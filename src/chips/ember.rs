@@ -6,8 +6,8 @@ use crate::transport::DeviceType;
 use serial_protocol::SerialProtocol;
 use std::collections::BTreeMap;
 
-pub struct EmberZNetSerialProtocol<const BUF_SIZE: usize> {
-    serial_port: SerialPort<BUF_SIZE>,
+pub struct EmberZNetSerialProtocol<'serial_port, const BUF_SIZE: usize> {
+    serial_port: SerialPort<'serial_port, BUF_SIZE>,
     frame_handler: FrameHandler,
     firmware_handler: FirmwareHandler,
     stack_configuration: BTreeMap<ConfigId, u8>,
