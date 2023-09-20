@@ -1,2 +1,5 @@
 [build]
 target = "armv7-unknown-linux-musleabi"
+
+[target.armv7-unknown-linux-musleabi]
+linker = "armv-linux-musleabi-gcc"
