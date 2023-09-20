@@ -1,14 +1,14 @@
-mod ezsp;
 mod firmware_update_handler;
 mod frame_handler;
+mod protocol;
 mod serial_protocol;
 
 use crate::security::Key;
 use crate::serial_port::SerialPort;
 use crate::transport::{DeviceType, Receive};
-use ezsp::{Config, Decision, Policy};
 use firmware_update_handler::FirmwareUpdateHandler;
 use frame_handler::FrameHandler;
+use protocol::{Config, Decision, NetworkParameters, Policy};
 use serial_protocol::SerialProtocol;
 use std::collections::BTreeMap;
 
