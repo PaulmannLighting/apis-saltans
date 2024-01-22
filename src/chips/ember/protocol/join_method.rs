@@ -1,6 +1,7 @@
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::ToPrimitive;
 
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, ToPrimitive)]
 pub enum JoinMethod {
     UseMacAssociation = 0x0,
     UseNwkRejoin = 0x1,
@@ -10,6 +11,8 @@ pub enum JoinMethod {
 
 impl From<JoinMethod> for u8 {
     fn from(join_method: JoinMethod) -> Self {
-        join_method as u8
+        join_method
+            .to_u8()
+            .expect("Could not convert JoinMethod to u8")
     }
 }

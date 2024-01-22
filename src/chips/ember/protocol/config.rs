@@ -1,6 +1,7 @@
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::ToPrimitive;
 
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, ToPrimitive)]
 pub enum Config {
     PacketBufferCount = 0x01,
     NeighborTableSize = 0x02,
@@ -50,6 +51,6 @@ pub enum Config {
 
 impl From<Config> for u8 {
     fn from(config_id: Config) -> Self {
-        config_id as u8
+        config_id.to_u8().expect("Could not convert Config to u8")
     }
 }

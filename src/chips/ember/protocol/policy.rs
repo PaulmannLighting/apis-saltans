@@ -1,6 +1,7 @@
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::ToPrimitive;
 
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, ToPrimitive)]
 pub enum Policy {
     TrustCenter = 0x00,
     BindingModification = 0x01,
@@ -16,6 +17,6 @@ pub enum Policy {
 
 impl From<Policy> for u8 {
     fn from(policy: Policy) -> Self {
-        policy as u8
+        policy.to_u8().expect("Could not convert Policy to u8")
     }
 }

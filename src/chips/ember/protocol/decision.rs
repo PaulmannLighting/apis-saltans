@@ -1,6 +1,7 @@
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::ToPrimitive;
 
-#[derive(Debug, FromPrimitive)]
+#[derive(Debug, FromPrimitive, ToPrimitive)]
 pub enum Decision {
     AllowJoins = 0x00,
     AllowPreconfiguredKeyJoins = 0x01,
@@ -30,6 +31,6 @@ pub enum Decision {
 
 impl From<Decision> for u8 {
     fn from(decision: Decision) -> Self {
-        decision as u8
+        decision.to_u8().expect("Could not convert Decision to u8")
     }
 }
