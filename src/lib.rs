@@ -1,3 +1,4 @@
+mod endpoint;
 mod network;
 mod node;
 mod nwk_address;
