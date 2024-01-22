@@ -12,12 +12,16 @@ pub enum StackType {
 
 impl Display for StackType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Zigbee2006 => write!(f, "ZigBee 2006"),
-            Self::Zigbee2007 => write!(f, "ZigBee 2007"),
-            Self::ZigbeePro => write!(f, "ZigBee Pro"),
-            Self::ZigbeeIp => write!(f, "ZigBee IP"),
-        }
+        write!(
+            f,
+            "ZigBee {}",
+            match self {
+                Self::Zigbee2006 => "2006",
+                Self::Zigbee2007 => "2007",
+                Self::ZigbeePro => "Pro",
+                Self::ZigbeeIp => "IP",
+            }
+        )
     }
 }
 
