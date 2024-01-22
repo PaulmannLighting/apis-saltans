@@ -3,6 +3,7 @@ use crate::IeeeAddress;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::AtomicU8;
 
+mod endpoint;
 mod node;
 mod state;
 
