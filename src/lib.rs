@@ -1,3 +1,4 @@
+mod command;
 mod device_type;
 pub mod endpoint;
 pub mod network;
