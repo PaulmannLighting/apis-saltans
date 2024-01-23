@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter};
 
+const DEFAULT_ENDPOINT: u8 = 0;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Address {
     address: u8,
@@ -31,6 +33,6 @@ impl Display for Address {
 
 impl From<u8> for Address {
     fn from(address: u8) -> Self {
-        Address::new(address, 0)
+        Address::new(address, DEFAULT_ENDPOINT)
     }
 }
