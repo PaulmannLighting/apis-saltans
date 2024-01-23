@@ -1,3 +1,5 @@
+use crate::network;
+use crate::IeeeAddress;
 use std::collections::{HashMap, HashSet};
 use std::time::SystemTime;
 
@@ -27,7 +29,7 @@ pub struct Node {
     routes: HashSet<RoutingTable>,
     binding_table: HashSet<BindingTable>,
     endpoints: HashMap<u8, Endpoint>,
-    endpoint_listeners: Vec<EndpointListener>,
+    endpoint_listeners: Vec<Box<dyn network::endpoint::Listener>>,
     network_manager: NetworkManager,
     state: Option<State>,
     link_quality_statistics: LinkQualityHandler,

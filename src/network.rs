@@ -3,9 +3,9 @@ use crate::IeeeAddress;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::AtomicU8;
 
-mod endpoint;
-mod node;
-mod state;
+pub mod endpoint;
+pub mod node;
+pub mod state;
 
 const DEFAULT_LOCAL_ENDPOINT_ID: u8 = 1;
 const BROADCAST_ENDPOINT_ID: u8 = u8::MAX;
