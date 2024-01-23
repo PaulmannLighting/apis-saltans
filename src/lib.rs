@@ -1,3 +1,4 @@
+mod broadcast;
 mod channel;
 mod command;
 mod device_type;
