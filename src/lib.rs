@@ -11,5 +11,6 @@ pub mod profile_type;
 pub mod quality;
 pub mod stack_type;
 pub mod status;
+mod zcl;
 
 pub type IeeeAddress = u64;
