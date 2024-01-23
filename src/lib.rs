@@ -1,3 +1,4 @@
+pub mod announce;
 mod broadcast;
 mod channel;
 mod command;
