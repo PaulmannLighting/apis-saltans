@@ -17,8 +17,8 @@ pub enum DeviceType {
     SmartEnergy(SmartEnergy),
 }
 
-impl From<DeviceType> for ProfileType {
-    fn from(device_type: DeviceType) -> Self {
+impl From<&DeviceType> for ProfileType {
+    fn from(device_type: &DeviceType) -> Self {
         match device_type {
             DeviceType::HomeAutomation(_) => ProfileType::HomeAutomation,
             DeviceType::GreenPower(_) => ProfileType::GreenPower,
@@ -28,13 +28,8 @@ impl From<DeviceType> for ProfileType {
     }
 }
 
-impl From<&DeviceType> for ProfileType {
-    fn from(device_type: &DeviceType) -> Self {
-        match device_type {
-            DeviceType::HomeAutomation(_) => ProfileType::HomeAutomation,
-            DeviceType::GreenPower(_) => ProfileType::GreenPower,
-            DeviceType::LightLink(_) => ProfileType::LightLink,
-            DeviceType::SmartEnergy(_) => ProfileType::SmartEnergy,
-        }
+impl From<DeviceType> for ProfileType {
+    fn from(device_type: DeviceType) -> Self {
+        Self::from(&device_type)
     }
 }
