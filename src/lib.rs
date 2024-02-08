@@ -4,6 +4,7 @@ pub mod channel;
 pub mod command;
 pub mod device_type;
 pub mod endpoint;
+pub mod mired;
 pub mod network;
 pub mod node;
 pub mod nwk_address;
