@@ -6,6 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bitflags = "2.6.0"
+macaddr = "1.0.1"
+num-derive = "0.4.2"
+serde = { version = "1.0.210", features = ["derive"] }
 
 [lints.rust]
 absolute_paths_not_starting_with_crate = "warn"
