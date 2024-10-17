@@ -9,3 +9,62 @@ edition = "2021"
 num-derive = "0.4.2"
 num-traits = "0.2.18"
 serialport = "4.3.0"
+
+[lints.rust]
+absolute_paths_not_starting_with_crate = "warn"
+elided_lifetimes_in_paths = "warn"
+keyword_idents = { level = "warn", priority = -1 }
+macro_use_extern_crate = "warn"
+meta_variable_misuse = "warn"
+missing_docs = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+unit_bindings = "warn"
+unsafe_code = "warn"
+unstable_features = "warn"
+unused_crate_dependencies = "warn"
+unused_imports = "warn"
+unused_qualifications = "warn"
+variant_size_differences = "warn"
+for_loops_over_fallibles = "warn"
+redundant_lifetimes = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -90 }
+nursery = { level = "warn", priority = -95 }
+perf = { level = "warn", priority = -95 }
+suspicious = { level = "warn", priority = -95 }
+complexity = { level = "warn", priority = -100 }
+cargo = { level = "warn", priority = -95 }
+all = { level = "warn", priority = -98 }
+
+incompatible_msrv = "warn"
+as_ptr_cast_mut = "warn"
+clear_with_drain = "warn"
+collection_is_never_read = "warn"
+debug_assert_with_mut_call = "warn"
+deref_by_slicing = "warn"
+empty_enum_variants_with_brackets = "warn"
+fn_to_numeric_cast_any = "warn"
+format_push_string = "warn"
+mem_forget = "warn"
+needless_collect = "warn"
+needless_pass_by_ref_mut = "warn"
+nonstandard_macro_braces = "warn"
+panic_in_result_fn = "warn"
+path_buf_push_overwrite = "warn"
+unwrap_in_result = "warn"
+verbose_file_reads = "warn"
+useless_let_if_seq = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+read_zero_byte_vec = "warn"
+redundant_clone = "warn"
+redundant_type_annotations = "warn"
+string_add = "warn"
+string_slice = "warn"
+string_to_string = "warn"
+trailing_empty_array = "warn"
+transmute_undefined_repr = "warn"
+unnecessary_self_imports = "warn"
+undocumented_unsafe_blocks = "warn"
