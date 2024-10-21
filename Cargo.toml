@@ -1,9 +1,16 @@
 [package]
 name = "zigbee"
+description = "Implementation of the Zigbee protocol."
+authors = ["Richard Neumann <neumann@paulmann.de>"]
+license = "MIT"
+repository = "https://github.com/PaulmannLighting/zigbee"
+keywords = ["zigbee", "network", "protocol"]
+categories = ["network-programming"]
+documentation = "https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+exclude = [".gitignore"]
+publish = false
 
 [dependencies]
 bitflags = "2.6"
