@@ -1,9 +1,8 @@
-use serde::{Deserialize, Serialize};
-
 const MASK: u8 = 0b0000_0111;
 
 /// The logical type of Zigbee device.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum LogicalType {
     /// The device is a coordinator.
     Coordinator = 0b000,

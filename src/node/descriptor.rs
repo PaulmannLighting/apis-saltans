@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 use flags::Flags;
 use mac_capability_flags::MacCapabilityFlags;
 
@@ -10,7 +8,8 @@ mod logical_type;
 mod mac_capability_flags;
 mod server_mask;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Descriptor {
     flags: Flags,
     mac_capability_flags: MacCapabilityFlags,

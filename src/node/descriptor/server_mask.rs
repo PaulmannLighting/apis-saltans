@@ -1,11 +1,12 @@
 use bitflags::bitflags;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 /// The server mask field of the node descriptor is sixteen bits in length,
 /// with bit settings signifying the system server capabilities of this node.
 ///
 /// It is used to facilitate discovery of particular system servers by other nodes on the system.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct ServerMask(u16);
 
 bitflags! {

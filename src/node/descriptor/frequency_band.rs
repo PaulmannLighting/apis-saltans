@@ -1,8 +1,8 @@
 use bitflags::bitflags;
-use serde::{Deserialize, Serialize};
 
 /// Supported frequency bands.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct FrequencyBand(u8);
 
 bitflags! {

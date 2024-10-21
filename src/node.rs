@@ -1,5 +1,4 @@
 use macaddr::MacAddr8;
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use capability::Capability;
@@ -8,7 +7,8 @@ use descriptor::Descriptor;
 mod capability;
 mod descriptor;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Debug)]
 pub struct Node {
     address: MacAddr8,
     short_address: Option<u16>,

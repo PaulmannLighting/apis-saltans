@@ -1,9 +1,9 @@
 use bitflags::bitflags;
-use serde::{Deserialize, Serialize};
 
 use super::device_type::DeviceType;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd, Deserialize, Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd)]
 pub struct MacCapabilityFlags(u8);
 
 bitflags! {
