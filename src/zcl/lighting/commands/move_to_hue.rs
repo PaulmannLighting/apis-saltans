@@ -1,3 +1,5 @@
+use crate::zcl::cluster::Cluster;
+use crate::zcl::command::Command;
 use num_derive::FromPrimitive;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -31,6 +33,14 @@ impl MoveToHue {
     pub const fn transition_time(&self) -> u16 {
         self.transition_time
     }
+}
+
+impl Cluster for MoveToHue {
+    const ID: u16 = 0x0300;
+}
+
+impl Command for MoveToHue {
+    const ID: u8 = 0x00;
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
