@@ -1,6 +1,7 @@
+use num_derive::FromPrimitive;
+
 use crate::zcl::cluster::Cluster;
 use crate::zcl::command::Command;
-use num_derive::FromPrimitive;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct MoveToHue {
