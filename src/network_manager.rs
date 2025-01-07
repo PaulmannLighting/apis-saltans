@@ -5,7 +5,7 @@ use std::io::Read;
 /// Trait to manage Zigbee networks.
 ///
 /// TODO: Implement appropriate methods to manage Zigbee networks and access clusters.
-pub trait NetworkManager {
+pub trait NetworkManager: Sized {
     /// Configuration used for initializing the network manager.
     type Configuration;
 
