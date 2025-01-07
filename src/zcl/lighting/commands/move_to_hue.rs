@@ -22,17 +22,17 @@ impl MoveToHue {
     }
 
     #[must_use]
-    pub const fn hue(&self) -> u8 {
+    pub const fn hue(self) -> u8 {
         self.hue
     }
 
     #[must_use]
-    pub const fn direction(&self) -> Direction {
+    pub const fn direction(self) -> Direction {
         self.direction
     }
 
     #[must_use]
-    pub const fn transition_time(&self) -> u16 {
+    pub const fn transition_time(self) -> u16 {
         self.transition_time
     }
 }

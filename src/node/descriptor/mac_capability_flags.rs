@@ -49,7 +49,7 @@ impl MacCapabilityFlags {
 
     /// Returns the reserved fields value.
     #[must_use]
-    pub const fn reserved(self) -> u8 {
+    pub fn reserved(self) -> u8 {
         (self & Self::RESERVED).bits() >> 2
     }
 

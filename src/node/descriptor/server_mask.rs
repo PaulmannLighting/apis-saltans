@@ -1,5 +1,4 @@
 use bitflags::bitflags;
-use serde::Deserialize;
 
 /// The server mask field of the node descriptor is sixteen bits in length,
 /// with bit settings signifying the system server capabilities of this node.

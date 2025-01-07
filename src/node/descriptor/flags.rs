@@ -23,7 +23,7 @@ impl Flags {
     /// Returns the logical type.
     ///
     /// Returns an error if the logical type is set to the reserved bits.
-    pub const fn logical_type(self) -> Result<LogicalType, u8> {
+    pub fn logical_type(self) -> Result<LogicalType, u8> {
         match ((self & Self::LOGICAL_TYPE).bits() >> 13) as u8 {
             0b000 => Ok(LogicalType::Coordinator),
             0b001 => Ok(LogicalType::Router),
@@ -46,19 +46,20 @@ impl Flags {
 
     /// Returns the reserved bytes.
     #[must_use]
-    pub const fn reserved(self) -> u8 {
+    pub fn reserved(self) -> u8 {
         ((self & Self::RESERVED).bits() >> 8) as u8
     }
 
     /// Returns the APS flags.
     #[must_use]
-    pub const fn aps_flags(self) -> u8 {
+    pub fn aps_flags(self) -> u8 {
         ((self & Self::APS_FLAGS).bits() >> 5) as u8
     }
 
     /// Returns the frequency band.
     #[must_use]
-    pub const fn frequency_band(self) -> FrequencyBand {
+    pub fn frequency_band(self) -> FrequencyBand {
+        #[allow(clippy::cast_possible_truncation)]
         FrequencyBand::from_bits_truncate((self & Self::FREQUENCY_BAND).bits() as u8)
     }
 }
