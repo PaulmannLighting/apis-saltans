@@ -3,6 +3,7 @@ use num_derive::FromPrimitive;
 use crate::zcl::cluster::Cluster;
 use crate::zcl::command::Command;
 
+/// Command to move a light to a specific huw.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct MoveToHue {
     hue: u8,
@@ -44,11 +45,16 @@ impl Command for MoveToHue {
     const ID: u8 = 0x00;
 }
 
+/// Direction of hue flow.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
 #[repr(u8)]
 pub enum Direction {
+    /// Take the shortest distance.
     ShortestDistance = 0x00,
+    /// Take the longest distance.
     LongestDistance = 0x01,
+    /// Move up.
     Up = 0x02,
+    /// Move down.
     Down = 0x03,
 }

@@ -7,6 +7,7 @@ use descriptor::Descriptor;
 mod capability;
 mod descriptor;
 
+/// A Zigbee node.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct Node {
