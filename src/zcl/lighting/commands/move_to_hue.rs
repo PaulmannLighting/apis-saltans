@@ -1,7 +1,6 @@
 use num_derive::FromPrimitive;
 
-use crate::zcl::cluster::Cluster;
-use crate::zcl::command::Command;
+use crate::zcl::{Cluster, Command};
 
 /// Command to move a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
