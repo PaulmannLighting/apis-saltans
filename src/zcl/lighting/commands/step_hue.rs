@@ -48,8 +48,8 @@ impl Command for StepHue {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
 #[repr(u8)]
 pub enum Mode {
-    Reserved1 = 0x00,
+    // 0x00 is reserved.
     Up = 0x01,
-    Reserved2 = 0x02,
+    // 0x02 is reserved.
     Down = 0x03,
 }

@@ -41,6 +41,6 @@ impl Command for MoveHue {
 pub enum Mode {
     Stop = 0x00,
     Up = 0x01,
-    Reserved = 0x02,
+    // 0x02 is reserved.
     Down = 0x03,
 }
