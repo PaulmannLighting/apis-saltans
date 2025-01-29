@@ -3,7 +3,7 @@ use num_derive::FromPrimitive;
 use crate::zcl::cluster::Cluster;
 use crate::zcl::command::Command;
 
-/// Command to move a light to a specific huw.
+/// Command to move a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct MoveToHue {
     hue: u8,
