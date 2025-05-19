@@ -5,4 +5,5 @@ pub use command::Command;
 
 mod cluster;
 mod command;
+mod frame;
 mod lighting;
