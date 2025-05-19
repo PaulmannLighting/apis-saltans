@@ -1,6 +1,6 @@
 use crate::zcl::Command;
 
-pub use header::Header;
+pub use header::{Control, Direction, Header, Type};
 
 mod header;
 
@@ -17,7 +17,12 @@ where
 {
     /// Creates a new ZCL frame.
     #[must_use]
-    pub const fn new(control: u8, manufacturer_code: Option<u16>, seq: u8, payload: T) -> Self {
+    pub const fn new(
+        control: Control,
+        manufacturer_code: Option<u16>,
+        seq: u8,
+        payload: T,
+    ) -> Self {
         Self {
             header: Header::new(control, manufacturer_code, seq, T::ID),
             payload,

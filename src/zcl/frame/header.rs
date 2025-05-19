@@ -1,8 +1,16 @@
+pub use control::Control;
+pub use direction::Direction;
+pub use typ::Type;
+
+mod control;
+mod direction;
+mod typ;
+
 /// A ZCL frame header.
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Header {
-    control: u8,
+    control: Control,
     manufacturer_code: Option<u16>,
     seq: u8,
     command_id: u8,
@@ -10,7 +18,12 @@ pub struct Header {
 
 impl Header {
     /// Crate a new header.
-    pub const fn new(control: u8, manufacturer_code: Option<u16>, seq: u8, command_id: u8) -> Self {
+    pub const fn new(
+        control: Control,
+        manufacturer_code: Option<u16>,
+        seq: u8,
+        command_id: u8,
+    ) -> Self {
         // TODO: validate that a set manufacturer code corresponds with the manufacturer specific sub-field being set to 0x01.
         Self {
             control,
@@ -21,7 +34,7 @@ impl Header {
     }
 
     /// Return the control flags.
-    pub const fn control(self) -> u8 {
+    pub const fn control(self) -> Control {
         self.control
     }
 
