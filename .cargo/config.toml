@@ -1,5 +1,5 @@
-[build]
-target = "armv7-unknown-linux-musleabi"
+[env]
+CC_armv7-unknown-linux-musleabihf = "/usr/bin/arm-linux-musleabihf-gcc"
 
-[target.armv7-unknown-linux-musleabi]
-linker = "armv-linux-musleabi-gcc"
+[target.armv7-unknown-linux-musleabihf]
+linker = "rust-lld"
