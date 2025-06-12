@@ -19,15 +19,21 @@ pub struct Header {
 impl Header {
     /// Crate a new header.
     #[must_use]
-    pub const fn new(
-        control: Control,
+    pub fn new(
+        typ: Type,
+        direction: Direction,
+        disable_client_response: bool,
         manufacturer_code: Option<u16>,
         seq: u8,
         command_id: u8,
     ) -> Self {
-        // TODO: validate that a set manufacturer code corresponds with the manufacturer specific sub-field being set to 0x01.
         Self {
-            control,
+            control: Control::new(
+                typ,
+                manufacturer_code.is_some(),
+                direction,
+                disable_client_response,
+            ),
             manufacturer_code,
             seq,
             command_id,

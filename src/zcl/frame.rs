@@ -19,14 +19,23 @@ where
 {
     /// Creates a new ZCL frame.
     #[must_use]
-    pub const fn new(
-        control: Control,
+    pub fn new(
+        typ: Type,
+        direction: Direction,
+        disable_client_response: bool,
         manufacturer_code: Option<u16>,
         seq: u8,
         payload: T,
     ) -> Self {
         Self {
-            header: Header::new(control, manufacturer_code, seq, <T as Command>::ID),
+            header: Header::new(
+                typ,
+                direction,
+                disable_client_response,
+                manufacturer_code,
+                seq,
+                <T as Command>::ID,
+            ),
             payload,
         }
     }
