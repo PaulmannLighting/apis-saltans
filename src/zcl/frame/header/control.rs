@@ -25,7 +25,7 @@ impl Control {
         direction: Direction,
         disable_client_response: bool,
     ) -> Self {
-        let mut flags = Self((typ as u8) << Self::MANUFACTURER_SPECIFIC.bits().trailing_zeros());
+        let mut flags = Self((typ as u8) << Self::TYPE.bits().trailing_zeros());
 
         if manufacturer_specific {
             flags.set(Self::MANUFACTURER_SPECIFIC, true);
@@ -46,7 +46,7 @@ impl Control {
     ///
     /// If the command type is not recognized, it returns an error with the raw value.
     pub const fn typ(self) -> Result<Type, u8> {
-        match self.0 & Self::TYPE.bits() {
+        match (self.0 & Self::TYPE.bits()) >> Self::TYPE.bits().trailing_zeros() {
             0x00 => Ok(Type::Global),
             0x01 => Ok(Type::ClusterSpecific),
             other => Err(other),
@@ -73,5 +73,86 @@ impl Control {
     #[must_use]
     pub const fn disable_default_response(self) -> bool {
         self.contains(Self::DISABLE_DEFAULT_RESPONSE)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Control, Direction, Type};
+
+    #[test]
+    fn test_type_trailing_zeros() {
+        assert_eq!(Control::TYPE.bits().trailing_zeros(), 6);
+    }
+
+    #[test]
+    fn test_cluster_specific_flag() {
+        assert_eq!(
+            (Type::ClusterSpecific as u8) << Control::TYPE.bits().trailing_zeros(),
+            0b0100_0000
+        );
+    }
+
+    #[test]
+    fn test_global_flag() {
+        assert_eq!(
+            (Type::Global as u8) << Control::TYPE.bits().trailing_zeros(),
+            0b0000_0000
+        );
+    }
+
+    #[test]
+    fn test_control_cluster_specific() {
+        let control = Control::new(Type::ClusterSpecific, true, Direction::ServerToClient, true);
+        assert_eq!(control.typ(), Ok(Type::ClusterSpecific));
+        assert!(control.is_manufacturer_specific());
+        assert_eq!(control.direction(), Direction::ServerToClient);
+        assert!(control.disable_default_response());
+    }
+
+    #[test]
+    fn test_control_global() {
+        let control = Control::new(Type::Global, true, Direction::ServerToClient, true);
+        assert_eq!(control.typ(), Ok(Type::Global));
+        assert!(control.is_manufacturer_specific());
+        assert_eq!(control.direction(), Direction::ServerToClient);
+        assert!(control.disable_default_response());
+    }
+
+    #[test]
+    fn test_control_manufacturer_unspecific() {
+        let control = Control::new(
+            Type::ClusterSpecific,
+            false,
+            Direction::ServerToClient,
+            true,
+        );
+        assert_eq!(control.typ(), Ok(Type::ClusterSpecific));
+        assert!(!control.is_manufacturer_specific());
+        assert_eq!(control.direction(), Direction::ServerToClient);
+        assert!(control.disable_default_response());
+    }
+
+    #[test]
+    fn test_control_disable_client_to_server() {
+        let control = Control::new(Type::ClusterSpecific, true, Direction::ClientToServer, true);
+        assert_eq!(control.typ(), Ok(Type::ClusterSpecific));
+        assert!(control.is_manufacturer_specific());
+        assert_eq!(control.direction(), Direction::ClientToServer);
+        assert!(control.disable_default_response());
+    }
+
+    #[test]
+    fn test_control_enable_client_response() {
+        let control = Control::new(
+            Type::ClusterSpecific,
+            true,
+            Direction::ClientToServer,
+            false,
+        );
+        assert_eq!(control.typ(), Ok(Type::ClusterSpecific));
+        assert!(control.is_manufacturer_specific());
+        assert_eq!(control.direction(), Direction::ClientToServer);
+        assert!(!control.disable_default_response());
     }
 }
