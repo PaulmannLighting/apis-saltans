@@ -10,4 +10,4 @@ pub mod move_saturation;
 pub mod move_to_hue;
 pub mod move_to_saturation;
 pub mod step_hue;
-mod step_saturation;
+pub mod step_saturation;
