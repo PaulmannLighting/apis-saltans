@@ -9,9 +9,13 @@ pub struct Control(u8);
 
 bitflags! {
     impl Control: u8 {
+        /// The command type.
         const TYPE = 0b1100_0000;
+        /// The command type is manufacturer specific.
         const MANUFACTURER_SPECIFIC = 0b0010_0000;
+        /// The direction of the command.
         const DIRECTION = 0b0001_0000;
+        /// The default response is disabled.
         const DISABLE_DEFAULT_RESPONSE = 0b0000_1000;
     }
 }
