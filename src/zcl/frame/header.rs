@@ -7,7 +7,6 @@ mod direction;
 mod typ;
 
 /// A ZCL frame header.
-
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Header {
     control: Control,
