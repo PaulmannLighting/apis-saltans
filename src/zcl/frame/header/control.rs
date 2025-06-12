@@ -13,7 +13,6 @@ bitflags! {
         const MANUFACTURER_SPECIFIC = 0b0010_0000;
         const DIRECTION = 0b0001_0000;
         const DISABLE_DEFAULT_RESPONSE = 0b0000_1000;
-        const RESERVED = 0b0000_0111;
     }
 }
 
