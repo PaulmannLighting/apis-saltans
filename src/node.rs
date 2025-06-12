@@ -1,3 +1,5 @@
+//! Zigbee network node representation.
+
 use macaddr::MacAddr8;
 use std::collections::HashSet;
 
