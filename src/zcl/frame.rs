@@ -24,7 +24,7 @@ where
         payload: T,
     ) -> Self {
         Self {
-            header: Header::new(control, manufacturer_code, seq, T::ID),
+            header: Header::new(control, manufacturer_code, seq, <T as Command>::ID),
             payload,
         }
     }
