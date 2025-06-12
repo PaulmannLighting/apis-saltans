@@ -19,8 +19,25 @@ bitflags! {
 impl Control {
     /// Creates a new `Control` instance with the specified flags.
     #[must_use]
-    pub const fn new(flags: u8) -> Self {
-        Self(flags)
+    pub fn new(
+        typ: Type,
+        manufacturer_specific: bool,
+        direction: Direction,
+        disable_client_response: bool,
+    ) -> Self {
+        let mut flags = Self((typ as u8) << Self::MANUFACTURER_SPECIFIC.bits().trailing_zeros());
+
+        if manufacturer_specific {
+            flags.set(Self::MANUFACTURER_SPECIFIC, true);
+        }
+
+        flags.set(Self::DIRECTION, direction == Direction::ServerToClient);
+
+        if disable_client_response {
+            flags.set(Self::DISABLE_DEFAULT_RESPONSE, true);
+        }
+
+        flags
     }
 
     /// Return the command type.
