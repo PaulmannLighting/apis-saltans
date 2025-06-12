@@ -25,6 +25,10 @@ impl Control {
     }
 
     /// Return the command type.
+    ///
+    /// # Errors
+    ///
+    /// If the command type is not recognized, it returns an error with the raw value.
     pub const fn typ(self) -> Result<Type, u8> {
         match self.0 & Self::TYPE.bits() {
             0x00 => Ok(Type::Global),
