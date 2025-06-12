@@ -45,12 +45,8 @@ impl Control {
     /// # Errors
     ///
     /// If the command type is not recognized, it returns an error with the raw value.
-    pub const fn typ(self) -> Result<Type, u8> {
-        match (self.0 & Self::TYPE.bits()) >> Self::TYPE.bits().trailing_zeros() {
-            0x00 => Ok(Type::Global),
-            0x01 => Ok(Type::ClusterSpecific),
-            other => Err(other),
-        }
+    pub fn typ(self) -> Result<Type, u8> {
+        Type::try_from((self.0 & Self::TYPE.bits()) >> Self::TYPE.bits().trailing_zeros())
     }
 
     /// Return whether the command is manufacturer specific.
