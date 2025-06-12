@@ -1,5 +1,5 @@
 //! An implementation of the Zigbee Cluster Library (ZCL).
 
-mod network_manager;
-mod node;
-mod zcl;
+pub mod network_manager;
+pub mod node;
+pub mod zcl;
