@@ -2,7 +2,7 @@
 
 pub use cluster::Cluster;
 pub use command::Command;
-pub use frame::{Control, Direction, Frame, Header, Type};
+pub use frame::{Direction, Frame, Header, Type};
 
 mod cluster;
 mod command;

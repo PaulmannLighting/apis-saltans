@@ -1,4 +1,4 @@
-pub use control::Control;
+use control::Control;
 pub use direction::Direction;
 pub use typ::Type;
 

@@ -2,7 +2,7 @@
 
 use crate::zcl::Command;
 
-pub use header::{Control, Direction, Header, Type};
+pub use header::{Direction, Header, Type};
 
 mod header;
 
