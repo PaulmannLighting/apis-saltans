@@ -32,13 +32,20 @@ impl Control {
         let mut flags = Self((typ as u8) << Self::TYPE.bits().trailing_zeros());
 
         if manufacturer_specific {
-            flags.set(Self::MANUFACTURER_SPECIFIC, true);
+            flags.insert(Self::MANUFACTURER_SPECIFIC);
         }
 
-        flags.set(Self::DIRECTION, direction == Direction::ServerToClient);
+        match direction {
+            Direction::ClientToServer => {
+                flags.remove(Self::DIRECTION);
+            }
+            Direction::ServerToClient => {
+                flags.insert(Self::DIRECTION);
+            }
+        }
 
         if disable_client_response {
-            flags.set(Self::DISABLE_DEFAULT_RESPONSE, true);
+            flags.insert(Self::DISABLE_DEFAULT_RESPONSE);
         }
 
         flags
