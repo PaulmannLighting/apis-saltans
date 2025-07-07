@@ -8,7 +8,7 @@ keywords = ["zigbee", "network", "protocol"]
 categories = ["network-programming"]
 documentation = "https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 exclude = [".gitignore"]
 publish = false
 
