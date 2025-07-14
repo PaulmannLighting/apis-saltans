@@ -1,8 +1,6 @@
-use crate::zcl::{Cluster, Command};
 use std::time::Duration;
 
-/// Amount of deci-seconds per millisecond.
-const DECI_SECONDS_PER_MILLISECOND: u64 = 100;
+use crate::zcl::{Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND};
 
 /// Command to move a light to a specific hue and saturation.
 pub struct MoveToHueAndSaturation {

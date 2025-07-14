@@ -6,5 +6,6 @@ pub use frame::{Direction, Frame, Header, Type};
 
 mod cluster;
 mod command;
+mod constants;
 pub mod frame;
 pub mod lighting;
