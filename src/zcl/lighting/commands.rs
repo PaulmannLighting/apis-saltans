@@ -1,3 +1,4 @@
+pub use move_color::MoveColor;
 pub use move_hue::Mode;
 pub use move_saturation::MoveSaturation;
 pub use move_to_color::MoveToColor;
@@ -7,6 +8,7 @@ pub use move_to_saturation::MoveToSaturation;
 pub use step_hue::StepHue;
 pub use step_saturation::StepSaturation;
 
+mod move_color;
 pub mod move_hue;
 pub mod move_saturation;
 mod move_to_color;
