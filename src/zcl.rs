@@ -7,4 +7,4 @@ pub use frame::{Direction, Frame, Header, Type};
 mod cluster;
 mod command;
 pub mod frame;
-mod lighting;
+pub mod lighting;
