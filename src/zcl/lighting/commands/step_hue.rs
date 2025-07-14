@@ -1,7 +1,9 @@
 use std::time::Duration;
 
 use crate::zcl::{
-    Command, constants::DECI_SECONDS_PER_MILLISECOND, lighting::Lighting, lighting::step_hue::Mode,
+    Command,
+    constants::DECI_SECONDS_PER_MILLISECOND,
+    lighting::{Lighting, step_hue::Mode},
 };
 
 /// Command to step a light's hue.

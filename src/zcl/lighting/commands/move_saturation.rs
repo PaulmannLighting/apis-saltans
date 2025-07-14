@@ -1,4 +1,7 @@
-use crate::zcl::{Command, lighting::Lighting, lighting::move_saturation::Mode};
+use crate::zcl::{
+    Command,
+    lighting::{Lighting, move_saturation::Mode},
+};
 
 /// Command to move a light's saturation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
