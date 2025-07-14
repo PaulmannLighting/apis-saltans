@@ -11,6 +11,7 @@ mod commands;
 mod direction;
 mod mode;
 
+/// Sealed trait for the Lighting cluster.
 trait Lighting {}
 
 impl<T> Cluster for T
