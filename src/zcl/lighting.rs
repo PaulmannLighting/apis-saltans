@@ -2,13 +2,14 @@
 
 pub use commands::*;
 pub use direction::Direction;
+pub use mode::{move_hue, move_saturation, step_hue, step_saturation};
 
 use crate::zcl::Cluster;
 
 mod color_information_attribute;
 mod commands;
 mod direction;
-pub mod mode;
+mod mode;
 
 trait Lighting {}
 

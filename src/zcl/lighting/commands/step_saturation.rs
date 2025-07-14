@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::zcl::{
     Command, constants::DECI_SECONDS_PER_MILLISECOND, lighting::Lighting,
-    lighting::mode::step_saturation::Mode,
+    lighting::step_saturation::Mode,
 };
 
 /// Command to step a light to a specific hue.
