@@ -1,3 +1,4 @@
+pub use enhanced_move_to_hue::EnhancedMoveToHue;
 pub use move_color::MoveColor;
 pub use move_hue::Mode;
 pub use move_saturation::MoveSaturation;
@@ -10,6 +11,7 @@ pub use step_color::StepColor;
 pub use step_hue::StepHue;
 pub use step_saturation::StepSaturation;
 
+mod enhanced_move_to_hue;
 mod move_color;
 pub mod move_hue;
 pub mod move_saturation;
