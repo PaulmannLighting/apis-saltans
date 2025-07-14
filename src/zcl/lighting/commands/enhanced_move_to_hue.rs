@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::zcl::{
     Command,
     constants::DECI_SECONDS_PER_MILLISECOND,
-    lighting::{Direction, Lighting},
+    lighting::{Lighting, move_to_hue::Direction},
 };
 
 /// Command to move a light to a specific extended hue with a direction and transition time.

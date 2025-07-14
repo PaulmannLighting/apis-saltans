@@ -17,7 +17,7 @@ impl EnhancedMoveHue {
         Self { mode, rate }
     }
 
-    /// Return the mode of hue movement.
+    /// Return the misc of hue movement.
     #[must_use]
     pub const fn mode(self) -> Mode {
         self.mode

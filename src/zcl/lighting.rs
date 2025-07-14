@@ -1,15 +1,13 @@
 //! Lighting API.
 
 pub use commands::*;
-pub use direction::Direction;
-pub use mode::{move_hue, move_saturation, step_hue, step_saturation};
+pub use misc::{move_hue, move_saturation, move_to_hue, step_hue, step_saturation};
 
 use crate::zcl::Cluster;
 
 mod color_information_attribute;
 mod commands;
-mod direction;
-mod mode;
+mod misc;
 
 const CLUSTER_ID: u16 = 0x0300;
 

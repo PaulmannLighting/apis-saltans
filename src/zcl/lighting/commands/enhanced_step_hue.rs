@@ -25,7 +25,7 @@ impl EnhancedStepHue {
         }
     }
 
-    /// Return the mode of hue step.
+    /// Return the misc of hue step.
     #[must_use]
     pub const fn mode(self) -> Mode {
         self.mode

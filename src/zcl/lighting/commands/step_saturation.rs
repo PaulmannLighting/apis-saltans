@@ -25,7 +25,7 @@ impl StepSaturation {
         }
     }
 
-    /// Return the mode of saturation step.
+    /// Return the misc of saturation step.
     #[must_use]
     pub const fn mode(self) -> Mode {
         self.mode

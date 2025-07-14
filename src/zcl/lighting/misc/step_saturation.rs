@@ -1,6 +1,6 @@
 use num_derive::FromPrimitive;
 
-/// Step mode.
+/// Step misc.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
 #[repr(u8)]
 pub enum Mode {

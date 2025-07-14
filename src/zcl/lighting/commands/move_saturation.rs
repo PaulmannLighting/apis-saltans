@@ -18,7 +18,7 @@ impl MoveSaturation {
         Self { mode, rate }
     }
 
-    /// Return the mode.
+    /// Return the misc.
     #[must_use]
     pub const fn mode(self) -> Mode {
         self.mode
