@@ -1,7 +1,7 @@
 //! Lighting API.
 
 pub use commands::*;
-pub use misc::{move_hue, move_saturation, move_to_hue, step_hue, step_saturation};
+pub use misc::{color_loop_set, move_hue, move_saturation, move_to_hue, step_hue, step_saturation};
 
 use crate::zcl::Cluster;
 

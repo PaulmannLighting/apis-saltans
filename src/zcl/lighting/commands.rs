@@ -1,3 +1,4 @@
+pub use color_loop_set::ColorLoopSet;
 pub use enhanced_move_hue::EnhancedMoveHue;
 pub use enhanced_move_to_hue::EnhancedMoveToHue;
 pub use enhanced_move_to_hue_and_saturation::EnhancedMoveToHueAndSaturation;
@@ -13,6 +14,7 @@ pub use step_color::StepColor;
 pub use step_hue::StepHue;
 pub use step_saturation::StepSaturation;
 
+mod color_loop_set;
 mod enhanced_move_hue;
 mod enhanced_move_to_hue;
 mod enhanced_move_to_hue_and_saturation;
