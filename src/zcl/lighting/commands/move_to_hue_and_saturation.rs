@@ -12,7 +12,7 @@ pub struct MoveToHueAndSaturation {
 }
 
 impl MoveToHueAndSaturation {
-    /// Creates a new `MoveToHueAndSaturation` command.
+    /// Create a new `MoveToHueAndSaturation` command.
     #[must_use]
     pub const fn new(hue: u8, saturation: u8, transition_time: u16) -> Self {
         Self {
@@ -22,19 +22,19 @@ impl MoveToHueAndSaturation {
         }
     }
 
-    /// Returns the hue value.
+    /// Return the hue value.
     #[must_use]
     pub const fn hue(self) -> u8 {
         self.hue
     }
 
-    /// Returns the saturation value.
+    /// Return the saturation value.
     #[must_use]
     pub const fn saturation(self) -> u8 {
         self.saturation
     }
 
-    /// Returns the transition time.
+    /// Return the transition time.
     #[must_use]
     pub fn transition_time(self) -> Duration {
         Duration::from_millis(u64::from(self.transition_time) * DECI_SECONDS_PER_MILLISECOND)

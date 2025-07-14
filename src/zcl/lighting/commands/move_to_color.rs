@@ -11,6 +11,7 @@ pub struct MoveToColor {
 }
 
 impl MoveToColor {
+    /// Create a new `MoveToColor` command.
     #[must_use]
     pub const fn new(color_x: u16, color_y: u16, transition_time: u16) -> Self {
         Self {
@@ -20,16 +21,19 @@ impl MoveToColor {
         }
     }
 
+    /// Return the color X value.
     #[must_use]
     pub const fn color_x(self) -> u16 {
         self.color_x
     }
 
+    /// Return the color Y value.
     #[must_use]
     pub const fn color_y(self) -> u16 {
         self.color_y
     }
 
+    /// Return the transition time.
     #[must_use]
     pub fn transition_time(self) -> Duration {
         Duration::from_millis(u64::from(self.transition_time) * DECI_SECONDS_PER_MILLISECOND)

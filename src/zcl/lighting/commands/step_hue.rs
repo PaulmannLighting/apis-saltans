@@ -1,5 +1,8 @@
+use std::time::Duration;
+
 use num_derive::FromPrimitive;
 
+use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
 use crate::zcl::{Cluster, Command};
 
 /// Command to step a light's hue.
@@ -11,6 +14,7 @@ pub struct StepHue {
 }
 
 impl StepHue {
+    /// Create a new `StepHue` command.
     #[must_use]
     pub const fn new(mode: Mode, size: u8, transition_time: u8) -> Self {
         Self {
@@ -20,19 +24,22 @@ impl StepHue {
         }
     }
 
+    /// Return the mode of hue step.
     #[must_use]
     pub const fn mode(self) -> Mode {
         self.mode
     }
 
+    /// Return the size of hue step.
     #[must_use]
     pub const fn size(self) -> u8 {
         self.size
     }
 
+    /// Return the transition time in deci-seconds.
     #[must_use]
-    pub const fn transition_time(self) -> u8 {
-        self.transition_time
+    pub fn transition_time(self) -> Duration {
+        Duration::from_millis(u64::from(self.transition_time) * DECI_SECONDS_PER_MILLISECOND)
     }
 }
 

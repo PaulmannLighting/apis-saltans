@@ -11,16 +11,19 @@ pub struct MoveSaturation {
 }
 
 impl MoveSaturation {
+    /// Create a new `MoveSaturation` command.
     #[must_use]
     pub const fn new(mode: Mode, rate: u8) -> Self {
         Self { mode, rate }
     }
 
+    /// Return the mode.
     #[must_use]
     pub const fn mode(self) -> Mode {
         self.mode
     }
 
+    /// Return the rate of saturation change in steps per second.
     #[must_use]
     pub const fn rate(self) -> u8 {
         self.rate
