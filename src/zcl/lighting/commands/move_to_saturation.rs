@@ -1,6 +1,6 @@
-use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::{Cluster, Command};
 use std::time::Duration;
+
+use crate::zcl::{Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND};
 
 /// Command to move a light to a specific saturation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
