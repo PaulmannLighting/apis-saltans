@@ -8,6 +8,7 @@ pub use step_saturation::StepSaturation;
 
 pub mod move_hue;
 pub mod move_saturation;
+mod move_to_color;
 pub mod move_to_hue;
 mod move_to_hue_and_saturation;
 pub mod move_to_saturation;

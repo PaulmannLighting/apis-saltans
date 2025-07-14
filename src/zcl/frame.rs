@@ -51,4 +51,10 @@ where
     pub const fn payload(&self) -> &T {
         &self.payload
     }
+
+    /// Consume the frame and return its payload.
+    #[must_use]
+    pub fn into_payload(self) -> T {
+        self.payload
+    }
 }
