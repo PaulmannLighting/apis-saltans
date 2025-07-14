@@ -3,6 +3,7 @@ use std::time::Duration;
 use crate::zcl::{Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND};
 
 /// Command to move a light to a specific hue and saturation.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct MoveToHueAndSaturation {
     hue: u8,
     saturation: u8,
