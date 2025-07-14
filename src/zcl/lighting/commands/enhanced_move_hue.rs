@@ -1,4 +1,4 @@
-use crate::zcl::{Cluster, Command, lighting::mode::move_hue::Mode};
+use crate::zcl::{Command, lighting::Lighting, lighting::mode::move_hue::Mode};
 
 /// Command to move a light's hue in an enhanced way, allowing for more control over the rate.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -27,9 +27,7 @@ impl EnhancedMoveHue {
     }
 }
 
-impl Cluster for EnhancedMoveHue {
-    const ID: u16 = 0x0300;
-}
+impl Lighting for EnhancedMoveHue {}
 
 impl Command for EnhancedMoveHue {
     const ID: u8 = 0x41;

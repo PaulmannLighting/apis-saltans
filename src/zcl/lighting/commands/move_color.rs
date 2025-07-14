@@ -1,4 +1,4 @@
-use crate::zcl::{Cluster, Command};
+use crate::zcl::{Command, lighting::Lighting};
 
 /// Command to move a light's color.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -27,9 +27,7 @@ impl MoveColor {
     }
 }
 
-impl Cluster for MoveColor {
-    const ID: u16 = 0x0300;
-}
+impl Lighting for MoveColor {}
 
 impl Command for MoveColor {
     const ID: u8 = 0x08;

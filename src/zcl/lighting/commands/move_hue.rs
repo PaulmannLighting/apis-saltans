@@ -1,4 +1,4 @@
-use crate::zcl::{Cluster, Command, lighting::mode::move_hue::Mode};
+use crate::zcl::{Command, lighting::Lighting, lighting::mode::move_hue::Mode};
 
 /// Command to move a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -28,9 +28,7 @@ impl MoveHue {
     }
 }
 
-impl Cluster for MoveHue {
-    const ID: u16 = 0x0300;
-}
+impl Lighting for MoveHue {}
 
 impl Command for MoveHue {
     const ID: u8 = 0x01;

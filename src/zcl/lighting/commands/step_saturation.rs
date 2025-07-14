@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::zcl::{
-    Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND,
+    Command, constants::DECI_SECONDS_PER_MILLISECOND, lighting::Lighting,
     lighting::mode::step_saturation::Mode,
 };
 
@@ -43,9 +43,7 @@ impl StepSaturation {
     }
 }
 
-impl Cluster for StepSaturation {
-    const ID: u16 = 0x0300;
-}
+impl Lighting for StepSaturation {}
 
 impl Command for StepSaturation {
     const ID: u8 = 0x04;

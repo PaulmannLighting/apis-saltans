@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::zcl::{Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND};
+use crate::zcl::{Command, constants::DECI_SECONDS_PER_MILLISECOND, lighting::Lighting};
 
 /// Command to step a light's color.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -40,9 +40,7 @@ impl StepColor {
     }
 }
 
-impl Cluster for StepColor {
-    const ID: u16 = 0x0300;
-}
+impl Lighting for StepColor {}
 
 impl Command for StepColor {
     const ID: u8 = 0x09;
