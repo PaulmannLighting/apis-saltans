@@ -1,3 +1,5 @@
+//! Data structures for the `Move Saturation` command in the `Lighting` cluster.
+
 use num_derive::FromPrimitive;
 
 /// Mode of saturation move.

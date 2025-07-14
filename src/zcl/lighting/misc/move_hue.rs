@@ -1,3 +1,5 @@
+//! Data structures for the `Move Hue` command in the `Lighting` cluster.
+
 use num_derive::FromPrimitive;
 
 /// Move misc.

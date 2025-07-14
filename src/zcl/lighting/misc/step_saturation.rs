@@ -1,3 +1,5 @@
+//! Data structures for the `Step Saturation` command in the `Lighting` cluster.
+
 use num_derive::FromPrimitive;
 
 /// Step misc.

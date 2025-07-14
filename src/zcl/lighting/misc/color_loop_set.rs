@@ -1,3 +1,5 @@
+//! Data structures for the `Color Loop Set` command in the `Lighting` cluster.
+
 use bitflags::bitflags;
 use num_derive::FromPrimitive;
 
