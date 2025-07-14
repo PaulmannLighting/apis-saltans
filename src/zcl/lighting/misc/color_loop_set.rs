@@ -24,8 +24,11 @@ bitflags! {
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum Action {
+    /// Deactivate the color loop.
     Deactivate = 0x00,
+    /// Activate the color loop from the value in the `ColorLoopStartEnhancedHue` field.
     ActivateFromColorLoopStartEnhancedHue = 0x01,
+    /// Activate the color loop from the value of the `EnhancedCurrentHue` attribute.
     ActivateFromEnhancedCurrentHue = 0x02,
 }
 
@@ -33,6 +36,8 @@ pub enum Action {
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum Direction {
+    /// Decrement the hue in the color loop.
     Decrement = 0x00,
+    /// Increment the hue in the color loop.
     Increment = 0x01,
 }
