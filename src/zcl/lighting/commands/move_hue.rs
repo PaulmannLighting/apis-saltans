@@ -1,6 +1,4 @@
-use num_derive::FromPrimitive;
-
-use crate::zcl::{Cluster, Command};
+use crate::zcl::{Cluster, Command, lighting::mode::move_hue::Mode};
 
 /// Command to move a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -36,17 +34,4 @@ impl Cluster for MoveHue {
 
 impl Command for MoveHue {
     const ID: u8 = 0x01;
-}
-
-/// Move mode.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
-#[repr(u8)]
-pub enum Mode {
-    /// Stop move.
-    Stop = 0x00,
-    /// Move up.
-    Up = 0x01,
-    // 0x02 is reserved.
-    /// Move down.
-    Down = 0x03,
 }

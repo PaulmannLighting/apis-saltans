@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use num_derive::FromPrimitive;
-
-use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::{Cluster, Command};
+use crate::zcl::{
+    Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND,
+    lighting::mode::step_saturation::Mode,
+};
 
 /// Command to step a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -49,16 +49,4 @@ impl Cluster for StepSaturation {
 
 impl Command for StepSaturation {
     const ID: u8 = 0x04;
-}
-
-/// Step mode.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
-#[repr(u8)]
-pub enum Mode {
-    // 0x00 is reserved.
-    /// Step up.
-    Up = 0x01,
-    // 0x02 is reserved.
-    /// Step down.
-    Down = 0x03,
 }

@@ -1,8 +1,6 @@
 use std::time::Duration;
 
-use crate::zcl::{
-    Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND, lighting::move_to_hue::Direction,
-};
+use crate::zcl::{Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND, lighting::Direction};
 
 /// Command to move a light to a specific extended hue with a direction and transition time.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

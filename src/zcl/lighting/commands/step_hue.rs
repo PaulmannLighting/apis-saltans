@@ -1,9 +1,8 @@
 use std::time::Duration;
 
-use num_derive::FromPrimitive;
-
-use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::{Cluster, Command};
+use crate::zcl::{
+    Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND, lighting::mode::step_hue::Mode,
+};
 
 /// Command to step a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -49,16 +48,4 @@ impl Cluster for StepHue {
 
 impl Command for StepHue {
     const ID: u8 = 0x02;
-}
-
-/// Mode of hue step.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
-#[repr(u8)]
-pub enum Mode {
-    // 0x00 is reserved.
-    /// Step up.
-    Up = 0x01,
-    // 0x02 is reserved.
-    /// Step down.
-    Down = 0x03,
 }

@@ -1,8 +1,6 @@
 use std::time::Duration;
 
-use num_derive::FromPrimitive;
-
-use crate::zcl::{Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND};
+use crate::zcl::{Cluster, Command, constants::DECI_SECONDS_PER_MILLISECOND, lighting::Direction};
 
 /// Command to move a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -48,18 +46,4 @@ impl Cluster for MoveToHue {
 
 impl Command for MoveToHue {
     const ID: u8 = 0x00;
-}
-
-/// Direction of hue flow.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
-#[repr(u8)]
-pub enum Direction {
-    /// Take the shortest distance.
-    ShortestDistance = 0x00,
-    /// Take the longest distance.
-    LongestDistance = 0x01,
-    /// Move up.
-    Up = 0x02,
-    /// Move down.
-    Down = 0x03,
 }

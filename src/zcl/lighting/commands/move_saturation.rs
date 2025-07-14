@@ -1,6 +1,4 @@
-use num_derive::FromPrimitive;
-
-use crate::zcl::{Cluster, Command};
+use crate::zcl::{Cluster, Command, lighting::mode::move_saturation::Mode};
 
 /// Command to move a light's saturation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -36,17 +34,4 @@ impl Cluster for MoveSaturation {
 
 impl Command for MoveSaturation {
     const ID: u8 = 0x04;
-}
-
-/// Mode of saturation move.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
-#[repr(u8)]
-pub enum Mode {
-    /// Stop move.
-    Stop = 0x00,
-    /// Move up.
-    Up = 0x01,
-    // 0x02 is reserved.
-    /// Move down.
-    Down = 0x03,
 }
