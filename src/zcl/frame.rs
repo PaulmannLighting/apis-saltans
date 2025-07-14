@@ -17,7 +17,7 @@ impl<T> Frame<T>
 where
     T: Command,
 {
-    /// Creates a new ZCL frame.
+    /// Create a new ZCL frame.
     #[must_use]
     pub fn new(
         typ: Type,
@@ -40,13 +40,13 @@ where
         }
     }
 
-    /// Returns the header of the ZCL frame.
+    /// Return the header of the ZCL frame.
     #[must_use]
     pub const fn header(&self) -> &Header {
         &self.header
     }
 
-    /// Returns the payload of the ZCL frame.
+    /// Return the payload of the ZCL frame.
     #[must_use]
     pub const fn payload(&self) -> &T {
         &self.payload
