@@ -2,5 +2,5 @@
 
 pub use mode::Mode;
 
-pub(super) mod command;
+pub(in crate::zcl::lighting::color_control) mod command;
 mod mode;

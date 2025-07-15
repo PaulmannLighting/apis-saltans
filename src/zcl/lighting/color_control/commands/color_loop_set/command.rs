@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::zcl::lighting::color_control::CLUSTER_ID;
-use crate::zcl::lighting::color_control::color_loop_set::{Action, Direction, Update};
+use crate::zcl::lighting::color_control::commands::color_loop_set::{Action, Direction, Update};
 use crate::zcl::{Cluster, Command};
 
 /// Activate a light's color loop.

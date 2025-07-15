@@ -1,43 +1,55 @@
+use std::time::Duration;
+
+use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
 use crate::zcl::lighting::color_control::CLUSTER_ID;
-use crate::zcl::lighting::color_control::move_hue::Mode;
+use crate::zcl::lighting::color_control::commands::step_hue::Mode;
 use crate::zcl::{Cluster, Command};
 
-/// Command to move a light's color temperature.
+/// Command to step a light's color temperature in a specified range.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct MoveColorTemperature {
+pub struct StepColorTemperature {
     mode: Mode,
-    rate: u16,
+    size: u16,
+    transition_time: u16,
     color_temp_min_mireds: u16,
     color_temp_max_mireds: u16,
 }
 
-impl MoveColorTemperature {
-    /// Create a new `MoveColorTemperature` command.
+impl StepColorTemperature {
+    /// Create a new `StepColorTemperature` command.
     #[must_use]
     pub const fn new(
         mode: Mode,
-        rate: u16,
+        size: u16,
+        transition_time: u16,
         color_temp_min_mireds: u16,
         color_temp_max_mireds: u16,
     ) -> Self {
         Self {
             mode,
-            rate,
+            size,
+            transition_time,
             color_temp_min_mireds,
             color_temp_max_mireds,
         }
     }
 
-    /// Return the mode of color temperature movement.
+    /// Return the mode of color temperature step.
     #[must_use]
     pub const fn mode(self) -> Mode {
         self.mode
     }
 
-    /// Return the rate of color temperature change in mireds per second.
+    /// Return the size of color temperature step.
     #[must_use]
-    pub const fn rate(self) -> u16 {
-        self.rate
+    pub const fn size(self) -> u16 {
+        self.size
+    }
+
+    /// Return the transition time.
+    #[must_use]
+    pub fn transition_time(self) -> Duration {
+        Duration::from_millis(u64::from(self.transition_time) * DECI_SECONDS_PER_MILLISECOND)
     }
 
     /// Return the minimum color temperature in mireds.
@@ -53,10 +65,10 @@ impl MoveColorTemperature {
     }
 }
 
-impl Cluster for MoveColorTemperature {
+impl Cluster for StepColorTemperature {
     const ID: u16 = CLUSTER_ID;
 }
 
-impl Command for MoveColorTemperature {
-    const ID: u8 = 0x4b;
+impl Command for StepColorTemperature {
+    const ID: u8 = 0x4c;
 }

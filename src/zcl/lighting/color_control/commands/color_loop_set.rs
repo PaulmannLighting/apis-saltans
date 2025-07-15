@@ -5,6 +5,6 @@ pub use direction::Direction;
 pub use update::Update;
 
 mod action;
-pub(super) mod command;
+pub(in crate::zcl::lighting::color_control) mod command;
 mod direction;
 mod update;
