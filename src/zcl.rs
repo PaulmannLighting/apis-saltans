@@ -5,6 +5,7 @@ pub use command::Command;
 pub use frame::{Direction, Frame, Header, Type};
 
 mod attribute;
+mod basic;
 mod cluster;
 mod command;
 mod command_frame_id;
