@@ -2,6 +2,7 @@
 
 pub use color_information_attribute::ColorInformationAttribute;
 pub use color_loop_set::command::ColorLoopSet;
+pub use drift_compensation::DriftCompensation;
 pub use enhanced_move_hue::EnhancedMoveHue;
 pub use enhanced_move_to_hue::EnhancedMoveToHue;
 pub use enhanced_move_to_hue_and_saturation::EnhancedMoveToHueAndSaturation;
@@ -23,6 +24,7 @@ pub use stop_move_step::StopMoveStep;
 
 mod color_information_attribute;
 pub mod color_loop_set;
+mod drift_compensation;
 mod enhanced_move_hue;
 mod enhanced_move_to_hue;
 mod enhanced_move_to_hue_and_saturation;
