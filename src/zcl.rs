@@ -7,6 +7,7 @@ pub use frame::{Direction, Frame, Header, Type};
 mod attribute;
 mod cluster;
 mod command;
+mod command_frame_id;
 mod constants;
 mod data_types;
 pub mod frame;
