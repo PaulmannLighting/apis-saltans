@@ -35,6 +35,7 @@ pub enum DataType {
     Data56([u8; 7]) = 0x0e,
     /// 64-bit data.
     Data64([u8; 8]) = 0x0f,
+    // Boolean
     /// Boolean.
     Logical(bool) = 0x10,
     // Bitmap
