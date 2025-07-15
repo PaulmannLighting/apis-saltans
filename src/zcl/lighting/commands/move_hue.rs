@@ -1,7 +1,6 @@
-use crate::zcl::{
-    Command,
-    lighting::{Lighting, move_hue::Mode},
-};
+use crate::zcl::Command;
+use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::move_hue::Mode;
 
 /// Command to move a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

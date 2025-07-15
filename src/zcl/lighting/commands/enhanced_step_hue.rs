@@ -1,10 +1,9 @@
 use std::time::Duration;
 
-use crate::zcl::{
-    Command,
-    constants::DECI_SECONDS_PER_MILLISECOND,
-    lighting::{Lighting, step_hue::Mode},
-};
+use crate::zcl::Command;
+use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
+use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::step_hue::Mode;
 
 /// Command to step a light's hue in an enhanced way, allowing for more control over the size.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

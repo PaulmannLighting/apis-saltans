@@ -1,10 +1,10 @@
 //! Zigbee network node representation.
 
-use macaddr::MacAddr8;
 use std::collections::HashSet;
 
 use capability::Capability;
 use descriptor::Descriptor;
+use macaddr::MacAddr8;
 
 mod capability;
 mod descriptor;

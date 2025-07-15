@@ -1,10 +1,9 @@
 use std::time::Duration;
 
-use crate::zcl::{
-    Command,
-    constants::DECI_SECONDS_PER_MILLISECOND,
-    lighting::{Lighting, step_saturation::Mode},
-};
+use crate::zcl::Command;
+use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
+use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::step_saturation::Mode;
 
 /// Command to step a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

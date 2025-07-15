@@ -1,10 +1,9 @@
 use std::time::Duration;
 
-use crate::zcl::{
-    Command,
-    constants::DECI_SECONDS_PER_MILLISECOND,
-    lighting::{Lighting, move_to_hue::Direction},
-};
+use crate::zcl::Command;
+use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
+use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::move_to_hue::Direction;
 
 /// Command to move a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

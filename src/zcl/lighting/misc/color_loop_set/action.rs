@@ -1,6 +1,5 @@
-pub use source::Source;
-
 use num_traits::FromPrimitive;
+pub use source::Source;
 
 mod source;
 

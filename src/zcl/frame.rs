@@ -1,8 +1,8 @@
 //! ZCL frame representation.
 
-use crate::zcl::Command;
-
 pub use header::{Direction, Header, Type};
+
+use crate::zcl::Command;
 
 mod header;
 
