@@ -1,49 +1,86 @@
-use bitmap::Bitmap;
-use collection::Collection;
-use enumeration::Enumeration;
-use floating_point::FloatingPoint;
-use general::General;
-use identifier::Identifier;
-use miscellaneous::Miscellaneous;
-use ordered_sequence::OrderedSequence;
-use signed_integer::SignedInteger;
-use string::String;
-use time::Time;
-use unsigned_integer::UnsignedInteger;
+use array::Array;
+use date::Date;
+use half::f16;
+use macaddr::MacAddr8;
+use structure::Structure;
+use time_of_day::TimeOfDay;
+use utc_time::UtcTime;
 
 mod array;
-mod bitmap;
-mod collection;
 mod date;
-mod enumeration;
-mod floating_point;
-mod general;
-mod identifier;
-mod miscellaneous;
-mod ordered_sequence;
-mod signed_integer;
-mod string;
 mod structure;
-mod time;
 mod time_of_day;
-mod unsigned_integer;
 mod utc_time;
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-pub enum Class {
+pub enum DataType {
     Null,
-    General(General),
+    /// Generic
+    Data8(u8),
+    Data16([u8; 2]),
+    Data24([u8; 3]),
+    Data32([u8; 4]),
+    Data40([u8; 5]),
+    Data48([u8; 6]),
+    Data56([u8; 7]),
+    Data64([u8; 8]),
     Logical(bool),
-    Bitmap(Bitmap),
-    UnsignedInteger(UnsignedInteger),
-    SignedInteger(SignedInteger),
-    Enumeration(Enumeration),
-    FloatingPoint(FloatingPoint),
+    /// Bitmap
+    Map8(u8),
+    Map16(u16),
+    Map24(u32),
+    Map32(u32),
+    Map40(u64),
+    Map48(u64),
+    Map56(u64),
+    Map64(u64),
+    /// Unsigned integer
+    Uint8(u8),
+    Uint16(u16),
+    Uint24(u32),
+    Uint32(u32),
+    Uint40(u64),
+    Uint48(u64),
+    Uint56(u64),
+    Uint64(u64),
+    /// Signed integer
+    Int8(i8),
+    Int16(i16),
+    Int24(i32),
+    Int32(i32),
+    Int40(i64),
+    Int48(i64),
+    Int56(i64),
+    Int64(i64),
+    /// Enumeration
+    Enum8(u8),
+    Enum16(u16),
+    /// Floating point
+    Semi(f16),
+    Single(f32),
+    Double(f64),
+    /// String
+    OctStr(Vec<u8>),
     String(String),
-    OrderedSequence(OrderedSequence),
-    Collection(Collection),
-    Time(Time),
-    Identifier(Identifier),
-    Miscellaneous(Miscellaneous),
+    OctStr16(Vec<u8>),
+    String16(String),
+    /// Ordered sequence
+    Array(Array),
+    Structure(Structure),
+    /// Collection
+    Set(Vec<u8>),
+    Bag(Vec<u8>),
+    /// Time
+    TimeOfDay(TimeOfDay),
+    Date(Date),
+    UtcTime(UtcTime),
+    /// Identifier
+    ClusterId(u16),
+    AttributeId(u16),
+    BacNetOid(u32),
+    /// Miscellaneous
+    IeeeAddress(MacAddr8),
+    SecurityKey([u8; 16]),
+    Opaque(Vec<u8>),
     Unknown,
 }
