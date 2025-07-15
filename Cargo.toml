@@ -14,6 +14,7 @@ publish = false
 
 [dependencies]
 bitflags = "2.6"
+half = "2.6.0"
 macaddr = "1.0"
 num-derive = "0.4"
 num-traits = "0.2.19"
