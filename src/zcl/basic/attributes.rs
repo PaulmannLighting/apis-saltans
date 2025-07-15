@@ -4,19 +4,20 @@ mod power_source;
 
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[repr(u16)]
 pub enum Attribute {
-    ZCLVersion(u8),
-    ApplicationVersion(u8),
-    StackVersion(u8),
-    HWVersion(u8),
-    ManufacturerName(String),
-    ModelIdentifier(String),
-    DateCode(String),
-    PowerSource(PowerSource),
-    LocationDescription(String),
-    PhysicalEnvironment(u8),
-    DeviceEnabled(bool),
-    AlarmMask(u8),
-    DisableLocalConfig(u8),
-    SwBuildId(String),
+    ZCLVersion(u8) = 0x0000,
+    ApplicationVersion(u8) = 0x0001,
+    StackVersion(u8) = 0x0002,
+    HWVersion(u8) = 0x0003,
+    ManufacturerName(String) = 0x0004,
+    ModelIdentifier(String) = 0x0005,
+    DateCode(String) = 0x0006,
+    PowerSource(PowerSource) = 0x0007,
+    LocationDescription(String) = 0x0010,
+    PhysicalEnvironment(u8) = 0x0011,
+    DeviceEnabled(bool) = 0x0012,
+    AlarmMask(u8) = 0x0013,
+    DisableLocalConfig(u8) = 0x0014,
+    SwBuildId(String) = 0x4000,
 }
