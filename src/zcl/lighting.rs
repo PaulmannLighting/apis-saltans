@@ -12,8 +12,12 @@ pub use move_saturation::command::MoveSaturation;
 pub use move_to_color::MoveToColor;
 pub use move_to_color_temperature::MoveToColorTemperature;
 pub use move_to_hue::command::MoveToHue;
+pub use move_to_hue_and_saturation::MoveToHueAndSaturation;
+pub use move_to_saturation::MoveToSaturation;
+pub use step_color::StepColor;
 pub use step_hue::command::StepHue;
 pub use step_saturation::command::StepSaturation;
+pub use stop_move_step::StopMoveStep;
 
 use crate::zcl::Cluster;
 
@@ -34,6 +38,7 @@ mod move_to_saturation;
 mod step_color;
 pub mod step_hue;
 pub mod step_saturation;
+mod stop_move_step;
 
 const CLUSTER_ID: u16 = 0x0300;
 
