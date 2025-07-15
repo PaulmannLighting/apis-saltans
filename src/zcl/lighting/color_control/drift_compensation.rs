@@ -7,7 +7,7 @@ pub enum DriftCompensation {
     /// No drift compensation.
     None = 0x00,
     /// Other or unknown drift compensation.
-    OtherUnknown = 0x01,
+    Other = 0x01,
     /// Temperature monitoring.
     Temperature = 0x02,
     /// Optical luminance monitoring and feedback.
