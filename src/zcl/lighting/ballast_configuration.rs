@@ -1,7 +1,7 @@
 //! Ballast Configuration Cluster.
 
-pub use ballast_configuration_attribute_set_id::BallastConfigurationAttributeSetId;
+pub use ballast_configuration_attribute::BallastConfigurationAttribute;
 
-mod ballast_configuration_attribute_set_id;
+mod ballast_configuration_attribute;
 mod ballast_information_attribute;
 mod commands;

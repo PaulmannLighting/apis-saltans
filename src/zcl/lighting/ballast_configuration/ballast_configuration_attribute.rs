@@ -1,5 +1,9 @@
-/// Attribute set identifiers for the Ballast Configuration.
-pub enum BallastConfigurationAttributeSetId {
+use num_derive::FromPrimitive;
+
+/// Ballast Configuration attributes.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
+#[repr(u16)]
+pub enum BallastConfigurationAttribute {
     /// Ballast information.
     BallastInformation = 0x0000,
     /// Ballast settings.
