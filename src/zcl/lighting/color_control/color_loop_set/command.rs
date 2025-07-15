@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use crate::zcl::Command;
-use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::color_loop_set::{Action, Direction, Update};
+use crate::zcl::{Cluster, Command};
 
 /// Activate a light's color loop.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -64,7 +64,9 @@ impl ColorLoopSet {
     }
 }
 
-impl ColorControl for ColorLoopSet {}
+impl Cluster for ColorLoopSet {
+    const ID: u16 = CLUSTER_ID;
+}
 
 impl Command for ColorLoopSet {
     const ID: u8 = 0x44;

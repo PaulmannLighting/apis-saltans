@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::step_hue::Mode;
+use crate::zcl::{Cluster, Command};
 
 /// Command to step a light's hue in an enhanced way, allowing for more control over the size.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -43,7 +43,9 @@ impl EnhancedStepHue {
     }
 }
 
-impl ColorControl for EnhancedStepHue {}
+impl Cluster for EnhancedStepHue {
+    const ID: u16 = CLUSTER_ID;
+}
 
 impl Command for EnhancedStepHue {
     const ID: u8 = 0x42;

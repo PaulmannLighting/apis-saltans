@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::move_to_hue::Direction;
+use crate::zcl::{Cluster, Command};
 
 /// Command to move a light to a specific extended hue with a direction and transition time.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -43,7 +43,9 @@ impl EnhancedMoveToHue {
     }
 }
 
-impl ColorControl for EnhancedMoveToHue {}
+impl Cluster for EnhancedMoveToHue {
+    const ID: u16 = CLUSTER_ID;
+}
 
 impl Command for EnhancedMoveToHue {
     const ID: u8 = 0x40;

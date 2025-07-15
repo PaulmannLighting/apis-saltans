@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::step_saturation::Mode;
+use crate::zcl::{Cluster, Command};
 
 /// Command to step a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -43,7 +43,9 @@ impl StepSaturation {
     }
 }
 
-impl ColorControl for StepSaturation {}
+impl Cluster for StepSaturation {
+    const ID: u16 = CLUSTER_ID;
+}
 
 impl Command for StepSaturation {
     const ID: u8 = 0x04;

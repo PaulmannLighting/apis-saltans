@@ -1,6 +1,6 @@
-use crate::zcl::Command;
-use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::move_hue::Mode;
+use crate::zcl::{Cluster, Command};
 
 /// Command to move a light's color temperature.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -53,7 +53,9 @@ impl MoveColorTemperature {
     }
 }
 
-impl ColorControl for MoveColorTemperature {}
+impl Cluster for MoveColorTemperature {
+    const ID: u16 = CLUSTER_ID;
+}
 
 impl Command for MoveColorTemperature {
     const ID: u8 = 0x4b;

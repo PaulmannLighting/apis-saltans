@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::CLUSTER_ID;
+use crate::zcl::{Cluster, Command};
 
 /// Command to move a light to a specific hue and saturation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -43,7 +43,9 @@ impl MoveToHueAndSaturation {
     }
 }
 
-impl ColorControl for MoveToHueAndSaturation {}
+impl Cluster for MoveToHueAndSaturation {
+    const ID: u16 = CLUSTER_ID;
+}
 
 impl Command for MoveToHueAndSaturation {
     const ID: u8 = 0x06;

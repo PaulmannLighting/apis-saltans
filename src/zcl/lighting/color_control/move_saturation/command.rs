@@ -1,6 +1,6 @@
-use crate::zcl::Command;
-use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::move_saturation::Mode;
+use crate::zcl::{Cluster, Command};
 
 /// Command to move a light's saturation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -30,7 +30,9 @@ impl MoveSaturation {
     }
 }
 
-impl ColorControl for MoveSaturation {}
+impl Cluster for MoveSaturation {
+    const ID: u16 = CLUSTER_ID;
+}
 
 impl Command for MoveSaturation {
     const ID: u8 = 0x04;
