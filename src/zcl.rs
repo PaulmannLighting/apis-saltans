@@ -2,6 +2,7 @@
 
 pub use cluster::Cluster;
 pub use command::Command;
+pub use data_type::DataType;
 pub use frame::{Direction, Frame, Header, Type};
 
 mod attribute;
@@ -10,6 +11,6 @@ mod cluster;
 mod command;
 mod command_frame_id;
 mod constants;
-mod data_types;
+mod data_type;
 pub mod frame;
 pub mod lighting;

@@ -1,4 +1,4 @@
-use crate::zcl::data_types::DataType;
+use crate::zcl::data_type::DataType;
 
 pub struct ArraySetBag {
     element_type: u8,
