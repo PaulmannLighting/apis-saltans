@@ -10,6 +10,10 @@ mod array;
 mod date;
 mod structure;
 mod time_of_day;
+mod uint16;
+mod uint24;
+mod uint32;
+mod uint8;
 mod utc_time;
 
 /// Available Zigbee data types.
