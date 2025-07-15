@@ -1,5 +1,5 @@
 use crate::zcl::lighting::color_control::CLUSTER_ID;
-use crate::zcl::lighting::color_control::commands::move_hue::Mode;
+use crate::zcl::lighting::color_control::move_hue::Mode;
 use crate::zcl::{Cluster, Command};
 
 /// Command to move a light's color temperature.
