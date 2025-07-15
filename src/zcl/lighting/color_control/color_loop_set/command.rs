@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use crate::zcl::Command;
-use crate::zcl::lighting::ColorControl;
-use crate::zcl::lighting::color_loop_set::{Action, Direction, Update};
+use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::color_loop_set::{Action, Direction, Update};
 
 /// Activate a light's color loop.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

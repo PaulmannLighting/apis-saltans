@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::ColorControl;
+use crate::zcl::lighting::color_control::ColorControl;
 
 /// Command to move a light to a specific color.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

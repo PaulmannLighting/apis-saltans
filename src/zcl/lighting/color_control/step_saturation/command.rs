@@ -2,21 +2,21 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::ColorControl;
-use crate::zcl::lighting::step_hue::Mode;
+use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::step_saturation::Mode;
 
-/// Command to step a light's hue in an enhanced way, allowing for more control over the size.
+/// Command to step a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct EnhancedStepHue {
+pub struct StepSaturation {
     mode: Mode,
-    size: u16,
-    transition_time: u16,
+    size: u8,
+    transition_time: u8,
 }
 
-impl EnhancedStepHue {
-    /// Create a new `EnhancedStepHue` command.
+impl StepSaturation {
+    /// Create a new `StepSaturation` command.
     #[must_use]
-    pub const fn new(mode: Mode, size: u16, transition_time: u16) -> Self {
+    pub const fn new(mode: Mode, size: u8, transition_time: u8) -> Self {
         Self {
             mode,
             size,
@@ -24,15 +24,15 @@ impl EnhancedStepHue {
         }
     }
 
-    /// Return the misc of hue step.
+    /// Return the misc of saturation step.
     #[must_use]
     pub const fn mode(self) -> Mode {
         self.mode
     }
 
-    /// Return the size of hue step.
+    /// Return the size of saturation step.
     #[must_use]
-    pub const fn size(self) -> u16 {
+    pub const fn size(self) -> u8 {
         self.size
     }
 
@@ -43,8 +43,8 @@ impl EnhancedStepHue {
     }
 }
 
-impl ColorControl for EnhancedStepHue {}
+impl ColorControl for StepSaturation {}
 
-impl Command for EnhancedStepHue {
-    const ID: u8 = 0x42;
+impl Command for StepSaturation {
+    const ID: u8 = 0x04;
 }

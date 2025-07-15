@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::ColorControl;
+use crate::zcl::lighting::color_control::ColorControl;
 
 /// Command to move a light's color temperature to a specific value in mireds.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

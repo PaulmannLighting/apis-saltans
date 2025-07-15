@@ -1,5 +1,5 @@
 use crate::zcl::Command;
-use crate::zcl::lighting::ColorControl;
+use crate::zcl::lighting::color_control::ColorControl;
 
 /// Command to move a light's color.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

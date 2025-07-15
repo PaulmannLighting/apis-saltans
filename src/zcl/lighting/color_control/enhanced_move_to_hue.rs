@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::ColorControl;
-use crate::zcl::lighting::move_to_hue::Direction;
+use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::move_to_hue::Direction;
 
 /// Command to move a light to a specific extended hue with a direction and transition time.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

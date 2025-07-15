@@ -2,31 +2,32 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::ColorControl;
+use crate::zcl::lighting::color_control::ColorControl;
 
-/// Command to move a light to a specific hue and saturation with enhanced precision.
+/// Command to move a light to a specific hue and saturation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct EnhancedMoveToHueAndSaturation {
-    enhanced_hue: u16,
+pub struct MoveToHueAndSaturation {
+    hue: u8,
     saturation: u8,
+    /// The transition time in deci-seconds.
     transition_time: u16,
 }
 
-impl EnhancedMoveToHueAndSaturation {
-    /// Create a new `EnhancedMoveToHueAndSaturation` command.
+impl MoveToHueAndSaturation {
+    /// Create a new `MoveToHueAndSaturation` command.
     #[must_use]
-    pub const fn new(enhanced_hue: u16, saturation: u8, transition_time: u16) -> Self {
+    pub const fn new(hue: u8, saturation: u8, transition_time: u16) -> Self {
         Self {
-            enhanced_hue,
+            hue,
             saturation,
             transition_time,
         }
     }
 
-    /// Return the enhanced hue value.
+    /// Return the hue value.
     #[must_use]
-    pub const fn enhanced_hue(self) -> u16 {
-        self.enhanced_hue
+    pub const fn hue(self) -> u8 {
+        self.hue
     }
 
     /// Return the saturation value.
@@ -42,8 +43,8 @@ impl EnhancedMoveToHueAndSaturation {
     }
 }
 
-impl ColorControl for EnhancedMoveToHueAndSaturation {}
+impl ColorControl for MoveToHueAndSaturation {}
 
-impl Command for EnhancedMoveToHueAndSaturation {
-    const ID: u8 = 0x43;
+impl Command for MoveToHueAndSaturation {
+    const ID: u8 = 0x06;
 }

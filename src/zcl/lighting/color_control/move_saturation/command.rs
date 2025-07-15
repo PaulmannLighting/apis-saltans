@@ -1,17 +1,17 @@
 use crate::zcl::Command;
-use crate::zcl::lighting::ColorControl;
-use crate::zcl::lighting::move_hue::Mode;
+use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::move_saturation::Mode;
 
-/// Command to move a light's hue.
+/// Command to move a light's saturation.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct MoveHue {
+pub struct MoveSaturation {
     mode: Mode,
     /// Steps per second.
     rate: u8,
 }
 
-impl MoveHue {
-    /// Create a new `MoveHue` command.
+impl MoveSaturation {
+    /// Create a new `MoveSaturation` command.
     #[must_use]
     pub const fn new(mode: Mode, rate: u8) -> Self {
         Self { mode, rate }
@@ -23,15 +23,15 @@ impl MoveHue {
         self.mode
     }
 
-    /// Return the rate of hue change in steps per second.
+    /// Return the rate of saturation change in steps per second.
     #[must_use]
     pub const fn rate(self) -> u8 {
         self.rate
     }
 }
 
-impl ColorControl for MoveHue {}
+impl ColorControl for MoveSaturation {}
 
-impl Command for MoveHue {
-    const ID: u8 = 0x01;
+impl Command for MoveSaturation {
+    const ID: u8 = 0x04;
 }

@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::ColorControl;
-use crate::zcl::lighting::step_hue::Mode;
+use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::step_hue::Mode;
 
 /// Command to step a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

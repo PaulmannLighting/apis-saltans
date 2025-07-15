@@ -1,6 +1,6 @@
 use crate::zcl::Command;
-use crate::zcl::lighting::ColorControl;
-use crate::zcl::lighting::move_hue::Mode;
+use crate::zcl::lighting::color_control::ColorControl;
+use crate::zcl::lighting::color_control::move_hue::Mode;
 
 /// Command to move a light's hue in an enhanced way, allowing for more control over the rate.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
