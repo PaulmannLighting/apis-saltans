@@ -1,5 +1,6 @@
 pub use power_source::PowerSource;
 
+mod date_code;
 mod power_source;
 
 /// Basic Cluster Attributes.
