@@ -1,7 +1,7 @@
 use array_set_bag::ArraySetBag;
 use structure::Structure;
 
-use crate::zcl::data_type::Class;
+use crate::zcl::data_types::Class;
 
 mod array_set_bag;
 mod structure;

@@ -8,6 +8,6 @@ mod attribute;
 mod cluster;
 mod command;
 mod constants;
-mod data_type;
+mod data_types;
 pub mod frame;
 pub mod lighting;

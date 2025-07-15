@@ -1,4 +1,4 @@
-use crate::zcl::data_type::Class;
+use crate::zcl::data_types::Class;
 
 pub struct Structure {
     number_of_elements: u16,
