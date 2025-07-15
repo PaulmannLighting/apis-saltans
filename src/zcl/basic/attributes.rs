@@ -1,3 +1,7 @@
+pub use power_source::PowerSource;
+
+mod power_source;
+
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Attribute {
@@ -8,7 +12,7 @@ pub enum Attribute {
     ManufacturerName(String),
     ModelIdentifier(String),
     DateCode(String),
-    PowerSource(u8),
+    PowerSource(PowerSource),
     LocationDescription(String),
     PhysicalEnvironment(u8),
     DeviceEnabled(bool),
