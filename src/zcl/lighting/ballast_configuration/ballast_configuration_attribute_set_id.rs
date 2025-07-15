@@ -1,5 +1,5 @@
-/// Attribute set identifiers for the Ballast Configuration cluster.
-pub enum AttributeSetId {
+/// Attribute set identifiers for the Ballast Configuration.
+pub enum BallastConfigurationAttributeSetId {
     /// Ballast information.
     BallastInformation = 0x0000,
     /// Ballast settings.
