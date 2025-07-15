@@ -1,5 +1,6 @@
 use std::num::TryFromIntError;
 
+/// A 24-bit unsigned integer type.
 #[derive(Clone, Copy, Default, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct U24 {
     upper: u8,
