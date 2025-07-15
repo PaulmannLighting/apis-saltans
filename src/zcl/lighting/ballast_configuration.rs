@@ -3,4 +3,5 @@
 pub use ballast_configuration_attribute_set_id::BallastConfigurationAttributeSetId;
 
 mod ballast_configuration_attribute_set_id;
+mod ballast_information_attribute;
 mod commands;
