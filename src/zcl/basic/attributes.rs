@@ -1,3 +1,4 @@
+pub use date_code::DateCode;
 pub use power_source::PowerSource;
 
 mod date_code;
@@ -13,7 +14,7 @@ pub enum Attribute {
     HWVersion(u8) = 0x0003,
     ManufacturerName(heapless::String<32>) = 0x0004,
     ModelIdentifier(heapless::String<32>) = 0x0005,
-    DateCode(String) = 0x0006,
+    DateCode(DateCode) = 0x0006,
     PowerSource(PowerSource) = 0x0007,
     LocationDescription(heapless::String<16>) = 0x0010,
     PhysicalEnvironment(u8) = 0x0011,
