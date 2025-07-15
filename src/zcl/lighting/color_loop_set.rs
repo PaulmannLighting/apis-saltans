@@ -5,5 +5,6 @@ pub use direction::Direction;
 pub use update::Update;
 
 mod action;
+pub(super) mod command;
 mod direction;
 mod update;
