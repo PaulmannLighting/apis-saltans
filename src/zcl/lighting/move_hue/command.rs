@@ -1,5 +1,5 @@
 use crate::zcl::Command;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 use crate::zcl::lighting::move_hue::Mode;
 
 /// Command to move a light's hue.
@@ -30,7 +30,7 @@ impl MoveHue {
     }
 }
 
-impl Lighting for MoveHue {}
+impl ColorControl for MoveHue {}
 
 impl Command for MoveHue {
     const ID: u8 = 0x01;

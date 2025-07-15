@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 use crate::zcl::lighting::move_to_hue::Direction;
 
 /// Command to move a light to a specific hue.
@@ -43,7 +43,7 @@ impl MoveToHue {
     }
 }
 
-impl Lighting for MoveToHue {}
+impl ColorControl for MoveToHue {}
 
 impl Command for MoveToHue {
     const ID: u8 = 0x00;

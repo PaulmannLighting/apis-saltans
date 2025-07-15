@@ -1,5 +1,5 @@
 use crate::zcl::Command;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 
 /// Command to move a light's color.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -28,7 +28,7 @@ impl MoveColor {
     }
 }
 
-impl Lighting for MoveColor {}
+impl ColorControl for MoveColor {}
 
 impl Command for MoveColor {
     const ID: u8 = 0x08;

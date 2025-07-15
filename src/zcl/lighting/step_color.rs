@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 
 /// Command to step a light's color.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -42,7 +42,7 @@ impl StepColor {
     }
 }
 
-impl Lighting for StepColor {}
+impl ColorControl for StepColor {}
 
 impl Command for StepColor {
     const ID: u8 = 0x09;

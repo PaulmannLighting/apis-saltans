@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 use crate::zcl::lighting::step_hue::Mode;
 
 /// Command to step a light's color temperature in a specified range.
@@ -65,7 +65,7 @@ impl StepColorTemperature {
     }
 }
 
-impl Lighting for StepColorTemperature {}
+impl ColorControl for StepColorTemperature {}
 
 impl Command for StepColorTemperature {
     const ID: u8 = 0x4c;

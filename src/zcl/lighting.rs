@@ -47,11 +47,11 @@ mod stop_move_step;
 const CLUSTER_ID: u16 = 0x0300;
 
 /// Sealed trait for the Lighting cluster.
-trait Lighting {}
+trait ColorControl {}
 
 impl<T> Cluster for T
 where
-    T: Lighting,
+    T: ColorControl,
 {
     const ID: u16 = CLUSTER_ID;
 }

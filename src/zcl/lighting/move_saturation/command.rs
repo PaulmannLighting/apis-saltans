@@ -1,5 +1,5 @@
 use crate::zcl::Command;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 use crate::zcl::lighting::move_saturation::Mode;
 
 /// Command to move a light's saturation.
@@ -30,7 +30,7 @@ impl MoveSaturation {
     }
 }
 
-impl Lighting for MoveSaturation {}
+impl ColorControl for MoveSaturation {}
 
 impl Command for MoveSaturation {
     const ID: u8 = 0x04;

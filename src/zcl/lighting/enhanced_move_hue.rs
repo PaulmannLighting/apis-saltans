@@ -1,5 +1,5 @@
 use crate::zcl::Command;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 use crate::zcl::lighting::move_hue::Mode;
 
 /// Command to move a light's hue in an enhanced way, allowing for more control over the rate.
@@ -29,7 +29,7 @@ impl EnhancedMoveHue {
     }
 }
 
-impl Lighting for EnhancedMoveHue {}
+impl ColorControl for EnhancedMoveHue {}
 
 impl Command for EnhancedMoveHue {
     const ID: u8 = 0x41;

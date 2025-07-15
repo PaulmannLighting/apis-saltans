@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::zcl::Command;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 use crate::zcl::lighting::color_loop_set::{Action, Direction, Update};
 
 /// Activate a light's color loop.
@@ -64,7 +64,7 @@ impl ColorLoopSet {
     }
 }
 
-impl Lighting for ColorLoopSet {}
+impl ColorControl for ColorLoopSet {}
 
 impl Command for ColorLoopSet {
     const ID: u8 = 0x44;

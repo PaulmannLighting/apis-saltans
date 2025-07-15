@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 
 /// Command to move a light's color temperature to a specific value in mireds.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -34,7 +34,7 @@ impl MoveToColorTemperature {
     }
 }
 
-impl Lighting for MoveToColorTemperature {}
+impl ColorControl for MoveToColorTemperature {}
 
 impl Command for MoveToColorTemperature {
     const ID: u8 = 0x0a;

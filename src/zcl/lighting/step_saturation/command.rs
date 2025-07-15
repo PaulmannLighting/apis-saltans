@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::zcl::Command;
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::Lighting;
+use crate::zcl::lighting::ColorControl;
 use crate::zcl::lighting::step_saturation::Mode;
 
 /// Command to step a light to a specific hue.
@@ -43,7 +43,7 @@ impl StepSaturation {
     }
 }
 
-impl Lighting for StepSaturation {}
+impl ColorControl for StepSaturation {}
 
 impl Command for StepSaturation {
     const ID: u8 = 0x04;
