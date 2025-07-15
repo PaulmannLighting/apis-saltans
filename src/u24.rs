@@ -71,13 +71,13 @@ mod tests {
 
     #[test]
     fn test_u32_to_u24_ok() {
-        let n = U24::try_from(0x00ab_cdef);
-        assert_eq!(n, Ok(N));
+        let result = U24::try_from(0x00ab_cdef);
+        assert_eq!(result, Ok(N));
     }
 
     #[test]
     fn test_u32_to_u24_err() {
-        let n = U24::try_from(0x01ab_cdef);
-        assert!(n.is_err());
+        let result = U24::try_from(0x01ab_cdef);
+        assert!(result.is_err());
     }
 }
