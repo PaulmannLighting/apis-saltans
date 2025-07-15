@@ -2,5 +2,4 @@
 
 pub mod network_manager;
 pub mod node;
-mod u24;
 pub mod zcl;
