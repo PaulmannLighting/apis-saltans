@@ -13,8 +13,8 @@ pub enum ParseError {
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseError::InvalidDate(error) => write!(f, "{error}"),
-            ParseError::CustomPartTooLong => {
+            Self::InvalidDate(error) => write!(f, "{error}"),
+            Self::CustomPartTooLong => {
                 write!(f, "Custom part of date code is too long.")
             }
         }
@@ -24,20 +24,20 @@ impl Display for ParseError {
 impl Error for ParseError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            ParseError::InvalidDate(error) => Some(error),
-            ParseError::CustomPartTooLong => None,
+            Self::InvalidDate(error) => Some(error),
+            Self::CustomPartTooLong => None,
         }
     }
 }
 
 impl From<chrono::ParseError> for ParseError {
     fn from(error: chrono::ParseError) -> Self {
-        ParseError::InvalidDate(error)
+        Self::InvalidDate(error)
     }
 }
 
 impl From<()> for ParseError {
     fn from(_: ()) -> Self {
-        ParseError::CustomPartTooLong
+        Self::CustomPartTooLong
     }
 }
