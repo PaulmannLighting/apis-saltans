@@ -8,20 +8,24 @@ mod parse_error;
 
 const DATE_FORMAT: &str = "%Y%m%d";
 const MAX_SIZE: usize = 16;
+const MAX_CUSTOM_SIZE: usize = 8;
+
 /// Zigbee Date Code string type, which is a fixed-size string of 16 bytes.
 pub type DateCodeString = heapless::String<MAX_SIZE>;
+type DateCodeBytes = heapless::Vec<u8, MAX_SIZE>;
+type CustomString = heapless::String<MAX_CUSTOM_SIZE>;
 
 /// Zigbee Date Code attribute.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct DateCode {
     date: NaiveDate,
-    custom: DateCodeString,
+    custom: CustomString,
 }
 
 impl DateCode {
     /// Create a new `DateCode`.
     #[must_use]
-    pub const fn new(date: NaiveDate, custom: DateCodeString) -> Self {
+    pub const fn new(date: NaiveDate, custom: CustomString) -> Self {
         Self { date, custom }
     }
 
@@ -56,7 +60,7 @@ impl FromStr for DateCode {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (date, remainder) = NaiveDate::parse_and_remainder(s, DATE_FORMAT)?;
-        let mut custom = heapless::String::new();
+        let mut custom = CustomString::new();
         custom.push_str(remainder)?;
         Ok(Self::new(date, custom))
     }
@@ -75,18 +79,14 @@ impl FromLeStream for DateCode {
     where
         T: Iterator<Item = u8>,
     {
-        String::from_utf8_lossy(
-            &bytes
-                .take(MAX_SIZE)
-                .collect::<heapless::Vec<u8, MAX_SIZE>>(),
-        )
-        .parse()
-        .ok()
+        String::from_utf8_lossy(&bytes.take(MAX_SIZE).collect::<DateCodeBytes>())
+            .parse()
+            .ok()
     }
 }
 
 impl ToLeStream for DateCode {
-    type Iter = <heapless::Vec<u8, MAX_SIZE> as IntoIterator>::IntoIter;
+    type Iter = <DateCodeBytes as IntoIterator>::IntoIter;
 
     fn to_le_stream(self) -> Self::Iter {
         DateCodeString::from(self).into_bytes().into_iter()
