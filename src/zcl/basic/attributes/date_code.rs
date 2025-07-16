@@ -1,7 +1,13 @@
-use chrono::NaiveDate;
+use std::str::FromStr;
 
+use chrono::NaiveDate;
+use le_stream::FromLeStream;
+use log::error;
+
+const DATE_FORMAT: &str = "%Y%m%d";
+const MAX_SIZE: usize = 16;
 /// Zigbee Date Code string type, which is a fixed-size string of 16 bytes.
-pub type DateCodeString = heapless::String<16>;
+pub type DateCodeString = heapless::String<MAX_SIZE>;
 
 /// Zigbee Date Code attribute.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -30,12 +36,25 @@ impl DateCode {
     }
 }
 
-impl TryFrom<DateCodeString> for DateCode {
-    type Error = chrono::ParseError;
+impl From<DateCode> for DateCodeString {
+    fn from(date_code: DateCode) -> Self {
+        let mut string = Self::new();
+        string
+            .push_str(&date_code.date.format(DATE_FORMAT).to_string())
+            .expect("Date should fit into string.");
+        string
+            .push_str(date_code.custom())
+            .expect("Custom part should fit into string.");
+        string
+    }
+}
+
+impl FromStr for DateCode {
+    type Err = chrono::ParseError;
 
     #[allow(clippy::unwrap_in_result)]
-    fn try_from(string: DateCodeString) -> Result<Self, Self::Error> {
-        let (date, remainder) = NaiveDate::parse_and_remainder(&string, "%Y%m%d")?;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (date, remainder) = NaiveDate::parse_and_remainder(s, DATE_FORMAT)?;
         let mut custom = heapless::String::new();
         custom
             .push_str(remainder)
@@ -44,15 +63,26 @@ impl TryFrom<DateCodeString> for DateCode {
     }
 }
 
-impl From<DateCode> for DateCodeString {
-    fn from(date_code: DateCode) -> Self {
-        let mut string = Self::new();
-        string
-            .push_str(&date_code.date.format("%Y%m%d").to_string())
-            .expect("Date should fit into string.");
-        string
-            .push_str(date_code.custom())
-            .expect("Custom part should fit into string.");
-        string
+impl TryFrom<DateCodeString> for DateCode {
+    type Error = chrono::ParseError;
+
+    fn try_from(string: DateCodeString) -> Result<Self, Self::Error> {
+        string.parse()
+    }
+}
+
+impl FromLeStream for DateCode {
+    fn from_le_stream<T>(bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let bytes: heapless::Vec<u8, MAX_SIZE> = bytes.take(MAX_SIZE).collect();
+
+        let Ok(string) = DateCodeString::from_utf8(bytes).inspect_err(|error| error!("{error}"))
+        else {
+            return None;
+        };
+
+        string.parse().ok()
     }
 }
