@@ -52,6 +52,7 @@ impl Flags {
 
     /// Returns the APS flags.
     #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn aps_flags(self) -> u8 {
         ((self & Self::APS_FLAGS).bits() >> 5) as u8
     }
