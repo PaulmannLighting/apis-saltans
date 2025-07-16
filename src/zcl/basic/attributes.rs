@@ -1,4 +1,6 @@
 pub use date_code::DateCode;
+pub use device_enabled::DeviceEnabled;
+pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 
 mod date_code;

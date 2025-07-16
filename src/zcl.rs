@@ -6,7 +6,7 @@ pub use data_type::DataType;
 pub use frame::{Direction, Frame, Header, Type};
 
 mod attribute;
-mod basic;
+pub mod basic;
 mod cluster;
 mod command;
 mod command_frame_id;
