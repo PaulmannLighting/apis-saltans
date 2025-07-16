@@ -13,6 +13,11 @@ mod device_enabled;
 mod physical_environment;
 mod power_source;
 
+/// A string type, which can be up to 16 bytes long.
+pub type String16 = heapless::String<16>;
+/// A string type, which can be up to 32 bytes long.
+pub type String32 = heapless::String<32>;
+
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
@@ -26,15 +31,15 @@ pub enum Attribute {
     /// The hardware version.
     HwVersion(u8) = 0x0003,
     /// The manufacturer name.
-    ManufacturerName(heapless::String<32>) = 0x0004,
+    ManufacturerName(String32) = 0x0004,
     /// The model identifier.
-    ModelIdentifier(heapless::String<32>) = 0x0005,
+    ModelIdentifier(String32) = 0x0005,
     /// The date code.
     DateCode(DateCode) = 0x0006,
     /// The power source.
     PowerSource(PowerSource) = 0x0007,
     /// The generic device class.
-    LocationDescription(heapless::String<16>) = 0x0010,
+    LocationDescription(String16) = 0x0010,
     /// The physical environment.
     PhysicalEnvironment(PhysicalEnvironment) = 0x0011,
     /// The device enabled state.
@@ -44,7 +49,7 @@ pub enum Attribute {
     /// The disable local configuration attribute.
     DisableLocalConfig(u8) = 0x0014,
     /// The cluster revision.
-    SwBuildId(heapless::String<16>) = 0x4000,
+    SwBuildId(String16) = 0x4000,
 }
 
 impl FromLeStream for Attribute {
@@ -57,22 +62,18 @@ impl FromLeStream for Attribute {
             0x0001 => u8::from_le_stream(&mut bytes).map(Self::ApplicationVersion),
             0x0002 => u8::from_le_stream(&mut bytes).map(Self::StackVersion),
             0x0003 => u8::from_le_stream(&mut bytes).map(Self::HwVersion),
-            0x0004 => {
-                heapless::String::<32>::from_le_stream(&mut bytes).map(Self::ManufacturerName)
-            }
-            0x0005 => heapless::String::<32>::from_le_stream(&mut bytes).map(Self::ModelIdentifier),
+            0x0004 => String32::from_le_stream(&mut bytes).map(Self::ManufacturerName),
+            0x0005 => String32::from_le_stream(&mut bytes).map(Self::ModelIdentifier),
             0x0006 => DateCode::from_le_stream(&mut bytes).map(Self::DateCode),
             0x0007 => PowerSource::from_le_stream(&mut bytes).map(Self::PowerSource),
-            0x0010 => {
-                heapless::String::<16>::from_le_stream(&mut bytes).map(Self::LocationDescription)
-            }
+            0x0010 => String16::from_le_stream(&mut bytes).map(Self::LocationDescription),
             0x0011 => {
                 PhysicalEnvironment::from_le_stream(&mut bytes).map(Self::PhysicalEnvironment)
             }
             0x0012 => DeviceEnabled::from_le_stream(&mut bytes).map(Self::DeviceEnabled),
             0x0013 => AlarmMask::from_le_stream(&mut bytes).map(Self::AlarmMask),
             0x0014 => u8::from_le_stream(&mut bytes).map(Self::DisableLocalConfig),
-            0x4000 => heapless::String::<16>::from_le_stream(&mut bytes).map(Self::SwBuildId),
+            0x4000 => String16::from_le_stream(&mut bytes).map(Self::SwBuildId),
             _ => None,
         }
     }

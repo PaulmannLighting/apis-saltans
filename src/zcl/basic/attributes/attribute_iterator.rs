@@ -1,5 +1,6 @@
 use le_stream::ToLeStream;
 
+use crate::zcl::basic::attributes::{String16, String32};
 use crate::zcl::basic::{
     AlarmMask, Attribute, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource,
 };
@@ -51,11 +52,10 @@ impl Iterator for AttributeIterator {
 /// Little endian stream iterator for the payload of an attribute in the Basic cluster.
 enum PayloadIterator {
     U8(<u8 as ToLeStream>::Iter),
-    String16(<heapless::String<16> as ToLeStream>::Iter),
-    String32(<heapless::String<32> as ToLeStream>::Iter),
+    String16(<String16 as ToLeStream>::Iter),
+    String32(<String32 as ToLeStream>::Iter),
     DateCode(<DateCode as ToLeStream>::Iter),
     PowerSource(<PowerSource as ToLeStream>::Iter),
-    LocationDescription(<heapless::String<16> as ToLeStream>::Iter),
     PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
     DeviceEnabled(<DeviceEnabled as ToLeStream>::Iter),
     AlarmMask(<AlarmMask as ToLeStream>::Iter),
@@ -71,7 +71,6 @@ impl Iterator for PayloadIterator {
             Self::String32(iter) => iter.next(),
             Self::DateCode(iter) => iter.next(),
             Self::PowerSource(iter) => iter.next(),
-            Self::LocationDescription(iter) => iter.next(),
             Self::PhysicalEnvironment(iter) => iter.next(),
             Self::DeviceEnabled(iter) => iter.next(),
             Self::AlarmMask(iter) => iter.next(),
@@ -85,14 +84,14 @@ impl From<u8> for PayloadIterator {
     }
 }
 
-impl From<heapless::String<16>> for PayloadIterator {
-    fn from(value: heapless::String<16>) -> Self {
+impl From<String16> for PayloadIterator {
+    fn from(value: String16) -> Self {
         Self::String16(value.to_le_stream())
     }
 }
 
-impl From<heapless::String<32>> for PayloadIterator {
-    fn from(value: heapless::String<32>) -> Self {
+impl From<String32> for PayloadIterator {
+    fn from(value: String32) -> Self {
         Self::String32(value.to_le_stream())
     }
 }
