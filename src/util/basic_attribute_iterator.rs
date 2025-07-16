@@ -22,21 +22,22 @@ impl BasicAttributeIterator {
 
 impl From<Attribute> for BasicAttributeIterator {
     fn from(attribute: Attribute) -> Self {
+        let id = attribute.id();
         match attribute {
-            Attribute::ZclVersion(version) => Self::new(0x0000, version.into()),
-            Attribute::ApplicationVersion(version) => Self::new(0x0001, version.into()),
-            Attribute::StackVersion(version) => Self::new(0x0002, version.into()),
-            Attribute::HwVersion(version) => Self::new(0x0003, version.into()),
-            Attribute::ManufacturerName(name) => Self::new(0x0004, name.into()),
-            Attribute::ModelIdentifier(id) => Self::new(0x0005, id.into()),
-            Attribute::DateCode(date_code) => Self::new(0x0006, date_code.into()),
-            Attribute::PowerSource(power_source) => Self::new(0x0007, power_source.into()),
-            Attribute::LocationDescription(location) => Self::new(0x0010, location.into()),
-            Attribute::PhysicalEnvironment(environment) => Self::new(0x0011, environment.into()),
-            Attribute::DeviceEnabled(enabled) => Self::new(0x0012, enabled.into()),
-            Attribute::AlarmMask(alarm_mask) => Self::new(0x0013, alarm_mask.into()),
-            Attribute::DisableLocalConfig(disable) => Self::new(0x0014, disable.into()),
-            Attribute::SwBuildId(id) => Self::new(0x4000, id.into()),
+            Attribute::ApplicationVersion(version)
+            | Attribute::HwVersion(version)
+            | Attribute::StackVersion(version)
+            | Attribute::ZclVersion(version) => Self::new(id, version.into()),
+            Attribute::ManufacturerName(name) => Self::new(id, name.into()),
+            Attribute::ModelIdentifier(model_id) => Self::new(id, model_id.into()),
+            Attribute::DateCode(date_code) => Self::new(id, date_code.into()),
+            Attribute::PowerSource(power_source) => Self::new(id, power_source.into()),
+            Attribute::LocationDescription(location) => Self::new(id, location.into()),
+            Attribute::PhysicalEnvironment(environment) => Self::new(id, environment.into()),
+            Attribute::DeviceEnabled(enabled) => Self::new(id, enabled.into()),
+            Attribute::AlarmMask(alarm_mask) => Self::new(id, alarm_mask.into()),
+            Attribute::DisableLocalConfig(disable) => Self::new(id, disable.into()),
+            Attribute::SwBuildId(sw_build_id) => Self::new(id, sw_build_id.into()),
         }
     }
 }
