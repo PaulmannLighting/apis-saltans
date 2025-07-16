@@ -1,6 +1,6 @@
 use num_derive::FromPrimitive;
 
-/// Ballast Configuration attributes.
+/// Ballast Configuration attribute.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
 #[repr(u16)]
 pub enum BallastConfigurationAttribute {

@@ -1,6 +1,6 @@
 use num_derive::FromPrimitive;
 
-/// Ballast information attributes for the `Ballast Configuration` cluster.
+/// Ballast information attribute for the `Ballast Configuration` cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
 #[repr(u16)]
 pub enum BallastInformationAttribute {
