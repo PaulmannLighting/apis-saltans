@@ -1,5 +1,9 @@
+use le_stream::{FromLeStream, ToLeStream};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+
 /// Device power source attribute.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum PowerSource {
     /// The power source is unknown.
@@ -16,4 +20,21 @@ pub enum PowerSource {
     EmergencyMainsConstantlyPowered = 0x05,
     /// The power source is an emergency mains supply that is powered through a transfer switch.
     EmergencyMainsAndTransferSwitch = 0x06,
+}
+
+impl FromLeStream for PowerSource {
+    fn from_le_stream<T>(bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        u8::from_le_stream(bytes).and_then(Self::from_u8)
+    }
+}
+
+impl ToLeStream for PowerSource {
+    type Iter = <u8 as ToLeStream>::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        (self as u8).to_le_stream()
+    }
 }
