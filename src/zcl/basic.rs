@@ -3,5 +3,9 @@
 pub use attribute::{
     AlarmMask, Attribute, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource,
 };
+pub use commands::ResetToFactoryDefaults;
 
 mod attribute;
+mod commands;
+
+const CLUSTER_ID: u16 = 0x0000;
