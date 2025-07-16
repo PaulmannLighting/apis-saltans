@@ -80,14 +80,6 @@ impl FromStr for DateCode {
     }
 }
 
-impl TryFrom<DateCodeString> for DateCode {
-    type Error = ParseError;
-
-    fn try_from(string: DateCodeString) -> Result<Self, Self::Error> {
-        string.parse()
-    }
-}
-
 impl FromLeStream for DateCode {
     fn from_le_stream<T>(bytes: T) -> Option<Self>
     where
