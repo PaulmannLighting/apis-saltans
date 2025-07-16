@@ -2,6 +2,7 @@ pub use date_code::DateCode;
 pub use power_source::PowerSource;
 
 mod date_code;
+mod physical_environment;
 mod power_source;
 
 /// Basic Cluster Attributes.
