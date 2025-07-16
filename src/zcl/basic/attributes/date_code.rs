@@ -98,3 +98,58 @@ impl ToLeStream for DateCode {
         DateCodeString::from(self).into_bytes().into_iter()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_date_code_from_str_with_custom() {
+        let date_code = DateCode::from_str("20231001Custom").unwrap();
+        assert_eq!(
+            date_code.date(),
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap()
+        );
+        assert_eq!(date_code.custom(), "Custom");
+    }
+
+    #[test]
+    fn test_date_code_from_str_without_custom() {
+        let date_code = DateCode::from_str("20231001").unwrap();
+        assert_eq!(
+            date_code.date(),
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap()
+        );
+        assert_eq!(date_code.custom(), "");
+    }
+
+    #[test]
+    fn test_date_code_to_string() {
+        let date_code = DateCode::new(
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap(),
+            CustomString::from_utf8("Custom".bytes().collect()).unwrap(),
+        );
+        assert_eq!(date_code.to_string(), "20231001Custom");
+    }
+
+    #[test]
+    fn test_from_le_stream() {
+        let bytes = "20231001Custom".bytes();
+        let date_code = DateCode::from_le_stream(bytes).unwrap();
+        assert_eq!(
+            date_code.date(),
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap()
+        );
+        assert_eq!(date_code.custom(), "Custom");
+    }
+
+    #[test]
+    fn test_to_le_stream() {
+        let date_code = DateCode::new(
+            NaiveDate::from_ymd_opt(2023, 10, 1).unwrap(),
+            CustomString::from_utf8("Custom".bytes().collect()).unwrap(),
+        );
+        let bytes: Vec<u8> = date_code.to_le_stream().collect();
+        assert_eq!(bytes, b"20231001Custom");
+    }
+}
