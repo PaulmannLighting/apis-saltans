@@ -1,10 +1,13 @@
 pub use alarm_mask::AlarmMask;
+use attribute_iterator::AttributeIterator;
 pub use date_code::DateCode;
 pub use device_enabled::DeviceEnabled;
+use le_stream::{FromLeStream, ToLeStream};
 pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 
 mod alarm_mask;
+mod attribute_iterator;
 mod date_code;
 mod device_enabled;
 mod physical_environment;
@@ -42,4 +45,43 @@ pub enum Attribute {
     DisableLocalConfig(u8) = 0x0014,
     /// The cluster revision.
     SwBuildId(heapless::String<16>) = 0x4000,
+}
+
+impl FromLeStream for Attribute {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        match u16::from_le_stream(&mut bytes)? {
+            0x0000 => u8::from_le_stream(&mut bytes).map(Self::ZclVersion),
+            0x0001 => u8::from_le_stream(&mut bytes).map(Self::ApplicationVersion),
+            0x0002 => u8::from_le_stream(&mut bytes).map(Self::StackVersion),
+            0x0003 => u8::from_le_stream(&mut bytes).map(Self::HwVersion),
+            0x0004 => {
+                heapless::String::<32>::from_le_stream(&mut bytes).map(Self::ManufacturerName)
+            }
+            0x0005 => heapless::String::<32>::from_le_stream(&mut bytes).map(Self::ModelIdentifier),
+            0x0006 => DateCode::from_le_stream(&mut bytes).map(Self::DateCode),
+            0x0007 => PowerSource::from_le_stream(&mut bytes).map(Self::PowerSource),
+            0x0010 => {
+                heapless::String::<16>::from_le_stream(&mut bytes).map(Self::LocationDescription)
+            }
+            0x0011 => {
+                PhysicalEnvironment::from_le_stream(&mut bytes).map(Self::PhysicalEnvironment)
+            }
+            0x0012 => DeviceEnabled::from_le_stream(&mut bytes).map(Self::DeviceEnabled),
+            0x0013 => AlarmMask::from_le_stream(&mut bytes).map(Self::AlarmMask),
+            0x0014 => u8::from_le_stream(&mut bytes).map(Self::DisableLocalConfig),
+            0x4000 => heapless::String::<16>::from_le_stream(&mut bytes).map(Self::SwBuildId),
+            _ => None,
+        }
+    }
+}
+
+impl ToLeStream for Attribute {
+    type Iter = AttributeIterator;
+
+    fn to_le_stream(self) -> Self::Iter {
+        self.into()
+    }
 }
