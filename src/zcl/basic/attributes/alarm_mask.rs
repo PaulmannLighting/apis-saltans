@@ -1,4 +1,5 @@
 use bitflags::bitflags;
+use le_stream::derive::{FromLeStream, ToLeStream};
 use num_derive::FromPrimitive;
 
 /// Alarm mask.
@@ -7,7 +8,20 @@ use num_derive::FromPrimitive;
     derive(serde::Serialize, serde::Deserialize),
     serde(transparent)
 )]
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Eq,
+    Hash,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    FromPrimitive,
+    FromLeStream,
+    ToLeStream,
+)]
 #[repr(transparent)]
 pub struct AlarmMask(u8);
 
