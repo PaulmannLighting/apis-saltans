@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use chrono::NaiveDate;
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 use log::error;
 
 const DATE_FORMAT: &str = "%Y%m%d";
@@ -84,5 +84,13 @@ impl FromLeStream for DateCode {
         };
 
         string.parse().ok()
+    }
+}
+
+impl ToLeStream for DateCode {
+    type Iter = <heapless::Vec<u8, MAX_SIZE> as IntoIterator>::IntoIter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        DateCodeString::from(self).into_bytes().into_iter()
     }
 }
