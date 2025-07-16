@@ -7,8 +7,9 @@ pub use parse_error::ParseError;
 mod parse_error;
 
 const DATE_FORMAT: &str = "%Y%m%d";
-const MAX_SIZE: usize = 16;
+const DATE_SIZE: usize = 8;
 const MAX_CUSTOM_SIZE: usize = 8;
+const MAX_SIZE: usize = DATE_SIZE + MAX_CUSTOM_SIZE;
 
 /// Zigbee Date Code string type, which is a fixed-size string of 16 bytes.
 pub type DateCodeString = heapless::String<MAX_SIZE>;
