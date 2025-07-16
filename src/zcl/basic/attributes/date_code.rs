@@ -43,10 +43,10 @@ impl From<DateCode> for DateCodeString {
         let mut string = Self::new();
         string
             .push_str(&date_code.date.format(DATE_FORMAT).to_string())
-            .expect("Date should fit into string.");
+            .expect("Serialized date should fit into DateCodeString.");
         string
             .push_str(date_code.custom())
-            .expect("Custom part should fit into string.");
+            .expect("Custom part should fit into DateCodeString.");
         string
     }
 }
