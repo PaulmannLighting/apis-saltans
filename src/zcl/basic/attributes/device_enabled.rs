@@ -3,7 +3,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 /// Device Enabled Attribute.
-
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum DeviceEnabled {

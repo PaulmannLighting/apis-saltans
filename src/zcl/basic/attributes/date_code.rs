@@ -18,6 +18,7 @@ type DateCodeBytes = heapless::Vec<u8, MAX_SIZE>;
 type CustomString = heapless::String<MAX_CUSTOM_SIZE>;
 
 /// Zigbee Date Code attribute.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct DateCode {
     date: NaiveDate,
