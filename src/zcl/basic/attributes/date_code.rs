@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::str::FromStr;
 
 use chrono::NaiveDate;
@@ -43,8 +44,20 @@ impl DateCode {
     }
 }
 
+impl Display for DateCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        DateCodeString::from(self).fmt(f)
+    }
+}
+
 impl From<DateCode> for DateCodeString {
     fn from(date_code: DateCode) -> Self {
+        Self::from(&date_code)
+    }
+}
+
+impl From<&DateCode> for DateCodeString {
+    fn from(date_code: &DateCode) -> Self {
         let mut string = Self::new();
         string
             .push_str(&date_code.date.format(DATE_FORMAT).to_string())
