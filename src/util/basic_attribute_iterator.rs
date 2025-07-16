@@ -1,17 +1,17 @@
 use le_stream::ToLeStream;
 
-use crate::zcl::basic::attributes::{String16, String32};
+use crate::types::{String16, String32};
 use crate::zcl::basic::{
     AlarmMask, Attribute, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource,
 };
 
 /// Little endian stream iterator for the `Attribute` in the Basic cluster.
-pub struct AttributeIterator {
+pub struct BasicAttributeIterator {
     prefix: <u16 as ToLeStream>::Iter,
     payload: PayloadIterator,
 }
 
-impl AttributeIterator {
+impl BasicAttributeIterator {
     fn new(id: u16, payload: PayloadIterator) -> Self {
         Self {
             prefix: id.to_le_stream(),
@@ -20,7 +20,7 @@ impl AttributeIterator {
     }
 }
 
-impl From<Attribute> for AttributeIterator {
+impl From<Attribute> for BasicAttributeIterator {
     fn from(attribute: Attribute) -> Self {
         match attribute {
             Attribute::ZclVersion(version) => Self::new(0x0000, version.into()),
@@ -41,7 +41,7 @@ impl From<Attribute> for AttributeIterator {
     }
 }
 
-impl Iterator for AttributeIterator {
+impl Iterator for BasicAttributeIterator {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {

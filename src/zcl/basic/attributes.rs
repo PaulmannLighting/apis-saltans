@@ -1,22 +1,18 @@
 pub use alarm_mask::AlarmMask;
-use attribute_iterator::AttributeIterator;
 pub use date_code::DateCode;
 pub use device_enabled::DeviceEnabled;
 use le_stream::{FromLeStream, ToLeStream};
 pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 
+use crate::types::{String16, String32};
+use crate::util::BasicAttributeIterator;
+
 mod alarm_mask;
-mod attribute_iterator;
 mod date_code;
 mod device_enabled;
 mod physical_environment;
 mod power_source;
-
-/// A string type, which can be up to 16 bytes long.
-pub type String16 = heapless::String<16>;
-/// A string type, which can be up to 32 bytes long.
-pub type String32 = heapless::String<32>;
 
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -80,7 +76,7 @@ impl FromLeStream for Attribute {
 }
 
 impl ToLeStream for Attribute {
-    type Iter = AttributeIterator;
+    type Iter = BasicAttributeIterator;
 
     fn to_le_stream(self) -> Self::Iter {
         self.into()
