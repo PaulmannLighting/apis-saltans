@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use chrono::NaiveDate;
 use le_stream::{FromLeStream, ToLeStream};
-use log::error;
 
 const DATE_FORMAT: &str = "%Y%m%d";
 const MAX_SIZE: usize = 16;
@@ -76,14 +75,13 @@ impl FromLeStream for DateCode {
     where
         T: Iterator<Item = u8>,
     {
-        let bytes: heapless::Vec<u8, MAX_SIZE> = bytes.take(MAX_SIZE).collect();
-
-        let Ok(string) = DateCodeString::from_utf8(bytes).inspect_err(|error| error!("{error}"))
-        else {
-            return None;
-        };
-
-        string.parse().ok()
+        String::from_utf8_lossy(
+            &bytes
+                .take(MAX_SIZE)
+                .collect::<heapless::Vec<u8, MAX_SIZE>>(),
+        )
+        .parse()
+        .ok()
     }
 }
 
