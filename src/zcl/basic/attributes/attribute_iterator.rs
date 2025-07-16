@@ -66,14 +66,12 @@ impl Iterator for PayloadIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Self::U8(iter) => iter.next(),
-            Self::String16(iter) => iter.next(),
+            Self::String16(iter) | Self::DateCode(iter) => iter.next(),
             Self::String32(iter) => iter.next(),
-            Self::DateCode(iter) => iter.next(),
-            Self::PowerSource(iter) => iter.next(),
-            Self::PhysicalEnvironment(iter) => iter.next(),
-            Self::DeviceEnabled(iter) => iter.next(),
-            Self::AlarmMask(iter) => iter.next(),
+            Self::PowerSource(iter) | Self::PhysicalEnvironment(iter) | Self::AlarmMask(iter) => {
+                iter.next()
+            }
+            Self::DeviceEnabled(iter) | Self::U8(iter) => iter.next(),
         }
     }
 }
