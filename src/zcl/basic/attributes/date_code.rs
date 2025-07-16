@@ -127,7 +127,7 @@ mod tests {
     fn test_date_code_to_string() {
         let date_code = DateCode::new(
             NaiveDate::from_ymd_opt(2023, 10, 1).unwrap(),
-            CustomString::from_utf8("Custom".bytes().collect()).unwrap(),
+            "Custom".try_into().unwrap(),
         );
         assert_eq!(date_code.to_string(), "20231001Custom");
     }
