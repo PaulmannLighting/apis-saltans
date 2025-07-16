@@ -1,11 +1,10 @@
-use std::ptr::from_ref;
-
 pub use alarm_mask::AlarmMask;
 pub use date_code::DateCode;
 pub use device_enabled::DeviceEnabled;
 use le_stream::{FromLeStream, ToLeStream};
 pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
+use repr_discriminant::repr_discriminant;
 
 use crate::types::{String16, String32};
 use crate::util::BasicAttributeIterator;
@@ -18,7 +17,7 @@ mod power_source;
 
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[repr(u16)]
+#[repr_discriminant(u16)]
 pub enum Attribute {
     /// The ZCL version.
     ZclVersion(u8) = 0x0000,
@@ -48,18 +47,6 @@ pub enum Attribute {
     DisableLocalConfig(u8) = 0x0014,
     /// The cluster revision.
     SwBuildId(String16) = 0x4000,
-}
-
-impl Attribute {
-    /// Returns the attribute ID.
-    #[must_use]
-    pub const fn id(&self) -> u16 {
-        // SAFETY: This is safe because `Attribute` is repr(u16).
-        #[allow(unsafe_code)]
-        unsafe {
-            *from_ref::<Self>(self).cast::<u16>()
-        }
-    }
 }
 
 impl FromLeStream for Attribute {

@@ -22,22 +22,24 @@ impl BasicAttributeIterator {
 
 impl From<Attribute> for BasicAttributeIterator {
     fn from(attribute: Attribute) -> Self {
-        let id = attribute.id();
+        let discriminant = attribute.discriminant();
         match attribute {
             Attribute::ApplicationVersion(version)
             | Attribute::HwVersion(version)
             | Attribute::StackVersion(version)
-            | Attribute::ZclVersion(version) => Self::new(id, version.into()),
-            Attribute::ManufacturerName(name) => Self::new(id, name.into()),
-            Attribute::ModelIdentifier(model_id) => Self::new(id, model_id.into()),
-            Attribute::DateCode(date_code) => Self::new(id, date_code.into()),
-            Attribute::PowerSource(power_source) => Self::new(id, power_source.into()),
-            Attribute::LocationDescription(location) => Self::new(id, location.into()),
-            Attribute::PhysicalEnvironment(environment) => Self::new(id, environment.into()),
-            Attribute::DeviceEnabled(enabled) => Self::new(id, enabled.into()),
-            Attribute::AlarmMask(alarm_mask) => Self::new(id, alarm_mask.into()),
-            Attribute::DisableLocalConfig(disable) => Self::new(id, disable.into()),
-            Attribute::SwBuildId(sw_build_id) => Self::new(id, sw_build_id.into()),
+            | Attribute::ZclVersion(version) => Self::new(discriminant, version.into()),
+            Attribute::ManufacturerName(name) => Self::new(discriminant, name.into()),
+            Attribute::ModelIdentifier(model_id) => Self::new(discriminant, model_id.into()),
+            Attribute::DateCode(date_code) => Self::new(discriminant, date_code.into()),
+            Attribute::PowerSource(power_source) => Self::new(discriminant, power_source.into()),
+            Attribute::LocationDescription(location) => Self::new(discriminant, location.into()),
+            Attribute::PhysicalEnvironment(environment) => {
+                Self::new(discriminant, environment.into())
+            }
+            Attribute::DeviceEnabled(enabled) => Self::new(discriminant, enabled.into()),
+            Attribute::AlarmMask(alarm_mask) => Self::new(discriminant, alarm_mask.into()),
+            Attribute::DisableLocalConfig(disable) => Self::new(discriminant, disable.into()),
+            Attribute::SwBuildId(sw_build_id) => Self::new(discriminant, sw_build_id.into()),
         }
     }
 }
