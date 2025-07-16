@@ -2,6 +2,9 @@ use std::str::FromStr;
 
 use chrono::NaiveDate;
 use le_stream::{FromLeStream, ToLeStream};
+use parse_error::ParseError;
+
+mod parse_error;
 
 const DATE_FORMAT: &str = "%Y%m%d";
 const MAX_SIZE: usize = 16;
@@ -49,21 +52,18 @@ impl From<DateCode> for DateCodeString {
 }
 
 impl FromStr for DateCode {
-    type Err = chrono::ParseError;
+    type Err = ParseError;
 
-    #[allow(clippy::unwrap_in_result)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (date, remainder) = NaiveDate::parse_and_remainder(s, DATE_FORMAT)?;
         let mut custom = heapless::String::new();
-        custom
-            .push_str(remainder)
-            .expect("Remainder should fit into custom string.");
+        custom.push_str(remainder)?;
         Ok(Self::new(date, custom))
     }
 }
 
 impl TryFrom<DateCodeString> for DateCode {
-    type Error = chrono::ParseError;
+    type Error = ParseError;
 
     fn try_from(string: DateCodeString) -> Result<Self, Self::Error> {
         string.parse()
