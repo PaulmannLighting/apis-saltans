@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use chrono::NaiveDate;
 use le_stream::{FromLeStream, ToLeStream};
-use parse_error::ParseError;
+pub use parse_error::ParseError;
 
 mod parse_error;
 
