@@ -1,5 +1,9 @@
+use le_stream::{FromLeStream, ToLeStream};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+
 /// The physical environment attribute.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum PhysicalEnvironment {
     /// The physical environment is unspecified.
@@ -220,4 +224,21 @@ pub enum PhysicalEnvironment {
     DecontaminationRoom = 0x6f,
     /// The physical environment is unknown.
     Unknown = 0xff,
+}
+
+impl FromLeStream for PhysicalEnvironment {
+    fn from_le_stream<T>(bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        u8::from_le_stream(bytes).and_then(Self::from_u8)
+    }
+}
+
+impl ToLeStream for PhysicalEnvironment {
+    type Iter = <u8 as ToLeStream>::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        (self as u8).to_le_stream()
+    }
 }
