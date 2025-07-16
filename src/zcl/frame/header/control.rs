@@ -10,13 +10,13 @@ pub struct Control(u8);
 bitflags! {
     impl Control: u8 {
         /// The command type.
-        const TYPE = 0b1100_0000;
+        const TYPE = 0b000_00011;
         /// The command type is manufacturer specific.
-        const MANUFACTURER_SPECIFIC = 0b0010_0000;
+        const MANUFACTURER_SPECIFIC = 0b0000_0100;
         /// The direction of the command.
-        const DIRECTION = 0b0001_0000;
+        const DIRECTION = 0b0000_1000;
         /// The default response is disabled.
-        const DISABLE_DEFAULT_RESPONSE = 0b0000_1000;
+        const DISABLE_DEFAULT_RESPONSE = 0b0001_0000;
     }
 }
 
@@ -29,7 +29,7 @@ impl Control {
         direction: Direction,
         disable_client_response: bool,
     ) -> Self {
-        let mut flags = Self((typ as u8) << Self::TYPE.bits().trailing_zeros());
+        let mut flags = Self(typ as u8);
 
         if manufacturer_specific {
             flags.insert(Self::MANUFACTURER_SPECIFIC);
@@ -57,7 +57,7 @@ impl Control {
     ///
     /// If the command type is not recognized, it returns an error with the raw value.
     pub fn typ(self) -> Result<Type, u8> {
-        Type::try_from((self.0 & Self::TYPE.bits()) >> Self::TYPE.bits().trailing_zeros())
+        Type::try_from(self.0 & Self::TYPE.bits())
     }
 
     /// Return whether the command is manufacturer specific.
@@ -86,27 +86,6 @@ impl Control {
 #[cfg(test)]
 mod tests {
     use super::{Control, Direction, Type};
-
-    #[test]
-    fn test_type_trailing_zeros() {
-        assert_eq!(Control::TYPE.bits().trailing_zeros(), 6);
-    }
-
-    #[test]
-    fn test_cluster_specific_flag() {
-        assert_eq!(
-            (Type::ClusterSpecific as u8) << Control::TYPE.bits().trailing_zeros(),
-            0b0100_0000
-        );
-    }
-
-    #[test]
-    fn test_global_flag() {
-        assert_eq!(
-            (Type::Global as u8) << Control::TYPE.bits().trailing_zeros(),
-            0b0000_0000
-        );
-    }
 
     #[test]
     fn test_control_cluster_specific() {
