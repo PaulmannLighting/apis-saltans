@@ -1,8 +1,10 @@
+pub use alarm_mask::AlarmMask;
 pub use date_code::DateCode;
 pub use device_enabled::DeviceEnabled;
 pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 
+mod alarm_mask;
 mod date_code;
 mod device_enabled;
 mod physical_environment;
@@ -35,7 +37,7 @@ pub enum Attribute {
     /// The device enabled state.
     DeviceEnabled(DeviceEnabled) = 0x0012,
     /// The alarm mask.
-    AlarmMask(u8) = 0x0013,
+    AlarmMask(AlarmMask) = 0x0013,
     /// The disable local configuration attribute.
     DisableLocalConfig(u8) = 0x0014,
     /// The cluster revision.
