@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use chrono::NaiveDate;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String16, String32};
