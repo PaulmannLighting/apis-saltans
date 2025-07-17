@@ -1,31 +1,71 @@
-use le_stream::FromLeStream;
-pub use mains_information::MainsInformation;
+use std::iter::Chain;
+
+pub use battery_alarm_mask::BatteryAlarmMask;
+pub use battery_alarm_state::BatteryAlarmState;
+pub use battery_information::BatteryInformation;
+pub use battery_settings::BatterySettings;
+pub use battery_size::BatterySize;
+use le_stream::{FromLeStream, ToLeStream};
+pub use mains_alarm_mask::MainsAlarmMask;
 use repr_discriminant::repr_discriminant;
 
-mod mains_information;
-mod mains_settings;
+use crate::util::PowerConfigurationAttributeIterator;
 
-const ATTRIBUTE_ID_MASK: u16 = 0xFFF0;
-const ATTRIBUTE_VALUE_MASK: u16 = 0x000F;
+mod battery_alarm_mask;
+mod battery_alarm_state;
+mod battery_information;
+mod battery_settings;
+mod battery_size;
+mod mains_alarm_mask;
 
+const ATTRIBUTE_MASK: u16 = 0x000f;
+
+/// Power configuration cluster attributes.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr_discriminant(u16)]
 pub enum Attribute {
-    /// Mains information.
-    MainsInformation(MainsInformation) = 0x0000,
-    /// Mains settings.
-    MainsSettings = 0x0010,
+    // Mains information.
+    /// Mains voltage in 100mV.
+    MainsVoltage(u16) = 0x0000,
+    /// Mains frequency in Hertz.
+    MainsFrequency(u8) = 0x0001,
+    // Mains settings.
+    /// Mains alarms.
+    AlarmMask(MainsAlarmMask) = 0x0010,
+    /// Mains voltage minimum threshold in 100mV.
+    VoltageMinThreshold(u16) = 0x0011,
+    /// Mains voltage maximum threshold in 100mV.
+    VoltageMaxThreshold(u16) = 0x0012,
+    /// Mains voltage dwell trip point in seconds.
+    VoltageDwellTripPoint(u16) = 0x0013,
     /// Battery information.
-    BatteryInformation = 0x0020,
+    BatteryInformation(BatteryInformation) = 0x0020,
     /// Battery settings.
-    BatterySettings = 0x0030,
+    BatterySettings(BatterySettings) = 0x0030,
     /// Battery source 2 information.
-    BatterySource2Information = 0x0040,
+    BatterySource2Information(BatteryInformation) = 0x0040,
     /// Battery source 2 settings.
-    BatterySource2Settings = 0x0050,
+    BatterySource2Settings(BatterySettings) = 0x0050,
     /// Battery source 3 information.
-    BatterySource3Information = 0x0060,
+    BatterySource3Information(BatteryInformation) = 0x0060,
     /// Battery source 3 settings.
-    BatterySource3Settings = 0x0070,
+    BatterySource3Settings(BatterySettings) = 0x0070,
+}
+
+impl Attribute {
+    /// Returns the attribute ID.
+    #[must_use]
+    pub const fn id(&self) -> u16 {
+        match self {
+            Self::BatteryInformation(info)
+            | Self::BatterySource2Information(info)
+            | Self::BatterySource3Information(info) => self.discriminant() | info.id(),
+            Self::BatterySettings(settings)
+            | Self::BatterySource2Settings(settings)
+            | Self::BatterySource3Settings(settings) => self.discriminant() | settings.id(),
+            _ => self.discriminant(),
+        }
+    }
 }
 
 impl FromLeStream for Attribute {
@@ -34,17 +74,68 @@ impl FromLeStream for Attribute {
         T: Iterator<Item = u8>,
     {
         let id = u16::from_le_stream(&mut bytes)?;
-        match id & ATTRIBUTE_ID_MASK {
-            0x0000 => MainsInformation::from_le_stream(id & ATTRIBUTE_VALUE_MASK, &mut bytes)
-                .map(Self::MainsInformation),
-            0x0010 => Some(Self::MainsSettings),
-            0x0020 => Some(Self::BatteryInformation),
-            0x0030 => Some(Self::BatterySettings),
-            0x0040 => Some(Self::BatterySource2Information),
-            0x0050 => Some(Self::BatterySource2Settings),
-            0x0060 => Some(Self::BatterySource3Information),
-            0x0070 => Some(Self::BatterySource3Settings),
+        match id {
+            0x0000 => u16::from_le_stream(&mut bytes).map(Self::MainsVoltage),
+            0x0001 => u8::from_le_stream(&mut bytes).map(Self::MainsFrequency),
+            0x0010 => MainsAlarmMask::from_le_stream(&mut bytes).map(Self::AlarmMask),
+            0x0011 => u16::from_le_stream(&mut bytes).map(Self::VoltageMinThreshold),
+            0x0012 => u16::from_le_stream(&mut bytes).map(Self::VoltageMaxThreshold),
+            0x0013 => u16::from_le_stream(&mut bytes).map(Self::VoltageDwellTripPoint),
+            0x0020..=0x002f => BatteryInformation::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
+                .map(Self::BatteryInformation),
+            0x0030..=0x003f => BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
+                .map(Self::BatterySettings),
+            0x0040..=0x004f => BatteryInformation::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
+                .map(Self::BatterySource2Information),
+            0x0050..=0x005f => BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
+                .map(Self::BatterySource2Settings),
+            0x0060..=0x006f => BatteryInformation::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
+                .map(Self::BatterySource3Information),
+            0x0070..=0x007f => BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
+                .map(Self::BatterySource3Settings),
             _ => None,
         }
+    }
+}
+
+impl ToLeStream for Attribute {
+    type Iter = Chain<<u16 as ToLeStream>::Iter, PowerConfigurationAttributeIterator>;
+
+    fn to_le_stream(self) -> Self::Iter {
+        let id = self.id();
+        let payload_iterator: PowerConfigurationAttributeIterator = match self {
+            Self::MainsVoltage(voltage)
+            | Self::VoltageMinThreshold(voltage)
+            | Self::VoltageMaxThreshold(voltage) => voltage.into(),
+            Self::MainsFrequency(value) => value.into(),
+            Self::AlarmMask(mask) => mask.into(),
+            Self::VoltageDwellTripPoint(value) => value.into(),
+            Self::BatteryInformation(info)
+            | Self::BatterySource2Information(info)
+            | Self::BatterySource3Information(info) => match info {
+                BatteryInformation::BatteryVoltage(voltage) => voltage.into(),
+                BatteryInformation::BatteryPercentageRemaining(percentage) => percentage.into(),
+            },
+            Self::BatterySettings(settings)
+            | Self::BatterySource2Settings(settings)
+            | Self::BatterySource3Settings(settings) => match settings {
+                BatterySettings::BatteryManufacturer(manufacturer) => manufacturer.into(),
+                BatterySettings::BatterySize(size) => size.into(),
+                BatterySettings::BatteryAHrRating(rating) => rating.into(),
+                BatterySettings::BatteryQuantity(quantity) => quantity.into(),
+                BatterySettings::BatteryRatedVoltage(voltage) => voltage.into(),
+                BatterySettings::BatteryAlarmMask(mask) => mask.into(),
+                BatterySettings::BatteryVoltageMinThreshold(threshold)
+                | BatterySettings::BatteryVoltageThreshold1(threshold)
+                | BatterySettings::BatteryVoltageThreshold2(threshold)
+                | BatterySettings::BatteryVoltageThreshold3(threshold)
+                | BatterySettings::BatteryPercentageMinThreshold(threshold)
+                | BatterySettings::BatteryPercentageThreshold1(threshold)
+                | BatterySettings::BatteryPercentageThreshold2(threshold)
+                | BatterySettings::BatteryPercentageThreshold3(threshold) => threshold.into(),
+                BatterySettings::BatteryAlarmState(state) => state.into(),
+            },
+        };
+        id.to_le_stream().chain(payload_iterator)
     }
 }

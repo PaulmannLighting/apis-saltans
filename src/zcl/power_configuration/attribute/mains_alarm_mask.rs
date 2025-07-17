@@ -1,7 +1,10 @@
 use bitflags::bitflags;
+use le_stream::derive::{FromLeStream, ToLeStream};
 
 /// Available mains alarms.
-#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
+)]
 #[repr(transparent)]
 pub struct MainsAlarmMask(u8);
 

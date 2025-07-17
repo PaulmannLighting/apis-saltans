@@ -14,4 +14,4 @@ mod constants;
 mod data_type;
 pub mod frame;
 pub mod lighting;
-mod power_configuration;
+pub mod power_configuration;
