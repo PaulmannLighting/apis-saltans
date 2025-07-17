@@ -13,7 +13,7 @@ impl U24 {
     // SAFETY: This constant is safe because it is guaranteed to be within the valid range of U24.
     pub const MIN: Self = unsafe { Self::new_unchecked(0x0000_0000) };
 
-    /// The maximum value for `U24`, which is 16,777,215 (0x00FF_FFFF).
+    /// The maximum value for `U24`, which is 16,777,215 (`0x00FF_FFFF`).
     #[allow(unsafe_code)]
     // SAFETY: This constant is safe because it is guaranteed to be within the valid range of U24.
     pub const MAX: Self = unsafe { Self::new_unchecked(0x00FF_FFFF) };
@@ -22,7 +22,7 @@ impl U24 {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that `value` is within the range of 0 to 16,777,215 (0x00FF_FFFF).
+    /// The caller must ensure that `value` is within the range of 0 to 16,777,215 (`0x00FF_FFFF`).
     #[must_use]
     #[allow(unsafe_code)]
     pub const unsafe fn new_unchecked(value: u32) -> Self {
