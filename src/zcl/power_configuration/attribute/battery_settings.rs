@@ -6,6 +6,7 @@ use crate::zcl::power_configuration::attribute::{
     BatteryAlarmMask, BatteryAlarmState, BatterySize,
 };
 
+/// Available battery settings.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr_discriminant(u16, id)]
 pub enum BatterySettings {
