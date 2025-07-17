@@ -1,3 +1,5 @@
+use le_stream::{FromLeStream, ToLeStream};
+
 /// Alarm codes for batteries.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
@@ -30,4 +32,37 @@ pub enum BatteryAlarm {
     MainsPowerLost = 0x3a,
     /// Alarm shall not be generated.
     None = 0xff,
+}
+
+impl FromLeStream for BatteryAlarm {
+    fn from_le_stream<T>(bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        match u8::from_le_stream(bytes)? {
+            0x10 => Some(Self::Batt1MinThreshold),
+            0x11 => Some(Self::Batt1Threshold1),
+            0x12 => Some(Self::Batt1Threshold2),
+            0x13 => Some(Self::Batt1Threshold3),
+            0x20 => Some(Self::Batt2MinThreshold),
+            0x21 => Some(Self::Batt2Threshold1),
+            0x22 => Some(Self::Batt2Threshold2),
+            0x23 => Some(Self::Batt2Threshold3),
+            0x30 => Some(Self::Batt3MinThreshold),
+            0x31 => Some(Self::Batt3Threshold1),
+            0x32 => Some(Self::Batt3Threshold2),
+            0x33 => Some(Self::Batt3Threshold3),
+            0x3a => Some(Self::MainsPowerLost),
+            0xff => Some(Self::None),
+            _ => None,
+        }
+    }
+}
+
+impl ToLeStream for BatteryAlarm {
+    type Iter = <u8 as ToLeStream>::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        (self as u8).to_le_stream()
+    }
 }
