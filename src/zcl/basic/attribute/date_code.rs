@@ -14,8 +14,10 @@ const MAX_SIZE: usize = DATE_SIZE + MAX_CUSTOM_SIZE;
 
 /// Zigbee Date Code string type, which is a fixed-size string of 16 bytes.
 pub type DateCodeString = heapless::String<MAX_SIZE>;
-type DateCodeBytes = heapless::Vec<u8, MAX_SIZE>;
-type CustomString = heapless::String<MAX_CUSTOM_SIZE>;
+/// A vector of bytes representing the date code, which can be up to `MAX_SIZE` bytes long.
+pub type DateCodeBytes = heapless::Vec<u8, MAX_SIZE>;
+/// A custom string type for the custom part of the date code, which can be up to `MAX_CUSTOM_SIZE` bytes long.
+pub type CustomString = heapless::String<MAX_CUSTOM_SIZE>;
 
 /// Zigbee Date Code attribute.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

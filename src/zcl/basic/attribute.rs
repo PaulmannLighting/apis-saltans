@@ -1,7 +1,7 @@
 use std::iter::Chain;
 
 pub use alarm_mask::AlarmMask;
-pub use date_code::DateCode;
+pub use date_code::{CustomString, DateCode};
 pub use device_enabled::DeviceEnabled;
 use le_stream::{FromLeStream, ToLeStream};
 pub use physical_environment::PhysicalEnvironment;
@@ -16,6 +16,7 @@ mod date_code;
 mod device_enabled;
 mod physical_environment;
 mod power_source;
+mod tests;
 
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
