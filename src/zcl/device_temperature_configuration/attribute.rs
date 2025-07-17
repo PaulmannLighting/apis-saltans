@@ -5,6 +5,7 @@ use repr_discriminant::repr_discriminant;
 
 use crate::types::U24;
 use crate::util::DeviceTemperatureConfigurationAttributeIterator;
+use crate::zcl::device_temperature_configuration::DeviceTempAlarmMask;
 
 /// Attributes for the Device Temperature Configuration cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -21,7 +22,7 @@ pub enum Attribute {
     OverTempTotalDwell(u16) = 0x0003,
     // Device Temperature Settings.
     /// Alarms mask for device temperature.
-    DeviceTempAlarmMask(u8) = 0x0010,
+    DeviceTempAlarmMask(DeviceTempAlarmMask) = 0x0010,
     /// Low temperature threshold in degrees Celsius.
     LowTempThreshold(i16) = 0x0011,
     /// High temperature threshold in degrees Celsius.
@@ -42,7 +43,7 @@ impl FromLeStream for Attribute {
             0x0001 => i16::from_le_stream(bytes).map(Self::MinTempExperienced),
             0x0002 => i16::from_le_stream(bytes).map(Self::MaxTempExperienced),
             0x0003 => u16::from_le_stream(bytes).map(Self::OverTempTotalDwell),
-            0x0010 => u8::from_le_stream(bytes).map(Self::DeviceTempAlarmMask),
+            0x0010 => DeviceTempAlarmMask::from_le_stream(bytes).map(Self::DeviceTempAlarmMask),
             0x0011 => i16::from_le_stream(bytes).map(Self::LowTempThreshold),
             0x0012 => i16::from_le_stream(bytes).map(Self::HighTempThreshold),
             0x0013 => U24::from_le_stream(bytes).map(Self::LowTempDwellTripPoint),
