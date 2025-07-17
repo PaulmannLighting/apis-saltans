@@ -24,22 +24,24 @@ impl From<Attribute> for BasicAttributeIterator {
     fn from(attribute: Attribute) -> Self {
         let discriminant = attribute.discriminant();
         match attribute {
-            Attribute::ApplicationVersion(version)
-            | Attribute::HwVersion(version)
-            | Attribute::StackVersion(version)
-            | Attribute::ZclVersion(version) => Self::new(discriminant, version.into()),
-            Attribute::ManufacturerName(name) => Self::new(discriminant, name.into()),
-            Attribute::ModelIdentifier(model_id) => Self::new(discriminant, model_id.into()),
+            Attribute::ManufacturerName(string) | Attribute::ModelIdentifier(string) => {
+                Self::new(discriminant, string.into())
+            }
             Attribute::DateCode(date_code) => Self::new(discriminant, date_code.into()),
             Attribute::PowerSource(power_source) => Self::new(discriminant, power_source.into()),
-            Attribute::LocationDescription(location) => Self::new(discriminant, location.into()),
+            Attribute::LocationDescription(string) | Attribute::SwBuildId(string) => {
+                Self::new(discriminant, string.into())
+            }
             Attribute::PhysicalEnvironment(environment) => {
                 Self::new(discriminant, environment.into())
             }
             Attribute::DeviceEnabled(enabled) => Self::new(discriminant, enabled.into()),
             Attribute::AlarmMask(alarm_mask) => Self::new(discriminant, alarm_mask.into()),
-            Attribute::DisableLocalConfig(disable) => Self::new(discriminant, disable.into()),
-            Attribute::SwBuildId(sw_build_id) => Self::new(discriminant, sw_build_id.into()),
+            Attribute::DisableLocalConfig(int)
+            | Attribute::ApplicationVersion(int)
+            | Attribute::HwVersion(int)
+            | Attribute::StackVersion(int)
+            | Attribute::ZclVersion(int) => Self::new(discriminant, int.into()),
         }
     }
 }
