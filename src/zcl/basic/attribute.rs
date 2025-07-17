@@ -1,3 +1,5 @@
+use std::iter::Chain;
+
 pub use alarm_mask::AlarmMask;
 pub use date_code::DateCode;
 pub use device_enabled::DeviceEnabled;
@@ -77,9 +79,26 @@ impl FromLeStream for Attribute {
 }
 
 impl ToLeStream for Attribute {
-    type Iter = BasicAttributeIterator;
+    type Iter = Chain<<u16 as ToLeStream>::Iter, BasicAttributeIterator>;
 
     fn to_le_stream(self) -> Self::Iter {
-        self.into()
+        let id = self.discriminant();
+        let payload_iterator: BasicAttributeIterator = match self {
+            Self::ZclVersion(value)
+            | Self::ApplicationVersion(value)
+            | Self::StackVersion(value)
+            | Self::HwVersion(value)
+            | Self::DisableLocalConfig(value) => value.into(),
+            Self::ManufacturerName(name) => name.into(),
+            Self::ModelIdentifier(identifier) => identifier.into(),
+            Self::DateCode(date_code) => date_code.into(),
+            Self::PowerSource(source) => source.into(),
+            Self::LocationDescription(description) => description.into(),
+            Self::PhysicalEnvironment(environment) => environment.into(),
+            Self::DeviceEnabled(enabled) => enabled.into(),
+            Self::AlarmMask(mask) => mask.into(),
+            Self::SwBuildId(build_id) => build_id.into(),
+        };
+        id.to_le_stream().chain(payload_iterator)
     }
 }
