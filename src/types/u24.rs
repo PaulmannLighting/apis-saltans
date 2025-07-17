@@ -32,7 +32,7 @@ impl U24 {
     /// Create a new `U24` value if it is within the valid range.
     #[must_use]
     pub const fn new(value: u32) -> Option<Self> {
-        if value <= Self::MAX.into_inner() {
+        if value <= Self::MAX.0 {
             Some(Self(value))
         } else {
             None
