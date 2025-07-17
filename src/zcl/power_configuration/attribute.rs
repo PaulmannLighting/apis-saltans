@@ -3,6 +3,7 @@ pub use mains_information::MainsInformation;
 use repr_discriminant::repr_discriminant;
 
 mod mains_information;
+mod mains_settings;
 
 const ATTRIBUTE_ID_MASK: u16 = 0xFFF0;
 const ATTRIBUTE_VALUE_MASK: u16 = 0x000F;

@@ -1,0 +1,17 @@
+use bitflags::bitflags;
+
+/// Available mains alarms.
+#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+#[repr(transparent)]
+pub struct MainsAlarmMask(u8);
+
+bitflags! {
+    impl MainsAlarmMask: u8 {
+        /// Mains voltage is too low.
+        const MAINS_VOLTAGE_TOO_LOW = 0b0000_0001;
+        /// Mains voltage is too high.
+        const MAINS_VOLTAGE_TOO_HIGH = 0b0000_0010;
+        /// Mains power supply is lost or unavailable (device may be running on battery).
+        const MAINS_POWER_SUPPLY_LOST = 0b0000_0100;
+    }
+}
