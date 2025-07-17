@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use core::fmt::Display;
 
 /// Error while creating a `TimeOfDay` instance.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -14,7 +14,7 @@ pub enum Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::InvalidHour(hour) => write!(f, "Invalid hour: {hour}"),
             Self::InvalidMinute(minute) => write!(f, "Invalid minute: {minute}"),
@@ -24,4 +24,4 @@ impl Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl core::error::Error for Error {}

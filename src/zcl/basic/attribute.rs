@@ -1,4 +1,4 @@
-use std::iter::Chain;
+use core::iter::Chain;
 
 pub use alarm_mask::AlarmMask;
 pub use date_code::{CustomString, DateCode};

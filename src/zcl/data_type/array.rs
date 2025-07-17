@@ -1,4 +1,5 @@
-use std::slice::Chunks;
+use alloc::vec::Vec;
+use core::slice::Chunks;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Ord, PartialOrd)]
 pub struct Array {

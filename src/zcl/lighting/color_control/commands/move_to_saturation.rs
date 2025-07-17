@@ -1,4 +1,4 @@
-use std::time::Duration;
+use core::time::Duration;
 
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
 use crate::zcl::lighting::color_control::CLUSTER_ID;

@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use read_attribute_status::ReadAttributeStatus;
 
 mod read_attribute_status;

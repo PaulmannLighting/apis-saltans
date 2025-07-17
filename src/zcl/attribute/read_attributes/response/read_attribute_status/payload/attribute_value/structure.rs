@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use crate::zcl::data_type::DataType;
 
 pub struct Structure {

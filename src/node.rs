@@ -1,6 +1,6 @@
 //! Zigbee network node representation.
 
-use std::collections::HashSet;
+use alloc::collections::BTreeSet;
 
 use capability::Capability;
 use descriptor::Descriptor;
@@ -15,6 +15,6 @@ mod descriptor;
 pub struct Node {
     address: MacAddr8,
     short_address: Option<u16>,
-    capabilities: HashSet<Capability>,
+    capabilities: BTreeSet<Capability>,
     descriptor: Descriptor,
 }

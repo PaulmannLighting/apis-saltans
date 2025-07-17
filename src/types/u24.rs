@@ -1,4 +1,4 @@
-use std::array::IntoIter;
+use core::array::IntoIter;
 
 use le_stream::{FromLeStream, ToLeStream};
 

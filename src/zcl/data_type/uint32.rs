@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use core::num::NonZeroU32;
 
 const MASK: u32 = 0xffff_ffff;
 

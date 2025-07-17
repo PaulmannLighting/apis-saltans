@@ -1,4 +1,4 @@
-use std::time::Duration;
+use core::time::Duration;
 
 use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::color_loop_set::{Action, Direction, Update};

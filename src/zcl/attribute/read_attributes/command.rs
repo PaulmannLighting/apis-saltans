@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Command {
     attributes: Vec<u16>,

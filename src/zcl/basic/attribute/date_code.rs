@@ -1,5 +1,6 @@
-use std::fmt::Display;
-use std::str::FromStr;
+use alloc::string::{String, ToString};
+use core::fmt::Display;
+use core::str::FromStr;
 
 use chrono::NaiveDate;
 use le_stream::{FromLeStream, ToLeStream};
@@ -48,7 +49,7 @@ impl DateCode {
 }
 
 impl Display for DateCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         DateCodeString::from(self).fmt(f)
     }
 }

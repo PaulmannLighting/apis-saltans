@@ -1,4 +1,4 @@
-use std::iter::Chain;
+use core::iter::Chain;
 
 pub use battery_alarm_mask::BatteryAlarmMask;
 pub use battery_alarm_state::BatteryAlarmState;
