@@ -6,6 +6,7 @@ use repr_discriminant::repr_discriminant;
 use crate::types::U24;
 use crate::util::DeviceTemperatureConfigurationAttributeIterator;
 
+/// Attributes for the Device Temperature Configuration cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr_discriminant(u16, id)]
 pub enum Attribute {
