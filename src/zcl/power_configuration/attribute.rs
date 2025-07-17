@@ -1,11 +1,12 @@
 pub use mains_information::MainsInformation;
+use repr_discriminant::repr_discriminant;
 
 mod mains_information;
 
 const ATTRIBUTE_ID_MASK: u16 = 0xFFF0;
 const ATTRIBUTE_VALUE_MASK: u16 = 0x000F;
 
-#[repr(u16)]
+#[repr_discriminant(u16)]
 pub enum Attribute {
     /// Mains information.
     MainsInformation(MainsInformation) = 0x0000,
