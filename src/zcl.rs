@@ -12,7 +12,7 @@ mod command;
 mod command_frame_id;
 mod constants;
 mod data_type;
-mod device_temperature_configuration;
+pub mod device_temperature_configuration;
 pub mod frame;
 pub mod lighting;
 pub mod power_configuration;
