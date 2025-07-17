@@ -19,7 +19,7 @@ mod power_source;
 
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[repr_discriminant(u16)]
+#[repr_discriminant(u16, id)]
 pub enum Attribute {
     /// The ZCL version.
     ZclVersion(u8) = 0x0000,
@@ -82,7 +82,7 @@ impl ToLeStream for Attribute {
     type Iter = Chain<<u16 as ToLeStream>::Iter, BasicAttributeIterator>;
 
     fn to_le_stream(self) -> Self::Iter {
-        let id = self.discriminant();
+        let id = self.id();
         let payload_iterator: BasicAttributeIterator = match self {
             Self::ZclVersion(value)
             | Self::ApplicationVersion(value)
