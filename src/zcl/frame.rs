@@ -1,6 +1,6 @@
 //! ZCL frame representation.
 
-pub use header::{Direction, Header, Type};
+pub use header::{Control, Direction, Header, Type};
 
 use crate::zcl::Command;
 

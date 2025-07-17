@@ -16,7 +16,6 @@ mod date_code;
 mod device_enabled;
 mod physical_environment;
 mod power_source;
-mod tests;
 
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
