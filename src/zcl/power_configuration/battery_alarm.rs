@@ -1,7 +1,9 @@
 use le_stream::{FromLeStream, ToLeStream};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 
 /// Alarm codes for batteries.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum BatteryAlarm {
     /// `BatteryVoltageMinThreshold` or `BatteryPercentageMinThreshold` reached for Battery Source 1
@@ -39,23 +41,7 @@ impl FromLeStream for BatteryAlarm {
     where
         T: Iterator<Item = u8>,
     {
-        match u8::from_le_stream(bytes)? {
-            0x10 => Some(Self::Batt1MinThreshold),
-            0x11 => Some(Self::Batt1Threshold1),
-            0x12 => Some(Self::Batt1Threshold2),
-            0x13 => Some(Self::Batt1Threshold3),
-            0x20 => Some(Self::Batt2MinThreshold),
-            0x21 => Some(Self::Batt2Threshold1),
-            0x22 => Some(Self::Batt2Threshold2),
-            0x23 => Some(Self::Batt2Threshold3),
-            0x30 => Some(Self::Batt3MinThreshold),
-            0x31 => Some(Self::Batt3Threshold1),
-            0x32 => Some(Self::Batt3Threshold2),
-            0x33 => Some(Self::Batt3Threshold3),
-            0x3a => Some(Self::MainsPowerLost),
-            0xff => Some(Self::None),
-            _ => None,
-        }
+        u8::from_le_stream(bytes).and_then(Self::from_u8)
     }
 }
 

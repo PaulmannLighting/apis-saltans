@@ -1,7 +1,9 @@
 use le_stream::{FromLeStream, ToLeStream};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 
 /// Available battery sizes.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum BatterySize {
     /// No battery is present.
@@ -31,19 +33,7 @@ impl FromLeStream for BatterySize {
     where
         T: Iterator<Item = u8>,
     {
-        match u8::from_le_stream(&mut bytes)? {
-            0x00 => Some(Self::NoBattery),
-            0x01 => Some(Self::BuiltInBattery),
-            0x02 => Some(Self::Other),
-            0x03 => Some(Self::AA),
-            0x04 => Some(Self::AAA),
-            0x05 => Some(Self::C),
-            0x06 => Some(Self::D),
-            0x07 => Some(Self::CR2),
-            0x08 => Some(Self::CR123A),
-            0xff => Some(Self::Unknown),
-            _ => None,
-        }
+        u8::from_le_stream(&mut bytes).and_then(Self::from_u8)
     }
 }
 
