@@ -26,4 +26,8 @@ pub enum BatteryAlarm {
     Batt3Threshold2 = 0x32,
     /// `BatteryVoltageThreshold3` or `BatteryPercentageThreshold3` reached Battery Source 3
     Batt3Threshold3 = 0x33,
+    /// Mains power supply lost/unavailable (i.e., device is running on battery).
+    MainsPowerLost = 0x3a,
+    /// Alarm shall not be generated.
+    None = 0xff,
 }
