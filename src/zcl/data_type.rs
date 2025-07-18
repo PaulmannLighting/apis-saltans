@@ -8,7 +8,7 @@ use structure::Structure;
 use time_of_day::TimeOfDay;
 use utc_time::UtcTime;
 
-use crate::types::{ByteSizedStr, OctStr, OctStr16, WordSizedStr};
+use crate::types::{ByteSizedStr, OctStr, OctStr16, U24, WordSizedStr};
 
 mod array;
 mod date;
@@ -52,7 +52,7 @@ pub enum DataType {
     /// 16-bit bitmap.
     Map16(u16) = 0x19,
     /// 24-bit bitmap.
-    Map24(u32) = 0x1a,
+    Map24(U24) = 0x1a,
     /// 32-bit bitmap.
     Map32(u32) = 0x1b,
     /// 40-bit bitmap.
@@ -69,7 +69,7 @@ pub enum DataType {
     /// 16-bit unsigned integer.
     Uint16(u16) = 0x21,
     /// 24-bit unsigned integer.
-    Uint24(u32) = 0x22,
+    Uint24(U24) = 0x22,
     /// 32-bit unsigned integer.
     Uint32(u32) = 0x23,
     /// 40-bit unsigned integer.
