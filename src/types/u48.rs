@@ -2,7 +2,7 @@ use core::array::IntoIter;
 
 use le_stream::{FromLeStream, ToLeStream};
 
-/// A 24-bit unsigned integer type.
+/// A 48-bit unsigned integer type.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(transparent)]
 pub struct U48(u64);
