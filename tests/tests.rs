@@ -2,5 +2,4 @@
 
 #![cfg(test)]
 
-mod types;
 mod zcl;
