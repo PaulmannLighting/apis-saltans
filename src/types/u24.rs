@@ -22,7 +22,7 @@ impl U24 {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that `value` is within the range of 0 to 16,777,215 (`0x00FF_FFFF`).
+    /// The caller must ensure that `value` is within the range of [`Self::MIN`]..=[`Self::MAX`].
     #[must_use]
     #[allow(unsafe_code)]
     pub const unsafe fn new_unchecked(value: u32) -> Self {
