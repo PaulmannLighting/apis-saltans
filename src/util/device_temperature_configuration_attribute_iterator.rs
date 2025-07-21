@@ -1,6 +1,6 @@
+use intx::U24;
 use le_stream::ToLeStream;
 
-use crate::types::U24;
 use crate::zcl::device_temperature_configuration::DeviceTempAlarmMask;
 
 pub enum DeviceTemperatureConfigurationAttributeIterator {

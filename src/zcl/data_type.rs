@@ -3,12 +3,13 @@ use alloc::vec::Vec;
 use array::Array;
 use date::Date;
 use half::f16;
+use intx::{I24, I40, I48, I56, U24, U40, U48, U56};
 use macaddr::MacAddr8;
 use structure::Structure;
 use time_of_day::TimeOfDay;
 use utc_time::UtcTime;
 
-use crate::types::{ByteSizedStr, OctStr, OctStr16, U24, WordSizedStr};
+use crate::types::{ByteSizedStr, OctStr, OctStr16, WordSizedStr};
 
 mod array;
 mod date;
@@ -56,11 +57,11 @@ pub enum DataType {
     /// 32-bit bitmap.
     Map32(u32) = 0x1b,
     /// 40-bit bitmap.
-    Map40(u64) = 0x1c,
+    Map40(U40) = 0x1c,
     /// 48-bit bitmap.
-    Map48(u64) = 0x1d,
+    Map48(U48) = 0x1d,
     /// 56-bit bitmap.
-    Map56(u64) = 0x1e,
+    Map56(U56) = 0x1e,
     /// 64-bit bitmap.
     Map64(u64) = 0x1f,
     // Unsigned integer
@@ -73,11 +74,11 @@ pub enum DataType {
     /// 32-bit unsigned integer.
     Uint32(u32) = 0x23,
     /// 40-bit unsigned integer.
-    Uint40(u64) = 0x24,
+    Uint40(U40) = 0x24,
     /// 48-bit unsigned integer.
-    Uint48(u64) = 0x25,
+    Uint48(U48) = 0x25,
     /// 56-bit unsigned integer.
-    Uint56(u64) = 0x26,
+    Uint56(U56) = 0x26,
     /// 64-bit unsigned integer.
     Uint64(u64) = 0x27,
     // Signed integer
@@ -86,15 +87,15 @@ pub enum DataType {
     /// 16-bit signed integer.
     Int16(i16) = 0x29,
     /// 24-bit signed integer.
-    Int24(i32) = 0x2a,
+    Int24(I24) = 0x2a,
     /// 32-bit signed integer.
     Int32(i32) = 0x2b,
     /// 40-bit signed integer.
-    Int40(i64) = 0x2c,
+    Int40(I40) = 0x2c,
     /// 48-bit signed integer.
-    Int48(i64) = 0x2d,
+    Int48(I48) = 0x2d,
     /// 56-bit signed integer.
-    Int56(i64) = 0x2e,
+    Int56(I56) = 0x2e,
     /// 64-bit signed integer.
     Int64(i64) = 0x2f,
     // Enumeration

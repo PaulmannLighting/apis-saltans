@@ -1,9 +1,9 @@
 use core::iter::Chain;
 
+use intx::U24;
 use le_stream::{FromLeStream, ToLeStream};
 use repr_discriminant::repr_discriminant;
 
-use crate::types::U24;
 use crate::util::DeviceTemperatureConfigurationAttributeIterator;
 use crate::zcl::device_temperature_configuration::DeviceTempAlarmMask;
 
