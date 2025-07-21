@@ -6,6 +6,7 @@ pub use u24::U24;
 mod u24;
 mod u40;
 mod u48;
+mod u56;
 
 /// A string type, which can be up to 16 bytes long.
 pub type String16 = heapless::String<16>;
