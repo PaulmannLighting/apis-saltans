@@ -1,7 +1,7 @@
 use core::iter::Chain;
 
 use intx::U24;
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 use repr_discriminant::repr_discriminant;
 
 use crate::util::DeviceTemperatureConfigurationAttributeIterator;
@@ -33,22 +33,24 @@ pub enum Attribute {
     HighTempDwellTripPoint(U24) = 0x0014,
 }
 
-impl FromLeStream for Attribute {
-    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+impl FromLeStreamTagged for Attribute {
+    type Tag = u16;
+
+    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
     where
         T: Iterator<Item = u8>,
     {
-        match u16::from_le_stream(&mut bytes)? {
-            0x0000 => i16::from_le_stream(bytes).map(Self::CurrentTemperature),
-            0x0001 => i16::from_le_stream(bytes).map(Self::MinTempExperienced),
-            0x0002 => i16::from_le_stream(bytes).map(Self::MaxTempExperienced),
-            0x0003 => u16::from_le_stream(bytes).map(Self::OverTempTotalDwell),
-            0x0010 => DeviceTempAlarmMask::from_le_stream(bytes).map(Self::DeviceTempAlarmMask),
-            0x0011 => i16::from_le_stream(bytes).map(Self::LowTempThreshold),
-            0x0012 => i16::from_le_stream(bytes).map(Self::HighTempThreshold),
-            0x0013 => U24::from_le_stream(bytes).map(Self::LowTempDwellTripPoint),
-            0x0014 => U24::from_le_stream(bytes).map(Self::HighTempDwellTripPoint),
-            _ => None,
+        match tag {
+            0x0000 => Ok(i16::from_le_stream(bytes).map(Self::CurrentTemperature)),
+            0x0001 => Ok(i16::from_le_stream(bytes).map(Self::MinTempExperienced)),
+            0x0002 => Ok(i16::from_le_stream(bytes).map(Self::MaxTempExperienced)),
+            0x0003 => Ok(u16::from_le_stream(bytes).map(Self::OverTempTotalDwell)),
+            0x0010 => Ok(DeviceTempAlarmMask::from_le_stream(bytes).map(Self::DeviceTempAlarmMask)),
+            0x0011 => Ok(i16::from_le_stream(bytes).map(Self::LowTempThreshold)),
+            0x0012 => Ok(i16::from_le_stream(bytes).map(Self::HighTempThreshold)),
+            0x0013 => Ok(U24::from_le_stream(bytes).map(Self::LowTempDwellTripPoint)),
+            0x0014 => Ok(U24::from_le_stream(bytes).map(Self::HighTempDwellTripPoint)),
+            unknown => Err(unknown),
         }
     }
 }

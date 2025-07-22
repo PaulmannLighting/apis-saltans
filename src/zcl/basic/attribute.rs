@@ -3,7 +3,7 @@ use core::iter::Chain;
 pub use alarm_mask::AlarmMask;
 pub use date_code::{CustomString, DateCode};
 pub use device_enabled::DeviceEnabled;
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 use repr_discriminant::repr_discriminant;
@@ -51,29 +51,29 @@ pub enum Attribute {
     SwBuildId(String16) = 0x4000,
 }
 
-impl FromLeStream for Attribute {
-    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+impl FromLeStreamTagged for Attribute {
+    type Tag = u16;
+
+    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
     where
         T: Iterator<Item = u8>,
     {
-        match u16::from_le_stream(&mut bytes)? {
-            0x0000 => u8::from_le_stream(&mut bytes).map(Self::ZclVersion),
-            0x0001 => u8::from_le_stream(&mut bytes).map(Self::ApplicationVersion),
-            0x0002 => u8::from_le_stream(&mut bytes).map(Self::StackVersion),
-            0x0003 => u8::from_le_stream(&mut bytes).map(Self::HwVersion),
-            0x0004 => String32::from_le_stream(&mut bytes).map(Self::ManufacturerName),
-            0x0005 => String32::from_le_stream(&mut bytes).map(Self::ModelIdentifier),
-            0x0006 => DateCode::from_le_stream(&mut bytes).map(Self::DateCode),
-            0x0007 => PowerSource::from_le_stream(&mut bytes).map(Self::PowerSource),
-            0x0010 => String16::from_le_stream(&mut bytes).map(Self::LocationDescription),
-            0x0011 => {
-                PhysicalEnvironment::from_le_stream(&mut bytes).map(Self::PhysicalEnvironment)
-            }
-            0x0012 => DeviceEnabled::from_le_stream(&mut bytes).map(Self::DeviceEnabled),
-            0x0013 => AlarmMask::from_le_stream(&mut bytes).map(Self::AlarmMask),
-            0x0014 => u8::from_le_stream(&mut bytes).map(Self::DisableLocalConfig),
-            0x4000 => String16::from_le_stream(&mut bytes).map(Self::SwBuildId),
-            _ => None,
+        match tag {
+            0x0000 => Ok(u8::from_le_stream(bytes).map(Self::ZclVersion)),
+            0x0001 => Ok(u8::from_le_stream(bytes).map(Self::ApplicationVersion)),
+            0x0002 => Ok(u8::from_le_stream(bytes).map(Self::StackVersion)),
+            0x0003 => Ok(u8::from_le_stream(bytes).map(Self::HwVersion)),
+            0x0004 => Ok(String32::from_le_stream(bytes).map(Self::ManufacturerName)),
+            0x0005 => Ok(String32::from_le_stream(bytes).map(Self::ModelIdentifier)),
+            0x0006 => Ok(DateCode::from_le_stream(bytes).map(Self::DateCode)),
+            0x0007 => Ok(PowerSource::from_le_stream(bytes).map(Self::PowerSource)),
+            0x0010 => Ok(String16::from_le_stream(bytes).map(Self::LocationDescription)),
+            0x0011 => Ok(PhysicalEnvironment::from_le_stream(bytes).map(Self::PhysicalEnvironment)),
+            0x0012 => Ok(DeviceEnabled::from_le_stream(bytes).map(Self::DeviceEnabled)),
+            0x0013 => Ok(AlarmMask::from_le_stream(bytes).map(Self::AlarmMask)),
+            0x0014 => Ok(u8::from_le_stream(bytes).map(Self::DisableLocalConfig)),
+            0x4000 => Ok(String16::from_le_stream(bytes).map(Self::SwBuildId)),
+            unknown => Err(unknown),
         }
     }
 }

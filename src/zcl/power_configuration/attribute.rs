@@ -5,7 +5,7 @@ pub use battery_alarm_state::BatteryAlarmState;
 pub use battery_information::BatteryInformation;
 pub use battery_settings::BatterySettings;
 pub use battery_size::BatterySize;
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 pub use mains_alarm_mask::MainsAlarmMask;
 use repr_discriminant::repr_discriminant;
 
@@ -68,32 +68,42 @@ impl Attribute {
     }
 }
 
-impl FromLeStream for Attribute {
-    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+impl FromLeStreamTagged for Attribute {
+    type Tag = u16;
+
+    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
     where
         T: Iterator<Item = u8>,
     {
-        let id = u16::from_le_stream(&mut bytes)?;
-        match id {
-            0x0000 => u16::from_le_stream(&mut bytes).map(Self::MainsVoltage),
-            0x0001 => u8::from_le_stream(&mut bytes).map(Self::MainsFrequency),
-            0x0010 => MainsAlarmMask::from_le_stream(&mut bytes).map(Self::AlarmMask),
-            0x0011 => u16::from_le_stream(&mut bytes).map(Self::VoltageMinThreshold),
-            0x0012 => u16::from_le_stream(&mut bytes).map(Self::VoltageMaxThreshold),
-            0x0013 => u16::from_le_stream(&mut bytes).map(Self::VoltageDwellTripPoint),
-            0x0020..=0x002f => BatteryInformation::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
-                .map(Self::BatteryInformation),
-            0x0030..=0x003f => BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
-                .map(Self::BatterySettings),
-            0x0040..=0x004f => BatteryInformation::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
-                .map(Self::BatterySource2Information),
-            0x0050..=0x005f => BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
-                .map(Self::BatterySource2Settings),
-            0x0060..=0x006f => BatteryInformation::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
-                .map(Self::BatterySource3Information),
-            0x0070..=0x007f => BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, &mut bytes)
-                .map(Self::BatterySource3Settings),
-            _ => None,
+        match tag {
+            0x0000 => Ok(u16::from_le_stream(bytes).map(Self::MainsVoltage)),
+            0x0001 => Ok(u8::from_le_stream(bytes).map(Self::MainsFrequency)),
+            0x0010 => Ok(MainsAlarmMask::from_le_stream(bytes).map(Self::AlarmMask)),
+            0x0011 => Ok(u16::from_le_stream(bytes).map(Self::VoltageMinThreshold)),
+            0x0012 => Ok(u16::from_le_stream(bytes).map(Self::VoltageMaxThreshold)),
+            0x0013 => Ok(u16::from_le_stream(bytes).map(Self::VoltageDwellTripPoint)),
+            id @ 0x0020..=0x002f => Ok(BatteryInformation::from_le_stream(
+                id & ATTRIBUTE_MASK,
+                bytes,
+            )
+            .map(Self::BatteryInformation)),
+            id @ 0x0030..=0x003f => Ok(BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, bytes)
+                .map(Self::BatterySettings)),
+            id @ 0x0040..=0x004f => Ok(BatteryInformation::from_le_stream(
+                id & ATTRIBUTE_MASK,
+                bytes,
+            )
+            .map(Self::BatterySource2Information)),
+            id @ 0x0050..=0x005f => Ok(BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, bytes)
+                .map(Self::BatterySource2Settings)),
+            id @ 0x0060..=0x006f => Ok(BatteryInformation::from_le_stream(
+                id & ATTRIBUTE_MASK,
+                bytes,
+            )
+            .map(Self::BatterySource3Information)),
+            id @ 0x0070..=0x007f => Ok(BatterySettings::from_le_stream(id & ATTRIBUTE_MASK, bytes)
+                .map(Self::BatterySource3Settings)),
+            unknown => Err(unknown),
         }
     }
 }

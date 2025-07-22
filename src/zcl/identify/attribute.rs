@@ -1,6 +1,6 @@
 use core::iter::Chain;
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 use repr_discriminant::repr_discriminant;
 
 /// Attributes for the Identify cluster.
@@ -11,14 +11,16 @@ pub enum Attribute {
     IdentifyTime(u16) = 0x0000,
 }
 
-impl FromLeStream for Attribute {
-    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+impl FromLeStreamTagged for Attribute {
+    type Tag = u16;
+
+    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
     where
         T: Iterator<Item = u8>,
     {
-        match u16::from_le_stream(&mut bytes)? {
-            0x0000 => u16::from_le_stream(bytes).map(Self::IdentifyTime),
-            _ => None,
+        match tag {
+            0x0000 => Ok(u16::from_le_stream(bytes).map(Self::IdentifyTime)),
+            unknown => Err(unknown),
         }
     }
 }
