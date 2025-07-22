@@ -14,5 +14,6 @@ mod constants;
 mod data_type;
 pub mod device_temperature_configuration;
 pub mod frame;
+pub mod identify;
 pub mod lighting;
 pub mod power_configuration;
