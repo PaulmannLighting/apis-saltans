@@ -22,7 +22,7 @@ le-stream = { version = "3", features = ["derive", "heapless", "intx"] }
 macaddr = "1.0"
 num-derive = "0.4"
 num-traits = "0.2"
-repr-discriminant = "0.1"
+repr-discriminant = "1"
 serde = { version = "1.0", optional = true }
 
 [features]

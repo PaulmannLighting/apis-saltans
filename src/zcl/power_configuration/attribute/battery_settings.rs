@@ -1,5 +1,5 @@
 use le_stream::FromLeStream;
-use repr_discriminant::repr_discriminant;
+use repr_discriminant::ReprDiscriminant;
 
 use crate::types::String16;
 use crate::zcl::power_configuration::attribute::{
@@ -8,7 +8,8 @@ use crate::zcl::power_configuration::attribute::{
 
 /// Available battery settings.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[repr_discriminant(u16, id)]
+#[repr(u16)]
+#[derive(ReprDiscriminant)]
 pub enum BatterySettings {
     /// Name of the battery manufacturer.
     BatteryManufacturer(String16) = 0x0000,

@@ -3,15 +3,15 @@ use core::iter::Chain;
 use intx::U24;
 use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
-use repr_discriminant::repr_discriminant;
+use repr_discriminant::ReprDiscriminant;
 
 use super::temp_threshold::TempThreshold;
 use super::{DeviceTempAlarmMask, Temperature};
 
 /// Attributes for the Device Temperature Configuration cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[repr_discriminant(u16, id)]
-#[derive(FromLeStreamTagged)]
+#[repr(u16)]
+#[derive(ReprDiscriminant, FromLeStreamTagged)]
 pub enum Attribute {
     // Device Temperature Information.
     /// Current temperature in degrees Celsius.
@@ -39,7 +39,7 @@ impl ToLeStream for Attribute {
     type Iter = Chain<<u16 as ToLeStream>::Iter, iterator::Attribute>;
 
     fn to_le_stream(self) -> Self::Iter {
-        let id = self.id();
+        let id = self.discriminant();
         let payload_iter: iterator::Attribute = match self {
             Self::CurrentTemperature(temp)
             | Self::MinTempExperienced(temp)

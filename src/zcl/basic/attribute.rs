@@ -7,7 +7,7 @@ use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
 pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
-use repr_discriminant::repr_discriminant;
+use repr_discriminant::ReprDiscriminant;
 
 use crate::types::{String16, String32};
 
@@ -19,8 +19,8 @@ mod power_source;
 
 /// Basic Cluster Attributes.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[repr_discriminant(u16, id)]
-#[derive(FromLeStreamTagged)]
+#[repr(u16)]
+#[derive(ReprDiscriminant, FromLeStreamTagged)]
 pub enum Attribute {
     /// The ZCL version.
     ZclVersion(u8) = 0x0000,
@@ -56,7 +56,7 @@ impl ToLeStream for Attribute {
     type Iter = Chain<<u16 as ToLeStream>::Iter, iterator::Attribute>;
 
     fn to_le_stream(self) -> Self::Iter {
-        let id = self.id();
+        let id = self.discriminant();
         let payload_iterator: iterator::Attribute = match self {
             Self::ZclVersion(value)
             | Self::ApplicationVersion(value)

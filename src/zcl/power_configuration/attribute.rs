@@ -7,7 +7,7 @@ pub use battery_settings::BatterySettings;
 pub use battery_size::BatterySize;
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 pub use mains_alarm_mask::MainsAlarmMask;
-use repr_discriminant::repr_discriminant;
+use repr_discriminant::ReprDiscriminant;
 
 mod battery_alarm_mask;
 mod battery_alarm_state;
@@ -20,7 +20,8 @@ const ATTRIBUTE_MASK: u16 = 0x000f;
 
 /// Power configuration cluster attribute.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[repr_discriminant(u16)]
+#[repr(u16)]
+#[derive(ReprDiscriminant)]
 pub enum Attribute {
     // Mains information.
     /// Mains voltage in 100mV.
@@ -57,10 +58,12 @@ impl Attribute {
         match self {
             Self::BatteryInformation(info)
             | Self::BatterySource2Information(info)
-            | Self::BatterySource3Information(info) => self.discriminant() | info.id(),
+            | Self::BatterySource3Information(info) => self.discriminant() | info.discriminant(),
             Self::BatterySettings(settings)
             | Self::BatterySource2Settings(settings)
-            | Self::BatterySource3Settings(settings) => self.discriminant() | settings.id(),
+            | Self::BatterySource3Settings(settings) => {
+                self.discriminant() | settings.discriminant()
+            }
             _ => self.discriminant(),
         }
     }

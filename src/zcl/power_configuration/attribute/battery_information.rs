@@ -1,8 +1,9 @@
 use le_stream::FromLeStream;
-use repr_discriminant::repr_discriminant;
+use repr_discriminant::ReprDiscriminant;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[repr_discriminant(u16, id)]
+#[repr(u16)]
+#[derive(ReprDiscriminant)]
 pub enum BatteryInformation {
     /// Battery voltage in 100mV.
     BatteryVoltage(u8) = 0x0000,
