@@ -18,7 +18,7 @@ mod mains_alarm_mask;
 
 const ATTRIBUTE_MASK: u16 = 0x000f;
 
-/// Power configuration cluster attributes.
+/// Power configuration cluster attribute.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr_discriminant(u16)]
 pub enum Attribute {

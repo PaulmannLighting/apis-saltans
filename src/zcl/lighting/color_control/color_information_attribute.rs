@@ -1,6 +1,6 @@
 use num_derive::FromPrimitive;
 
-/// Color information attributes for the Color Control cluster.
+/// Color information attribute for the Color Control cluster.
 ///
 /// TODO: Add respective associated data.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]

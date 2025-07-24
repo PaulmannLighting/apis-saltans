@@ -7,7 +7,7 @@ use repr_discriminant::repr_discriminant;
 
 mod name_support;
 
-/// Available attributes for the `Groups` cluster.
+/// Available attribute for the `Groups` cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr_discriminant(u16, id)]
 #[derive(FromLeStreamTagged)]

@@ -1,7 +1,7 @@
 //! The `Groups` cluster.
 
-pub use attributes::{Attribute, NameSupport};
+pub use attribute::{Attribute, NameSupport};
 
-mod attributes;
+mod attribute;
 
 const CLUSTER_ID: u16 = 0x0004;
