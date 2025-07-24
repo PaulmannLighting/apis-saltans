@@ -1,8 +1,8 @@
 use core::iter::Chain;
 
 use intx::U24;
-use le_stream::derive::FromLeStreamTagged;
 use le_stream::ToLeStream;
+use le_stream::derive::FromLeStreamTagged;
 use repr_discriminant::repr_discriminant;
 
 use crate::util::DeviceTemperatureConfigurationAttributeIterator;
@@ -10,7 +10,6 @@ use crate::zcl::device_temperature_configuration::temp_threshold::TempThreshold;
 use crate::zcl::device_temperature_configuration::{DeviceTempAlarmMask, Temperature};
 
 /// Attributes for the Device Temperature Configuration cluster.
-
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr_discriminant(u16, id)]
 #[derive(FromLeStreamTagged)]
