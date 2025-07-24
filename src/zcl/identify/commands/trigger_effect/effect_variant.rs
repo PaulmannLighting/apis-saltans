@@ -5,6 +5,7 @@ use num_traits::FromPrimitive;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum EffectVariant {
+    /// Default effect variant.
     Default = 0x00,
 }
 
