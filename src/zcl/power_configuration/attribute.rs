@@ -9,8 +9,6 @@ use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 pub use mains_alarm_mask::MainsAlarmMask;
 use repr_discriminant::repr_discriminant;
 
-use crate::util::PowerConfigurationAttributeIterator;
-
 mod battery_alarm_mask;
 mod battery_alarm_state;
 mod battery_information;
@@ -109,11 +107,11 @@ impl FromLeStreamTagged for Attribute {
 }
 
 impl ToLeStream for Attribute {
-    type Iter = Chain<<u16 as ToLeStream>::Iter, PowerConfigurationAttributeIterator>;
+    type Iter = Chain<<u16 as ToLeStream>::Iter, iterator::Attribute>;
 
     fn to_le_stream(self) -> Self::Iter {
         let id = self.id();
-        let payload_iterator: PowerConfigurationAttributeIterator = match self {
+        let payload_iterator: iterator::Attribute = match self {
             Self::MainsVoltage(voltage)
             | Self::VoltageMinThreshold(voltage)
             | Self::VoltageMaxThreshold(voltage) => voltage.into(),
@@ -147,5 +145,92 @@ impl ToLeStream for Attribute {
             },
         };
         id.to_le_stream().chain(payload_iterator)
+    }
+}
+
+/// Iterator for `Attribute` payloads.
+mod iterator {
+    use le_stream::ToLeStream;
+
+    use crate::types::String16;
+    use crate::zcl::power_configuration::{
+        BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask,
+    };
+
+    /// Little endian stream iterator for the [`Attribute`](crate::zcl::power_configuration::Attribute)
+    /// in the Power Configuration cluster.
+    pub enum Attribute {
+        U8(<u8 as ToLeStream>::Iter),
+        U16(<u16 as ToLeStream>::Iter),
+        U32(<u32 as ToLeStream>::Iter),
+        String16(<String16 as ToLeStream>::Iter),
+        MainsAlarmMask(<MainsAlarmMask as ToLeStream>::Iter),
+        BatterySize(<BatterySize as ToLeStream>::Iter),
+        BatteryAlarmMask(<BatteryAlarmMask as ToLeStream>::Iter),
+        BatteryAlarmState(<BatteryAlarmState as ToLeStream>::Iter),
+    }
+
+    impl Iterator for Attribute {
+        type Item = u8;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                Self::U8(iter)
+                | Self::MainsAlarmMask(iter)
+                | Self::BatterySize(iter)
+                | Self::BatteryAlarmMask(iter) => iter.next(),
+                Self::U16(iter) => iter.next(),
+                Self::U32(iter) | Self::BatteryAlarmState(iter) => iter.next(),
+                Self::String16(iter) => iter.next(),
+            }
+        }
+    }
+
+    impl From<u8> for Attribute {
+        fn from(value: u8) -> Self {
+            Self::U8(value.to_le_stream())
+        }
+    }
+
+    impl From<u16> for Attribute {
+        fn from(value: u16) -> Self {
+            Self::U16(value.to_le_stream())
+        }
+    }
+
+    impl From<u32> for Attribute {
+        fn from(value: u32) -> Self {
+            Self::U32(value.to_le_stream())
+        }
+    }
+
+    impl From<String16> for Attribute {
+        fn from(value: String16) -> Self {
+            Self::String16(value.to_le_stream())
+        }
+    }
+
+    impl From<MainsAlarmMask> for Attribute {
+        fn from(value: MainsAlarmMask) -> Self {
+            Self::MainsAlarmMask(value.to_le_stream())
+        }
+    }
+
+    impl From<BatterySize> for Attribute {
+        fn from(value: BatterySize) -> Self {
+            Self::BatterySize(value.to_le_stream())
+        }
+    }
+
+    impl From<BatteryAlarmMask> for Attribute {
+        fn from(value: BatteryAlarmMask) -> Self {
+            Self::BatteryAlarmMask(value.to_le_stream())
+        }
+    }
+
+    impl From<BatteryAlarmState> for Attribute {
+        fn from(value: BatteryAlarmState) -> Self {
+            Self::BatteryAlarmState(value.to_le_stream())
+        }
     }
 }
