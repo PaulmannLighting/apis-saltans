@@ -15,6 +15,7 @@ pub struct TriggerEffect {
 }
 
 impl TriggerEffect {
+    /// Create a new `TriggerEffect` command.
     #[must_use]
     pub fn new(identifier: EffectIdentifier, variant: EffectVariant) -> Self {
         Self {
@@ -23,10 +24,20 @@ impl TriggerEffect {
         }
     }
 
+    /// Return the effect identifier.
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw identifier if it cannot be converted to an `EffectIdentifier`.
     pub fn identifier(self) -> Result<EffectIdentifier, u8> {
         EffectIdentifier::try_from(self.identifier)
     }
 
+    /// Return the effect variant.
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw variant if it cannot be converted to an `EffectVariant`.
     pub fn variant(self) -> Result<EffectVariant, u8> {
         EffectVariant::try_from(self.variant)
     }
