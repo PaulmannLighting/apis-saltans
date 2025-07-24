@@ -5,7 +5,7 @@ mod power_source;
 
 use chrono::NaiveDate;
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::types::{String16, String32};
+use zigbee::types::{String, String16};
 use zigbee::zcl::basic::{
     AlarmMask, Attribute, CustomString, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource,
 };
@@ -73,14 +73,14 @@ fn manufacturer_name_from_le_stream() {
     assert_eq!(
         attribute,
         Some(Attribute::ManufacturerName(
-            String32::try_from("Test").unwrap()
+            String::try_from("Test").unwrap()
         ))
     );
 }
 
 #[test]
 fn manufacturer_name_to_le_stream() {
-    let attribute = Attribute::ManufacturerName(String32::try_from("Test").unwrap());
+    let attribute = Attribute::ManufacturerName(String::try_from("Test").unwrap());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(bytes, vec![0x04, 0x00, b'T', b'e', b's', b't']);
 }

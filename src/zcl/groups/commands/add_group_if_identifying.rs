@@ -4,7 +4,6 @@ use crate::zcl::{Cluster, Command};
 
 /// Command to add a group to the device's group table if the device is currently identifying.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-#[repr(transparent)]
 pub struct AddGroupIfIdentifying {
     group_id: u16,
     group_name: String,
@@ -22,7 +21,7 @@ impl AddGroupIfIdentifying {
 
     /// Returns the identifier of the group to be added.
     #[must_use]
-    pub const fn group_id(self) -> u16 {
+    pub fn group_id(&self) -> u16 {
         self.group_id
     }
 

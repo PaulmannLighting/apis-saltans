@@ -22,14 +22,14 @@ impl GetGroupMembership {
 
     /// Returns the number of groups in the membership request.
     #[must_use]
-    pub const fn group_count(&self) -> u8 {
-        self.group_list.len() as u8
+    pub fn group_count(&self) -> u8 {
+        AsRef::<[u16]>::as_ref(&self.group_list).len() as u8
     }
 
     /// Returns the list of group IDs in the membership request.
     #[must_use]
-    pub const fn group_list(&self) -> &[u16] {
-        &self.group_list
+    pub fn group_list(&self) -> &[u16] {
+        self.group_list.as_ref()
     }
 }
 

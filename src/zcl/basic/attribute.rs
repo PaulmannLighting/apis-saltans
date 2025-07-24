@@ -9,7 +9,7 @@ pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 use repr_discriminant::ReprDiscriminant;
 
-use crate::types::{String16, String32};
+use crate::types::{String, String16};
 
 mod alarm_mask;
 mod date_code;
@@ -31,9 +31,9 @@ pub enum Attribute {
     /// The hardware version.
     HwVersion(u8) = 0x0003,
     /// The manufacturer name.
-    ManufacturerName(String32) = 0x0004,
+    ManufacturerName(String) = 0x0004, // TODO: Limit to 32 bytes
     /// The model identifier.
-    ModelIdentifier(String32) = 0x0005,
+    ModelIdentifier(String) = 0x0005, // TODO: Limit to 32 bytes
     /// The date code.
     DateCode(DateCode) = 0x0006,
     /// The power source.
@@ -81,14 +81,14 @@ impl ToLeStream for Attribute {
 mod iterator {
     use le_stream::ToLeStream;
 
-    use crate::types::{String16, String32};
+    use crate::types::{String, String16};
     use crate::zcl::basic::{AlarmMask, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource};
 
     /// Little endian stream iterator for the payload of an attribute in the Basic cluster.
     pub enum Attribute {
         U8(<u8 as ToLeStream>::Iter),
         String16(<String16 as ToLeStream>::Iter),
-        String32(<String32 as ToLeStream>::Iter),
+        String(<String as ToLeStream>::Iter),
         DateCode(<DateCode as ToLeStream>::Iter),
         PowerSource(<PowerSource as ToLeStream>::Iter),
         PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
@@ -101,8 +101,9 @@ mod iterator {
 
         fn next(&mut self) -> Option<Self::Item> {
             match self {
-                Self::String16(iter) | Self::DateCode(iter) => iter.next(),
-                Self::String32(iter) => iter.next(),
+                Self::String16(iter) => iter.next(),
+                Self::DateCode(iter) => iter.next(),
+                Self::String(iter) => iter.next(),
                 Self::PowerSource(iter)
                 | Self::PhysicalEnvironment(iter)
                 | Self::AlarmMask(iter)
@@ -124,9 +125,9 @@ mod iterator {
         }
     }
 
-    impl From<String32> for Attribute {
-        fn from(value: String32) -> Self {
-            Self::String32(value.to_le_stream())
+    impl From<String> for Attribute {
+        fn from(value: String) -> Self {
+            Self::String(value.to_le_stream())
         }
     }
 
