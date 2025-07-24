@@ -4,13 +4,12 @@ use array::Array;
 use date::Date;
 use half::f16;
 use intx::{I24, I40, I48, I56, U24, U40, U48, U56};
-use le_stream::Prefixed;
 use macaddr::MacAddr8;
 use structure::Structure;
 use time_of_day::TimeOfDay;
 use utc_time::UtcTime;
 
-use crate::types::{ByteSizedStr, OctStr, OctStr16, WordSizedStr};
+use crate::types::{OctStr, OctStr16, String, String16};
 
 mod array;
 mod date;
@@ -109,13 +108,13 @@ pub enum DataType {
     Double(f64) = 0x3a,
     // String
     /// Octet string.
-    OctStr(Prefixed<u8, OctStr>) = 0x41,
+    OctStr(OctStr) = 0x41,
     /// Character string.
-    String(Prefixed<u8, ByteSizedStr>) = 0x42,
+    String(String) = 0x42,
     /// Long octet string.
-    OctStr16(Prefixed<u16, OctStr16>) = 0x43,
+    OctStr16(OctStr16) = 0x43,
     /// Long character string.
-    String16(Prefixed<u16, WordSizedStr>) = 0x44,
+    String16(String16) = 0x44,
     // Ordered sequence
     /// Array.
     Array(Array) = 0x48,
