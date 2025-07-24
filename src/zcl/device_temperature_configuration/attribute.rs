@@ -1,12 +1,13 @@
 use core::iter::Chain;
 
 use intx::U24;
-use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
+use le_stream::ToLeStream;
 use repr_discriminant::repr_discriminant;
 
 use crate::util::DeviceTemperatureConfigurationAttributeIterator;
-use crate::zcl::device_temperature_configuration::DeviceTempAlarmMask;
+use crate::zcl::device_temperature_configuration::temp_threshold::TempThreshold;
+use crate::zcl::device_temperature_configuration::{DeviceTempAlarmMask, Temperature};
 
 /// Attributes for the Device Temperature Configuration cluster.
 
@@ -16,20 +17,20 @@ use crate::zcl::device_temperature_configuration::DeviceTempAlarmMask;
 pub enum Attribute {
     // Device Temperature Information.
     /// Current temperature in degrees Celsius.
-    CurrentTemperature(i16) = 0x0000,
+    CurrentTemperature(Temperature) = 0x0000,
     /// Minimum temperature experienced in degrees Celsius.
-    MinTempExperienced(i16) = 0x0001,
+    MinTempExperienced(Temperature) = 0x0001,
     /// Maximum temperature experienced in degrees Celsius.
-    MaxTempExperienced(i16) = 0x0002,
+    MaxTempExperienced(Temperature) = 0x0002,
     /// Total time the temperature was above the maximum threshold in hours.
     OverTempTotalDwell(u16) = 0x0003,
     // Device Temperature Settings.
     /// Alarms mask for device temperature.
     DeviceTempAlarmMask(DeviceTempAlarmMask) = 0x0010,
     /// Low temperature threshold in degrees Celsius.
-    LowTempThreshold(i16) = 0x0011,
+    LowTempThreshold(TempThreshold) = 0x0011,
     /// High temperature threshold in degrees Celsius.
-    HighTempThreshold(i16) = 0x0012,
+    HighTempThreshold(TempThreshold) = 0x0012,
     /// Low temperature dwell trip point in seconds.
     LowTempDwellTripPoint(U24) = 0x0013,
     /// High temperature dwell trip point in seconds.
@@ -44,9 +45,8 @@ impl ToLeStream for Attribute {
         let payload_iter: DeviceTemperatureConfigurationAttributeIterator = match self {
             Self::CurrentTemperature(temp)
             | Self::MinTempExperienced(temp)
-            | Self::MaxTempExperienced(temp)
-            | Self::LowTempThreshold(temp)
-            | Self::HighTempThreshold(temp) => temp.into(),
+            | Self::MaxTempExperienced(temp) => temp.into(),
+            Self::LowTempThreshold(thresh) | Self::HighTempThreshold(thresh) => thresh.into(),
             Self::OverTempTotalDwell(hours) => hours.into(),
             Self::DeviceTempAlarmMask(mask) => mask.into(),
             Self::LowTempDwellTripPoint(seconds) | Self::HighTempDwellTripPoint(seconds) => {

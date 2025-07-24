@@ -1,12 +1,14 @@
 use core::ops::RangeInclusive;
 
+use le_stream::{FromLeStream, ToLeStream};
+
+const INVALID_READING: i16 = -1; // 0xffff in unsigned representation as per 3.4.2.2.1.1.
 const RANGE: RangeInclusive<i16> = -200..=200;
-const INVALID_READING: i16 = -1; // 0xffff in unsigned representation
 
 /// Represents a temperature in degrees Celsius, with handling for valid, out-of-range, and invalid readings.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Temperature {
-    /// A valid temperature reading within the defined range.
+    /// A valid temperature reading within the defined range in °C.
     Valid(i16),
     /// An out-of-range temperature reading.
     OutOfRange(i16),
@@ -31,6 +33,26 @@ impl From<Temperature> for i16 {
         match temp {
             Temperature::OutOfRange(value) | Temperature::Valid(value) => value,
             Temperature::InvalidReading => INVALID_READING,
+        }
+    }
+}
+
+impl FromLeStream for Temperature {
+    fn from_le_stream<T>(bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        i16::from_le_stream(bytes).map(Self::from)
+    }
+}
+
+impl ToLeStream for Temperature {
+    type Iter = <i16 as ToLeStream>::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        match self {
+            Self::Valid(temp) | Self::OutOfRange(temp) => temp.to_le_stream(),
+            Self::InvalidReading => INVALID_READING.to_le_stream(),
         }
     }
 }

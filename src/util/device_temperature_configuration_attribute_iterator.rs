@@ -1,7 +1,9 @@
 use intx::U24;
 use le_stream::ToLeStream;
 
-use crate::zcl::device_temperature_configuration::DeviceTempAlarmMask;
+use crate::zcl::device_temperature_configuration::{
+    DeviceTempAlarmMask, TempThreshold, Temperature,
+};
 
 pub enum DeviceTemperatureConfigurationAttributeIterator {
     I16(<i16 as ToLeStream>::Iter),
@@ -24,7 +26,7 @@ impl Iterator for DeviceTemperatureConfigurationAttributeIterator {
 
 impl From<i16> for DeviceTemperatureConfigurationAttributeIterator {
     fn from(value: i16) -> Self {
-        Self::I16(value.to_le_stream())
+        Self::U16(value.to_le_stream())
     }
 }
 
@@ -43,5 +45,17 @@ impl From<U24> for DeviceTemperatureConfigurationAttributeIterator {
 impl From<DeviceTempAlarmMask> for DeviceTemperatureConfigurationAttributeIterator {
     fn from(value: DeviceTempAlarmMask) -> Self {
         Self::DeviceTempAlarmMask(value.to_le_stream())
+    }
+}
+
+impl From<Temperature> for DeviceTemperatureConfigurationAttributeIterator {
+    fn from(value: Temperature) -> Self {
+        Self::I16(value.to_le_stream())
+    }
+}
+
+impl From<TempThreshold> for DeviceTemperatureConfigurationAttributeIterator {
+    fn from(value: TempThreshold) -> Self {
+        Self::I16(value.to_le_stream())
     }
 }
