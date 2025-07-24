@@ -10,7 +10,6 @@ pub use power_source::PowerSource;
 use repr_discriminant::repr_discriminant;
 
 use crate::types::{String16, String32};
-use crate::util::BasicAttributeIterator;
 
 mod alarm_mask;
 mod date_code;
@@ -54,11 +53,11 @@ pub enum Attribute {
 }
 
 impl ToLeStream for Attribute {
-    type Iter = Chain<<u16 as ToLeStream>::Iter, BasicAttributeIterator>;
+    type Iter = Chain<<u16 as ToLeStream>::Iter, iterator::Attribute>;
 
     fn to_le_stream(self) -> Self::Iter {
         let id = self.id();
-        let payload_iterator: BasicAttributeIterator = match self {
+        let payload_iterator: iterator::Attribute = match self {
             Self::ZclVersion(value)
             | Self::ApplicationVersion(value)
             | Self::StackVersion(value)
@@ -75,5 +74,89 @@ impl ToLeStream for Attribute {
             Self::SwBuildId(build_id) => build_id.into(),
         };
         id.to_le_stream().chain(payload_iterator)
+    }
+}
+
+/// Iterator for `Attribute` payloads.
+mod iterator {
+    use le_stream::ToLeStream;
+
+    use crate::types::{String16, String32};
+    use crate::zcl::basic::{AlarmMask, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource};
+
+    /// Little endian stream iterator for the payload of an attribute in the Basic cluster.
+    pub enum Attribute {
+        U8(<u8 as ToLeStream>::Iter),
+        String16(<String16 as ToLeStream>::Iter),
+        String32(<String32 as ToLeStream>::Iter),
+        DateCode(<DateCode as ToLeStream>::Iter),
+        PowerSource(<PowerSource as ToLeStream>::Iter),
+        PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
+        DeviceEnabled(<DeviceEnabled as ToLeStream>::Iter),
+        AlarmMask(<AlarmMask as ToLeStream>::Iter),
+    }
+
+    impl Iterator for Attribute {
+        type Item = u8;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                Self::String16(iter) | Self::DateCode(iter) => iter.next(),
+                Self::String32(iter) => iter.next(),
+                Self::PowerSource(iter)
+                | Self::PhysicalEnvironment(iter)
+                | Self::AlarmMask(iter)
+                | Self::DeviceEnabled(iter)
+                | Self::U8(iter) => iter.next(),
+            }
+        }
+    }
+
+    impl From<u8> for Attribute {
+        fn from(value: u8) -> Self {
+            Self::U8(value.to_le_stream())
+        }
+    }
+
+    impl From<String16> for Attribute {
+        fn from(value: String16) -> Self {
+            Self::String16(value.to_le_stream())
+        }
+    }
+
+    impl From<String32> for Attribute {
+        fn from(value: String32) -> Self {
+            Self::String32(value.to_le_stream())
+        }
+    }
+
+    impl From<DateCode> for Attribute {
+        fn from(value: DateCode) -> Self {
+            Self::DateCode(value.to_le_stream())
+        }
+    }
+
+    impl From<PowerSource> for Attribute {
+        fn from(value: PowerSource) -> Self {
+            Self::PowerSource(value.to_le_stream())
+        }
+    }
+
+    impl From<PhysicalEnvironment> for Attribute {
+        fn from(value: PhysicalEnvironment) -> Self {
+            Self::PhysicalEnvironment(value.to_le_stream())
+        }
+    }
+
+    impl From<DeviceEnabled> for Attribute {
+        fn from(value: DeviceEnabled) -> Self {
+            Self::DeviceEnabled(value.to_le_stream())
+        }
+    }
+
+    impl From<AlarmMask> for Attribute {
+        fn from(value: AlarmMask) -> Self {
+            Self::AlarmMask(value.to_le_stream())
+        }
     }
 }
