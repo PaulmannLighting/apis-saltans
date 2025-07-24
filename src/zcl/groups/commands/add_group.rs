@@ -1,9 +1,11 @@
+use le_stream::derive::{FromLeStream, ToLeStream};
+
 use crate::types::String;
 use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
 /// Command to add a group to the device's group table.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct AddGroup {
     /// The identifier of the group to be added.
     group_id: u16,
