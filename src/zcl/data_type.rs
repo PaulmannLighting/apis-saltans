@@ -4,6 +4,7 @@ use array::Array;
 use date::Date;
 use half::f16;
 use intx::{I24, I40, I48, I56, U24, U40, U48, U56};
+use le_stream::Prefixed;
 use macaddr::MacAddr8;
 use structure::Structure;
 use time_of_day::TimeOfDay;
@@ -108,13 +109,13 @@ pub enum DataType {
     Double(f64) = 0x3a,
     // String
     /// Octet string.
-    OctStr(OctStr) = 0x41,
+    OctStr(Prefixed<u8, OctStr>) = 0x41,
     /// Character string.
-    String(ByteSizedStr) = 0x42,
+    String(Prefixed<u8, ByteSizedStr>) = 0x42,
     /// Long octet string.
-    OctStr16(OctStr16) = 0x43,
+    OctStr16(Prefixed<u16, OctStr16>) = 0x43,
     /// Long character string.
-    String16(WordSizedStr) = 0x44,
+    String16(Prefixed<u16, WordSizedStr>) = 0x44,
     // Ordered sequence
     /// Array.
     Array(Array) = 0x48,
