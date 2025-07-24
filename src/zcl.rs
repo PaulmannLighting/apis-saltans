@@ -4,6 +4,7 @@ pub use cluster::Cluster;
 pub use command::Command;
 pub use data_type::DataType;
 pub use frame::{Control, Direction, Frame, Header, Type};
+pub use status::Status;
 
 mod attribute;
 pub mod basic;
@@ -18,3 +19,4 @@ pub mod groups;
 pub mod identify;
 pub mod lighting;
 pub mod power_configuration;
+mod status;
