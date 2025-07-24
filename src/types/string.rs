@@ -12,6 +12,10 @@ pub struct String(OctStr);
 
 impl String {
     /// Try to parse the underlying bytes as a UTF-8 string.
+    ///
+    /// # Errors
+    ///
+    /// If the bytes are not valid UTF-8, this will return an [`Utf8Error`].
     pub fn try_as_str(&self) -> Result<&str, Utf8Error> {
         str::from_utf8(self.0.as_ref())
     }

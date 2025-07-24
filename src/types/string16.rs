@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+use alloc::string::{String, ToString};
 use core::str;
 use core::str::Utf8Error;
 
@@ -12,6 +14,10 @@ pub struct String16(OctStr16);
 
 impl String16 {
     /// Try to parse the underlying bytes as a UTF-8 string.
+    ///
+    /// # Errors
+    ///
+    /// If the bytes are not valid UTF-8, this will return an [`Utf8Error`].
     pub fn try_as_str(&self) -> Result<&str, Utf8Error> {
         str::from_utf8(self.0.as_ref())
     }
@@ -29,10 +35,18 @@ impl AsRef<[u8]> for String16 {
     }
 }
 
+impl TryFrom<String> for String16 {
+    type Error = Box<[u8]>;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        OctStr16::try_from(value.into_bytes()).map(Self)
+    }
+}
+
 impl TryFrom<&str> for String16 {
-    type Error = ();
+    type Error = Box<[u8]>;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        OctStr16::try_from(value.as_bytes()).map(Self)
+        Self::try_from(value.to_string())
     }
 }
