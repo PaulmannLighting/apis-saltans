@@ -1,4 +1,3 @@
-use alloc::string::ToString;
 use core::iter::Chain;
 
 use le_stream::ToLeStream;
