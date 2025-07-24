@@ -1,7 +1,7 @@
 //! The `Groups` cluster.
 
 pub use attribute::{Attribute, NameSupport};
-pub use commands::AddGroup;
+pub use commands::{AddGroup, ViewGroup};
 
 mod attribute;
 mod commands;
