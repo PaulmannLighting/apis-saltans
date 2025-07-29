@@ -11,6 +11,18 @@ const NON_VALUE: i16 = 0x8000;
 #[repr(transparent)]
 pub struct Int16(i16);
 
+impl Int16 {
+    /// Crate a new `Int16` from an `i16` value.
+    #[must_use]
+    pub const fn new(value: i16) -> Option<Self> {
+        if value == NON_VALUE {
+            None
+        } else {
+            Some(Self(value))
+        }
+    }
+}
+
 impl From<Int16> for Option<i16> {
     fn from(value: Int16) -> Self {
         if value.0 == NON_VALUE {

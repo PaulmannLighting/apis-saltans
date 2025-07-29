@@ -10,6 +10,18 @@ const NON_VALUE: u32 = 0xffff;
 #[repr(transparent)]
 pub struct Uint32(u32);
 
+impl Uint32 {
+    /// Crate a new `Uint32` from an `u32` value.
+    #[must_use]
+    pub const fn new(value: u32) -> Option<Self> {
+        if value == NON_VALUE {
+            None
+        } else {
+            Some(Self(value))
+        }
+    }
+}
+
 impl From<Uint32> for Option<u32> {
     fn from(value: Uint32) -> Self {
         if value.0 == NON_VALUE {

@@ -10,6 +10,18 @@ const NON_VALUE: u16 = 0xffff;
 #[repr(transparent)]
 pub struct Uint16(u16);
 
+impl Uint16 {
+    /// Crate a new `Uint16` from an `u16` value.
+    #[must_use]
+    pub const fn new(value: u16) -> Option<Self> {
+        if value == NON_VALUE {
+            None
+        } else {
+            Some(Self(value))
+        }
+    }
+}
+
 impl From<Uint16> for Option<u16> {
     fn from(value: Uint16) -> Self {
         if value.0 == NON_VALUE {

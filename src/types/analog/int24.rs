@@ -11,6 +11,18 @@ const NON_VALUE: [u8; 3] = [0x80, 0x00, 0x00]; // big-endian representation of 0
 #[repr(transparent)]
 pub struct Int24(I24);
 
+impl Int24 {
+    /// Crate a new `Int24` from an `I24` value.
+    #[must_use]
+    pub fn new(value: I24) -> Option<Self> {
+        if value == I24::from_be_bytes(NON_VALUE) {
+            None
+        } else {
+            Some(Self(value))
+        }
+    }
+}
+
 impl From<Int24> for Option<I24> {
     fn from(value: Int24) -> Self {
         if value.0 == I24::from_be_bytes(NON_VALUE) {

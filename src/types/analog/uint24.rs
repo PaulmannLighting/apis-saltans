@@ -11,6 +11,18 @@ const NON_VALUE: U24 = U24::MAX; // 0xffffff
 #[repr(transparent)]
 pub struct Uint24(U24);
 
+impl Uint24 {
+    /// Crate a new `Uint24` from an `U24` value.
+    #[must_use]
+    pub fn new(value: U24) -> Option<Self> {
+        if value == NON_VALUE {
+            None
+        } else {
+            Some(Self(value))
+        }
+    }
+}
+
 impl From<Uint24> for Option<U24> {
     fn from(value: Uint24) -> Self {
         if value.0 == NON_VALUE {

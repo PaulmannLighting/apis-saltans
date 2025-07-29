@@ -11,6 +11,18 @@ const NON_VALUE: i8 = 0x80;
 #[repr(transparent)]
 pub struct Int8(i8);
 
+impl Int8 {
+    /// Crate a new `Int8` from an `i8` value.
+    #[must_use]
+    pub const fn new(value: i8) -> Option<Self> {
+        if value == NON_VALUE {
+            None
+        } else {
+            Some(Self(value))
+        }
+    }
+}
+
 impl From<Int8> for Option<i8> {
     fn from(value: Int8) -> Self {
         if value.0 == NON_VALUE {

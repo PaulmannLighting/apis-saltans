@@ -10,6 +10,18 @@ const NON_VALUE: u64 = 0xffff_ffff_ffff_ffff;
 #[repr(transparent)]
 pub struct Uint64(u64);
 
+impl Uint64 {
+    /// Crate a new `Uint64` from an `u64` value.
+    #[must_use]
+    pub const fn new(value: u64) -> Option<Self> {
+        if value == NON_VALUE {
+            None
+        } else {
+            Some(Self(value))
+        }
+    }
+}
+
 impl From<Uint64> for Option<u64> {
     fn from(value: Uint64) -> Self {
         if value.0 == NON_VALUE {
