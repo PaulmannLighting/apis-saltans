@@ -2,6 +2,8 @@ use le_stream::derive::FromLeStreamTagged;
 use maybe_color_mode::MaybeColorMode;
 use maybe_drift_compensation::MaybeDriftCompensation;
 
+use super::options::Options;
+
 mod maybe_color_mode;
 mod maybe_drift_compensation;
 
@@ -30,6 +32,8 @@ pub enum ColorInformationAttribute {
     ColorTemperature = 0x0007,
     /// The color mode of the light.
     ColorMode(MaybeColorMode) = 0x0008,
+    /// Commissioning options.
+    Options(Options) = 0x000f,
     /// The enhanced current hue of the light.
     EnhancedCurrentHue = 0x4000,
     /// The enhanced color mode of the light.
