@@ -13,6 +13,7 @@ pub use drift_compensation::DriftCompensation;
 pub use options::Options;
 
 mod color_information_attribute;
+mod color_loop_direction;
 mod color_mode;
 mod commands;
 mod drift_compensation;

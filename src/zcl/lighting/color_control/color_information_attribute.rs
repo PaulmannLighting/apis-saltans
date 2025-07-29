@@ -1,4 +1,5 @@
 use le_stream::derive::FromLeStreamTagged;
+use maybe_color_loop_direction::MaybeColorLoopDirection;
 use maybe_color_mode::MaybeColorMode;
 use maybe_drift_compensation::MaybeDriftCompensation;
 use maybe_enhanced_color_mode::MaybeEnhancedColorMode;
@@ -6,6 +7,7 @@ use maybe_enhanced_color_mode::MaybeEnhancedColorMode;
 use super::options::Options;
 use crate::types::{String, Uint8, Uint16};
 
+mod maybe_color_loop_direction;
 mod maybe_color_mode;
 mod maybe_drift_compensation;
 mod maybe_enhanced_color_mode;
@@ -44,7 +46,7 @@ pub enum ColorInformationAttribute {
     /// Indicates whether the color loop is active.
     ColorLoopActive(Uint8) = 0x4002,
     /// The direction of the color loop.
-    ColorLoopDirection = 0x4003,
+    ColorLoopDirection(MaybeColorLoopDirection) = 0x4003,
     /// The time for one complete color loop cycle in seconds.
     ColorLoopTime = 0x4004,
     /// The start hue for the color loop in enhanced hue format.
