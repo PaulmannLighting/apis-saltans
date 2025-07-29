@@ -4,6 +4,7 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
+#[repr(transparent)]
 pub struct Data8([u8; 1]);
 
 impl AsRef<[u8]> for Data8 {
