@@ -2,9 +2,9 @@ use intx::U24;
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 /// See Table 2-11.
-const NON_VALUE: U24 = U24::MAX;
+const NON_VALUE: U24 = U24::MAX; // 0xffffff
 
-/// The `16-bit unsigned integer` type, short `uint16`.
+/// The `24-bit unsigned integer` type, short `uint24`.
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
