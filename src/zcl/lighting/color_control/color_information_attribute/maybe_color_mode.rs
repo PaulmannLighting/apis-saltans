@@ -6,19 +6,16 @@ use crate::zcl::lighting::color_control::color_mode::ColorMode;
 #[repr(transparent)]
 pub struct MaybeColorMode(u8);
 
-impl MaybeColorMode {
-    /// Returns the inner value.
-    ///
-    /// # Errors
-    ///
-    /// If the inner value does not correspond to a valid `ColorMode`, this will return an error.
-    pub fn value(self) -> Result<ColorMode, u8> {
-        ColorMode::try_from(self.0)
-    }
-}
-
 impl From<ColorMode> for MaybeColorMode {
     fn from(value: ColorMode) -> Self {
         Self(value as u8)
+    }
+}
+
+impl TryFrom<MaybeColorMode> for ColorMode {
+    type Error = u8;
+
+    fn try_from(value: MaybeColorMode) -> Result<Self, Self::Error> {
+        Self::try_from(value.0)
     }
 }
