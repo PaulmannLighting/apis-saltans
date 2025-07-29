@@ -48,15 +48,19 @@ pub enum ColorInformationAttribute {
     /// The direction of the color loop.
     ColorLoopDirection(MaybeColorLoopDirection) = 0x4003,
     /// The time for one complete color loop cycle in seconds.
-    ColorLoopTime = 0x4004,
+    ColorLoopTime(Uint16) = 0x4004,
     /// The start hue for the color loop in enhanced hue format.
-    ColorLoopStartEnhancedHue = 0x4005,
+    ColorLoopStartEnhancedHue(Uint16) = 0x4005,
     /// The stored enhanced hue value for the color loop.
-    ColorLoopStoredEnhancedHue = 0x4006,
+    ColorLoopStoredEnhancedHue(Uint16) = 0x4006,
     /// The color capabilities of the light.
     ColorCapabilities = 0x400A,
     /// The physical minimum color temperature in mireds.
-    ColorTempPhysicalMin = 0x400B,
+    ColorTempPhysicalMin(Uint16) = 0x400B,
     /// The physical maximum color temperature in mireds.
-    ColorTempPhysicalMax = 0x400C,
+    ColorTempPhysicalMax(Uint16) = 0x400C,
+    /// The lower bound for the `ColorTemperature` in mireds.
+    CoupleColorTempToLevelMin(Uint16) = 0x400D,
+    /// The desired startup color temperature in mireds.
+    StartUpColorTemperature(Uint16) = 0x4010,
 }
