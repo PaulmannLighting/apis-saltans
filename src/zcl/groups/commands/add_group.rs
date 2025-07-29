@@ -1,3 +1,5 @@
+use core::str::Utf8Error;
+
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 use crate::types::String;
@@ -29,8 +31,8 @@ impl AddGroup {
     }
 
     /// Returns the name of the group to be added.
-    pub fn group_name(&self) -> &str {
-        self.group_name.as_ref()
+    pub fn group_name(&self) -> Result<&str, Utf8Error> {
+        self.group_name.try_as_str()
     }
 
     /// Returns the raw bytes of the group name.

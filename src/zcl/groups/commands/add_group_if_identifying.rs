@@ -1,3 +1,5 @@
+use core::str::Utf8Error;
+
 use crate::types::String;
 use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
@@ -26,9 +28,8 @@ impl AddGroupIfIdentifying {
     }
 
     /// Returns the name of the group to be added.
-    #[must_use]
-    pub fn group_name(&self) -> &str {
-        self.group_name.as_ref()
+    pub fn group_name(&self) -> Result<&str, Utf8Error> {
+        self.group_name.try_as_str()
     }
 
     /// Returns the raw bytes of the group name.
