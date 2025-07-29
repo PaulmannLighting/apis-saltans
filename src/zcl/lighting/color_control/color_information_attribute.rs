@@ -1,10 +1,16 @@
-use num_derive::FromPrimitive;
+use le_stream::derive::FromLeStreamTagged;
+use maybe_color_mode::MaybeColorMode;
+use maybe_drift_compensation::MaybeDriftCompensation;
+
+mod maybe_color_mode;
+mod maybe_drift_compensation;
 
 /// Color information attribute for the Color Control cluster.
 ///
 /// TODO: Add respective associated data.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[repr(u16)]
+#[derive(FromLeStreamTagged)]
 pub enum ColorInformationAttribute {
     /// The current hue of the light.
     CurrentHue = 0x0000,
@@ -17,13 +23,13 @@ pub enum ColorInformationAttribute {
     /// The current Y coordinate in the CIE 1931 color space.
     CurrentY = 0x0004,
     /// The drift compensation value for the light.
-    DriftCompensation = 0x0005,
+    DriftCompensation(MaybeDriftCompensation) = 0x0005,
     /// The drift compensation text for the light.
     CompensationText = 0x0006,
     /// The color temperature of the light in mireds.
     ColorTemperature = 0x0007,
     /// The color mode of the light.
-    ColorMode = 0x0008,
+    ColorMode(MaybeColorMode) = 0x0008,
     /// The enhanced current hue of the light.
     EnhancedCurrentHue = 0x4000,
     /// The enhanced color mode of the light.

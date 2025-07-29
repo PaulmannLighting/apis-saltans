@@ -1,6 +1,7 @@
 //! The `Color Control` cluster provides control over the color of a light source.
 
 pub use color_information_attribute::ColorInformationAttribute;
+pub use color_mode::ColorMode;
 pub use commands::{
     ColorLoopSet, EnhancedMoveHue, EnhancedMoveToHue, EnhancedMoveToHueAndSaturation,
     EnhancedStepHue, MoveColor, MoveColorTemperature, MoveHue, MoveSaturation, MoveToColor,
@@ -11,6 +12,7 @@ pub use commands::{
 pub use drift_compensation::DriftCompensation;
 
 mod color_information_attribute;
+mod color_mode;
 mod commands;
 mod drift_compensation;
 
