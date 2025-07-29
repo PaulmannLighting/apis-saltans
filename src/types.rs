@@ -1,6 +1,6 @@
 //! Common types used across the protocol.
 
-pub use discrete::{Bool, Data8, Data16, Data24, Data32, Data40};
+pub use discrete::{Bool, Data8, Data16, Data24, Data32, Data40, Data48};
 pub use null::{NoData, Unknown};
 pub use oct_str::OctStr;
 pub use oct_str16::OctStr16;
