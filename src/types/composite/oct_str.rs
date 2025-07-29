@@ -79,6 +79,6 @@ impl ToLeStream for OctStr {
     fn to_le_stream(self) -> Self::Iter {
         let size = Uint8::new(u8::try_from(self.0.len()).expect("Length should fit into u8."))
             .expect("Length should be a valid Uint8.");
-        size.to_le_stream().chain(self.0.into_iter())
+        size.to_le_stream().chain(self.0)
     }
 }
