@@ -54,13 +54,13 @@ pub enum ColorInformationAttribute {
     /// The stored enhanced hue value for the color loop.
     ColorLoopStoredEnhancedHue(Uint16) = 0x4006,
     /// The color capabilities of the light.
-    ColorCapabilities = 0x400A,
+    ColorCapabilities = 0x400a,
     /// The physical minimum color temperature in mireds.
-    ColorTempPhysicalMin(Uint16) = 0x400B,
+    ColorTempPhysicalMin(Uint16) = 0x400b,
     /// The physical maximum color temperature in mireds.
-    ColorTempPhysicalMax(Uint16) = 0x400C,
+    ColorTempPhysicalMax(Uint16) = 0x400c,
     /// The lower bound for the `ColorTemperature` in mireds.
-    CoupleColorTempToLevelMin(Uint16) = 0x400D,
+    CoupleColorTempToLevelMin(Uint16) = 0x400d,
     /// The desired startup color temperature in mireds.
     StartUpColorTemperature(Uint16) = 0x4010,
 }
