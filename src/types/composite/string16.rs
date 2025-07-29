@@ -7,7 +7,7 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 
 use crate::types::composite::oct_str16::OctStr16;
 
-/// A string type, which can be up to [`u16::MAX`] bytes long.
+/// A string type, which can be up to [`OctStr16::MAX_SIZE`] bytes long.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 #[repr(transparent)]
 pub struct String16(OctStr16);
