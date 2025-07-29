@@ -1,11 +1,13 @@
 use le_stream::derive::FromLeStreamTagged;
 use maybe_color_mode::MaybeColorMode;
 use maybe_drift_compensation::MaybeDriftCompensation;
+use maybe_enhanced_color_mode::MaybeEnhancedColorMode;
 
 use super::options::Options;
 
 mod maybe_color_mode;
 mod maybe_drift_compensation;
+mod maybe_enhanced_color_mode;
 
 /// Color information attribute for the Color Control cluster.
 ///
@@ -37,7 +39,7 @@ pub enum ColorInformationAttribute {
     /// The enhanced current hue of the light.
     EnhancedCurrentHue = 0x4000,
     /// The enhanced color mode of the light.
-    EnhancedColorMode = 0x4001,
+    EnhancedColorMode(MaybeEnhancedColorMode) = 0x4001,
     /// Indicates whether the color loop is active.
     ColorLoopActive = 0x4002,
     /// The direction of the color loop.

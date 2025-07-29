@@ -16,6 +16,7 @@ mod color_information_attribute;
 mod color_mode;
 mod commands;
 mod drift_compensation;
+mod enhanced_color_mode;
 mod options;
 
 const CLUSTER_ID: u16 = 0x0300;
