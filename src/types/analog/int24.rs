@@ -4,7 +4,7 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 /// See Table 2-11.
 const NON_VALUE: [u8; 3] = [0x80, 0x00, 0x00]; // big-endian representation of 0x800000
 
-/// The `24-bit unsigned integer` type, short `uint24`.
+/// The `24-bit signed integer` type, short `int24`.
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
