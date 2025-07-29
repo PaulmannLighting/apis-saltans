@@ -1,8 +1,8 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 /// See Table 2-11.
-#[allow(clippy::cast_possible_wrap)]
-const NON_VALUE: i16 = 0x8000u16 as i16;
+#[allow(overflowing_literals)]
+const NON_VALUE: i16 = 0x8000;
 
 /// The `16-bit signed integer` type, short `int16`.
 #[derive(
