@@ -3,6 +3,7 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 use crate::zcl::lighting::color_control::color_mode::ColorMode;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
+#[repr(transparent)]
 pub struct MaybeColorMode(u8);
 
 impl MaybeColorMode {
