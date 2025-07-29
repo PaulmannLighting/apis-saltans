@@ -1,7 +1,10 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
+/// `FALSE` value, see 2.6.2.5.
 const FALSE: u8 = 0x00;
+/// `TRUE` value, see 2.6.2.5.
 const TRUE: u8 = 0x01;
+/// `non-value`, see 2.6.2.5.
 const NON_VALUE: u8 = 0xff;
 
 /// A boolean type, represented as a single byte.

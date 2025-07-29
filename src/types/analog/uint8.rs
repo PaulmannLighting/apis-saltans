@@ -1,5 +1,6 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
+/// See Table 2-11.
 const NON_VALUE: u8 = 0xff;
 
 /// The `8-bit unsigned integer` type, short `uint8`.
