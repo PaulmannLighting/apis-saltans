@@ -23,12 +23,6 @@ impl String16 {
     }
 }
 
-impl AsRef<str> for String16 {
-    fn as_ref(&self) -> &str {
-        self.try_as_str().unwrap_or_default()
-    }
-}
-
 impl AsRef<[u8]> for String16 {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
