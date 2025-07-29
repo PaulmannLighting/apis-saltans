@@ -4,6 +4,8 @@ use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 
+use crate::types::Uint8;
+
 const NON_VALUE: u8 = 0xff;
 
 /// An octet string, with a capacity of [`OctStr::MAX_SIZE`].
@@ -58,12 +60,7 @@ impl FromLeStream for OctStr {
     where
         T: Iterator<Item = u8>,
     {
-        let size = u8::from_le_stream(&mut bytes)?;
-
-        if size == NON_VALUE {
-            return Default::default();
-        }
-
+        let size: u8 = Option::<u8>::from(Uint8::from_le_stream(&mut bytes)?).unwrap_or(0);
         let mut data = Vec::with_capacity(usize::from(size));
 
         for _ in 0..size {
@@ -75,18 +72,11 @@ impl FromLeStream for OctStr {
 }
 
 impl ToLeStream for OctStr {
-    type Iter = Chain<<u8 as ToLeStream>::Iter, <Box<[u8]> as IntoIterator>::IntoIter>;
+    type Iter = Chain<<Uint8 as ToLeStream>::Iter, <Box<[u8]> as IntoIterator>::IntoIter>;
 
     fn to_le_stream(self) -> Self::Iter {
-        let size: u8 = self
-            .0
-            .len()
-            .try_into()
-            .expect("Length should not exceed u8::MAX.");
-        assert!(
-            size <= Self::MAX_SIZE,
-            "Size should be less than Self::MAX_SIZE."
-        );
+        let size = Uint8::new(u8::try_from(self.0.len()).expect("Length should fit into u8."))
+            .expect("Length should be a valid Uint8.");
         size.to_le_stream().chain(self.0.into_iter())
     }
 }
