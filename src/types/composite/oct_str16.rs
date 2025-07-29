@@ -6,8 +6,6 @@ use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::Uint16;
 
-const NON_VALUE: u16 = 0xffff;
-
 /// An octet string, with a capacity of [`OctStr16::MAX_SIZE`].
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(transparent)]
@@ -15,7 +13,7 @@ pub struct OctStr16(Box<[u8]>);
 
 impl OctStr16 {
     /// Maximum size of the octet string.
-    pub const MAX_SIZE: u16 = NON_VALUE - 1;
+    pub const MAX_SIZE: u16 = Uint16::NON_VALUE - 1;
 }
 
 impl AsRef<[u8]> for OctStr16 {
@@ -39,7 +37,11 @@ impl TryFrom<Box<[u8]>> for OctStr16 {
     ///
     /// If the length of the boxed slice exceeds [`Self::MAX_SIZE`], this will return an error with the original value.
     fn try_from(value: Box<[u8]>) -> Result<Self, Self::Error> {
-        if value.len() > usize::from(Self::MAX_SIZE) {
+        if u16::try_from(value.len())
+            .ok()
+            .and_then(Uint16::new)
+            .is_some()
+        {
             Err(value)
         } else {
             Ok(Self(value))

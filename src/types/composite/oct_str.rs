@@ -6,8 +6,6 @@ use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::Uint8;
 
-const NON_VALUE: u8 = 0xff;
-
 /// An octet string, with a capacity of [`OctStr::MAX_SIZE`].
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(transparent)]
@@ -15,7 +13,7 @@ pub struct OctStr(Box<[u8]>);
 
 impl OctStr {
     /// Maximum size of the octet string.
-    pub const MAX_SIZE: u8 = NON_VALUE - 1;
+    pub const MAX_SIZE: u8 = Uint8::NON_VALUE - 1;
 }
 
 impl AsRef<[u8]> for OctStr {
@@ -39,7 +37,11 @@ impl TryFrom<Box<[u8]>> for OctStr {
     type Error = Box<[u8]>;
 
     fn try_from(value: Box<[u8]>) -> Result<Self, Self::Error> {
-        if value.len() > usize::from(Self::MAX_SIZE) {
+        if u8::try_from(value.len())
+            .ok()
+            .and_then(Uint8::new)
+            .is_some()
+        {
             Err(value)
         } else {
             Ok(Self(value))
