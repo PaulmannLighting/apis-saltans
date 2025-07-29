@@ -29,18 +29,6 @@ impl From<bool> for Bool {
     }
 }
 
-impl From<u8> for Bool {
-    fn from(value: u8) -> Self {
-        Self(value)
-    }
-}
-
-impl From<Bool> for u8 {
-    fn from(value: Bool) -> Self {
-        value.0
-    }
-}
-
 impl TryInto<bool> for Bool {
     type Error = u8;
 
@@ -77,18 +65,6 @@ mod tests {
 
         let bool_false: Bool = false.into();
         assert_eq!(bool_false, Bool::FALSE);
-    }
-
-    #[test]
-    fn from_u8() {
-        let bool_from_u8_true: Bool = TRUE.into();
-        assert_eq!(bool_from_u8_true, Bool::TRUE);
-
-        let bool_from_u8_false: Bool = FALSE.into();
-        assert_eq!(bool_from_u8_false, Bool::FALSE);
-
-        let bool_from_u8_non_value: Bool = NON_VALUE.into();
-        assert_eq!(bool_from_u8_non_value, Bool::NON_VALUE);
     }
 
     #[test]
