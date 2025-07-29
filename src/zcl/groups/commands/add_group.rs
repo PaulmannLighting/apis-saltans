@@ -26,16 +26,22 @@ impl AddGroup {
     }
 
     /// Returns the identifier of the group to be added.
+    #[must_use]
     pub fn group_id(&self) -> u16 {
         self.group_id
     }
 
     /// Returns the name of the group to be added.
+    ///
+    /// # Errors
+    ///
+    /// If the group name is not valid UTF-8, this will return an [`Utf8Error`].
     pub fn group_name(&self) -> Result<&str, Utf8Error> {
         self.group_name.try_as_str()
     }
 
     /// Returns the raw bytes of the group name.
+    #[must_use]
     pub fn group_name_raw(&self) -> &[u8] {
         self.group_name.as_ref()
     }
