@@ -31,6 +31,11 @@ impl AsMut<[u8]> for OctStr16 {
 impl TryFrom<Box<[u8]>> for OctStr16 {
     type Error = Box<[u8]>;
 
+    /// Try to create an `OctStr16` from a boxed slice of bytes.
+    ///
+    /// # Errors
+    ///
+    /// If the length of the boxed slice exceeds [`Self::MAX_SIZE`], this will return an error with the original value.
     fn try_from(value: Box<[u8]>) -> Result<Self, Self::Error> {
         if value.len() > usize::from(Self::MAX_SIZE) {
             Err(value)
