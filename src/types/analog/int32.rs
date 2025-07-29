@@ -4,7 +4,7 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 #[allow(overflowing_literals)]
 const NON_VALUE: i32 = 0x8000_0000;
 
-/// The `32-bit signed integer` type, short `int24`.
+/// The `32-bit signed integer` type, short `int32`.
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
