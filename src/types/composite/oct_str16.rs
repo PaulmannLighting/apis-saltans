@@ -42,9 +42,9 @@ impl TryFrom<Box<[u8]>> for OctStr16 {
             .and_then(Uint16::new)
             .is_some()
         {
-            Err(value)
-        } else {
             Ok(Self(value))
+        } else {
+            Err(value)
         }
     }
 }
