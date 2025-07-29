@@ -10,12 +10,6 @@ const NON_VALUE: u16 = 0xffff;
 #[repr(transparent)]
 pub struct Uint16(u16);
 
-impl From<u16> for Uint16 {
-    fn from(value: u16) -> Self {
-        Self(value)
-    }
-}
-
 impl From<Uint16> for Option<u16> {
     fn from(value: Uint16) -> Self {
         if value.0 == NON_VALUE {
