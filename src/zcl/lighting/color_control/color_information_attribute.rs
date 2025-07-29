@@ -4,6 +4,7 @@ use maybe_color_mode::MaybeColorMode;
 use maybe_drift_compensation::MaybeDriftCompensation;
 use maybe_enhanced_color_mode::MaybeEnhancedColorMode;
 
+use super::color_capabilities::ColorCapabilities;
 use super::options::Options;
 use crate::types::{String, Uint8, Uint16};
 
@@ -54,7 +55,7 @@ pub enum ColorInformationAttribute {
     /// The stored enhanced hue value for the color loop.
     ColorLoopStoredEnhancedHue(Uint16) = 0x4006,
     /// The color capabilities of the light.
-    ColorCapabilities = 0x400a,
+    ColorCapabilities(ColorCapabilities) = 0x400a,
     /// The physical minimum color temperature in mireds.
     ColorTempPhysicalMin(Uint16) = 0x400b,
     /// The physical maximum color temperature in mireds.

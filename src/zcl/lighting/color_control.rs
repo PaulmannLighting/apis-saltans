@@ -1,5 +1,6 @@
 //! The `Color Control` cluster provides control over the color of a light source.
 
+pub use color_capabilities::ColorCapabilities;
 pub use color_information_attribute::ColorInformationAttribute;
 pub use color_mode::ColorMode;
 pub use commands::{
@@ -12,6 +13,7 @@ pub use commands::{
 pub use drift_compensation::DriftCompensation;
 pub use options::Options;
 
+mod color_capabilities;
 mod color_information_attribute;
 mod color_loop_direction;
 mod color_mode;
