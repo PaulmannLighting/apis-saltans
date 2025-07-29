@@ -1,10 +1,14 @@
 //! Common types used across the protocol.
 
+pub use discrete::Data8;
+pub use null::{NoData, Unknown};
 pub use oct_str::OctStr;
 pub use oct_str16::OctStr16;
 pub use string::String;
 pub use string16::String16;
 
+mod discrete;
+mod null;
 mod oct_str;
 mod oct_str16;
 mod string;
