@@ -3,6 +3,7 @@
 pub use int8::Int8;
 pub use int16::Int16;
 pub use int24::Int24;
+pub use int32::Int32;
 pub use uint8::Uint8;
 pub use uint16::Uint16;
 pub use uint24::Uint24;
@@ -14,6 +15,7 @@ pub use uint64::Uint64;
 
 mod int16;
 mod int24;
+mod int32;
 mod int8;
 mod uint16;
 mod uint24;
