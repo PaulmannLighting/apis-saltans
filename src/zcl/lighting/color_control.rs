@@ -2,6 +2,7 @@
 
 pub use color_capabilities::ColorCapabilities;
 pub use color_information_attribute::ColorInformationAttribute;
+pub use color_loop_direction::ColorLoopDirection;
 pub use color_mode::ColorMode;
 pub use commands::{
     ColorLoopSet, EnhancedMoveHue, EnhancedMoveToHue, EnhancedMoveToHueAndSaturation,
@@ -11,6 +12,7 @@ pub use commands::{
     move_saturation, move_to_hue, step_hue, step_saturation,
 };
 pub use drift_compensation::DriftCompensation;
+pub use enhanced_color_mode::EnhancedColorMode;
 pub use options::Options;
 
 mod color_capabilities;
