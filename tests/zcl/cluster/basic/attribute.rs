@@ -68,7 +68,7 @@ fn hw_version_to_le_stream() {
 
 #[test]
 fn manufacturer_name_from_le_stream() {
-    let bytes = vec![0x04, 0x00, b'T', b'e', b's', b't'];
+    let bytes = vec![0x04, 0x00, 0x04, b'T', b'e', b's', b't'];
     let attribute = Attribute::from_le_stream(bytes.into_iter());
     assert_eq!(
         attribute,
@@ -82,7 +82,7 @@ fn manufacturer_name_from_le_stream() {
 fn manufacturer_name_to_le_stream() {
     let attribute = Attribute::ManufacturerName(String::try_from("Test").unwrap());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
-    assert_eq!(bytes, vec![0x04, 0x00, b'T', b'e', b's', b't']);
+    assert_eq!(bytes, vec![0x04, 0x00, 0x04, b'T', b'e', b's', b't']);
 }
 
 #[test]
@@ -162,7 +162,9 @@ fn power_source_to_le_stream() {
 
 #[test]
 fn location_description_from_le_stream() {
-    let bytes = vec![0x10, 0x00, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n'];
+    let bytes = vec![
+        0x10, 0x00, 0x08, 0x00, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n',
+    ];
     let attribute = Attribute::from_le_stream(bytes.into_iter());
     assert_eq!(
         attribute,
@@ -178,7 +180,9 @@ fn location_description_to_le_stream() {
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(
         bytes,
-        vec![0x10, 0x00, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n']
+        vec![
+            0x10, 0x00, 0x08, 0x00, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n'
+        ]
     );
 }
 
@@ -249,7 +253,7 @@ fn disable_local_config_to_le_stream() {
 
 #[test]
 fn sw_build_id_from_le_stream() {
-    let bytes = vec![0x00, 0x40, b'T', b'e', b's', b't'];
+    let bytes = vec![0x00, 0x40, 0x04, 0x00, b'T', b'e', b's', b't'];
     let attribute = Attribute::from_le_stream(bytes.into_iter());
     assert_eq!(
         attribute,
@@ -261,5 +265,5 @@ fn sw_build_id_from_le_stream() {
 fn sw_build_id_to_le_stream() {
     let attribute = Attribute::SwBuildId(String16::try_from("Test").unwrap());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
-    assert_eq!(bytes, vec![0x00, 0x40, b'T', b'e', b's', b't']);
+    assert_eq!(bytes, vec![0x00, 0x40, 0x04, 0x00, b'T', b'e', b's', b't']);
 }
