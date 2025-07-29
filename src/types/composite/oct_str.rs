@@ -6,7 +6,7 @@ use le_stream::{FromLeStream, ToLeStream};
 
 const NON_VALUE: u8 = 0xff;
 
-/// An octet string, with a capacity of [`MAX_SIZE`].
+/// An octet string, with a capacity of [`OctStr::MAX_SIZE`].
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(transparent)]
 pub struct OctStr(Box<[u8]>);
