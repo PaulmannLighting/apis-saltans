@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use le_stream::derive::{FromLeStream, ToLeStream};
 
+/// Flags for local device configuration functions to be disabled.
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
