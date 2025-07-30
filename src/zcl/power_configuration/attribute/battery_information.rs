@@ -1,15 +1,17 @@
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 
+use crate::types::Uint8;
+
 /// Information about the battery status of a device.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
 pub enum BatteryInformation {
     /// Battery voltage in 100mV.
-    BatteryVoltage(u8) = 0x0000,
+    BatteryVoltage(Uint8) = 0x0000,
     /// Battery percentage remaining.
-    BatteryPercentageRemaining(u8) = 0x0001,
+    BatteryPercentageRemaining(Uint8) = 0x0001,
 }
 
 impl BatteryInformation {
@@ -18,8 +20,8 @@ impl BatteryInformation {
         T: Iterator<Item = u8>,
     {
         match mask {
-            0x0000 => u8::from_le_stream(bytes).map(Self::BatteryVoltage),
-            0x0001 => u8::from_le_stream(bytes).map(Self::BatteryPercentageRemaining),
+            0x0000 => Uint8::from_le_stream(bytes).map(Self::BatteryVoltage),
+            0x0001 => Uint8::from_le_stream(bytes).map(Self::BatteryPercentageRemaining),
             _ => None,
         }
     }
