@@ -1,6 +1,6 @@
 use crate::units::Mireds;
 
-pub const PREVIOUS: u16 = 0xffff;
+const PREVIOUS: u16 = 0xffff;
 
 /// The startup color temperature to use.
 pub enum StartupColorTemperature {
