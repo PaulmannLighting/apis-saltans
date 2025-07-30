@@ -3,6 +3,7 @@ use maybe_color_loop_direction::MaybeColorLoopDirection;
 use maybe_color_mode::MaybeColorMode;
 use maybe_drift_compensation::MaybeDriftCompensation;
 use maybe_enhanced_color_mode::MaybeEnhancedColorMode;
+use maybe_startup_color_temperature::MaybeStartupColorTemperature;
 
 use super::color_capabilities::ColorCapabilities;
 use super::options::Options;
@@ -12,6 +13,7 @@ mod maybe_color_loop_direction;
 mod maybe_color_mode;
 mod maybe_drift_compensation;
 mod maybe_enhanced_color_mode;
+mod maybe_startup_color_temperature;
 
 /// Color information attribute for the Color Control cluster.
 ///
@@ -63,5 +65,5 @@ pub enum ColorInformationAttribute {
     /// The lower bound for the `ColorTemperature` in mireds.
     CoupleColorTempToLevelMin(Uint16) = 0x400d,
     /// The desired startup color temperature in mireds.
-    StartUpColorTemperature(Uint16) = 0x4010,
+    StartUpColorTemperature(MaybeStartupColorTemperature) = 0x4010,
 }

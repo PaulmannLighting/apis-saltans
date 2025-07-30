@@ -23,5 +23,6 @@ mod commands;
 mod drift_compensation;
 mod enhanced_color_mode;
 mod options;
+mod startup_color_temperature;
 
 const CLUSTER_ID: u16 = 0x0300;
