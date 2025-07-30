@@ -8,6 +8,7 @@ mod effect_identifier;
 mod effect_variant;
 
 /// Trigger an effect on a device.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct TriggerEffect {
     identifier: u8,

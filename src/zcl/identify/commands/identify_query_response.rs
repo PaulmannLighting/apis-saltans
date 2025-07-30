@@ -4,6 +4,7 @@ use crate::zcl::identify::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
 /// Response to the [`IdentifyQuery`](crate::zcl::identify::IdentifyQuery) command.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct IdentifyQueryResponse {
     timeout_secs: u16,

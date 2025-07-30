@@ -4,6 +4,7 @@ use crate::zcl::identify::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
 /// Toggle the identify state of a device.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Identify {
     identify_time_secs: u16,
