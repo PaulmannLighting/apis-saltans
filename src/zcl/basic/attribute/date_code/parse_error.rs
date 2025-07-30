@@ -37,7 +37,7 @@ impl From<chrono::ParseError> for ParseError {
 }
 
 impl From<()> for ParseError {
-    fn from(_: ()) -> Self {
+    fn from((): ()) -> Self {
         Self::CustomPartTooLong
     }
 }

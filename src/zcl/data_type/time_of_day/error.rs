@@ -2,6 +2,7 @@ use core::fmt::Display;
 
 /// Error while creating a `TimeOfDay` instance.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[allow(clippy::enum_variant_names)]
 pub enum Error {
     /// The hour is invalid.
     InvalidHour(u8),

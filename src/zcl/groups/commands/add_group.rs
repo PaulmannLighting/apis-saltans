@@ -27,7 +27,7 @@ impl AddGroup {
 
     /// Returns the identifier of the group to be added.
     #[must_use]
-    pub fn group_id(&self) -> u16 {
+    pub const fn group_id(&self) -> u16 {
         self.group_id
     }
 

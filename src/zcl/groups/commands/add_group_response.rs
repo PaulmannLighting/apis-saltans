@@ -12,6 +12,7 @@ pub struct AddGroupResponse {
 
 impl AddGroupResponse {
     /// Creates a new `AddGroupsResponse` with the given status and group ID.
+    #[must_use]
     pub fn new(status: Status, group_id: u16) -> Self {
         Self {
             status: status.into(),

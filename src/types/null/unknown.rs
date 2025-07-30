@@ -7,13 +7,11 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 pub struct Unknown;
 
 impl From<()> for Unknown {
-    fn from(_: ()) -> Self {
+    fn from((): ()) -> Self {
         Self
     }
 }
 
 impl From<Unknown> for () {
-    fn from(_: Unknown) -> Self {
-        ()
-    }
+    fn from(_: Unknown) -> Self {}
 }

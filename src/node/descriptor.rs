@@ -18,5 +18,5 @@ pub struct Descriptor {
     maximum_incoming_transfer_size: u16,
     server_mask: u16,
     maximum_outgoing_transfer_size: u16,
-    descriptor_capability: u8,
+    capability: u8,
 }

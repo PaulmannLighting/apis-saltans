@@ -21,9 +21,14 @@ impl GetGroupMembership {
     }
 
     /// Returns the number of groups in the membership request.
+    ///
+    /// # Panics
+    ///
+    /// If the number of groups exceeds `u8::MAX`, this method will panic.
     #[must_use]
     pub fn group_count(&self) -> u8 {
-        AsRef::<[u16]>::as_ref(&self.group_list).len() as u8
+        u8::try_from(AsRef::<[u16]>::as_ref(&self.group_list).len())
+            .expect("Group count should fit in u8.")
     }
 
     /// Returns the list of group IDs in the membership request.

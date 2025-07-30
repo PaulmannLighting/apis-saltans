@@ -141,7 +141,7 @@ pub enum DataType {
     ClusterId(u16) = 0xe8,
     /// Attribute ID.
     AttributeId(u16) = 0xe9,
-    /// BACnet OID.
+    /// `BACnet` OID.
     BacNetOid(u32) = 0xea,
     // Miscellaneous
     /// IEEE address.
