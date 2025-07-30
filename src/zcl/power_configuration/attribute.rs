@@ -9,6 +9,8 @@ use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 pub use mains_alarm_mask::MainsAlarmMask;
 use repr_discriminant::ReprDiscriminant;
 
+use crate::types::{Uint8, Uint16};
+
 mod battery_alarm_mask;
 mod battery_alarm_state;
 mod battery_information;
@@ -25,18 +27,18 @@ const ATTRIBUTE_MASK: u16 = 0x000f;
 pub enum Attribute {
     // Mains information.
     /// Mains voltage in 100mV.
-    MainsVoltage(u16) = 0x0000,
+    MainsVoltage(Uint16) = 0x0000,
     /// Mains frequency in Hertz.
-    MainsFrequency(u8) = 0x0001,
+    MainsFrequency(Uint8) = 0x0001,
     // Mains settings.
     /// Mains alarms.
     AlarmMask(MainsAlarmMask) = 0x0010,
     /// Mains voltage minimum threshold in 100mV.
-    VoltageMinThreshold(u16) = 0x0011,
+    VoltageMinThreshold(Uint16) = 0x0011,
     /// Mains voltage maximum threshold in 100mV.
-    VoltageMaxThreshold(u16) = 0x0012,
+    VoltageMaxThreshold(Uint16) = 0x0012,
     /// Mains voltage dwell trip point in seconds.
-    VoltageDwellTripPoint(u16) = 0x0013,
+    VoltageDwellTripPoint(Uint16) = 0x0013,
     /// Battery information.
     BatteryInformation(BatteryInformation) = 0x0020,
     /// Battery settings.
@@ -77,12 +79,12 @@ impl FromLeStreamTagged for Attribute {
         T: Iterator<Item = u8>,
     {
         match tag {
-            0x0000 => Ok(u16::from_le_stream(bytes).map(Self::MainsVoltage)),
-            0x0001 => Ok(u8::from_le_stream(bytes).map(Self::MainsFrequency)),
+            0x0000 => Ok(Uint16::from_le_stream(bytes).map(Self::MainsVoltage)),
+            0x0001 => Ok(Uint8::from_le_stream(bytes).map(Self::MainsFrequency)),
             0x0010 => Ok(MainsAlarmMask::from_le_stream(bytes).map(Self::AlarmMask)),
-            0x0011 => Ok(u16::from_le_stream(bytes).map(Self::VoltageMinThreshold)),
-            0x0012 => Ok(u16::from_le_stream(bytes).map(Self::VoltageMaxThreshold)),
-            0x0013 => Ok(u16::from_le_stream(bytes).map(Self::VoltageDwellTripPoint)),
+            0x0011 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageMinThreshold)),
+            0x0012 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageMaxThreshold)),
+            0x0013 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageDwellTripPoint)),
             id @ 0x0020..=0x002f => Ok(BatteryInformation::from_le_stream(
                 id & ATTRIBUTE_MASK,
                 bytes,
@@ -155,7 +157,7 @@ impl ToLeStream for Attribute {
 mod iterator {
     use le_stream::ToLeStream;
 
-    use crate::types::String16;
+    use crate::types::{String16, Uint8, Uint16, Uint32};
     use crate::zcl::power_configuration::{
         BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask,
     };
@@ -163,9 +165,9 @@ mod iterator {
     /// Little endian stream iterator for the [`Attribute`](crate::zcl::power_configuration::Attribute)
     /// in the Power Configuration cluster.
     pub enum Attribute {
-        U8(<u8 as ToLeStream>::Iter),
-        U16(<u16 as ToLeStream>::Iter),
-        U32(<u32 as ToLeStream>::Iter),
+        Uint8(<Uint8 as ToLeStream>::Iter),
+        Uint16(<Uint16 as ToLeStream>::Iter),
+        Uint32(<Uint32 as ToLeStream>::Iter),
         String16(<String16 as ToLeStream>::Iter),
         MainsAlarmMask(<MainsAlarmMask as ToLeStream>::Iter),
         BatterySize(<BatterySize as ToLeStream>::Iter),
@@ -178,32 +180,32 @@ mod iterator {
 
         fn next(&mut self) -> Option<Self::Item> {
             match self {
-                Self::U8(iter)
+                Self::Uint8(iter)
                 | Self::MainsAlarmMask(iter)
                 | Self::BatterySize(iter)
                 | Self::BatteryAlarmMask(iter) => iter.next(),
-                Self::U16(iter) => iter.next(),
-                Self::U32(iter) | Self::BatteryAlarmState(iter) => iter.next(),
+                Self::Uint16(iter) => iter.next(),
+                Self::Uint32(iter) | Self::BatteryAlarmState(iter) => iter.next(),
                 Self::String16(iter) => iter.next(),
             }
         }
     }
 
-    impl From<u8> for Attribute {
-        fn from(value: u8) -> Self {
-            Self::U8(value.to_le_stream())
+    impl From<Uint8> for Attribute {
+        fn from(value: Uint8) -> Self {
+            Self::Uint8(value.to_le_stream())
         }
     }
 
-    impl From<u16> for Attribute {
-        fn from(value: u16) -> Self {
-            Self::U16(value.to_le_stream())
+    impl From<Uint16> for Attribute {
+        fn from(value: Uint16) -> Self {
+            Self::Uint16(value.to_le_stream())
         }
     }
 
-    impl From<u32> for Attribute {
-        fn from(value: u32) -> Self {
-            Self::U32(value.to_le_stream())
+    impl From<Uint32> for Attribute {
+        fn from(value: Uint32) -> Self {
+            Self::Uint32(value.to_le_stream())
         }
     }
 
