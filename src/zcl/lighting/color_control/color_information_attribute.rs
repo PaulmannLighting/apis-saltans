@@ -9,8 +9,6 @@ use crate::zcl::lighting::color_control::{
 };
 
 /// Color information attribute for the Color Control cluster.
-///
-/// TODO: Add respective associated data.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 #[repr(u16)]
 #[derive(FromLeStreamTagged)]
