@@ -31,3 +31,11 @@ impl From<Uint16> for Option<u16> {
         }
     }
 }
+
+impl TryFrom<u16> for Uint16 {
+    type Error = ();
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Self::new(value).ok_or(())
+    }
+}

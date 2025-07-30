@@ -38,3 +38,19 @@ impl From<Int48> for Option<i64> {
         Option::<I48>::from(value).map(Into::into)
     }
 }
+
+impl TryFrom<I48> for Int48 {
+    type Error = ();
+
+    fn try_from(value: I48) -> Result<Self, Self::Error> {
+        Self::new(value).ok_or(())
+    }
+}
+
+impl TryFrom<i64> for Int48 {
+    type Error = Option<i64>;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        I48::try_from(value).map_or(Err(Some(value)), |i48| Self::new(i48).ok_or(None))
+    }
+}

@@ -32,3 +32,11 @@ impl From<Int16> for Option<i16> {
         }
     }
 }
+
+impl TryFrom<i16> for Int16 {
+    type Error = ();
+
+    fn try_from(value: i16) -> Result<Self, Self::Error> {
+        Self::new(value).ok_or(())
+    }
+}

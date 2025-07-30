@@ -31,3 +31,23 @@ impl From<Uint64> for Option<u64> {
         }
     }
 }
+
+impl TryFrom<u64> for Uint64 {
+    type Error = ();
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Self::new(value).ok_or(())
+    }
+}
+
+impl TryFrom<Uint64> for u64 {
+    type Error = Option<u64>;
+
+    fn try_from(value: Uint64) -> Result<Self, Self::Error> {
+        if value.0 == NON_VALUE {
+            Err(None)
+        } else {
+            Ok(value.0)
+        }
+    }
+}

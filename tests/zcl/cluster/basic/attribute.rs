@@ -7,19 +7,23 @@ use chrono::NaiveDate;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String, String16};
 use zigbee::zcl::basic::{
-    AlarmMask, Attribute, CustomString, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource,
+    AlarmMask, Attribute, CustomString, DateCode, DeviceEnabled, DisableLocalConfig,
+    PhysicalEnvironment, PowerSource,
 };
 
 #[test]
 fn zcl_version_from_le_stream() {
     let bytes = vec![0x00, 0x00, 0x06];
     let attribute = Attribute::from_le_stream(bytes.into_iter());
-    assert_eq!(attribute, Some(Attribute::ZclVersion(6)));
+    assert_eq!(
+        attribute,
+        Some(Attribute::ZclVersion(6.try_into().unwrap()))
+    );
 }
 
 #[test]
 fn zcl_version_to_le_stream() {
-    let attribute = Attribute::ZclVersion(6);
+    let attribute = Attribute::ZclVersion(6.try_into().unwrap());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(bytes, vec![0x00, 0x00, 0x06]);
 }
@@ -28,12 +32,15 @@ fn zcl_version_to_le_stream() {
 fn application_version_from_le_stream() {
     let bytes = vec![0x01, 0x00, 0x05];
     let attribute = Attribute::from_le_stream(bytes.into_iter());
-    assert_eq!(attribute, Some(Attribute::ApplicationVersion(5)));
+    assert_eq!(
+        attribute,
+        Some(Attribute::ApplicationVersion(5.try_into().unwrap()))
+    );
 }
 
 #[test]
 fn application_version_to_le_stream() {
-    let attribute = Attribute::ApplicationVersion(5);
+    let attribute = Attribute::ApplicationVersion(5.try_into().unwrap());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(bytes, vec![0x01, 0x00, 0x05]);
 }
@@ -42,12 +49,15 @@ fn application_version_to_le_stream() {
 fn stack_version_from_le_stream() {
     let bytes = vec![0x02, 0x00, 0x04];
     let attribute = Attribute::from_le_stream(bytes.into_iter());
-    assert_eq!(attribute, Some(Attribute::StackVersion(4)));
+    assert_eq!(
+        attribute,
+        Some(Attribute::StackVersion(4.try_into().unwrap()))
+    );
 }
 
 #[test]
 fn stack_version_to_le_stream() {
-    let attribute = Attribute::StackVersion(4);
+    let attribute = Attribute::StackVersion(4.try_into().unwrap());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(bytes, vec![0x02, 0x00, 0x04]);
 }
@@ -56,12 +66,12 @@ fn stack_version_to_le_stream() {
 fn hw_version_from_le_stream() {
     let bytes = vec![0x03, 0x00, 0x02];
     let attribute = Attribute::from_le_stream(bytes.into_iter());
-    assert_eq!(attribute, Some(Attribute::HwVersion(2)));
+    assert_eq!(attribute, Some(Attribute::HwVersion(2.try_into().unwrap())));
 }
 
 #[test]
 fn hw_version_to_le_stream() {
-    let attribute = Attribute::HwVersion(2);
+    let attribute = Attribute::HwVersion(2.try_into().unwrap());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(bytes, vec![0x03, 0x00, 0x02]);
 }
@@ -241,12 +251,15 @@ fn alarm_mask_to_le_stream() {
 fn disable_local_config_from_le_stream() {
     let bytes = vec![0x14, 0x00, 0x01];
     let attribute = Attribute::from_le_stream(bytes.into_iter());
-    assert_eq!(attribute, Some(Attribute::DisableLocalConfig(1)));
+    assert_eq!(
+        attribute,
+        Some(Attribute::DisableLocalConfig(DisableLocalConfig::RESET))
+    );
 }
 
 #[test]
 fn disable_local_config_to_le_stream() {
-    let attribute = Attribute::DisableLocalConfig(1);
+    let attribute = Attribute::DisableLocalConfig(DisableLocalConfig::RESET);
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(bytes, vec![0x14, 0x00, 0x01]);
 }

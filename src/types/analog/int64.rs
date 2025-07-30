@@ -32,3 +32,11 @@ impl From<Int64> for Option<i64> {
         }
     }
 }
+
+impl TryFrom<i64> for Int64 {
+    type Error = ();
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        Self::new(value).ok_or(())
+    }
+}
