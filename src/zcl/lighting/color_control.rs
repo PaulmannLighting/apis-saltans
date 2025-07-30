@@ -14,6 +14,7 @@ pub use commands::{
 pub use drift_compensation::DriftCompensation;
 pub use enhanced_color_mode::EnhancedColorMode;
 pub use options::Options;
+pub use startup_color_temperature::StartupColorTemperature;
 
 mod color_capabilities;
 mod color_information_attribute;
