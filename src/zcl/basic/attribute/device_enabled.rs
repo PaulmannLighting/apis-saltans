@@ -1,4 +1,3 @@
-use le_stream::{FromLeStream, ToLeStream};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
@@ -13,19 +12,16 @@ pub enum DeviceEnabled {
     Enabled = 0x01,
 }
 
-impl FromLeStream for DeviceEnabled {
-    fn from_le_stream<T>(bytes: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        u8::from_le_stream(bytes).and_then(Self::from_u8)
+impl From<DeviceEnabled> for u8 {
+    fn from(value: DeviceEnabled) -> Self {
+        value as u8
     }
 }
 
-impl ToLeStream for DeviceEnabled {
-    type Iter = <u8 as ToLeStream>::Iter;
+impl TryFrom<u8> for DeviceEnabled {
+    type Error = u8;
 
-    fn to_le_stream(self) -> Self::Iter {
-        (self as u8).to_le_stream()
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_u8(value).ok_or(value)
     }
 }

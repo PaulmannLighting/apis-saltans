@@ -11,6 +11,7 @@ pub use power_source::PowerSource;
 use repr_discriminant::ReprDiscriminant;
 
 use crate::types::{String, String16, Uint8};
+use crate::util::Parsable;
 
 mod alarm_mask;
 mod date_code;
@@ -45,7 +46,7 @@ pub enum Attribute {
     /// The physical environment.
     PhysicalEnvironment(PhysicalEnvironment) = 0x0011,
     /// The device enabled state.
-    DeviceEnabled(DeviceEnabled) = 0x0012,
+    DeviceEnabled(Parsable<u8, DeviceEnabled>) = 0x0012,
     /// The alarm mask.
     AlarmMask(AlarmMask) = 0x0013,
     /// The disable local configuration attribute.
@@ -84,6 +85,7 @@ mod iterator {
     use le_stream::ToLeStream;
 
     use crate::types::{String, String16, Uint8};
+    use crate::util::Parsable;
     use crate::zcl::basic::{
         AlarmMask, DateCode, DeviceEnabled, DisableLocalConfig, PhysicalEnvironment, PowerSource,
     };
@@ -96,7 +98,7 @@ mod iterator {
         DateCode(<DateCode as ToLeStream>::Iter),
         PowerSource(<PowerSource as ToLeStream>::Iter),
         PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
-        DeviceEnabled(<DeviceEnabled as ToLeStream>::Iter),
+        DeviceEnabled(<Parsable<u8, DeviceEnabled> as ToLeStream>::Iter),
         DisableLocalConfig(<DisableLocalConfig as ToLeStream>::Iter),
         AlarmMask(<AlarmMask as ToLeStream>::Iter),
     }
@@ -155,8 +157,8 @@ mod iterator {
         }
     }
 
-    impl From<DeviceEnabled> for Attribute {
-        fn from(value: DeviceEnabled) -> Self {
+    impl From<Parsable<u8, DeviceEnabled>> for Attribute {
+        fn from(value: Parsable<u8, DeviceEnabled>) -> Self {
             Self::DeviceEnabled(value.to_le_stream())
         }
     }
