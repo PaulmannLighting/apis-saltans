@@ -24,7 +24,7 @@ impl TryFrom<u16> for Mireds {
     type Error = u16;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        if value <= Self::MAX {
+        if (Self::MIN..Self::MAX).contains(&value) {
             Ok(Self(value))
         } else {
             Err(value)
