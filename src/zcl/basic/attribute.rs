@@ -84,8 +84,9 @@ mod iterator {
     use le_stream::ToLeStream;
 
     use crate::types::{String, String16, Uint8};
-    use crate::zcl::basic::attribute::disable_local_config::DisableLocalConfig;
-    use crate::zcl::basic::{AlarmMask, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource};
+    use crate::zcl::basic::{
+        AlarmMask, DateCode, DeviceEnabled, DisableLocalConfig, PhysicalEnvironment, PowerSource,
+    };
 
     /// Little endian stream iterator for the payload of an attribute in the Basic cluster.
     pub enum Attribute {
