@@ -4,7 +4,6 @@ use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 
-use super::temp_threshold::TempThreshold;
 use super::{DeviceTempAlarmMask, Temperature};
 use crate::types::{Uint16, Uint24};
 
@@ -26,9 +25,9 @@ pub enum Attribute {
     /// Alarms mask for device temperature.
     DeviceTempAlarmMask(DeviceTempAlarmMask) = 0x0010,
     /// Low temperature threshold in degrees Celsius.
-    LowTempThreshold(TempThreshold) = 0x0011,
+    LowTempThreshold(Temperature) = 0x0011,
     /// High temperature threshold in degrees Celsius.
-    HighTempThreshold(TempThreshold) = 0x0012,
+    HighTempThreshold(Temperature) = 0x0012,
     /// Low temperature dwell trip point in seconds.
     LowTempDwellTripPoint(Uint24) = 0x0013,
     /// High temperature dwell trip point in seconds.
@@ -60,15 +59,12 @@ mod iterator {
     use le_stream::ToLeStream;
 
     use crate::types::{Uint16, Uint24};
-    use crate::zcl::device_temperature_configuration::{
-        DeviceTempAlarmMask, TempThreshold, Temperature,
-    };
+    use crate::zcl::device_temperature_configuration::{DeviceTempAlarmMask, Temperature};
 
     pub enum Attribute {
         Temperature(<Temperature as ToLeStream>::Iter),
         Uint16(<Uint16 as ToLeStream>::Iter),
         DeviceTempAlarmMask(<DeviceTempAlarmMask as ToLeStream>::Iter),
-        TempThreshold(<TempThreshold as ToLeStream>::Iter),
         Uint24(<Uint24 as ToLeStream>::Iter),
     }
 
@@ -77,9 +73,7 @@ mod iterator {
 
         fn next(&mut self) -> Option<Self::Item> {
             match self {
-                Self::Uint16(iter) | Self::Temperature(iter) | Self::TempThreshold(iter) => {
-                    iter.next()
-                }
+                Self::Uint16(iter) | Self::Temperature(iter) => iter.next(),
                 Self::DeviceTempAlarmMask(iter) => iter.next(),
                 Self::Uint24(iter) => iter.next(),
             }
@@ -101,12 +95,6 @@ mod iterator {
     impl From<DeviceTempAlarmMask> for Attribute {
         fn from(value: DeviceTempAlarmMask) -> Self {
             Self::DeviceTempAlarmMask(value.to_le_stream())
-        }
-    }
-
-    impl From<TempThreshold> for Attribute {
-        fn from(value: TempThreshold) -> Self {
-            Self::TempThreshold(value.to_le_stream())
         }
     }
 
