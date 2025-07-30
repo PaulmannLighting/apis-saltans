@@ -1,7 +1,8 @@
 //! Zigbee Cluster Library (ZCL) Basic Cluster.
 
 pub use attribute::{
-    AlarmMask, Attribute, CustomString, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource,
+    AlarmMask, Attribute, CustomString, DateCode, DeviceEnabled, DisableLocalConfig,
+    PhysicalEnvironment, PowerSource,
 };
 pub use commands::ResetToFactoryDefaults;
 

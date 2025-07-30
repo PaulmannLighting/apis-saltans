@@ -3,17 +3,19 @@ use core::iter::Chain;
 pub use alarm_mask::AlarmMask;
 pub use date_code::{CustomString, DateCode};
 pub use device_enabled::DeviceEnabled;
+pub use disable_local_config::DisableLocalConfig;
 use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
 pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 use repr_discriminant::ReprDiscriminant;
 
-use crate::types::{String, String16};
+use crate::types::{String, String16, Uint8};
 
 mod alarm_mask;
 mod date_code;
 mod device_enabled;
+mod disable_local_config;
 mod physical_environment;
 mod power_source;
 
@@ -23,13 +25,13 @@ mod power_source;
 #[derive(ReprDiscriminant, FromLeStreamTagged)]
 pub enum Attribute {
     /// The ZCL version.
-    ZclVersion(u8) = 0x0000,
+    ZclVersion(Uint8) = 0x0000,
     /// The application version.
-    ApplicationVersion(u8) = 0x0001,
+    ApplicationVersion(Uint8) = 0x0001,
     /// The stack version.
-    StackVersion(u8) = 0x0002,
+    StackVersion(Uint8) = 0x0002,
     /// The hardware version.
-    HwVersion(u8) = 0x0003,
+    HwVersion(Uint8) = 0x0003,
     /// The manufacturer name.
     ManufacturerName(String) = 0x0004, // TODO: Limit to 32 bytes
     /// The model identifier.
@@ -47,7 +49,7 @@ pub enum Attribute {
     /// The alarm mask.
     AlarmMask(AlarmMask) = 0x0013,
     /// The disable local configuration attribute.
-    DisableLocalConfig(u8) = 0x0014,
+    DisableLocalConfig(DisableLocalConfig) = 0x0014,
     /// The cluster revision.
     SwBuildId(String16) = 0x4000,
 }
@@ -61,8 +63,7 @@ impl ToLeStream for Attribute {
             Self::ZclVersion(value)
             | Self::ApplicationVersion(value)
             | Self::StackVersion(value)
-            | Self::HwVersion(value)
-            | Self::DisableLocalConfig(value) => value.into(),
+            | Self::HwVersion(value) => value.into(),
             Self::ManufacturerName(name) => name.into(),
             Self::ModelIdentifier(identifier) => identifier.into(),
             Self::DateCode(date_code) => date_code.into(),
@@ -71,6 +72,7 @@ impl ToLeStream for Attribute {
             Self::PhysicalEnvironment(environment) => environment.into(),
             Self::DeviceEnabled(enabled) => enabled.into(),
             Self::AlarmMask(mask) => mask.into(),
+            Self::DisableLocalConfig(value) => value.into(),
             Self::SwBuildId(build_id) => build_id.into(),
         };
         id.to_le_stream().chain(payload_iterator)
@@ -81,18 +83,20 @@ impl ToLeStream for Attribute {
 mod iterator {
     use le_stream::ToLeStream;
 
-    use crate::types::{String, String16};
+    use crate::types::{String, String16, Uint8};
+    use crate::zcl::basic::attribute::disable_local_config::DisableLocalConfig;
     use crate::zcl::basic::{AlarmMask, DateCode, DeviceEnabled, PhysicalEnvironment, PowerSource};
 
     /// Little endian stream iterator for the payload of an attribute in the Basic cluster.
     pub enum Attribute {
-        U8(<u8 as ToLeStream>::Iter),
+        Uint8(<Uint8 as ToLeStream>::Iter),
         String16(<String16 as ToLeStream>::Iter),
         String(<String as ToLeStream>::Iter),
         DateCode(<DateCode as ToLeStream>::Iter),
         PowerSource(<PowerSource as ToLeStream>::Iter),
         PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
         DeviceEnabled(<DeviceEnabled as ToLeStream>::Iter),
+        DisableLocalConfig(<DisableLocalConfig as ToLeStream>::Iter),
         AlarmMask(<AlarmMask as ToLeStream>::Iter),
     }
 
@@ -107,15 +111,16 @@ mod iterator {
                 Self::PowerSource(iter)
                 | Self::PhysicalEnvironment(iter)
                 | Self::AlarmMask(iter)
+                | Self::DisableLocalConfig(iter)
                 | Self::DeviceEnabled(iter)
-                | Self::U8(iter) => iter.next(),
+                | Self::Uint8(iter) => iter.next(),
             }
         }
     }
 
-    impl From<u8> for Attribute {
-        fn from(value: u8) -> Self {
-            Self::U8(value.to_le_stream())
+    impl From<Uint8> for Attribute {
+        fn from(value: Uint8) -> Self {
+            Self::Uint8(value.to_le_stream())
         }
     }
 
@@ -152,6 +157,12 @@ mod iterator {
     impl From<DeviceEnabled> for Attribute {
         fn from(value: DeviceEnabled) -> Self {
             Self::DeviceEnabled(value.to_le_stream())
+        }
+    }
+
+    impl From<DisableLocalConfig> for Attribute {
+        fn from(value: DisableLocalConfig) -> Self {
+            Self::DisableLocalConfig(value.to_le_stream())
         }
     }
 
