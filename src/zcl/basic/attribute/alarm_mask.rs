@@ -1,6 +1,5 @@
 use bitflags::bitflags;
 use le_stream::derive::{FromLeStream, ToLeStream};
-use num_derive::FromPrimitive;
 
 /// Alarm mask.
 #[cfg_attr(
@@ -9,18 +8,7 @@ use num_derive::FromPrimitive;
     serde(transparent)
 )]
 #[derive(
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    Eq,
-    Hash,
-    Ord,
-    PartialEq,
-    PartialOrd,
-    FromPrimitive,
-    FromLeStream,
-    ToLeStream,
+    Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
 #[repr(transparent)]
 pub struct AlarmMask(u8);
