@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+use crate::types::Uint16;
 use crate::zcl::identify::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
@@ -7,20 +8,26 @@ use crate::zcl::{Cluster, Command};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct IdentifyQueryResponse {
-    timeout_secs: u16,
+    timeout_secs: Uint16,
 }
 
 impl IdentifyQueryResponse {
     /// Create a new `IdentifyQueryResponse` command with the specified timeout.
     #[must_use]
-    pub const fn new(timeout_secs: u16) -> Self {
+    pub const fn new(timeout_secs: Uint16) -> Self {
         Self { timeout_secs }
+    }
+
+    /// Return the identify time in seconds.
+    #[must_use]
+    pub fn timeout_secs(self) -> Option<u16> {
+        self.timeout_secs.into()
     }
 
     /// Return the identify timeout for this command.
     #[must_use]
-    pub fn timeout(self) -> Duration {
-        Duration::from_secs(u64::from(self.timeout_secs))
+    pub fn timeout(self) -> Option<Duration> {
+        self.timeout_secs().map(u64::from).map(Duration::from_secs)
     }
 }
 

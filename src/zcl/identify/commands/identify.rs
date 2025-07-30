@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+use crate::types::Uint16;
 use crate::zcl::identify::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
@@ -7,26 +8,28 @@ use crate::zcl::{Cluster, Command};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Identify {
-    identify_time_secs: u16,
+    identify_time_secs: Uint16,
 }
 
 impl Identify {
     /// Create a new `Identify` command with the specified identify time.
     #[must_use]
-    pub const fn new(identify_time_secs: u16) -> Self {
+    pub const fn new(identify_time_secs: Uint16) -> Self {
         Self { identify_time_secs }
     }
 
     /// Return the identify time seconds for this command.
     #[must_use]
-    pub const fn identify_time_secs(self) -> u16 {
-        self.identify_time_secs
+    pub fn identify_time_secs(self) -> Option<u16> {
+        self.identify_time_secs.into()
     }
 
     /// Return the identify time for this command.
     #[must_use]
-    pub fn identify_time(self) -> Duration {
-        Duration::from_secs(u64::from(self.identify_time_secs))
+    pub fn identify_time(self) -> Option<Duration> {
+        self.identify_time_secs()
+            .map(u64::from)
+            .map(Duration::from_secs)
     }
 }
 
