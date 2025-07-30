@@ -3,6 +3,7 @@ use crate::units::Mireds;
 const PREVIOUS: u16 = 0xffff;
 
 /// The startup color temperature to use.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum StartupColorTemperature {
     /// Set the color temperature to the specified value in mireds.
     Value(Mireds),
