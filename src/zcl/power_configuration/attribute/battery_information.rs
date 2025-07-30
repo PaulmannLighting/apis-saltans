@@ -1,6 +1,7 @@
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 
+/// Information about the battery status of a device.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
