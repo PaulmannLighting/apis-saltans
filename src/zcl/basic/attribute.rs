@@ -39,7 +39,7 @@ pub enum Attribute {
     /// The model identifier.
     ModelIdentifier(String) = 0x0005, // TODO: Limit to 32 bytes
     /// The date code.
-    DateCode(DateCode) = 0x0006,
+    DateCode(Parsable<String, DateCode>) = 0x0006,
     /// The power source.
     PowerSource(PowerSource) = 0x0007,
     /// The generic device class.
@@ -78,5 +78,87 @@ impl ToLeStream for Attribute {
             Self::SwBuildId(build_id) => build_id.into(),
         };
         id.to_le_stream().chain(payload_iterator)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+    use alloc::vec::Vec;
+
+    use chrono::NaiveDate;
+
+    use super::*;
+
+    #[test]
+    fn zcl_version_to_le_stream() {
+        let attribute = Attribute::ZclVersion(Uint8::new(8).unwrap());
+        let bytes: Vec<_> = attribute.to_le_stream().collect();
+        assert_eq!(bytes, vec![0x00, 0x00, 0x08]);
+    }
+
+    #[test]
+    fn application_version_to_le_stream() {
+        let attribute = Attribute::ApplicationVersion(Uint8::new(32).unwrap());
+        let bytes: Vec<_> = attribute.to_le_stream().collect();
+        assert_eq!(bytes, vec![0x01, 0x00, 0x20]);
+    }
+
+    #[test]
+    fn stack_version_to_le_stream() {
+        let attribute = Attribute::StackVersion(Uint8::new(2).unwrap());
+        let bytes: Vec<_> = attribute.to_le_stream().collect();
+        assert_eq!(bytes, vec![0x02, 0x00, 0x02]);
+    }
+
+    #[test]
+    fn hw_version_to_le_stream() {
+        let attribute = Attribute::HwVersion(Uint8::new(1).unwrap());
+        let bytes: Vec<_> = attribute.to_le_stream().collect();
+        assert_eq!(bytes, vec![0x03, 0x00, 0x01]);
+    }
+
+    #[test]
+    fn manufacturer_name_to_le_stream() {
+        let attribute = Attribute::ManufacturerName(String::try_from("Test Manufacturer").unwrap());
+        let bytes: Vec<_> = attribute.to_le_stream().collect();
+        assert_eq!(
+            bytes,
+            vec![
+                0x04, 0x00, 0x11, b'T', b'e', b's', b't', b' ', b'M', b'a', b'n', b'u', b'f', b'a',
+                b'c', b't', b'u', b'r', b'e', b'r'
+            ]
+        );
+    }
+
+    #[test]
+    fn model_identifier_to_le_stream() {
+        let attribute = Attribute::ModelIdentifier(String::try_from("Test Model").unwrap());
+        let bytes: Vec<_> = attribute.to_le_stream().collect();
+        assert_eq!(
+            bytes,
+            vec![
+                0x05, 0x00, 0x0A, b'T', b'e', b's', b't', b' ', b'M', b'o', b'd', b'e', b'l'
+            ]
+        );
+    }
+
+    #[test]
+    fn date_code_to_le_stream() {
+        let attribute = Attribute::DateCode(
+            DateCode::new(
+                NaiveDate::from_ymd_opt(2025, 7, 31).unwrap(),
+                "Custom".try_into().unwrap(),
+            )
+            .into(),
+        );
+        let bytes: Vec<_> = attribute.to_le_stream().collect();
+        assert_eq!(
+            bytes,
+            vec![
+                0x06, 0x00, b'2', b'0', b'2', b'5', b'0', b'7', b'3', b'1', b'C', b'u', b's', b't',
+                b'o', b'm'
+            ]
+        );
     }
 }

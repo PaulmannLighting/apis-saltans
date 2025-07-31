@@ -1,4 +1,3 @@
-mod date_code;
 mod physial_environment;
 mod power_source;
 
@@ -100,10 +99,13 @@ fn date_code_without_custom_from_le_stream() {
     let attribute = Attribute::from_le_stream(bytes.into_iter());
     assert_eq!(
         attribute,
-        Some(Attribute::DateCode(DateCode::new(
-            NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
-            CustomString::new()
-        )))
+        Some(Attribute::DateCode(
+            DateCode::new(
+                NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
+                CustomString::new()
+            )
+            .into()
+        ))
     );
 }
 
@@ -115,10 +117,13 @@ fn date_code_with_custom_from_le_stream() {
     let attribute = Attribute::from_le_stream(bytes.into_iter());
     assert_eq!(
         attribute,
-        Some(Attribute::DateCode(DateCode::new(
-            NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
-            CustomString::try_from("Test").unwrap()
-        )))
+        Some(Attribute::DateCode(
+            DateCode::new(
+                NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
+                CustomString::try_from("Test").unwrap()
+            )
+            .into()
+        ))
     );
 }
 
@@ -128,7 +133,7 @@ fn date_code_without_custom_to_le_stream() {
         NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
         CustomString::new(),
     );
-    let attribute = Attribute::DateCode(date_code);
+    let attribute = Attribute::DateCode(date_code.into());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(
         bytes,
@@ -142,7 +147,7 @@ fn date_code_with_custom_to_le_stream() {
         NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
         CustomString::try_from("Test").unwrap(),
     );
-    let attribute = Attribute::DateCode(date_code);
+    let attribute = Attribute::DateCode(date_code.into());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(
         bytes,

@@ -11,7 +11,6 @@ pub enum Attribute {
     Uint8(<Uint8 as ToLeStream>::Iter),
     String16(<String16 as ToLeStream>::Iter),
     String(<String as ToLeStream>::Iter),
-    DateCode(<DateCode as ToLeStream>::Iter),
     PowerSource(<PowerSource as ToLeStream>::Iter),
     PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
     DeviceEnabled(<Parsable<u8, DeviceEnabled> as ToLeStream>::Iter),
@@ -25,7 +24,6 @@ impl Iterator for Attribute {
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Self::String16(iter) => iter.next(),
-            Self::DateCode(iter) => iter.next(),
             Self::String(iter) => iter.next(),
             Self::PowerSource(iter)
             | Self::PhysicalEnvironment(iter)
@@ -55,9 +53,9 @@ impl From<String> for Attribute {
     }
 }
 
-impl From<DateCode> for Attribute {
-    fn from(value: DateCode) -> Self {
-        Self::DateCode(value.to_le_stream())
+impl From<Parsable<String, DateCode>> for Attribute {
+    fn from(value: Parsable<String, DateCode>) -> Self {
+        Self::String(value.to_le_stream())
     }
 }
 
