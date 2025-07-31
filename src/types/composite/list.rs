@@ -56,11 +56,10 @@ where
     where
         I: Iterator<Item = u8>,
     {
-        let prefix: Uint8 = u8::from_le_stream(&mut bytes)?
-            .try_into()
-            .unwrap_or_default();
+        let prefix = Uint8::from_le_stream(&mut bytes)?;
         let mut items = Vec::new();
 
+        // If the prefix is `None`, i.e. an invalid read, we assume an empty list.
         for _ in 0..Option::<u8>::from(prefix).unwrap_or_default() {
             items.push(T::from_le_stream(&mut bytes)?);
         }
