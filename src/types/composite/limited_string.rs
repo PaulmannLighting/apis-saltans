@@ -14,6 +14,10 @@ pub struct LimitedString<const MAX_LEN: usize>(String);
 
 impl<const MAX_LEN: usize> LimitedString<MAX_LEN> {
     /// Creates a new `LimitedString` if the provided string's length is within the limit.
+    ///
+    /// # Errors
+    ///
+    /// If the length of the string exceeds `MAX_LEN`, this will return an error with the original value.
     pub const fn new(value: String) -> Result<Self, String> {
         if value.len() <= MAX_LEN {
             Ok(Self(value))
