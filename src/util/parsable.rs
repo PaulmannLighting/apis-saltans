@@ -10,13 +10,12 @@ pub struct Parsable<Src, Dst> {
     dst: PhantomData<Dst>,
 }
 
-impl<Src, Dst> Parsable<Src, Dst> {
+impl<Src, Dst> Parsable<Src, Dst>
+where
+    Dst: TryFrom<Src, Error: Into<Src>>,
+{
     /// Parse the source value into the destination type.
-    pub fn parse(self) -> Result<Dst, Src>
-    where
-        Dst: TryFrom<Src>,
-        Dst::Error: Into<Src>,
-    {
+    pub fn parse(self) -> Result<Dst, Src> {
         Dst::try_from(self.src).map_err(Into::into)
     }
 }
