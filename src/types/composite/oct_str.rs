@@ -1,6 +1,7 @@
 use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
+use log::{error, warn};
 
 use crate::constants::U8_CAPACITY;
 use crate::types::Uint8;
@@ -69,17 +70,24 @@ impl<const CAPACITY: usize> TryFrom<&[u8]> for OctStr<CAPACITY> {
 }
 
 impl<const CAPACITY: usize> FromLeStream for OctStr<CAPACITY> {
+    // TODO: For the sake of robustness, reconsider handling of the case `size > CAPACITY`.
+    #[allow(clippy::unwrap_in_result)]
     fn from_le_stream<T>(mut stream: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
         let size: u8 = Option::<u8>::from(Uint8::from_le_stream(&mut stream)?).unwrap_or(0);
+
+        if CAPACITY < size.into() {
+            warn!("OctStr size {size} exceeds maximum capacity of {CAPACITY} bytes.");
+        }
+
         let mut bytes = heapless::Vec::new();
 
         for _ in 0..size {
             bytes
                 .push(u8::from_le_stream(&mut stream)?)
-                .expect("Bytes should not exceed capacity.");
+                .unwrap_or_else(|byte| error!("Buffer is full. Discarding byte: {byte:#04X}"));
         }
 
         Some(Self(bytes))
