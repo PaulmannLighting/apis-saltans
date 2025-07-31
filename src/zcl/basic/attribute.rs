@@ -10,7 +10,7 @@ pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 use repr_discriminant::ReprDiscriminant;
 
-use crate::types::{LimitedString, String, String16, Uint8};
+use crate::types::{String, Uint8};
 use crate::util::Parsable;
 
 mod alarm_mask;
@@ -35,15 +35,15 @@ pub enum Attribute {
     /// The hardware version.
     HwVersion(Uint8) = 0x0003,
     /// The manufacturer name.
-    ManufacturerName(LimitedString<32>) = 0x0004,
+    ManufacturerName(String<32>) = 0x0004,
     /// The model identifier.
-    ModelIdentifier(LimitedString<32>) = 0x0005,
+    ModelIdentifier(String<32>) = 0x0005,
     /// The date code.
     DateCode(Parsable<String, DateCode>) = 0x0006,
     /// The power source.
     PowerSource(PowerSource) = 0x0007,
     /// The generic device class.
-    LocationDescription(String16) = 0x0010,
+    LocationDescription(String<16>) = 0x0010,
     /// The physical environment.
     PhysicalEnvironment(PhysicalEnvironment) = 0x0011,
     /// The device enabled state.
@@ -53,7 +53,7 @@ pub enum Attribute {
     /// The disable local configuration attribute.
     DisableLocalConfig(DisableLocalConfig) = 0x0014,
     /// The cluster revision.
-    SwBuildId(String16) = 0x4000,
+    SwBuildId(String<16>) = 0x4000,
 }
 
 impl ToLeStream for Attribute {
@@ -66,22 +66,21 @@ impl ToLeStream for Attribute {
             | Self::ApplicationVersion(value)
             | Self::StackVersion(value)
             | Self::HwVersion(value) => value.into(),
-            Self::ManufacturerName(name) => name.into(),
-            Self::ModelIdentifier(identifier) => identifier.into(),
+            Self::ManufacturerName(string) | Self::ModelIdentifier(string) => string.into(),
             Self::DateCode(date_code) => date_code.into(),
             Self::PowerSource(source) => source.into(),
-            Self::LocationDescription(description) => description.into(),
             Self::PhysicalEnvironment(environment) => environment.into(),
             Self::DeviceEnabled(enabled) => enabled.into(),
             Self::AlarmMask(mask) => mask.into(),
             Self::DisableLocalConfig(value) => value.into(),
-            Self::SwBuildId(build_id) => build_id.into(),
+            Self::LocationDescription(string) | Self::SwBuildId(string) => string.into(),
         };
         id.to_le_stream().chain(payload_iterator)
     }
 }
 
 #[cfg(test)]
+#[cfg(feature = "alloc")]
 mod tests {
     use alloc::vec;
     use alloc::vec::Vec;
@@ -268,25 +267,25 @@ mod tests {
     #[test]
     fn location_description_from_le_stream() {
         let bytes = vec![
-            0x10, 0x00, 0x08, 0x00, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n',
+            0x10, 0x00, 0x08, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n',
         ];
         let attribute = Attribute::from_le_stream(bytes.into_iter());
         assert_eq!(
             attribute,
             Some(Attribute::LocationDescription(
-                String16::try_from("Location").unwrap()
+                "Location".try_into().unwrap()
             ))
         );
     }
 
     #[test]
     fn location_description_to_le_stream() {
-        let attribute = Attribute::LocationDescription(String16::try_from("Location").unwrap());
+        let attribute = Attribute::LocationDescription("Location".try_into().unwrap());
         let bytes: Vec<u8> = attribute.to_le_stream().collect();
         assert_eq!(
             bytes,
             vec![
-                0x10, 0x00, 0x08, 0x00, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n'
+                0x10, 0x00, 0x08, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n'
             ]
         );
     }
@@ -361,18 +360,18 @@ mod tests {
 
     #[test]
     fn sw_build_id_from_le_stream() {
-        let bytes = vec![0x00, 0x40, 0x04, 0x00, b'T', b'e', b's', b't'];
+        let bytes = vec![0x00, 0x40, 0x04, b'T', b'e', b's', b't'];
         let attribute = Attribute::from_le_stream(bytes.into_iter());
         assert_eq!(
             attribute,
-            Some(Attribute::SwBuildId(String16::try_from("Test").unwrap()))
+            Some(Attribute::SwBuildId("Test".try_into().unwrap()))
         );
     }
 
     #[test]
     fn sw_build_id_to_le_stream() {
-        let attribute = Attribute::SwBuildId(String16::try_from("Test").unwrap());
+        let attribute = Attribute::SwBuildId("Test".try_into().unwrap());
         let bytes: Vec<u8> = attribute.to_le_stream().collect();
-        assert_eq!(bytes, vec![0x00, 0x40, 0x04, 0x00, b'T', b'e', b's', b't']);
+        assert_eq!(bytes, vec![0x00, 0x40, 0x04, b'T', b'e', b's', b't']);
     }
 }

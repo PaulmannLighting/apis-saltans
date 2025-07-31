@@ -1,4 +1,5 @@
 //! Zigbee network node representation.
+#![cfg(feature = "alloc")]
 
 use alloc::collections::BTreeSet;
 

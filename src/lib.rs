@@ -1,9 +1,10 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 //! An implementation of the Zigbee Cluster Library (ZCL).
+#![no_std]
 
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
+mod constants;
 #[cfg(feature = "std")]
 pub mod network_manager;
 pub mod node;

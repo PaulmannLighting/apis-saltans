@@ -1,4 +1,3 @@
-use alloc::string::ToString;
 use core::fmt::Display;
 use core::str::{FromStr, Utf8Error};
 
@@ -6,7 +5,7 @@ use chrono::NaiveDate;
 use either::{Either, Left, Right};
 pub use parse_error::ParseError;
 
-use crate::types::String;
+use crate::types::{String, U8String};
 
 mod parse_error;
 
@@ -58,10 +57,16 @@ impl From<DateCode> for String {
 
 impl From<&DateCode> for String {
     fn from(date_code: &DateCode) -> Self {
+        let mut buffer = U8String::new();
         date_code
-            .to_string()
-            .try_into()
-            .expect("Date code should fit into a String.")
+            .date
+            .format(DATE_FORMAT)
+            .write_to(&mut buffer)
+            .expect("Date should be writable to buffer.");
+        buffer
+            .push_str(&date_code.custom)
+            .expect("Custom string should fit into buffer.");
+        Self::from(buffer)
     }
 }
 
@@ -114,6 +119,9 @@ mod tests {
             NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
             "Custom".try_into().unwrap(),
         );
-        assert_eq!(date_code.to_string(), "20060814Custom");
+        assert_eq!(
+            String::from(date_code).try_as_str().unwrap(),
+            "20060814Custom"
+        );
     }
 }

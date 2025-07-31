@@ -1,19 +1,13 @@
-use alloc::vec::Vec;
-
-use array::Array;
 use date::Date;
 use half::f16;
 use intx::{I24, I40, I48, I56, U24, U40, U48, U56};
 use macaddr::MacAddr8;
-use structure::Structure;
 use time_of_day::TimeOfDay;
 use utc_time::UtcTime;
 
-use crate::types::{OctStr, OctStr16, String, String16};
+use crate::types::{OctStr, String};
 
-mod array;
 mod date;
-mod structure;
 mod time_of_day;
 mod utc_time;
 
@@ -112,23 +106,19 @@ pub enum DataType {
     /// Character string.
     String(String) = 0x42,
     /// Long octet string.
-    OctStr16(OctStr16) = 0x43,
+    // OctStr16(OctStr16) = 0x43, TODO: Implement this type.
     /// Long character string.
-    String16(String16) = 0x44,
+    // String16(String16) = 0x44, TODO: Implement this type.
     // Ordered sequence
     /// Array.
-    Array(Array) = 0x48,
+    // Array(Array) = 0x48, TODO: Implement this type.
     /// Structure.
-    Structure(Structure) = 0x4c,
+    // Structure(Structure) = 0x4c, TODO: Implement this type.
     // Collection
     /// Set.
-    ///
-    /// TODO: Choose a more appropriate type for the set.
-    Set(Vec<u8>) = 0x50,
+    //Set(Vec<u8>) = 0x50, TODO: Implement this type.
     /// Bag.
-    ///
-    /// TODO: Choose a more appropriate type for the bag.
-    Bag(Vec<u8>) = 0x51,
+    // Bag(Vec<u8>) = 0x51, TODO: Implement this type.
     // Time
     /// Time of day.
     TimeOfDay(TimeOfDay) = 0xe0,
@@ -149,7 +139,7 @@ pub enum DataType {
     /// 128-bit security key.
     SecurityKey([u8; 16]) = 0xf1,
     /// Opaque data.
-    Opaque(Vec<u8>) = 0xf2,
+    // Opaque(Vec<u8>) = 0xf2, // TODO: Implement this type.
     /// Unknown data type.
     Unknown = 0xff,
 }

@@ -1,7 +1,7 @@
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 
-use crate::types::{String16, Uint8, Uint16};
+use crate::types::{String, Uint8, Uint16};
 use crate::zcl::power_configuration::attribute::{
     BatteryAlarmMask, BatteryAlarmState, BatterySize,
 };
@@ -13,7 +13,7 @@ use crate::zcl::power_configuration::attribute::{
 #[derive(ReprDiscriminant)]
 pub enum BatterySettings {
     /// Name of the battery manufacturer.
-    BatteryManufacturer(String16) = 0x0000,
+    BatteryManufacturer(String<16>) = 0x0000,
     /// The battery size.
     BatterySize(BatterySize) = 0x0001,
     /// The battery ampere-hour rating in 10mAHr.
@@ -50,7 +50,7 @@ impl BatterySettings {
         T: Iterator<Item = u8>,
     {
         match mask {
-            0x0000 => String16::from_le_stream(bytes).map(Self::BatteryManufacturer),
+            0x0000 => String::from_le_stream(bytes).map(Self::BatteryManufacturer),
             0x0001 => BatterySize::from_le_stream(bytes).map(Self::BatterySize),
             0x0002 => Uint16::from_le_stream(bytes).map(Self::BatteryAHrRating),
             0x0003 => Uint8::from_le_stream(bytes).map(Self::BatteryQuantity),

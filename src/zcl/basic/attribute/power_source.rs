@@ -41,6 +41,7 @@ impl ToLeStream for PowerSource {
 }
 
 #[cfg(test)]
+#[cfg(feature = "alloc")]
 mod tests {
     use alloc::vec;
     use alloc::vec::Vec;

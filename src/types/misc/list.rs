@@ -1,23 +1,23 @@
-use alloc::boxed::Box;
-use alloc::vec::Vec;
+use core::fmt::Debug;
 use core::iter::Chain;
 use core::marker::PhantomData;
 
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::Uint8;
+use crate::types::misc::U8Vec;
 
 /// A list of items with a length prefix.
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct List<P, T> {
-    items: Box<[T]>,
+    items: U8Vec<T>,
     prefix: PhantomData<P>,
 }
 
 impl<T> List<Uint8, T> {
     /// Creates a new `List` with the specified items.
     #[must_use]
-    pub fn new(items: Box<[T]>) -> Option<Self> {
+    pub fn new(items: U8Vec<T>) -> Option<Self> {
         u8::try_from(items.len())
             .ok()
             .and_then(Uint8::new)
@@ -31,7 +31,7 @@ impl<T> List<Uint8, T> {
 impl<P, T> List<P, T> {
     /// Return the inner `Box<[T]>` of the list.
     #[must_use]
-    pub fn into_inner(self) -> Box<[T]> {
+    pub fn into_inner(self) -> U8Vec<T> {
         self.items
     }
 }
@@ -56,16 +56,17 @@ where
     where
         I: Iterator<Item = u8>,
     {
-        let prefix = Uint8::from_le_stream(&mut bytes)?;
-        let mut items = Vec::new();
-
         // If the prefix is `None`, i.e. an invalid read, we assume an empty list.
-        for _ in 0..Option::<u8>::from(prefix).unwrap_or_default() {
-            items.push(T::from_le_stream(&mut bytes)?);
+        let size = Option::<u8>::from(Uint8::from_le_stream(&mut bytes)?).unwrap_or_default();
+        let mut items = U8Vec::new();
+
+        for _ in 0..size {
+            // If the item cannot be added, return `None`.
+            items.push(T::from_le_stream(&mut bytes)?).ok()?;
         }
 
         Some(Self {
-            items: items.into_boxed_slice(),
+            items,
             prefix: PhantomData,
         })
     }
@@ -75,7 +76,7 @@ impl<T> ToLeStream for List<Uint8, T>
 where
     T: ToLeStream,
 {
-    type Iter = Chain<<Uint8 as ToLeStream>::Iter, <Box<[T]> as ToLeStream>::Iter>;
+    type Iter = Chain<<Uint8 as ToLeStream>::Iter, <U8Vec<T> as ToLeStream>::Iter>;
 
     fn to_le_stream(self) -> Self::Iter {
         u8::try_from(self.items.len())

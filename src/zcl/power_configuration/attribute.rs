@@ -157,7 +157,7 @@ impl ToLeStream for Attribute {
 mod iterator {
     use le_stream::ToLeStream;
 
-    use crate::types::{String16, Uint8, Uint16, Uint32};
+    use crate::types::{String, Uint8, Uint16, Uint32};
     use crate::zcl::power_configuration::{
         BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask,
     };
@@ -168,11 +168,7 @@ mod iterator {
         Uint8(<Uint8 as ToLeStream>::Iter),
         Uint16(<Uint16 as ToLeStream>::Iter),
         Uint32(<Uint32 as ToLeStream>::Iter),
-        String16(<String16 as ToLeStream>::Iter),
-        MainsAlarmMask(<MainsAlarmMask as ToLeStream>::Iter),
-        BatterySize(<BatterySize as ToLeStream>::Iter),
-        BatteryAlarmMask(<BatteryAlarmMask as ToLeStream>::Iter),
-        BatteryAlarmState(<BatteryAlarmState as ToLeStream>::Iter),
+        String16(<String<16> as ToLeStream>::Iter),
     }
 
     impl Iterator for Attribute {
@@ -180,12 +176,9 @@ mod iterator {
 
         fn next(&mut self) -> Option<Self::Item> {
             match self {
-                Self::Uint8(iter)
-                | Self::MainsAlarmMask(iter)
-                | Self::BatterySize(iter)
-                | Self::BatteryAlarmMask(iter) => iter.next(),
+                Self::Uint8(iter) => iter.next(),
                 Self::Uint16(iter) => iter.next(),
-                Self::Uint32(iter) | Self::BatteryAlarmState(iter) => iter.next(),
+                Self::Uint32(iter) => iter.next(),
                 Self::String16(iter) => iter.next(),
             }
         }
@@ -209,33 +202,33 @@ mod iterator {
         }
     }
 
-    impl From<String16> for Attribute {
-        fn from(value: String16) -> Self {
-            Self::String16(value.to_le_stream())
-        }
-    }
-
     impl From<MainsAlarmMask> for Attribute {
         fn from(value: MainsAlarmMask) -> Self {
-            Self::MainsAlarmMask(value.to_le_stream())
+            Self::Uint8(value.to_le_stream())
         }
     }
 
     impl From<BatterySize> for Attribute {
         fn from(value: BatterySize) -> Self {
-            Self::BatterySize(value.to_le_stream())
+            Self::Uint8(value.to_le_stream())
         }
     }
 
     impl From<BatteryAlarmMask> for Attribute {
         fn from(value: BatteryAlarmMask) -> Self {
-            Self::BatteryAlarmMask(value.to_le_stream())
+            Self::Uint8(value.to_le_stream())
         }
     }
 
     impl From<BatteryAlarmState> for Attribute {
         fn from(value: BatteryAlarmState) -> Self {
-            Self::BatteryAlarmState(value.to_le_stream())
+            Self::Uint32(value.to_le_stream())
+        }
+    }
+
+    impl From<String<16>> for Attribute {
+        fn from(value: String<16>) -> Self {
+            Self::String16(value.to_le_stream())
         }
     }
 }
