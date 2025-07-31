@@ -5,6 +5,7 @@ pub use get_group_membership::GetGroupMembership;
 pub use get_group_membership_response::GetGroupMembershipResponse;
 pub use remove_all_groups::RemoveAllGroups;
 pub use remove_group::RemoveGroup;
+pub use remove_group_response::RemoveGroupResponse;
 pub use view_group::ViewGroup;
 pub use view_group_response::ViewGroupResponse;
 
@@ -15,5 +16,6 @@ mod get_group_membership;
 mod get_group_membership_response;
 mod remove_all_groups;
 mod remove_group;
+mod remove_group_response;
 mod view_group;
 mod view_group_response;

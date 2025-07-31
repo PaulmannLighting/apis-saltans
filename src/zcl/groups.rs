@@ -3,7 +3,8 @@
 pub use attribute::{Attribute, NameSupport};
 pub use commands::{
     AddGroup, AddGroupIfIdentifying, AddGroupResponse, GetGroupMembership,
-    GetGroupMembershipResponse, RemoveAllGroups, RemoveGroup, ViewGroup, ViewGroupResponse,
+    GetGroupMembershipResponse, RemoveAllGroups, RemoveGroup, RemoveGroupResponse, ViewGroup,
+    ViewGroupResponse,
 };
 
 mod attribute;
