@@ -1,6 +1,8 @@
-use core::fmt::Display;
+use alloc::boxed::Box;
+use core::fmt::Debug;
 use core::str::Utf8Error;
 
+use either::{Either, Left, Right};
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 use crate::types::String;
@@ -13,11 +15,17 @@ pub struct LimitedString<const MAX_LEN: usize>(String);
 impl<const MAX_LEN: usize> LimitedString<MAX_LEN> {
     /// Creates a new `LimitedString` if the provided string's length is within the limit.
     pub const fn new(value: String) -> Result<Self, String> {
-        if value.as_ref().len() <= MAX_LEN {
+        if value.len() <= MAX_LEN {
             Ok(Self(value))
         } else {
             Err(value)
         }
+    }
+
+    /// Return the length in bytes.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.0.len()
     }
 
     /// Try to parse the underlying bytes as a UTF-8 string.
@@ -47,5 +55,21 @@ impl<const MAX_LEN: usize> TryFrom<String> for LimitedString<MAX_LEN> {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::new(value)
+    }
+}
+
+impl<const MAX_LEN: usize> TryFrom<&str> for LimitedString<MAX_LEN> {
+    type Error = Either<Box<[u8]>, String>;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::new(String::try_from(value).map_err(Left)?).map_err(Right)
+    }
+}
+
+impl<const MAX_LEN: usize> TryFrom<alloc::string::String> for LimitedString<MAX_LEN> {
+    type Error = Either<Box<[u8]>, String>;
+
+    fn try_from(value: alloc::string::String) -> Result<Self, Self::Error> {
+        Self::new(String::try_from(value).map_err(Left)?).map_err(Right)
     }
 }

@@ -14,6 +14,12 @@ pub struct OctStr(Box<[u8]>);
 impl OctStr {
     /// Maximum size of the octet string.
     pub const MAX_SIZE: u8 = Uint8::NON_VALUE - 1;
+
+    /// Return the length in bytes.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 impl AsRef<[u8]> for OctStr {

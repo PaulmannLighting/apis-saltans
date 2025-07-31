@@ -13,6 +13,12 @@ use crate::types::composite::oct_str16::OctStr16;
 pub struct String16(OctStr16);
 
 impl String16 {
+    /// Return the length in bytes.
+    #[must_use]
+    pub const fn len(&self) -> usize {
+        self.0.len()
+    }
+
     /// Try to parse the underlying bytes as a UTF-8 string.
     ///
     /// # Errors
