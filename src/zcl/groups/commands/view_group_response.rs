@@ -5,7 +5,7 @@ use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::status::Deprecated;
 use crate::zcl::{Cluster, Command, Status};
 
-/// Represents a response to an `AddGroups` command.
+/// Represents a response to an `ViewGroup` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct ViewGroupResponse {
     status: u8,

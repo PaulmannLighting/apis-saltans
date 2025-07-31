@@ -4,7 +4,7 @@ use crate::types::{List, Uint8, Uint16};
 use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
-/// Represents a response to an `AddGroups` command.
+/// Represents a response to an `GetGroupMembership` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct GetGroupMembershipResponse {
     capacity: Uint8,
@@ -12,7 +12,7 @@ pub struct GetGroupMembershipResponse {
 }
 
 impl GetGroupMembershipResponse {
-    /// Creates a new `ViewGroupResponse` with the given status and group ID.
+    /// Creates a new `GetGroupMembershipResponse` with the given status and group ID.
     #[must_use]
     pub const fn new(capacity: Uint8, groups: List<Uint8, Uint16>) -> Self {
         Self { capacity, groups }
