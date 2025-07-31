@@ -21,6 +21,12 @@ impl Int64 {
             Some(Self(value))
         }
     }
+
+    /// Create a new `Int64` with the non-value.
+    #[must_use]
+    pub const fn non_value(self) -> Self {
+        Self(NON_VALUE)
+    }
 }
 
 impl From<Int64> for Option<i64> {

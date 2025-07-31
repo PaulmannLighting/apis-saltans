@@ -21,6 +21,12 @@ impl Int56 {
             Some(Self(value))
         }
     }
+
+    /// Create a new `Int56` with the non-value.
+    #[must_use]
+    pub fn non_value(self) -> Self {
+        Self(I56::from_be_bytes(NON_VALUE))
+    }
 }
 
 impl From<Int56> for Option<I56> {

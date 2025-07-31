@@ -21,6 +21,12 @@ impl Uint40 {
             Some(Self(value))
         }
     }
+
+    /// Create a new `Uint40` with the non-value.
+    #[must_use]
+    pub const fn non_value(self) -> Self {
+        Self(NON_VALUE)
+    }
 }
 
 impl From<Uint40> for Option<U40> {

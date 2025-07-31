@@ -21,6 +21,12 @@ impl Int32 {
             Some(Self(value))
         }
     }
+
+    /// Create a new `Int32` with the non-value.
+    #[must_use]
+    pub const fn non_value(self) -> Self {
+        Self(NON_VALUE)
+    }
 }
 
 impl From<Int32> for Option<i32> {

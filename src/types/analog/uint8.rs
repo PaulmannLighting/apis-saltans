@@ -20,6 +20,12 @@ impl Uint8 {
             Some(Self(value))
         }
     }
+
+    /// Create a new `Uint8` with the non-value.
+    #[must_use]
+    pub const fn non_value(self) -> Self {
+        Self(Self::NON_VALUE)
+    }
 }
 
 impl From<Uint8> for Option<u8> {
