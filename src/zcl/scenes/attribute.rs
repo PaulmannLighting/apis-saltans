@@ -15,7 +15,7 @@ pub enum Attribute {
     /// ID of the last invoked scene.
     CurrentScene(Uint8) = 0x0001,
     /// Group ID of the last invoked scene.
-    CurrentGroup(Uint16) = 0x0002,
+    CurrentGroup(Uint16) = 0x0002, // TODO: Limit to 0xfff7
     /// Flag indicating whether the scene is valid.
     SceneValid(Bool) = 0x0003,
     /// Flag indicating whether the device supports scene names.
