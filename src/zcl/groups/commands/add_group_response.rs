@@ -1,5 +1,6 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
+use crate::types::Uint16;
 use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::status::Deprecated;
 use crate::zcl::{Cluster, Command, Status};
@@ -8,13 +9,13 @@ use crate::zcl::{Cluster, Command, Status};
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct AddGroupResponse {
     status: u8,
-    group_id: u16,
+    group_id: Uint16,
 }
 
 impl AddGroupResponse {
     /// Creates a new `AddGroupsResponse` with the given status and group ID.
     #[must_use]
-    pub fn new(status: Status, group_id: u16) -> Self {
+    pub fn new(status: Status, group_id: Uint16) -> Self {
         Self {
             status: status.into(),
             group_id,
@@ -32,7 +33,7 @@ impl AddGroupResponse {
 
     /// Returns the group ID associated with the response.
     #[must_use]
-    pub const fn group_id(self) -> u16 {
+    pub const fn group_id(self) -> Uint16 {
         self.group_id
     }
 }

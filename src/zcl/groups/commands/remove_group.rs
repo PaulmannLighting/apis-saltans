@@ -1,5 +1,6 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
+use crate::types::Uint16;
 use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
@@ -7,19 +8,19 @@ use crate::zcl::{Cluster, Command};
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 #[repr(transparent)]
 pub struct RemoveGroup {
-    group_id: u16,
+    group_id: Uint16,
 }
 
 impl RemoveGroup {
     /// Creates a new `RemoveGroup` command with the specified group ID.
     #[must_use]
-    pub const fn new(group_id: u16) -> Self {
+    pub const fn new(group_id: Uint16) -> Self {
         Self { group_id }
     }
 
     /// Returns the identifier of the group to be removed.
     #[must_use]
-    pub const fn group_id(self) -> u16 {
+    pub const fn group_id(self) -> Uint16 {
         self.group_id
     }
 }
