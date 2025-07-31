@@ -1,7 +1,11 @@
+pub use deprecated::Deprecated;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
+mod deprecated;
+
 /// Available ZCL status codes.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum Status {
@@ -11,18 +15,10 @@ pub enum Status {
     Failure = 0x01,
     /// Indicates the command is not authorized.
     NotAuthorized = 0x7e,
-    /// A reserved field was not zero.
-    ReservedFieldNotZero = 0x7f,
     /// Indicates the command was malformed.
     MalformedCommand = 0x80,
     /// Indicates the cluster command is not supported.
-    UnsupportedClusterCommand = 0x81,
-    /// Indicates the general command is not supported.
-    UnsupportedGeneralCommand = 0x82,
-    /// Indicates the manufacturer-specific cluster command is not supported.
-    UnsupportedManufacturerClusterCommand = 0x83,
-    /// Indicates the manufacturer-specific general command is not supported.
-    UnsupportedManufacturerGeneralCommand = 0x84,
+    UnsupportedCommand = 0x81,
     /// Indicates the field in the command is invalid.
     InvalidField = 0x85,
     /// Indicates the attribute is unsupported.
@@ -33,8 +29,6 @@ pub enum Status {
     ReadOnly = 0x88,
     /// Indicates there is insufficient space to perform the operation.
     InsufficientSpace = 0x89,
-    /// Indicates a duplicate entry exists.
-    DuplicateExists = 0x8a,
     /// Indicates the requested entry was not found.
     NotFound = 0x8b,
     /// Indicates the attribute is unreportable.
@@ -43,16 +37,6 @@ pub enum Status {
     InvalidDataType = 0x8d,
     /// Indicates the selector is invalid.
     InvalidSelector = 0x8e,
-    /// Indicates the attribute is write-only.
-    WriteOnly = 0x8f,
-    /// Indicates the startup state is inconsistent.
-    InconsistentStartupState = 0x90,
-    /// Indicates the command was defined out of band.
-    DefinedOutOfBand = 0x91,
-    /// Indicates the command is inconsistent.
-    Inconsistent = 0x92,
-    /// Indicates the action is denied.
-    ActionDenied = 0x93,
     /// Indicates the command timed out.
     Timeout = 0x94,
     /// Indicates the command was aborted.
@@ -67,21 +51,15 @@ pub enum Status {
     RequireMoreImage = 0x99,
     /// Indicates the notification is pending.
     NotificationPending = 0x9a,
-    /// Indicates a hardware failure.
-    HardwareFailure = 0xc0,
-    /// Indicates a software failure.
-    SoftwareFailure = 0xc1,
-    /// Indicates a calibration error.
-    CalibrationError = 0xc2,
     /// Indicates that the cluster is unsupported.
     UnsupportedCluster = 0xc3,
 }
 
 impl TryFrom<u8> for Status {
-    type Error = u8;
+    type Error = Result<Deprecated, u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
+        Self::from_u8(value).ok_or(Deprecated::try_from(value))
     }
 }
 

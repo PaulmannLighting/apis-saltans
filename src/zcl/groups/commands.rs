@@ -13,3 +13,4 @@ mod get_group_membership;
 mod remove_all_groups;
 mod remove_group;
 mod view_group;
+mod view_group_response;
