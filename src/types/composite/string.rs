@@ -4,12 +4,12 @@ use core::str::Utf8Error;
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 use crate::constants::U8_CAPACITY;
-use crate::types::{OctStr, U8String};
+use crate::types::OctStr;
 
 /// A string type, which can be up to [`OctStr::MAX_SIZE`] bytes long.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 #[repr(transparent)]
-pub struct String<const CAPACITY: usize = U8_CAPACITY>(OctStr);
+pub struct String<const CAPACITY: usize = U8_CAPACITY>(OctStr<CAPACITY>);
 
 impl<const CAPACITY: usize> String<CAPACITY> {
     /// Return the length in bytes.
@@ -40,8 +40,8 @@ impl<const CAPACITY: usize> AsRef<[u8]> for String<CAPACITY> {
     }
 }
 
-impl<const CAPACITY: usize> From<U8String> for String<CAPACITY> {
-    fn from(value: U8String) -> Self {
+impl<const CAPACITY: usize> From<heapless::String<CAPACITY>> for String<CAPACITY> {
+    fn from(value: heapless::String<CAPACITY>) -> Self {
         Self(OctStr::from(value.into_bytes()))
     }
 }
