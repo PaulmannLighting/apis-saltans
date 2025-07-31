@@ -177,7 +177,9 @@ mod tests {
 
     #[test]
     fn date_code_without_custom_from_le_stream() {
-        let bytes = vec![0x06, 0x00, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4'];
+        let bytes = vec![
+            0x06, 0x00, 0x08, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4',
+        ];
         let attribute = Attribute::from_le_stream(bytes.into_iter());
         assert_eq!(
             attribute,
@@ -194,7 +196,7 @@ mod tests {
     #[test]
     fn date_code_with_custom_from_le_stream() {
         let bytes = vec![
-            0x06, 0x00, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4', b'T', b'e', b's', b't',
+            0x06, 0x00, 0xC, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4', b'T', b'e', b's', b't',
         ];
         let attribute = Attribute::from_le_stream(bytes.into_iter());
         assert_eq!(
@@ -219,7 +221,9 @@ mod tests {
         let bytes: Vec<u8> = attribute.to_le_stream().collect();
         assert_eq!(
             bytes,
-            vec![0x06, 0x00, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4']
+            vec![
+                0x06, 0x00, 0x08, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4'
+            ]
         );
     }
 
@@ -234,7 +238,8 @@ mod tests {
         assert_eq!(
             bytes,
             vec![
-                0x06, 0x00, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4', b'T', b'e', b's', b't'
+                0x06, 0x00, 0xC, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4', b'T', b'e', b's',
+                b't'
             ]
         );
     }
