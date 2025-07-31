@@ -43,5 +43,5 @@ impl Cluster for RemoveGroupResponse {
 }
 
 impl Command for RemoveGroupResponse {
-    const ID: u8 = 0x00;
+    const ID: u8 = 0x03;
 }

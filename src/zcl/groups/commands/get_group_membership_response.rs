@@ -42,5 +42,5 @@ impl Cluster for GetGroupMembershipResponse {
 }
 
 impl Command for GetGroupMembershipResponse {
-    const ID: u8 = 0x01;
+    const ID: u8 = 0x02;
 }
