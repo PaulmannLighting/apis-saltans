@@ -181,15 +181,18 @@ mod tests {
             0x06, 0x00, 0x08, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4',
         ];
         let attribute = Attribute::from_le_stream(bytes.into_iter());
+
+        let Attribute::DateCode(date_code) = attribute.unwrap() else {
+            panic!("Expected DateCode attribute");
+        };
+
+        let date_code = date_code.parse().unwrap();
         assert_eq!(
-            attribute,
-            Some(Attribute::DateCode(
-                DateCode::new(
-                    NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
-                    CustomString::new()
-                )
-                .into()
-            ))
+            date_code,
+            DateCode::new(
+                NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
+                CustomString::new()
+            )
         );
     }
 
@@ -199,15 +202,18 @@ mod tests {
             0x06, 0x00, 0xC, b'2', b'0', b'0', b'6', b'0', b'8', b'1', b'4', b'T', b'e', b's', b't',
         ];
         let attribute = Attribute::from_le_stream(bytes.into_iter());
+
+        let Attribute::DateCode(date_code) = attribute.unwrap() else {
+            panic!("Expected DateCode attribute");
+        };
+
+        let date_code = date_code.parse().unwrap();
         assert_eq!(
-            attribute,
-            Some(Attribute::DateCode(
-                DateCode::new(
-                    NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
-                    CustomString::try_from("Test").unwrap()
-                )
-                .into()
-            ))
+            date_code,
+            DateCode::new(
+                NaiveDate::from_ymd_opt(2006, 8, 14).unwrap(),
+                CustomString::try_from("Test").unwrap()
+            )
         );
     }
 

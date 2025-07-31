@@ -15,6 +15,7 @@ publish = false
 [dependencies]
 bitflags = "2.6"
 chrono = "0.4"
+either = "1.15.0"
 half = "2.6"
 heapless = "0.8"
 intx = "0.1.0"

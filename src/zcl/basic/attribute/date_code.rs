@@ -1,8 +1,9 @@
 use alloc::string::ToString;
 use core::fmt::Display;
-use core::str::FromStr;
+use core::str::{FromStr, Utf8Error};
 
 use chrono::NaiveDate;
+use either::{Either, Left, Right};
 pub use parse_error::ParseError;
 
 use crate::types::String;
@@ -72,6 +73,14 @@ impl FromStr for DateCode {
         let mut custom = CustomString::new();
         custom.push_str(remainder)?;
         Ok(Self::new(date, custom))
+    }
+}
+
+impl TryFrom<String> for DateCode {
+    type Error = Either<Utf8Error, ParseError>;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::from_str(value.try_as_str().map_err(Left)?).map_err(Right)
     }
 }
 

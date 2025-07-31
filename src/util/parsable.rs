@@ -12,11 +12,11 @@ pub struct Parsable<Src, Dst> {
 
 impl<Src, Dst> Parsable<Src, Dst>
 where
-    Dst: TryFrom<Src, Error: Into<Src>>,
+    Dst: TryFrom<Src>,
 {
     /// Parse the source value into the destination type.
-    pub fn parse(self) -> Result<Dst, Src> {
-        Dst::try_from(self.src).map_err(Into::into)
+    pub fn parse(self) -> Result<Dst, <Dst as TryFrom<Src>>::Error> {
+        Dst::try_from(self.src)
     }
 }
 
