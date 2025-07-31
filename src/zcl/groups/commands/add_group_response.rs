@@ -1,6 +1,7 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 use crate::zcl::groups::CLUSTER_ID;
+use crate::zcl::status::Deprecated;
 use crate::zcl::{Cluster, Command, Status};
 
 /// Represents a response to an `AddGroups` command.
@@ -25,7 +26,7 @@ impl AddGroupResponse {
     /// # Errors
     ///
     /// If the status byte does not correspond to a valid `Status`, this will return the raw status value as an error.
-    pub fn status(self) -> Result<Status, u8> {
+    pub fn status(self) -> Result<Status, Result<Deprecated, u8>> {
         Status::try_from(self.status)
     }
 
