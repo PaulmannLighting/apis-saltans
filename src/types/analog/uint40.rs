@@ -1,9 +1,6 @@
 use intx::U40;
 use le_stream::derive::{FromLeStream, ToLeStream};
 
-/// See Table 2-11.
-const NON_VALUE: U40 = U40::MAX; // 0xff_ffff_ffff
-
 /// The `40-bit unsigned integer` type, short `uint40`.
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
@@ -12,10 +9,13 @@ const NON_VALUE: U40 = U40::MAX; // 0xff_ffff_ffff
 pub struct Uint40(U40);
 
 impl Uint40 {
+    /// The non-value. See Table 2-11.
+    pub const NON_VALUE: U40 = U40::MAX;
+
     /// Crate a new `Uint40` from an `U40` value.
     #[must_use]
     pub fn new(value: U40) -> Option<Self> {
-        if value == NON_VALUE {
+        if value == Self::NON_VALUE {
             None
         } else {
             Some(Self(value))
@@ -24,14 +24,14 @@ impl Uint40 {
 
     /// Create a new `Uint40` with the non-value.
     #[must_use]
-    pub const fn non_value(self) -> Self {
-        Self(NON_VALUE)
+    pub const fn non_value() -> Self {
+        Self(Self::NON_VALUE)
     }
 }
 
 impl From<Uint40> for Option<U40> {
     fn from(value: Uint40) -> Self {
-        if value.0 == NON_VALUE {
+        if value.0 == Uint40::NON_VALUE {
             None
         } else {
             Some(value.0)

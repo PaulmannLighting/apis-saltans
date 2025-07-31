@@ -23,7 +23,7 @@ impl Uint16 {
 
     /// Create a new `Uint16` with the non-value.
     #[must_use]
-    pub const fn non_value(self) -> Self {
+    pub const fn non_value() -> Self {
         Self(Self::NON_VALUE)
     }
 }
