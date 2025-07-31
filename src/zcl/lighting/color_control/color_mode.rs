@@ -1,5 +1,9 @@
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+
 /// Color mode of the device.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum ColorMode {
     /// Current hue and saturation.
@@ -14,11 +18,6 @@ impl TryFrom<u8> for ColorMode {
     type Error = u8;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0x00 => Ok(Self::CurrentHueAndSaturation),
-            0x01 => Ok(Self::CurrentXAndY),
-            0x02 => Ok(Self::ColorTemperature),
-            other => Err(other),
-        }
+        Self::from_u8(value).ok_or(value)
     }
 }

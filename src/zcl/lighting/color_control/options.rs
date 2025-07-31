@@ -2,6 +2,11 @@ use bitflags::bitflags;
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 /// Options for the On/Off cluster commands.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 #[repr(transparent)]
 pub struct Options(u8);

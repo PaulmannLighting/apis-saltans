@@ -1,6 +1,11 @@
 use bitflags::bitflags;
 
 /// Ballast status attribute.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 pub struct BallastStatus(u8);
 
 bitflags! {
