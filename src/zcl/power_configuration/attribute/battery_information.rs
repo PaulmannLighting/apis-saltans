@@ -4,6 +4,7 @@ use repr_discriminant::ReprDiscriminant;
 use crate::types::Uint8;
 
 /// Information about the battery status of a device.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]

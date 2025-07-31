@@ -7,6 +7,7 @@ use crate::zcl::power_configuration::attribute::{
 };
 
 /// Available battery settings.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]

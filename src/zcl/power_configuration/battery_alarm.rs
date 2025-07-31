@@ -3,6 +3,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 /// Alarm codes for batteries.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum BatteryAlarm {
@@ -34,6 +35,14 @@ pub enum BatteryAlarm {
     MainsPowerLost = 0x3a,
     /// Alarm shall not be generated.
     None = 0xff,
+}
+
+impl TryFrom<u8> for BatteryAlarm {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_u8(value).ok_or(value)
+    }
 }
 
 impl FromLeStream for BatteryAlarm {

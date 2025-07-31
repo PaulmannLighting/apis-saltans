@@ -3,6 +3,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 /// Available battery sizes.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum BatterySize {
@@ -26,6 +27,14 @@ pub enum BatterySize {
     CR123A = 0x08,
     /// 9V battery.
     Unknown = 0xff,
+}
+
+impl TryFrom<u8> for BatterySize {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_u8(value).ok_or(value)
+    }
 }
 
 impl FromLeStream for BatterySize {
