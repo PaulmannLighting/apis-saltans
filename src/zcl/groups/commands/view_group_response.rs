@@ -1,5 +1,3 @@
-use core::str::Utf8Error;
-
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 use crate::types::{String, Uint16};
@@ -42,12 +40,9 @@ impl ViewGroupResponse {
     }
 
     /// Returns the name of the group associated with the response.
-    ///
-    /// # Errors
-    ///
-    /// If the group name is not valid UTF-8, this will return an [`Utf8Error`].
-    pub fn group_name(&self) -> Result<&str, Utf8Error> {
-        self.group_name.try_as_str()
+    #[must_use]
+    pub const fn group_name(&self) -> &String {
+        &self.group_name
     }
 }
 

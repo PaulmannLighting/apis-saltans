@@ -1,20 +1,18 @@
-use core::str::Utf8Error;
-
-use crate::types::String;
+use crate::types::{String, Uint16};
 use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
 /// Command to add a group to the device's group table if the device is currently identifying.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct AddGroupIfIdentifying {
-    group_id: u16,
+    group_id: Uint16,
     group_name: String,
 }
 
 impl AddGroupIfIdentifying {
     /// Creates a new `AddGroupIfIdentifying` command with the specified group ID and name.
     #[must_use]
-    pub const fn new(group_id: u16, group_name: String) -> Self {
+    pub const fn new(group_id: Uint16, group_name: String) -> Self {
         Self {
             group_id,
             group_name,
@@ -23,23 +21,14 @@ impl AddGroupIfIdentifying {
 
     /// Returns the identifier of the group to be added.
     #[must_use]
-    pub const fn group_id(&self) -> u16 {
+    pub const fn group_id(&self) -> Uint16 {
         self.group_id
     }
 
     /// Returns the name of the group to be added.
-    ///
-    /// # Errors
-    ///
-    /// If the group name is not valid UTF-8, this will return an [`Utf8Error`].
-    pub fn group_name(&self) -> Result<&str, Utf8Error> {
-        self.group_name.try_as_str()
-    }
-
-    /// Returns the raw bytes of the group name.
     #[must_use]
-    pub fn group_name_raw(&self) -> &[u8] {
-        self.group_name.as_ref()
+    pub const fn group_name(&self) -> &String {
+        &self.group_name
     }
 }
 
