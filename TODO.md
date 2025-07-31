@@ -1,6 +1,6 @@
-# Design changes
+# TODOs
 
-## Clusters and commands
+## Design changes
 
 - [ ] Make clusters an enum.
 - [ ] Make commands enums.
