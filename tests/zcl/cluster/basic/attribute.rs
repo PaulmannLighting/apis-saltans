@@ -1,5 +1,4 @@
 mod date_code;
-mod device_enabled;
 mod physial_environment;
 mod power_source;
 
@@ -219,13 +218,13 @@ fn device_enabled_from_le_stream() {
     let attribute = Attribute::from_le_stream(bytes.into_iter());
     assert_eq!(
         attribute,
-        Some(Attribute::DeviceEnabled(DeviceEnabled::Enabled))
+        Some(Attribute::DeviceEnabled(DeviceEnabled::Enabled.into()))
     );
 }
 
 #[test]
 fn device_enabled_to_le_stream() {
-    let attribute = Attribute::DeviceEnabled(DeviceEnabled::Enabled);
+    let attribute = Attribute::DeviceEnabled(DeviceEnabled::Enabled.into());
     let bytes: Vec<u8> = attribute.to_le_stream().collect();
     assert_eq!(bytes, vec![0x12, 0x00, 0x01]);
 }
