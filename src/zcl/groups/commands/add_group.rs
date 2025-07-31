@@ -2,7 +2,7 @@ use core::str::Utf8Error;
 
 use le_stream::derive::{FromLeStream, ToLeStream};
 
-use crate::types::String;
+use crate::types::{String, Uint16};
 use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::{Cluster, Command};
 
@@ -10,7 +10,7 @@ use crate::zcl::{Cluster, Command};
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct AddGroup {
     /// The identifier of the group to be added.
-    group_id: u16,
+    group_id: Uint16,
     /// The name of the group to be added, if supported.
     group_name: String,
 }
@@ -18,7 +18,7 @@ pub struct AddGroup {
 impl AddGroup {
     /// Creates a new `AddGroup` command with the specified group ID and name.
     #[must_use]
-    pub const fn new(group_id: u16, group_name: String) -> Self {
+    pub const fn new(group_id: Uint16, group_name: String) -> Self {
         Self {
             group_id,
             group_name,
@@ -27,7 +27,7 @@ impl AddGroup {
 
     /// Returns the identifier of the group to be added.
     #[must_use]
-    pub const fn group_id(&self) -> u16 {
+    pub const fn group_id(&self) -> Uint16 {
         self.group_id
     }
 
