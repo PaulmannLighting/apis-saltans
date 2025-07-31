@@ -1,6 +1,6 @@
 use le_stream::ToLeStream;
 
-use crate::types::{String, String16, Uint8};
+use crate::types::{LimitedString, String, String16, Uint8};
 use crate::util::Parsable;
 use crate::zcl::basic::{
     AlarmMask, DateCode, DeviceEnabled, DisableLocalConfig, PhysicalEnvironment, PowerSource,
@@ -10,7 +10,7 @@ use crate::zcl::basic::{
 pub enum Attribute {
     Uint8(<Uint8 as ToLeStream>::Iter),
     String16(<String16 as ToLeStream>::Iter),
-    String(<String as ToLeStream>::Iter),
+    LimitedString(<String as ToLeStream>::Iter),
     PowerSource(<PowerSource as ToLeStream>::Iter),
     PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
     DeviceEnabled(<Parsable<u8, DeviceEnabled> as ToLeStream>::Iter),
@@ -24,7 +24,7 @@ impl Iterator for Attribute {
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Self::String16(iter) => iter.next(),
-            Self::String(iter) => iter.next(),
+            Self::LimitedString(iter) => iter.next(),
             Self::PowerSource(iter)
             | Self::PhysicalEnvironment(iter)
             | Self::AlarmMask(iter)
@@ -47,15 +47,15 @@ impl From<String16> for Attribute {
     }
 }
 
-impl From<String> for Attribute {
-    fn from(value: String) -> Self {
-        Self::String(value.to_le_stream())
+impl<const MAX_LEN: usize> From<LimitedString<MAX_LEN>> for Attribute {
+    fn from(value: LimitedString<MAX_LEN>) -> Self {
+        Self::LimitedString(value.to_le_stream())
     }
 }
 
 impl From<Parsable<String, DateCode>> for Attribute {
     fn from(value: Parsable<String, DateCode>) -> Self {
-        Self::String(value.to_le_stream())
+        Self::LimitedString(value.to_le_stream())
     }
 }
 

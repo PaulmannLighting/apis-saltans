@@ -10,7 +10,7 @@ pub use physical_environment::PhysicalEnvironment;
 pub use power_source::PowerSource;
 use repr_discriminant::ReprDiscriminant;
 
-use crate::types::{String, String16, Uint8};
+use crate::types::{LimitedString, String, String16, Uint8};
 use crate::util::Parsable;
 
 mod alarm_mask;
@@ -35,9 +35,9 @@ pub enum Attribute {
     /// The hardware version.
     HwVersion(Uint8) = 0x0003,
     /// The manufacturer name.
-    ManufacturerName(String) = 0x0004, // TODO: Limit to 32 bytes
+    ManufacturerName(LimitedString<32>) = 0x0004,
     /// The model identifier.
-    ModelIdentifier(String) = 0x0005, // TODO: Limit to 32 bytes
+    ModelIdentifier(LimitedString<32>) = 0x0005,
     /// The date code.
     DateCode(Parsable<String, DateCode>) = 0x0006,
     /// The power source.
@@ -162,15 +162,13 @@ mod tests {
         let attribute = Attribute::from_le_stream(bytes.into_iter());
         assert_eq!(
             attribute,
-            Some(Attribute::ManufacturerName(
-                String::try_from("Test").unwrap()
-            ))
+            Some(Attribute::ManufacturerName("Test".try_into().unwrap()))
         );
     }
 
     #[test]
     fn manufacturer_name_to_le_stream() {
-        let attribute = Attribute::ManufacturerName(String::try_from("Test").unwrap());
+        let attribute = Attribute::ManufacturerName("Test".try_into().unwrap());
         let bytes: Vec<u8> = attribute.to_le_stream().collect();
         assert_eq!(bytes, vec![0x04, 0x00, 0x04, b'T', b'e', b's', b't']);
     }
