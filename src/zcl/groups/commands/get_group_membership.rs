@@ -6,20 +6,26 @@ use crate::zcl::{Cluster, Command};
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(transparent)]
 pub struct GetGroupMembership {
-    group_list: List<Uint8, Uint16>,
+    groups: List<Uint8, Uint16>,
 }
 
 impl GetGroupMembership {
     /// Creates a new `GetGroupMembership` command with the specified group count and list.
     #[must_use]
-    pub const fn new(group_list: List<Uint8, Uint16>) -> Self {
-        Self { group_list }
+    pub const fn new(groups: List<Uint8, Uint16>) -> Self {
+        Self { groups }
+    }
+
+    /// Return the groups the sender is a member of.
+    #[must_use]
+    pub fn groups(&self) -> &[Uint16] {
+        self.groups.as_ref()
     }
 }
 
 impl AsRef<[Uint16]> for GetGroupMembership {
     fn as_ref(&self) -> &[Uint16] {
-        self.group_list.as_ref()
+        self.groups()
     }
 }
 
