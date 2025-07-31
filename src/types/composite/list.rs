@@ -20,7 +20,7 @@ impl<T> List<Uint8, T> {
     pub fn new(items: Box<[T]>) -> Option<Self> {
         u8::try_from(items.len())
             .ok()
-            .and_then(|length| Uint8::new(length))
+            .and_then(Uint8::new)
             .map(|_| Self {
                 items,
                 prefix: PhantomData,
