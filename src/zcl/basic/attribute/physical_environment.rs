@@ -245,11 +245,8 @@ impl ToLeStream for PhysicalEnvironment {
 }
 
 #[cfg(test)]
-#[cfg(feature = "alloc")]
+#[cfg(feature = "std")]
 mod tests {
-    use alloc::vec;
-    use alloc::vec::Vec;
-
     use super::*;
 
     #[test]

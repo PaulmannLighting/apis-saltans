@@ -5,7 +5,7 @@ use chrono::NaiveDate;
 use either::{Either, Left, Right};
 pub use parse_error::ParseError;
 
-use crate::types::{String, U8String};
+use crate::types::String;
 
 mod parse_error;
 
@@ -49,15 +49,15 @@ impl Display for DateCode {
     }
 }
 
-impl From<DateCode> for String {
+impl From<DateCode> for String<16> {
     fn from(date_code: DateCode) -> Self {
         Self::from(&date_code)
     }
 }
 
-impl From<&DateCode> for String {
+impl From<&DateCode> for String<16> {
     fn from(date_code: &DateCode) -> Self {
-        let mut buffer = U8String::new();
+        let mut buffer = heapless::String::new();
         date_code
             .date
             .format(DATE_FORMAT)
@@ -81,10 +81,10 @@ impl FromStr for DateCode {
     }
 }
 
-impl TryFrom<String> for DateCode {
+impl<const CAPACITY: usize> TryFrom<String<CAPACITY>> for DateCode {
     type Error = Either<Utf8Error, ParseError>;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
+    fn try_from(value: String<CAPACITY>) -> Result<Self, Self::Error> {
         Self::from_str(value.try_as_str().map_err(Left)?).map_err(Right)
     }
 }

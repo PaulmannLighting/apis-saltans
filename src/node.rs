@@ -1,7 +1,7 @@
 //! Zigbee network node representation.
-#![cfg(feature = "alloc")]
+#![cfg(feature = "std")]
 
-use alloc::collections::BTreeSet;
+use std::collections::BTreeSet;
 
 use capability::Capability;
 use descriptor::Descriptor;

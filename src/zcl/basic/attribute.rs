@@ -39,7 +39,7 @@ pub enum Attribute {
     /// The model identifier.
     ModelIdentifier(String<32>) = 0x0005,
     /// The date code.
-    DateCode(Parsable<String, DateCode>) = 0x0006,
+    DateCode(Parsable<String<16>, DateCode>) = 0x0006,
     /// The power source.
     PowerSource(PowerSource) = 0x0007,
     /// The generic device class.
@@ -80,11 +80,8 @@ impl ToLeStream for Attribute {
 }
 
 #[cfg(test)]
-#[cfg(feature = "alloc")]
+#[cfg(feature = "std")]
 mod tests {
-    use alloc::vec;
-    use alloc::vec::Vec;
-
     use chrono::NaiveDate;
     use le_stream::FromLeStream;
 

@@ -1,8 +1,5 @@
 //! An implementation of the Zigbee Cluster Library (ZCL).
-#![no_std]
-
-#[cfg(feature = "alloc")]
-extern crate alloc;
+#![cfg_attr(not(feature = "std"), no_std)]
 
 mod constants;
 #[cfg(feature = "std")]

@@ -53,12 +53,6 @@ impl From<String<32>> for Attribute {
     }
 }
 
-impl From<Parsable<String, DateCode>> for Attribute {
-    fn from(value: Parsable<String, DateCode>) -> Self {
-        Self::String16(value.to_le_stream())
-    }
-}
-
 impl From<PowerSource> for Attribute {
     fn from(value: PowerSource) -> Self {
         Self::PowerSource(value.to_le_stream())
@@ -74,6 +68,12 @@ impl From<PhysicalEnvironment> for Attribute {
 impl From<Parsable<u8, DeviceEnabled>> for Attribute {
     fn from(value: Parsable<u8, DeviceEnabled>) -> Self {
         Self::DeviceEnabled(value.to_le_stream())
+    }
+}
+
+impl From<Parsable<String<16>, DateCode>> for Attribute {
+    fn from(value: Parsable<String<16>, DateCode>) -> Self {
+        Self::String16(value.to_le_stream())
     }
 }
 
