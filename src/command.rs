@@ -1,4 +1,4 @@
-use crate::zcl::cluster::Cluster;
+use crate::zcl::Cluster;
 
 /// Trait to identify a Zigbee command.
 pub trait Command: Cluster {

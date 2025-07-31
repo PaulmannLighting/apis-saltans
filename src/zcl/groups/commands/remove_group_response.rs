@@ -1,8 +1,8 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
+use crate::status::Deprecated;
 use crate::types::Uint16;
 use crate::zcl::groups::CLUSTER_ID;
-use crate::zcl::status::Deprecated;
 use crate::zcl::{Cluster, Command, Status};
 
 /// Represents a response to an `RemoveGroup` command.
