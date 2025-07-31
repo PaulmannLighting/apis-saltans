@@ -1,7 +1,9 @@
 //! Identify Cluster.
 
 pub use attribute::Attribute;
-pub use commands::{Identify, IdentifyQuery, IdentifyQueryResponse, TriggerEffect};
+pub use commands::{
+    EffectIdentifier, EffectVariant, Identify, IdentifyQuery, IdentifyQueryResponse, TriggerEffect,
+};
 
 mod attribute;
 mod commands;
