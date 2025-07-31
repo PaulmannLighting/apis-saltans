@@ -19,6 +19,12 @@ impl String16 {
         self.0.len()
     }
 
+    /// Determine whether the string is empty.
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// Try to parse the underlying bytes as a UTF-8 string.
     ///
     /// # Errors
