@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::ToLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
@@ -23,12 +23,17 @@ pub enum PowerSource {
     EmergencyMainsAndTransferSwitch = 0x06,
 }
 
-impl FromLeStream for PowerSource {
-    fn from_le_stream<T>(bytes: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        u8::from_le_stream(bytes).and_then(Self::from_u8)
+impl From<PowerSource> for u8 {
+    fn from(value: PowerSource) -> Self {
+        value as Self
+    }
+}
+
+impl TryFrom<u8> for PowerSource {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_u8(value).ok_or(value)
     }
 }
 
@@ -36,7 +41,7 @@ impl ToLeStream for PowerSource {
     type Iter = <u8 as ToLeStream>::Iter;
 
     fn to_le_stream(self) -> Self::Iter {
-        (self as u8).to_le_stream()
+        u8::from(self).to_le_stream()
     }
 }
 
@@ -44,13 +49,6 @@ impl ToLeStream for PowerSource {
 #[cfg(feature = "std")]
 mod tests {
     use super::*;
-
-    #[test]
-    fn power_source_from_le_stream() {
-        let bytes = vec![0x01];
-        let power_source = PowerSource::from_le_stream(bytes.into_iter()).unwrap();
-        assert_eq!(power_source, PowerSource::MainsSinglePhase);
-    }
 
     #[test]
     fn power_source_to_le_stream() {

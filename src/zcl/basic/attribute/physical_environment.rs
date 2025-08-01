@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::ToLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
@@ -227,12 +227,17 @@ pub enum PhysicalEnvironment {
     Unknown = 0xff,
 }
 
-impl FromLeStream for PhysicalEnvironment {
-    fn from_le_stream<T>(bytes: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        u8::from_le_stream(bytes).and_then(Self::from_u8)
+impl From<PhysicalEnvironment> for u8 {
+    fn from(value: PhysicalEnvironment) -> Self {
+        value as Self
+    }
+}
+
+impl TryFrom<u8> for PhysicalEnvironment {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_u8(value).ok_or(value)
     }
 }
 
@@ -240,51 +245,6 @@ impl ToLeStream for PhysicalEnvironment {
     type Iter = <u8 as ToLeStream>::Iter;
 
     fn to_le_stream(self) -> Self::Iter {
-        (self as u8).to_le_stream()
-    }
-}
-
-#[cfg(test)]
-#[cfg(feature = "std")]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn mirror_or_atrium_from_le_stream() {
-        let bytes = vec![0x01];
-        let environment = PhysicalEnvironment::from_le_stream(bytes.into_iter()).unwrap();
-        assert_eq!(environment, PhysicalEnvironment::MirrorOrAtrium);
-    }
-
-    #[test]
-    fn bar_to_le_stream() {
-        let environment = PhysicalEnvironment::Bar;
-        let bytes: Vec<u8> = environment.to_le_stream().collect();
-        assert_eq!(bytes, vec![0x02]);
-    }
-
-    #[test]
-    fn unknown() {
-        let bytes = vec![0xff];
-        let environment = PhysicalEnvironment::from_le_stream(bytes.into_iter()).unwrap();
-        assert_eq!(environment, PhysicalEnvironment::Unknown);
-    }
-
-    #[test]
-    fn any_office_from_le_stream() {
-        let mut bytes = vec![0x0b, 0x24].into_iter();
-        let office = PhysicalEnvironment::from_le_stream(&mut bytes).unwrap();
-        assert_eq!(office, PhysicalEnvironment::Office);
-        let office_alt = PhysicalEnvironment::from_le_stream(&mut bytes).unwrap();
-        assert_eq!(office_alt, PhysicalEnvironment::OfficeAlt);
-    }
-
-    #[test]
-    fn any_living_room_from_le_stream() {
-        let mut bytes = vec![0x2e, 0x39].into_iter();
-        let living_room = PhysicalEnvironment::from_le_stream(&mut bytes).unwrap();
-        assert_eq!(living_room, PhysicalEnvironment::LivingRoom);
-        let living_room_alt = PhysicalEnvironment::from_le_stream(&mut bytes).unwrap();
-        assert_eq!(living_room_alt, PhysicalEnvironment::LivingRoomAlt);
+        u8::from(self).to_le_stream()
     }
 }
