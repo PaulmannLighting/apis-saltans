@@ -8,7 +8,7 @@ pub use super::device_enabled::DeviceEnabled;
 pub use super::disable_local_config::DisableLocalConfig;
 pub use super::physical_environment::PhysicalEnvironment;
 use crate::types::String;
-pub mod iterator;
+mod iterator;
 
 /// Writable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
