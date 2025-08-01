@@ -1,13 +1,16 @@
+//! Writable attributes in the Basic cluster.
+
 use core::iter::Chain;
 
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
 
-pub use super::alarm_mask::AlarmMask;
-pub use super::device_enabled::DeviceEnabled;
-pub use super::disable_local_config::DisableLocalConfig;
-pub use super::physical_environment::PhysicalEnvironment;
+use super::alarm_mask::AlarmMask;
+use super::device_enabled::DeviceEnabled;
+use super::disable_local_config::DisableLocalConfig;
+use super::physical_environment::PhysicalEnvironment;
 use crate::types::String;
+
 mod iterator;
 
 /// Writable attributes in the Basic cluster.

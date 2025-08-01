@@ -1,12 +1,14 @@
+//! Readable attributes in the Basic cluster
+
 use le_stream::derive::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 
-pub use super::alarm_mask::AlarmMask;
-pub use super::date_code::DateCode;
-pub use super::device_enabled::DeviceEnabled;
-pub use super::disable_local_config::DisableLocalConfig;
-pub use super::physical_environment::PhysicalEnvironment;
-pub use super::power_source::PowerSource;
+use super::alarm_mask::AlarmMask;
+use super::date_code::DateCode;
+use super::device_enabled::DeviceEnabled;
+use super::disable_local_config::DisableLocalConfig;
+use super::physical_environment::PhysicalEnvironment;
+use super::power_source::PowerSource;
 use crate::types::{String, Uint8};
 use crate::util::Parsable;
 
