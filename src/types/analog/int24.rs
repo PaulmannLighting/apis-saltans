@@ -62,3 +62,24 @@ impl TryFrom<i32> for Int24 {
         I24::try_from(value).map_or(Err(Some(value)), |i24| Self::new(i24).ok_or(None))
     }
 }
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Int24 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.to_be_bytes().serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Int24 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let bytes: [u8; 3] = serde::Deserialize::deserialize(deserializer)?;
+        Ok(Self(I24::from_be_bytes(bytes)))
+    }
+}

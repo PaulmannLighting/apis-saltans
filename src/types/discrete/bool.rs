@@ -8,6 +8,7 @@ const TRUE: u8 = 0x01;
 const NON_VALUE: u8 = 0xff;
 
 /// A boolean type, represented as a single byte.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]

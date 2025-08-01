@@ -7,6 +7,7 @@ use crate::constants::U8_CAPACITY;
 use crate::types::Uint8;
 
 /// An octet string with a maximum size of [`OctStr::CAPACITY`] bytes.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(transparent)]
 pub struct OctStr<const CAPACITY: usize = U8_CAPACITY>(heapless::Vec<u8, CAPACITY>);

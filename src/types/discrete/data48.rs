@@ -1,6 +1,7 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 /// The `48-bit data` type, short `data48`.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]

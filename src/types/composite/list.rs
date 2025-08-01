@@ -8,6 +8,7 @@ use crate::constants::U8_CAPACITY;
 use crate::types::Uint8;
 
 /// A list of items with a length prefix.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct List<P, T, const CAPACITY: usize = U8_CAPACITY> {
     items: heapless::Vec<T, CAPACITY>,

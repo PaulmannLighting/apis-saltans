@@ -7,6 +7,7 @@ use crate::constants::U8_CAPACITY;
 use crate::types::OctStr;
 
 /// A string type, which can be up to [`OctStr::MAX_SIZE`] bytes long.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 #[repr(transparent)]
 pub struct String<const CAPACITY: usize = U8_CAPACITY>(OctStr<CAPACITY>);

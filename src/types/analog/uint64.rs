@@ -1,6 +1,7 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 /// The `64-bit unsigned integer` type, short `uint64`.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]

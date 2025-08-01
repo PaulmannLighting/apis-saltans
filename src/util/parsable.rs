@@ -3,6 +3,7 @@ use core::marker::PhantomData;
 use le_stream::{FromLeStream, ToLeStream};
 
 /// A wrapper type that allows parsing a source type into a destination type.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(transparent)]
 pub struct Parsable<Src, Dst> {
