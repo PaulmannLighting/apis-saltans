@@ -1,5 +1,9 @@
 # TODOs
 
+## Implementation
+
+- [ ] Implement `Attribute` for `power_configuration::attribute::write`.
+
 ## Design changes
 
 - [ ] Make clusters an enum.
