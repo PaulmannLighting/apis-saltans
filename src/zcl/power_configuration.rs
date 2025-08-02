@@ -1,8 +1,7 @@
 //! Power configuration cluster.
 
 pub use attribute::{
-    Attribute, BatteryAlarmMask, BatteryAlarmState, BatteryInformation, BatterySettings,
-    BatterySize, MainsAlarmMask,
+    BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask, read, write,
 };
 pub use battery_alarm::BatteryAlarm;
 
