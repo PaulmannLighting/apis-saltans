@@ -1,10 +1,13 @@
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 
-use crate::types::{String, Uint8, Uint16};
+use crate::types::{OctStr, String, Uint8, Uint16};
+use crate::util::Parsable;
 use crate::zcl::power_configuration::attribute::{
     BatteryAlarmMask, BatteryAlarmState, BatterySize,
 };
+
+const MASK: u16 = 0x000f;
 
 /// Available battery settings.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -13,9 +16,9 @@ use crate::zcl::power_configuration::attribute::{
 #[derive(ReprDiscriminant)]
 pub enum BatterySettings {
     /// Name of the battery manufacturer.
-    BatteryManufacturer(String<16>) = 0x0000,
+    BatteryManufacturer(Parsable<OctStr<16>, String<16>>) = 0x0000,
     /// The battery size.
-    BatterySize(BatterySize) = 0x0001,
+    BatterySize(Parsable<u8, BatterySize>) = 0x0001,
     /// The battery ampere-hour rating in 10mAHr.
     BatteryAHrRating(Uint16) = 0x0002,
     /// Amount of battery cells.
@@ -45,27 +48,27 @@ pub enum BatterySettings {
 }
 
 impl BatterySettings {
-    pub(crate) fn from_le_stream<T>(mask: u16, bytes: T) -> Option<Self>
+    pub(crate) fn try_from_le_stream_with_tag<T>(tag: u16, bytes: T) -> Result<Option<Self>, u16>
     where
         T: Iterator<Item = u8>,
     {
-        match mask {
-            0x0000 => String::from_le_stream(bytes).map(Self::BatteryManufacturer),
-            0x0001 => BatterySize::from_le_stream(bytes).map(Self::BatterySize),
-            0x0002 => Uint16::from_le_stream(bytes).map(Self::BatteryAHrRating),
-            0x0003 => Uint8::from_le_stream(bytes).map(Self::BatteryQuantity),
-            0x0004 => Uint8::from_le_stream(bytes).map(Self::BatteryRatedVoltage),
-            0x0005 => BatteryAlarmMask::from_le_stream(bytes).map(Self::BatteryAlarmMask),
-            0x0006 => Uint8::from_le_stream(bytes).map(Self::BatteryVoltageMinThreshold),
-            0x0007 => Uint8::from_le_stream(bytes).map(Self::BatteryVoltageThreshold1),
-            0x0008 => Uint8::from_le_stream(bytes).map(Self::BatteryVoltageThreshold2),
-            0x0009 => Uint8::from_le_stream(bytes).map(Self::BatteryVoltageThreshold3),
-            0x000a => Uint8::from_le_stream(bytes).map(Self::BatteryPercentageMinThreshold),
-            0x000b => Uint8::from_le_stream(bytes).map(Self::BatteryPercentageThreshold1),
-            0x000c => Uint8::from_le_stream(bytes).map(Self::BatteryPercentageThreshold2),
-            0x000d => Uint8::from_le_stream(bytes).map(Self::BatteryPercentageThreshold3),
-            0x000e => BatteryAlarmState::from_le_stream(bytes).map(Self::BatteryAlarmState),
-            _ => None,
+        match tag & MASK {
+            0x0000 => Ok(Parsable::from_le_stream(bytes).map(Self::BatteryManufacturer)),
+            0x0001 => Ok(Parsable::from_le_stream(bytes).map(Self::BatterySize)),
+            0x0002 => Ok(Uint16::from_le_stream(bytes).map(Self::BatteryAHrRating)),
+            0x0003 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryQuantity)),
+            0x0004 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryRatedVoltage)),
+            0x0005 => Ok(BatteryAlarmMask::from_le_stream(bytes).map(Self::BatteryAlarmMask)),
+            0x0006 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryVoltageMinThreshold)),
+            0x0007 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryVoltageThreshold1)),
+            0x0008 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryVoltageThreshold2)),
+            0x0009 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryVoltageThreshold3)),
+            0x000a => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryPercentageMinThreshold)),
+            0x000b => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryPercentageThreshold1)),
+            0x000c => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryPercentageThreshold2)),
+            0x000d => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryPercentageThreshold3)),
+            0x000e => Ok(BatteryAlarmState::from_le_stream(bytes).map(Self::BatteryAlarmState)),
+            _ => Err(tag),
         }
     }
 }

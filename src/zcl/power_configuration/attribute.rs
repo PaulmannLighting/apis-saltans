@@ -2,21 +2,21 @@ use core::iter::Chain;
 
 pub use battery_alarm_mask::BatteryAlarmMask;
 pub use battery_alarm_state::BatteryAlarmState;
-pub use battery_information::BatteryInformation;
-pub use battery_settings::BatterySettings;
 pub use battery_size::BatterySize;
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 pub use mains_alarm_mask::MainsAlarmMask;
+pub use read::battery_information::BatteryInformation;
+pub use read::battery_settings::BatterySettings;
 use repr_discriminant::ReprDiscriminant;
 
 use crate::types::{Uint8, Uint16};
 
 mod battery_alarm_mask;
 mod battery_alarm_state;
-mod battery_information;
-mod battery_settings;
 mod battery_size;
 mod mains_alarm_mask;
+mod read;
+mod write;
 
 const ATTRIBUTE_MASK: u16 = 0x000f;
 

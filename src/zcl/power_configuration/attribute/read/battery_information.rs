@@ -3,6 +3,8 @@ use repr_discriminant::ReprDiscriminant;
 
 use crate::types::Uint8;
 
+const MASK: u16 = 0x000f;
+
 /// Information about the battery status of a device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -16,14 +18,14 @@ pub enum BatteryInformation {
 }
 
 impl BatteryInformation {
-    pub(crate) fn from_le_stream<T>(mask: u16, bytes: T) -> Option<Self>
+    pub(crate) fn try_from_le_stream_with_tag<T>(tag: u16, bytes: T) -> Result<Option<Self>, u16>
     where
         T: Iterator<Item = u8>,
     {
-        match mask {
-            0x0000 => Uint8::from_le_stream(bytes).map(Self::BatteryVoltage),
-            0x0001 => Uint8::from_le_stream(bytes).map(Self::BatteryPercentageRemaining),
-            _ => None,
+        match tag & MASK {
+            0x0000 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryVoltage)),
+            0x0001 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryPercentageRemaining)),
+            _ => Err(tag),
         }
     }
 }
