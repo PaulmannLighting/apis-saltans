@@ -56,10 +56,12 @@ pub enum Status {
 }
 
 impl TryFrom<u8> for Status {
-    type Error = Result<Deprecated, u8>;
+    type Error = u8;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(Deprecated::try_from(value))
+        Self::from_u8(value)
+            .ok_or(value)
+            .or_else(|value| Deprecated::try_from(value).map(Into::into))
     }
 }
 

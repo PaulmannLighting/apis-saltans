@@ -1,6 +1,8 @@
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
+use crate::status::Status;
+
 /// Deprecated ZCL status codes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
@@ -52,16 +54,34 @@ pub enum Deprecated {
     LimitReached = 0xc4,
 }
 
-impl TryFrom<u8> for Deprecated {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
+impl From<Deprecated> for Status {
+    fn from(value: Deprecated) -> Self {
+        match value {
+            Deprecated::UnsupportedGeneralCommand => Status::UnsupportedCommand,
+            Deprecated::UnsupportedManufacturerClusterCommand => Status::UnsupportedCommand,
+            Deprecated::UnsupportedManufacturerGeneralCommand => Status::UnsupportedCommand,
+            Deprecated::DuplicateExists => Status::Success,
+            Deprecated::WriteOnly => Status::NotAuthorized,
+            Deprecated::InconsistentStartupState => Status::Failure,
+            Deprecated::DefinedOutOfBand => Status::Failure,
+            Deprecated::ActionDenied => Status::Failure,
+            Deprecated::HardwareFailure => Status::Failure,
+            Deprecated::SoftwareFailure => Status::Failure,
+            Deprecated::LimitReached => Status::Success,
+        }
     }
 }
 
 impl From<Deprecated> for u8 {
     fn from(value: Deprecated) -> Self {
         value as Self
+    }
+}
+
+impl TryFrom<u8> for Deprecated {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_u8(value).ok_or(value)
     }
 }
