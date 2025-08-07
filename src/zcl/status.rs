@@ -74,17 +74,16 @@ impl From<Status> for u8 {
 impl From<Deprecated> for Status {
     fn from(value: Deprecated) -> Self {
         match value {
-            Deprecated::UnsupportedGeneralCommand => Self::UnsupportedCommand,
-            Deprecated::UnsupportedManufacturerClusterCommand => Self::UnsupportedCommand,
-            Deprecated::UnsupportedManufacturerGeneralCommand => Self::UnsupportedCommand,
-            Deprecated::DuplicateExists => Self::Success,
+            Deprecated::UnsupportedGeneralCommand
+            | Deprecated::UnsupportedManufacturerClusterCommand
+            | Deprecated::UnsupportedManufacturerGeneralCommand => Self::UnsupportedCommand,
+            Deprecated::DuplicateExists | Deprecated::LimitReached => Self::Success,
             Deprecated::WriteOnly => Self::NotAuthorized,
-            Deprecated::InconsistentStartupState => Self::Failure,
-            Deprecated::DefinedOutOfBand => Self::Failure,
-            Deprecated::ActionDenied => Self::Failure,
-            Deprecated::HardwareFailure => Self::Failure,
-            Deprecated::SoftwareFailure => Self::Failure,
-            Deprecated::LimitReached => Self::Success,
+            Deprecated::InconsistentStartupState
+            | Deprecated::DefinedOutOfBand
+            | Deprecated::ActionDenied
+            | Deprecated::HardwareFailure
+            | Deprecated::SoftwareFailure => Self::Failure,
         }
     }
 }
