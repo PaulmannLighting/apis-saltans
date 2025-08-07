@@ -60,8 +60,8 @@ impl TryFrom<u8> for Status {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::from_u8(value)
+            .or_else(|| Deprecated::from_u8(value).map(Into::into))
             .ok_or(value)
-            .or_else(|value| Deprecated::try_from(value).map(Into::into))
     }
 }
 
