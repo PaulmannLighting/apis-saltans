@@ -57,17 +57,17 @@ pub enum Deprecated {
 impl From<Deprecated> for Status {
     fn from(value: Deprecated) -> Self {
         match value {
-            Deprecated::UnsupportedGeneralCommand => Status::UnsupportedCommand,
-            Deprecated::UnsupportedManufacturerClusterCommand => Status::UnsupportedCommand,
-            Deprecated::UnsupportedManufacturerGeneralCommand => Status::UnsupportedCommand,
-            Deprecated::DuplicateExists => Status::Success,
-            Deprecated::WriteOnly => Status::NotAuthorized,
-            Deprecated::InconsistentStartupState => Status::Failure,
-            Deprecated::DefinedOutOfBand => Status::Failure,
-            Deprecated::ActionDenied => Status::Failure,
-            Deprecated::HardwareFailure => Status::Failure,
-            Deprecated::SoftwareFailure => Status::Failure,
-            Deprecated::LimitReached => Status::Success,
+            Deprecated::UnsupportedGeneralCommand => Self::UnsupportedCommand,
+            Deprecated::UnsupportedManufacturerClusterCommand => Self::UnsupportedCommand,
+            Deprecated::UnsupportedManufacturerGeneralCommand => Self::UnsupportedCommand,
+            Deprecated::DuplicateExists => Self::Success,
+            Deprecated::WriteOnly => Self::NotAuthorized,
+            Deprecated::InconsistentStartupState => Self::Failure,
+            Deprecated::DefinedOutOfBand => Self::Failure,
+            Deprecated::ActionDenied => Self::Failure,
+            Deprecated::HardwareFailure => Self::Failure,
+            Deprecated::SoftwareFailure => Self::Failure,
+            Deprecated::LimitReached => Self::Success,
         }
     }
 }
