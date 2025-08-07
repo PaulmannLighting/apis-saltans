@@ -1,6 +1,5 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
-use crate::status::Deprecated;
 use crate::types::Uint16;
 use crate::zcl::groups::CLUSTER_ID;
 use crate::zcl::{Cluster, Command, Status};
@@ -27,7 +26,7 @@ impl RemoveGroupResponse {
     /// # Errors
     ///
     /// If the status byte does not correspond to a valid `Status`, this will return the raw status value as an error.
-    pub fn status(self) -> Result<Status, Result<Deprecated, u8>> {
+    pub fn status(self) -> Result<Status, u8> {
         Status::try_from(self.status)
     }
 
