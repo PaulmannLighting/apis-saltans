@@ -1,7 +1,4 @@
 use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
-
-use crate::zcl::status::Status;
 
 /// Deprecated ZCL status codes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -52,22 +49,4 @@ pub enum Deprecated {
     ///
     /// Use `Success` instead.
     LimitReached = 0xc4,
-}
-
-impl From<Deprecated> for Status {
-    fn from(value: Deprecated) -> Self {
-        match value {
-            Deprecated::UnsupportedGeneralCommand => Self::UnsupportedCommand,
-            Deprecated::UnsupportedManufacturerClusterCommand => Self::UnsupportedCommand,
-            Deprecated::UnsupportedManufacturerGeneralCommand => Self::UnsupportedCommand,
-            Deprecated::DuplicateExists => Self::Success,
-            Deprecated::WriteOnly => Self::NotAuthorized,
-            Deprecated::InconsistentStartupState => Self::Failure,
-            Deprecated::DefinedOutOfBand => Self::Failure,
-            Deprecated::ActionDenied => Self::Failure,
-            Deprecated::HardwareFailure => Self::Failure,
-            Deprecated::SoftwareFailure => Self::Failure,
-            Deprecated::LimitReached => Self::Success,
-        }
-    }
 }

@@ -70,3 +70,21 @@ impl From<Status> for u8 {
         value as Self
     }
 }
+
+impl From<Deprecated> for Status {
+    fn from(value: Deprecated) -> Self {
+        match value {
+            Deprecated::UnsupportedGeneralCommand => Self::UnsupportedCommand,
+            Deprecated::UnsupportedManufacturerClusterCommand => Self::UnsupportedCommand,
+            Deprecated::UnsupportedManufacturerGeneralCommand => Self::UnsupportedCommand,
+            Deprecated::DuplicateExists => Self::Success,
+            Deprecated::WriteOnly => Self::NotAuthorized,
+            Deprecated::InconsistentStartupState => Self::Failure,
+            Deprecated::DefinedOutOfBand => Self::Failure,
+            Deprecated::ActionDenied => Self::Failure,
+            Deprecated::HardwareFailure => Self::Failure,
+            Deprecated::SoftwareFailure => Self::Failure,
+            Deprecated::LimitReached => Self::Success,
+        }
+    }
+}
