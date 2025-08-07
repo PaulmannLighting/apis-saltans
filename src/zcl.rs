@@ -5,7 +5,6 @@ pub use status::Status;
 
 pub use crate::cluster::Cluster;
 pub use crate::command::Command;
-pub use crate::data_type::DataType;
 
 mod attribute;
 pub mod basic;

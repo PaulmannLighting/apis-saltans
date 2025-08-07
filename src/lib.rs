@@ -4,7 +4,6 @@
 mod cluster;
 mod command;
 mod constants;
-mod data_type;
 #[cfg(feature = "std")]
 pub mod network_manager;
 pub mod node;
