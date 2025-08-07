@@ -55,22 +55,6 @@ pub enum Status {
     UnsupportedCluster = 0xc3,
 }
 
-impl TryFrom<u8> for Status {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value)
-            .or_else(|| Deprecated::from_u8(value).map(Into::into))
-            .ok_or(value)
-    }
-}
-
-impl From<Status> for u8 {
-    fn from(value: Status) -> Self {
-        value as Self
-    }
-}
-
 impl From<Deprecated> for Status {
     fn from(value: Deprecated) -> Self {
         match value {
@@ -85,5 +69,21 @@ impl From<Deprecated> for Status {
             | Deprecated::HardwareFailure
             | Deprecated::SoftwareFailure => Self::Failure,
         }
+    }
+}
+
+impl From<Status> for u8 {
+    fn from(value: Status) -> Self {
+        value as Self
+    }
+}
+
+impl TryFrom<u8> for Status {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::from_u8(value)
+            .or_else(|| Deprecated::from_u8(value).map(Into::into))
+            .ok_or(value)
     }
 }
