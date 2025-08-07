@@ -71,17 +71,3 @@ impl From<Deprecated> for Status {
         }
     }
 }
-
-impl From<Deprecated> for u8 {
-    fn from(value: Deprecated) -> Self {
-        value as Self
-    }
-}
-
-impl TryFrom<u8> for Deprecated {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
-    }
-}
