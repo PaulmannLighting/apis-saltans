@@ -81,6 +81,13 @@ impl From<Status> for u8 {
 impl TryFrom<u8> for Status {
     type Error = u8;
 
+    /// Attempts to convert a `u8` value into a `Status`.
+    ///
+    /// If the value is deprecated, it will be automatically converted to the corresponding new `Status` value.
+    ///
+    /// # Errors
+    ///
+    /// Returns the original `u8` value if it does not correspond to a valid `Status` or a deprecated status.
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::from_u8(value)
             .or_else(|| Deprecated::from_u8(value).map(Into::into))
