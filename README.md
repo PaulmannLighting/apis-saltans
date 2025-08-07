@@ -1,8 +1,8 @@
-# sic-bee
+# apis-saltans
 
-![The Sic! Bee](sic-bee.png)
+![The Sic! Bee](logo.png)
 
-Rust library implementing the yellow-jacket smart home protocol.
+Rust library implementing a smart home protocol of dancing insects.
 
 ## Work in progress
 
