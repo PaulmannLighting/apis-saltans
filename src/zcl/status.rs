@@ -1,4 +1,4 @@
-pub use deprecated::Deprecated;
+use deprecated::Deprecated;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
