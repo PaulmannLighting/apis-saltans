@@ -1,5 +1,5 @@
 [package]
-name = "sic-bee"
+name = "apis-saltans"
 description = "Here be bees."
 authors = ["Richard Neumann <neumann@paulmann.de>"]
 license = "MIT"
