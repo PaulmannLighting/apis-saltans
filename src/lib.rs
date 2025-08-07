@@ -8,7 +8,6 @@ mod data_type;
 #[cfg(feature = "std")]
 pub mod network_manager;
 pub mod node;
-mod status;
 pub mod types;
 mod units;
 mod util;
