@@ -52,9 +52,21 @@ where
         &self.payload
     }
 
+    /// Consume the frame and return its header.
+    #[must_use]
+    pub fn into_header(self) -> Header {
+        self.header
+    }
+
     /// Consume the frame and return its payload.
     #[must_use]
     pub fn into_payload(self) -> T {
         self.payload
+    }
+
+    /// Consume the frame and return its header and payload.
+    #[must_use]
+    pub fn into_parts(self) -> (Header, T) {
+        (self.header, self.payload)
     }
 }
