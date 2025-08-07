@@ -13,33 +13,7 @@ pub struct Frame<T> {
     payload: T,
 }
 
-impl<T> Frame<T>
-where
-    T: Command,
-{
-    /// Create a new ZCL frame.
-    #[must_use]
-    pub fn new(
-        typ: Type,
-        direction: Direction,
-        disable_client_response: bool,
-        manufacturer_code: Option<u16>,
-        seq: u8,
-        payload: T,
-    ) -> Self {
-        Self {
-            header: Header::new(
-                typ,
-                direction,
-                disable_client_response,
-                manufacturer_code,
-                seq,
-                <T as Command>::ID,
-            ),
-            payload,
-        }
-    }
-
+impl<T> Frame<T> {
     /// Return the header of the ZCL frame.
     #[must_use]
     pub const fn header(&self) -> &Header {
@@ -68,5 +42,33 @@ where
     #[must_use]
     pub fn into_parts(self) -> (Header, T) {
         (self.header, self.payload)
+    }
+}
+
+impl<T> Frame<T>
+where
+    T: Command,
+{
+    /// Create a new ZCL frame.
+    #[must_use]
+    pub fn new(
+        typ: Type,
+        direction: Direction,
+        disable_client_response: bool,
+        manufacturer_code: Option<u16>,
+        seq: u8,
+        payload: T,
+    ) -> Self {
+        Self {
+            header: Header::new(
+                typ,
+                direction,
+                disable_client_response,
+                manufacturer_code,
+                seq,
+                <T as Command>::ID,
+            ),
+            payload,
+        }
     }
 }
