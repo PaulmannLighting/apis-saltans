@@ -1,5 +1,6 @@
 use core::error::Error;
 use core::fmt::{Debug, Display};
+use heapless::CapacityError;
 
 /// Error when parsing a `DateCode`.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -36,8 +37,8 @@ impl From<chrono::ParseError> for ParseError {
     }
 }
 
-impl From<()> for ParseError {
-    fn from((): ()) -> Self {
+impl From<CapacityError> for ParseError {
+    fn from(_: CapacityError) -> Self {
         Self::CustomPartTooLong
     }
 }
