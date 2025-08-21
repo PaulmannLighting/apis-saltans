@@ -1,5 +1,6 @@
 use core::error::Error;
 use core::fmt::{Debug, Display};
+
 use heapless::CapacityError;
 
 /// Error when parsing a `DateCode`.
