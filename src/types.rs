@@ -5,7 +5,10 @@ pub use analog::{
     Uint48, Uint56, Uint64,
 };
 pub use composite::{List, OctStr, String};
-pub use discrete::{Bool, Data8, Data16, Data24, Data32, Data40, Data48, Data56, Data64, Date, TimeOfDay, UtcTime, DateError, TimeOfDayError};
+pub use discrete::{
+    Bool, Data8, Data16, Data24, Data32, Data40, Data48, Data56, Data64, Date, DateError,
+    TimeOfDay, TimeOfDayError, UtcTime,
+};
 pub use null::{NoData, Unknown};
 
 mod analog;
