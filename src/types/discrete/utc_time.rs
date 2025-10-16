@@ -30,7 +30,7 @@ impl From<UtcTime> for Option<u32> {
 impl TryFrom<TimeDelta> for UtcTime {
     type Error = TryFromIntError;
 
-    /// Converts a `TimeDelta` to a `UtcTime`.
+    /// Converts a [`TimeDelta`] to a `UtcTime`.
     ///
     /// This will discard any sub-second information.
     fn try_from(value: TimeDelta) -> Result<Self, Self::Error> {
@@ -44,7 +44,7 @@ where
 {
     type Error = TryFromIntError;
 
-    /// Converts a `DateTime` to a `UtcTime`.
+    /// Converts a [`DateTime`] to a `UtcTime`.
     ///
     /// This will discard any sub-second information.
     fn try_from(value: DateTime<T>) -> Result<Self, Self::Error> {
