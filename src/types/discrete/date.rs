@@ -1,6 +1,6 @@
 use core::ops::RangeInclusive;
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, Weekday};
 pub use error::Error;
 use intx::TryFromIntError;
 
@@ -99,6 +99,22 @@ impl Date {
     pub const fn day_of_week(self) -> u8 {
         self.day_of_week
     }
+
+    /// Return the day of the week as a [`Weekday`].
+    #[must_use]
+    pub const fn weekday(self) -> Option<Weekday> {
+        match self.day_of_week {
+            0 => None,
+            1 => Some(Weekday::Mon),
+            2 => Some(Weekday::Tue),
+            3 => Some(Weekday::Wed),
+            4 => Some(Weekday::Thu),
+            5 => Some(Weekday::Fri),
+            6 => Some(Weekday::Sat),
+            7 => Some(Weekday::Sun),
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl From<Date> for NaiveDate {
@@ -150,6 +166,7 @@ mod tests {
         assert_eq!(date.year(), 2023);
         assert_eq!(date.month(), 3);
         assert_eq!(date.day_of_month(), 14);
-        assert_eq!(date.day_of_week(), 2); // Tuesday
+        assert_eq!(date.day_of_week(), 2);
+        assert_eq!(date.weekday(), Some(Weekday::Tue));
     }
 }
