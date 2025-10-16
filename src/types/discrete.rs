@@ -9,6 +9,9 @@ pub use data40::Data40;
 pub use data48::Data48;
 pub use data56::Data56;
 pub use data64::Data64;
+pub use date::{Date, Error as DateError};
+pub use time_of_day::{TimeOfDay, Error as TimeOfDayError};
+pub use utc_time::UtcTime;
 
 mod bool;
 mod data16;
@@ -19,3 +22,6 @@ mod data48;
 mod data56;
 mod data64;
 mod data8;
+mod date;
+mod time_of_day;
+mod utc_time;
