@@ -41,12 +41,9 @@ impl TimeOfDay {
             return Err(Error::InvalidHundredths(hundedths));
         }
 
-        Ok(Self {
-            hour,
-            minute,
-            second,
-            hundedths,
-        })
+        // SAFETY: We just validated the inputs' constraints above.
+        #[allow(unsafe_code)]
+        Ok(unsafe { Self::new_unchecked(hour, minute, second, hundedths) })
     }
 
     /// Create a new `TimeOfDay` instance without checking the values.
