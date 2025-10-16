@@ -116,7 +116,7 @@ impl TryFrom<NaiveDate> for Date {
     type Error = TryFromIntError;
 
     fn try_from(value: NaiveDate) -> Result<Self, Self::Error> {
-        let year = value.year().try_into()?;
+        let year = (value.year() - i32::from(YEAR_OFFSET)).try_into()?;
         let month = value.month().try_into()?;
         let day_of_month = value.day().try_into()?;
         let day_of_week = value.weekday().number_from_monday().try_into()?;
@@ -127,5 +127,29 @@ impl TryFrom<NaiveDate> for Date {
                 Self::new_unchecked(year, month, day_of_month, day_of_week)
             },
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::NaiveDate;
+
+    use super::*;
+
+    #[test]
+    fn into_naive_date() {
+        let date = Date::try_new(2023, 3, 14, 2).unwrap();
+        let naive_date: NaiveDate = date.into();
+        assert_eq!(naive_date, NaiveDate::from_ymd_opt(2023, 3, 14).unwrap());
+    }
+
+    #[test]
+    fn try_from_naive_date() {
+        let naive_date = NaiveDate::from_ymd_opt(2023, 3, 14).unwrap();
+        let date = Date::try_from(naive_date).unwrap();
+        assert_eq!(date.year(), 2023);
+        assert_eq!(date.month(), 3);
+        assert_eq!(date.day_of_month(), 14);
+        assert_eq!(date.day_of_week(), 2); // Tuesday
     }
 }
