@@ -1,7 +1,8 @@
 use core::ops::RangeInclusive;
 
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 pub use error::Error;
+use intx::TryFromIntError;
 
 const VALID_MONTHS: RangeInclusive<u8> = 1..=12;
 const VALID_DAYS_OF_MONTH: RangeInclusive<u8> = 1..=31;
@@ -108,5 +109,23 @@ impl From<Date> for NaiveDate {
             value.day_of_month.into(),
         )
         .expect("Date values are always valid.")
+    }
+}
+
+impl TryFrom<NaiveDate> for Date {
+    type Error = TryFromIntError;
+
+    fn try_from(value: NaiveDate) -> Result<Self, Self::Error> {
+        let year = value.year().try_into()?;
+        let month = value.month().try_into()?;
+        let day_of_month = value.day().try_into()?;
+        let day_of_week = value.weekday().number_from_monday().try_into()?;
+        Ok(
+            #[allow(unsafe_code)]
+            // SAFETY: Values extracted from NaiveDate are guaranteed to be valid.
+            unsafe {
+                Self::new_unchecked(year, month, day_of_month, day_of_week)
+            },
+        )
     }
 }
