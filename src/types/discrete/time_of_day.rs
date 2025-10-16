@@ -1,6 +1,6 @@
 use core::ops::Range;
 
-use chrono::NaiveTime;
+use chrono::{NaiveTime, Timelike};
 pub use error::Error;
 
 mod error;
@@ -9,6 +9,7 @@ const VALID_HOURS: Range<u8> = 0..24;
 const VALID_MINUTES: Range<u8> = 0..60;
 const VALID_SECONDS: Range<u8> = 0..60;
 const VALID_HUNDREDTHS: Range<u8> = 0..100;
+const NANOS_PER_HUNDREDTH: u32 = 10_000_000;
 
 /// Represents a time of day with hour, minute, second, and hundredths of a second.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -67,6 +68,31 @@ impl TimeOfDay {
         }
     }
 
+    /// Create a new `TimeOfDay` instance from a [`NaiveTime`].
+    ///
+    /// # Returns
+    ///
+    /// A tuple of the `TimeOfDay` instance and the remaining nanoseconds.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the values extracted from `NaiveTime` are out of range, which should never happen.
+    #[must_use]
+    pub fn from_naive_time(time: NaiveTime) -> (Self, u32) {
+        let hour = time.hour().try_into().expect("Hour is always valid.");
+        let minute = time.minute().try_into().expect("Minute is always valid.");
+        let second = time.second().try_into().expect("Second is always valid.");
+        let hundredths = (time.nanosecond() / NANOS_PER_HUNDREDTH)
+            .try_into()
+            .expect("Hundredths is always valid.");
+        let nanoseconds = time.nanosecond() % NANOS_PER_HUNDREDTH;
+        (
+            Self::try_new(hour, minute, second, hundredths)
+                .expect("Values extracted from NaiveTime are always within bounds."),
+            nanoseconds,
+        )
+    }
+
     /// Get the hour of the day.
     #[must_use]
     pub const fn hour(self) -> u8 {
@@ -122,5 +148,16 @@ mod tests {
             naive_time,
             NaiveTime::from_hms_milli_opt(12, 34, 56, 780).unwrap()
         );
+    }
+
+    #[test]
+    fn from_naive_time() {
+        let naive_time = NaiveTime::from_hms_milli_opt(12, 34, 56, 780).unwrap();
+        let (time_of_day, nanos) = TimeOfDay::from_naive_time(naive_time);
+        assert_eq!(time_of_day.hour(), 12);
+        assert_eq!(time_of_day.minute(), 34);
+        assert_eq!(time_of_day.second(), 56);
+        assert_eq!(time_of_day.hundredths(), 78);
+        assert_eq!(nanos, 0);
     }
 }
