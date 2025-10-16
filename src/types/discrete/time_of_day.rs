@@ -15,7 +15,7 @@ pub struct TimeOfDay {
     hour: u8,
     minute: u8,
     second: u8,
-    hundedths: u8,
+    hundredths: u8,
 }
 
 impl TimeOfDay {
@@ -24,7 +24,7 @@ impl TimeOfDay {
     /// # Errors
     ///
     /// Returns an [`Error`] if any of the provided values are out of range.
-    pub fn try_new(hour: u8, minute: u8, second: u8, hundedths: u8) -> Result<Self, Error> {
+    pub fn try_new(hour: u8, minute: u8, second: u8, hundredths: u8) -> Result<Self, Error> {
         if !VALID_HOURS.contains(&hour) {
             return Err(Error::InvalidHour(hour));
         }
@@ -37,13 +37,13 @@ impl TimeOfDay {
             return Err(Error::InvalidSecond(second));
         }
 
-        if !VALID_HUNDREDTHS.contains(&hundedths) {
-            return Err(Error::InvalidHundredths(hundedths));
+        if !VALID_HUNDREDTHS.contains(&hundredths) {
+            return Err(Error::InvalidHundredths(hundredths));
         }
 
         // SAFETY: We just validated the inputs' constraints above.
         #[allow(unsafe_code)]
-        Ok(unsafe { Self::new_unchecked(hour, minute, second, hundedths) })
+        Ok(unsafe { Self::new_unchecked(hour, minute, second, hundredths) })
     }
 
     /// Create a new `TimeOfDay` instance without checking the values.
@@ -62,7 +62,7 @@ impl TimeOfDay {
             hour,
             minute,
             second,
-            hundedths,
+            hundredths: hundedths,
         }
     }
 
@@ -86,7 +86,7 @@ impl TimeOfDay {
 
     /// Get the hundredths of a second.
     #[must_use]
-    pub const fn hundedths(self) -> u8 {
-        self.hundedths
+    pub const fn hundredths(self) -> u8 {
+        self.hundredths
     }
 }
