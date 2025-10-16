@@ -1,5 +1,6 @@
 use core::ops::RangeInclusive;
 
+use chrono::NaiveDate;
 pub use error::Error;
 
 const VALID_MONTHS: RangeInclusive<u8> = 1..=12;
@@ -96,5 +97,16 @@ impl Date {
     #[must_use]
     pub const fn day_of_week(self) -> u8 {
         self.day_of_week
+    }
+}
+
+impl From<Date> for NaiveDate {
+    fn from(value: Date) -> Self {
+        Self::from_ymd_opt(
+            value.year().into(),
+            value.month.into(),
+            value.day_of_month.into(),
+        )
+        .expect("Date values are always valid.")
     }
 }
