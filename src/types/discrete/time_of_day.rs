@@ -58,12 +58,12 @@ impl TimeOfDay {
     /// - Hundredths: 0 to 99
     #[allow(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new_unchecked(hour: u8, minute: u8, second: u8, hundedths: u8) -> Self {
+    pub const unsafe fn new_unchecked(hour: u8, minute: u8, second: u8, hundredths: u8) -> Self {
         Self {
             hour,
             minute,
             second,
-            hundredths: hundedths,
+            hundredths,
         }
     }
 
