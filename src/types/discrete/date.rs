@@ -72,6 +72,20 @@ impl Date {
             _ => None,
         }
     }
+
+    /// Convert to an `Option<Date>`, returning `None` if all fields are non-values.
+    #[must_use]
+    pub const fn into_option(self) -> Option<Self> {
+        if self.year == NON_VALUE
+            && self.month == NON_VALUE
+            && self.day_of_month == NON_VALUE
+            && self.day_of_week == NON_VALUE
+        {
+            None
+        } else {
+            Some(self)
+        }
+    }
 }
 
 impl TryFrom<Date> for NaiveDate {
