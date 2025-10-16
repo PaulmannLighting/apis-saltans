@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn try_into_naive_time() {
         let time_of_day = TimeOfDay::try_new(12, 34, 56, 78).unwrap();
-        let naive_time: NaiveTime = time_of_day.try_into().unwrap();
+        let naive_time: NaiveTime = time_of_day.into();
         assert_eq!(
             naive_time,
             NaiveTime::from_hms_milli_opt(12, 34, 56, 780).unwrap()
