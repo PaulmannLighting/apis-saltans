@@ -24,7 +24,7 @@ impl Date {
         if self.year == NON_VALUE {
             None
         } else {
-            Some(u16::from(self.year) + YEAR_OFFSET)
+            u16::from(self.year).checked_add(YEAR_OFFSET)
         }
     }
 
