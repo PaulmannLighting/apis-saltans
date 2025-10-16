@@ -7,6 +7,13 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 )]
 pub struct Unknown;
 
+impl Unknown {
+    /// Crate an arbitrary option from `Unknown`.
+    #[must_use]
+    pub const fn into_option<T>(self) -> Option<T> {
+        None
+    }
+}
 
 impl From<()> for Unknown {
     fn from((): ()) -> Self {
