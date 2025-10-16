@@ -1,16 +1,11 @@
-use core::num::TryFromIntError;
 use core::ops::Add;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeDelta, TimeZone, Utc};
 
-// Base datetime is 2000-01-01T00:00:00
-const BASE_DATETIME: DateTime<Utc> = DateTime::<Utc>::from_naive_utc_and_offset(
-    NaiveDateTime::new(
-        NaiveDate::from_ymd_opt(2000, 1, 1).expect("Default date is valid."),
-        NaiveTime::from_hms_opt(0, 0, 0).expect("Default time is valid."),
-    ),
-    Utc,
-);
+const BASE_DATE: NaiveDate = NaiveDate::from_ymd_opt(2000, 1, 1).expect("Default date is valid.");
+const BASE_TIME: NaiveTime = NaiveTime::from_hms_opt(0, 0, 0).expect("Default time is valid.");
+const BASE_NAIVE_DATETIME: NaiveDateTime = NaiveDateTime::new(BASE_DATE, BASE_TIME);
+const BASE_DATETIME: DateTime<Utc> = DateTime::from_naive_utc_and_offset(BASE_NAIVE_DATETIME, Utc);
 const NON_VALUE: u32 = 0xffff_ffff;
 
 /// UTC time data type.
@@ -28,13 +23,25 @@ impl From<UtcTime> for Option<u32> {
 }
 
 impl TryFrom<TimeDelta> for UtcTime {
-    type Error = TryFromIntError;
+    type Error = i64;
 
     /// Converts a [`TimeDelta`] to a `UtcTime`.
     ///
     /// This will discard any sub-second information.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the number of seconds is out of range for a `u32`.
     fn try_from(value: TimeDelta) -> Result<Self, Self::Error> {
-        value.num_seconds().try_into().map(Self)
+        let Ok(seconds) = u32::try_from(value.num_seconds()) else {
+            return Err(value.num_seconds());
+        };
+
+        if seconds == NON_VALUE {
+            return Err(seconds.into());
+        }
+
+        Ok(Self(seconds))
     }
 }
 
@@ -42,11 +49,15 @@ impl<T> TryFrom<DateTime<T>> for UtcTime
 where
     T: TimeZone,
 {
-    type Error = TryFromIntError;
+    type Error = i64;
 
     /// Converts a [`DateTime`] to a `UtcTime`.
     ///
     /// This will discard any sub-second information.
+    ///
+    /// # Errors
+    ///
+    /// This will return an error if the number of seconds is out of range for a `u32`.
     fn try_from(value: DateTime<T>) -> Result<Self, Self::Error> {
         Self::try_from(value.signed_duration_since(BASE_DATETIME))
     }
@@ -89,8 +100,21 @@ mod tests {
     }
 
     #[test]
+    fn datetime_from_utc_with_non_value() {
+        let utc_time = UtcTime(NON_VALUE);
+        let result = DateTime::<Utc>::try_from(utc_time);
+        assert_eq!(result, Err(()));
+    }
+
+    #[test]
     fn try_from_utc_time() {
         let utc_time: UtcTime = BASE_DATETIME.try_into().unwrap();
         assert_eq!(utc_time, UtcTime(0));
+    }
+
+    #[test]
+    fn try_from_utc_time_non_value() {
+        let result = UtcTime::try_from(BASE_DATETIME.add(TimeDelta::seconds(NON_VALUE.into())));
+        assert_eq!(result, Err(NON_VALUE.into()));
     }
 }
