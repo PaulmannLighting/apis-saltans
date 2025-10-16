@@ -1,5 +1,7 @@
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeDelta, Utc};
+use core::num::TryFromIntError;
 use core::ops::Add;
+
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeDelta, Utc};
 
 // Base datetime is 2000-01-01T00:00:00
 const BASE_DATETIME: DateTime<Utc> = DateTime::<Utc>::from_naive_utc_and_offset(
@@ -13,6 +15,24 @@ const BASE_DATETIME: DateTime<Utc> = DateTime::<Utc>::from_naive_utc_and_offset(
 /// UTC time data type.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct UtcTime(u32);
+
+impl UtcTime {
+    /// Creates a new `UtcTime` instance from a `TimeDelta`.
+    ///
+    /// # Returns
+    ///
+    /// A tuple of the `UtcTime` instance and the remaining nanoseconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`TryFromIntError`] if the seconds part of the `TimeDelta` cannot be converted to `u32`.
+    pub fn try_from(time_delta: TimeDelta) -> Result<(Self, i32), TryFromIntError> {
+        time_delta
+            .num_seconds()
+            .try_into()
+            .map(|seconds| (Self(seconds), time_delta.subsec_nanos()))
+    }
+}
 
 impl From<UtcTime> for TimeDelta {
     fn from(value: UtcTime) -> Self {
