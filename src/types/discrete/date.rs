@@ -256,15 +256,14 @@ mod tests {
 
     #[test]
     fn try_from_naive_date_year_overflow() {
-        let naive_date = NaiveDate::from_ymd_opt(2300, 3, 14).unwrap();
+        let naive_date = NaiveDate::from_ymd_opt(2156, 3, 14).unwrap();
         let result = Date::try_from(naive_date);
-        assert_eq!(result, Err(TryFromNaiveDateError::YearOverflow(2300)));
+        assert_eq!(result, Err(TryFromNaiveDateError::YearOverflow(2156)));
     }
 
     #[test]
     fn try_from_naive_date_year_no_value() {
-        let naive_date =
-            NaiveDate::from_ymd_opt((YEAR_OFFSET + u16::from(NON_VALUE)).into(), 3, 14).unwrap();
+        let naive_date = NaiveDate::from_ymd_opt(2155, 3, 14).unwrap();
         let result = Date::try_from(naive_date);
         assert_eq!(result, Err(TryFromNaiveDateError::YearOffsetIsNonValue));
     }
