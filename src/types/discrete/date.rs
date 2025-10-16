@@ -127,6 +127,8 @@ impl TryFrom<NaiveDate> for Date {
             return Err(TryFromNaiveDateError::YearOffsetIsNonValue);
         }
 
+        // NaiveDate guarantees valid month, day, and weekday values.
+        // Furthermore, neither of those values can be 0xff, i.e. the non-value.
         let month = value
             .month()
             .try_into()
