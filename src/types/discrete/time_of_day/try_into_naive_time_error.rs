@@ -5,13 +5,9 @@ use core::fmt::Display;
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[allow(clippy::enum_variant_names)]
 pub struct TryIntoNaiveTimeError {
-    /// The hour.
     hour: u8,
-    /// The minute.
     minute: u8,
-    /// The second.
     second: u8,
-    /// The hundredths of a second.
     hundredths: u8,
 }
 
