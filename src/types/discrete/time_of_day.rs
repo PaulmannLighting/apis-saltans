@@ -1,5 +1,6 @@
 use core::ops::Range;
 
+use chrono::NaiveTime;
 pub use error::Error;
 
 mod error;
@@ -88,5 +89,19 @@ impl TimeOfDay {
     #[must_use]
     pub const fn hundredths(self) -> u8 {
         self.hundredths
+    }
+}
+
+impl TryFrom<TimeOfDay> for NaiveTime {
+    type Error = ();
+
+    fn try_from(value: TimeOfDay) -> Result<Self, Self::Error> {
+        Self::from_hms_milli_opt(
+            u32::from(value.hour),
+            u32::from(value.minute),
+            u32::from(value.second),
+            u32::from(value.hundredths) * 10,
+        )
+        .ok_or(())
     }
 }
