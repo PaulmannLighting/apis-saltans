@@ -96,12 +96,16 @@ impl TryFrom<TimeOfDay> for NaiveTime {
     type Error = ();
 
     fn try_from(value: TimeOfDay) -> Result<Self, Self::Error> {
-        Self::from_hms_milli_opt(
-            u32::from(value.hour),
-            u32::from(value.minute),
-            u32::from(value.second),
-            u32::from(value.hundredths) * 10,
-        )
-        .ok_or(())
+        u32::from(value.hundredths)
+            .checked_mul(10)
+            .and_then(|millis| {
+                Self::from_hms_milli_opt(
+                    u32::from(value.hour),
+                    u32::from(value.minute),
+                    u32::from(value.second),
+                    millis,
+                )
+            })
+            .ok_or(())
     }
 }
