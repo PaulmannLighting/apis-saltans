@@ -170,6 +170,80 @@ mod tests {
     }
 
     #[test]
+    fn into_naive_date_no_year() {
+        let date = Date {
+            year: 0xff,
+            month: 3,
+            day_of_month: 14,
+            day_of_week: 2,
+        };
+        let result = NaiveDate::try_from(date);
+        assert_eq!(result, Err(TryFromDateError::NoYear));
+    }
+
+    #[test]
+    fn into_naive_date_no_month() {
+        let date = Date {
+            year: (2023 - YEAR_OFFSET).try_into().expect("Year is valid."),
+            month: 0xff,
+            day_of_month: 14,
+            day_of_week: 2,
+        };
+        let result = NaiveDate::try_from(date);
+        assert_eq!(result, Err(TryFromDateError::NoMonth));
+    }
+
+    #[test]
+    fn into_naive_date_no_day_of_month() {
+        let date = Date {
+            year: (2023 - YEAR_OFFSET).try_into().expect("Year is valid."),
+            month: 3,
+            day_of_month: 0xff,
+            day_of_week: 2,
+        };
+        let result = NaiveDate::try_from(date);
+        assert_eq!(result, Err(TryFromDateError::NoDayOfMonth));
+    }
+
+    #[test]
+    fn into_naive_date_invalid_month() {
+        let date = Date {
+            year: (2023 - YEAR_OFFSET).try_into().expect("Year is valid."),
+            month: 13,
+            day_of_month: 14,
+            day_of_week: 2,
+        };
+        let result = NaiveDate::try_from(date);
+        assert_eq!(
+            result,
+            Err(TryFromDateError::InvalidDate {
+                year: 2023,
+                month: 13,
+                day_of_month: 14,
+            })
+        );
+    }
+
+    #[test]
+    fn into_naive_date_invalid_day_of_month() {
+        let date = Date {
+            year: (2023 - YEAR_OFFSET).try_into().expect("Year is valid."),
+            month: 3,
+            day_of_month: 32,
+            day_of_week: 2,
+        };
+        let result = NaiveDate::try_from(date);
+        assert_eq!(
+            result,
+            Err(TryFromDateError::InvalidDate {
+                year: 2023,
+                month: 3,
+                day_of_month: 32,
+            })
+        );
+    }
+
+    #[test]
     fn try_from_naive_date() {
         let naive_date = NaiveDate::from_ymd_opt(2023, 3, 14).unwrap();
         let date = Date::try_from(naive_date).unwrap();
@@ -178,5 +252,20 @@ mod tests {
         assert_eq!(date.day_of_month(), Some(14));
         assert_eq!(date.day_of_week(), Some(2));
         assert_eq!(date.weekday(), Some(Weekday::Tue));
+    }
+
+    #[test]
+    fn try_from_naive_date_year_overflow() {
+        let naive_date = NaiveDate::from_ymd_opt(2300, 3, 14).unwrap();
+        let result = Date::try_from(naive_date);
+        assert_eq!(result, Err(TryFromNaiveDateError::YearOverflow(2300)));
+    }
+
+    #[test]
+    fn try_from_naive_date_year_no_value() {
+        let naive_date =
+            NaiveDate::from_ymd_opt((YEAR_OFFSET + u16::from(NON_VALUE)).into(), 3, 14).unwrap();
+        let result = Date::try_from(naive_date);
+        assert_eq!(result, Err(TryFromNaiveDateError::YearOffsetIsNonValue));
     }
 }
