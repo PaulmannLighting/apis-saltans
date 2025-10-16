@@ -1,15 +1,13 @@
-use core::ops::Range;
-
 use chrono::{NaiveTime, Timelike};
-pub use error::Error;
+use log::debug;
+pub use try_from_naive_time_error::TryFromNaiveTimeError;
+pub use try_into_naive_time_error::TryIntoNaiveTimeError;
 
-mod error;
+mod try_from_naive_time_error;
+mod try_into_naive_time_error;
 
-const VALID_HOURS: Range<u8> = 0..24;
-const VALID_MINUTES: Range<u8> = 0..60;
-const VALID_SECONDS: Range<u8> = 0..60;
-const VALID_HUNDREDTHS: Range<u8> = 0..100;
 const NANOS_PER_HUNDREDTHS: u32 = 10_000_000;
+const NON_VALUE: u8 = 0xff;
 
 /// Represents a time of day with hour, minute, second, and hundredths of a second.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -21,112 +19,102 @@ pub struct TimeOfDay {
 }
 
 impl TimeOfDay {
-    /// Create a new `TimeOfDay` instance.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if any of the provided values are out of range.
-    pub fn try_new(hour: u8, minute: u8, second: u8, hundredths: u8) -> Result<Self, Error> {
-        if !VALID_HOURS.contains(&hour) {
-            return Err(Error::InvalidHour(hour));
-        }
-
-        if !VALID_MINUTES.contains(&minute) {
-            return Err(Error::InvalidMinute(minute));
-        }
-
-        if !VALID_SECONDS.contains(&second) {
-            return Err(Error::InvalidSecond(second));
-        }
-
-        if !VALID_HUNDREDTHS.contains(&hundredths) {
-            return Err(Error::InvalidHundredths(hundredths));
-        }
-
-        // SAFETY: We just validated the inputs' constraints above.
-        #[allow(unsafe_code)]
-        Ok(unsafe { Self::new_unchecked(hour, minute, second, hundredths) })
-    }
-
-    /// Create a new `TimeOfDay` instance without checking the values.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the provided values are within the valid ranges:
-    /// - Hour: 0 to 23
-    /// - Minute: 0 to 59
-    /// - Second: 0 to 59
-    /// - Hundredths: 0 to 99
-    #[allow(unsafe_code)]
-    #[must_use]
-    pub const unsafe fn new_unchecked(hour: u8, minute: u8, second: u8, hundredths: u8) -> Self {
-        Self {
-            hour,
-            minute,
-            second,
-            hundredths,
-        }
-    }
-
-    /// Create a new `TimeOfDay` instance from a [`NaiveTime`].
-    ///
-    /// # Returns
-    ///
-    /// A tuple of the `TimeOfDay` instance and the remaining nanoseconds.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the values extracted from `NaiveTime` are out of range, which should never happen.
-    #[must_use]
-    pub fn from_naive_time(time: NaiveTime) -> (Self, u32) {
-        let hour = time.hour().try_into().expect("Hour is always valid.");
-        let minute = time.minute().try_into().expect("Minute is always valid.");
-        let second = time.second().try_into().expect("Second is always valid.");
-        let hundredths = (time.nanosecond() / NANOS_PER_HUNDREDTHS)
-            .try_into()
-            .expect("Hundredths is always valid.");
-        let nanoseconds = time.nanosecond() % NANOS_PER_HUNDREDTHS;
-        (
-            Self::try_new(hour, minute, second, hundredths)
-                .expect("Values extracted from NaiveTime are always within bounds."),
-            nanoseconds,
-        )
-    }
-
     /// Get the hour of the day.
     #[must_use]
-    pub const fn hour(self) -> u8 {
-        self.hour
+    pub const fn hour(self) -> Option<u8> {
+        if self.hour == NON_VALUE {
+            None
+        } else {
+            Some(self.hour)
+        }
     }
 
     /// Get the minute of the hour.
     #[must_use]
-    pub const fn minute(self) -> u8 {
-        self.minute
+    pub const fn minute(self) -> Option<u8> {
+        if self.minute == NON_VALUE {
+            None
+        } else {
+            Some(self.minute)
+        }
     }
 
     /// Get the second of the minute.
     #[must_use]
-    pub const fn second(self) -> u8 {
-        self.second
+    pub const fn second(self) -> Option<u8> {
+        if self.second == NON_VALUE {
+            None
+        } else {
+            Some(self.second)
+        }
     }
 
     /// Get the hundredths of a second.
     #[must_use]
-    pub const fn hundredths(self) -> u8 {
-        self.hundredths
+    pub const fn hundredths(self) -> Option<u8> {
+        if self.hundredths == NON_VALUE {
+            None
+        } else {
+            Some(self.hundredths)
+        }
     }
 }
 
-impl From<TimeOfDay> for NaiveTime {
-    fn from(value: TimeOfDay) -> Self {
+impl TryFrom<NaiveTime> for TimeOfDay {
+    type Error = TryFromNaiveTimeError;
+
+    fn try_from(value: NaiveTime) -> Result<Self, Self::Error> {
+        let Ok(hour) = value.hour().try_into() else {
+            return Err(TryFromNaiveTimeError::InvalidHour(value.hour()));
+        };
+
+        let Ok(minute) = value.minute().try_into() else {
+            return Err(TryFromNaiveTimeError::InvalidMinute(value.minute()));
+        };
+
+        let Ok(second) = value.second().try_into() else {
+            return Err(TryFromNaiveTimeError::InvalidSecond(value.second()));
+        };
+
+        let hundredths = value.nanosecond() / NANOS_PER_HUNDREDTHS;
+
+        let Ok(hundredths) = hundredths.try_into() else {
+            return Err(TryFromNaiveTimeError::InvalidHundredths(
+                value.nanosecond() / NANOS_PER_HUNDREDTHS,
+            ));
+        };
+
+        let nanos = value.nanosecond() % NANOS_PER_HUNDREDTHS;
+
+        if nanos != 0 {
+            debug!("Warning: NaiveTime has non-zero nanoseconds part: {nanos}");
+        }
+
+        // NaiveTime guarantees valid ranges of all fields.
+        Ok(Self {
+            hour,
+            minute,
+            second,
+            hundredths,
+        })
+    }
+}
+
+impl TryFrom<TimeOfDay> for NaiveTime {
+    type Error = TryIntoNaiveTimeError;
+
+    fn try_from(value: TimeOfDay) -> Result<Self, Self::Error> {
+        let hour = value.hour().unwrap_or_default();
+        let minute = value.minute().unwrap_or_default();
+        let second = value.second().unwrap_or_default();
+        let hundredths = value.hundredths().unwrap_or_default();
         Self::from_hms_milli_opt(
-            u32::from(value.hour),
-            u32::from(value.minute),
-            u32::from(value.second),
-            u32::from(value.hundredths) * 10,
+            u32::from(hour),
+            u32::from(minute),
+            u32::from(second),
+            u32::from(hundredths) * 10,
         )
-        .expect("Values in TimeOfDay are always valid.")
+        .ok_or_else(|| TryIntoNaiveTimeError::new(hour, minute, second, hundredths))
     }
 }
 
@@ -136,8 +124,13 @@ mod tests {
 
     #[test]
     fn try_into_naive_time() {
-        let time_of_day = TimeOfDay::try_new(12, 34, 56, 78).unwrap();
-        let naive_time: NaiveTime = time_of_day.into();
+        let time_of_day = TimeOfDay {
+            hour: 12,
+            minute: 34,
+            second: 56,
+            hundredths: 78,
+        };
+        let naive_time: NaiveTime = time_of_day.try_into().unwrap();
         assert_eq!(
             naive_time,
             NaiveTime::from_hms_milli_opt(12, 34, 56, 780).unwrap()
@@ -147,11 +140,10 @@ mod tests {
     #[test]
     fn from_naive_time() {
         let naive_time = NaiveTime::from_hms_milli_opt(12, 34, 56, 780).unwrap();
-        let (time_of_day, nanos) = TimeOfDay::from_naive_time(naive_time);
-        assert_eq!(time_of_day.hour(), 12);
-        assert_eq!(time_of_day.minute(), 34);
-        assert_eq!(time_of_day.second(), 56);
-        assert_eq!(time_of_day.hundredths(), 78);
-        assert_eq!(nanos, 0);
+        let time_of_day: TimeOfDay = naive_time.try_into().unwrap();
+        assert_eq!(time_of_day.hour(), Some(12));
+        assert_eq!(time_of_day.minute(), Some(34));
+        assert_eq!(time_of_day.second(), Some(56));
+        assert_eq!(time_of_day.hundredths(), Some(78));
     }
 }

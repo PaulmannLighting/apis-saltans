@@ -7,7 +7,7 @@ pub use analog::{
 pub use composite::{List, OctStr, String};
 pub use discrete::{
     Bool, Data8, Data16, Data24, Data32, Data40, Data48, Data56, Data64, Date, TimeOfDay,
-    TimeOfDayError, TryFromDateError, TryFromNaiveDateError, UtcTime,
+    TryFromDateError, TryFromNaiveDateError, TryFromNaiveTimeError, TryIntoNaiveTimeError, UtcTime,
 };
 pub use null::{NoData, Unknown};
 

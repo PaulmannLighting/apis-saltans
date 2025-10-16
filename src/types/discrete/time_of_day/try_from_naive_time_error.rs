@@ -1,20 +1,21 @@
+use core::error::Error;
 use core::fmt::Display;
 
 /// Error while creating a `TimeOfDay` instance.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[allow(clippy::enum_variant_names)]
-pub enum Error {
+pub enum TryFromNaiveTimeError {
     /// The hour is invalid.
-    InvalidHour(u8),
+    InvalidHour(u32),
     /// The minute is invalid.
-    InvalidMinute(u8),
+    InvalidMinute(u32),
     /// The second is invalid.
-    InvalidSecond(u8),
+    InvalidSecond(u32),
     /// The hundredths of a second is invalid.
-    InvalidHundredths(u8),
+    InvalidHundredths(u32),
 }
 
-impl Display for Error {
+impl Display for TryFromNaiveTimeError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::InvalidHour(hour) => write!(f, "Invalid hour: {hour}"),
@@ -25,4 +26,4 @@ impl Display for Error {
     }
 }
 
-impl core::error::Error for Error {}
+impl Error for TryFromNaiveTimeError {}
