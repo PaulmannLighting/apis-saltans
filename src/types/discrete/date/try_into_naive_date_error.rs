@@ -3,7 +3,7 @@ use core::fmt::Display;
 
 /// An error which can occur when converting a [`Date`](super::Date) to a [`NaiveDate`](chrono::NaiveDate).
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum TryFromDateError {
+pub enum TryIntoNaiveDateError {
     /// No year value is set.
     NoYear,
     /// No month value is set.
@@ -21,7 +21,7 @@ pub enum TryFromDateError {
     },
 }
 
-impl Display for TryFromDateError {
+impl Display for TryIntoNaiveDateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::NoYear => write!(f, "No year value is set"),
@@ -36,4 +36,4 @@ impl Display for TryFromDateError {
     }
 }
 
-impl Error for TryFromDateError {}
+impl Error for TryIntoNaiveDateError {}

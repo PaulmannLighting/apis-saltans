@@ -9,7 +9,7 @@ pub use data40::Data40;
 pub use data48::Data48;
 pub use data56::Data56;
 pub use data64::Data64;
-pub use date::{Date, TryFromDateError, TryFromNaiveDateError};
+pub use date::{Date, TryFromNaiveDateError, TryIntoNaiveDateError};
 pub use time_of_day::{TimeOfDay, TryFromNaiveTimeError, TryIntoNaiveTimeError};
 pub use utc_time::UtcTime;
 

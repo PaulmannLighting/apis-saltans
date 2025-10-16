@@ -1,9 +1,9 @@
 use chrono::{Datelike, NaiveDate, Weekday};
-pub use try_from_date_error::TryFromDateError;
 pub use try_from_naive_date_error::TryFromNaiveDateError;
+pub use try_into_naive_date_error::TryIntoNaiveDateError;
 
-mod try_from_date_error;
 mod try_from_naive_date_error;
+mod try_into_naive_date_error;
 
 const YEAR_OFFSET: u16 = 1900;
 const NON_VALUE: u8 = 0xff;
@@ -89,23 +89,23 @@ impl Date {
 }
 
 impl TryFrom<Date> for NaiveDate {
-    type Error = TryFromDateError;
+    type Error = TryIntoNaiveDateError;
 
     fn try_from(value: Date) -> Result<Self, Self::Error> {
         let Some(year) = value.year() else {
-            return Err(TryFromDateError::NoYear);
+            return Err(TryIntoNaiveDateError::NoYear);
         };
 
         let Some(month) = value.month() else {
-            return Err(TryFromDateError::NoMonth);
+            return Err(TryIntoNaiveDateError::NoMonth);
         };
 
         let Some(day_of_month) = value.day_of_month() else {
-            return Err(TryFromDateError::NoDayOfMonth);
+            return Err(TryIntoNaiveDateError::NoDayOfMonth);
         };
 
         Self::from_ymd_opt(year.into(), month.into(), day_of_month.into()).ok_or(
-            TryFromDateError::InvalidDate {
+            TryIntoNaiveDateError::InvalidDate {
                 year,
                 month,
                 day_of_month,
@@ -182,7 +182,7 @@ mod tests {
             day_of_week: 2,
         };
         let result = NaiveDate::try_from(date);
-        assert_eq!(result, Err(TryFromDateError::NoYear));
+        assert_eq!(result, Err(TryIntoNaiveDateError::NoYear));
     }
 
     #[test]
@@ -194,7 +194,7 @@ mod tests {
             day_of_week: 2,
         };
         let result = NaiveDate::try_from(date);
-        assert_eq!(result, Err(TryFromDateError::NoMonth));
+        assert_eq!(result, Err(TryIntoNaiveDateError::NoMonth));
     }
 
     #[test]
@@ -206,7 +206,7 @@ mod tests {
             day_of_week: 2,
         };
         let result = NaiveDate::try_from(date);
-        assert_eq!(result, Err(TryFromDateError::NoDayOfMonth));
+        assert_eq!(result, Err(TryIntoNaiveDateError::NoDayOfMonth));
     }
 
     #[test]
@@ -220,7 +220,7 @@ mod tests {
         let result = NaiveDate::try_from(date);
         assert_eq!(
             result,
-            Err(TryFromDateError::InvalidDate {
+            Err(TryIntoNaiveDateError::InvalidDate {
                 year: 2023,
                 month: 13,
                 day_of_month: 14,
@@ -239,7 +239,7 @@ mod tests {
         let result = NaiveDate::try_from(date);
         assert_eq!(
             result,
-            Err(TryFromDateError::InvalidDate {
+            Err(TryIntoNaiveDateError::InvalidDate {
                 year: 2023,
                 month: 3,
                 day_of_month: 32,
