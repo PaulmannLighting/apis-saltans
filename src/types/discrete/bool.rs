@@ -60,37 +60,61 @@ mod tests {
     use super::*;
 
     #[test]
-    fn from_bool() {
+    fn from_bool_true() {
         let bool_true: Bool = true.into();
         assert_eq!(bool_true, Bool::TRUE);
+    }
 
+    #[test]
+    fn from_bool_false() {
         let bool_false: Bool = false.into();
         assert_eq!(bool_false, Bool::FALSE);
     }
 
     #[test]
-    fn try_into_bool() {
+    fn try_into_bool_true() {
         let result_true: Result<bool, u8> = Bool::TRUE.try_into();
         assert_eq!(result_true, Ok(true));
+    }
 
+    #[test]
+    fn try_into_bool_false() {
         let result_false: Result<bool, u8> = Bool::FALSE.try_into();
         assert_eq!(result_false, Ok(false));
+    }
 
+    #[test]
+    fn try_into_bool_non_value() {
         let result_non_value: Result<bool, u8> = Bool::NON_VALUE.try_into();
         assert_eq!(result_non_value, Err(NON_VALUE));
     }
 
     #[test]
-    fn try_into_option_bool() {
+    fn try_into_bool_invalid() {
+        let result_non_value: Result<bool, u8> = Bool(32).try_into();
+        assert_eq!(result_non_value, Err(32));
+    }
+
+    #[test]
+    fn try_into_option_bool_true() {
         let result_some_true: Result<Option<bool>, u8> = Bool::TRUE.try_into();
         assert_eq!(result_some_true, Ok(Some(true)));
+    }
 
+    #[test]
+    fn try_into_option_bool_false() {
         let result_some_false: Result<Option<bool>, u8> = Bool::FALSE.try_into();
         assert_eq!(result_some_false, Ok(Some(false)));
+    }
 
+    #[test]
+    fn try_into_option_bool_none() {
         let result_none: Result<Option<bool>, u8> = Bool::NON_VALUE.try_into();
         assert_eq!(result_none, Ok(None));
+    }
 
+    #[test]
+    fn try_into_option_bool_invalid() {
         let result_invalid: Result<Option<bool>, u8> = Bool(0x02).try_into();
         assert_eq!(result_invalid, Err(0x02));
     }
