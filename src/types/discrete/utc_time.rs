@@ -67,16 +67,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn no_offset() {
+    fn datetime_from_utc_no_offset() {
         let utc_time = UtcTime(0);
         let datetime: DateTime<Utc> = utc_time.into();
         assert_eq!(datetime, BASE_DATETIME);
     }
 
     #[test]
-    fn some_offset() {
+    fn datetime_from_utc_with_offset() {
         let utc_time = UtcTime(1000);
         let datetime: DateTime<Utc> = utc_time.into();
         assert_eq!(datetime, BASE_DATETIME.add(TimeDelta::seconds(1000)));
+    }
+
+    #[test]
+    fn try_from_utc_time() {
+        let (utc_time, nanos) =
+            UtcTime::try_from_date_time(BASE_DATETIME).expect("Failed to convert datetime.");
+        assert_eq!(utc_time, UtcTime(0));
+        assert_eq!(nanos, 0);
     }
 }
