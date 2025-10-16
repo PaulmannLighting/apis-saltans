@@ -9,7 +9,7 @@ const VALID_HOURS: Range<u8> = 0..24;
 const VALID_MINUTES: Range<u8> = 0..60;
 const VALID_SECONDS: Range<u8> = 0..60;
 const VALID_HUNDREDTHS: Range<u8> = 0..100;
-const NANOS_PER_HUNDREDTH: u32 = 10_000_000;
+const NANOS_PER_HUNDREDTHS: u32 = 10_000_000;
 
 /// Represents a time of day with hour, minute, second, and hundredths of a second.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -82,10 +82,10 @@ impl TimeOfDay {
         let hour = time.hour().try_into().expect("Hour is always valid.");
         let minute = time.minute().try_into().expect("Minute is always valid.");
         let second = time.second().try_into().expect("Second is always valid.");
-        let hundredths = (time.nanosecond() / NANOS_PER_HUNDREDTH)
+        let hundredths = (time.nanosecond() / NANOS_PER_HUNDREDTHS)
             .try_into()
             .expect("Hundredths is always valid.");
-        let nanoseconds = time.nanosecond() % NANOS_PER_HUNDREDTH;
+        let nanoseconds = time.nanosecond() % NANOS_PER_HUNDREDTHS;
         (
             Self::try_new(hour, minute, second, hundredths)
                 .expect("Values extracted from NaiveTime are always within bounds."),
