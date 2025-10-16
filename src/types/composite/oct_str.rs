@@ -100,7 +100,7 @@ impl<const CAPACITY: usize> ToLeStream for OctStr<CAPACITY> {
         Chain<<Uint8 as ToLeStream>::Iter, <heapless::Vec<u8, CAPACITY> as IntoIterator>::IntoIter>;
 
     fn to_le_stream(self) -> Self::Iter {
-        Uint8::new(u8::try_from(self.0.len()).expect("Length should fit into u8."))
+        Uint8::try_from(u8::try_from(self.0.len()).expect("Length should fit into u8."))
             .expect("Length should be a valid Uint8.")
             .to_le_stream()
             .chain(self.0)

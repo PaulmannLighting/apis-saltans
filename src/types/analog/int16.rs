@@ -1,5 +1,7 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
+const NON_VALUE: i16 = 0x8000u16.cast_signed();
+
 /// The `16-bit signed integer` type, short `int16`.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
@@ -8,30 +10,9 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 #[repr(transparent)]
 pub struct Int16(i16);
 
-impl Int16 {
-    /// The non-value.  See Table 2-11.
-    pub const NON_VALUE: i16 = 0x8000u16.cast_signed();
-
-    /// Crate a new `Int16` from an `i16` value.
-    #[must_use]
-    pub const fn new(value: i16) -> Option<Self> {
-        if value == Self::NON_VALUE {
-            None
-        } else {
-            Some(Self(value))
-        }
-    }
-
-    /// Create a new `Int16` with the non-value.
-    #[must_use]
-    pub const fn non_value() -> Self {
-        Self(Self::NON_VALUE)
-    }
-}
-
 impl From<Int16> for Option<i16> {
     fn from(value: Int16) -> Self {
-        if value.0 == Int16::NON_VALUE {
+        if value.0 == NON_VALUE {
             None
         } else {
             Some(value.0)
@@ -43,6 +24,18 @@ impl TryFrom<i16> for Int16 {
     type Error = ();
 
     fn try_from(value: i16) -> Result<Self, Self::Error> {
-        Self::new(value).ok_or(())
+        if value == NON_VALUE {
+            Err(())
+        } else {
+            Ok(Self(value))
+        }
+    }
+}
+
+impl TryFrom<Option<i16>> for Int16 {
+    type Error = ();
+
+    fn try_from(value: Option<i16>) -> Result<Self, Self::Error> {
+        value.map_or(Ok(Self(NON_VALUE)), Self::try_from)
     }
 }

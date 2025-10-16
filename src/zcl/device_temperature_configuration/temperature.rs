@@ -20,11 +20,12 @@ impl Temperature {
     #[must_use]
     pub fn new(degrees_celsius: i16) -> Option<Self> {
         if RANGE.contains(&degrees_celsius) {
-            Int16::new(degrees_celsius).map(Self)
+            Int16::try_from(degrees_celsius).ok().map(Self)
         } else {
             None
         }
     }
+
     /// Returns the temperature value in degrees Celsius.
     ///
     /// # Returns

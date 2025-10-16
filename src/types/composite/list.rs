@@ -21,8 +21,9 @@ impl<T, const CAPACITY: usize> List<Uint8, T, CAPACITY> {
     pub fn new(items: heapless::Vec<T, CAPACITY>) -> Option<Self> {
         u8::try_from(items.len())
             .ok()
-            .and_then(Uint8::new)
-            .map(|_| Self {
+            .try_into()
+            .ok()
+            .map(|_: Uint8| Self {
                 items,
                 prefix: PhantomData,
             })
@@ -81,9 +82,7 @@ where
         Chain<<Uint8 as ToLeStream>::Iter, <heapless::Vec<T, CAPACITY> as ToLeStream>::Iter>;
 
     fn to_le_stream(self) -> Self::Iter {
-        u8::try_from(self.items.len())
-            .ok()
-            .and_then(Uint8::new)
+        Uint8::try_from(u8::try_from(self.items.len()).ok())
             .expect("List length should be a valid Uint8.")
             .to_le_stream()
             .chain(self.items.to_le_stream())
