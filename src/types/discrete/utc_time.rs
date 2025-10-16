@@ -9,7 +9,7 @@ const BASE_DATETIME: DateTime<Utc> = DateTime::from_naive_utc_and_offset(BASE_NA
 const NON_VALUE: u32 = 0xffff_ffff;
 
 /// UTC time data type.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct UtcTime(u32);
 
 impl From<UtcTime> for Option<u32> {
