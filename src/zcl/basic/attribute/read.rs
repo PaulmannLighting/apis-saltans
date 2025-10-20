@@ -13,6 +13,7 @@ use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
 use crate::types::{OctStr, String, Uint8};
 use crate::util::Parsable;
+use crate::zcl::basic::write;
 
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -61,6 +62,20 @@ pub enum Attribute {
     DisableLocalConfig(DisableLocalConfig) = 0x0014,
     /// The cluster revision.
     SwBuildId(String<16>) = 0x4000,
+}
+
+impl From<write::Attribute> for Attribute {
+    fn from(value: write::Attribute) -> Self {
+        match value {
+            write::Attribute::LocationDescription(string) => Self::LocationDescription(string),
+            write::Attribute::PhysicalEnvironment(environment) => {
+                Self::PhysicalEnvironment(environment.into())
+            }
+            write::Attribute::DeviceEnabled(enabled) => Self::DeviceEnabled(enabled.into()),
+            write::Attribute::AlarmMask(mask) => Self::AlarmMask(mask),
+            write::Attribute::DisableLocalConfig(value) => Self::DisableLocalConfig(value),
+        }
+    }
 }
 
 #[cfg(test)]

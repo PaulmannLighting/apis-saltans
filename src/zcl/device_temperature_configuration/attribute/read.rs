@@ -6,7 +6,7 @@ use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 
-use super::iterator;
+use super::{iterator, write};
 use crate::types::{Uint16, Uint24};
 use crate::zcl::device_temperature_configuration::{DeviceTempAlarmMask, Temperature};
 
@@ -35,6 +35,22 @@ pub enum Attribute {
     LowTempDwellTripPoint(Uint24) = 0x0013,
     /// High temperature dwell trip point in seconds.
     HighTempDwellTripPoint(Uint24) = 0x0014,
+}
+
+impl From<write::Attribute> for Attribute {
+    fn from(value: write::Attribute) -> Self {
+        match value {
+            write::Attribute::DeviceTempAlarmMask(mask) => Self::DeviceTempAlarmMask(mask),
+            write::Attribute::LowTempThreshold(thresh) => Self::LowTempThreshold(thresh),
+            write::Attribute::HighTempThreshold(thresh) => Self::HighTempThreshold(thresh),
+            write::Attribute::LowTempDwellTripPoint(seconds) => {
+                Self::LowTempDwellTripPoint(seconds)
+            }
+            write::Attribute::HighTempDwellTripPoint(seconds) => {
+                Self::HighTempDwellTripPoint(seconds)
+            }
+        }
+    }
 }
 
 impl ToLeStream for Attribute {

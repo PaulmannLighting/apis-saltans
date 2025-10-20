@@ -10,6 +10,7 @@ use super::device_enabled::DeviceEnabled;
 use super::disable_local_config::DisableLocalConfig;
 use super::physical_environment::PhysicalEnvironment;
 use crate::types::String;
+use crate::zcl::basic::read;
 
 mod iterator;
 
@@ -29,6 +30,27 @@ pub enum Attribute {
     AlarmMask(AlarmMask) = 0x0013,
     /// The disable local configuration attribute.
     DisableLocalConfig(DisableLocalConfig) = 0x0014,
+}
+
+impl TryFrom<read::Attribute> for Attribute {
+    type Error = read::Attribute;
+
+    fn try_from(value: read::Attribute) -> Result<Self, Self::Error> {
+        match value {
+            read::Attribute::LocationDescription(string) => Ok(Self::LocationDescription(string)),
+            read::Attribute::PhysicalEnvironment(parsable) => parsable.parse().map_or_else(
+                |_| Err(read::Attribute::PhysicalEnvironment(parsable)),
+                |physical_environment| Ok(Self::PhysicalEnvironment(physical_environment)),
+            ),
+            read::Attribute::DeviceEnabled(parsable) => parsable.parse().map_or_else(
+                |_| Err(read::Attribute::DeviceEnabled(parsable)),
+                |device_enabled| Ok(Self::DeviceEnabled(device_enabled)),
+            ),
+            read::Attribute::AlarmMask(mask) => Ok(Self::AlarmMask(mask)),
+            read::Attribute::DisableLocalConfig(value) => Ok(Self::DisableLocalConfig(value)),
+            other => Err(other),
+        }
+    }
 }
 
 impl ToLeStream for Attribute {
