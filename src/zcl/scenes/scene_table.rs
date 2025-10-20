@@ -6,6 +6,7 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 use crate::types::{String, Uint8, Uint16};
 
 /// Scene table entry.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct SceneTable {
     group_id: Uint16,
