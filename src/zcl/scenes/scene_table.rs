@@ -12,8 +12,8 @@ pub struct SceneTable {
     scene_id: Uint8,
     scene_name: String<16>,
     transition_time: Uint16,
-    extension_field_sets: heapless::Vec<u8, 32>, // TODO: More specific type
-    transition_time100ms: Uint8,                 // TODO: Limit to 0x00..0x09.
+    extension_field_sets: (),    // TODO: More specific type
+    transition_time100ms: Uint8, // TODO: Limit to 0x00..0x09.
 }
 
 impl SceneTable {
@@ -24,7 +24,7 @@ impl SceneTable {
         scene_id: Uint8,
         scene_name: String<16>,
         transition_time: Uint16,
-        extension_field_sets: heapless::Vec<u8, 32>,
+        extension_field_sets: (),
         transition_time100ms: Uint8,
     ) -> Self {
         Self {
@@ -63,8 +63,8 @@ impl SceneTable {
 
     /// Returns the extension field sets.
     #[must_use]
-    pub const fn extension_field_sets(&self) -> &heapless::Vec<u8, 32> {
-        &self.extension_field_sets
+    pub const fn extension_field_sets(&self) -> () {
+        self.extension_field_sets
     }
 
     /// Returns the transition time in 100ms units.
