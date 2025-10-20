@@ -7,9 +7,11 @@ use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;
 use super::device_enabled::DeviceEnabled;
 use super::disable_local_config::DisableLocalConfig;
+use super::generic_device_class::GenericDeviceClass;
+use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
-use crate::types::{String, Uint8};
+use crate::types::{OctStr, String, Uint8};
 use crate::util::Parsable;
 
 /// Readable attributes in the Basic cluster.
@@ -33,6 +35,20 @@ pub enum Attribute {
     DateCode(Parsable<String<16>, DateCode>) = 0x0006,
     /// The power source.
     PowerSource(Parsable<u8, PowerSource>) = 0x0007,
+    /// The generic device class.
+    GenericDeviceClass(Parsable<u8, GenericDeviceClass>) = 0x0008,
+    /// The generic device type.
+    GenericDeviceType(Parsable<u8, GenericDeviceType>) = 0x0009,
+    /// The product code.
+    ProductCode(OctStr) = 0x000a,
+    /// The product URL.
+    ProductUrl(String) = 0x000b,
+    /// The manufacturer version details.
+    ManufacturerVersionDetails(String) = 0x000c,
+    /// The serial number.
+    SerialNumber(String) = 0x000d,
+    /// The product label.
+    ProductLabel(String) = 0x000e,
     /// The generic device class.
     LocationDescription(String<16>) = 0x0010,
     /// The physical environment.
