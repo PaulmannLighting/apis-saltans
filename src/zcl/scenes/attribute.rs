@@ -9,6 +9,7 @@ pub use crate::zcl::groups::NameSupport;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant, FromLeStreamTagged)]
+#[allow(variant_size_differences)]
 pub enum Attribute {
     /// Number of scenes currently stored in the device.
     SceneCount(Uint8) = 0x0000,
