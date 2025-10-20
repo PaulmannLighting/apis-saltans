@@ -17,6 +17,7 @@ mod iterator;
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
+#[allow(variant_size_differences)]
 pub enum Attribute {
     /// The generic device class.
     LocationDescription(String<16>) = 0x0010,
