@@ -1,4 +1,4 @@
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
 
 use crate::types::{OctStr, String, Uint8, Uint16};
@@ -47,8 +47,10 @@ pub enum BatterySettings {
     BatteryAlarmState(BatteryAlarmState) = 0x000e,
 }
 
-impl BatterySettings {
-    pub(crate) fn try_from_le_stream_with_tag<T>(tag: u16, bytes: T) -> Result<Option<Self>, u16>
+impl FromLeStreamTagged for BatterySettings {
+    type Tag = u16;
+
+    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
     where
         T: Iterator<Item = u8>,
     {

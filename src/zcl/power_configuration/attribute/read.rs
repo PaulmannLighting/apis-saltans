@@ -64,13 +64,13 @@ impl FromLeStreamTagged for Attribute {
             0x0012 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageMaxThreshold)),
             0x0013 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageDwellTripPoint)),
             tag if tag & MASK == 0x0020 || tag & MASK == 0x0030 => {
-                Ok(Battery::try_from_le_stream_with_tag(tag, bytes)?.map(Self::Battery))
+                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery))
             }
             tag if tag & MASK == 0x0040 || tag & MASK == 0x0050 => {
-                Ok(Battery::try_from_le_stream_with_tag(tag, bytes)?.map(Self::Battery2))
+                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery2))
             }
             tag if tag & MASK == 0x0060 || tag & MASK == 0x0070 => {
-                Ok(Battery::try_from_le_stream_with_tag(tag, bytes)?.map(Self::Battery3))
+                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery3))
             }
             unknown => Err(unknown),
         }
