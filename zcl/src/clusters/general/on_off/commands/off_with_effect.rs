@@ -1,4 +1,4 @@
-use effect::Effect;
+pub use effect::{DelayedAllOff, DyingLight, Effect};
 use le_stream::derive::{FromLeStream, ToLeStream};
 use zigbee::types::Uint8;
 use zigbee::{Cluster, Command};
