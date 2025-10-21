@@ -82,16 +82,17 @@ where
     }
 }
 
-impl<T, const CAPACITY: usize> ToLeStream for List<Uint8, T, CAPACITY>
+impl<P, T, const CAPACITY: usize> ToLeStream for List<P, T, CAPACITY>
 where
     T: ToLeStream,
+    P: TryFrom<usize> + ToLeStream,
 {
-    type Iter =
-        Chain<<Uint8 as ToLeStream>::Iter, <heapless::Vec<T, CAPACITY> as ToLeStream>::Iter>;
+    type Iter = Chain<<P as ToLeStream>::Iter, <heapless::Vec<T, CAPACITY> as ToLeStream>::Iter>;
 
     fn to_le_stream(self) -> Self::Iter {
-        Uint8::try_from(u8::try_from(self.items.len()).ok())
-            .expect("List length should be a valid Uint8.")
+        P::try_from(self.items.len())
+            .ok()
+            .expect("List length should be a valid `P`.")
             .to_le_stream()
             .chain(self.items.to_le_stream())
     }
