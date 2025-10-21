@@ -1,3 +1,5 @@
+use std::num::TryFromIntError;
+
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 const NON_VALUE: u8 = 0xff;
@@ -45,5 +47,16 @@ impl TryFrom<Option<u8>> for Uint8 {
 
     fn try_from(value: Option<u8>) -> Result<Self, Self::Error> {
         value.map_or(Ok(Self(NON_VALUE)), Self::try_from)
+    }
+}
+
+impl TryFrom<usize> for Uint8 {
+    type Error = Option<TryFromIntError>;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match u8::try_from(value) {
+            Ok(value) => Self::try_from(value).map_err(|()| None),
+            Err(error) => Err(Some(error)),
+        }
     }
 }
