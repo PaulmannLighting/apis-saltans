@@ -12,10 +12,18 @@ pub struct Int32(i32);
 
 impl From<Int32> for Option<i32> {
     fn from(value: Int32) -> Self {
+        value.try_into().ok()
+    }
+}
+
+impl TryFrom<Int32> for i32 {
+    type Error = ();
+
+    fn try_from(value: Int32) -> Result<Self, Self::Error> {
         if value.0 == NON_VALUE {
-            None
+            Err(())
         } else {
-            Some(value.0)
+            Ok(value.0)
         }
     }
 }

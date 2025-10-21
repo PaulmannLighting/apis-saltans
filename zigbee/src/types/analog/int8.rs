@@ -12,10 +12,18 @@ pub struct Int8(i8);
 
 impl From<Int8> for Option<i8> {
     fn from(value: Int8) -> Self {
+        value.try_into().ok()
+    }
+}
+
+impl TryFrom<Int8> for i8 {
+    type Error = ();
+
+    fn try_from(value: Int8) -> Result<Self, Self::Error> {
         if value.0 == NON_VALUE {
-            None
+            Err(())
         } else {
-            Some(value.0)
+            Ok(value.0)
         }
     }
 }

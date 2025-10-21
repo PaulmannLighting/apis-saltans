@@ -12,17 +12,25 @@ pub struct Uint40(U40);
 
 impl From<Uint40> for Option<U40> {
     fn from(value: Uint40) -> Self {
-        if value.0 == NON_VALUE {
-            None
-        } else {
-            Some(value.0)
-        }
+        value.try_into().ok()
     }
 }
 
 impl From<Uint40> for Option<u64> {
     fn from(value: Uint40) -> Self {
         Option::<U40>::from(value).map(Into::into)
+    }
+}
+
+impl TryFrom<Uint40> for U40 {
+    type Error = ();
+
+    fn try_from(value: Uint40) -> Result<Self, Self::Error> {
+        if value.0 == NON_VALUE {
+            Err(())
+        } else {
+            Ok(value.0)
+        }
     }
 }
 

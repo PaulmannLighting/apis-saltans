@@ -12,17 +12,25 @@ pub struct Uint56(U56);
 
 impl From<Uint56> for Option<U56> {
     fn from(value: Uint56) -> Self {
-        if value.0 == NON_VALUE {
-            None
-        } else {
-            Some(value.0)
-        }
+        value.try_into().ok()
     }
 }
 
 impl From<Uint56> for Option<u64> {
     fn from(value: Uint56) -> Self {
         Option::<U56>::from(value).map(Into::into)
+    }
+}
+
+impl TryFrom<Uint56> for U56 {
+    type Error = ();
+
+    fn try_from(value: Uint56) -> Result<Self, Self::Error> {
+        if value.0 == NON_VALUE {
+            Err(())
+        } else {
+            Ok(value.0)
+        }
     }
 }
 

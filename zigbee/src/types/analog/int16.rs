@@ -12,10 +12,18 @@ pub struct Int16(i16);
 
 impl From<Int16> for Option<i16> {
     fn from(value: Int16) -> Self {
+        value.try_into().ok()
+    }
+}
+
+impl TryFrom<Int16> for i16 {
+    type Error = ();
+
+    fn try_from(value: Int16) -> Result<Self, Self::Error> {
         if value.0 == NON_VALUE {
-            None
+            Err(())
         } else {
-            Some(value.0)
+            Ok(value.0)
         }
     }
 }

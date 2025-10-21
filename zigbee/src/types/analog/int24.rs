@@ -1,7 +1,7 @@
 use intx::I24;
 use le_stream::derive::{FromLeStream, ToLeStream};
 
-const NON_VALUE: [u8; 3] = [0x80, 0x00, 0x00];
+const NON_VALUE_BE: [u8; 3] = [0x80, 0x00, 0x00];
 
 /// The `24-bit signed integer` type, short `int24`.
 #[derive(
@@ -12,10 +12,18 @@ pub struct Int24(I24);
 
 impl From<Int24> for Option<I24> {
     fn from(value: Int24) -> Self {
-        if value.0 == I24::from_be_bytes(NON_VALUE) {
-            None
+        value.try_into().ok()
+    }
+}
+
+impl TryFrom<Int24> for I24 {
+    type Error = ();
+
+    fn try_from(value: Int24) -> Result<Self, Self::Error> {
+        if value.0 == Self::from_be_bytes(NON_VALUE_BE) {
+            Err(())
         } else {
-            Some(value.0)
+            Ok(value.0)
         }
     }
 }
@@ -30,7 +38,7 @@ impl TryFrom<I24> for Int24 {
     type Error = ();
 
     fn try_from(value: I24) -> Result<Self, Self::Error> {
-        if value == I24::from_be_bytes(NON_VALUE) {
+        if value == I24::from_be_bytes(NON_VALUE_BE) {
             Err(())
         } else {
             Ok(Self(value))
@@ -42,7 +50,10 @@ impl TryFrom<Option<I24>> for Int24 {
     type Error = ();
 
     fn try_from(value: Option<I24>) -> Result<Self, Self::Error> {
-        value.map_or_else(|| Ok(Self(I24::from_be_bytes(NON_VALUE))), Self::try_from)
+        value.map_or_else(
+            || Ok(Self(I24::from_be_bytes(NON_VALUE_BE))),
+            Self::try_from,
+        )
     }
 }
 

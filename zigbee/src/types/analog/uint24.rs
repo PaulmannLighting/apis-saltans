@@ -12,17 +12,25 @@ pub struct Uint24(U24);
 
 impl From<Uint24> for Option<U24> {
     fn from(value: Uint24) -> Self {
-        if value.0 == NON_VALUE {
-            None
-        } else {
-            Some(value.0)
-        }
+        value.try_into().ok()
     }
 }
 
 impl From<Uint24> for Option<u32> {
     fn from(value: Uint24) -> Self {
         Option::<U24>::from(value).map(Into::into)
+    }
+}
+
+impl TryFrom<Uint24> for U24 {
+    type Error = ();
+
+    fn try_from(value: Uint24) -> Result<Self, Self::Error> {
+        if value.0 == NON_VALUE {
+            Err(())
+        } else {
+            Ok(value.0)
+        }
     }
 }
 

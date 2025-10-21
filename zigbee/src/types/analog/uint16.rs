@@ -12,10 +12,18 @@ pub struct Uint16(u16);
 
 impl From<Uint16> for Option<u16> {
     fn from(value: Uint16) -> Self {
+        value.try_into().ok()
+    }
+}
+
+impl TryFrom<Uint16> for u16 {
+    type Error = ();
+
+    fn try_from(value: Uint16) -> Result<Self, Self::Error> {
         if value.0 == NON_VALUE {
-            None
+            Err(())
         } else {
-            Some(value.0)
+            Ok(value.0)
         }
     }
 }

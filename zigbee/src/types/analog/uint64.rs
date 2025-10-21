@@ -12,10 +12,18 @@ pub struct Uint64(u64);
 
 impl From<Uint64> for Option<u64> {
     fn from(value: Uint64) -> Self {
+        value.try_into().ok()
+    }
+}
+
+impl TryFrom<Uint64> for u64 {
+    type Error = ();
+
+    fn try_from(value: Uint64) -> Result<Self, Self::Error> {
         if value.0 == NON_VALUE {
-            None
+            Err(())
         } else {
-            Some(value.0)
+            Ok(value.0)
         }
     }
 }

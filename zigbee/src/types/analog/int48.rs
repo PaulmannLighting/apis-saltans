@@ -1,7 +1,7 @@
 use intx::I48;
 use le_stream::derive::{FromLeStream, ToLeStream};
 
-const NON_VALUE: [u8; 6] = [0x80, 0x00, 0x00, 0x00, 0x00, 0x00];
+const NON_VALUE_BE: [u8; 6] = [0x80, 0x00, 0x00, 0x00, 0x00, 0x00];
 
 /// The `48-bit signed integer` type, short `int48`.
 #[derive(
@@ -12,11 +12,7 @@ pub struct Int48(I48);
 
 impl From<Int48> for Option<I48> {
     fn from(value: Int48) -> Self {
-        if value.0 == I48::from_be_bytes(NON_VALUE) {
-            None
-        } else {
-            Some(value.0)
-        }
+        value.try_into().ok()
     }
 }
 
@@ -26,11 +22,23 @@ impl From<Int48> for Option<i64> {
     }
 }
 
+impl TryFrom<Int48> for I48 {
+    type Error = ();
+
+    fn try_from(value: Int48) -> Result<Self, Self::Error> {
+        if value.0 == Self::from_be_bytes(NON_VALUE_BE) {
+            Err(())
+        } else {
+            Ok(value.0)
+        }
+    }
+}
+
 impl TryFrom<I48> for Int48 {
     type Error = ();
 
     fn try_from(value: I48) -> Result<Self, Self::Error> {
-        if value == I48::from_be_bytes(NON_VALUE) {
+        if value == I48::from_be_bytes(NON_VALUE_BE) {
             Err(())
         } else {
             Ok(Self(value))
@@ -42,7 +50,10 @@ impl TryFrom<Option<I48>> for Int48 {
     type Error = ();
 
     fn try_from(value: Option<I48>) -> Result<Self, Self::Error> {
-        value.map_or_else(|| Ok(Self(I48::from_be_bytes(NON_VALUE))), Self::try_from)
+        value.map_or_else(
+            || Ok(Self(I48::from_be_bytes(NON_VALUE_BE))),
+            Self::try_from,
+        )
     }
 }
 
