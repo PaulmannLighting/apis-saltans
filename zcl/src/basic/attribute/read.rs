@@ -2,8 +2,8 @@
 
 use le_stream::derive::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
-use zb::Parsable;
-use zb::types::{OctStr, String, Uint8};
+use zigbee::Parsable;
+use zigbee::types::{OctStr, String, Uint8};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;

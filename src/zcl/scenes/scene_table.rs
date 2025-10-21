@@ -2,7 +2,7 @@ use core::str::Utf8Error;
 
 use chrono::Duration;
 use le_stream::derive::{FromLeStream, ToLeStream};
-use zb::types::{String, Uint16, Uint8};
+use zigbee::types::{String, Uint16, Uint8};
 
 /// Scene table entry.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

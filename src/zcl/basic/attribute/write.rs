@@ -4,7 +4,7 @@ use core::iter::Chain;
 
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
-use zb::types::String;
+use zigbee::types::String;
 
 use super::alarm_mask::AlarmMask;
 use super::device_enabled::DeviceEnabled;

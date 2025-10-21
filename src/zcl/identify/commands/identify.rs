@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use zb::types::Uint16;
+use zigbee::types::Uint16;
 
 use crate::zcl::identify::CLUSTER_ID;
 use crate::{Cluster, Command};

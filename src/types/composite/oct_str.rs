@@ -2,7 +2,7 @@ use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use log::{error, warn};
-use zb::types::Uint8;
+use zigbee::types::Uint8;
 
 use crate::constants::U8_CAPACITY;
 

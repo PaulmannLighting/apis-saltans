@@ -5,7 +5,7 @@ use core::iter::Chain;
 use le_stream::derive::FromLeStreamTagged;
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
-use zb::types::{Uint16, Uint24};
+use zigbee::types::{Uint16, Uint24};
 
 use super::{iterator, write};
 use crate::zcl::device_temperature_configuration::{DeviceTempAlarmMask, Temperature};

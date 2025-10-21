@@ -1,7 +1,7 @@
 use le_stream::derive::FromLeStreamTagged;
 use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
-use zb::types::{Bool, Uint8, Uint16};
+use zigbee::types::{Bool, Uint8, Uint16};
 
 pub use crate::groups::NameSupport;
 

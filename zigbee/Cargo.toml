@@ -1,5 +1,5 @@
 [package]
-name = "zb"
+name = "zigbee"
 description = "Zigbee core library."
 authors = ["Richard Neumann <neumann@paulmann.de>"]
 license = "MIT"

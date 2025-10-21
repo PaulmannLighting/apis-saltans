@@ -1,5 +1,5 @@
 use read_attribute_status::ReadAttributeStatus;
-use zb::constants::U8_CAPACITY;
+use zigbee::constants::U8_CAPACITY;
 
 mod read_attribute_status;
 

@@ -1,4 +1,4 @@
-use zb::units::Mireds;
+use zigbee::units::Mireds;
 
 const PREVIOUS: u16 = 0xffff;
 

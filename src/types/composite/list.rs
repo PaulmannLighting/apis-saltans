@@ -3,7 +3,7 @@ use core::iter::Chain;
 use core::marker::PhantomData;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zb::types::Uint8;
+use zigbee::types::Uint8;
 
 use crate::constants::U8_CAPACITY;
 

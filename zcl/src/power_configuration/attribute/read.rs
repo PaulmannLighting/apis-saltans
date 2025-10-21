@@ -1,7 +1,7 @@
 use battery::Battery;
 use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
-use zb::types::{Uint8, Uint16};
+use zigbee::types::{Uint8, Uint16};
 
 use super::mains_alarm_mask::MainsAlarmMask;
 

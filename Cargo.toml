@@ -1,5 +1,5 @@
 [workspace]
-members = ["zb", "zcl"]
+members = ["zigbee", "zcl"]
 resolver = "3"
 
 [workspace.lints.rust]

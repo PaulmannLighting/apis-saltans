@@ -1,6 +1,6 @@
 //! Commands for the Basic cluster.
 
-use zb::{Cluster, Command};
+use zigbee::{Cluster, Command};
 
 use crate::basic::CLUSTER_ID;
 

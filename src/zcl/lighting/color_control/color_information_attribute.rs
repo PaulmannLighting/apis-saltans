@@ -1,5 +1,5 @@
 use le_stream::derive::FromLeStreamTagged;
-use zb::types::{String, Uint16, Uint8};
+use zigbee::types::{String, Uint16, Uint8};
 
 use super::color_capabilities::ColorCapabilities;
 use super::options::Options;

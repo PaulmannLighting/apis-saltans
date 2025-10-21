@@ -1,6 +1,6 @@
 use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
-use zb::types::Uint8;
+use zigbee::types::Uint8;
 
 const MASK: u16 = 0x000f;
 

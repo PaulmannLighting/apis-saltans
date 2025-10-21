@@ -2,7 +2,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use zb::{Cluster, Command};
+pub use zigbee::{Cluster, Command};
 
 pub use crate::status::Status;
 

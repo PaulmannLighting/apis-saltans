@@ -1,7 +1,7 @@
 //! Iterator over Device Temperature Configuration attributes.
 
 use le_stream::ToLeStream;
-use zb::types::{Uint16, Uint24};
+use zigbee::types::{Uint16, Uint24};
 
 use crate::device_temperature_configuration::{DeviceTempAlarmMask, Temperature};
 

@@ -4,7 +4,7 @@ use core::str::{FromStr, Utf8Error};
 use chrono::NaiveDate;
 use either::{Either, Left, Right};
 pub use parse_error::ParseError;
-use zb::types::String;
+use zigbee::types::String;
 
 mod parse_error;
 

@@ -1,5 +1,5 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
-use zb::types::{String, Uint16};
+use zigbee::types::{String, Uint16};
 
 use crate::groups::CLUSTER_ID;
 use crate::{Cluster, Command, Status};

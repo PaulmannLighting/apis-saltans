@@ -1,6 +1,6 @@
 use le_stream::ToLeStream;
-use zb::Parsable;
-use zb::types::String;
+use zigbee::Parsable;
+use zigbee::types::String;
 
 use crate::basic::{AlarmMask, DeviceEnabled, DisableLocalConfig, PhysicalEnvironment};
 

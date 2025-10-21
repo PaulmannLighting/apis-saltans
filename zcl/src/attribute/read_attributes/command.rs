@@ -1,4 +1,4 @@
-use zb::constants::U8_CAPACITY;
+use zigbee::constants::U8_CAPACITY;
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Command<const CAPACITY: usize = U8_CAPACITY> {

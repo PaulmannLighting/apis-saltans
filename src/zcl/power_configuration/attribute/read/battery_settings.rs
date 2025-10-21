@@ -1,6 +1,6 @@
 use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
-use zb::types::{String, Uint16, Uint8};
+use zigbee::types::{String, Uint16, Uint8};
 
 use crate::util::Parsable;
 use crate::zcl::power_configuration::attribute::{

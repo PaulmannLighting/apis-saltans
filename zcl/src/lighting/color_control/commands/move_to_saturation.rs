@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use zb::constants::DECI_SECONDS_PER_MILLISECOND;
+use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
 
 use crate::lighting::color_control::CLUSTER_ID;
 use crate::{Cluster, Command};

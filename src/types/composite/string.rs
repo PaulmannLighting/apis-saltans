@@ -2,7 +2,7 @@ use core::str;
 use core::str::Utf8Error;
 
 use le_stream::derive::{FromLeStream, ToLeStream};
-use zb::types::OctStr;
+use zigbee::types::OctStr;
 
 use crate::constants::U8_CAPACITY;
 

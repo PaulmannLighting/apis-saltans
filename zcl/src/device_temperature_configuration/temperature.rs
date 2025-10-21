@@ -1,7 +1,7 @@
 use core::ops::RangeInclusive;
 
 use le_stream::derive::{FromLeStream, ToLeStream};
-use zb::types::Int16;
+use zigbee::types::Int16;
 
 const RANGE: RangeInclusive<i16> = -200..=200;
 

@@ -1,6 +1,6 @@
 use le_stream::derive::FromLeStreamTagged;
-use zb::Parsable;
-use zb::types::{String, Uint8, Uint16};
+use zigbee::Parsable;
+use zigbee::types::{String, Uint8, Uint16};
 
 use super::color_capabilities::ColorCapabilities;
 use super::options::Options;

@@ -1,4 +1,4 @@
-use zb::types::{List, Uint8, Uint16};
+use zigbee::types::{List, Uint8, Uint16};
 
 use crate::groups::CLUSTER_ID;
 use crate::{Cluster, Command};
