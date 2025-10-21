@@ -1,20 +1,24 @@
-use le_stream::derive::{FromLeStream, ToLeStream};
-use zigbee::types::{List, Uint8, Uint16};
+use core::iter::Chain;
+
+use le_stream::{FromLeStream, ToLeStream};
+use zigbee::types::{Uint8, Uint16};
 
 use crate::clusters::general::groups::CLUSTER_ID;
+use crate::clusters::general::groups::types::GroupList;
 use crate::{Cluster, Command};
 
 /// Represents a response to an `GetGroupMembership` command.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct GetGroupMembershipResponse {
     capacity: Uint8,
-    groups: List<Uint8, Uint16>,
+    groups: GroupList,
 }
 
 impl GetGroupMembershipResponse {
     /// Creates a new `GetGroupMembershipResponse` with the given status and group ID.
     #[must_use]
-    pub const fn new(capacity: Uint8, groups: List<Uint8, Uint16>) -> Self {
+    #[allow(clippy::missing_panics_doc)]
+    pub const fn new(capacity: Uint8, groups: GroupList) -> Self {
         Self { capacity, groups }
     }
 
@@ -43,4 +47,43 @@ impl Cluster for GetGroupMembershipResponse {
 
 impl Command for GetGroupMembershipResponse {
     const ID: u8 = 0x02;
+}
+
+impl FromLeStream for GetGroupMembershipResponse {
+    fn from_le_stream<I>(mut bytes: I) -> Option<Self>
+    where
+        I: Iterator<Item = u8>,
+    {
+        let capacity = Uint8::from_le_stream(&mut bytes)?;
+        let group_count = Uint8::from_le_stream(&mut bytes)?;
+        let mut groups = GroupList::new();
+
+        let Ok(size) = u8::try_from(group_count) else {
+            return None;
+        };
+
+        for _ in 0..size {
+            groups.push(Uint16::from_le_stream(&mut bytes)?).ok()?;
+        }
+
+        Some(Self { capacity, groups })
+    }
+}
+
+impl ToLeStream for GetGroupMembershipResponse {
+    type Iter = Chain<
+        Chain<<Uint8 as ToLeStream>::Iter, <Uint8 as ToLeStream>::Iter>,
+        <GroupList as ToLeStream>::Iter,
+    >;
+
+    fn to_le_stream(self) -> Self::Iter {
+        self.capacity
+            .to_le_stream()
+            .chain(
+                Uint8::try_from(self.groups.len())
+                    .expect("GroupList size always fits into a Uint8.")
+                    .to_le_stream(),
+            )
+            .chain(self.groups.to_le_stream())
+    }
 }

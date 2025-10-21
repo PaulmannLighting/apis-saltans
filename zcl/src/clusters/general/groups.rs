@@ -9,5 +9,6 @@ pub use commands::{
 
 mod attribute;
 mod commands;
+mod types;
 
 const CLUSTER_ID: u16 = 0x0004;
