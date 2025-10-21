@@ -57,9 +57,15 @@ where
     where
         I: Iterator<Item = u8>,
     {
-        // If the prefix is `None`, i.e. an invalid read, we assume an empty list.
-        let size = Option::<u8>::from(Uint8::from_le_stream(&mut bytes)?).unwrap_or_default();
         let mut items = heapless::Vec::new();
+
+        // If the prefix is `None`, i.e. an invalid read, we assume an empty list.
+        let Ok(size) = u8::try_from(Uint8::from_le_stream(&mut bytes)?) else {
+            return Some(Self {
+                items,
+                prefix: PhantomData,
+            });
+        };
 
         for _ in 0..size {
             // If the item cannot be added, return `None`.
