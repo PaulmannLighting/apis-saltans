@@ -2,7 +2,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
 /// Delayed all off effect variants.
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, FromPrimitive, ToPrimitive)]
 #[repr(u8)]
 pub enum DelayedAllOff {

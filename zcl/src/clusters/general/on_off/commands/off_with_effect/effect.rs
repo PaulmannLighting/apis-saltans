@@ -7,6 +7,7 @@ mod delayed_all_off;
 mod dying_light;
 
 /// Effects.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[repr(u8)]
 #[derive(ReprDiscriminant)]
