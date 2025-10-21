@@ -13,8 +13,6 @@ pub mod device_temperature_configuration;
 pub mod groups;
 pub mod identify;
 pub mod lighting;
-#[cfg(feature = "std")]
-pub mod network_manager;
 pub mod power_configuration;
 pub mod scenes;
 mod status;
