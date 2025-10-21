@@ -83,7 +83,8 @@ impl<'de> serde::Deserialize<'de> for Int40 {
     where
         D: serde::Deserializer<'de>,
     {
-        let bytes: [u8; 5] = serde::Deserialize::deserialize(deserializer)?;
-        Ok(Self(I40::from_be_bytes(bytes)))
+        serde::Deserialize::deserialize(deserializer)
+            .map(I40::from_be_bytes)
+            .map(Self)
     }
 }
