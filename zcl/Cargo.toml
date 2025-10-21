@@ -1,12 +1,12 @@
 [package]
 name = "zcl"
-description = "Here be bees."
+description = "Zigbee Cluster Library."
 authors = ["Richard Neumann <neumann@paulmann.de>"]
 license = "MIT"
 repository = "https://github.com/PaulmannLighting/sic-bee"
-keywords = ["bee", "protocol", "cluster", "library", "zcl"]
+keywords = ["zigbee", "cluster", "library", "zcl"]
 categories = ["network-programming"]
-documentation = "https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf"
+documentation = "https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf"
 version = "0.1.0"
 edition = "2024"
 exclude = [".gitignore"]
