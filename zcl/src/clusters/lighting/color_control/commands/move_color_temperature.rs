@@ -1,5 +1,5 @@
-use crate::clusters::general::lighting::color_control::CLUSTER_ID;
-use crate::clusters::general::lighting::color_control::move_hue::Mode;
+use crate::clusters::lighting::color_control::CLUSTER_ID;
+use crate::clusters::lighting::color_control::move_hue::Mode;
 use crate::{Cluster, Command};
 
 /// Command to move a light's color temperature.

@@ -2,22 +2,22 @@ use core::time::Duration;
 
 use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
 
-use crate::clusters::general::lighting::color_control::CLUSTER_ID;
-use crate::clusters::general::lighting::color_control::step_hue::Mode;
+use crate::clusters::lighting::color_control::CLUSTER_ID;
+use crate::clusters::lighting::color_control::step_hue::Mode;
 use crate::{Cluster, Command};
 
-/// Command to step a light's hue in an enhanced way, allowing for more control over the size.
+/// Command to step a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct EnhancedStepHue {
+pub struct StepHue {
     mode: Mode,
-    size: u16,
-    transition_time: u16,
+    size: u8,
+    transition_time: u8,
 }
 
-impl EnhancedStepHue {
-    /// Create a new `EnhancedStepHue` command.
+impl StepHue {
+    /// Create a new `StepHue` command.
     #[must_use]
-    pub const fn new(mode: Mode, size: u16, transition_time: u16) -> Self {
+    pub const fn new(mode: Mode, size: u8, transition_time: u8) -> Self {
         Self {
             mode,
             size,
@@ -33,7 +33,7 @@ impl EnhancedStepHue {
 
     /// Return the size of hue step.
     #[must_use]
-    pub const fn size(self) -> u16 {
+    pub const fn size(self) -> u8 {
         self.size
     }
 
@@ -44,10 +44,10 @@ impl EnhancedStepHue {
     }
 }
 
-impl Cluster for EnhancedStepHue {
+impl Cluster for StepHue {
     const ID: u16 = CLUSTER_ID;
 }
 
-impl Command for EnhancedStepHue {
-    const ID: u8 = 0x42;
+impl Command for StepHue {
+    const ID: u8 = 0x02;
 }

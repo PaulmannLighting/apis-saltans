@@ -2,8 +2,8 @@ use core::time::Duration;
 
 use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
 
-use crate::clusters::general::lighting::color_control::CLUSTER_ID;
-use crate::clusters::general::lighting::color_control::move_to_hue::Direction;
+use crate::clusters::lighting::color_control::CLUSTER_ID;
+use crate::clusters::lighting::color_control::move_to_hue::Direction;
 use crate::{Cluster, Command};
 
 /// Command to move a light to a specific extended hue with a direction and transition time.

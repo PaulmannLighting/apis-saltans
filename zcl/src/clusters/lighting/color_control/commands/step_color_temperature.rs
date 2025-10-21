@@ -2,8 +2,8 @@ use core::time::Duration;
 
 use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
 
-use crate::clusters::general::lighting::color_control::CLUSTER_ID;
-use crate::clusters::general::lighting::color_control::step_hue::Mode;
+use crate::clusters::lighting::color_control::CLUSTER_ID;
+use crate::clusters::lighting::color_control::step_hue::Mode;
 use crate::{Cluster, Command};
 
 /// Command to step a light's color temperature in a specified range.

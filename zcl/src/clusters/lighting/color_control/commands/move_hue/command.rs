@@ -1,17 +1,17 @@
-use crate::clusters::general::lighting::color_control::CLUSTER_ID;
-use crate::clusters::general::lighting::color_control::move_saturation::Mode;
+use crate::clusters::lighting::color_control::CLUSTER_ID;
+use crate::clusters::lighting::color_control::move_hue::Mode;
 use crate::{Cluster, Command};
 
-/// Command to move a light's saturation.
+/// Command to move a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct MoveSaturation {
+pub struct MoveHue {
     mode: Mode,
     /// Steps per second.
     rate: u8,
 }
 
-impl MoveSaturation {
-    /// Create a new `MoveSaturation` command.
+impl MoveHue {
+    /// Create a new `MoveHue` command.
     #[must_use]
     pub const fn new(mode: Mode, rate: u8) -> Self {
         Self { mode, rate }
@@ -23,17 +23,17 @@ impl MoveSaturation {
         self.mode
     }
 
-    /// Return the rate of saturation change in steps per second.
+    /// Return the rate of hue change in steps per second.
     #[must_use]
     pub const fn rate(self) -> u8 {
         self.rate
     }
 }
 
-impl Cluster for MoveSaturation {
+impl Cluster for MoveHue {
     const ID: u16 = CLUSTER_ID;
 }
 
-impl Command for MoveSaturation {
-    const ID: u8 = 0x04;
+impl Command for MoveHue {
+    const ID: u8 = 0x01;
 }

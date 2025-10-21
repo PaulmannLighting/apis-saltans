@@ -4,7 +4,7 @@ use zigbee::types::{String, Uint8, Uint16};
 
 use super::color_capabilities::ColorCapabilities;
 use super::options::Options;
-use crate::clusters::general::lighting::color_control::{
+use crate::clusters::lighting::color_control::{
     ColorLoopDirection, ColorMode, DriftCompensation, EnhancedColorMode, StartupColorTemperature,
 };
 
