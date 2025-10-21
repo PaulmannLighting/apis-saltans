@@ -96,7 +96,7 @@ mod tests {
             panic!("Expected ZclVersion attribute");
         };
 
-        assert_eq!(version, 6.try_into().unwrap());
+        assert_eq!(version, 6u8.try_into().unwrap());
     }
 
     #[test]
@@ -108,7 +108,7 @@ mod tests {
             panic!("Expected ApplicationVersion attribute");
         };
 
-        assert_eq!(version, 5.try_into().unwrap());
+        assert_eq!(version, 5u8.try_into().unwrap());
     }
 
     #[test]
@@ -120,7 +120,7 @@ mod tests {
             panic!("Expected StackVersion attribute");
         };
 
-        assert_eq!(version, 4.try_into().unwrap());
+        assert_eq!(version, 4u8.try_into().unwrap());
     }
 
     #[test]
@@ -132,7 +132,7 @@ mod tests {
             panic!("Expected HwVersion attribute");
         };
 
-        assert_eq!(version, 2.try_into().unwrap());
+        assert_eq!(version, 2u8.try_into().unwrap());
     }
 
     #[test]
