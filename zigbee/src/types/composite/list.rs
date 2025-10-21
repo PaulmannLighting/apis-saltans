@@ -20,9 +20,12 @@ where
     P: TryFrom<usize>,
 {
     /// Creates a new `List` with the specified items.
-    #[must_use]
-    pub fn new(items: heapless::Vec<T, CAPACITY>) -> Option<Self> {
-        P::try_from(items.len()).ok().map(|_| Self {
+    ///
+    /// # Errors
+    ///
+    /// If the length of `items` cannot be converted to the prefix type `P`, an error is returned.
+    pub fn try_new(items: heapless::Vec<T, CAPACITY>) -> Result<Self, P::Error> {
+        P::try_from(items.len()).map(|_| Self {
             items,
             prefix: PhantomData,
         })
