@@ -30,7 +30,7 @@ impl GetGroupMembershipResponse {
     /// Return the groups in the group table.
     #[must_use]
     pub fn groups(&self) -> &[Uint16] {
-        self.groups.as_ref()
+        &self.groups
     }
 
     /// Return the group count.
@@ -49,7 +49,7 @@ impl GetGroupMembershipResponse {
 
 impl AsRef<[Uint16]> for GetGroupMembershipResponse {
     fn as_ref(&self) -> &[Uint16] {
-        self.groups()
+        &self.groups
     }
 }
 

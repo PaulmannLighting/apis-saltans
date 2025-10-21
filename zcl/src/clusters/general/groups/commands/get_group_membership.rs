@@ -23,7 +23,7 @@ impl GetGroupMembership {
     /// Return the groups the sender is a member of.
     #[must_use]
     pub fn groups(&self) -> &[Uint16] {
-        self.groups.as_ref()
+        &self.groups
     }
 
     /// Return the group count.
@@ -42,7 +42,7 @@ impl GetGroupMembership {
 
 impl AsRef<[Uint16]> for GetGroupMembership {
     fn as_ref(&self) -> &[Uint16] {
-        self.groups()
+        &self.groups
     }
 }
 
