@@ -17,7 +17,6 @@ pub struct GetGroupMembershipResponse {
 impl GetGroupMembershipResponse {
     /// Creates a new `GetGroupMembershipResponse` with the given status and group ID.
     #[must_use]
-    #[allow(clippy::missing_panics_doc)]
     pub const fn new(capacity: Uint8, groups: GroupList) -> Self {
         Self { capacity, groups }
     }
