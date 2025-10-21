@@ -1,0 +1,19 @@
+use le_stream::derive::FromLeStreamTagged;
+use repr_discriminant::ReprDiscriminant;
+use start_up_on_off::StartUpOnOff;
+use zigbee::Parsable;
+use zigbee::types::{Bool, Uint16};
+
+mod start_up_on_off;
+
+/// Attributes for the On/Off cluster.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[repr(u16)]
+#[derive(ReprDiscriminant, FromLeStreamTagged)]
+pub enum Attribute {
+    OnOff(Bool) = 0x0000,
+    GlobalSceneControl(Bool) = 0x4000,
+    OnTime(Uint16) = 0x4001,
+    OffWaitTime(Uint16) = 0x4002,
+    StartUpOnOff(Parsable<u8, StartUpOnOff>) = 0x4003,
+}
