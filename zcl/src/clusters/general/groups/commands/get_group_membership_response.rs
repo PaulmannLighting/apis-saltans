@@ -33,6 +33,16 @@ impl GetGroupMembershipResponse {
     pub fn groups(&self) -> &[Uint16] {
         self.groups.as_ref()
     }
+
+    /// Return the group count.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the amount of groups exceeds [`Uint8::MAX`], which should never happen.
+    #[must_use]
+    pub fn group_count(&self) -> Uint8 {
+        Uint8::try_from(self.groups.len()).expect("GroupList size always fits into a Uint8.")
+    }
 }
 
 impl AsRef<[Uint16]> for GetGroupMembershipResponse {
@@ -79,11 +89,7 @@ impl ToLeStream for GetGroupMembershipResponse {
     fn to_le_stream(self) -> Self::Iter {
         self.capacity
             .to_le_stream()
-            .chain(
-                Uint8::try_from(self.groups.len())
-                    .expect("GroupList size always fits into a Uint8.")
-                    .to_le_stream(),
-            )
+            .chain(self.group_count().to_le_stream())
             .chain(self.groups.to_le_stream())
     }
 }
