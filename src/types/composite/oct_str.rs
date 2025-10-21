@@ -2,9 +2,9 @@ use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use log::{error, warn};
+use zb::types::Uint8;
 
 use crate::constants::U8_CAPACITY;
-use crate::types::Uint8;
 
 /// An octet string with a maximum size of [`OctStr::CAPACITY`] bytes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

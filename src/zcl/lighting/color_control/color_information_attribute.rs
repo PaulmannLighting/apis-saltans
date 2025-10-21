@@ -1,8 +1,8 @@
 use le_stream::derive::FromLeStreamTagged;
+use zb::types::{String, Uint16, Uint8};
 
 use super::color_capabilities::ColorCapabilities;
 use super::options::Options;
-use crate::types::{String, Uint8, Uint16};
 use crate::util::Parsable;
 use crate::zcl::lighting::color_control::{
     ColorLoopDirection, ColorMode, DriftCompensation, EnhancedColorMode, StartupColorTemperature,

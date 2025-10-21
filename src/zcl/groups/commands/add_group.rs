@@ -1,10 +1,10 @@
 use core::str::Utf8Error;
 
 use le_stream::derive::{FromLeStream, ToLeStream};
+use zb::types::{String, Uint16};
 
-use crate::types::{String, Uint16};
 use crate::zcl::groups::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Command to add a group to the device's group table.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]

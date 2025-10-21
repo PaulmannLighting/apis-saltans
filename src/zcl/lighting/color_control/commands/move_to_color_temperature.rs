@@ -2,7 +2,7 @@ use core::time::Duration;
 
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
 use crate::zcl::lighting::color_control::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Command to move a light's color temperature to a specific value in mireds.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

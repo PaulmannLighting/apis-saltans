@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
+use zb::types::{String, Uint16, Uint8};
 
-use crate::types::{String, Uint8, Uint16};
 use crate::util::Parsable;
 use crate::zcl::power_configuration::attribute::{
     BatteryAlarmMask, BatteryAlarmState, BatterySize,

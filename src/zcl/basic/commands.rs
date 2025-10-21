@@ -1,7 +1,7 @@
 //! Commands for the Basic cluster.
 
 use crate::zcl::basic::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Reset a device to factory defaults.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]

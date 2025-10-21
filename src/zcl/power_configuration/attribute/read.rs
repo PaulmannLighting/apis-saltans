@@ -1,9 +1,9 @@
 use battery::Battery;
 use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
+use zb::types::{Uint16, Uint8};
 
 use super::mains_alarm_mask::MainsAlarmMask;
-use crate::types::{Uint8, Uint16};
 
 mod battery;
 mod battery_information;

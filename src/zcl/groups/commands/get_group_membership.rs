@@ -1,6 +1,7 @@
-use crate::types::{List, Uint8, Uint16};
+use zb::types::{List, Uint16, Uint8};
+
 use crate::zcl::groups::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Command to request the membership of a device in multiple groups.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

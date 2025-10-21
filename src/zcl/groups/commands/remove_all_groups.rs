@@ -1,7 +1,7 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
 use crate::zcl::groups::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Command to remove all groups from the device's group table.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]

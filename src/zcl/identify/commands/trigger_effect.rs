@@ -2,7 +2,7 @@ pub use effect_identifier::EffectIdentifier;
 pub use effect_variant::EffectVariant;
 
 use crate::zcl::identify::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 mod effect_identifier;
 mod effect_variant;

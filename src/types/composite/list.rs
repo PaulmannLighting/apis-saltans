@@ -3,9 +3,9 @@ use core::iter::Chain;
 use core::marker::PhantomData;
 
 use le_stream::{FromLeStream, ToLeStream};
+use zb::types::Uint8;
 
 use crate::constants::U8_CAPACITY;
-use crate::types::Uint8;
 
 /// A list of items with a length prefix.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

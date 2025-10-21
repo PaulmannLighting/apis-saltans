@@ -1,8 +1,8 @@
 //! Iterator over Device Temperature Configuration attributes.
 
 use le_stream::ToLeStream;
+use zb::types::{Uint16, Uint24};
 
-use crate::types::{Uint16, Uint24};
 use crate::zcl::device_temperature_configuration::{DeviceTempAlarmMask, Temperature};
 
 /// Little endian stream iterator for the payload of an attribute in the Device Temperature Configuration cluster.

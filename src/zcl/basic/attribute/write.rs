@@ -4,12 +4,12 @@ use core::iter::Chain;
 
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
+use zb::types::String;
 
 use super::alarm_mask::AlarmMask;
 use super::device_enabled::DeviceEnabled;
 use super::disable_local_config::DisableLocalConfig;
 use super::physical_environment::PhysicalEnvironment;
-use crate::types::String;
 use crate::zcl::basic::read;
 
 mod iterator;
@@ -80,9 +80,7 @@ mod tests {
         let bytes: Vec<u8> = attribute.to_le_stream().collect();
         assert_eq!(
             bytes,
-            vec![
-                0x10, 0x00, 0x08, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n'
-            ]
+            vec![0x10, 0x00, 0x08, b'L', b'o', b'c', b'a', b't', b'i', b'o', b'n']
         );
     }
 

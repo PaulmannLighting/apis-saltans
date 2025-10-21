@@ -1,6 +1,6 @@
 use le_stream::ToLeStream;
+use zb::types::String;
 
-use crate::types::String;
 use crate::util::Parsable;
 use crate::zcl::basic::{AlarmMask, DeviceEnabled, DisableLocalConfig, PhysicalEnvironment};
 

@@ -1,6 +1,7 @@
-use crate::types::{String, Uint16};
+use zb::types::{String, Uint16};
+
 use crate::zcl::groups::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Command to add a group to the device's group table if the device is currently identifying.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

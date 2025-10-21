@@ -1,9 +1,9 @@
 use core::time::Duration;
 
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::move_to_hue::Direction;
-use crate::zcl::{Cluster, Command};
+use crate::zcl::lighting::color_control::CLUSTER_ID;
+use crate::{Cluster, Command};
 
 /// Command to move a light to a specific hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

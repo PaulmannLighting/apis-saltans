@@ -1,8 +1,8 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
+use zb::types::{List, Uint16, Uint8};
 
-use crate::types::{List, Uint8, Uint16};
 use crate::zcl::groups::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Represents a response to an `GetGroupMembership` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]

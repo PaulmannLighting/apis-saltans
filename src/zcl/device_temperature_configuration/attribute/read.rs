@@ -2,12 +2,12 @@
 
 use core::iter::Chain;
 
-use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
+use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
+use zb::types::{Uint16, Uint24};
 
 use super::{iterator, write};
-use crate::types::{Uint16, Uint24};
 use crate::zcl::device_temperature_configuration::{DeviceTempAlarmMask, Temperature};
 
 /// Readable attributes for the Device Temperature Configuration cluster.

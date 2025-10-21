@@ -1,6 +1,6 @@
-use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::move_hue::Mode;
-use crate::zcl::{Cluster, Command};
+use crate::zcl::lighting::color_control::CLUSTER_ID;
+use crate::{Cluster, Command};
 
 /// Command to move a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

@@ -1,9 +1,9 @@
 use core::time::Duration;
 
 use crate::zcl::constants::DECI_SECONDS_PER_MILLISECOND;
-use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::step_hue::Mode;
-use crate::zcl::{Cluster, Command};
+use crate::zcl::lighting::color_control::CLUSTER_ID;
+use crate::{Cluster, Command};
 
 /// Command to step a light's hue.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

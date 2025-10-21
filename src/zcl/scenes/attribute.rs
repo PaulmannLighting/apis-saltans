@@ -1,8 +1,8 @@
 use le_stream::derive::FromLeStreamTagged;
 use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
+use zb::types::{Bool, Uint16, Uint8};
 
-use crate::types::{Bool, Uint8, Uint16};
 pub use crate::zcl::groups::NameSupport;
 
 /// Attributes for the Scenes cluster.

@@ -1,8 +1,8 @@
 use core::time::Duration;
 
-use crate::zcl::lighting::color_control::CLUSTER_ID;
 use crate::zcl::lighting::color_control::color_loop_set::{Action, Direction, Update};
-use crate::zcl::{Cluster, Command};
+use crate::zcl::lighting::color_control::CLUSTER_ID;
+use crate::{Cluster, Command};
 
 /// Activate a light's color loop.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

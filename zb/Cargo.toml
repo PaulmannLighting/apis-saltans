@@ -1,0 +1,33 @@
+[package]
+name = "zb"
+description = "Here be bees."
+authors = ["Richard Neumann <neumann@paulmann.de>"]
+license = "MIT"
+repository = "https://github.com/PaulmannLighting/sic-bee"
+keywords = ["bee", "protocol", "cluster", "library", "zcl"]
+categories = ["network-programming"]
+documentation = "https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf"
+version = "0.1.0"
+edition = "2024"
+exclude = [".gitignore"]
+publish = false
+
+
+[dependencies]
+bitflags = "2.6"
+chrono = "0.4"
+heapless = "0.9"
+intx = "0.1.0"
+le-stream = { version = "5", features = ["derive", "heapless", "intx", "macaddr"] }
+macaddr = "1.0"
+num-derive = "0.4"
+num-traits = "0.2"
+serde = { version = "1.0", optional = true }
+log = "0.4"
+
+[features]
+std = []
+serde = ["serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
+
+[lints]
+workspace = true

@@ -2,6 +2,7 @@
 
 use le_stream::derive::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
+use zb::types::{OctStr, String, Uint8};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;
@@ -11,7 +12,6 @@ use super::generic_device_class::GenericDeviceClass;
 use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
-use crate::types::{OctStr, String, Uint8};
 use crate::util::Parsable;
 use crate::zcl::basic::write;
 

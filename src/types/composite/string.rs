@@ -2,9 +2,9 @@ use core::str;
 use core::str::Utf8Error;
 
 use le_stream::derive::{FromLeStream, ToLeStream};
+use zb::types::OctStr;
 
 use crate::constants::U8_CAPACITY;
-use crate::types::OctStr;
 
 /// A string type, which can be up to [`OctStr::MAX_SIZE`] bytes long.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

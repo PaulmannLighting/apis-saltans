@@ -1,5 +1,5 @@
 use crate::zcl::identify::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Request the target to respond if they are currently identifying themselves.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

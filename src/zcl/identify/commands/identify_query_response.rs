@@ -1,8 +1,9 @@
 use core::time::Duration;
 
-use crate::types::Uint16;
+use zb::types::Uint16;
+
 use crate::zcl::identify::CLUSTER_ID;
-use crate::zcl::{Cluster, Command};
+use crate::{Cluster, Command};
 
 /// Response to the [`IdentifyQuery`](crate::zcl::identify::IdentifyQuery) command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
