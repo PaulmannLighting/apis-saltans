@@ -40,11 +40,11 @@ impl TryFrom<(u8, u8)> for Effect {
     fn try_from((id, variant): (u8, u8)) -> Result<Self, Self::Error> {
         match (id, variant) {
             (0x00, variant) => DelayedAllOff::try_from(variant)
-                .map_err(|variant| (id, variant))
-                .map(Self::DelayedAllOff),
+                .map(Self::DelayedAllOff)
+                .map_err(|variant| (id, variant)),
             (0x01, variant) => DyingLight::try_from(variant)
-                .map_err(|variant| (id, variant))
-                .map(Self::DyingLight),
+                .map(Self::DyingLight)
+                .map_err(|variant| (id, variant)),
             _ => Err((id, variant)),
         }
     }
