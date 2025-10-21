@@ -15,18 +15,17 @@ pub struct List<P, T, const CAPACITY: usize = U8_CAPACITY> {
     prefix: PhantomData<P>,
 }
 
-impl<T, const CAPACITY: usize> List<Uint8, T, CAPACITY> {
+impl<P, T, const CAPACITY: usize> List<P, T, CAPACITY>
+where
+    P: TryFrom<usize>,
+{
     /// Creates a new `List` with the specified items.
     #[must_use]
     pub fn new(items: heapless::Vec<T, CAPACITY>) -> Option<Self> {
-        u8::try_from(items.len())
-            .ok()
-            .try_into()
-            .ok()
-            .map(|_: Uint8| Self {
-                items,
-                prefix: PhantomData,
-            })
+        P::try_from(items.len()).ok().map(|_| Self {
+            items,
+            prefix: PhantomData,
+        })
     }
 }
 
