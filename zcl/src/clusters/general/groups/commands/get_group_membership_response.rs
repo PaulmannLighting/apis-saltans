@@ -51,6 +51,15 @@ impl AsRef<[Uint16]> for GetGroupMembershipResponse {
     }
 }
 
+impl IntoIterator for GetGroupMembershipResponse {
+    type Item = Uint16;
+    type IntoIter = <GroupList as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.groups.into_iter()
+    }
+}
+
 impl Cluster for GetGroupMembershipResponse {
     const ID: u16 = CLUSTER_ID;
 }
