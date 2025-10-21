@@ -12,6 +12,26 @@ const NON_VALUE: u8 = 0xff;
 #[repr(transparent)]
 pub struct Uint8(u8);
 
+impl Uint8 {
+    /// The minimum valid value.
+    pub const MIN: Self = Self(0);
+
+    /// The maximum valid value.
+    pub const MAX: Self = Self(NON_VALUE.checked_sub(1).expect("NON_VALUE is not zero"));
+
+    /// Convert to a `u8`.
+    #[must_use]
+    pub const fn as_u8(self) -> u8 {
+        self.0
+    }
+
+    /// Convert to a `usize`.
+    #[must_use]
+    pub const fn as_usize(self) -> usize {
+        self.0 as usize
+    }
+}
+
 impl From<Uint8> for Option<u8> {
     fn from(value: Uint8) -> Self {
         value.try_into().ok()
