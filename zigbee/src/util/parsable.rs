@@ -16,6 +16,10 @@ where
     Dst: TryFrom<Src>,
 {
     /// Parse the source value into the destination type.
+    ///
+    /// # Errors
+    ///
+    /// Returns the appropriate `<Dst as TryFrom<Src>>::Error` if the conversion fails.
     pub fn parse(self) -> Result<Dst, <Dst as TryFrom<Src>>::Error> {
         Dst::try_from(self.src)
     }
