@@ -1,8 +1,8 @@
 //! Data structures for the `Color Loop Set` command in the `Lighting` cluster.
 
-pub use action::{Action, Source};
-pub use direction::Direction;
-pub use update::Update;
+pub use self::action::{Action, Source};
+pub use self::direction::Direction;
+pub use self::update::Update;
 
 mod action;
 pub(crate) mod command;
