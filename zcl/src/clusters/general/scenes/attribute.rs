@@ -1,8 +1,9 @@
 use le_stream::derive::FromLeStreamTagged;
 use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
-use zigbee::types::{Bool, Uint8, Uint16};
+use zigbee::types::{Bool, Uint8};
 
+use super::types::CurrentGroup;
 pub use crate::clusters::general::groups::NameSupport;
 
 /// Attributes for the Scenes cluster.
@@ -16,7 +17,7 @@ pub enum Attribute {
     /// ID of the last invoked scene.
     CurrentScene(Uint8) = 0x0001,
     /// Group ID of the last invoked scene.
-    CurrentGroup(Uint16) = 0x0002, // TODO: Limit to 0xfff7
+    CurrentGroup(CurrentGroup) = 0x0002,
     /// Flag indicating whether the scene is valid.
     SceneValid(Bool) = 0x0003,
     /// Flag indicating whether the device supports scene names.
