@@ -1,7 +1,7 @@
 //! On/Off cluster.
 
-pub use attribute::Attribute;
-pub use commands::{DelayedAllOff, DyingLight, Effect, Off, OffWithEffect, On, Toggle};
+pub use self::attribute::Attribute;
+pub use self::commands::{DelayedAllOff, DyingLight, Effect, Off, OffWithEffect, On, Toggle};
 
 mod attribute;
 mod commands;

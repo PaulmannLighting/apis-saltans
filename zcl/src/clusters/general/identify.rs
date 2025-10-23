@@ -1,7 +1,7 @@
 //! Identify Cluster.
 
-pub use attribute::Attribute;
-pub use commands::{
+pub use self::attribute::Attribute;
+pub use self::commands::{
     EffectIdentifier, EffectVariant, Identify, IdentifyQuery, IdentifyQueryResponse, TriggerEffect,
 };
 

@@ -1,5 +1,5 @@
 //! Commonly used units of measurement.
 
-pub use mireds::Mireds;
+pub use self::mireds::Mireds;
 
 mod mireds;

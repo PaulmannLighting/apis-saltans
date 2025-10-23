@@ -1,7 +1,7 @@
 //! Device Temperature Configuration Cluster.
 
-pub use device_temp_alarm_mask::DeviceTempAlarmMask;
-pub use temperature::Temperature;
+pub use self::device_temp_alarm_mask::DeviceTempAlarmMask;
+pub use self::temperature::Temperature;
 
 pub mod attribute;
 mod device_temp_alarm_mask;

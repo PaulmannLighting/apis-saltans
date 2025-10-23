@@ -1,6 +1,5 @@
-pub use effect_identifier::EffectIdentifier;
-pub use effect_variant::EffectVariant;
-
+pub use self::effect_identifier::EffectIdentifier;
+pub use self::effect_variant::EffectVariant;
 use crate::clusters::general::identify::CLUSTER_ID;
 use crate::{Cluster, Command};
 

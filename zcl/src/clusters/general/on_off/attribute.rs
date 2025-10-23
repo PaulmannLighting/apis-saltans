@@ -1,8 +1,9 @@
 use le_stream::derive::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
-use start_up_on_off::StartUpOnOff;
 use zigbee::Parsable;
 use zigbee::types::{Bool, Uint16};
+
+use self::start_up_on_off::StartUpOnOff;
 
 mod start_up_on_off;
 

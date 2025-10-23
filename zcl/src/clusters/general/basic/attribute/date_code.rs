@@ -3,8 +3,9 @@ use core::str::{FromStr, Utf8Error};
 
 use chrono::NaiveDate;
 use either::{Either, Left, Right};
-pub use parse_error::ParseError;
 use zigbee::types::String;
+
+pub use self::parse_error::ParseError;
 
 mod parse_error;
 

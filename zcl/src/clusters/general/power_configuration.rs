@@ -1,9 +1,9 @@
 //! Power configuration cluster.
 
-pub use attribute::{
+pub use self::attribute::{
     BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask, read, write,
 };
-pub use battery_alarm::BatteryAlarm;
+pub use self::battery_alarm::BatteryAlarm;
 
 mod attribute;
 mod battery_alarm;

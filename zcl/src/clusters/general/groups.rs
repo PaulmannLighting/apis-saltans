@@ -1,7 +1,7 @@
 //! The `Groups` cluster.
 
-pub use attribute::{Attribute, NameSupport};
-pub use commands::{
+pub use self::attribute::{Attribute, NameSupport};
+pub use self::commands::{
     AddGroup, AddGroupIfIdentifying, AddGroupResponse, GetGroupMembership,
     GetGroupMembershipResponse, RemoveAllGroups, RemoveGroup, RemoveGroupResponse, ViewGroup,
     ViewGroupResponse,

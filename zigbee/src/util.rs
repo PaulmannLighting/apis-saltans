@@ -1,5 +1,5 @@
 //! Non-Zigbee related utility functions and types.
 
-pub use parsable::Parsable;
+pub use self::parsable::Parsable;
 
 mod parsable;

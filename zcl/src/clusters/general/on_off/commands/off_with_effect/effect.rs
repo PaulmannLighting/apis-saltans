@@ -1,7 +1,8 @@
-pub use delayed_all_off::DelayedAllOff;
-pub use dying_light::DyingLight;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::Uint8;
+
+pub use self::delayed_all_off::DelayedAllOff;
+pub use self::dying_light::DyingLight;
 
 mod delayed_all_off;
 mod dying_light;

@@ -1,6 +1,7 @@
 use chrono::{Datelike, NaiveDate, Weekday};
-pub use try_from_naive_date_error::TryFromNaiveDateError;
-pub use try_into_naive_date_error::TryIntoNaiveDateError;
+
+pub use self::try_from_naive_date_error::TryFromNaiveDateError;
+pub use self::try_into_naive_date_error::TryIntoNaiveDateError;
 
 mod try_from_naive_date_error;
 mod try_into_naive_date_error;

@@ -1,6 +1,6 @@
-pub use control::Control;
-pub use direction::Direction;
-pub use typ::Type;
+pub use self::control::Control;
+pub use self::direction::Direction;
+pub use self::typ::Type;
 
 mod control;
 mod direction;

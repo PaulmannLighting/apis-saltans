@@ -2,8 +2,9 @@ use core::iter::Chain;
 
 use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
-pub use name_support::NameSupport;
 use repr_discriminant::ReprDiscriminant;
+
+pub use self::name_support::NameSupport;
 
 mod name_support;
 

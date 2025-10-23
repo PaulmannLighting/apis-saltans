@@ -1,13 +1,13 @@
-pub use add_group::AddGroup;
-pub use add_group_if_identifying::AddGroupIfIdentifying;
-pub use add_group_response::AddGroupResponse;
-pub use get_group_membership::GetGroupMembership;
-pub use get_group_membership_response::GetGroupMembershipResponse;
-pub use remove_all_groups::RemoveAllGroups;
-pub use remove_group::RemoveGroup;
-pub use remove_group_response::RemoveGroupResponse;
-pub use view_group::ViewGroup;
-pub use view_group_response::ViewGroupResponse;
+pub use self::add_group::AddGroup;
+pub use self::add_group_if_identifying::AddGroupIfIdentifying;
+pub use self::add_group_response::AddGroupResponse;
+pub use self::get_group_membership::GetGroupMembership;
+pub use self::get_group_membership_response::GetGroupMembershipResponse;
+pub use self::remove_all_groups::RemoveAllGroups;
+pub use self::remove_group::RemoveGroup;
+pub use self::remove_group_response::RemoveGroupResponse;
+pub use self::view_group::ViewGroup;
+pub use self::view_group_response::ViewGroupResponse;
 
 mod add_group;
 mod add_group_if_identifying;

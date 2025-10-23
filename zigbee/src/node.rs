@@ -3,9 +3,10 @@
 
 use std::collections::BTreeSet;
 
-use capability::Capability;
-use descriptor::Descriptor;
 use macaddr::MacAddr8;
+
+use self::capability::Capability;
+use self::descriptor::Descriptor;
 
 mod capability;
 mod descriptor;

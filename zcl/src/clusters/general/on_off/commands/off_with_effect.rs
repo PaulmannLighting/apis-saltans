@@ -1,8 +1,8 @@
-pub use effect::{DelayedAllOff, DyingLight, Effect};
 use le_stream::derive::{FromLeStream, ToLeStream};
 use zigbee::types::Uint8;
 use zigbee::{Cluster, Command};
 
+pub use self::effect::{DelayedAllOff, DyingLight, Effect};
 use crate::general::on_off::CLUSTER_ID;
 
 mod effect;

@@ -1,17 +1,17 @@
 //! Discrete data types.
 
-pub use bool::Bool;
-pub use data8::Data8;
-pub use data16::Data16;
-pub use data24::Data24;
-pub use data32::Data32;
-pub use data40::Data40;
-pub use data48::Data48;
-pub use data56::Data56;
-pub use data64::Data64;
-pub use date::{Date, TryFromNaiveDateError, TryIntoNaiveDateError};
-pub use time_of_day::{TimeOfDay, TryFromNaiveTimeError, TryIntoNaiveTimeError};
-pub use utc_time::UtcTime;
+pub use self::bool::Bool;
+pub use self::data8::Data8;
+pub use self::data16::Data16;
+pub use self::data24::Data24;
+pub use self::data32::Data32;
+pub use self::data40::Data40;
+pub use self::data48::Data48;
+pub use self::data56::Data56;
+pub use self::data64::Data64;
+pub use self::date::{Date, TryFromNaiveDateError, TryIntoNaiveDateError};
+pub use self::time_of_day::{TimeOfDay, TryFromNaiveTimeError, TryIntoNaiveTimeError};
+pub use self::utc_time::UtcTime;
 
 mod bool;
 mod data16;

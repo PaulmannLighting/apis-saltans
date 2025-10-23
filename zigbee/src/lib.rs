@@ -1,9 +1,8 @@
 //! Zigbee library.
 
-pub use util::Parsable;
-
-pub use crate::cluster::Cluster;
-pub use crate::command::Command;
+pub use self::cluster::Cluster;
+pub use self::command::Command;
+pub use self::util::Parsable;
 
 mod cluster;
 mod command;

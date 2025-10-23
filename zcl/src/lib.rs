@@ -2,7 +2,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use clusters::general;
+pub use clusters::{general, lighting};
 pub use status::Status;
 pub use zigbee::{Cluster, Command};
 

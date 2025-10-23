@@ -1,7 +1,8 @@
 use chrono::{NaiveTime, Timelike};
 use log::debug;
-pub use try_from_naive_time_error::TryFromNaiveTimeError;
-pub use try_into_naive_time_error::TryIntoNaiveTimeError;
+
+pub use self::try_from_naive_time_error::TryFromNaiveTimeError;
+pub use self::try_into_naive_time_error::TryIntoNaiveTimeError;
 
 mod try_from_naive_time_error;
 mod try_into_naive_time_error;

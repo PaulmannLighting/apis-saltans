@@ -1,7 +1,7 @@
 //! Scenes cluster.
 
-pub use attribute::Attribute;
-pub use scene_table::SceneTable;
+pub use self::attribute::Attribute;
+pub use self::scene_table::SceneTable;
 
 mod attribute;
 mod scene_table;
