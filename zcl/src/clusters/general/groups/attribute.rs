@@ -3,6 +3,7 @@ use core::iter::Chain;
 use le_stream::ToLeStream;
 use le_stream::derive::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
+use zigbee::Parsable;
 
 pub use self::name_support::NameSupport;
 
@@ -14,7 +15,7 @@ mod name_support;
 #[derive(ReprDiscriminant, FromLeStreamTagged)]
 pub enum Attribute {
     /// Flag indicating whether the group name is supported by the device.
-    NameSupport(NameSupport) = 0x0000,
+    NameSupport(Parsable<u8, NameSupport>) = 0x0000,
 }
 
 impl ToLeStream for Attribute {

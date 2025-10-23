@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::ToLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
@@ -24,15 +24,6 @@ impl TryFrom<u8> for NameSupport {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::from_u8(value).ok_or(value)
-    }
-}
-
-impl FromLeStream for NameSupport {
-    fn from_le_stream<T>(bytes: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        u8::from_le_stream(bytes).map(|id| Self::try_from(id).unwrap_or(Self::Unsupported))
     }
 }
 
