@@ -32,7 +32,7 @@ pub enum ColorInformationAttribute {
     /// The drift compensation text for the light.
     ///
     /// TODO: This string's size is pretty large. Confirm the size.
-    CompensationText(String) = 0x0006,
+    CompensationText(String<254>) = 0x0006,
     /// The color temperature of the light in mireds.
     ColorTemperature(Uint16) = 0x0007,
     /// The color mode of the light.
