@@ -1,5 +1,3 @@
-use alloc::boxed::Box;
-
 use le_stream::derive::FromLeStreamTagged;
 use zigbee::Parsable;
 use zigbee::types::{String, Uint8, Uint16};
