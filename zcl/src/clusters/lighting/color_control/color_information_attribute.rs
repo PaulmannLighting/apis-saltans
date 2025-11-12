@@ -1,12 +1,20 @@
+use color_capabilities::ColorCapabilities;
 use le_stream::derive::FromLeStreamTagged;
+use options::Options;
 use zigbee::Parsable;
 use zigbee::types::{String, Uint8, Uint16};
 
-use super::color_capabilities::ColorCapabilities;
-use super::options::Options;
 use crate::clusters::lighting::color_control::{
     ColorLoopDirection, ColorMode, DriftCompensation, EnhancedColorMode, StartupColorTemperature,
 };
+
+pub mod color_capabilities;
+pub mod color_loop_direction;
+pub mod color_mode;
+pub mod drift_compensation;
+pub mod enhanced_color_mode;
+pub mod options;
+pub mod startup_color_temperature;
 
 /// Color information attribute for the Color Control cluster.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
