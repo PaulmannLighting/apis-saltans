@@ -50,6 +50,10 @@ impl SceneTable {
     }
 
     /// Returns the scene name.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the scene name is not valid UTF-8.
     pub fn scene_name(&self) -> Result<&str, Utf8Error> {
         self.scene_name.try_as_str()
     }

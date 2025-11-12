@@ -14,6 +14,7 @@ const MASK: u16 = 0x000f;
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
+#[expect(variant_size_differences)]
 pub enum BatterySettings {
     /// Name of the battery manufacturer.
     BatteryManufacturer(String<16>) = 0x0000,

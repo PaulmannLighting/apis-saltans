@@ -72,7 +72,6 @@ impl<const CAPACITY: usize> TryFrom<&[u8]> for OctStr<CAPACITY> {
 
 impl<const CAPACITY: usize> FromLeStream for OctStr<CAPACITY> {
     // TODO: For the sake of robustness, reconsider handling of the case `size > CAPACITY`.
-    #[expect(clippy::unwrap_in_result)]
     fn from_le_stream<T>(mut stream: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,

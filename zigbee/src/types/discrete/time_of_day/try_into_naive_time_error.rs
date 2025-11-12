@@ -3,7 +3,6 @@ use core::fmt::Display;
 
 /// Error while creating a `TimeOfDay` instance.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-#[expect(clippy::enum_variant_names)]
 pub struct TryIntoNaiveTimeError {
     hour: u8,
     minute: u8,

@@ -1,3 +1,5 @@
+use alloc::boxed::Box;
+
 use le_stream::derive::FromLeStreamTagged;
 use zigbee::Parsable;
 use zigbee::types::{String, Uint8, Uint16};
@@ -13,6 +15,7 @@ use crate::clusters::lighting::color_control::{
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 #[repr(u16)]
 #[derive(FromLeStreamTagged)]
+#[expect(variant_size_differences, clippy::large_enum_variant)]
 pub enum ColorInformationAttribute {
     /// The current hue of the light.
     CurrentHue(Uint8) = 0x0000,
@@ -27,6 +30,8 @@ pub enum ColorInformationAttribute {
     /// The drift compensation value for the light.
     DriftCompensation(Parsable<u16, DriftCompensation>) = 0x0005,
     /// The drift compensation text for the light.
+    ///
+    /// TODO: This string's size is pretty large. Confirm the size.
     CompensationText(String) = 0x0006,
     /// The color temperature of the light in mireds.
     ColorTemperature(Uint16) = 0x0007,

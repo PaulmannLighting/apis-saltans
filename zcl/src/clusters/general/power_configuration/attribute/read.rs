@@ -1,3 +1,5 @@
+//! Readable attributes for the Power Configuration cluster.
+
 use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
