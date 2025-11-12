@@ -52,7 +52,7 @@ impl Flags {
 
     /// Returns the APS flags.
     #[must_use]
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation)]
     pub fn aps_flags(self) -> u8 {
         ((self & Self::APS_FLAGS).bits() >> 5) as u8
     }
@@ -60,7 +60,7 @@ impl Flags {
     /// Returns the frequency band.
     #[must_use]
     pub fn frequency_band(self) -> FrequencyBand {
-        #[allow(clippy::cast_possible_truncation)]
+        #[expect(clippy::cast_possible_truncation)]
         FrequencyBand::from_bits_truncate((self & Self::FREQUENCY_BAND).bits() as u8)
     }
 }

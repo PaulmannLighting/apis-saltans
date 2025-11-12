@@ -118,7 +118,7 @@ impl TryFrom<Date> for NaiveDate {
 impl TryFrom<NaiveDate> for Date {
     type Error = TryFromNaiveDateError;
 
-    #[allow(clippy::unwrap_in_result)]
+    #[expect(clippy::unwrap_in_result)]
     fn try_from(value: NaiveDate) -> Result<Self, Self::Error> {
         let Some(year) = value.year().checked_sub(i32::from(YEAR_OFFSET)) else {
             return Err(TryFromNaiveDateError::YearOverflow(value.year()));
