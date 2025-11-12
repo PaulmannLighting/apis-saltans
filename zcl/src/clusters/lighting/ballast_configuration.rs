@@ -6,5 +6,6 @@ pub use self::ballast_status::BallastStatus;
 
 mod ballast_configuration_attribute;
 mod ballast_information_attribute;
+mod ballast_settings_attribute;
 mod ballast_status;
 mod commands;
