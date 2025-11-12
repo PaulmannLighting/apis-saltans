@@ -26,7 +26,7 @@ impl TryFrom<Int56> for I56 {
     type Error = ();
 
     fn try_from(value: Int56) -> Result<Self, Self::Error> {
-        if value.0 == I56::from_be_bytes(NON_VALUE_BE) {
+        if value.0 == Self::from_be_bytes(NON_VALUE_BE) {
             Err(())
         } else {
             Ok(value.0)
