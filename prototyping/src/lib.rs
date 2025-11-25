@@ -4,8 +4,10 @@ use std::error::Error;
 use std::io;
 
 use ezsp::ember::node::Type;
+use ezsp::ember::zll::{InitialSecurityState, KeyIndex};
 use ezsp::{Networking, Zll};
 use log::debug;
+use rand::random;
 
 /// A Zigbee coordinator device.
 pub trait Coordinator {
@@ -43,20 +45,33 @@ where
     }
 
     async fn form_network(&mut self, pan_id: u16, channel: u8) -> Result<(), Self::Error> {
-        let (typ, mut params) = self.get_network_parameters().await?;
+        debug!("Getting current network parameters");
+        let (node_type, mut parameters) = self.get_network_parameters().await?;
 
-        debug!("Current node type: {typ}");
-        debug!("Current parameters: {params:?}");
+        debug!("Current node type: {node_type}");
+        debug!("Current parameters: {parameters:?}");
 
-        if typ != Type::Coordinator {
+        if node_type != Type::Coordinator {
             debug!("Setting node type to Coordinator");
             self.set_node_type(Type::Coordinator).await?;
         }
 
-        params.set_pan_id(pan_id);
-        params.set_radio_channel(channel);
+        self.set_initial_security_state(
+            random(),
+            InitialSecurityState::new(
+                Default::default(),
+                KeyIndex::Development,
+                random(),
+                random(),
+            ),
+        )
+        .await?;
+
+        parameters.set_pan_id(pan_id);
+        parameters.set_radio_channel(channel);
+
         debug!("Setting network parameters");
-        Networking::form_network(self, params).await?;
+        Networking::form_network(self, parameters).await?;
         Ok(())
     }
 }

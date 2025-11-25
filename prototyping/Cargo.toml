@@ -8,6 +8,7 @@ zigbee = { path = "../zigbee" }
 zcl = { path = "../zcl" }
 ezsp = { path = "../../ezsp", features = ["ashv2"] }
 log = "0.4"
+rand = "0.10.0-rc.5"
 
 [lints]
 workspace = true
