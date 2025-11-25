@@ -5,6 +5,7 @@ use std::io;
 
 use ezsp::ember::node::Type;
 use ezsp::{Networking, Zll};
+use log::debug;
 
 /// A Zigbee coordinator device.
 pub trait Coordinator {
@@ -37,18 +38,21 @@ where
     type Error = ezsp::Error;
 
     async fn initialize(&mut self) -> io::Result<()> {
-        todo!("Not yet implemented");
+        debug!("initializing");
+        Ok(())
     }
 
     async fn form_network(&mut self, pan_id: u16, channel: u8) -> Result<(), Self::Error> {
         let (typ, mut params) = self.get_network_parameters().await?;
 
         if typ != Type::Coordinator {
+            debug!("Setting node type to Coordinator");
             self.set_node_type(Type::Coordinator).await?;
         }
 
         params.set_pan_id(pan_id);
         params.set_radio_channel(channel);
+        debug!("Setting network parameters");
         Networking::form_network(self, params).await?;
         Ok(())
     }
