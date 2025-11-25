@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-zigbee = { path = "../zigbee", features = ["std"] }
-zcl = { path = "../zcl", features = ["std"] }
+zigbee = { path = "../zigbee" }
+zcl = { path = "../zcl" }
+ezsp = { path = "../../ezsp", features = ["ashv2"] }
 
 [lints]
 workspace = true
