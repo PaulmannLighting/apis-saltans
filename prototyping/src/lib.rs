@@ -1,11 +1,18 @@
 //! A library for prototyping Zigbee coordinator devices.
 
+mod concentrator_config;
+mod transport_options;
+
 use std::error::Error;
 use std::io;
+use std::time::Duration;
 
+use ezsp::ember::aps::{Frame, Options};
 use ezsp::ember::node::Type;
 use ezsp::ember::zll::{InitialSecurityState, KeyIndex};
-use ezsp::{Networking, Zll};
+use ezsp::ember::{aps, concentrator};
+use ezsp::ezsp::{config, decision, policy};
+use ezsp::{Configuration, Messaging, Networking, Zll};
 use log::{debug, info};
 use rand::random;
 
@@ -19,7 +26,7 @@ pub trait Coordinator {
     /// # Errors
     ///
     /// Returns an [`io::Error`] if initialization fails.
-    fn initialize(&mut self) -> impl Future<Output = io::Result<()>>;
+    fn initialize(&mut self) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Forms a new Zigbee network with the specified PAN ID and channel.
     ///
@@ -38,16 +45,46 @@ pub trait Coordinator {
     ///
     /// Returns an [`io::Error`] if permitting joining fails.
     fn permit_joining(&mut self, seconds: u8) -> impl Future<Output = Result<(), Self::Error>>;
+
+    /// Advertises the network to nearby devices for the specified duration.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`io::Error`] if advertising the network fails.
+    fn advertise_network(&mut self, seconds: u8) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
 impl<T> Coordinator for T
 where
-    T: Networking + Zll,
+    T: Configuration + Messaging + Networking + Zll,
 {
     type Error = ezsp::Error;
 
-    async fn initialize(&mut self) -> io::Result<()> {
+    async fn initialize(&mut self) -> Result<(), Self::Error> {
         debug!("initializing");
+
+        // See `InitZigBeeLibraryService.java`.
+        self.set_policy(policy::Id::TrustCenter, decision::Id::AllowJoins)
+            .await?;
+        self.set_radio_power(8).await?;
+        let config = concentrator::Parameters::new(
+            concentrator::Type::HighRam,
+            Duration::from_secs(60),
+            Duration::from_secs(3600),
+            8,
+            8,
+            0,
+        )
+        .expect("Concentrator parameters should be valid.");
+        self.set_concentrator(Some(config)).await?;
+        self.set_configuration_value(config::Id::SourceRouteTableSize, 100)
+            .await?;
+        self.set_configuration_value(config::Id::ApsUnicastMessageCount, 16)
+            .await?;
+        self.set_configuration_value(config::Id::NeighborTableSize, 24)
+            .await?;
+        self.set_configuration_value(config::Id::MaxHops, 30)
+            .await?;
         Ok(())
     }
 
@@ -67,7 +104,7 @@ where
             random(),
             InitialSecurityState::new(
                 Default::default(),
-                KeyIndex::Development,
+                KeyIndex::Certification,
                 random(),
                 random(),
             ),
@@ -83,7 +120,29 @@ where
 
     async fn permit_joining(&mut self, seconds: u8) -> Result<(), Self::Error> {
         info!("Permitting joining for {seconds} seconds");
-        self.permit_joining(seconds.into()).await
-        // TODO: Send a broadcast to announce the network
+        self.permit_joining(seconds.into()).await?;
+
+        Ok(())
+    }
+
+    async fn advertise_network(&mut self, seconds: u8) -> Result<(), Self::Error> {
+        let mut options = Options::new();
+        options
+            .push(aps::Option::Retry)
+            .expect("Options buffer should have sufficient capacity. This is a bug.");
+        options
+            .push(aps::Option::EnableAddressDiscovery)
+            .expect("Options buffer should have sufficient capacity. This is a bug.");
+        options
+            .push(aps::Option::EnableRouteDiscovery)
+            .expect("Options buffer should have sufficient capacity. This is a bug.");
+        let aps_frame = Frame::new(0, 0x0036, 0, 0, options, 0, 1);
+        let message = [seconds, 0x01].into();
+
+        info!("Message: {message:x?}");
+        info!("Sending broadcast to notify devices");
+        self.send_broadcast(0xFFFC, aps_frame, 31, 5, message)
+            .await?;
+        Ok(())
     }
 }

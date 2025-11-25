@@ -40,12 +40,19 @@ async fn main() {
 
     let mut uart = Uart::new(serial_port, callbacks_sender, 8, 1024);
     uart.initialize().await.expect("Failed to initialize uart");
+    info!("Forming network");
     uart.form_network(0xabcd, 11)
         .await
         .expect("Failed to form network");
 
+    info!("Permitting joining for {} seconds", args.join_secs);
     uart.permit_joining(args.join_secs)
         .await
         .expect("Failed to permit joining");
+
+    info!("Advertising network for {} seconds", args.join_secs);
+    uart.advertise_network(args.join_secs)
+        .await
+        .expect("Failed to advertise network");
     sleep(Duration::from_secs(args.join_secs.into())).await;
 }
