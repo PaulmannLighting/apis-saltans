@@ -1,20 +1,53 @@
 //! A library for prototyping Zigbee coordinator devices.
 
+use std::error::Error;
 use std::io;
+
+use ezsp::Networking;
+use ezsp::ember::node::Type;
+use ezsp::uart::Uart;
+use serialport::SerialPort;
 
 /// A Zigbee coordinator device.
 pub trait Coordinator {
+    /// The error type for coordinator operations.
+    type Error: Error;
+
     /// Initializes the coordinator device.
     ///
     /// # Errors
     ///
     /// Returns an [`io::Error`] if initialization fails.
-    fn initialize(&mut self) -> io::Result<()>;
+    fn initialize(&mut self) -> impl Future<Output = io::Result<()>>;
 
     /// Forms a new Zigbee network with the specified PAN ID and channel.
     ///
     /// # Errors
     ///
     /// Returns an [`io::Error`] if network formation fails.
-    fn form_network(&mut self, pan_id: u16, channel: u8) -> io::Result<()>;
+    fn form_network(
+        &mut self,
+        pan_id: u16,
+        channel: u8,
+    ) -> impl Future<Output = Result<(), Self::Error>>;
+}
+
+impl<T> Coordinator for Uart<T>
+where
+    T: SerialPort,
+{
+    type Error = ezsp::Error;
+
+    async fn initialize(&mut self) -> io::Result<()> {
+        todo!("Not yet implemented");
+    }
+
+    async fn form_network(&mut self, pan_id: u16, channel: u8) -> Result<(), Self::Error> {
+        let (typ, mut params) = self.get_network_parameters().await?;
+        assert_eq!(typ, Type::Coordinator);
+        params.set_pan_id(pan_id);
+        params.set_radio_channel(channel);
+        Networking::form_network(self, params).await?;
+        Ok(())
+    }
 }
