@@ -1,0 +1,15 @@
+[package]
+name = "prototype"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+prototyping = { path = "../prototyping" }
+tokio = { version = "1.48", features = ["rt", "rt-multi-thread", "macros"] }
+clap = { version = "4.5.53", features = ["derive"] }
+ashv2 = { version = "1.2", features = ["serialport"] }
+serialport = "4.8"
+ezsp = { path = "../../ezsp", features = ["ashv2"] }
+
+[lints]
+workspace = true
