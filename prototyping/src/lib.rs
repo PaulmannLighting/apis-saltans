@@ -45,6 +45,9 @@ where
     async fn form_network(&mut self, pan_id: u16, channel: u8) -> Result<(), Self::Error> {
         let (typ, mut params) = self.get_network_parameters().await?;
 
+        debug!("Current node type: {typ}");
+        debug!("Current parameters: {params:?}");
+
         if typ != Type::Coordinator {
             debug!("Setting node type to Coordinator");
             self.set_node_type(Type::Coordinator).await?;
