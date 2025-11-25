@@ -15,13 +15,13 @@ publish = false
 [dependencies]
 bitflags = "2.6"
 chrono = "0.4"
-either = "1.15.0"
+either = "1.15"
 heapless = "0.9"
 le-stream = { version = "5", features = ["derive", "heapless", "intx", "macaddr"] }
 macaddr = "1.0"
 num-derive = "0.4"
 num-traits = "0.2"
-repr-discriminant = "1"
+repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1.0", optional = true }
 zigbee = { path = "../zigbee" }
 
