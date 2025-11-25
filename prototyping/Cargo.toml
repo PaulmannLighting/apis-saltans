@@ -1,0 +1,11 @@
+[package]
+name = "prototyping"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+zigbee = { path = "../zigbee", features = ["std"] }
+zcl = { path = "../zcl", features = ["std"] }
+
+[lints]
+workspace = true
