@@ -3,10 +3,8 @@
 use std::error::Error;
 use std::io;
 
-use ezsp::Networking;
 use ezsp::ember::node::Type;
-use ezsp::uart::Uart;
-use serialport::SerialPort;
+use ezsp::{Networking, Zll};
 
 /// A Zigbee coordinator device.
 pub trait Coordinator {
@@ -32,9 +30,9 @@ pub trait Coordinator {
     ) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
-impl<T> Coordinator for Uart<T>
+impl<T> Coordinator for T
 where
-    T: SerialPort,
+    T: Networking + Zll,
 {
     type Error = ezsp::Error;
 

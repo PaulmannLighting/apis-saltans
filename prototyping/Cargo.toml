@@ -7,7 +7,6 @@ edition = "2024"
 zigbee = { path = "../zigbee" }
 zcl = { path = "../zcl" }
 ezsp = { path = "../../ezsp", features = ["ashv2"] }
-serialport = "4.8"
 
 [lints]
 workspace = true
