@@ -6,7 +6,7 @@ use std::io;
 use ezsp::ember::node::Type;
 use ezsp::ember::zll::{InitialSecurityState, KeyIndex};
 use ezsp::{Networking, Zll};
-use log::debug;
+use log::{debug, info};
 use rand::random;
 
 /// A Zigbee coordinator device.
@@ -31,6 +31,13 @@ pub trait Coordinator {
         pan_id: u16,
         channel: u8,
     ) -> impl Future<Output = Result<(), Self::Error>>;
+
+    /// Permits devices to join the network for a specified duration in seconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`io::Error`] if permitting joining fails.
+    fn permit_joining(&mut self, seconds: u8) -> impl Future<Output = Result<(), Self::Error>>;
 }
 
 impl<T> Coordinator for T
@@ -45,14 +52,14 @@ where
     }
 
     async fn form_network(&mut self, pan_id: u16, channel: u8) -> Result<(), Self::Error> {
-        debug!("Getting current network parameters");
+        info!("Getting current network parameters");
         let (node_type, mut parameters) = self.get_network_parameters().await?;
 
-        debug!("Current node type: {node_type}");
-        debug!("Current parameters: {parameters:?}");
+        info!("Current node type: {node_type}");
+        info!("Current parameters: {parameters:?}");
 
         if node_type != Type::Coordinator {
-            debug!("Setting node type to Coordinator");
+            info!("Setting node type to Coordinator");
             self.set_node_type(Type::Coordinator).await?;
         }
 
@@ -70,8 +77,13 @@ where
         parameters.set_pan_id(pan_id);
         parameters.set_radio_channel(channel);
 
-        debug!("Setting network parameters");
-        Networking::form_network(self, parameters).await?;
-        Ok(())
+        info!("Setting network parameters");
+        Networking::form_network(self, parameters).await
+    }
+
+    async fn permit_joining(&mut self, seconds: u8) -> Result<(), Self::Error> {
+        info!("Permitting joining for {seconds} seconds");
+        self.permit_joining(seconds.into()).await
+        // TODO: Send a broadcast to announce the network
     }
 }
