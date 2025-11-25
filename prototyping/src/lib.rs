@@ -42,7 +42,11 @@ where
 
     async fn form_network(&mut self, pan_id: u16, channel: u8) -> Result<(), Self::Error> {
         let (typ, mut params) = self.get_network_parameters().await?;
-        assert_eq!(typ, Type::Coordinator);
+
+        if typ != Type::Coordinator {
+            self.set_node_type(Type::Coordinator).await?;
+        }
+
         params.set_pan_id(pan_id);
         params.set_radio_channel(channel);
         Networking::form_network(self, params).await?;
