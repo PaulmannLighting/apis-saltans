@@ -11,6 +11,7 @@ use ezsp::ezsp::{config, decision, policy};
 use ezsp::{Configuration, Messaging, Networking, Zll};
 use le_stream::ToLeStream;
 use log::{debug, info};
+use macaddr::MacAddr8;
 use rand::random;
 use zdp::MgmtPermitJoiningReq;
 
@@ -31,11 +32,7 @@ pub trait Coordinator {
     /// # Errors
     ///
     /// Returns an [`Self::Error`] if network formation fails.
-    fn form_network(
-        &mut self,
-        pan_id: u16,
-        channel: u8,
-    ) -> impl Future<Output = Result<(), Self::Error>>;
+    fn form_network(&mut self, channel: u8) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Permits devices to join the network for a specified duration in seconds.
     ///
@@ -90,10 +87,11 @@ where
             .await?;
         self.set_configuration_value(config::Id::MaxHops, 30)
             .await?;
+
         Ok(())
     }
 
-    async fn form_network(&mut self, pan_id: u16, channel: u8) -> Result<(), Self::Error> {
+    async fn form_network(&mut self, channel: u8) -> Result<(), Self::Error> {
         info!("Getting current network parameters");
         let parameters = self.get_network_parameters().await?;
 
@@ -121,7 +119,10 @@ where
         )
         .await?;
 
-        parameters.set_pan_id(pan_id);
+        parameters.set_pan_id(0xffff);
+        parameters.set_extended_pan_id(MacAddr8::new(
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        ));
         parameters.set_radio_channel(channel);
 
         info!("Setting network parameters");
@@ -167,11 +168,12 @@ where
         let mut nodes = BTreeMap::new();
 
         for index in 0..=u8::MAX {
+            info!("Getting child for {index}");
             if let Ok(child) = self.get_child_data(index).await {
                 info!("Child at {index}: {child:?}");
                 nodes.insert(index, child);
             } else {
-                debug!("No child at index {index}");
+                break;
             }
         }
 
