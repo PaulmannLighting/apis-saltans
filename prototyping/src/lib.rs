@@ -90,12 +90,17 @@ where
 
     async fn form_network(&mut self, pan_id: u16, channel: u8) -> Result<(), Self::Error> {
         info!("Getting current network parameters");
-        let (node_type, mut parameters) = self.get_network_parameters().await?;
+        let parameters = self.get_network_parameters().await?;
 
-        info!("Current node type: {node_type}");
+        let status = parameters.status();
+        let node_type = parameters.node_type();
+        let mut parameters = parameters.into_parameters();
+
+        info!("Current status: {status:?}");
+        info!("Current node type: {node_type:?}");
         info!("Current parameters: {parameters:?}");
 
-        if node_type != Type::Coordinator {
+        if node_type != Ok(Type::Coordinator) {
             info!("Setting node type to Coordinator");
             self.set_node_type(Type::Coordinator).await?;
         }
@@ -121,7 +126,6 @@ where
     async fn permit_joining(&mut self, seconds: u8) -> Result<(), Self::Error> {
         info!("Permitting joining for {seconds} seconds");
         self.permit_joining(seconds.into()).await?;
-
         Ok(())
     }
 
@@ -137,11 +141,11 @@ where
             .push(aps::Option::EnableRouteDiscovery)
             .expect("Options buffer should have sufficient capacity. This is a bug.");
         let aps_frame = Frame::new(0, 0x0036, 0, 0, options, 0, 1);
-        let message = [seconds, 0x01].into();
+        let message = [0x26, seconds, 0x01].into();
 
         info!("Message: {message:x?}");
         info!("Sending broadcast to notify devices");
-        self.send_broadcast(0xFFFC, aps_frame, 31, 5, message)
+        self.send_broadcast(0xFFFC, aps_frame, 0x08, 0x26, message)
             .await?;
         Ok(())
     }
