@@ -8,7 +8,7 @@ use crate::Service;
 mod request_type;
 
 /// Request parameters for network address request.
-#[derive(Clone, Debug, Eq, PartialEq, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct NwkAddrReq {
     ieee_addr: MacAddr8,
     request_type: u8,

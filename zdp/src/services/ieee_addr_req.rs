@@ -3,7 +3,7 @@ use le_stream::derive::{FromLeStream, ToLeStream};
 use crate::Service;
 
 /// Request type for IEEE address request.
-#[derive(Clone, Debug, Eq, PartialEq, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct IeeeAddrReq {
     nwk_addr: u16,
     request_type: u8,
