@@ -43,6 +43,11 @@ async fn main() {
     info!("Initializing");
     uart.initialize().await.expect("Failed to initialize uart");
 
+    info!("Forming network");
+    uart.form_network(0xabcd, 11)
+        .await
+        .expect("Failed to form network");
+
     info!("Permitting joining for {} seconds", args.join_secs);
     uart.permit_joining(args.join_secs)
         .await
@@ -50,14 +55,13 @@ async fn main() {
 
     sleep(Duration::from_secs(5)).await;
 
-    info!("Forming network");
-    uart.form_network(0xabcd, 11)
-        .await
-        .expect("Failed to form network");
-
     info!("Advertising network for {} seconds", args.join_secs);
     uart.advertise_network(args.join_secs)
         .await
         .expect("Failed to advertise network");
     sleep(Duration::from_secs(args.join_secs.into())).await;
+    info!("Ending advertisement");
+
+    info!("Listing children");
+    let _children = uart.get_children().await;
 }

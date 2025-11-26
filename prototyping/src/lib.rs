@@ -1,11 +1,12 @@
 //! A library for prototyping Zigbee coordinator devices.
 
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::time::Duration;
 
 use ezsp::ember::node::Type;
 use ezsp::ember::zll::{InitialSecurityState, KeyIndex};
-use ezsp::ember::{aps, concentrator};
+use ezsp::ember::{aps, child, concentrator};
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::{Configuration, Messaging, Networking, Zll};
 use le_stream::ToLeStream;
@@ -22,14 +23,14 @@ pub trait Coordinator {
     ///
     /// # Errors
     ///
-    /// Returns an [`io::Error`] if initialization fails.
+    /// Returns an [`Self::Error`] if initialization fails.
     fn initialize(&mut self) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Forms a new Zigbee network with the specified PAN ID and channel.
     ///
     /// # Errors
     ///
-    /// Returns an [`io::Error`] if network formation fails.
+    /// Returns an [`Self::Error`] if network formation fails.
     fn form_network(
         &mut self,
         pan_id: u16,
@@ -40,15 +41,22 @@ pub trait Coordinator {
     ///
     /// # Errors
     ///
-    /// Returns an [`io::Error`] if permitting joining fails.
+    /// Returns an [`Self::Error`] if permitting joining fails.
     fn permit_joining(&mut self, seconds: u8) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Advertises the network to nearby devices for the specified duration.
     ///
     /// # Errors
     ///
-    /// Returns an [`io::Error`] if advertising the network fails.
+    /// Returns an [`Self::Error`] if advertising the network fails.
     fn advertise_network(&mut self, seconds: u8) -> impl Future<Output = Result<(), Self::Error>>;
+
+    /// Retrieves a list of nodes currently connected to the network.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Self::Error`] if retrieving the nodes fails.
+    fn get_children(&mut self) -> impl Future<Output = BTreeMap<u8, child::Data>>;
 }
 
 impl<T> Coordinator for T
@@ -153,5 +161,20 @@ where
         .await?;
 
         Ok(())
+    }
+
+    async fn get_children(&mut self) -> BTreeMap<u8, child::Data> {
+        let mut nodes = BTreeMap::new();
+
+        for index in 0..=u8::MAX {
+            if let Ok(child) = self.get_child_data(index).await {
+                info!("Child at {index}: {child:?}");
+                nodes.insert(index, child);
+            } else {
+                debug!("No child at index {index}");
+            }
+        }
+
+        nodes
     }
 }
