@@ -1,5 +1,7 @@
 use le_stream::derive::{FromLeStream, ToLeStream};
 
+use crate::Service;
+
 /// A frame with a sequence number and associated data.
 #[derive(Clone, Debug, Eq, PartialEq, ToLeStream, FromLeStream)]
 pub struct Frame<T> {
@@ -24,5 +26,22 @@ impl<T> Frame<T> {
     #[must_use]
     pub const fn data(&self) -> &T {
         &self.data
+    }
+}
+
+impl<T> Frame<T>
+where
+    T: Service,
+{
+    /// Returns the service name.
+    #[must_use]
+    pub const fn service_name(&self) -> &'static str {
+        T::NAME
+    }
+
+    /// Returns the cluster ID.
+    #[must_use]
+    pub const fn cluster_id(&self) -> u16 {
+        T::CLUSTER_ID
     }
 }
