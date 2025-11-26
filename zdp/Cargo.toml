@@ -1,0 +1,13 @@
+[package]
+name = "zdp"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+le-stream = { version = "5.2", features = ["derive", "macaddr"] }
+macaddr = "1.0"
+num-derive = "0.4"
+num-traits = "0.2"
+
+[lints]
+workspace = true
