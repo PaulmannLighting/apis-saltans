@@ -1,20 +1,17 @@
 //! A library for prototyping Zigbee coordinator devices.
 
-mod concentrator_config;
-mod transport_options;
-
 use std::error::Error;
-use std::io;
 use std::time::Duration;
 
-use ezsp::ember::aps::{Frame, Options};
 use ezsp::ember::node::Type;
 use ezsp::ember::zll::{InitialSecurityState, KeyIndex};
 use ezsp::ember::{aps, concentrator};
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::{Configuration, Messaging, Networking, Zll};
+use le_stream::ToLeStream;
 use log::{debug, info};
 use rand::random;
+use zdp::MgmtPermitJoiningReq;
 
 /// A Zigbee coordinator device.
 pub trait Coordinator {
@@ -130,7 +127,7 @@ where
     }
 
     async fn advertise_network(&mut self, seconds: u8) -> Result<(), Self::Error> {
-        let mut options = Options::new();
+        let mut options = aps::Options::new();
         options
             .push(aps::Option::Retry)
             .expect("Options buffer should have sufficient capacity. This is a bug.");
@@ -140,13 +137,19 @@ where
         options
             .push(aps::Option::EnableRouteDiscovery)
             .expect("Options buffer should have sufficient capacity. This is a bug.");
-        let aps_frame = Frame::new(0, 0x0036, 0, 0, options, 0, 1);
-        let message = [0x26, seconds, 0x01].into();
+        let aps_frame = aps::Frame::new(0, 0x0036, 0, 0, options, 0, 1);
+        let message = zdp::Frame::new(0x00, MgmtPermitJoiningReq::new(seconds, true));
 
         info!("Message: {message:x?}");
         info!("Sending broadcast to notify devices");
-        self.send_broadcast(0xFFFC, aps_frame, 0x08, 0x26, message)
-            .await?;
+        self.send_broadcast(
+            0xFFFC,
+            aps_frame,
+            0x08,
+            0x26,
+            message.to_le_stream().collect(),
+        )
+        .await?;
         Ok(())
     }
 }

@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-zigbee = { path = "../zigbee" }
-zcl = { path = "../zcl" }
-ezsp = { path = "../../ezsp", features = ["ashv2"] }
+zdp = { path = "../zdp" }
+ezsp = { path = "../../ezsp" }
 log = "0.4"
 rand = "0.10.0-rc.5"
+le-stream = { version = "5" }
 
 [lints]
 workspace = true
