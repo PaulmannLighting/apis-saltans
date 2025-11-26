@@ -138,18 +138,20 @@ where
             .push(aps::Option::EnableRouteDiscovery)
             .expect("Options buffer should have sufficient capacity. This is a bug.");
         let aps_frame = aps::Frame::new(0, 0x0036, 0, 0, options, 0, 1);
+        info!("APS Frame: {aps_frame:x?}");
         let message = zdp::Frame::new(0x00, MgmtPermitJoiningReq::new(seconds, true));
+        info!("ZDP frame: {message:x?}");
 
-        info!("Message: {message:x?}");
         info!("Sending broadcast to notify devices");
         self.send_broadcast(
             0xFFFC,
-            aps_frame,
+            aps_frame.clone(),
             0x08,
             0x26,
-            message.to_le_stream().collect(),
+            message.clone().to_le_stream().collect(),
         )
         .await?;
+
         Ok(())
     }
 }
