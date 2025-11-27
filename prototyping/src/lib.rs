@@ -5,7 +5,7 @@ use std::error::Error;
 use std::time::Duration;
 
 use ezsp::ember::security::initial;
-use ezsp::ember::{aps, child, concentrator, node};
+use ezsp::ember::{aps, child, concentrator, network, node};
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::{Configuration, Messaging, Networking, Security, Utilities, Zll};
 use le_stream::ToLeStream;
@@ -108,13 +108,9 @@ where
         self.set_stack_policy(policy).await?;
 
         info!("Getting current network parameters");
-        let parameters = self.get_network_parameters().await?;
-        let status = parameters.status();
-        let node_type = parameters.node_type();
-        let parameters = parameters.into_parameters();
-        info!("Current status: {status:?}");
-        info!("Current node type: {node_type:?}");
-        info!("Current parameters: {parameters:?}");
+        let (node_type, parameters) = self.get_network_parameters().await?;
+        info!("Node type: {node_type:?}");
+        log_parameters(&parameters);
 
         let ieee_address = self.get_eui64().await?;
         info!("IEEE address: {ieee_address}");
@@ -214,15 +210,16 @@ where
             }
         }
 
+        info!("Getting network parameters - pre reinitialization");
+        let (node_type, mut parameters) = self.get_network_parameters().await?;
+        info!("Node type: {node_type:?}");
+        log_parameters(&parameters);
+
         if reinitialize {
             info!("Leaving network");
             if let Err(error) = self.leave_network().await {
                 error!("Failed to leave network: {error}");
             }
-
-            let parameters = self.get_network_parameters().await?;
-            let node_type = parameters.node_type();
-            let mut parameters = parameters.into_parameters();
 
             let pan_id: u16 = 24171;
             info!("Pan id: {pan_id}");
@@ -234,30 +231,21 @@ where
 
             parameters.set_radio_channel(12);
 
-            if node_type == Ok(node::Type::Coordinator) {
+            if node_type == node::Type::Coordinator {
                 info!("Forming network");
                 Networking::form_network(self, parameters).await?;
             } else {
-                self.join_network(node_type.expect("Invalid node type."), parameters)
-                    .await?;
+                self.join_network(node_type, parameters).await?;
             }
-        } else {
+        } else if node_type == node::Type::Router {
+            info!("Rejoining network");
             self.find_and_rejoin_network(true, 0).await?;
         }
 
-        info!("Getting network parameters");
-        let parameters = self.get_network_parameters().await?;
-        info!("Status: {:?}", parameters.status());
-        info!("Node type: {:?}", parameters.node_type());
-        let parameters = parameters.into_parameters();
-        info!("PAN ID: {:#X}", parameters.pan_id());
-        info!("Extended PAN ID: {:#X?}", parameters.extended_pan_id());
-        info!("Radio TX power: {:#X}", parameters.radio_tx_power());
-        info!("Radio channel: {:#X}", parameters.radio_channel());
-        info!("Join method: {:#X?}", parameters.join_method());
-        info!("Nwk manager ID: {:#X}", parameters.nwk_manager_id());
-        info!("Nwk update ID: {:#X}", parameters.nwk_update_id());
-        info!("Channels: {:#X}", parameters.channels());
+        info!("Getting network parameters - post reinitialization");
+        let (node_type, parameters) = self.get_network_parameters().await?;
+        info!("Node type: {node_type:?}");
+        log_parameters(&parameters);
 
         // TODO: Only if concentrator type is set.
         info!("Sending many-to-one route request");
@@ -314,4 +302,15 @@ where
 
         nodes
     }
+}
+
+fn log_parameters(parameters: &network::Parameters) {
+    info!("PAN ID: {:#X}", parameters.pan_id());
+    info!("Extended PAN ID: {:#X?}", parameters.extended_pan_id());
+    info!("Radio TX power: {:#X}", parameters.radio_tx_power());
+    info!("Radio channel: {:#X}", parameters.radio_channel());
+    info!("Join method: {:#X?}", parameters.join_method());
+    info!("Nwk manager ID: {:#X}", parameters.nwk_manager_id());
+    info!("Nwk update ID: {:#X}", parameters.nwk_update_id());
+    info!("Channels: {:#X}", parameters.channels());
 }
