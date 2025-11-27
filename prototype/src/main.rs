@@ -11,7 +11,7 @@ use ezsp::ember::Status;
 use ezsp::ezsp::{config, policy};
 use ezsp::parameters::networking::handler::Handler::StackStatus;
 use ezsp::uart::Uart;
-use ezsp::{Callback, Configuration, Mfglib, Networking};
+use ezsp::{Callback, Configuration, Mfglib, Networking, Utilities};
 use log::{error, info};
 use prototyping::Coordinator;
 use serialport::FlowControl;
@@ -108,6 +108,10 @@ async fn main() {
     match uart.get_radio_channel().await {
         Ok(channel) => info!("Radio channel: {channel}"),
         Err(error) => error!("Failed to get radio channel: {error}"),
+    }
+
+    while let Some(callback) = uart.callback().await.expect("Failed to receive callback") {
+        info!("Received callback: {callback:?}");
     }
 
     info!("Terminating.");
