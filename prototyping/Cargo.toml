@@ -7,7 +7,6 @@ edition = "2024"
 zdp = { path = "../zdp" }
 ezsp = { path = "../../ezsp" }
 log = "0.4"
-rand = "0.10.0-rc.5"
 le-stream = { version = "5" }
 macaddr = "1.0.1"
 

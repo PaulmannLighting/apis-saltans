@@ -21,6 +21,8 @@ struct Args {
         help = "Amount of seconds to permit joining"
     )]
     join_secs: u8,
+    #[clap(long, short, help = "Whether to reinitialize the device")]
+    reinitialize: bool,
 }
 
 #[tokio::main]
@@ -43,22 +45,23 @@ async fn main() {
     info!("Initializing");
     uart.initialize().await.expect("Failed to initialize uart");
 
-    info!("Forming network");
-    uart.form_network(11).await.expect("Failed to form network");
+    info!("Starting");
+    uart.startup(args.reinitialize)
+        .await
+        .expect("Failed to start uart");
 
     info!("Permitting joining for {} seconds", args.join_secs);
     uart.permit_joining(args.join_secs)
         .await
         .expect("Failed to permit joining");
 
-    /*
     sleep(Duration::from_secs(5)).await;
 
     info!("Advertising network for {} seconds", args.join_secs);
     uart.advertise_network(args.join_secs)
         .await
         .expect("Failed to advertise network");
-     */
+
     sleep(Duration::from_secs(args.join_secs.into())).await;
     info!("Joining period has ended");
 
