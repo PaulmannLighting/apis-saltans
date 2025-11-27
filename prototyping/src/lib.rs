@@ -238,6 +238,7 @@ where
                 info!("Waiting to leave network");
                 // This is a hack. TODO: Wait for callback instead.
                 sleep(Duration::from_secs(5)).await;
+                info!("Network should be left by now.")
             }
 
             self.initialize().await?;
@@ -256,7 +257,7 @@ where
                 pan_id,
                 8,
                 radio_channel,
-                join::Method::NwkRejoinHaveNwkKey,
+                join::Method::MacAssociation,
                 0,
                 0,
                 0,
@@ -313,7 +314,7 @@ where
             .expect("Options buffer should have sufficient capacity. This is a bug.");
         let message = zdp::Frame::new(0x00, MgmtPermitJoiningReq::new(seconds, true));
         info!("ZDP frame: {message:x?}");
-        let aps_frame = aps::Frame::new(0, message.cluster_id(), 0, 0, options, 0, 1);
+        let aps_frame = aps::Frame::new(0x0104, message.cluster_id(), 1, 0, options, 0xffff, 1);
         info!("APS Frame: {aps_frame:x?}");
 
         info!("Sending broadcast to notify devices");
@@ -343,7 +344,7 @@ where
     }
 }
 
-fn log_parameters(parameters: &network::Parameters) {
+pub fn log_parameters(parameters: &network::Parameters) {
     info!("PAN ID: {:#X}", parameters.pan_id());
     info!("Extended PAN ID: {:#X?}", parameters.extended_pan_id());
     info!("Radio TX power: {:#X}", parameters.radio_tx_power());

@@ -11,9 +11,9 @@ use ezsp::ember::Status;
 use ezsp::ezsp::{config, policy};
 use ezsp::parameters::networking::handler::Handler::StackStatus;
 use ezsp::uart::Uart;
-use ezsp::{Callback, Configuration, Mfglib, Networking, Utilities};
+use ezsp::{Callback, Configuration, Ezsp, Mfglib, Networking, Utilities};
 use log::{error, info};
-use prototyping::Coordinator;
+use prototyping::{Coordinator, log_parameters};
 use serialport::FlowControl;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::sleep;
@@ -38,15 +38,21 @@ async fn main() {
     let args = Args::parse();
     env_logger::init();
     let network_up = Arc::new(AtomicBool::new(false));
+    let network_closed = Arc::new(AtomicBool::new(false));
 
     let serial_port = open(args.tty.clone(), BaudRate::RstCts, FlowControl::Software)
         .expect("Failed to open serial port");
     let (callbacks_sender, callbacks_receiver) = tokio::sync::mpsc::channel(1024);
 
     // Spawn a task to handle incoming callbacks.
-    tokio::spawn(handle_callbacks(callbacks_receiver, network_up.clone()));
+    tokio::spawn(handle_callbacks(
+        callbacks_receiver,
+        network_up.clone(),
+        network_closed.clone(),
+    ));
 
     let mut uart = Uart::new(serial_port, callbacks_sender, 8, 1024);
+    uart.init().await.expect("Failed to initialize uart");
 
     info!("Initializing");
     uart.initialize().await.expect("Failed to initialize uart");
@@ -73,7 +79,18 @@ async fn main() {
         .await
         .expect("Failed to advertise network");
 
-    sleep(Duration::from_secs(args.join_secs.into())).await;
+    info!("Logging network parameters.");
+    let (node_type, parameters) = uart
+        .get_network_parameters()
+        .await
+        .expect("Failed to get network parameters");
+    info!("Node type: {node_type:?}");
+    log_parameters(&parameters);
+
+    info!("Waiting for joining period to end!");
+    while !network_closed.load(SeqCst) {
+        sleep(Duration::from_secs(1)).await;
+    }
     info!("Joining period has ended");
 
     info!("Listing children");
@@ -117,14 +134,25 @@ async fn main() {
     info!("Terminating.");
 }
 
-async fn handle_callbacks(mut callbacks: Receiver<Callback>, network_up: Arc<AtomicBool>) {
+async fn handle_callbacks(
+    mut callbacks: Receiver<Callback>,
+    network_up: Arc<AtomicBool>,
+    network_closed: Arc<AtomicBool>,
+) {
     while let Some(callback) = callbacks.recv().await {
         info!("Received callback: {callback:?}");
 
-        if let Callback::Networking(StackStatus(status)) = &callback
-            && status.result() == Ok(Status::NetworkUp)
-        {
-            network_up.store(true, SeqCst);
+        if let Callback::Networking(StackStatus(status)) = &callback {
+            match status.result() {
+                Ok(Status::NetworkUp) => {
+                    network_up.store(true, SeqCst);
+                }
+                Ok(Status::NetworkClosed) => {
+                    network_closed.store(true, SeqCst);
+                    info!("Join successful");
+                }
+                _ => (),
+            }
         }
     }
 }
