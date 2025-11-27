@@ -322,7 +322,7 @@ where
             aps_frame.clone(),
             0x08,
             0x26,
-            message.clone().to_le_stream().collect(),
+            message.to_le_stream().collect(),
         )
         .await?;
 
