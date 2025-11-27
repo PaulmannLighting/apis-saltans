@@ -304,12 +304,9 @@ where
         let mut nodes = BTreeMap::new();
 
         for index in 0..=u8::MAX {
-            info!("Getting child for {index}");
             if let Ok(child) = self.get_child_data(index).await {
                 info!("Child at {index}: {child:?}");
                 nodes.insert(index, child);
-            } else {
-                break;
             }
         }
 
