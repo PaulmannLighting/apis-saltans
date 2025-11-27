@@ -5,12 +5,13 @@ use std::error::Error;
 use std::time::Duration;
 
 use ezsp::ember::security::initial;
-use ezsp::ember::{aps, child, concentrator, network, node};
+use ezsp::ember::{aps, child, concentrator, join, network, node};
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::{Configuration, Messaging, Networking, Security, Utilities, Zll};
 use le_stream::ToLeStream;
 use log::{debug, error, info};
 use macaddr::MacAddr8;
+use tokio::time::sleep;
 use zdp::MgmtPermitJoiningReq;
 
 const LINK_KEY: &[u8] = include_bytes!("../../assets/link.key");
@@ -108,9 +109,15 @@ where
         self.set_stack_policy(policy).await?;
 
         info!("Getting current network parameters");
-        let (node_type, parameters) = self.get_network_parameters().await?;
-        info!("Node type: {node_type:?}");
-        log_parameters(&parameters);
+        match self.get_network_parameters().await {
+            Ok((node_type, parameters)) => {
+                info!("Node type: {node_type:?}");
+                log_parameters(&parameters);
+            }
+            Err(error) => {
+                error!("Failed to get network parameters: {error}");
+            }
+        }
 
         let ieee_address = self.get_eui64().await?;
         info!("IEEE address: {ieee_address}");
@@ -210,26 +217,52 @@ where
             }
         }
 
-        info!("Getting network parameters - pre reinitialization");
-        let (node_type, mut parameters) = self.get_network_parameters().await?;
-        info!("Node type: {node_type:?}");
-        log_parameters(&parameters);
+        info!("Getting network parameters - pre init");
+        let node_type = match self.get_network_parameters().await {
+            Ok((node_type, parameters)) => {
+                info!("Node type: {node_type:?}");
+                log_parameters(&parameters);
+                Some(node_type)
+            }
+            Err(error) => {
+                error!("Failed to get network parameters: {error}");
+                None
+            }
+        };
 
         if reinitialize {
             info!("Leaving network");
             if let Err(error) = self.leave_network().await {
                 error!("Failed to leave network: {error}");
+            } else {
+                info!("Waiting to leave network");
+                // This is a hack. TODO: Wait for callback instead.
+                sleep(Duration::from_secs(5)).await;
             }
+
+            self.initialize().await?;
 
             let pan_id: u16 = 24171;
             info!("Pan id: {pan_id}");
-            parameters.set_pan_id(pan_id);
 
             let extended_pan_id = MacAddr8::new(0x8D, 0x9F, 0x3D, 0xFE, 0x00, 0xBF, 0x0D, 0xB5);
             info!("Extended pan id: {extended_pan_id}");
-            parameters.set_extended_pan_id(extended_pan_id);
 
-            parameters.set_radio_channel(12);
+            let radio_channel: u8 = 12;
+            info!("Radio channel: {radio_channel}");
+
+            let parameters = network::Parameters::new(
+                extended_pan_id,
+                pan_id,
+                8,
+                radio_channel,
+                join::Method::NwkRejoinHaveNwkKey,
+                0,
+                0,
+                0,
+            );
+
+            let node_type = node_type.unwrap_or(node::Type::Coordinator);
 
             if node_type == node::Type::Coordinator {
                 info!("Forming network");
@@ -237,15 +270,21 @@ where
             } else {
                 self.join_network(node_type, parameters).await?;
             }
-        } else if node_type == node::Type::Router {
+        } else if node_type == Some(node::Type::Router) {
             info!("Rejoining network");
             self.find_and_rejoin_network(true, 0).await?;
         }
 
         info!("Getting network parameters - post reinitialization");
-        let (node_type, parameters) = self.get_network_parameters().await?;
-        info!("Node type: {node_type:?}");
-        log_parameters(&parameters);
+        match self.get_network_parameters().await {
+            Ok((node_type, parameters)) => {
+                info!("Node type: {node_type:?}");
+                log_parameters(&parameters);
+            }
+            Err(error) => {
+                error!("Failed to get network parameters: {error}");
+            }
+        }
 
         // TODO: Only if concentrator type is set.
         info!("Sending many-to-one route request");
