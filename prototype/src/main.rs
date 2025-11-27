@@ -125,6 +125,6 @@ async fn handle_callbacks(mut callbacks: Receiver<Callback>, network_up: Arc<Ato
             && status.result() == Ok(Status::NetworkUp)
         {
             network_up.store(true, SeqCst);
-        };
+        }
     }
 }
