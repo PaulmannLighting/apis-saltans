@@ -241,6 +241,8 @@ where
                 self.join_network(node_type.expect("Invalid node type."), parameters)
                     .await?;
             }
+        } else {
+            self.find_and_rejoin_network(true, 0).await?;
         }
 
         info!("Getting network parameters");
