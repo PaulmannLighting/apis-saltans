@@ -62,11 +62,10 @@ async fn main() {
         .await
         .expect("Failed to start uart");
 
+    info!("Waiting for network to come up!");
     while !network_up.load(SeqCst) {
-        info!("Waiting for network to come up!");
         sleep(Duration::from_secs(1)).await;
     }
-
     info!("Network is up!");
 
     info!("Permitting joining for {} seconds", args.join_secs);
