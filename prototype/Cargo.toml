@@ -14,6 +14,7 @@ log = "0.4"
 macaddr = "1.0.1"
 zdp = { path = "../zdp" }
 le-stream = "5.2.0"
+enum-iterator = "2.3.0"
 
 [lints]
 workspace = true

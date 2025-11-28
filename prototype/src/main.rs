@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use ashv2::{BaudRate, open};
 use clap::Parser;
+use enum_iterator::all;
 use ezsp::ember::message::Outgoing;
 use ezsp::ember::security::initial;
 use ezsp::ember::{Status, aps, concentrator, join, network};
@@ -79,6 +80,11 @@ async fn main() {
     let mut uart = Uart::new(serial_port, callbacks_sender, 8, 1024);
     uart.init().await.expect("Failed to initialize UART");
 
+    info!("Initial EZSP NCP configuration:");
+    print_configuration(&mut uart).await;
+    info!("Initial EZSP NCP policy:");
+    print_policy(&mut uart).await;
+
     info!("Adding endpoint");
     add_endpoint(&mut uart)
         .await
@@ -104,6 +110,11 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
     }
     info!("Network is up");
+
+    info!("Final EZSP NCP configuration:");
+    print_configuration(&mut uart).await;
+    info!("Final EZSP NCP policy:");
+    print_policy(&mut uart).await;
 
     let (node_type, parameters) = uart
         .get_network_parameters()
@@ -148,15 +159,17 @@ async fn main() {
     }
     info!("Network is opened");
 
-    let seq = send_broadcast(&mut uart, args.join_secs)
-        .await
-        .expect("Failed to send broadcast");
-    info!("Sent broadcast with sequence number: {seq}");
+    /*
+        let seq = send_broadcast(&mut uart, args.join_secs)
+            .await
+            .expect("Failed to send broadcast");
+        info!("Sent broadcast with sequence number: {seq}");
 
-    let seq = send_unicast(&mut uart, args.join_secs)
-        .await
-        .expect("Failed to send unicast");
-    info!("Sent unicast with sequence number: {seq}");
+        let seq = send_unicast(&mut uart, args.join_secs)
+            .await
+            .expect("Failed to send unicast");
+        info!("Sent unicast with sequence number: {seq}");
+    */
 
     tokio::spawn(async move {
         loop {
@@ -214,7 +227,7 @@ where
     uart.form_network(network::Parameters::new(
         args.extended_pan_id,
         args.pan_id,
-        8,
+        RADIO_TX_POWER as u8,
         args.radio_channel,
         join::Method::MacAssociation,
         0,
@@ -319,6 +332,30 @@ where
         zdp_frame.to_le_stream().collect(),
     )
     .await
+}
+
+async fn print_configuration<T>(uart: &mut T)
+where
+    T: Configuration,
+{
+    for id in all::<config::Id>() {
+        match uart.get_configuration_value(id).await {
+            Ok(value) => info!("Configuration {id:?} = {value}"),
+            Err(error) => warn!("Failed to get configuration {id:?}: {error}"),
+        }
+    }
+}
+
+async fn print_policy<T>(uart: &mut T)
+where
+    T: Configuration,
+{
+    for id in all::<policy::Id>() {
+        match uart.get_policy(id).await {
+            Ok(value) => info!("Policy {id:?} = {value:?}"),
+            Err(error) => warn!("Failed to get policy {id:?}: {error}"),
+        }
+    }
 }
 
 async fn handle_callbacks(
