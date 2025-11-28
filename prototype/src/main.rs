@@ -14,18 +14,19 @@ use ezsp::ezsp::{config, decision, policy};
 use ezsp::parameters::networking::handler::Handler::StackStatus;
 use ezsp::uart::Uart;
 use ezsp::{Callback, Configuration, Error, Ezsp, Messaging, Networking, Security, Utilities};
-use log::{error, info};
+use log::info;
 use macaddr::MacAddr8;
 use serialport::FlowControl;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::sleep;
 
+const RADIO_TX_POWER: i8 = 8;
 const PAN_ID: u16 = 24171;
 const EXTENDED_PAN_ID: MacAddr8 = MacAddr8::new(0x8D, 0x9F, 0x3D, 0xFE, 0x00, 0xBF, 0x0D, 0xB5);
 const NETWORK_KEY: [u8; 16] = [
     0x29, 0xB0, 0x0D, 0xE6, 0x31, 0xAB, 0x7A, 0xD0, 0xC6, 0x83, 0xC8, 0x7A, 0xBF, 0x70, 0xD6, 0x08,
 ];
-const RADIO_CHANNEL: u8 = 12;
+const RADIO_CHANNEL: u8 = 11;
 const LINK_KEY: &[u8] = include_bytes!("../../assets/link.key");
 const HOME_AUTOMATION: u16 = 0x0104;
 const HOME_GATEWAY: u16 = 0x0050;
@@ -58,7 +59,7 @@ async fn main() {
     let args = Args::parse();
     env_logger::init();
     let network_up = Arc::new(AtomicBool::new(false));
-    let network_closed = Arc::new(AtomicBool::new(false));
+    let network_open = Arc::new(AtomicBool::new(false));
 
     let serial_port = open(args.tty.clone(), BaudRate::RstCts, FlowControl::Software)
         .expect("Failed to open serial port");
@@ -68,11 +69,16 @@ async fn main() {
     tokio::spawn(handle_callbacks(
         callbacks_receiver,
         network_up.clone(),
-        network_closed.clone(),
+        network_open.clone(),
     ));
 
     let mut uart = Uart::new(serial_port, callbacks_sender, 8, 1024);
     uart.init().await.expect("Failed to initialize UART");
+
+    info!("Setting radio TX power to {RADIO_TX_POWER}");
+    uart.set_radio_power(RADIO_TX_POWER)
+        .await
+        .expect("Failed to set radio power");
 
     info!("Adding endpoint");
     add_endpoint(&mut uart)
@@ -86,9 +92,12 @@ async fn main() {
             .expect("Failed to reinitialize network");
     } else {
         info!("Initializing network");
-        uart.network_init(BTreeSet::default())
+        initialize(&mut uart)
             .await
             .expect("Failed to initialize network");
+        uart.network_init(BTreeSet::default())
+            .await
+            .expect("Network init failed");
     }
 
     info!("Waiting for network to come up...");
@@ -120,8 +129,14 @@ async fn main() {
         .await
         .expect("Failed to permit joining");
 
+    info!("Waiting for network to open...");
+    while !network_open.load(SeqCst) {
+        sleep(Duration::from_secs(1)).await;
+    }
+    info!("Network is opened");
+
     info!("Waiting for network to close...");
-    while !network_closed.load(SeqCst) {
+    while network_open.load(SeqCst) {
         sleep(Duration::from_secs(1)).await;
     }
     info!("Network is closed");
@@ -203,17 +218,6 @@ where
     policy.insert(policy::Id::TrustCenter, decision::Id::AllowJoins);
     uart.set_stack_policy(policy).await?;
 
-    info!("Getting current network parameters");
-    match uart.get_network_parameters().await {
-        Ok((node_type, parameters)) => {
-            info!("Node type: {node_type:?}");
-            log_parameters(&parameters);
-        }
-        Err(error) => {
-            error!("Failed to get network parameters: {error}");
-        }
-    }
-
     let ieee_address = uart.get_eui64().await?;
     info!("IEEE address: {ieee_address}");
 
@@ -238,7 +242,7 @@ where
 async fn handle_callbacks(
     mut callbacks: Receiver<Callback>,
     network_up: Arc<AtomicBool>,
-    network_closed: Arc<AtomicBool>,
+    network_open: Arc<AtomicBool>,
 ) {
     while let Some(callback) = callbacks.recv().await {
         info!("Received callback: {callback:?}");
@@ -248,11 +252,14 @@ async fn handle_callbacks(
                 Ok(Status::NetworkUp) => {
                     network_up.store(true, SeqCst);
                 }
-                Ok(Status::NetworkClosed) => {
-                    network_closed.store(true, SeqCst);
-                }
                 Ok(Status::NetworkDown) => {
                     network_up.store(false, SeqCst);
+                }
+                Ok(Status::NetworkOpened) => {
+                    network_open.store(true, SeqCst);
+                }
+                Ok(Status::NetworkClosed) => {
+                    network_open.store(false, SeqCst);
                 }
                 _ => (),
             }
