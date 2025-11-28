@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use ashv2::{BaudRate, open};
 use clap::Parser;
+use ezsp::ember::message::Outgoing;
 use ezsp::ember::security::initial;
 use ezsp::ember::{Status, aps, concentrator, join, network};
 use ezsp::ezsp::{config, decision, policy};
@@ -152,6 +153,11 @@ async fn main() {
         .expect("Failed to send broadcast");
     info!("Sent broadcast with sequence number: {seq}");
 
+    let seq = send_unicast(&mut uart, args.join_secs)
+        .await
+        .expect("Failed to send unicast");
+    info!("Sent unicast with sequence number: {seq}");
+
     tokio::spawn(async move {
         loop {
             match uart.network_state().await {
@@ -294,6 +300,25 @@ where
     let aps_frame = aps::Frame::new(0, zdp_frame.cluster_id(), 0, 0, aps_options, 0, 0);
     uart.send_broadcast(0xFFFC, aps_frame, 31, 5, zdp_frame.to_le_stream().collect())
         .await
+}
+
+async fn send_unicast<T>(uart: &mut T, join_secs: u8) -> Result<u8, Error>
+where
+    T: Messaging,
+{
+    let zdp_frame = zdp::Frame::new(0, MgmtPermitJoiningReq::new(join_secs, true));
+    let aps_options = aps::Options::RETRY
+        | aps::Options::ENABLE_ADDRESS_DISCOVERY
+        | aps::Options::ENABLE_ROUTE_DISCOVERY;
+    let aps_frame = aps::Frame::new(0, zdp_frame.cluster_id(), 0, 1, aps_options, 0, 0);
+    uart.send_unicast(
+        Outgoing::Direct,
+        PAN_ID,
+        aps_frame,
+        5,
+        zdp_frame.to_le_stream().collect(),
+    )
+    .await
 }
 
 async fn handle_callbacks(
