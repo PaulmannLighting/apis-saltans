@@ -273,7 +273,7 @@ where
     let mut configuration = BTreeMap::new();
     configuration.insert(config::Id::IndirectTransmissionTimeout, 7680);
     configuration.insert(config::Id::MaxHops, 30);
-    configuration.insert(config::Id::PacketBufferCount, 253);
+    configuration.insert(config::Id::PacketBufferCount, 250);
     configuration.insert(config::Id::FragmentDelayMs, 50);
     configuration.insert(config::Id::AddressTableSize, 8);
     configuration.insert(config::Id::TxPowerMode, 0);
