@@ -9,17 +9,20 @@ use std::time::Duration;
 use ashv2::{BaudRate, open};
 use clap::Parser;
 use ezsp::ember::security::initial;
-use ezsp::ember::{Status, concentrator, join, network};
+use ezsp::ember::{Status, aps, concentrator, join, network};
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::parameters::networking::handler::Handler::{ChildJoin, StackStatus};
 use ezsp::uart::Uart;
 use ezsp::{Callback, Configuration, Error, Ezsp, Messaging, Networking, Security, Utilities};
+use le_stream::ToLeStream;
 use log::{info, warn};
 use macaddr::MacAddr8;
 use serialport::FlowControl;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::sleep;
+use zdp::MgmtPermitJoiningReq;
 
+const ENDPOINT_ID: u8 = 1;
 const RADIO_TX_POWER: i8 = 8;
 const PAN_ID: u16 = 24171;
 const EXTENDED_PAN_ID: MacAddr8 = MacAddr8::new(0x8D, 0x9F, 0x3D, 0xFE, 0x00, 0xBF, 0x0D, 0xB5);
@@ -144,6 +147,11 @@ async fn main() {
     }
     info!("Network is opened");
 
+    let seq = send_broadcast(&mut uart, args.join_secs)
+        .await
+        .expect("Failed to send broadcast");
+    info!("Sent broadcast with sequence number: {seq}");
+
     tokio::spawn(async move {
         loop {
             match uart.network_state().await {
@@ -216,7 +224,7 @@ where
 {
     info!("Adding endpoint");
     uart.add_endpoint(
-        1,
+        ENDPOINT_ID,
         HOME_AUTOMATION,
         HOME_GATEWAY,
         0,
@@ -273,6 +281,19 @@ where
     .await?;
 
     Ok(())
+}
+
+async fn send_broadcast<T>(uart: &mut T, join_secs: u8) -> Result<u8, Error>
+where
+    T: Messaging,
+{
+    let zdp_frame = zdp::Frame::new(0, MgmtPermitJoiningReq::new(join_secs, true));
+    let aps_options = aps::Options::RETRY
+        | aps::Options::ENABLE_ADDRESS_DISCOVERY
+        | aps::Options::ENABLE_ROUTE_DISCOVERY;
+    let aps_frame = aps::Frame::new(0, zdp_frame.cluster_id(), 0, 0, aps_options, 0, 0);
+    uart.send_broadcast(0xFFFC, aps_frame, 31, 5, zdp_frame.to_le_stream().collect())
+        .await
 }
 
 async fn handle_callbacks(

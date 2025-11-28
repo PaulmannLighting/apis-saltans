@@ -12,6 +12,8 @@ ezsp = { path = "../../ezsp", features = ["ashv2"] }
 env_logger = "0.11"
 log = "0.4"
 macaddr = "1.0.1"
+zdp = { path = "../zdp" }
+le-stream = "5.2.0"
 
 [lints]
 workspace = true
