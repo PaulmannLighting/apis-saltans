@@ -11,10 +11,10 @@ use clap::Parser;
 use ezsp::ember::security::initial;
 use ezsp::ember::{Status, concentrator, join, network};
 use ezsp::ezsp::{config, decision, policy};
-use ezsp::parameters::networking::handler::Handler::StackStatus;
+use ezsp::parameters::networking::handler::Handler::{ChildJoin, StackStatus};
 use ezsp::uart::Uart;
 use ezsp::{Callback, Configuration, Error, Ezsp, Messaging, Networking, Security, Utilities};
-use log::info;
+use log::{info, warn};
 use macaddr::MacAddr8;
 use serialport::FlowControl;
 use tokio::sync::mpsc::Receiver;
@@ -75,11 +75,6 @@ async fn main() {
     let mut uart = Uart::new(serial_port, callbacks_sender, 8, 1024);
     uart.init().await.expect("Failed to initialize UART");
 
-    info!("Setting radio TX power to {RADIO_TX_POWER}");
-    uart.set_radio_power(RADIO_TX_POWER)
-        .await
-        .expect("Failed to set radio power");
-
     info!("Adding endpoint");
     add_endpoint(&mut uart)
         .await
@@ -119,10 +114,24 @@ async fn main() {
         .expect("Failed to get current security state");
     info!("Security state bitmask: {:#06X}", security_state.bitmask());
 
+    info!("Setting radio TX power to {RADIO_TX_POWER}");
+    uart.set_radio_power(RADIO_TX_POWER)
+        .await
+        .expect("Failed to set radio power");
+
+    let node_id = uart.get_node_id().await.expect("Failed to get node ID");
+    info!("Node ID: {node_id:#06X}");
+
     info!("Sending many-to-one route request");
     uart.send_many_to_one_route_request(concentrator::Type::HighRam, 8)
         .await
         .expect("Failed to send many-to-one route request");
+
+    let packet_buffer_count = uart
+        .get_configuration_value(config::Id::PacketBufferCount)
+        .await
+        .expect("Failed to get packet buffer count");
+    info!("Packet buffer count: {packet_buffer_count}");
 
     info!("Permitting joining for {} seconds", args.join_secs);
     uart.permit_joining(args.join_secs.into())
@@ -134,6 +143,33 @@ async fn main() {
         sleep(Duration::from_secs(1)).await;
     }
     info!("Network is opened");
+
+    tokio::spawn(async move {
+        loop {
+            match uart.network_state().await {
+                Ok(state) => info!("Network state: {state:?}"),
+                Err(error) => warn!("Failed to get network state: {error}"),
+            }
+
+            for index in 0..=u8::MAX {
+                if let Ok(child) = uart.get_child_data(index).await {
+                    info!("Child at {index}: {child:?}");
+                } else {
+                    break;
+                }
+            }
+
+            for index in 0..=u8::MAX {
+                if let Ok(neighbor) = uart.get_neighbor(index).await {
+                    info!("Neighbor at {index}: {neighbor:?}");
+                } else {
+                    break;
+                }
+            }
+
+            sleep(Duration::from_secs(1)).await;
+        }
+    });
 
     info!("Waiting for network to close...");
     while network_open.load(SeqCst) {
@@ -180,7 +216,7 @@ where
 {
     info!("Adding endpoint");
     uart.add_endpoint(
-        0,
+        1,
         HOME_AUTOMATION,
         HOME_GATEWAY,
         0,
@@ -264,7 +300,13 @@ async fn handle_callbacks(
                 _ => (),
             }
         }
+
+        if let Callback::Networking(ChildJoin(status)) = &callback {
+            info!("Child joined with ID: {}", status.child_id());
+        }
     }
+
+    warn!("Callback handler exiting");
 }
 
 fn log_parameters(parameters: &network::Parameters) {
