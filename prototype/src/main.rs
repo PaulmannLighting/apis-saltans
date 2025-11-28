@@ -101,6 +101,12 @@ async fn main() {
     info!("Node type: {node_type:?}");
     log_parameters(&parameters);
 
+    let security_state = uart
+        .get_current_security_state()
+        .await
+        .expect("Failed to get current security state");
+    info!("Security state bitmask: {:#06X}", security_state.bitmask());
+
     info!("Sending many-to-one route request");
     uart.send_many_to_one_route_request(concentrator::Type::HighRam, 8)
         .await
