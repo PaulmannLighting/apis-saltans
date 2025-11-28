@@ -271,10 +271,25 @@ where
     uart.set_concentrator(Some(config)).await?;
 
     let mut configuration = BTreeMap::new();
-    configuration.insert(config::Id::SourceRouteTableSize, 100);
-    configuration.insert(config::Id::ApsUnicastMessageCount, 16);
-    configuration.insert(config::Id::NeighborTableSize, 24);
+    configuration.insert(config::Id::IndirectTransmissionTimeout, 7680);
     configuration.insert(config::Id::MaxHops, 30);
+    configuration.insert(config::Id::PacketBufferCount, 253);
+    configuration.insert(config::Id::FragmentDelayMs, 50);
+    configuration.insert(config::Id::AddressTableSize, 8);
+    configuration.insert(config::Id::TxPowerMode, 0);
+    configuration.insert(config::Id::ApsUnicastMessageCount, 16);
+    configuration.insert(config::Id::SupportedNetworks, 1);
+    configuration.insert(config::Id::ApplicationZdoFlags, 1);
+    configuration.insert(config::Id::TrustCenterAddressCacheSize, 2);
+    configuration.insert(config::Id::StackProfile, 2);
+    configuration.insert(config::Id::BroadcastTableSize, 15);
+    configuration.insert(config::Id::NeighborTableSize, 24);
+    configuration.insert(config::Id::MaxEndDeviceChildren, 16);
+    configuration.insert(config::Id::SourceRouteTableSize, 100);
+    configuration.insert(config::Id::SecurityLevel, 5);
+    configuration.insert(config::Id::KeyTableSize, 4);
+    configuration.insert(config::Id::FragmentWindowSize, 1);
+    configuration.insert(config::Id::BindingTableSize, 2);
     uart.set_stack_configuration(configuration).await?;
 
     let mut policy = BTreeMap::new();
