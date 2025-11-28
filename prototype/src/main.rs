@@ -20,8 +20,11 @@ use serialport::FlowControl;
 use tokio::sync::mpsc::Receiver;
 use tokio::time::sleep;
 
-const PAN_ID: u16 = 0x5EAB;
+const PAN_ID: u16 = 24171;
 const EXTENDED_PAN_ID: MacAddr8 = MacAddr8::new(0x8D, 0x9F, 0x3D, 0xFE, 0x00, 0xBF, 0x0D, 0xB5);
+const NETWORK_KEY: [u8; 16] = [
+    0x29, 0xB0, 0x0D, 0xE6, 0x31, 0xAB, 0x7A, 0xD0, 0xC6, 0x83, 0xC8, 0x7A, 0xBF, 0x70, 0xD6, 0x08,
+];
 const RADIO_CHANNEL: u8 = 12;
 const LINK_KEY: &[u8] = include_bytes!("../../assets/link.key");
 const HOME_AUTOMATION: u16 = 0x0104;
@@ -216,25 +219,14 @@ where
 
     uart.set_radio_power(8).await?;
 
-    let link_key = LINK_KEY
-        .try_into()
-        .expect("Link key should be valid. This is a bug.");
-    info!("Link key: {link_key:02X?}");
-
-    // Randomly generated network key for testing.
-    let network_key = [
-        0xCB, 0x61, 0x6A, 0x55, 0xA2, 0xA6, 0x9D, 0x7D, 0x7F, 0x71, 0x4F, 0xAD, 0x88, 0xA5, 0xD4,
-        0x9E,
-    ];
-    info!("Network key: {network_key:02X?}");
     uart.set_initial_security_state(initial::State::new(
         [
             initial::Bitmask::HavePreconfiguredKey,
             initial::Bitmask::RequireEncryptedKey,
         ]
         .into(),
-        link_key,
-        network_key,
+        LINK_KEY.try_into().expect("Link key should be valid."),
+        NETWORK_KEY,
         0,
         MacAddr8::default(),
     ))
