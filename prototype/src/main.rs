@@ -336,6 +336,7 @@ where
     Ok(())
 }
 
+#[expect(dead_code)]
 async fn send_broadcast<T>(uart: &mut T, join_secs: u8) -> Result<u8, Error>
 where
     T: Messaging,
@@ -349,6 +350,7 @@ where
         .await
 }
 
+#[expect(dead_code)]
 async fn send_unicast<T>(uart: &mut T, join_secs: u8) -> Result<u8, Error>
 where
     T: Messaging,
