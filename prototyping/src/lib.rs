@@ -344,6 +344,7 @@ where
     }
 }
 
+/// Logs the network parameters.
 pub fn log_parameters(parameters: &network::Parameters) {
     info!("PAN ID: {:#X}", parameters.pan_id());
     info!("Extended PAN ID: {:#X?}", parameters.extended_pan_id());
