@@ -293,7 +293,26 @@ where
     uart.set_stack_configuration(configuration).await?;
 
     let mut policy = BTreeMap::new();
-    policy.insert(policy::Id::TrustCenter, decision::Id::AllowJoins);
+    policy.insert(
+        policy::Id::TcKeyRequest,
+        decision::Id::AllowTcKeyRequestsAndSendCurrentKey,
+    );
+    policy.insert(
+        policy::Id::MessageContentsInCallback,
+        decision::Id::MessageTagOnlyInCallback,
+    );
+    policy.insert(
+        policy::Id::TrustCenter,
+        decision::Id::AllowPreconfiguredKeyJoins,
+    );
+    policy.insert(
+        policy::Id::TcJoinsUsingWellKnownKey,
+        decision::Id::AllowJoins,
+    );
+    policy.insert(
+        policy::Id::BindingModification,
+        decision::Id::CheckBindingModificationsAreValidEndpointClusters,
+    );
     uart.set_stack_policy(policy).await?;
 
     let ieee_address = uart.get_eui64().await?;
