@@ -12,7 +12,7 @@ use ezsp::ember::concentrator;
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::uart::Uart;
 use ezsp::zigbee::{EventHandler, NetworkManager};
-use log::{info, warn};
+use log::{debug, info, warn};
 use macaddr::MacAddr8;
 use serialport::FlowControl;
 
@@ -124,7 +124,7 @@ async fn main() {
             info!("Zigbee Event: {event:?}");
         }
 
-        warn!("Zigbee event channel closed.");
+        debug!("Zigbee event channel closed.");
     });
 
     network_manager
