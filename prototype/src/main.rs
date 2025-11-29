@@ -12,7 +12,7 @@ use ezsp::ember::concentrator;
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::uart::Uart;
 use ezsp::zigbee::{EventHandler, NetworkManager};
-use log::{debug, info, warn};
+use log::{debug, info};
 use macaddr::MacAddr8;
 use serialport::FlowControl;
 
