@@ -9,7 +9,7 @@ use std::time::Duration;
 use ashv2::{BaudRate, open};
 use clap::Parser;
 use enum_iterator::all;
-use ezsp::ember::message::Outgoing;
+use ezsp::ember::message::{Destination, Outgoing};
 use ezsp::ember::security::initial;
 use ezsp::ember::{Status, aps, concentrator, join, network};
 use ezsp::ezsp::{config, decision, policy};
@@ -361,8 +361,7 @@ where
         | aps::Options::ENABLE_ROUTE_DISCOVERY;
     let aps_frame = aps::Frame::new(0, zdp_frame.cluster_id(), 0, 1, aps_options, 0, 0);
     uart.send_unicast(
-        Outgoing::Direct,
-        PAN_ID,
+        Destination::Direct(PAN_ID),
         aps_frame,
         5,
         zdp_frame.to_le_stream().collect(),
