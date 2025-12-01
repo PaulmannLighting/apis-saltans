@@ -1,8 +1,6 @@
-#[cfg_attr(
-    feature = "le-stream",
-    derive(le_stream::FromLeStream, le_stream::ToLeStream)
-)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+use le_stream::{FromLeStream, ToLeStream};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct AckInner {
     destination: u8,
     cluster_id: u16,

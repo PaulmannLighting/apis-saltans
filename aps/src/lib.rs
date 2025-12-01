@@ -1,16 +1,8 @@
+//! APS Frame definitions and utilities.
+
+pub use self::frame::{
+    Acknowledgment, Command, Control, Data, DeliveryMode, Destination, Extended, Frame, FrameType,
+    Header,
+};
+
 mod frame;
-
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}

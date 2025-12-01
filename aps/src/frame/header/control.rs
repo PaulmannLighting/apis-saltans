@@ -1,4 +1,5 @@
 use bitflags::bitflags;
+use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
 
 pub use self::delivery_mode::DeliveryMode;
@@ -8,11 +9,7 @@ mod delivery_mode;
 mod frame_type;
 
 /// APS frame control field.
-#[cfg_attr(
-    feature = "le-stream",
-    derive(le_stream::FromLeStream, le_stream::ToLeStream)
-)]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 #[repr(transparent)]
 pub struct Control(u8);
 

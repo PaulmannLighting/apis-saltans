@@ -1,8 +1,6 @@
-#[cfg_attr(
-    feature = "le-stream",
-    derive(le_stream::FromLeStream, le_stream::ToLeStream)
-)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+use le_stream::{FromLeStream, ToLeStream};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Address {
     destination_endpoint: Option<u8>,
     group_address: Option<u16>,
