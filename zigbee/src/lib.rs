@@ -8,7 +8,6 @@ mod cluster;
 mod command;
 pub mod constants;
 pub mod frame;
-pub mod network_manager;
 pub mod node;
 pub mod types;
 pub mod units;
