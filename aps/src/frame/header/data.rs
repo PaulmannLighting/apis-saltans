@@ -11,6 +11,24 @@ pub struct Data {
 }
 
 impl Data {
+    /// Creates a new APS Data frame header without validating the control and destination.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the provided `control` and `destination` are consistent.
+    #[expect(unsafe_code)]
+    #[must_use]
+    pub const unsafe fn new_unchecked(
+        control: Control,
+        destination: Option<Destination>,
+        counter: u8,
+    ) -> Self {
+        Self {
+            control,
+            destination,
+            counter,
+        }
+    }
     /// Creates a new APS Data frame header.
     #[must_use]
     pub const fn new(destination: Destination, counter: u8) -> Self {
