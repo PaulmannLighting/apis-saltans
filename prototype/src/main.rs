@@ -11,10 +11,11 @@ use ezsp::Ezsp;
 use ezsp::ember::concentrator;
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::uart::Uart;
-use ezsp::zigbee::{EventHandler, NetworkManager};
+use ezsp::zigbee::{DeviceConfig, EventHandler, NetworkManager};
 use log::{debug, info};
 use macaddr::MacAddr8;
 use serialport::FlowControl;
+use zigbee_nwk::Nlme;
 
 const PAN_ID: u16 = 24171;
 const EXTENDED_PAN_ID: MacAddr8 = MacAddr8::new(0x8D, 0x9F, 0x3D, 0xFE, 0x00, 0xBF, 0x0D, 0xB5);
@@ -127,19 +128,24 @@ async fn main() {
         debug!("Zigbee event channel closed.");
     });
 
+    let device_config = DeviceConfig::new(
+        concentrator_config,
+        configuration,
+        policy,
+        LINK_KEY.try_into().expect("Link key is valid."),
+        args.extended_pan_id,
+        args.pan_id,
+        args.radio_channel,
+    );
+
     network_manager
-        .init(
-            args.reinitialize,
-            concentrator_config,
-            configuration,
-            policy,
-            LINK_KEY.try_into().expect("Link key is valid."),
-            args.extended_pan_id,
-            args.pan_id,
-            args.radio_channel,
-        )
+        .configure(device_config)
         .await
         .expect("Failed to initialize network manager");
+    network_manager
+        .start(args.reinitialize)
+        .await
+        .expect("Failed to start network manager");
 
     info!(
         "Network initialized. Permitting joining for {} seconds...",

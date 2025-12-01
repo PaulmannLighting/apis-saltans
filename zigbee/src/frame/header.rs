@@ -1,3 +1,5 @@
+use le_stream::derive::{FromLeStream, ToLeStream};
+
 pub use self::control::Control;
 pub use self::direction::Direction;
 pub use self::typ::Type;
@@ -7,7 +9,7 @@ mod direction;
 mod typ;
 
 /// A ZCL frame header.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct Header {
     control: Control,
     manufacturer_code: Option<u16>,

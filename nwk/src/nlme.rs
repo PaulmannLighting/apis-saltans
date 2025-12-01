@@ -1,25 +1,35 @@
-/// Stub device.
-type Device = ();
+use std::error::Error;
 
-/// Stub network parameters.
-type Network = ();
+use crate::NetworkDescriptor;
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
+    /// Device settings type.
+    type DeviceSettings;
+    /// Error type.
+    type Error: Error;
+
     /// Configure a device on the network.
-    fn configure(&mut self, device: Device) -> impl Future<Output = ()>;
+    fn configure(
+        &mut self,
+        settings: Self::DeviceSettings,
+    ) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Start the network.
-    fn start(&mut self) -> impl Future<Output = ()>;
+    fn start(&mut self, reinitialize: bool) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Join a network.
-    fn join(&mut self, network: Network) -> impl Future<Output = ()>;
+    fn join(&mut self, network: NetworkDescriptor)
+    -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Rejoin a network.
-    fn rejoin(&mut self, network: Network) -> impl Future<Output = ()>;
+    fn rejoin(
+        &mut self,
+        network: NetworkDescriptor,
+    ) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Leave the network.
-    fn leave(&mut self) -> impl Future<Output = ()>;
+    fn leave(&mut self) -> impl Future<Output = Result<(), Self::Error>>;
 
     // TODO: Add more NLME methods as needed. Maybe split into separate traits.
 }

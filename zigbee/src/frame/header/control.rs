@@ -1,10 +1,12 @@
 use bitflags::bitflags;
+use le_stream::derive::{FromLeStream, ToLeStream};
 
 use super::direction::Direction;
 use super::typ::Type;
 
 /// ZCL frame control flags.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
+#[repr(transparent)]
 pub struct Control(u8);
 
 bitflags! {

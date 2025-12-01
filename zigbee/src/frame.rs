@@ -1,12 +1,14 @@
 //! ZCL frame representation.
 
+use le_stream::derive::{FromLeStream, ToLeStream};
+
 pub use self::header::{Control, Direction, Header, Type};
 use crate::Command;
 
 mod header;
 
 /// A ZCL frame.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct Frame<T> {
     header: Header,
     payload: T,
