@@ -1,7 +1,8 @@
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::header::{
-    Acknowledgment, Command, Control, Data, DeliveryMode, Destination, Extended, FrameType, Header,
+    Acknowledgment, Command, Control, Data, DeliveryMode, Destination, Extended, ExtendedControl,
+    Fragmentation, FrameType, Header,
 };
 
 mod header;
