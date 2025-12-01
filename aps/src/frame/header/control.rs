@@ -15,11 +15,17 @@ pub struct Control(u8);
 
 bitflags! {
     impl Control: u8 {
+        /// Frame type mask.
         const FRAME_TYPE = 0b1100_0000;
+        /// Delivery mode mask.
         const DELIVERY_MODE = 0b0011_0000;
+        /// Indicate if the frame is a command frame.
         const ACK_FORMAT = 0b0000_1000;
+        /// Security provider flag.
         const SECURITY = 0b0000_0100;
+        /// Acknowledgment request flag.
         const ACK_REQUEST = 0b0000_0010;
+        /// Extended header flag.
         const EXTENDED_HEADER = 0b0000_0001;
     }
 }
@@ -33,7 +39,7 @@ impl Control {
     }
 
     /// Set the frame type.
-    pub fn set_frame_type(&mut self, frame_type: FrameType) {
+    pub const fn set_frame_type(&mut self, frame_type: FrameType) {
         self.0 = (self.bits() & !Self::FRAME_TYPE.bits()) | ((frame_type as u8) << 6);
     }
 
@@ -44,7 +50,7 @@ impl Control {
     }
 
     /// Set the delivery mode.
-    pub fn set_delivery_mode(&mut self, delivery_mode: DeliveryMode) {
+    pub const fn set_delivery_mode(&mut self, delivery_mode: DeliveryMode) {
         self.0 = (self.bits() & !Self::DELIVERY_MODE.bits()) | ((delivery_mode as u8) << 4);
     }
 }
