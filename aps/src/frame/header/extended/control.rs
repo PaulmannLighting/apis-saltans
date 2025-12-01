@@ -18,6 +18,7 @@ bitflags! {
 
 impl Control {
     /// Returns the fragmentation field.
+    #[must_use]
     pub fn fragmentation(self) -> Option<Fragmentation> {
         Fragmentation::from_u8((self.bits() & Self::FRAGMENTATION.bits()) >> 6)
     }
