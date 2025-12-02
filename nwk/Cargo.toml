@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-le-stream = "5.2.0"
-zigbee = { version = "0.1.0", path = "../zigbee" }
 
 [lints]
 workspace = true
