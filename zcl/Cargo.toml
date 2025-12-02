@@ -17,7 +17,7 @@ bitflags = "2.6"
 chrono = "0.4"
 either = "1.15"
 heapless = "0.9"
-le-stream = { version = "5", features = ["derive", "heapless", "intx", "macaddr"] }
+le-stream = { version = "6", features = ["derive", "heapless", "intx", "macaddr"] }
 macaddr = "1.0"
 num-derive = "0.4"
 num-traits = "0.2"

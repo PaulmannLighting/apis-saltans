@@ -1,6 +1,6 @@
 //! Readable attributes in the Basic cluster
 
-use le_stream::derive::FromLeStreamTagged;
+use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::Parsable;
 use zigbee::types::{OctStr, String, Uint8};

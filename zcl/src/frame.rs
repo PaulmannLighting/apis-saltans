@@ -1,6 +1,6 @@
 //! ZCL frame representation.
 
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::header::{Control, Direction, Header, Type};
 use crate::Command;

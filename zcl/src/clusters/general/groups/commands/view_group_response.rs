@@ -1,4 +1,4 @@
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String, Uint16};
 
 use crate::clusters::general::groups::CLUSTER_ID;

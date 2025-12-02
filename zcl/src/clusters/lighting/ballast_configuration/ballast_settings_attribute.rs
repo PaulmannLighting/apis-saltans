@@ -1,4 +1,4 @@
-use le_stream::derive::FromLeStreamTagged;
+use le_stream::FromLeStreamTagged;
 use zigbee::Parsable;
 
 use self::level::Level;

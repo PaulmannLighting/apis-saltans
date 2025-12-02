@@ -1,7 +1,6 @@
 use core::iter::Chain;
 
-use le_stream::ToLeStream;
-use le_stream::derive::FromLeStreamTagged;
+use le_stream::{FromLeStreamTagged, ToLeStream};
 use repr_discriminant::ReprDiscriminant;
 
 /// Attributes for the Identify cluster.

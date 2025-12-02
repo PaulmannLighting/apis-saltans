@@ -1,4 +1,4 @@
-use le_stream::derive::FromLeStreamTagged;
+use le_stream::FromLeStreamTagged;
 use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::Parsable;

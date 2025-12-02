@@ -1,9 +1,9 @@
-use color_capabilities::ColorCapabilities;
-use le_stream::derive::FromLeStreamTagged;
-use options::Options;
+use le_stream::FromLeStreamTagged;
 use zigbee::Parsable;
 use zigbee::types::{String, Uint8, Uint16};
 
+use self::color_capabilities::ColorCapabilities;
+use self::options::Options;
 use crate::clusters::lighting::color_control::{
     ColorLoopDirection, ColorMode, DriftCompensation, EnhancedColorMode, StartupColorTemperature,
 };

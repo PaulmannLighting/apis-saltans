@@ -4,10 +4,12 @@
 extern crate alloc;
 
 pub use clusters::{general, lighting};
+pub use frame::{Control, Direction, Frame, Header, Type};
 pub use status::Status;
 pub use zigbee::{Cluster, Command};
 
 mod attribute;
 mod clusters;
 mod command_frame_id;
+mod frame;
 mod status;

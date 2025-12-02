@@ -1,3 +1,5 @@
+use le_stream::ToLeStream;
+
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
 use crate::clusters::general::identify::CLUSTER_ID;
@@ -8,7 +10,7 @@ mod effect_variant;
 
 /// Trigger an effect on a device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, ToLeStream)]
 pub struct TriggerEffect {
     identifier: u8,
     variant: u8,
