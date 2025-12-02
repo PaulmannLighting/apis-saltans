@@ -2,11 +2,12 @@
 
 use std::collections::BTreeMap;
 use std::io::stdin;
+use std::panic::set_hook;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
-use ashv2::{BaudRate, open};
+use ashv2::{BaudRate, HexSlice, open};
 use clap::Parser;
 use ezsp::ember::message::Destination;
 use ezsp::ember::{aps, concentrator};
@@ -15,7 +16,7 @@ use ezsp::uart::Uart;
 use ezsp::zigbee::{DeviceConfig, EventHandler, NetworkManager};
 use ezsp::{Ezsp, Messaging, Networking};
 use le_stream::ToLeStream;
-use log::{debug, info};
+use log::{debug, error, info};
 use macaddr::MacAddr8;
 use serialport::FlowControl;
 use tokio::time::sleep;
@@ -115,7 +116,7 @@ async fn main() {
     );
     policy.insert(
         policy::Id::MessageContentsInCallback,
-        decision::Id::MessageTagAndContentsInCallback,
+        decision::Id::MessageTagOnlyInCallback,
     );
     policy.insert(policy::Id::KeyRequest, decision::Id::DenyAppKeyRequests);
     policy.insert(
@@ -177,42 +178,14 @@ async fn main() {
     network_manager.await_network_closed().await;
     info!("Joining period has ended.");
 
-    network_manager
-        .send_many_to_one_route_request()
-        .await
-        .expect("Failed to send many route request");
-    sleep(Duration::from_secs(1)).await;
-
     info!("Sending active endpoint request...");
-    active_endpoint_request(&mut network_manager, 200).await;
-
-    /*
-    sleep(Duration::from_secs(1)).await;
-
-    let mut sequence = Sequence(0x00);
+    active_endpoint_request(&mut network_manager, 0x01).await;
 
     info!("Switching off all connected devices...");
-    switch_off(&mut network_manager, sequence.next()).await;
-
-    sleep(Duration::from_secs(1)).await;
-
-    info!("Setting color on all connected devices...");
-    move_to_color(&mut network_manager, sequence.next()).await;
-
-    sleep(Duration::from_secs(1)).await;
-
-    info!("Triggering effect on all connected devices...");
-    trigger_effect(&mut network_manager, sequence.next()).await;
-    */
+    switch_off(&mut network_manager, 0x02).await;
 
     info!("Waiting 10 seconds...");
     sleep(Duration::from_secs(10)).await;
-
-    info!("Sending many-to-one route request.");
-    network_manager
-        .send_many_to_one_route_request()
-        .await
-        .expect("Failed to send many-to-one route request");
 
     info!("Waiting 10 seconds...");
     sleep(Duration::from_secs(10)).await;
@@ -225,18 +198,49 @@ async fn main() {
         info!("Neighbor: {neighbor:?}");
     }
 
-    for child in network_manager
-        .get_children()
-        .await
-        .expect("Failed to get children")
-    {
-        info!("Child: {child:?}");
-    }
-
     info!("Sending active endpoint request...");
-    active_endpoint_request(&mut network_manager, 201).await;
+    active_endpoint_request(&mut network_manager, 0x03).await;
 
-    let _ = stdin().lines().next();
+    info!("Switching off all connected devices...");
+    switch_off(&mut network_manager, 0x04).await;
+
+    info!("Enter node ID...");
+    for line in stdin().lines().map_while(Result::ok) {
+        let Ok(node_id) = line.trim().parse::<u16>() else {
+            error!("Invalid node ID. Please enter a valid u16 value.");
+            continue;
+        };
+
+        let aps_options = aps::Options::RETRY
+            | aps::Options::ENABLE_ROUTE_DISCOVERY
+            | aps::Options::ENABLE_ADDRESS_DISCOVERY;
+        let aps_frame = aps::Frame::new(
+            HOME_AUTOMATION,
+            <Off as Cluster>::ID,
+            0x01,
+            0x01,
+            aps_options,
+            0x00,
+            0x00,
+        );
+        let zcl_frame = zcl::Frame::new(
+            zcl::Type::ClusterSpecific,
+            zcl::Direction::ClientToServer,
+            true,
+            None,
+            0x00,
+            Off,
+        );
+
+        network_manager
+            .send_unicast(
+                Destination::Direct(node_id),
+                aps_frame,
+                &zcl_frame.to_le_stream().collect::<Vec<_>>(),
+            )
+            .await
+            .expect("Failed to send unicast data");
+    }
 }
 
 async fn move_to_color<T>(network_manager: &mut NetworkManager<T>, sequence: u8)
@@ -264,8 +268,6 @@ where
         sequence,
         move_to_color,
     );
-
-    send_to_all(network_manager, aps_frame, zcl_frame).await;
 }
 
 async fn trigger_effect<T>(network_manager: &mut NetworkManager<T>, sequence: u8)
@@ -316,7 +318,7 @@ where
     let zcl_frame = zcl::Frame::new(
         zcl::Type::ClusterSpecific,
         zcl::Direction::ClientToServer,
-        false,
+        true,
         None,
         sequence,
         Off,
@@ -344,7 +346,9 @@ where
         payload.clear();
         payload.push(0x00); // ZDP SEQ
         payload.extend(short_address.to_le_stream()); // NWK Address
-        info!("Setting color on device with short ID {short_address}");
+        info!("Sending unicast to device with short ID {short_address}");
+        debug!("APS Frame: {aps_frame:#06X?}");
+        debug!("Payload: {:#04X}", HexSlice::new(&payload));
         network_manager
             .send_unicast(
                 Destination::Direct(short_address),
@@ -368,12 +372,22 @@ async fn send_to_all<N, F>(
     let payload = zcl_frame.to_le_stream().collect::<Vec<_>>();
     debug!("Sending payload: {payload:#04X?}");
 
-    for (_, short_address) in network_manager
+    let mut targets: Vec<_> = network_manager
         .get_neighbors()
         .await
         .expect("Failed to get neighbors")
-    {
-        info!("Setting color on device with short ID {short_address}");
+        .into_values()
+        .collect();
+    targets.extend(
+        network_manager
+            .get_children()
+            .await
+            .expect("Failed to get neighbors")
+            .into_values(),
+    );
+
+    for short_address in targets {
+        info!("Sending unicast to: {short_address}");
         network_manager
             .send_unicast(
                 Destination::Direct(short_address),
@@ -382,15 +396,5 @@ async fn send_to_all<N, F>(
             )
             .await
             .expect("Failed to send unicast data");
-    }
-}
-
-struct Sequence(u8);
-
-impl Sequence {
-    pub const fn next(&mut self) -> u8 {
-        let current = self.0;
-        self.0 = self.0.wrapping_add(1);
-        current
     }
 }

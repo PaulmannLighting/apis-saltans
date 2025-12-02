@@ -19,8 +19,10 @@ pub trait Nlme {
     fn start(&mut self, reinitialize: bool) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Join a network.
-    fn join(&mut self, network: NetworkDescriptor)
-    -> impl Future<Output = Result<(), Self::Error>>;
+    fn join(
+        &mut self,
+        settings: Self::DeviceSettings,
+    ) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Rejoin a network.
     fn rejoin(
