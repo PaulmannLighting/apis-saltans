@@ -2,7 +2,6 @@
 
 use std::collections::BTreeMap;
 use std::io::stdin;
-use std::panic::set_hook;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::time::Duration;
@@ -29,7 +28,11 @@ use zigbee_nwk::Nlme;
 const PAN_ID: u16 = 24171;
 const EXTENDED_PAN_ID: MacAddr8 = MacAddr8::new(0x8D, 0x9F, 0x3D, 0xFE, 0x00, 0xBF, 0x0D, 0xB5);
 const RADIO_CHANNEL: u8 = 11;
+const RADIO_TX_POWER: i8 = 8;
 const LINK_KEY: &[u8] = include_bytes!("../../assets/link.key");
+const NETWORK_KEY: [u8; 16] = [
+    0x29, 0xB0, 0x0D, 0xE6, 0x31, 0xAB, 0x7A, 0xD0, 0xC6, 0x83, 0xC8, 0x7A, 0xBF, 0x70, 0xD6, 0x08,
+];
 const HOME_AUTOMATION: u16 = 0x0104;
 
 #[derive(Debug, Parser)]
@@ -103,10 +106,6 @@ async fn main() {
 
     let mut policy = BTreeMap::new();
     policy.insert(
-        policy::Id::TcKeyRequest,
-        decision::Id::AllowTcKeyRequestsAndSendCurrentKey,
-    );
-    policy.insert(
         policy::Id::TrustCenter,
         decision::Id::AllowPreconfiguredKeyJoins,
     );
@@ -115,14 +114,18 @@ async fn main() {
         decision::Id::AllowJoins,
     );
     policy.insert(
+        policy::Id::TcKeyRequest,
+        decision::Id::AllowTcKeyRequestsAndSendCurrentKey,
+    );
+    policy.insert(
         policy::Id::MessageContentsInCallback,
         decision::Id::MessageTagOnlyInCallback,
     );
-    policy.insert(policy::Id::KeyRequest, decision::Id::DenyAppKeyRequests);
     policy.insert(
         policy::Id::BindingModification,
         decision::Id::CheckBindingModificationsAreValidEndpointClusters,
     );
+    policy.insert(policy::Id::KeyRequest, decision::Id::DenyAppKeyRequests);
 
     let mut network_manager = NetworkManager::new(uart, network_up.clone(), network_open.clone());
     let event_handler = EventHandler::new(callbacks_receiver, zigbee_tx, network_up, network_open);
@@ -146,9 +149,11 @@ async fn main() {
         configuration,
         policy,
         LINK_KEY.try_into().expect("Link key is valid."),
+        NETWORK_KEY,
         args.extended_pan_id,
         args.pan_id,
         args.radio_channel,
+        RADIO_TX_POWER,
     );
 
     network_manager
@@ -178,18 +183,13 @@ async fn main() {
     network_manager.await_network_closed().await;
     info!("Joining period has ended.");
 
-    info!("Sending active endpoint request...");
-    active_endpoint_request(&mut network_manager, 0x01).await;
-
     info!("Switching off all connected devices...");
     switch_off(&mut network_manager, 0x02).await;
 
     info!("Waiting 10 seconds...");
     sleep(Duration::from_secs(10)).await;
 
-    info!("Waiting 10 seconds...");
-    sleep(Duration::from_secs(10)).await;
-
+    info!("Listing neighbors...");
     for neighbor in network_manager
         .get_neighbors()
         .await
@@ -198,11 +198,24 @@ async fn main() {
         info!("Neighbor: {neighbor:?}");
     }
 
-    info!("Sending active endpoint request...");
-    active_endpoint_request(&mut network_manager, 0x03).await;
+    info!("Listing children...");
+    for child in network_manager
+        .get_children()
+        .await
+        .expect("Failed to get neighbors")
+    {
+        info!("Child: {child:?}");
+    }
 
     info!("Switching off all connected devices...");
     switch_off(&mut network_manager, 0x04).await;
+
+    let network_state = network_manager
+        .get_transport()
+        .network_state()
+        .await
+        .expect("Failed to get network state");
+    info!("Network State: {network_state:?}");
 
     info!("Enter node ID...");
     for line in stdin().lines().map_while(Result::ok) {
@@ -211,38 +224,36 @@ async fn main() {
             continue;
         };
 
-        let aps_options = aps::Options::RETRY
-            | aps::Options::ENABLE_ROUTE_DISCOVERY
-            | aps::Options::ENABLE_ADDRESS_DISCOVERY;
-        let aps_frame = aps::Frame::new(
-            HOME_AUTOMATION,
-            <Off as Cluster>::ID,
-            0x01,
-            0x01,
-            aps_options,
-            0x00,
-            0x00,
-        );
-        let zcl_frame = zcl::Frame::new(
-            zcl::Type::ClusterSpecific,
-            zcl::Direction::ClientToServer,
-            true,
-            None,
-            0x00,
-            Off,
-        );
-
         network_manager
             .send_unicast(
                 Destination::Direct(node_id),
-                aps_frame,
-                &zcl_frame.to_le_stream().collect::<Vec<_>>(),
+                aps::Frame::new(
+                    HOME_AUTOMATION,
+                    <Off as Cluster>::ID,
+                    0x01,
+                    0x01,
+                    aps::Options::RETRY
+                        | aps::Options::ENABLE_ROUTE_DISCOVERY
+                        | aps::Options::ENABLE_ADDRESS_DISCOVERY,
+                    0x00,
+                    0x00,
+                ),
+                zcl::Frame::new(
+                    zcl::Type::ClusterSpecific,
+                    zcl::Direction::ClientToServer,
+                    true,
+                    None,
+                    0x00,
+                    Off,
+                )
+                .to_le_stream(),
             )
             .await
             .expect("Failed to send unicast data");
     }
 }
 
+#[expect(dead_code)]
 async fn move_to_color<T>(network_manager: &mut NetworkManager<T>, sequence: u8)
 where
     T: Messaging + Networking,
@@ -268,8 +279,11 @@ where
         sequence,
         move_to_color,
     );
+
+    send_to_all(network_manager, aps_frame, zcl_frame).await;
 }
 
+#[expect(dead_code)]
 async fn trigger_effect<T>(network_manager: &mut NetworkManager<T>, sequence: u8)
 where
     T: Messaging + Networking,
@@ -327,6 +341,7 @@ where
     send_to_all(network_manager, aps_frame, zcl_frame).await;
 }
 
+#[expect(dead_code)]
 async fn active_endpoint_request<T>(network_manager: &mut NetworkManager<T>, sequence: u8)
 where
     T: Messaging + Networking,
@@ -336,14 +351,12 @@ where
         | aps::Options::ENABLE_ADDRESS_DISCOVERY;
     let aps_frame = aps::Frame::new(0x0000, 0x0005, 0x01, 0x01, aps_options, 0x00, sequence);
 
-    let mut payload = Vec::new();
-
     for (_, short_address) in network_manager
         .get_neighbors()
         .await
         .expect("Failed to get neighbors")
     {
-        payload.clear();
+        let mut payload = Vec::new();
         payload.push(0x00); // ZDP SEQ
         payload.extend(short_address.to_le_stream()); // NWK Address
         info!("Sending unicast to device with short ID {short_address}");
@@ -353,7 +366,7 @@ where
             .send_unicast(
                 Destination::Direct(short_address),
                 aps_frame.clone(),
-                &payload,
+                payload,
             )
             .await
             .expect("Failed to send unicast data");
@@ -369,8 +382,6 @@ async fn send_to_all<N, F>(
     F: Clone + zcl::Command + ToLeStream,
 {
     debug!("Sending APS frame: {aps_frame:#X?}");
-    let payload = zcl_frame.to_le_stream().collect::<Vec<_>>();
-    debug!("Sending payload: {payload:#04X?}");
 
     let mut targets: Vec<_> = network_manager
         .get_neighbors()
@@ -392,7 +403,7 @@ async fn send_to_all<N, F>(
             .send_unicast(
                 Destination::Direct(short_address),
                 aps_frame.clone(),
-                &payload,
+                zcl_frame.clone().to_le_stream(),
             )
             .await
             .expect("Failed to send unicast data");
