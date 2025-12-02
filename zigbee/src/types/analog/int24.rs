@@ -1,5 +1,5 @@
 use intx::I24;
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 const NON_VALUE_BE: [u8; 3] = [0x80, 0x00, 0x00];
 

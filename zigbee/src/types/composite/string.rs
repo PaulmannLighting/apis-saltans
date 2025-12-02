@@ -1,7 +1,7 @@
 use core::str;
 use core::str::Utf8Error;
 
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::constants::U8_CAPACITY;
 use crate::types::OctStr;

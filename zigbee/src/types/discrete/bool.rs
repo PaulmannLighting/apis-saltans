@@ -1,4 +1,4 @@
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 /// `FALSE` value, see 2.6.2.5.
 const FALSE: u8 = 0x00;

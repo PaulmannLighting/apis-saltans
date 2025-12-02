@@ -1,5 +1,5 @@
 use intx::U40;
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 const NON_VALUE: U40 = U40::MAX;
 

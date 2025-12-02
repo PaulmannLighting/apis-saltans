@@ -1,4 +1,4 @@
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 const NON_VALUE: u64 = 0xffff_ffff_ffff_ffff;
 

@@ -1,5 +1,5 @@
 use intx::U56;
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 const NON_VALUE: U56 = U56::MAX;
 

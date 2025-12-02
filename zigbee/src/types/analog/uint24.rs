@@ -1,5 +1,5 @@
 use intx::U24;
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 const NON_VALUE: U24 = U24::MAX;
 

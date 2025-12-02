@@ -1,4 +1,4 @@
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 const NON_VALUE: i8 = 0x80u8.cast_signed();
 

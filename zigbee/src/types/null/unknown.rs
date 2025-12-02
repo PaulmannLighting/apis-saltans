@@ -1,4 +1,4 @@
-use le_stream::derive::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 /// The `Unknown` data type, short `unk`.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
