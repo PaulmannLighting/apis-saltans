@@ -2,16 +2,14 @@ use std::sync::Arc;
 
 use ezsp::ember::aps;
 use ezsp::ember::message::Destination;
-use ezsp::ember::network::Duration;
 use ezsp::uart::Uart;
 use ezsp::zigbee::NetworkManager;
-use ezsp::{Error, Messaging, Networking};
 use le_stream::ToLeStream;
-use rocket::http::ext::IntoOwned;
 use rocket::{State, get};
 use serialport::TTYPort;
 use tokio::sync::Mutex;
 use zcl::Cluster;
+use zcl::general::on_off::{Off, On};
 use zcl::lighting::color_control::MoveToColor;
 
 use self::device::Device;
@@ -42,37 +40,97 @@ pub async fn get_neighbors(zigbee: &State<Zigbee>) -> EzspJsonResponse<Vec<Devic
     Ok(neighbors).into()
 }
 
-#[get("/set-color/<short_address>")]
-pub async fn set_color(zigbee: &State<Zigbee>, short_address: u16) -> EzspJsonResponse<u8> {
-    let move_to_color = MoveToColor::new(0x529E, 0x543B, 0, 0x00, 0x00);
-    let aps_options = aps::Options::RETRY
-        | aps::Options::ENABLE_ROUTE_DISCOVERY
-        | aps::Options::ENABLE_ADDRESS_DISCOVERY;
-    let aps_frame = aps::Frame::new(
-        HOME_AUTOMATION,
-        <MoveToColor as Cluster>::ID,
-        0x01,
-        0x01,
-        aps_options,
-        0x00,
-        0x00,
-    );
-    let zcl_frame = zcl::Frame::new(
-        zcl::Type::ClusterSpecific,
-        zcl::Direction::ClientToServer,
-        false,
-        None,
-        0x00,
-        move_to_color,
-    );
-
+#[get("/switch-off/<short_address>")]
+pub async fn switch_off(zigbee: &State<Zigbee>, short_address: u16) -> EzspJsonResponse<u8> {
     zigbee
         .lock()
         .await
         .send_unicast(
             Destination::Direct(short_address),
-            aps_frame.clone(),
-            zcl_frame.clone().to_le_stream(),
+            aps::Frame::new(
+                HOME_AUTOMATION,
+                <Off as Cluster>::ID,
+                0x01,
+                0x01,
+                aps::Options::RETRY
+                    | aps::Options::ENABLE_ROUTE_DISCOVERY
+                    | aps::Options::ENABLE_ADDRESS_DISCOVERY,
+                0x00,
+                0x00,
+            ),
+            zcl::Frame::new(
+                zcl::Type::ClusterSpecific,
+                zcl::Direction::ClientToServer,
+                true,
+                None,
+                0x00,
+                Off,
+            )
+            .to_le_stream(),
+        )
+        .await
+        .into()
+}
+
+#[get("/switch-on/<short_address>")]
+pub async fn switch_on(zigbee: &State<Zigbee>, short_address: u16) -> EzspJsonResponse<u8> {
+    zigbee
+        .lock()
+        .await
+        .send_unicast(
+            Destination::Direct(short_address),
+            aps::Frame::new(
+                HOME_AUTOMATION,
+                <On as Cluster>::ID,
+                0x01,
+                0x01,
+                aps::Options::RETRY
+                    | aps::Options::ENABLE_ROUTE_DISCOVERY
+                    | aps::Options::ENABLE_ADDRESS_DISCOVERY,
+                0x00,
+                0x00,
+            ),
+            zcl::Frame::new(
+                zcl::Type::ClusterSpecific,
+                zcl::Direction::ClientToServer,
+                true,
+                None,
+                0x00,
+                On,
+            )
+            .to_le_stream(),
+        )
+        .await
+        .into()
+}
+
+#[get("/set-color/<short_address>")]
+pub async fn set_color(zigbee: &State<Zigbee>, short_address: u16) -> EzspJsonResponse<u8> {
+    zigbee
+        .lock()
+        .await
+        .send_unicast(
+            Destination::Direct(short_address),
+            aps::Frame::new(
+                HOME_AUTOMATION,
+                <MoveToColor as Cluster>::ID,
+                0x01,
+                0x01,
+                aps::Options::RETRY
+                    | aps::Options::ENABLE_ROUTE_DISCOVERY
+                    | aps::Options::ENABLE_ADDRESS_DISCOVERY,
+                0x00,
+                0x00,
+            ),
+            zcl::Frame::new(
+                zcl::Type::ClusterSpecific,
+                zcl::Direction::ClientToServer,
+                false,
+                None,
+                0x00,
+                MoveToColor::new(0x529E, 0x543B, 0, 0x00, 0x00),
+            )
+            .to_le_stream(),
         )
         .await
         .into()

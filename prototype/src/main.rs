@@ -22,7 +22,7 @@ use serialport::FlowControl;
 use tokio::sync::Mutex;
 use zigbee_nwk::Nlme;
 
-use crate::web_api::{allow_join, get_neighbors, set_color};
+use crate::web_api::{allow_join, get_neighbors, set_color, switch_off, switch_on};
 
 const PAN_ID: u16 = 24171;
 const EXTENDED_PAN_ID: MacAddr8 = MacAddr8::new(0x8D, 0x9F, 0x3D, 0xFE, 0x00, 0xBF, 0x0D, 0xB5);
@@ -38,13 +38,6 @@ const HOME_AUTOMATION: u16 = 0x0104;
 struct Args {
     #[clap(index = 1, help = "Path to the serial TTY device")]
     tty: String,
-    #[clap(
-        long,
-        short,
-        default_value_t = 60,
-        help = "Amount of seconds to permit joining"
-    )]
-    join_secs: u8,
     #[clap(long, short, help = "Whether to reinitialize the device")]
     reinitialize: bool,
     #[clap(long, short, help = "The PAN ID for the new network", default_value_t = PAN_ID)]
@@ -171,7 +164,10 @@ async fn main() {
     info!("Starting server...");
     let _web_ui = rocket::custom(figment)
         .manage(Arc::new(Mutex::new(network_manager)))
-        .mount("/", routes![allow_join, get_neighbors, set_color])
+        .mount(
+            "/",
+            routes![allow_join, get_neighbors, switch_on, switch_off, set_color],
+        )
         .launch()
         .await
         .expect("Failed to launch server");
