@@ -1,3 +1,4 @@
+/// Represents the destination of an APS frame.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Destination {
     /// A unicast endpoint ID.
