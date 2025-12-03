@@ -1,4 +1,5 @@
-use ezsp::Error;
+use std::error::Error;
+
 use rocket::Response;
 use rocket::http::Status;
 use rocket::response::Responder;
@@ -6,26 +7,27 @@ use rocket::serde::json::Json;
 use serde::Serialize;
 
 #[derive(Debug)]
-pub struct EzspJsonResponse<T> {
-    result: Result<T, Error>,
+pub struct JsonResult<T, E> {
+    result: Result<T, E>,
 }
 
-impl<T> EzspJsonResponse<T> {
+impl<T, E> JsonResult<T, E> {
     #[must_use]
-    pub fn new(result: Result<T, Error>) -> Self {
+    pub fn new(result: Result<T, E>) -> Self {
         Self { result }
     }
 }
 
-impl<T> From<Result<T, Error>> for EzspJsonResponse<T> {
-    fn from(result: Result<T, Error>) -> Self {
+impl<T, E> From<Result<T, E>> for JsonResult<T, E> {
+    fn from(result: Result<T, E>) -> Self {
         Self::new(result)
     }
 }
 
-impl<'r, 'o: 'r, T> Responder<'r, 'o> for EzspJsonResponse<T>
+impl<'r, 'o: 'r, T, E> Responder<'r, 'o> for JsonResult<T, E>
 where
     T: Serialize,
+    E: Error,
 {
     fn respond_to(self, req: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
         match self.result {

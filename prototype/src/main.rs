@@ -14,13 +14,12 @@ use ezsp::Ezsp;
 use ezsp::ember::concentrator;
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::uart::Uart;
-use ezsp::zigbee::{DeviceConfig, EventHandler, NetworkManager};
-use log::{debug, info};
+use ezsp::zigbee::NetworkManager;
+use log::info;
 use macaddr::MacAddr8;
 use rocket::routes;
 use serialport::FlowControl;
 use tokio::sync::Mutex;
-use zigbee_nwk::Nlme;
 
 use crate::web_api::{allow_join, get_neighbors, set_color, switch_off, switch_on};
 
@@ -32,7 +31,6 @@ const LINK_KEY: &[u8] = include_bytes!("../../assets/link.key");
 const NETWORK_KEY: [u8; 16] = [
     0x29, 0xB0, 0x0D, 0xE6, 0x31, 0xAB, 0x7A, 0xD0, 0xC6, 0x83, 0xC8, 0x7A, 0xBF, 0x70, 0xD6, 0x08,
 ];
-const HOME_AUTOMATION: u16 = 0x0104;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -59,10 +57,9 @@ async fn main() {
 
     let serial_port = open(args.tty.clone(), BaudRate::RstCts, FlowControl::Software)
         .expect("Failed to open serial port");
-    let (callbacks_sender, callbacks_receiver) = tokio::sync::mpsc::channel(1024);
-    let (zigbee_tx, mut zigbee_rx) = tokio::sync::mpsc::channel(1024);
+    let (callbacks_tx, callbacks_rx) = tokio::sync::mpsc::channel(1024);
 
-    let mut uart = Uart::new(serial_port, callbacks_sender, 8, 1024);
+    let mut uart = Uart::new(serial_port, callbacks_tx, 8, 1024);
     uart.init().await.expect("Failed to initialize UART");
 
     let concentrator_config = concentrator::Parameters::new(
@@ -122,41 +119,18 @@ async fn main() {
         (decision::Bitmask::ALLOW_JOINS | decision::Bitmask::IGNORE_UNSECURED_REJOINS).bits(),
     );
 
-    let mut network_manager = NetworkManager::new(uart, network_up.clone(), network_open.clone());
-    let event_handler = EventHandler::new(callbacks_receiver, zigbee_tx, network_up, network_open);
-
-    // Handle EZSP events.
-    tokio::spawn(async move {
-        event_handler.run().await;
-    });
-
-    // Handle Zigbee events.
-    tokio::spawn(async move {
-        while let Some(event) = zigbee_rx.recv().await {
-            info!("Zigbee Event: {event:?}");
-        }
-
-        debug!("Zigbee event channel closed.");
-    });
-
-    let device_config = DeviceConfig::new(
-        concentrator_config,
-        configuration,
-        policy,
-        LINK_KEY.try_into().expect("Link key is valid."),
-        NETWORK_KEY,
-        args.extended_pan_id,
-        args.pan_id,
-        args.radio_channel,
-        RADIO_TX_POWER,
-    );
-
-    network_manager
-        .configure(device_config)
-        .await
-        .expect("Failed to initialize network manager");
-    network_manager
-        .start(args.reinitialize)
+    let network_manager = NetworkManager::build(uart, callbacks_rx)
+        .with_policies(policy)
+        .with_configurations(configuration)
+        .with_concentrator(concentrator_config)
+        .with_link_key(LINK_KEY.try_into().expect("Link key is valid."))
+        .with_network_key(NETWORK_KEY)
+        .with_ieee_address(args.extended_pan_id)
+        .with_pan_id(args.pan_id)
+        .with_radio_channel(args.radio_channel)
+        .with_radio_power(RADIO_TX_POWER)
+        .with_reinitialize(args.reinitialize)
+        .start()
         .await
         .expect("Failed to start network manager");
 
