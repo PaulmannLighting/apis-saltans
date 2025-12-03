@@ -5,7 +5,6 @@ mod web_api;
 use std::collections::BTreeMap;
 use std::net::Ipv4Addr;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
 use ashv2::{BaudRate, open};
@@ -52,8 +51,6 @@ struct Args {
 async fn main() {
     let args = Args::parse();
     env_logger::init();
-    let network_up = Arc::new(AtomicBool::new(false));
-    let network_open = Arc::new(AtomicBool::new(false));
 
     let serial_port = open(args.tty.clone(), BaudRate::RstCts, FlowControl::Software)
         .expect("Failed to open serial port");
