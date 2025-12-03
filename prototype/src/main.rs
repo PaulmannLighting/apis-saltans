@@ -107,25 +107,28 @@ async fn main() {
     let mut policy = BTreeMap::new();
     policy.insert(
         policy::Id::TrustCenter,
-        decision::Id::AllowPreconfiguredKeyJoins,
+        decision::Id::AllowPreconfiguredKeyJoins.into(),
     );
     policy.insert(
         policy::Id::TcJoinsUsingWellKnownKey,
-        decision::Id::AllowJoins,
+        decision::Id::AllowJoins.into(),
     );
     policy.insert(
         policy::Id::TcKeyRequest,
-        decision::Id::AllowTcKeyRequestsAndSendCurrentKey,
+        decision::Id::AllowTcKeyRequestsAndSendCurrentKey.into(),
     );
     policy.insert(
         policy::Id::MessageContentsInCallback,
-        decision::Id::MessageTagOnlyInCallback,
+        decision::Id::MessageTagOnlyInCallback.into(),
     );
     policy.insert(
         policy::Id::BindingModification,
-        decision::Id::CheckBindingModificationsAreValidEndpointClusters,
+        decision::Id::CheckBindingModificationsAreValidEndpointClusters.into(),
     );
-    policy.insert(policy::Id::KeyRequest, decision::Id::DenyAppKeyRequests);
+    policy.insert(
+        policy::Id::KeyRequest,
+        (decision::Bitmask::ALLOW_JOINS | decision::Bitmask::IGNORE_UNSECURED_REJOINS).bits(),
+    );
 
     let mut network_manager = NetworkManager::new(uart, network_up.clone(), network_open.clone());
     let event_handler = EventHandler::new(callbacks_receiver, zigbee_tx, network_up, network_open);
