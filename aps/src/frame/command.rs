@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::ToLeStream;
 
 use crate::frame::destination::Destination;
 use crate::{Control, DeliveryMode, FrameType};
@@ -8,46 +8,23 @@ use crate::{Control, DeliveryMode, FrameType};
 pub struct Command<T> {
     control: Control,
     counter: u8,
+    id: u8,
     payload: T,
 }
 
 impl<T> Command<T> {
-    /// Creates a new APS Command frame.
-    #[must_use]
-    pub const fn new(destination: Destination, counter: u8, payload: T) -> Self {
-        let mut control = Control::empty();
-        control.set_frame_type(FrameType::Command);
-
-        match destination {
-            Destination::Unicast { .. } => {
-                control.set_delivery_mode(DeliveryMode::Unicast);
-            }
-            Destination::Broadcast(_) => {
-                control.set_delivery_mode(DeliveryMode::Broadcast);
-            }
-            Destination::Group(_) => {
-                control.set_delivery_mode(DeliveryMode::Group);
-            }
-        }
-
-        Self {
-            control,
-            counter,
-            payload,
-        }
-    }
-
     /// Create a new command frame.
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the provided `control` is consistent with a Command frame.
+    /// The caller must ensure that the provided `control` and `id` are consistent with a Command frame.
     #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn raw(control: Control, counter: u8, payload: T) -> Self {
+    pub const unsafe fn new_unchecked(control: Control, counter: u8, id: u8, payload: T) -> Self {
         Self {
             control,
             counter,
+            id,
             payload,
         }
     }
@@ -79,19 +56,31 @@ impl<T> Command<T> {
 
 impl<T> Command<T>
 where
-    T: FromLeStream,
+    T: zcl::Command,
 {
-    pub(crate) fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
-    where
-        U: Iterator<Item = u8>,
-    {
-        let counter = u8::from_le_stream(&mut bytes)?;
-        let payload = T::from_le_stream(&mut bytes)?;
+    /// Creates a new APS Command frame.
+    #[must_use]
+    pub const fn new(destination: Destination, counter: u8, payload: T) -> Self {
+        let mut control = Control::empty();
+        control.set_frame_type(FrameType::Command);
 
-        Some(Self {
+        match destination {
+            Destination::Unicast { .. } => {
+                control.set_delivery_mode(DeliveryMode::Unicast);
+            }
+            Destination::Broadcast(_) => {
+                control.set_delivery_mode(DeliveryMode::Broadcast);
+            }
+            Destination::Group(_) => {
+                control.set_delivery_mode(DeliveryMode::Group);
+            }
+        }
+
+        Self {
             control,
             counter,
+            id: <T as zcl::Command>::ID,
             payload,
-        })
+        }
     }
 }
