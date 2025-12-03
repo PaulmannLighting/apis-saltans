@@ -86,21 +86,15 @@ pub struct Xy {
 }
 
 impl Xy {
-    /// Create a new `Xy` color.
-    #[must_use]
-    pub const fn new(x: u16, y: u16) -> Self {
-        Self { x, y }
-    }
-
     /// Return the X value.
     #[must_use]
-    pub const fn x(&self) -> u16 {
+    pub const fn x(self) -> u16 {
         self.x
     }
 
     /// Return the Y value.
     #[must_use]
-    pub const fn y(&self) -> u16 {
+    pub const fn y(self) -> u16 {
         self.y
     }
 }
