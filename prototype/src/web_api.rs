@@ -10,6 +10,7 @@ use rocket::serde::json::Json;
 use rocket::{State, get, put};
 use serialport::TTYPort;
 use tokio::sync::Mutex;
+use tokio::time::sleep;
 use zcl::general::on_off::{Off, On};
 use zcl::lighting::color_control::MoveToColor;
 use zigbee_nwk::Nlme;
@@ -122,6 +123,8 @@ pub async fn party(zigbee: &State<Zigbee>) -> JsonResult<(), zigbee_nwk::Error<e
                 return Err(error).into();
             }
         }
+
+        sleep(Duration::from_secs(delay_secs.into())).await;
     }
 
     Ok(()).into()
