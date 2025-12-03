@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use ezsp::uart::Uart;
 use ezsp::zigbee::NetworkManager;
@@ -22,8 +23,13 @@ mod json_result;
 type Zigbee = Arc<Mutex<NetworkManager<Uart<TTYPort>>>>;
 
 #[get("/allow-join")]
-pub async fn allow_join(zigbee: &State<Zigbee>) -> JsonResult<(), ezsp::Error> {
-    zigbee.lock().await.allow_joins(60u8.into()).await.into()
+pub async fn allow_join(zigbee: &State<Zigbee>) -> JsonResult<(), zigbee_nwk::Error<ezsp::Error>> {
+    zigbee
+        .lock()
+        .await
+        .allow_joins(Duration::from_secs(60))
+        .await
+        .into()
 }
 
 #[get("/neighbors")]
