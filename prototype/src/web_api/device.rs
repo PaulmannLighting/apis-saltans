@@ -1,4 +1,3 @@
-use ezsp::Error;
 use macaddr::MacAddr8;
 use serde::Serialize;
 

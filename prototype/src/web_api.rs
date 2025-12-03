@@ -5,7 +5,8 @@ use ezsp::ember::message::Destination;
 use ezsp::uart::Uart;
 use ezsp::zigbee::NetworkManager;
 use le_stream::ToLeStream;
-use rocket::{State, get};
+use rocket::serde::json::Json;
+use rocket::{State, get, put};
 use serialport::TTYPort;
 use tokio::sync::Mutex;
 use zcl::Cluster;
@@ -15,7 +16,9 @@ use zcl::lighting::color_control::MoveToColor;
 use self::device::Device;
 use self::ezsp_json_response::EzspJsonResponse;
 use crate::HOME_AUTOMATION;
+use crate::web_api::color_move::ColorMove;
 
+mod color_move;
 mod device;
 mod ezsp_json_response;
 
@@ -104,8 +107,12 @@ pub async fn switch_on(zigbee: &State<Zigbee>, short_address: u16) -> EzspJsonRe
         .into()
 }
 
-#[get("/set-color/<short_address>")]
-pub async fn set_color(zigbee: &State<Zigbee>, short_address: u16) -> EzspJsonResponse<u8> {
+#[put("/set-color/<short_address>", data = "<color_move>")]
+pub async fn set_color(
+    zigbee: &State<Zigbee>,
+    short_address: u16,
+    color_move: Json<ColorMove>,
+) -> EzspJsonResponse<u8> {
     zigbee
         .lock()
         .await
@@ -128,7 +135,7 @@ pub async fn set_color(zigbee: &State<Zigbee>, short_address: u16) -> EzspJsonRe
                 false,
                 None,
                 0x00,
-                MoveToColor::new(0x529E, 0x543B, 0, 0x00, 0x00),
+                MoveToColor::from(color_move.into_inner()),
             )
             .to_le_stream(),
         )
