@@ -3,10 +3,10 @@ use le_stream::{FromLeStream, ToLeStream};
 use self::ack_fmt::AckFmt;
 use crate::{Control, Extended, FrameType};
 
-pub mod ack_fmt;
+mod ack_fmt;
 
-/// APS Acknowledgment frame header.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, ToLeStream)]
+/// APS Acknowledgment Frame.
+#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Acknowledgment {
     control: Control,
     fmt: Option<AckFmt>, // Present if "ack format" is NOT set in control.
@@ -71,10 +71,7 @@ impl Acknowledgment {
         let counter = u8::from_le_stream(&mut bytes)?;
 
         let extended = if control.contains(Control::EXTENDED_HEADER) {
-            Some(Extended::from_le_stream(
-                &mut bytes,
-                control.frame_type() == FrameType::Acknowledgment,
-            )?)
+            Some(Extended::from_le_stream(true, &mut bytes)?)
         } else {
             None
         };
@@ -85,5 +82,29 @@ impl Acknowledgment {
             counter,
             extended,
         })
+    }
+
+    /// Returns the control field.
+    #[must_use]
+    pub const fn control(&self) -> Control {
+        self.control
+    }
+
+    /// Returns the acknowledgment format field.
+    #[must_use]
+    pub const fn fmt(&self) -> Option<AckFmt> {
+        self.fmt
+    }
+
+    /// Returns the counter field.
+    #[must_use]
+    pub const fn counter(&self) -> u8 {
+        self.counter
+    }
+
+    /// Returns the extended header field.
+    #[must_use]
+    pub const fn extended(&self) -> Option<Extended> {
+        self.extended
     }
 }

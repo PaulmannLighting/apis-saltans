@@ -16,7 +16,7 @@ pub struct Extended {
 }
 
 impl Extended {
-    pub(crate) fn from_le_stream<T>(mut bytes: T, is_ack: bool) -> Option<Self>
+    pub(crate) fn from_le_stream<T>(is_ack: bool, mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {

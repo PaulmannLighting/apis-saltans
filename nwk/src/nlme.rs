@@ -1,37 +1,19 @@
-use std::error::Error;
+use aps::Command;
+use le_stream::ToLeStream;
 
-use crate::NetworkDescriptor;
+use crate::Error;
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
-    /// Device settings type.
-    type DeviceSettings;
-    /// Error type.
-    type Error: Error;
+    /// The error type returned by NLME operations.
+    type Error: std::error::Error;
 
-    /// Configure a device on the network.
-    fn configure(
+    /// Send a unicast message.
+    fn unicast_command<T>(
         &mut self,
-        settings: Self::DeviceSettings,
-    ) -> impl Future<Output = Result<(), Self::Error>>;
-
-    /// Start the network.
-    fn start(&mut self, reinitialize: bool) -> impl Future<Output = Result<(), Self::Error>>;
-
-    /// Join a network.
-    fn join(
-        &mut self,
-        settings: Self::DeviceSettings,
-    ) -> impl Future<Output = Result<(), Self::Error>>;
-
-    /// Rejoin a network.
-    fn rejoin(
-        &mut self,
-        network: NetworkDescriptor,
-    ) -> impl Future<Output = Result<(), Self::Error>>;
-
-    /// Leave the network.
-    fn leave(&mut self) -> impl Future<Output = Result<(), Self::Error>>;
-
-    // TODO: Add more NLME methods as needed. Maybe split into separate traits.
+        destination: u16,
+        frame: Command<T>,
+    ) -> impl Future<Output = Result<(), Error<Self::Error>>>
+    where
+        T: zcl::Command + ToLeStream;
 }
