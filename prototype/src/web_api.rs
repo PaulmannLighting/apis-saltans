@@ -10,7 +10,6 @@ use tokio::sync::Mutex;
 use zcl::general::on_off::{Off, On};
 use zcl::lighting::color_control::MoveToColor;
 use zigbee_nwk::Nlme;
-use zigbee_nwk::aps::{Command, Destination};
 
 use self::color_move::ColorMove;
 use self::device::Device;
@@ -56,10 +55,7 @@ pub async fn switch_off(
     zigbee
         .lock()
         .await
-        .unicast_command(
-            short_address,
-            Command::new(Destination::Unicast(0x01), 0x00, Off),
-        )
+        .unicast_command(short_address, Off)
         .await
         .into()
 }
@@ -72,10 +68,7 @@ pub async fn switch_on(
     zigbee
         .lock()
         .await
-        .unicast_command(
-            short_address,
-            Command::new(Destination::Unicast(0x01), 0x00, On),
-        )
+        .unicast_command(short_address, On)
         .await
         .into()
 }
@@ -89,14 +82,7 @@ pub async fn set_color(
     zigbee
         .lock()
         .await
-        .unicast_command(
-            short_address,
-            Command::new(
-                Destination::Unicast(0x01),
-                0x00,
-                MoveToColor::from(color_move.into_inner()),
-            ),
-        )
+        .unicast_command(short_address, MoveToColor::from(color_move.into_inner()))
         .await
         .into()
 }

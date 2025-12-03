@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use aps::Command;
 use le_stream::ToLeStream;
 use macaddr::MacAddr8;
 
@@ -39,7 +38,7 @@ pub trait Nlme {
     fn unicast_command<T>(
         &mut self,
         destination: u16,
-        frame: Command<T>,
+        frame: T,
     ) -> impl Future<Output = Result<(), Error<Self::Error>>>
     where
         T: zcl::Command + ToLeStream;
