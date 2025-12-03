@@ -5,7 +5,7 @@ mod web_api;
 use std::collections::BTreeMap;
 use std::net::Ipv4Addr;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use ashv2::{BaudRate, open};
 use clap::Parser;
@@ -51,6 +51,7 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
+    let start = Instant::now();
     let args = Args::parse();
     env_logger::init();
 
@@ -134,6 +135,8 @@ async fn main() {
         .expect("Failed to start network manager");
 
     let figment = rocket::Config::figment().merge(("address", Ipv4Addr::UNSPECIFIED));
+    let elapsed = Instant::now().duration_since(start);
+    info!("Initialization completed in {elapsed:.2?}");
     info!("Starting server...");
     let _web_ui = rocket::custom(figment)
         .manage(Arc::new(Mutex::new(network_manager)))
