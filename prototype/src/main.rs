@@ -123,7 +123,7 @@ async fn main() {
         .with_policies(policy)
         .with_configurations(configuration)
         .with_concentrator(concentrator_config)
-        .with_link_key(LINK_KEY.try_into().expect("Link key is valid."))
+        .with_link_key(LINK_KEY.try_into().expect("Link key is valid"))
         .with_network_key(NETWORK_KEY)
         .with_ieee_address(args.extended_pan_id)
         .with_pan_id(args.pan_id)
