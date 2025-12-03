@@ -1,9 +1,7 @@
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::FromLeStream;
 
-use self::destination::Destination;
+use crate::frame::destination::Destination;
 use crate::{Control, DeliveryMode, Extended, FrameType};
-
-mod destination;
 
 /// APS Data frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
