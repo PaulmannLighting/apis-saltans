@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 aps = { path = "../aps" }
 le-stream = "6.0.0"
+macaddr = "1.0.1"
 zcl = { path = "../zcl" }
 
 [lints]

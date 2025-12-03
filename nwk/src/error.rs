@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+/// A generic error type for the NWK layer.
 #[derive(Debug)]
 pub enum Error<T> {
     /// An I/O error occurred.
@@ -53,7 +54,7 @@ pub mod zigbee {
 
     impl Display for Error {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            todo!()
+            write!(f, "Zigbee error")
         }
     }
 
