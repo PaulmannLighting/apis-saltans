@@ -16,6 +16,7 @@ zigbee-nwk = { version = "0.1.0", path = "../nwk" }
 zcl = { version = "0.1.0", path = "../zcl" }
 rocket = { version = "0.5.1", features = ["json"] }
 serde = { version = "1.0.228", features = ["derive"] }
+rand = "0.9.2"
 
 [lints]
 workspace = true

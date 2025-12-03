@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use zcl::lighting::color_control::MoveToColor;
 
-use self::color::Rgb;
+pub use self::color::Rgb;
 use crate::web_api::color_move::color::Xy;
 
 mod color;
@@ -13,6 +13,12 @@ pub struct ColorMove {
 }
 
 impl ColorMove {
+    /// Create a new ColorMove.
+    #[must_use]
+    pub const fn new(rgb: Rgb, rate: u16) -> Self {
+        Self { rgb, rate }
+    }
+
     fn xy(self) -> (u16, u16) {
         let xy: Xy = self.rgb.into();
         (xy.x(), xy.y())

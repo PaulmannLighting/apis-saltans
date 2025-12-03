@@ -19,10 +19,8 @@ use macaddr::MacAddr8;
 use rocket::routes;
 use serialport::FlowControl;
 use tokio::sync::Mutex;
-use zcl::general::on_off::On;
-use zigbee_nwk::aps::{Command, Destination};
 
-use crate::web_api::{allow_join, get_neighbors, set_color, switch_off, switch_on};
+use crate::web_api::{allow_join, get_neighbors, party, set_color, switch_off, switch_on};
 
 const PAN_ID: u16 = 24171;
 const EXTENDED_PAN_ID: MacAddr8 = MacAddr8::new(0x8D, 0x9F, 0x3D, 0xFE, 0x00, 0xBF, 0x0D, 0xB5);
@@ -142,7 +140,14 @@ async fn main() {
         .manage(Arc::new(Mutex::new(network_manager)))
         .mount(
             "/",
-            routes![allow_join, get_neighbors, switch_on, switch_off, set_color],
+            routes![
+                allow_join,
+                get_neighbors,
+                switch_on,
+                switch_off,
+                set_color,
+                party
+            ],
         )
         .launch()
         .await
