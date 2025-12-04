@@ -9,3 +9,11 @@ mod scene_table;
 mod types;
 
 const CLUSTER_ID: u16 = 0x0005;
+
+/// Commands for the Scenes cluster.
+#[derive(Debug)]
+pub enum Command {}
+
+/// Responses for the Scenes cluster.
+#[derive(Debug)]
+pub enum Response {}

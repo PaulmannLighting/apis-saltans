@@ -9,3 +9,11 @@ mod attribute;
 mod battery_alarm;
 
 const CLUSTER_ID: u16 = 0x0001;
+
+/// Commands for the Power Configuration cluster.
+#[derive(Debug)]
+pub enum Command {}
+
+/// Responses for the Power Configuration cluster.
+#[derive(Debug)]
+pub enum Response {}

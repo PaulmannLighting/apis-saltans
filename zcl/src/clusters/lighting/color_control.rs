@@ -20,3 +20,50 @@ mod color_information_attribute;
 mod commands;
 
 const CLUSTER_ID: u16 = 0x0300;
+
+/// Commands for the Color Control cluster.
+#[derive(Debug)]
+pub enum Command {
+    /// Color Loop Set command.
+    ColorLoopSet(ColorLoopSet),
+    /// Enhanced Move Hue command.
+    EnhancedMoveHue(EnhancedMoveHue),
+    /// Enhanced Move To Hue command.
+    EnhancedMoveToHue(EnhancedMoveToHue),
+    /// Enhanced Move To Hue And Saturation command.
+    EnhancedMoveToHueAndSaturation(EnhancedMoveToHueAndSaturation),
+    /// Enhanced Step Hue command.
+    EnhancedStepHue(EnhancedStepHue),
+    /// Move Color command.
+    MoveColor(MoveColor),
+    /// Move Color Temperature command.
+    MoveColorTemperature(MoveColorTemperature),
+    /// Move Hue command.
+    MoveHue(MoveHue),
+    /// Move Saturation command.
+    MoveSaturation(MoveSaturation),
+    /// Move To Color command.
+    MoveToColor(MoveToColor),
+    /// Move To Color Temperature command.
+    MoveToColorTemperature(MoveToColorTemperature),
+    /// Move To Hue command.
+    MoveToHue(MoveToHue),
+    /// Move To Hue And Saturation command.
+    MoveToHueAndSaturation(MoveToHueAndSaturation),
+    /// Move To Saturation command.
+    MoveToSaturation(MoveToSaturation),
+    /// Step Color command.
+    StepColor(StepColor),
+    /// Step Color Temperature command.
+    StepColorTemperature(StepColorTemperature),
+    /// Step Hue command.
+    StepHue(StepHue),
+    /// Step Saturation command.
+    StepSaturation(StepSaturation),
+    /// Stop Move Step command.
+    StopMoveStep(StopMoveStep),
+}
+
+/// Responses for the Color Control cluster.
+#[derive(Debug)]
+pub enum Response {}

@@ -10,3 +10,11 @@ mod ballast_information_attribute;
 mod ballast_settings_attribute;
 mod ballast_status;
 mod commands;
+
+/// Ballast Configuration commands.
+#[derive(Debug)]
+pub enum Command {}
+
+/// Ballast Configuration responses.
+#[derive(Debug)]
+pub enum Response {}
