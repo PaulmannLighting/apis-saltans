@@ -27,7 +27,7 @@ impl Reserved {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the given ID is within the valid range (241..255).
+    /// The caller must ensure that the given ID is within the valid range (241..=254).
     #[expect(unsafe_code)]
     #[must_use]
     pub const unsafe fn new_unchecked(id: u8) -> Self {
