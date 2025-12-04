@@ -37,7 +37,8 @@ pub trait Nlme {
     /// Returns an error if the operation fails.
     fn unicast_command<T>(
         &mut self,
-        destination: u16,
+        pan_id: u16,
+        endpoint: u8,
         frame: T,
     ) -> impl Future<Output = Result<(), Error<Self::Error>>>
     where
