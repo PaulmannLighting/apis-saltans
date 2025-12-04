@@ -18,19 +18,27 @@ impl<'nlme, T> DeviceProxy<'nlme, T> {
     pub(crate) const fn new(nlme: &'nlme mut T, pan_id: u16) -> Self {
         Self { nlme, pan_id }
     }
+}
 
+impl<T> DeviceProxy<'_, T>
+where
+    T: Nlme,
+{
     /// Get a proxy for a specific endpoint on the device.
-    pub const fn endpoint(self, endpoint_id: u8) -> EndpointProxy<'nlme, T> {
+    pub const fn endpoint(&mut self, endpoint_id: u8) -> EndpointProxy<'_, T> {
         EndpointProxy::new(self.nlme, self.pan_id, endpoint_id)
     }
 
     /// Get a proxy for the default endpoint on the device.
-    pub const fn default_endpoint(self) -> EndpointProxy<'nlme, T> {
+    pub const fn default_endpoint(&mut self) -> EndpointProxy<'_, T> {
         self.endpoint(DEFAULT_ENDPOINT)
     }
 }
 
-impl<T> DeviceProxy<'_, T> {
+impl<T> DeviceProxy<'_, T>
+where
+    T: Nlme,
+{
     /// Send a unicast command to the device.
     pub async fn unicast_command<C>(
         &mut self,
@@ -38,7 +46,6 @@ impl<T> DeviceProxy<'_, T> {
         frame: C,
     ) -> Result<(), Error<T::Error>>
     where
-        T: Nlme,
         C: Command + ToLeStream,
     {
         self.nlme

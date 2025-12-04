@@ -22,11 +22,13 @@ impl<'nlme, T> EndpointProxy<'nlme, T> {
     }
 }
 
-impl<T> EndpointProxy<'_, T> {
+impl<T> EndpointProxy<'_, T>
+where
+    T: Nlme,
+{
     /// Send a unicast command to the endpoint.
     pub async fn unicast_command<C>(&mut self, frame: C) -> Result<(), Error<T::Error>>
     where
-        T: Nlme,
         C: Command + ToLeStream,
     {
         self.nlme
