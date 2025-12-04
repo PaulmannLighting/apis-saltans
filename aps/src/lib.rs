@@ -2,8 +2,8 @@
 
 pub use self::broadcast::Broadcast;
 pub use self::frame::{
-    Acknowledgment, Command, Control, Data, DeliveryMode, Destination, Extended, ExtendedControl,
-    Fragmentation, FrameType,
+    AckFmt, Acknowledgment, Command, Control, Data, DeliveryMode, Destination, Extended,
+    ExtendedControl, Fragmentation, FrameType,
 };
 
 mod broadcast;

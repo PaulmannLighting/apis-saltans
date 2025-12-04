@@ -1,6 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 
-use self::ack_fmt::AckFmt;
+pub use self::ack_fmt::AckFmt;
 use crate::{Control, Extended, FrameType};
 
 mod ack_fmt;

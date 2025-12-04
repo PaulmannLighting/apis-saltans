@@ -1,4 +1,4 @@
-pub use self::acknowledgement::Acknowledgment;
+pub use self::acknowledgement::{AckFmt, Acknowledgment};
 pub use self::command::Command;
 pub use self::control::{Control, DeliveryMode, FrameType};
 pub use self::data::Data;
