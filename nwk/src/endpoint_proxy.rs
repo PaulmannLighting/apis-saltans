@@ -1,3 +1,8 @@
+use le_stream::ToLeStream;
+use zcl::Command;
+
+use crate::{Error, Nlme};
+
 /// A proxy for an endpoint within a network layer management entity (NLME).
 #[derive(Debug)]
 pub struct EndpointProxy<'nlme, T> {
@@ -14,5 +19,18 @@ impl<'nlme, T> EndpointProxy<'nlme, T> {
             pan_id,
             endpoint_id,
         }
+    }
+}
+
+impl<T> EndpointProxy<'_, T> {
+    /// Send a unicast command to the endpoint.
+    pub async fn unicast_command<C>(&mut self, frame: C) -> Result<(), Error<T::Error>>
+    where
+        T: Nlme,
+        C: Command + ToLeStream,
+    {
+        self.nlme
+            .unicast_command(self.pan_id, self.endpoint_id, frame)
+            .await
     }
 }
