@@ -24,15 +24,6 @@ struct LinearRgb {
 
 impl From<Rgb> for LinearRgb {
     fn from(rgb: Rgb) -> Self {
-        fn correct_channel(channel: u8) -> f32 {
-            let channel_f = f32::from(channel) / 255.0;
-            if channel_f <= 0.04045 {
-                channel_f / 12.92
-            } else {
-                ((channel_f + 0.055) / 1.055).powf(2.4)
-            }
-        }
-
         Self {
             red: correct_channel(rgb.red),
             green: correct_channel(rgb.green),
@@ -48,27 +39,21 @@ struct Xyz {
     z: f32,
 }
 
+impl Xyz {
+    const X_COEFFICIENTS: LinearRgbToXyzCoefficients =
+        LinearRgbToXyzCoefficients::new(0.664_511, 0.154_324, 0.162_028);
+    const Y_COEFFICIENTS: LinearRgbToXyzCoefficients =
+        LinearRgbToXyzCoefficients::new(0.283_881, 0.668_433, 0.047_685);
+    const Z_COEFFICIENTS: LinearRgbToXyzCoefficients =
+        LinearRgbToXyzCoefficients::new(0.000_088, 0.072_310, 0.986_039);
+}
+
 impl From<LinearRgb> for Xyz {
-    fn from(gamma_rgb: LinearRgb) -> Self {
+    fn from(linear_rgb: LinearRgb) -> Self {
         Self {
-            x: gamma_rgb.blue.mul_add(
-                0.180_437_5,
-                gamma_rgb
-                    .red
-                    .mul_add(0.412_456_4, gamma_rgb.green * 0.357_576_1),
-            ),
-            y: gamma_rgb.blue.mul_add(
-                0.072_175_0,
-                gamma_rgb
-                    .red
-                    .mul_add(0.212_672_9, gamma_rgb.green * 0.715_152_2),
-            ),
-            z: gamma_rgb.blue.mul_add(
-                0.950_304_1,
-                gamma_rgb
-                    .red
-                    .mul_add(0.019_333_9, gamma_rgb.green * 0.119_192),
-            ),
+            x: Self::X_COEFFICIENTS.apply(linear_rgb),
+            y: Self::Y_COEFFICIENTS.apply(linear_rgb),
+            z: Self::Z_COEFFICIENTS.apply(linear_rgb),
         }
     }
 }
@@ -86,6 +71,8 @@ pub struct Xy {
 }
 
 impl Xy {
+    const MULTIPLIER: f32 = 65_535.0;
+
     /// Return the X value.
     #[must_use]
     pub const fn x(self) -> u16 {
@@ -108,8 +95,8 @@ impl From<Xyz> for Xy {
         } else {
             #[expect(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
             Self {
-                x: ((xyz.x / sum) * 65_536.0).round() as u16,
-                y: ((xyz.y / sum) * 65_536.0).round() as u16,
+                x: ((xyz.x / sum) * Self::MULTIPLIER).round() as u16,
+                y: ((xyz.y / sum) * Self::MULTIPLIER).round() as u16,
             }
         }
     }
@@ -118,5 +105,40 @@ impl From<Xyz> for Xy {
 impl From<Rgb> for Xy {
     fn from(rgb: Rgb) -> Self {
         Self::from(Xyz::from(rgb))
+    }
+}
+
+/// Coefficients for converting Linear RGB to a single channel of XYZ.
+#[derive(Debug)]
+struct LinearRgbToXyzCoefficients {
+    red: f32,
+    green: f32,
+    blue: f32,
+}
+
+impl LinearRgbToXyzCoefficients {
+    /// Create new coefficients.
+    const fn new(red: f32, green: f32, blue: f32) -> Self {
+        Self { red, green, blue }
+    }
+
+    /// Apply the coefficients to a Linear RGB color.
+    pub fn apply(&self, linear_rgb: LinearRgb) -> f32 {
+        self.apply_rgb(linear_rgb.red, linear_rgb.green, linear_rgb.blue)
+    }
+
+    /// Apply the coefficients to individual RGB components.
+    fn apply_rgb(&self, red: f32, green: f32, blue: f32) -> f32 {
+        red.mul_add(self.red, green.mul_add(self.green, blue * self.blue))
+    }
+}
+
+#[inline]
+fn correct_channel(channel: u8) -> f32 {
+    let channel_f = f32::from(channel) / 255.0;
+    if channel_f <= 0.04045 {
+        channel_f / 12.92
+    } else {
+        ((channel_f + 0.055) / 1.055).powf(2.4)
     }
 }
