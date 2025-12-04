@@ -4,7 +4,6 @@ mod web_api;
 
 use std::collections::BTreeMap;
 use std::net::Ipv4Addr;
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use ashv2::{BaudRate, open};
@@ -19,8 +18,7 @@ use macaddr::MacAddr8;
 use rocket::routes;
 use serialport::FlowControl;
 use tokio::spawn;
-use tokio::sync::Mutex;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, channel};
 use zigbee_nwk::{Actor, ProxySender};
 
 use crate::web_api::{allow_join, get_neighbors, party, set_color, switch_off, switch_on};
@@ -58,7 +56,7 @@ async fn main() {
 
     let serial_port = open(args.tty.clone(), BaudRate::RstCts, FlowControl::Software)
         .expect("Failed to open serial port");
-    let (callbacks_tx, callbacks_rx) = tokio::sync::mpsc::channel(1024);
+    let (callbacks_tx, callbacks_rx) = channel(1024);
 
     let mut uart = Uart::new(serial_port, callbacks_tx, 8, 1024);
     uart.init().await.expect("Failed to initialize UART");
@@ -163,7 +161,7 @@ async fn main() {
     info!("Server stopped.");
 }
 
-async fn event_proxy(mut events: Receiver<Callback>, proxy: ProxySender<ezsp::Error>) {
+async fn event_proxy(mut events: Receiver<Callback>, _proxy: ProxySender<ezsp::Error>) {
     while let Some(event) = events.recv().await {
         info!("EZSP Event: {event:?}");
     }
