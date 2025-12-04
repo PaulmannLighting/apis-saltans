@@ -9,9 +9,13 @@ const DEFAULT_ENDPOINT: u8 = 0x01;
 /// A Zigbee endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 pub enum Endpoint {
+    /// Data interface of the Zigbee Device Object (ZDO).
     Data,
+    /// Application-specific endpoint.
     Application(Application),
+    /// Reserved endpoint.
     Reserved(Reserved),
+    /// Data interface broadcast endpoint.
     Broadcast,
 }
 
