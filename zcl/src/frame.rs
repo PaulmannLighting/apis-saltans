@@ -54,7 +54,6 @@ where
     #[must_use]
     pub fn new(
         typ: Type,
-        direction: Direction,
         disable_client_response: bool,
         manufacturer_code: Option<u16>,
         seq: u8,
@@ -63,7 +62,7 @@ where
         Self {
             header: Header::new(
                 typ,
-                direction,
+                <T as Command>::DIRECTION,
                 disable_client_response,
                 manufacturer_code,
                 seq,
