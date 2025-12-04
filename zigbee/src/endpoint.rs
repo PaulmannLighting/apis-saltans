@@ -4,6 +4,8 @@ pub use self::reserved::Reserved;
 mod application;
 mod reserved;
 
+const DEFAULT_ENDPOINT: u8 = 0x01;
+
 /// A Zigbee endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 pub enum Endpoint {
@@ -11,6 +13,12 @@ pub enum Endpoint {
     Application(Application),
     Reserved(Reserved),
     Broadcast,
+}
+
+impl Default for Endpoint {
+    fn default() -> Self {
+        DEFAULT_ENDPOINT.into()
+    }
 }
 
 impl From<u8> for Endpoint {
