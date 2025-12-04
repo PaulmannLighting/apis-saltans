@@ -1,9 +1,7 @@
-use le_stream::ToLeStream;
-use zcl::Command;
 use zigbee::Endpoint;
 
 use crate::endpoint_proxy::EndpointProxy;
-use crate::{Error, Nlme, ProxySender};
+use crate::{Error, Proxy, ProxySender, ZclCommand};
 
 /// Extension trait to get a device proxy from a Network Layer Management Entity (NLME).
 pub trait DeviceProxyExt: Sized {
@@ -31,10 +29,7 @@ impl<'nlme, T> DeviceProxy<'nlme, T> {
     }
 }
 
-impl<T> DeviceProxy<'_, ProxySender<T>>
-where
-    T: std::error::Error,
-{
+impl<T> DeviceProxy<'_, ProxySender<T>> {
     /// Get a proxy for a specific endpoint on the device.
     pub const fn endpoint(&mut self, endpoint_id: Endpoint) -> EndpointProxy<'_, ProxySender<T>> {
         EndpointProxy::new(self.nlme, self.pan_id, endpoint_id)
@@ -46,21 +41,18 @@ where
     }
 }
 
-impl<T> DeviceProxy<'_, T>
+impl<T> DeviceProxy<'_, ProxySender<T>>
 where
-    T: Nlme,
+    T: std::error::Error,
 {
     /// Send a unicast command to the device.
-    pub async fn unicast_command<C>(
+    pub async fn unicast_command(
         &mut self,
         endpoint: Endpoint,
-        frame: C,
-    ) -> Result<(), Error<T::Error>>
-    where
-        C: Command + ToLeStream,
-    {
+        command: impl Into<ZclCommand>,
+    ) -> Result<(), Error<T>> {
         self.nlme
-            .unicast_command(self.pan_id, endpoint, frame)
+            .unicast_command(self.pan_id, endpoint, command)
             .await
     }
 }

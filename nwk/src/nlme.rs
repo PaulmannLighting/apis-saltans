@@ -6,7 +6,6 @@ use macaddr::MacAddr8;
 use zigbee::Endpoint;
 
 use crate::Error;
-use crate::device_proxy::DeviceProxy;
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {

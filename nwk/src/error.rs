@@ -45,8 +45,7 @@ where
             Self::Io(error) => Some(error),
             Self::Implementation(error) => Some(error),
             Self::Zigbee(error) => Some(error),
-            Self::ActorSend => None,
-            Self::ActorReceive => None,
+            Self::ActorSend | Self::ActorReceive => None,
         }
     }
 }

@@ -1,6 +1,6 @@
 use zigbee::Endpoint;
 
-use crate::{Error, Nlme, Proxy, ProxySender, ZclCommand};
+use crate::{Error, Proxy, ProxySender, ZclCommand};
 
 /// A proxy for an endpoint within a network layer management entity (NLME).
 #[derive(Debug)]
