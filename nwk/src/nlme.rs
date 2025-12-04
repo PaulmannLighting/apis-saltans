@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use le_stream::ToLeStream;
 use macaddr::MacAddr8;
+use zigbee::Endpoint;
 
 use crate::Error;
 use crate::device_proxy::DeviceProxy;
@@ -39,7 +40,7 @@ pub trait Nlme {
     fn unicast_command<T>(
         &mut self,
         pan_id: u16,
-        endpoint: u8,
+        endpoint: Endpoint,
         frame: T,
     ) -> impl Future<Output = Result<(), Error<Self::Error>>>
     where
