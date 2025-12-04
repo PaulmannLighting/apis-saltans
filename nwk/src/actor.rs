@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::time::Duration;
 
-use log::{error, warn};
+use log::error;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
@@ -50,7 +50,7 @@ where
                 } => {
                     response
                         .send(match command {
-                            zcl::Commands::Lighting(lighting::Command::ColorControl(command)) => {
+                            Commands::Lighting(lighting::Command::ColorControl(command)) => {
                                 match command {
                                     color_control::Command::MoveToColor(move_to_color) => {
                                         self.unicast_command(pan_id, endpoint, move_to_color).await
@@ -58,17 +58,15 @@ where
                                     _ => Err(crate::Error::NotImplemented),
                                 }
                             }
-                            zcl::Commands::General(general::Command::OnOff(command)) => {
-                                match command {
-                                    on_off::Command::On(on) => {
-                                        self.unicast_command(pan_id, endpoint, on).await
-                                    }
-                                    on_off::Command::Off(off) => {
-                                        self.unicast_command(pan_id, endpoint, off).await
-                                    }
-                                    _ => Err(crate::Error::NotImplemented),
+                            Commands::General(general::Command::OnOff(command)) => match command {
+                                on_off::Command::On(on) => {
+                                    self.unicast_command(pan_id, endpoint, on).await
                                 }
-                            }
+                                on_off::Command::Off(off) => {
+                                    self.unicast_command(pan_id, endpoint, off).await
+                                }
+                                _ => Err(crate::Error::NotImplemented),
+                            },
                             _ => Err(crate::Error::NotImplemented),
                         })
                         .unwrap_or_else(|error| {

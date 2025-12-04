@@ -9,6 +9,7 @@ use zigbee::Endpoint;
 use crate::Error;
 
 /// Messages sent to the NWK actor.
+#[expect(clippy::large_enum_variant, variant_size_differences)]
 pub enum Message<E> {
     AllowJoins {
         duration: Duration,
