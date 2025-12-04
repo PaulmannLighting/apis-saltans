@@ -50,46 +50,46 @@ pub async fn get_neighbors(
     Ok(neighbors).into()
 }
 
-#[get("/switch-off/<short_address>")]
+#[get("/switch-off/<pan_id>")]
 pub async fn switch_off(
     zigbee: &State<Zigbee>,
-    short_address: u16,
+    pan_id: u16,
 ) -> JsonResult<(), zigbee_nwk::Error<ezsp::Error>> {
     zigbee
         .lock()
         .await
-        .device(short_address)
+        .device(pan_id)
         .default_endpoint()
         .unicast_command(Off)
         .await
         .into()
 }
 
-#[get("/switch-on/<short_address>")]
+#[get("/switch-on/<pan_id>")]
 pub async fn switch_on(
     zigbee: &State<Zigbee>,
-    short_address: u16,
+    pan_id: u16,
 ) -> JsonResult<(), zigbee_nwk::Error<ezsp::Error>> {
     zigbee
         .lock()
         .await
-        .device(short_address)
+        .device(pan_id)
         .default_endpoint()
         .unicast_command(On)
         .await
         .into()
 }
 
-#[put("/set-color/<short_address>", data = "<color_move>")]
+#[put("/set-color/<pan_id>", data = "<color_move>")]
 pub async fn set_color(
     zigbee: &State<Zigbee>,
-    short_address: u16,
+    pan_id: u16,
     color_move: Json<ColorMove>,
 ) -> JsonResult<(), zigbee_nwk::Error<ezsp::Error>> {
     zigbee
         .lock()
         .await
-        .device(short_address)
+        .device(pan_id)
         .default_endpoint()
         .unicast_command(MoveToColor::from(color_move.into_inner()))
         .await
@@ -114,11 +114,11 @@ async fn do_party(zigbee: Zigbee) -> Result<(), zigbee_nwk::Error<ezsp::Error>> 
     let mut rng = SmallRng::from_os_rng();
 
     for _ in 0..30 {
-        for short_id in neighbors.iter().filter_map(|(_, short_id)| *short_id) {
+        for pan_id in neighbors.iter().filter_map(|(_, short_id)| *short_id) {
             zigbee
                 .lock()
                 .await
-                .device(short_id)
+                .device(pan_id)
                 .default_endpoint()
                 .unicast_command(MoveToColor::from(ColorMove::new(
                     *colors.choose(&mut rng).expect("Colors are not empty"),
