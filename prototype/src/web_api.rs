@@ -10,7 +10,6 @@ use rocket::serde::json::Json;
 use rocket::{State, get, put};
 use serialport::TTYPort;
 use tokio::sync::Mutex;
-use tokio::time::sleep;
 use zcl::general::on_off::{Off, On};
 use zcl::lighting::color_control::MoveToColor;
 use zigbee_nwk::Nlme;
