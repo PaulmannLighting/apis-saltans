@@ -9,6 +9,10 @@ pub enum Error<T> {
     Implementation(T),
     /// An error indicated by a status code.
     Zigbee(zigbee::Error),
+    /// An error occurred while sending a message to an actor.
+    ActorSend,
+    /// An error occurred while receiving a message from an actor.
+    ActorReceive,
 }
 
 impl<T> Display for Error<T>
@@ -20,6 +24,8 @@ where
             Self::Io(error) => error.fmt(f),
             Self::Implementation(error) => error.fmt(f),
             Self::Zigbee(error) => error.fmt(f),
+            Self::ActorSend => write!(f, "Failed to send message to actor"),
+            Self::ActorReceive => write!(f, "Failed to receive message from actor"),
         }
     }
 }
@@ -39,6 +45,8 @@ where
             Self::Io(error) => Some(error),
             Self::Implementation(error) => Some(error),
             Self::Zigbee(error) => Some(error),
+            Self::ActorSend => None,
+            Self::ActorReceive => None,
         }
     }
 }

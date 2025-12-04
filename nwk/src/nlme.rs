@@ -30,7 +30,7 @@ pub trait Nlme {
     /// Returns an error if the operation fails.
     fn get_neighbors(
         &mut self,
-    ) -> impl Future<Output = Result<BTreeMap<MacAddr8, Option<u16>>, Error<Self::Error>>>;
+    ) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error<Self::Error>>>;
 
     /// Send a unicast message.
     ///
