@@ -9,16 +9,19 @@ use std::time::{Duration, Instant};
 
 use ashv2::{BaudRate, open};
 use clap::Parser;
-use ezsp::Ezsp;
 use ezsp::ember::concentrator;
 use ezsp::ezsp::{config, decision, policy};
 use ezsp::uart::Uart;
 use ezsp::zigbee::NetworkManager;
+use ezsp::{Callback, Ezsp};
 use log::info;
 use macaddr::MacAddr8;
 use rocket::routes;
 use serialport::FlowControl;
+use tokio::spawn;
 use tokio::sync::Mutex;
+use tokio::sync::mpsc::{Receiver, Sender, channel};
+use zigbee_nwk::{Actor, ProxySender};
 
 use crate::web_api::{allow_join, get_neighbors, party, set_color, switch_off, switch_on};
 
@@ -117,7 +120,7 @@ async fn main() {
         (decision::Bitmask::ALLOW_JOINS | decision::Bitmask::IGNORE_UNSECURED_REJOINS).bits(),
     );
 
-    let (network_manager, _event_manager) = NetworkManager::build(uart, callbacks_rx)
+    let (network_manager, event_manager) = NetworkManager::build(uart, callbacks_rx)
         .with_policies(policy)
         .with_configurations(configuration)
         .with_concentrator(concentrator_config)
@@ -132,12 +135,17 @@ async fn main() {
         .await
         .expect("Failed to start network manager");
 
+    let (proxy, actor) = channel(1024);
+    spawn(network_manager.run(actor));
+    let events = event_manager.register(1024).await;
+    spawn(event_proxy(events, proxy.clone()));
+
     let figment = rocket::Config::figment().merge(("address", Ipv4Addr::UNSPECIFIED));
     let elapsed = Instant::now().duration_since(start);
     info!("Initialization completed in {elapsed:.2?}");
     info!("Starting server...");
     let _web_ui = rocket::custom(figment)
-        .manage(Arc::new(Mutex::new(network_manager)))
+        .manage(proxy)
         .mount(
             "/",
             routes![
@@ -153,4 +161,10 @@ async fn main() {
         .await
         .expect("Failed to launch server");
     info!("Server stopped.");
+}
+
+async fn event_proxy(mut events: Receiver<Callback>, proxy: ProxySender<ezsp::Error>) {
+    while let Some(event) = events.recv().await {
+        info!("EZSP Event: {event:?}");
+    }
 }

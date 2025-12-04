@@ -45,12 +45,4 @@ pub trait Nlme {
     ) -> impl Future<Output = Result<(), Error<Self::Error>>>
     where
         T: zcl::Command + ToLeStream;
-
-    /// Return a proxy for the device with the specified PAN ID.
-    fn device(&mut self, pan_id: u16) -> DeviceProxy<'_, Self>
-    where
-        Self: Sized,
-    {
-        DeviceProxy::new(self, pan_id)
-    }
 }

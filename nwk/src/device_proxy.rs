@@ -3,7 +3,19 @@ use zcl::Command;
 use zigbee::Endpoint;
 
 use crate::endpoint_proxy::EndpointProxy;
-use crate::{Error, Nlme};
+use crate::{Error, Nlme, ProxySender};
+
+/// Extension trait to get a device proxy from a Network Layer Management Entity (NLME).
+pub trait DeviceProxyExt: Sized {
+    /// Get a device proxy for the specified PAN ID.
+    fn device(&mut self, pan_id: u16) -> DeviceProxy<'_, Self>;
+}
+
+impl<T> DeviceProxyExt for ProxySender<T> {
+    fn device(&mut self, pan_id: u16) -> DeviceProxy<'_, Self> {
+        DeviceProxy::new(self, pan_id)
+    }
+}
 
 /// A proxy structure to interact with a Zigbee device via the Network Layer Management Entity (NLME).
 #[derive(Debug)]
@@ -19,17 +31,17 @@ impl<'nlme, T> DeviceProxy<'nlme, T> {
     }
 }
 
-impl<T> DeviceProxy<'_, T>
+impl<T> DeviceProxy<'_, ProxySender<T>>
 where
-    T: Nlme,
+    T: std::error::Error,
 {
     /// Get a proxy for a specific endpoint on the device.
-    pub const fn endpoint(&mut self, endpoint_id: Endpoint) -> EndpointProxy<'_, T> {
+    pub const fn endpoint(&mut self, endpoint_id: Endpoint) -> EndpointProxy<'_, ProxySender<T>> {
         EndpointProxy::new(self.nlme, self.pan_id, endpoint_id)
     }
 
     /// Get a proxy for the default endpoint on the device.
-    pub fn default_endpoint(&mut self) -> EndpointProxy<'_, T> {
+    pub fn default_endpoint(&mut self) -> EndpointProxy<'_, ProxySender<T>> {
         self.endpoint(Endpoint::default())
     }
 }

@@ -11,3 +11,21 @@ pub enum ZclCommand {
     /// Move the device to a specific color.
     MoveToColor(MoveToColor),
 }
+
+impl From<On> for ZclCommand {
+    fn from(cmd: On) -> Self {
+        Self::On(cmd)
+    }
+}
+
+impl From<Off> for ZclCommand {
+    fn from(cmd: Off) -> Self {
+        Self::Off(cmd)
+    }
+}
+
+impl From<MoveToColor> for ZclCommand {
+    fn from(cmd: MoveToColor) -> Self {
+        Self::MoveToColor(cmd)
+    }
+}

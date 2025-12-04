@@ -79,7 +79,7 @@ pub trait Proxy<T> {
         &mut self,
         pan_id: u16,
         endpoint: zigbee::Endpoint,
-        command: ZclCommand,
+        command: impl Into<ZclCommand>,
     ) -> impl Future<Output = Result<(), crate::Error<T>>>;
 }
 
@@ -107,13 +107,13 @@ where
         &mut self,
         pan_id: u16,
         endpoint: zigbee::Endpoint,
-        command: ZclCommand,
+        command: impl Into<ZclCommand>,
     ) -> Result<(), crate::Error<T>> {
         let (sender, rx) = oneshot::channel();
         self.send(Message::ZclCommand {
             pan_id,
             endpoint,
-            command,
+            command: command.into(),
             sender,
         })
         .await

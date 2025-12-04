@@ -1,8 +1,6 @@
-use le_stream::ToLeStream;
-use zcl::Command;
 use zigbee::Endpoint;
 
-use crate::{Error, Nlme};
+use crate::{Error, Nlme, Proxy, ProxySender, ZclCommand};
 
 /// A proxy for an endpoint within a network layer management entity (NLME).
 #[derive(Debug)]
@@ -23,17 +21,17 @@ impl<'nlme, T> EndpointProxy<'nlme, T> {
     }
 }
 
-impl<T> EndpointProxy<'_, T>
+impl<T> EndpointProxy<'_, ProxySender<T>>
 where
-    T: Nlme,
+    T: std::error::Error,
 {
     /// Send a unicast command to the endpoint.
-    pub async fn unicast_command<C>(&mut self, frame: C) -> Result<(), Error<T::Error>>
-    where
-        C: Command + ToLeStream,
-    {
+    pub async fn unicast_command(
+        &mut self,
+        command: impl Into<ZclCommand>,
+    ) -> Result<(), Error<T>> {
         self.nlme
-            .unicast_command(self.pan_id, self.endpoint_id, frame)
+            .unicast_command(self.pan_id, self.endpoint_id, command)
             .await
     }
 }
