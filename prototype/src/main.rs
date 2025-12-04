@@ -117,7 +117,7 @@ async fn main() {
         (decision::Bitmask::ALLOW_JOINS | decision::Bitmask::IGNORE_UNSECURED_REJOINS).bits(),
     );
 
-    let network_manager = NetworkManager::build(uart, callbacks_rx)
+    let (network_manager, _event_manager) = NetworkManager::build(uart, callbacks_rx)
         .with_policies(policy)
         .with_configurations(configuration)
         .with_concentrator(concentrator_config)
