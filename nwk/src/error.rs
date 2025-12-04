@@ -13,6 +13,8 @@ pub enum Error<T> {
     ActorSend,
     /// An error occurred while receiving a message from an actor.
     ActorReceive,
+    /// An unimplemented feature was invoked.
+    NotImplemented,
 }
 
 impl<T> Display for Error<T>
@@ -26,6 +28,7 @@ where
             Self::Zigbee(error) => error.fmt(f),
             Self::ActorSend => write!(f, "Failed to send message to actor"),
             Self::ActorReceive => write!(f, "Failed to receive message from actor"),
+            Self::NotImplemented => write!(f, "Feature not implemented"),
         }
     }
 }
@@ -45,7 +48,7 @@ where
             Self::Io(error) => Some(error),
             Self::Implementation(error) => Some(error),
             Self::Zigbee(error) => Some(error),
-            Self::ActorSend | Self::ActorReceive => None,
+            Self::ActorSend | Self::ActorReceive | Self::NotImplemented => None,
         }
     }
 }

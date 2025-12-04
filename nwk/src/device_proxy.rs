@@ -1,7 +1,8 @@
+use zcl::Commands;
 use zigbee::Endpoint;
 
 use crate::endpoint_proxy::EndpointProxy;
-use crate::{Error, Proxy, ProxySender, ZclCommand};
+use crate::{Error, Proxy, ProxySender};
 
 /// Extension trait to get a device proxy from a Network Layer Management Entity (NLME).
 pub trait DeviceProxyExt: Sized {
@@ -49,7 +50,7 @@ where
     pub async fn unicast_command(
         &mut self,
         endpoint: Endpoint,
-        command: impl Into<ZclCommand>,
+        command: impl Into<Commands>,
     ) -> Result<(), Error<T>> {
         self.nlme
             .unicast_command(self.pan_id, endpoint, command)

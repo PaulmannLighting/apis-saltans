@@ -1,6 +1,7 @@
+use zcl::Commands;
 use zigbee::Endpoint;
 
-use crate::{Error, Proxy, ProxySender, ZclCommand};
+use crate::{Error, Proxy, ProxySender};
 
 /// A proxy for an endpoint within a network layer management entity (NLME).
 #[derive(Debug)]
@@ -26,10 +27,7 @@ where
     T: std::error::Error,
 {
     /// Send a unicast command to the endpoint.
-    pub async fn unicast_command(
-        &mut self,
-        command: impl Into<ZclCommand>,
-    ) -> Result<(), Error<T>> {
+    pub async fn unicast_command(&mut self, command: impl Into<Commands>) -> Result<(), Error<T>> {
         self.nlme
             .unicast_command(self.pan_id, self.endpoint_id, command)
             .await

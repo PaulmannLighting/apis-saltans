@@ -2,17 +2,18 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::time::Duration;
 
-use log::error;
+use log::{error, warn};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
+use zcl::general::on_off;
+use zcl::lighting::color_control;
+use zcl::{Commands, general, lighting};
 
 pub use self::message::Message;
-pub use self::zcl_command::ZclCommand;
 use crate::Nlme;
 
 mod message;
-mod zcl_command;
 
 /// Actor trait for handling NWK layer messages.
 pub trait Actor<T> {
@@ -48,7 +49,28 @@ where
                     response,
                 } => {
                     response
-                        .send(command.execute(&mut self, pan_id, endpoint).await)
+                        .send(match command {
+                            zcl::Commands::Lighting(lighting::Command::ColorControl(command)) => {
+                                match command {
+                                    color_control::Command::MoveToColor(move_to_color) => {
+                                        self.unicast_command(pan_id, endpoint, move_to_color).await
+                                    }
+                                    _ => Err(crate::Error::NotImplemented),
+                                }
+                            }
+                            zcl::Commands::General(general::Command::OnOff(command)) => {
+                                match command {
+                                    on_off::Command::On(on) => {
+                                        self.unicast_command(pan_id, endpoint, on).await
+                                    }
+                                    on_off::Command::Off(off) => {
+                                        self.unicast_command(pan_id, endpoint, off).await
+                                    }
+                                    _ => Err(crate::Error::NotImplemented),
+                                }
+                            }
+                            _ => Err(crate::Error::NotImplemented),
+                        })
                         .unwrap_or_else(|error| {
                             error!("Failed to send ZCL command response: {error:?}");
                         });
@@ -76,7 +98,7 @@ pub trait Proxy<T> {
         &mut self,
         pan_id: u16,
         endpoint: zigbee::Endpoint,
-        command: impl Into<ZclCommand>,
+        command: impl Into<Commands>,
     ) -> impl Future<Output = Result<(), crate::Error<T>>>;
 }
 
@@ -107,7 +129,7 @@ where
         &mut self,
         pan_id: u16,
         endpoint: zigbee::Endpoint,
-        command: impl Into<ZclCommand>,
+        command: impl Into<Commands>,
     ) -> Result<(), crate::Error<T>> {
         let (sender, rx) = oneshot::channel();
         self.send(Message::ZclCommand {

@@ -1,6 +1,6 @@
 //! Zigbee Network (NWK) Layer implementation.
 
-pub use actor::{Actor, Proxy, ZclCommand};
+pub use actor::{Actor, Proxy};
 pub use device_proxy::DeviceProxyExt;
 use tokio::sync::mpsc::{Receiver, Sender};
 pub use {aps, zcl, zigbee};

@@ -3,9 +3,9 @@ use std::time::Duration;
 
 use macaddr::MacAddr8;
 use tokio::sync::oneshot::Sender;
+use zcl::Commands;
 use zigbee::Endpoint;
 
-use super::ZclCommand;
 use crate::Error;
 
 /// Messages sent to the NWK actor.
@@ -20,7 +20,7 @@ pub enum Message<E> {
     ZclCommand {
         pan_id: u16,
         endpoint: Endpoint,
-        command: ZclCommand,
+        command: Commands,
         response: Sender<Result<(), Error<E>>>,
     },
 }
