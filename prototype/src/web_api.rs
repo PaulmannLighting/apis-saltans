@@ -58,7 +58,7 @@ pub async fn switch_off(
     zigbee
         .lock()
         .await
-        .unicast_command(short_address, Off)
+        .unicast_command(short_address, 0x01, Off)
         .await
         .into()
 }
@@ -71,7 +71,7 @@ pub async fn switch_on(
     zigbee
         .lock()
         .await
-        .unicast_command(short_address, On)
+        .unicast_command(short_address, 0x01, On)
         .await
         .into()
 }
@@ -85,7 +85,11 @@ pub async fn set_color(
     zigbee
         .lock()
         .await
-        .unicast_command(short_address, MoveToColor::from(color_move.into_inner()))
+        .unicast_command(
+            short_address,
+            0x01,
+            MoveToColor::from(color_move.into_inner()),
+        )
         .await
         .into()
 }
@@ -114,6 +118,7 @@ async fn do_party(zigbee: Zigbee) -> Result<(), zigbee_nwk::Error<ezsp::Error>> 
                 .await
                 .unicast_command(
                     short_id,
+                    0x01,
                     MoveToColor::from(ColorMove::new(
                         *colors.choose(&mut rng).expect("Colors are not empty"),
                         delay_secs * 10,
