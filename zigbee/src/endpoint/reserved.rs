@@ -23,6 +23,12 @@ impl Reserved {
         }
     }
 
+    /// Create a new `Reserved` endpoint ID, clamping the given ID to the valid range.
+    #[must_use]
+    pub fn new_clamped(id: u8) -> Self {
+        Self(id.clamp(Self::MIN, Self::MAX))
+    }
+
     /// Create a new `Reserved` endpoint ID without checking validity.
     ///
     /// # Safety
