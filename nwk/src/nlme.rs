@@ -5,6 +5,7 @@ use le_stream::ToLeStream;
 use macaddr::MacAddr8;
 
 use crate::Error;
+use crate::device_proxy::DeviceProxy;
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
@@ -43,4 +44,12 @@ pub trait Nlme {
     ) -> impl Future<Output = Result<(), Error<Self::Error>>>
     where
         T: zcl::Command + ToLeStream;
+
+    /// Return a proxy for the device with the specified PAN ID.
+    fn device(&mut self, pan_id: u16) -> DeviceProxy<'_, Self>
+    where
+        Self: Sized,
+    {
+        DeviceProxy::new(self, pan_id)
+    }
 }
