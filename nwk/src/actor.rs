@@ -27,34 +27,31 @@ where
     async fn run(mut self, mut rx: Receiver<Message<T::Error>>) {
         while let Some(message) = rx.recv().await {
             match message {
-                Message::AllowJoins { duration, sender } => {
-                    let result = self.allow_joins(duration).await;
-                    sender.send(result).unwrap_or_else(|error| {
-                        error!("Failed to send allow joins command response: {error:?}");
-                    });
+                Message::AllowJoins { duration, response } => {
+                    response
+                        .send(self.allow_joins(duration).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send allow joins command response: {error:?}");
+                        });
                 }
-                Message::GetNeighbors { sender } => {
-                    let result = self.get_neighbors().await;
-                    sender.send(result).unwrap_or_else(|error| {
-                        error!("Failed to send get neighbors command response: {error:?}");
-                    });
+                Message::GetNeighbors { response } => {
+                    response
+                        .send(self.get_neighbors().await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send get neighbors command response: {error:?}");
+                        });
                 }
                 Message::ZclCommand {
                     pan_id,
                     endpoint,
                     command,
-                    sender,
+                    response,
                 } => {
-                    let result = match command {
-                        ZclCommand::On(cmd) => self.unicast_command(pan_id, endpoint, cmd).await,
-                        ZclCommand::Off(cmd) => self.unicast_command(pan_id, endpoint, cmd).await,
-                        ZclCommand::MoveToColor(cmd) => {
-                            self.unicast_command(pan_id, endpoint, cmd).await
-                        }
-                    };
-                    sender.send(result).unwrap_or_else(|error| {
-                        error!("Failed to send ZCL command response: {error:?}");
-                    });
+                    response
+                        .send(command.execute(&mut self, pan_id, endpoint).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send ZCL command response: {error:?}");
+                        });
                 }
             }
         }
@@ -89,15 +86,18 @@ where
 {
     async fn allow_joins(&mut self, duration: Duration) -> Result<(), crate::Error<T>> {
         let (sender, rx) = oneshot::channel();
-        self.send(Message::AllowJoins { duration, sender })
-            .await
-            .map_err(|_| crate::Error::ActorSend)?;
+        self.send(Message::AllowJoins {
+            duration,
+            response: sender,
+        })
+        .await
+        .map_err(|_| crate::Error::ActorSend)?;
         rx.await.map_err(|_| crate::Error::ActorReceive)?
     }
 
     async fn get_neighbors(&mut self) -> Result<BTreeMap<MacAddr8, u16>, crate::Error<T>> {
         let (sender, rx) = oneshot::channel();
-        self.send(Message::GetNeighbors { sender })
+        self.send(Message::GetNeighbors { response: sender })
             .await
             .map_err(|_| crate::Error::ActorSend)?;
         rx.await.map_err(|_| crate::Error::ActorReceive)?
@@ -114,7 +114,7 @@ where
             pan_id,
             endpoint,
             command: command.into(),
-            sender,
+            response: sender,
         })
         .await
         .map_err(|_| crate::Error::ActorSend)?;

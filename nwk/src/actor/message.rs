@@ -12,15 +12,15 @@ use crate::Error;
 pub enum Message<E> {
     AllowJoins {
         duration: Duration,
-        sender: Sender<Result<(), Error<E>>>,
+        response: Sender<Result<(), Error<E>>>,
     },
     GetNeighbors {
-        sender: Sender<Result<BTreeMap<MacAddr8, u16>, Error<E>>>,
+        response: Sender<Result<BTreeMap<MacAddr8, u16>, Error<E>>>,
     },
     ZclCommand {
         pan_id: u16,
         endpoint: Endpoint,
         command: ZclCommand,
-        sender: Sender<Result<(), Error<E>>>,
+        response: Sender<Result<(), Error<E>>>,
     },
 }
