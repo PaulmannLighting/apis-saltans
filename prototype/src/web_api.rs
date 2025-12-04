@@ -93,22 +93,24 @@ pub async fn set_color(
 
 #[put("/party")]
 pub async fn party(zigbee: &State<Zigbee>) -> JsonResult<(), zigbee_nwk::Error<ezsp::Error>> {
+    tokio::spawn(do_party(zigbee.inner().clone()));
+    Ok(()).into()
+}
+
+async fn do_party(zigbee: Zigbee) -> Result<(), zigbee_nwk::Error<ezsp::Error>> {
     let colors = [
         Rgb::new(255, 0, 0),
         Rgb::new(0, 255, 0),
         Rgb::new(0, 0, 255),
     ];
-    let neighbors = match zigbee.lock().await.get_neighbors().await {
-        Ok(neighbors) => neighbors,
-        Err(err) => return Err(err).into(),
-    };
+    let neighbors = zigbee.lock().await.get_neighbors().await?;
 
-    let delay_secs = 3;
+    let delay_secs = 0;
     let mut rng = SmallRng::from_os_rng();
 
     for _ in 0..30 {
         for short_id in neighbors.iter().filter_map(|(_, short_id)| *short_id) {
-            if let Err(error) = zigbee
+            zigbee
                 .lock()
                 .await
                 .unicast_command(
@@ -118,14 +120,9 @@ pub async fn party(zigbee: &State<Zigbee>) -> JsonResult<(), zigbee_nwk::Error<e
                         delay_secs * 10,
                     )),
                 )
-                .await
-            {
-                return Err(error).into();
-            }
+                .await?;
         }
-
-        sleep(Duration::from_secs(delay_secs.into())).await;
     }
 
-    Ok(()).into()
+    Ok(())
 }

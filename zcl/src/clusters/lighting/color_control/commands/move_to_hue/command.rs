@@ -50,4 +50,5 @@ impl Cluster for MoveToHue {
 
 impl Command for MoveToHue {
     const ID: u8 = 0x00;
+    const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }

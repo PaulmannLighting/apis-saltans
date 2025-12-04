@@ -50,4 +50,5 @@ impl Cluster for EnhancedMoveToHue {
 
 impl Command for EnhancedMoveToHue {
     const ID: u8 = 0x40;
+    const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }

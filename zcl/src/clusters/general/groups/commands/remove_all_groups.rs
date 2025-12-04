@@ -1,4 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Direction;
 
 use crate::clusters::general::groups::CLUSTER_ID;
 use crate::{Cluster, Command};
@@ -13,4 +14,5 @@ impl Cluster for RemoveAllGroups {
 
 impl Command for RemoveAllGroups {
     const ID: u8 = 0x04;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

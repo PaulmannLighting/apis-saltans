@@ -1,3 +1,5 @@
+use zigbee::Direction;
+
 use crate::clusters::general::identify::CLUSTER_ID;
 use crate::{Cluster, Command};
 
@@ -13,4 +15,5 @@ impl Cluster for IdentifyQuery {
 
 impl Command for IdentifyQuery {
     const ID: u8 = 0x01;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

@@ -70,4 +70,5 @@ impl Cluster for ColorLoopSet {
 
 impl Command for ColorLoopSet {
     const ID: u8 = 0x44;
+    const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }

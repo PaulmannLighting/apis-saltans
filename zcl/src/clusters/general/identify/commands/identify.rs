@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+use zigbee::Direction;
 use zigbee::types::Uint16;
 
 use crate::clusters::general::identify::CLUSTER_ID;
@@ -40,4 +41,5 @@ impl Cluster for Identify {
 
 impl Command for Identify {
     const ID: u8 = 0x00;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

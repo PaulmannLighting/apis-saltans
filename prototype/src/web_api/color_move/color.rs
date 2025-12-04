@@ -95,8 +95,8 @@ impl From<Xyz> for Xy {
         } else {
             #[expect(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
             Self {
-                x: ((xyz.x / sum) * Self::MULTIPLIER).round() as u16,
-                y: ((xyz.y / sum) * Self::MULTIPLIER).round() as u16,
+                x: ((xyz.x / sum) * Self::MULTIPLIER).round_ties_even() as u16,
+                y: ((xyz.y / sum) * Self::MULTIPLIER).round_ties_even() as u16,
             }
         }
     }

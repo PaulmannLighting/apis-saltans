@@ -1,3 +1,5 @@
+use zigbee::Direction;
+
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::move_saturation::Mode;
 use crate::{Cluster, Command};
@@ -36,4 +38,5 @@ impl Cluster for MoveSaturation {
 
 impl Command for MoveSaturation {
     const ID: u8 = 0x04;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

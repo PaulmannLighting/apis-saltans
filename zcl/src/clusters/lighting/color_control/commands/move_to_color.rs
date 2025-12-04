@@ -1,6 +1,7 @@
 use core::time::Duration;
 
 use le_stream::ToLeStream;
+use zigbee::Direction;
 use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
@@ -72,4 +73,5 @@ impl Cluster for MoveToColor {
 
 impl Command for MoveToColor {
     const ID: u8 = 0x07;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

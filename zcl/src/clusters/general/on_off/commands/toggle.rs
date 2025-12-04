@@ -1,4 +1,4 @@
-use zigbee::{Cluster, Command};
+use zigbee::{Cluster, Command, Direction};
 
 use crate::general::on_off::CLUSTER_ID;
 
@@ -13,4 +13,5 @@ impl Cluster for Toggle {
 
 impl Command for Toggle {
     const ID: u8 = 0x02;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

@@ -1,6 +1,7 @@
 use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Direction;
 use zigbee::types::{Uint8, Uint16};
 
 use crate::clusters::general::groups::CLUSTER_ID;
@@ -68,6 +69,7 @@ impl Cluster for GetGroupMembershipResponse {
 
 impl Command for GetGroupMembershipResponse {
     const ID: u8 = 0x02;
+    const DIRECTION: Direction = Direction::ServerToClient;
 }
 
 impl FromLeStream for GetGroupMembershipResponse {

@@ -1,11 +1,10 @@
 use le_stream::{FromLeStream, ToLeStream};
+pub use zigbee::Direction;
 
 pub use self::control::Control;
-pub use self::direction::Direction;
 pub use self::typ::Type;
 
 mod control;
-mod direction;
 mod typ;
 
 /// A ZCL frame header.

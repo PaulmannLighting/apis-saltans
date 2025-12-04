@@ -1,4 +1,5 @@
 use le_stream::ToLeStream;
+use zigbee::Direction;
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
@@ -51,4 +52,5 @@ impl Cluster for TriggerEffect {
 
 impl Command for TriggerEffect {
     const ID: u8 = 0x40;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

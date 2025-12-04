@@ -1,3 +1,5 @@
+use zigbee::Direction;
+
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::{Cluster, Command};
 
@@ -34,4 +36,5 @@ impl Cluster for MoveColor {
 
 impl Command for MoveColor {
     const ID: u8 = 0x08;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

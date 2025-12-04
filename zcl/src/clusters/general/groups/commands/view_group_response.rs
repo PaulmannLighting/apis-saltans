@@ -1,4 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Direction;
 use zigbee::types::{String, Uint16};
 
 use crate::clusters::general::groups::CLUSTER_ID;
@@ -51,4 +52,5 @@ impl Cluster for ViewGroupResponse {
 
 impl Command for ViewGroupResponse {
     const ID: u8 = 0x01;
+    const DIRECTION: Direction = Direction::ServerToClient;
 }

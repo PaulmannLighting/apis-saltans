@@ -1,6 +1,7 @@
 use core::str::Utf8Error;
 
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Direction;
 use zigbee::types::{String, Uint16};
 
 use crate::clusters::general::groups::CLUSTER_ID;
@@ -53,4 +54,5 @@ impl Cluster for AddGroup {
 
 impl Command for AddGroup {
     const ID: u8 = 0x00;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

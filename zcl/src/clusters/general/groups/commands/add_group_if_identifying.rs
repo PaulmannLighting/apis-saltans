@@ -1,3 +1,4 @@
+use zigbee::Direction;
 use zigbee::types::{String, Uint16};
 
 use crate::clusters::general::groups::CLUSTER_ID;
@@ -39,4 +40,5 @@ impl Cluster for AddGroupIfIdentifying {
 
 impl Command for AddGroupIfIdentifying {
     const ID: u8 = 0x05;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

@@ -1,6 +1,6 @@
 //! Commands for the Basic cluster.
 
-use zigbee::{Cluster, Command};
+use zigbee::{Cluster, Command, Direction};
 
 use crate::clusters::general::basic::CLUSTER_ID;
 
@@ -14,4 +14,5 @@ impl Cluster for ResetToFactoryDefaults {
 
 impl Command for ResetToFactoryDefaults {
     const ID: u8 = 0x00;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

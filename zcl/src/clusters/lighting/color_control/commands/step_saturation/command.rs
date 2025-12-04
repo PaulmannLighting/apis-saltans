@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+use zigbee::Direction;
 use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
@@ -50,4 +51,5 @@ impl Cluster for StepSaturation {
 
 impl Command for StepSaturation {
     const ID: u8 = 0x04;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

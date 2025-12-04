@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use zigbee::{Cluster, Command};
+use zigbee::{Cluster, Command, Direction};
 
 use crate::general::on_off::CLUSTER_ID;
 
@@ -14,4 +14,5 @@ impl Cluster for Off {
 
 impl Command for Off {
     const ID: u8 = 0x00;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

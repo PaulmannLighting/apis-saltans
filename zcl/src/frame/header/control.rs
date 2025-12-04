@@ -1,7 +1,7 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Direction;
 
-use super::direction::Direction;
 use super::typ::Type;
 
 /// ZCL frame control flags.

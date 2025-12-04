@@ -1,3 +1,5 @@
+use zigbee::Direction;
+
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::{Cluster, Command};
 
@@ -11,4 +13,5 @@ impl Cluster for StopMoveStep {
 
 impl Command for StopMoveStep {
     const ID: u8 = 47;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }

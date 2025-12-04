@@ -1,6 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint8;
-use zigbee::{Cluster, Command};
+use zigbee::{Cluster, Command, Direction};
 
 pub use self::effect::{DelayedAllOff, DyingLight, Effect};
 use crate::general::on_off::CLUSTER_ID;
@@ -44,4 +44,5 @@ impl Cluster for OffWithEffect {
 
 impl Command for OffWithEffect {
     const ID: u8 = 0x40;
+    const DIRECTION: Direction = Direction::ClientToServer;
 }
