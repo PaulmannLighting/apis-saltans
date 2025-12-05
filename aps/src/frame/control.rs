@@ -34,23 +34,29 @@ impl Control {
     /// Return the frame type.
     #[must_use]
     pub fn frame_type(self) -> FrameType {
-        FrameType::from_u8((self & Self::FRAME_TYPE).bits() >> 6)
-            .unwrap_or_else(|| unreachable!("Frame type covers all possible values."))
+        FrameType::from_u8(
+            (self & Self::FRAME_TYPE).bits() >> Self::FRAME_TYPE.bits().trailing_zeros(),
+        )
+        .unwrap_or_else(|| unreachable!("Frame type covers all possible values."))
     }
 
     /// Set the frame type.
     pub const fn set_frame_type(&mut self, frame_type: FrameType) {
-        self.0 = (self.bits() & !Self::FRAME_TYPE.bits()) | ((frame_type as u8) << 6);
+        self.0 = (self.bits() & !Self::FRAME_TYPE.bits())
+            | ((frame_type as u8) << Self::FRAME_TYPE.bits().trailing_zeros());
     }
 
     /// Return the delivery mode.
     #[must_use]
     pub fn delivery_mode(self) -> Option<DeliveryMode> {
-        DeliveryMode::from_u8((self & Self::DELIVERY_MODE).bits() >> 4)
+        DeliveryMode::from_u8(
+            (self & Self::DELIVERY_MODE).bits() >> Self::DELIVERY_MODE.bits().trailing_zeros(),
+        )
     }
 
     /// Set the delivery mode.
     pub const fn set_delivery_mode(&mut self, delivery_mode: DeliveryMode) {
-        self.0 = (self.bits() & !Self::DELIVERY_MODE.bits()) | ((delivery_mode as u8) << 4);
+        self.0 = (self.bits() & !Self::DELIVERY_MODE.bits())
+            | ((delivery_mode as u8) << Self::DELIVERY_MODE.bits().trailing_zeros());
     }
 }
