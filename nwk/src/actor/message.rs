@@ -11,6 +11,9 @@ use crate::Error;
 /// Messages sent to the NWK actor.
 #[expect(clippy::large_enum_variant, variant_size_differences)]
 pub enum Message {
+    GetPanId {
+        response: Sender<Result<u16, Error>>,
+    },
     AllowJoins {
         duration: Duration,
         response: Sender<Result<(), Error>>,

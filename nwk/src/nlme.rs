@@ -9,8 +9,8 @@ use crate::Error;
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
-    /// The error type returned by NLME operations.
-    type Error: Into<Error>;
+    /// Get the PAN ID of the network manager.
+    fn get_pan_id(&self) -> impl Future<Output = Result<u16, Error>>;
 
     /// Allow devices to join the network for the specified duration.
     ///
