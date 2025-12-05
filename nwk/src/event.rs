@@ -21,6 +21,15 @@ pub enum Event {
         /// The PAN ID of the joined device.
         pan_id: u16,
     },
+    /// A device has rejoined the network.
+    DeviceRejoined {
+        /// The IEEE address of the joined device.
+        ieee_address: MacAddr8,
+        /// The PAN ID of the joined device.
+        pan_id: u16,
+        /// Whether the rejoin was secured.
+        secured: bool,
+    },
     /// A device has left the network.
     DeviceLeft {
         /// The IEEE address of the left device.
