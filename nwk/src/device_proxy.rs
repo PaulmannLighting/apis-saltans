@@ -2,7 +2,7 @@ use le_stream::ToLeStream;
 use zigbee::{Command, Endpoint};
 
 use crate::endpoint_proxy::EndpointProxy;
-use crate::{Error, Proxy};
+use crate::{Error, Frame, Proxy};
 
 /// A proxy structure to interact with a Zigbee device via the Network Layer Management Entity (NLME).
 #[derive(Debug)]
@@ -37,10 +37,10 @@ where
         &self,
         endpoint: Endpoint,
         cluster_id: u16,
-        payload: Vec<u8>,
+        frame: Frame,
     ) -> Result<(), Error> {
         self.proxy
-            .unicast(self.pan_id, endpoint, cluster_id, payload)
+            .unicast(self.pan_id, endpoint, cluster_id, frame)
             .await
     }
 

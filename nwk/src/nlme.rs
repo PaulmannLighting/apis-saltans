@@ -4,7 +4,7 @@ use std::time::Duration;
 use macaddr::MacAddr8;
 use zigbee::Endpoint;
 
-use crate::Error;
+use crate::{Error, Frame};
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
@@ -38,6 +38,6 @@ pub trait Nlme {
         pan_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
-        payload: Vec<u8>,
+        frame: Frame,
     ) -> impl Future<Output = Result<(), Error>>;
 }

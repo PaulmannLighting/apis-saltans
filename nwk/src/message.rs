@@ -5,7 +5,7 @@ use macaddr::MacAddr8;
 use tokio::sync::oneshot::Sender;
 use zigbee::Endpoint;
 
-use crate::Error;
+use crate::{Error, Frame};
 
 /// Messages sent to the NWK actor.
 pub enum Message {
@@ -26,7 +26,7 @@ pub enum Message {
         pan_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
-        payload: Vec<u8>,
+        frame: Frame,
         response: Sender<Result<(), Error>>,
     },
 }

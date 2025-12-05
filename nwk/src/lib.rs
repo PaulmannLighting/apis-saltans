@@ -1,9 +1,10 @@
 //! Zigbee Network (NWK) Layer implementation.
 
-pub use actor::Actor;
 use tokio::sync::mpsc::{Receiver, Sender};
 
+pub use self::actor::Actor;
 pub use self::error::Error;
+pub use self::frame::Frame;
 pub use self::nlme::Nlme;
 pub use self::proxy::Proxy;
 
@@ -17,6 +18,7 @@ mod actor;
 mod device_proxy;
 mod endpoint_proxy;
 mod error;
+mod frame;
 mod message;
 mod nlme;
 mod proxy;

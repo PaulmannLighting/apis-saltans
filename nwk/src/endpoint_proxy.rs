@@ -1,7 +1,7 @@
 use le_stream::ToLeStream;
 use zigbee::{Command, Endpoint};
 
-use crate::{Error, Proxy};
+use crate::{Error, Frame, Proxy};
 
 /// A proxy for an endpoint within a network layer management entity (NLME).
 #[derive(Debug)]
@@ -27,9 +27,9 @@ where
     T: Proxy + Sync,
 {
     /// Send a unicast command to the endpoint.
-    pub async fn unicast(&self, cluster_id: u16, payload: Vec<u8>) -> Result<(), Error> {
+    pub async fn unicast(&self, cluster_id: u16, frame: Frame) -> Result<(), Error> {
         self.proxy
-            .unicast(self.pan_id, self.endpoint, cluster_id, payload)
+            .unicast(self.pan_id, self.endpoint, cluster_id, frame)
             .await
     }
 

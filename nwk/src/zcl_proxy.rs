@@ -29,15 +29,12 @@ where
     where
         C: Command + ToLeStream,
     {
-        let seq = self.proxy.get_transaction_seq().await;
         self.proxy
             .unicast(
                 pan_id,
                 endpoint,
                 <C as Cluster>::ID,
-                zcl::Frame::new(Type::ClusterSpecific, true, None, seq, command)
-                    .to_le_stream()
-                    .collect(),
+                zcl::Frame::new(Type::ClusterSpecific, true, None, 0x00, command).into(),
             )
             .await
     }

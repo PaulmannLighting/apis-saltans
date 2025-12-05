@@ -6,10 +6,10 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zigbee::Endpoint;
 
-use crate::Error;
 use crate::actor::Message;
 use crate::device_proxy::DeviceProxy;
 use crate::zcl_proxy::ZclProxy;
+use crate::{Error, Frame};
 
 /// Proxy trait for sending NWK layer messages.
 pub trait Proxy {
@@ -31,7 +31,7 @@ pub trait Proxy {
         pan_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
-        payload: Vec<u8>,
+        frame: Frame,
     ) -> impl Future<Output = Result<(), Error>>;
 
     /// Get a device proxy for the specified PAN ID.
@@ -90,14 +90,14 @@ impl Proxy for Sender<Message> {
         pan_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
-        payload: Vec<u8>,
+        frame: Frame,
     ) -> Result<(), Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::Unicast {
             pan_id,
             endpoint,
             cluster_id,
-            payload,
+            frame,
             response,
         })
         .await
