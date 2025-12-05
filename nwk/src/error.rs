@@ -4,10 +4,8 @@ use std::sync::Arc;
 /// A generic error type for the NWK layer.
 #[derive(Debug)]
 pub enum Error {
-    /// An I/O error occurred.
-    Io(std::io::Error),
     /// An implementation-specific error occurred.
-    Implementation(Arc<dyn std::error::Error>),
+    Implementation(Arc<dyn std::error::Error + Send + Sync>),
     /// An error indicated by a status code.
     Zigbee(zigbee::Error),
     /// An error occurred while sending a message to an actor.
@@ -21,7 +19,6 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Io(error) => error.fmt(f),
             Self::Implementation(error) => error.fmt(f),
             Self::Zigbee(error) => error.fmt(f),
             Self::ActorSend => write!(f, "Failed to send message to actor"),
@@ -34,7 +31,6 @@ impl Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Io(error) => Some(error),
             Self::Implementation(error) => Some(&**error),
             Self::Zigbee(error) => Some(error),
             Self::ActorSend | Self::ActorReceive | Self::NotImplemented => None,

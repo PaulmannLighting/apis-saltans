@@ -1,5 +1,5 @@
-use zcl::Commands;
-use zigbee::Endpoint;
+use le_stream::ToLeStream;
+use zigbee::{Command, Endpoint};
 
 use crate::endpoint_proxy::EndpointProxy;
 use crate::{Error, Proxy};
@@ -20,7 +20,7 @@ impl<'proxy, T> DeviceProxy<'proxy, T> {
 
 impl<T> DeviceProxy<'_, T>
 where
-    T: Proxy,
+    T: Proxy + Sync,
 {
     /// Get a proxy for a specific endpoint on the device.
     pub const fn endpoint(&self, endpoint_id: Endpoint) -> EndpointProxy<'_, T> {
@@ -36,10 +36,22 @@ where
     pub async fn unicast_command(
         &self,
         endpoint: Endpoint,
-        command: impl Into<Commands>,
+        cluster_id: u16,
+        payload: Vec<u8>,
     ) -> Result<(), Error> {
         self.proxy
-            .unicast_command(self.pan_id, endpoint, command)
+            .unicast(self.pan_id, endpoint, cluster_id, payload)
+            .await
+    }
+
+    /// Send a unicast ZCL command to the device.
+    pub async fn unicast_commands<C>(&self, endpoint: Endpoint, command: C) -> Result<(), Error>
+    where
+        C: Command + ToLeStream,
+    {
+        self.proxy
+            .zcl()
+            .unicast(self.pan_id, endpoint, command)
             .await
     }
 }

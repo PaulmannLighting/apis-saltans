@@ -1,5 +1,5 @@
-use zcl::Commands;
-use zigbee::Endpoint;
+use le_stream::ToLeStream;
+use zigbee::{Command, Endpoint};
 
 use crate::{Error, Proxy};
 
@@ -8,28 +8,39 @@ use crate::{Error, Proxy};
 pub struct EndpointProxy<'proxy, T> {
     proxy: &'proxy T,
     pan_id: u16,
-    endpoint_id: Endpoint,
+    endpoint: Endpoint,
 }
 
 impl<'proxy, T> EndpointProxy<'proxy, T> {
     /// Create a new `EndpointProxy`.
-    pub(crate) const fn new(proxy: &'proxy T, pan_id: u16, endpoint_id: Endpoint) -> Self {
+    pub(crate) const fn new(proxy: &'proxy T, pan_id: u16, endpoint: Endpoint) -> Self {
         Self {
             proxy,
             pan_id,
-            endpoint_id,
+            endpoint,
         }
     }
 }
 
 impl<T> EndpointProxy<'_, T>
 where
-    T: Proxy,
+    T: Proxy + Sync,
 {
     /// Send a unicast command to the endpoint.
-    pub async fn unicast_command(&self, command: impl Into<Commands>) -> Result<(), Error> {
+    pub async fn unicast(&self, cluster_id: u16, payload: Vec<u8>) -> Result<(), Error> {
         self.proxy
-            .unicast_command(self.pan_id, self.endpoint_id, command)
+            .unicast(self.pan_id, self.endpoint, cluster_id, payload)
+            .await
+    }
+
+    /// Send a unicast ZCL command to the endpoint.
+    pub async fn unicast_commands<C>(&self, command: C) -> Result<(), Error>
+    where
+        C: Command + ToLeStream,
+    {
+        self.proxy
+            .zcl()
+            .unicast(self.pan_id, self.endpoint, command)
             .await
     }
 }

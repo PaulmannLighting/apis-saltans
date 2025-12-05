@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use le_stream::ToLeStream;
 use macaddr::MacAddr8;
 use zigbee::Endpoint;
 
@@ -9,8 +8,11 @@ use crate::Error;
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
+    /// Get the next transaction sequence number.
+    fn get_transaction_seq(&mut self) -> u8;
+
     /// Get the PAN ID of the network manager.
-    fn get_pan_id(&self) -> impl Future<Output = Result<u16, Error>>;
+    fn get_pan_id(&mut self) -> impl Future<Output = Result<u16, Error>>;
 
     /// Allow devices to join the network for the specified duration.
     ///
@@ -31,12 +33,11 @@ pub trait Nlme {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn unicast_command<T>(
+    fn unicast(
         &mut self,
         pan_id: u16,
         endpoint: Endpoint,
-        frame: T,
-    ) -> impl Future<Output = Result<(), Error>>
-    where
-        T: zcl::Command + ToLeStream;
+        cluster_id: u16,
+        payload: Vec<u8>,
+    ) -> impl Future<Output = Result<(), Error>>;
 }

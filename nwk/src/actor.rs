@@ -5,15 +5,12 @@ use log::error;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
-use zcl::general::on_off;
-use zcl::lighting::color_control;
-use zcl::{Commands, general, lighting};
+use zigbee::Endpoint;
 
-pub use self::message::Message;
 use crate::device_proxy::DeviceProxy;
+pub use crate::message::Message;
+use crate::zcl_proxy::ZclProxy;
 use crate::{Error, Nlme};
-
-mod message;
 
 /// Actor trait for handling NWK layer messages.
 pub trait Actor {
@@ -28,6 +25,13 @@ where
     async fn run(mut self, mut rx: Receiver<Message>) {
         while let Some(message) = rx.recv().await {
             match message {
+                Message::GetTransactionSeq { response } => {
+                    response
+                        .send(self.get_transaction_seq())
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send get PAN ID command response: {error:?}");
+                        });
+                }
                 Message::GetPanId { response } => {
                     response
                         .send(self.get_pan_id().await)
@@ -49,110 +53,20 @@ where
                             error!("Failed to send get neighbors command response: {error:?}");
                         });
                 }
-                Message::ZclCommand {
+                Message::Unicast {
                     pan_id,
                     endpoint,
-                    command,
+                    cluster_id,
+                    payload,
                     response,
                 } => {
                     response
-                        .send(match command {
-                            Commands::Lighting(lighting::Command::ColorControl(command)) => {
-                                match command {
-                                    color_control::Command::MoveToColor(move_to_color) => {
-                                        self.unicast_command(pan_id, endpoint, move_to_color).await
-                                    }
-                                    _ => Err(Error::NotImplemented),
-                                }
-                            }
-                            Commands::General(general::Command::OnOff(command)) => match command {
-                                on_off::Command::On(on) => {
-                                    self.unicast_command(pan_id, endpoint, on).await
-                                }
-                                on_off::Command::Off(off) => {
-                                    self.unicast_command(pan_id, endpoint, off).await
-                                }
-                                _ => Err(Error::NotImplemented),
-                            },
-                            _ => Err(Error::NotImplemented),
-                        })
+                        .send(self.unicast(pan_id, endpoint, cluster_id, payload).await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send ZCL command response: {error:?}");
                         });
                 }
             }
         }
-    }
-}
-
-/// Proxy trait for sending NWK layer messages.
-pub trait Proxy {
-    /// Get the PAN ID of the network manager.
-    fn get_pan_id(&self) -> impl Future<Output = Result<u16, Error>>;
-
-    /// Allow devices to join the network for the specified duration.
-    fn allow_joins(&self, duration: Duration) -> impl Future<Output = Result<(), Error>>;
-
-    /// Get the list of neighbor devices.
-    fn get_neighbors(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>>;
-
-    /// Send a unicast ZCL command.
-    fn unicast_command(
-        &self,
-        pan_id: u16,
-        endpoint: zigbee::Endpoint,
-        command: impl Into<Commands>,
-    ) -> impl Future<Output = Result<(), Error>>;
-
-    /// Get a device proxy for the specified PAN ID.
-    fn device(&self, pan_id: u16) -> DeviceProxy<'_, Self>
-    where
-        Self: Sized,
-    {
-        DeviceProxy::new(self, pan_id)
-    }
-}
-
-impl Proxy for Sender<Message> {
-    async fn get_pan_id(&self) -> Result<u16, Error> {
-        let (response, rx) = oneshot::channel();
-        self.send(Message::GetPanId { response })
-            .await
-            .map_err(|_| Error::ActorSend)?;
-        rx.await.map_err(|_| Error::ActorReceive)?
-    }
-
-    async fn allow_joins(&self, duration: Duration) -> Result<(), Error> {
-        let (response, rx) = oneshot::channel();
-        self.send(Message::AllowJoins { duration, response })
-            .await
-            .map_err(|_| Error::ActorSend)?;
-        rx.await.map_err(|_| Error::ActorReceive)?
-    }
-
-    async fn get_neighbors(&self) -> Result<BTreeMap<MacAddr8, u16>, Error> {
-        let (response, rx) = oneshot::channel();
-        self.send(Message::GetNeighbors { response })
-            .await
-            .map_err(|_| Error::ActorSend)?;
-        rx.await.map_err(|_| Error::ActorReceive)?
-    }
-
-    async fn unicast_command(
-        &self,
-        pan_id: u16,
-        endpoint: zigbee::Endpoint,
-        command: impl Into<Commands>,
-    ) -> Result<(), Error> {
-        let (response, rx) = oneshot::channel();
-        self.send(Message::ZclCommand {
-            pan_id,
-            endpoint,
-            command: command.into(),
-            response,
-        })
-        .await
-        .map_err(|_| Error::ActorSend)?;
-        rx.await.map_err(|_| Error::ActorReceive)?
     }
 }
