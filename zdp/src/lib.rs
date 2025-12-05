@@ -4,7 +4,9 @@
 
 pub use self::frame::Frame;
 pub use self::service::Service;
-pub use self::services::{IeeeAddrReq, MgmtPermitJoiningReq, NwkAddrReq, RequestType};
+pub use self::services::{
+    BindReq, BindReqDestination, IeeeAddrReq, MgmtPermitJoiningReq, NwkAddrReq, RequestType,
+};
 
 mod frame;
 mod service;
