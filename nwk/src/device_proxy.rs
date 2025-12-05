@@ -45,7 +45,7 @@ where
     }
 
     /// Send a unicast ZCL command to the device.
-    pub async fn unicast_commands<C>(&self, endpoint: Endpoint, command: C) -> Result<(), Error>
+    pub async fn unicast_zcl<C>(&self, endpoint: Endpoint, command: C) -> Result<(), Error>
     where
         C: Command + ToLeStream,
     {
