@@ -6,8 +6,8 @@ A Rust library implementing a smart home protocol of dancing insects.
 
 ## Work in progress
 
-This library aims to provide an implementation of the ZCL as defined in document `07-5123`, revision
-`8`.
+This library aims to provide an implementation of the ZCL as defined in document `05-3474-23`, revision
+`23.2`.
 
 This library is a work in progress and is not yet ready for production use.
 
