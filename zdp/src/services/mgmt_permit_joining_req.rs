@@ -1,4 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Cluster;
 
 use crate::Service;
 
@@ -32,7 +33,10 @@ impl MgmtPermitJoiningReq {
     }
 }
 
+impl Cluster for MgmtPermitJoiningReq {
+    const ID: u16 = 0x0036;
+}
+
 impl Service for MgmtPermitJoiningReq {
     const NAME: &'static str = "Mgmt_Permit_Joining_req";
-    const CLUSTER_ID: u16 = 0x0036;
 }

@@ -1,4 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Cluster;
 
 use crate::Service;
 
@@ -40,7 +41,10 @@ impl IeeeAddrReq {
     }
 }
 
+impl Cluster for IeeeAddrReq {
+    const ID: u16 = 0x0001;
+}
+
 impl Service for IeeeAddrReq {
     const NAME: &'static str = "IEEE_addr_req";
-    const CLUSTER_ID: u16 = 0x0001;
 }

@@ -1,4 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Cluster;
 
 use crate::Service;
 
@@ -38,10 +39,15 @@ where
     pub const fn service_name(&self) -> &'static str {
         T::NAME
     }
+}
 
+impl<T> Frame<T>
+where
+    T: Cluster,
+{
     /// Returns the cluster ID.
     #[must_use]
     pub const fn cluster_id(&self) -> u16 {
-        T::CLUSTER_ID
+        <T as Cluster>::ID
     }
 }

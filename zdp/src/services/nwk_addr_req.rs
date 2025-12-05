@@ -1,6 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
+use zigbee::Cluster;
 
 pub use self::request_type::RequestType;
 use crate::Service;
@@ -48,7 +49,10 @@ impl NwkAddrReq {
     }
 }
 
+impl Cluster for NwkAddrReq {
+    const ID: u16 = 0x0000;
+}
+
 impl Service for NwkAddrReq {
     const NAME: &'static str = "NWK_addr_req";
-    const CLUSTER_ID: u16 = 0x0000;
 }

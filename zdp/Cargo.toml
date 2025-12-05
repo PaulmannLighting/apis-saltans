@@ -8,6 +8,7 @@ le-stream = { version = "6", features = ["derive", "macaddr"] }
 macaddr = "1.0"
 num-derive = "0.4"
 num-traits = "0.2"
+zigbee = { version = "0.1.0", path = "../zigbee" }
 
 [lints]
 workspace = true
