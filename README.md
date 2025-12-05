@@ -11,10 +11,6 @@ This library aims to provide an implementation of the ZCL as defined in document
 
 This library is a work in progress and is not yet ready for production use.
 
-## Documentation
-
-- [Specification](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf)
-
 ## Usage
 
 This workspace contains multiple crates pertaining to the Zigbee protocol stack:
