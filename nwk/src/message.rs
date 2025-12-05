@@ -25,7 +25,6 @@ pub enum Message {
     Unicast {
         pan_id: u16,
         endpoint: Endpoint,
-        cluster_id: u16,
         frame: Frame,
         response: Sender<Result<(), Error>>,
     },

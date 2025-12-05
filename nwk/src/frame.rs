@@ -1,5 +1,6 @@
 use le_stream::ToLeStream;
 use zcl::Header;
+use zigbee::Cluster;
 
 /// A non-sequenced, non-generic view on a ZCL frame for transmission via channels.
 ///
@@ -8,6 +9,7 @@ use zcl::Header;
 /// The underlying frame's sequence number must be overridden and is assumed to be undefined.
 #[derive(Debug)]
 pub struct Frame {
+    cluster_id: u16,
     header: Header,
     payload: Box<[u8]>,
 }
@@ -20,6 +22,7 @@ impl Frame {
     pub fn with_seq(mut self, seq: u8) -> SequencedFrame {
         self.header.set_seq(seq);
         SequencedFrame {
+            cluster_id: self.cluster_id,
             header: self.header,
             payload: self.payload,
         }
@@ -28,11 +31,12 @@ impl Frame {
 
 impl<T> From<zcl::Frame<T>> for Frame
 where
-    T: ToLeStream,
+    T: Cluster + ToLeStream,
 {
     fn from(frame: zcl::Frame<T>) -> Self {
         let (header, payload) = frame.into_parts();
         Self {
+            cluster_id: <T as Cluster>::ID,
             header,
             payload: payload.to_le_stream().collect(),
         }
@@ -47,16 +51,23 @@ where
 /// It can be safely serialized and sent.
 ///
 /// The only way to create this frame is via [`Frame::with_seq`].
-#[derive(Debug, ToLeStream)]
+#[derive(Debug)]
 pub struct SequencedFrame {
+    cluster_id: u16,
     header: Header,
     payload: Box<[u8]>,
 }
 
 impl SequencedFrame {
+    /// Return the cluster ID of the ZCL frame.
+    #[must_use]
+    pub const fn cluster_id(&self) -> u16 {
+        self.cluster_id
+    }
+
     /// Serialize the ZCL frame into a little-endian byte array.
     #[must_use]
     pub fn serialize(self) -> Box<[u8]> {
-        self.to_le_stream().collect()
+        self.header.to_le_stream().chain(self.payload).collect()
     }
 }

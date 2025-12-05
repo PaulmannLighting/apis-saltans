@@ -33,15 +33,8 @@ where
     }
 
     /// Send a unicast command to the device.
-    pub async fn unicast_command(
-        &self,
-        endpoint: Endpoint,
-        cluster_id: u16,
-        frame: Frame,
-    ) -> Result<(), Error> {
-        self.proxy
-            .unicast(self.pan_id, endpoint, cluster_id, frame)
-            .await
+    pub async fn unicast_command(&self, endpoint: Endpoint, frame: Frame) -> Result<(), Error> {
+        self.proxy.unicast(self.pan_id, endpoint, frame).await
     }
 
     /// Send a unicast ZCL command to the device.

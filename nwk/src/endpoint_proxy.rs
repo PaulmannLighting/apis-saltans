@@ -27,10 +27,8 @@ where
     T: Proxy + Sync,
 {
     /// Send a unicast command to the endpoint.
-    pub async fn unicast(&self, cluster_id: u16, frame: Frame) -> Result<(), Error> {
-        self.proxy
-            .unicast(self.pan_id, self.endpoint, cluster_id, frame)
-            .await
+    pub async fn unicast(&self, frame: Frame) -> Result<(), Error> {
+        self.proxy.unicast(self.pan_id, self.endpoint, frame).await
     }
 
     /// Send a unicast ZCL command to the endpoint.

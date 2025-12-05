@@ -30,7 +30,6 @@ pub trait Proxy {
         &self,
         pan_id: u16,
         endpoint: Endpoint,
-        cluster_id: u16,
         frame: Frame,
     ) -> impl Future<Output = Result<(), Error>>;
 
@@ -85,18 +84,11 @@ impl Proxy for Sender<Message> {
         rx.await.map_err(|_| Error::ActorReceive)?
     }
 
-    async fn unicast(
-        &self,
-        pan_id: u16,
-        endpoint: Endpoint,
-        cluster_id: u16,
-        frame: Frame,
-    ) -> Result<(), Error> {
+    async fn unicast(&self, pan_id: u16, endpoint: Endpoint, frame: Frame) -> Result<(), Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::Unicast {
             pan_id,
             endpoint,
-            cluster_id,
             frame,
             response,
         })
