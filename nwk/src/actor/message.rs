@@ -10,18 +10,18 @@ use crate::Error;
 
 /// Messages sent to the NWK actor.
 #[expect(clippy::large_enum_variant, variant_size_differences)]
-pub enum Message<E> {
+pub enum Message {
     AllowJoins {
         duration: Duration,
-        response: Sender<Result<(), Error<E>>>,
+        response: Sender<Result<(), Error>>,
     },
     GetNeighbors {
-        response: Sender<Result<BTreeMap<MacAddr8, u16>, Error<E>>>,
+        response: Sender<Result<BTreeMap<MacAddr8, u16>, Error>>,
     },
     ZclCommand {
         pan_id: u16,
         endpoint: Endpoint,
         command: Commands,
-        response: Sender<Result<(), Error<E>>>,
+        response: Sender<Result<(), Error>>,
     },
 }

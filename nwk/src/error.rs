@@ -1,12 +1,13 @@
 use std::fmt::Display;
+use std::sync::Arc;
 
 /// A generic error type for the NWK layer.
 #[derive(Debug)]
-pub enum Error<T> {
+pub enum Error {
     /// An I/O error occurred.
     Io(std::io::Error),
     /// An implementation-specific error occurred.
-    Implementation(T),
+    Implementation(Arc<dyn std::error::Error>),
     /// An error indicated by a status code.
     Zigbee(zigbee::Error),
     /// An error occurred while sending a message to an actor.
@@ -17,10 +18,7 @@ pub enum Error<T> {
     NotImplemented,
 }
 
-impl<T> Display for Error<T>
-where
-    T: Display,
-{
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Io(error) => error.fmt(f),
@@ -33,20 +31,11 @@ where
     }
 }
 
-impl<T> From<T> for Error<T> {
-    fn from(error: T) -> Self {
-        Self::Implementation(error)
-    }
-}
-
-impl<T> std::error::Error for Error<T>
-where
-    T: std::error::Error + 'static,
-{
+impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Io(error) => Some(error),
-            Self::Implementation(error) => Some(error),
+            Self::Implementation(error) => Some(&**error),
             Self::Zigbee(error) => Some(error),
             Self::ActorSend | Self::ActorReceive | Self::NotImplemented => None,
         }
