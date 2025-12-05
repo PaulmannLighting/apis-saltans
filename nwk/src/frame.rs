@@ -1,35 +1,28 @@
 use le_stream::ToLeStream;
 use zcl::Header;
 
-/// A non-generic view on a ZCL frame for transmission via channels.
-#[derive(Debug, ToLeStream)]
+/// A non-sequenced, non-generic view on a ZCL frame for transmission via channels.
+///
+/// # Invariants
+///
+/// The underlying frame's sequence number must be overridden and is assumed to be undefined.
+#[derive(Debug)]
 pub struct Frame {
     header: Header,
     payload: Box<[u8]>,
 }
 
 impl Frame {
-    /// Return the header of the ZCL frame.
-    #[must_use]
-    pub const fn header(&self) -> &Header {
-        &self.header
-    }
-
     /// Set the sequence number of the ZCL frame.
-    pub const fn set_seq(&mut self, seq: u8) {
+    ///
+    /// The resulting frame will have a well-defined sequence number and can be serialized and sent.
+    #[must_use]
+    pub fn with_seq(mut self, seq: u8) -> SequencedFrame {
         self.header.set_seq(seq);
-    }
-
-    /// Return the payload of the ZCL frame.
-    #[must_use]
-    pub const fn payload(&self) -> &[u8] {
-        &self.payload
-    }
-
-    /// Serialize the ZCL frame into a little-endian byte array.
-    #[must_use]
-    pub fn serialize(self) -> Box<[u8]> {
-        self.to_le_stream().collect()
+        SequencedFrame {
+            header: self.header,
+            payload: self.payload,
+        }
     }
 }
 
@@ -43,5 +36,27 @@ where
             header,
             payload: payload.to_le_stream().collect(),
         }
+    }
+}
+
+/// A sequenced, non-generic view on a ZCL frame for transmission via channels.
+///
+/// # Invariants
+///
+/// This frame is guaranteed to have a well-defined sequence.
+/// It can be safely serialized and sent.
+///
+/// The only way to create this frame is via [`Frame::with_seq`].
+#[derive(Debug, ToLeStream)]
+pub struct SequencedFrame {
+    header: Header,
+    payload: Box<[u8]>,
+}
+
+impl SequencedFrame {
+    /// Serialize the ZCL frame into a little-endian byte array.
+    #[must_use]
+    pub fn serialize(self) -> Box<[u8]> {
+        self.to_le_stream().collect()
     }
 }
