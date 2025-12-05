@@ -24,7 +24,6 @@ where
         &self,
         pan_id: u16,
         endpoint: zigbee::Endpoint,
-        group_id: u16,
         command: C,
     ) -> Result<(), Error>
     where
@@ -35,8 +34,8 @@ where
                 pan_id,
                 endpoint,
                 <C as Cluster>::ID,
-                group_id,
-                // FIXME: The `seq` of `0x00` is a placeholder. It should will be replaced with a proper transaction sequence number on the actor's side.
+                // FIXME: The `seq` of `0x00` is a placeholder.
+                // It must be replaced with a proper transaction sequence number on the actor's side.
                 zcl::Frame::new(Type::ClusterSpecific, true, None, 0x00, command).into(),
             )
             .await

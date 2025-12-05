@@ -37,27 +37,21 @@ where
         &self,
         endpoint: Endpoint,
         cluster_id: u16,
-        group_id: u16,
         frame: Frame,
     ) -> Result<(), Error> {
         self.proxy
-            .unicast(self.pan_id, endpoint, cluster_id, group_id, frame)
+            .unicast(self.pan_id, endpoint, cluster_id, frame)
             .await
     }
 
     /// Send a unicast ZCL command to the device.
-    pub async fn unicast_zcl<C>(
-        &self,
-        endpoint: Endpoint,
-        group_id: u16,
-        command: C,
-    ) -> Result<(), Error>
+    pub async fn unicast_zcl<C>(&self, endpoint: Endpoint, command: C) -> Result<(), Error>
     where
         C: Command + ToLeStream,
     {
         self.proxy
             .zcl()
-            .unicast(self.pan_id, endpoint, group_id, command)
+            .unicast(self.pan_id, endpoint, command)
             .await
     }
 }
