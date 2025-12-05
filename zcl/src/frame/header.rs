@@ -58,6 +58,11 @@ impl Header {
         self.seq
     }
 
+    /// Set the sequence number.
+    pub const fn set_seq(&mut self, seq: u8) {
+        self.seq = seq;
+    }
+
     /// Return the command ID.
     #[must_use]
     pub const fn command_id(self) -> u8 {
