@@ -49,11 +49,15 @@ where
                     pan_id,
                     endpoint,
                     cluster_id,
+                    group_id,
                     frame,
                     response,
                 } => {
                     response
-                        .send(self.unicast(pan_id, endpoint, cluster_id, frame).await)
+                        .send(
+                            self.unicast(pan_id, endpoint, cluster_id, group_id, frame)
+                                .await,
+                        )
                         .unwrap_or_else(|error| {
                             error!("Failed to send ZCL command response: {error:?}");
                         });

@@ -31,6 +31,7 @@ pub trait Proxy {
         pan_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
+        group_id: u16,
         frame: Frame,
     ) -> impl Future<Output = Result<(), Error>>;
 
@@ -90,6 +91,7 @@ impl Proxy for Sender<Message> {
         pan_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
+        group_id: u16,
         frame: Frame,
     ) -> Result<(), Error> {
         let (response, rx) = oneshot::channel();
@@ -97,6 +99,7 @@ impl Proxy for Sender<Message> {
             pan_id,
             endpoint,
             cluster_id,
+            group_id,
             frame,
             response,
         })

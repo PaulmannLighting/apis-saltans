@@ -26,6 +26,7 @@ pub enum Message {
         pan_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
+        group_id: u16,
         frame: Frame,
         response: Sender<Result<(), Error>>,
     },

@@ -38,6 +38,7 @@ pub trait Nlme {
         pan_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
+        group_id: u16,
         frame: Frame,
     ) -> impl Future<Output = Result<(), Error>>;
 }
