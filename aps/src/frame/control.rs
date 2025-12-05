@@ -34,7 +34,7 @@ impl Control {
     /// Return the frame type.
     #[must_use]
     pub fn frame_type(self) -> FrameType {
-        FrameType::from_u8((self & Self::FRAME_TYPE).bits())
+        FrameType::from_u8((self & Self::FRAME_TYPE).bits() >> 6)
             .unwrap_or_else(|| unreachable!("Frame type covers all possible values."))
     }
 
