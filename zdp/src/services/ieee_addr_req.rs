@@ -6,7 +6,7 @@ use crate::Service;
 /// Request type for IEEE address request.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct IeeeAddrReq {
-    nwk_addr: u16,
+    nwk_addr_of_interest: u16,
     request_type: u8,
     start_index: u8,
 }
@@ -14,18 +14,18 @@ pub struct IeeeAddrReq {
 impl IeeeAddrReq {
     /// Creates a new `IeeeAddrReq`.
     #[must_use]
-    pub const fn new(nwk_addr: u16, request_type: u8, start_index: u8) -> Self {
+    pub const fn new(nwk_addr_of_interest: u16, request_type: u8, start_index: u8) -> Self {
         Self {
-            nwk_addr,
+            nwk_addr_of_interest,
             request_type,
             start_index,
         }
     }
 
-    /// Returns the network address.
+    /// Returns the network address of interest.
     #[must_use]
-    pub const fn nwk_addr(&self) -> u16 {
-        self.nwk_addr
+    pub const fn nwk_addr_of_interest(&self) -> u16 {
+        self.nwk_addr_of_interest
     }
 
     /// Returns the request type.
