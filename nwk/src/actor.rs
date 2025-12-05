@@ -1,16 +1,8 @@
-use std::collections::BTreeMap;
-use std::time::Duration;
-
 use log::error;
-use macaddr::MacAddr8;
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::oneshot;
-use zigbee::Endpoint;
+use tokio::sync::mpsc::Receiver;
 
-use crate::device_proxy::DeviceProxy;
+use crate::Nlme;
 pub use crate::message::Message;
-use crate::zcl_proxy::ZclProxy;
-use crate::{Error, Nlme};
 
 /// Actor trait for handling NWK layer messages.
 pub trait Actor {
