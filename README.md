@@ -23,8 +23,8 @@ This workspace contains multiple crates pertaining to the Zigbee protocol stack:
 
 ## Legal
 
-Tis library is free software and is not affiliated with the Zigbee Alliance or the Zigbee protocol.
-It may or may not conform to the specifications linked to above.
+This library is free software and is not affiliated with the Zigbee Alliance.
+It may or may not conform to the official specifications of the Zigbee protocol.
 
 ## Contribution guidelines
 
