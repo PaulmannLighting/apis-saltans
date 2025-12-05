@@ -58,11 +58,12 @@ impl Acknowledgment {
         }
     }
 
-    pub(crate) fn from_le_stream_with_control<T>(control: Control, mut bytes: T) -> Option<Self>
+    /// Parses an APS Acknowledgment frame from a little-endian byte stream with the given control field.
+    pub fn from_le_stream_with_control<T>(control: Control, mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
-        let inner = if control.contains(Control::ACK_FORMAT) {
+        let fmt = if control.contains(Control::ACK_FORMAT) {
             None
         } else {
             Some(AckFmt::from_le_stream(&mut bytes)?)
@@ -78,7 +79,7 @@ impl Acknowledgment {
 
         Some(Self {
             control,
-            fmt: inner,
+            fmt,
             counter,
             extended,
         })

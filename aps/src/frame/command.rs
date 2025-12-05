@@ -1,4 +1,4 @@
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::frame::destination::Destination;
 use crate::{Control, DeliveryMode, FrameType};
@@ -82,5 +82,27 @@ where
             id: <T as zcl::Command>::ID,
             payload,
         }
+    }
+}
+
+impl<T> Command<T>
+where
+    T: FromLeStream,
+{
+    /// Creates a new APS Command frame from a little-endian byte stream with the given control field.
+    pub fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
+    where
+        U: Iterator<Item = u8>,
+    {
+        let counter = u8::from_le_stream(&mut bytes)?;
+        let id = u8::from_le_stream(&mut bytes)?;
+        let payload = T::from_le_stream(&mut bytes)?;
+
+        Some(Self {
+            control,
+            counter,
+            id,
+            payload,
+        })
     }
 }

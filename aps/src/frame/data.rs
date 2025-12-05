@@ -93,12 +93,11 @@ impl<T> Data<T>
 where
     T: FromLeStream,
 {
-    pub(crate) fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
+    /// Creates an APS Data frame from a little-endian byte stream, given the control field.
+    pub fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
     where
         U: Iterator<Item = u8>,
     {
-        let control = Control::from_le_stream(&mut bytes)?;
-
         let destination = match control.delivery_mode()? {
             DeliveryMode::Unicast => Destination::Unicast(u8::from_le_stream(&mut bytes)?),
             DeliveryMode::Broadcast => Destination::Broadcast(u8::from_le_stream(&mut bytes)?),
