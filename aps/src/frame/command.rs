@@ -65,7 +65,7 @@ where
         control.set_frame_type(FrameType::Command);
 
         match destination {
-            Destination::Unicast { .. } => {
+            Destination::Unicast(_) => {
                 control.set_delivery_mode(DeliveryMode::Unicast);
             }
             Destination::Broadcast(_) => {
