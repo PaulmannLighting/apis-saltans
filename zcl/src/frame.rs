@@ -71,4 +71,27 @@ where
             payload,
         }
     }
+
+    /// Create a new ZCL frame with an unspecified sequence number.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the sequence number is set appropriately
+    /// before sending the frame, as using the default sequence number of `0x00` may lead to
+    /// unexpected behavior.
+    #[expect(unsafe_code)]
+    pub unsafe fn new_unsequenced(
+        typ: Type,
+        disable_client_response: bool,
+        manufacturer_code: Option<u16>,
+        payload: T,
+    ) -> Self {
+        Self::new(
+            typ,
+            disable_client_response,
+            manufacturer_code,
+            0x00,
+            payload,
+        )
+    }
 }

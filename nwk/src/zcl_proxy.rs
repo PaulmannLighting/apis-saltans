@@ -34,9 +34,10 @@ where
                 pan_id,
                 endpoint,
                 <C as Cluster>::ID,
-                // FIXME: The `seq` of `0x00` is a placeholder.
-                // It must be replaced with a proper transaction sequence number on the actor's side.
-                zcl::Frame::new(Type::ClusterSpecific, true, None, 0x00, command).into(),
+                #[expect(unsafe_code)]
+                // SAFETY: The sequence ID will be set by the receiving actor.
+                unsafe { zcl::Frame::new_unsequenced(Type::ClusterSpecific, true, None, command) }
+                    .into(),
             )
             .await
     }
