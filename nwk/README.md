@@ -18,7 +18,7 @@ The following pseudo-code demonstrates how to use the crate with a hypothetical
 ```rust
 use tokio::spawn;
 use tokio::sync::mpsc::channel;
-use zigbee_nwk::{Actor, Proxy};
+use zigbee_nwk::{Actor, Nlme, Proxy};
 
 use my_hardware_zigbee_coordinator::MyZigbeeCoordinator;
 
@@ -29,9 +29,23 @@ impl Nlme for MyZigbeeCoordinator {
 
 #[tokio::main]
 async fn main() {
+    // Initialize your hardware-specific Zigbee coordinator
     let coordinator = MyZigbeeCoordinator::new(/* ... */);
 
+    // Create a communication channel between the proxy and the actor.
     let (proxy, actor) = channel(1024);
-    spawn(network_manager.run(actor));
+
+    // Spawn the actor in a separate task.
+    spawn(coordinator.run(actor));
+
+    // Use the proxy to send Zigbee commands and receive responses.
+    match proxy.unicast(/* ... */).await {
+        Ok(response) => {
+            println!("Received response: {response:?}");
+        }
+        Err(error) => {
+            eprintln!("Error sending command: {error:?}");
+        }
+    }
 }
 ```
