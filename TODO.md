@@ -3,12 +3,12 @@
 ## Implementation
 
 - [ ] Implement `Attribute` for `power_configuration::attribute::write`.
+- [ ] Implement all ZCL frames.
+- [ ] Implement all Device Profile Client Services (binding, etc.) in ZDP.
 
 ## Design changes
 
-- [ ] Make clusters an enum.
-- [ ] Make commands enums.
-- [ ] Make respective command enums inner types of cluster variants.
+N/A
 
 ## Robustness
 
