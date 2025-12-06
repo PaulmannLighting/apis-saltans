@@ -20,7 +20,7 @@ pub enum Message {
     },
     ScanNetworks {
         channel_mask: u32,
-        duration: Duration,
+        duration: u8,
         response: Sender<Result<Vec<FoundNetwork>, Error>>,
     },
     AllowJoins {

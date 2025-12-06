@@ -20,13 +20,18 @@ pub trait Nlme {
 
     /// Scan for available networks.
     ///
+    /// # Parameters
+    ///
+    /// - `channel_mask`: A bitmask representing the channels to scan.
+    /// - `duration`: The duration to scan each channel. The meaning is implementation-specific.
+    ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
     fn scan_networks(
         &mut self,
         channel_mask: u32,
-        duration: Duration,
+        duration: u8,
     ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
 
     /// Allow devices to join the network for the specified duration.
