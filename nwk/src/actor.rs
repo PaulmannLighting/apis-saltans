@@ -31,6 +31,13 @@ where
                             error!("Failed to send get PAN ID command response: {error:?}");
                         });
                 }
+                Message::ScanNetworks { response } => {
+                    response
+                        .send(self.scan_networks().await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send scan networks command response: {error:?}");
+                        });
+                }
                 Message::AllowJoins { duration, response } => {
                     response
                         .send(self.allow_joins(duration).await)

@@ -5,7 +5,10 @@ use macaddr::MacAddr8;
 use tokio::sync::oneshot::Sender;
 use zigbee::Endpoint;
 
+pub use self::found_network::{FoundNetwork, Network};
 use crate::{Error, Frame};
+
+mod found_network;
 
 /// Messages sent to the NWK actor.
 pub enum Message {
@@ -14,6 +17,9 @@ pub enum Message {
     },
     GetPanId {
         response: Sender<Result<u16, Error>>,
+    },
+    ScanNetworks {
+        response: Sender<Result<Vec<FoundNetwork>, Error>>,
     },
     AllowJoins {
         duration: Duration,

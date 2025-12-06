@@ -1,5 +1,6 @@
 //! Zigbee Network (NWK) Layer implementation.
 
+pub use message::{FoundNetwork, Network};
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::actor::Actor;

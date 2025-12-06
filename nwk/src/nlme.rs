@@ -4,7 +4,7 @@ use std::time::Duration;
 use macaddr::MacAddr8;
 use zigbee::Endpoint;
 
-use crate::{Error, Frame};
+use crate::{Error, FoundNetwork, Frame};
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
@@ -12,7 +12,18 @@ pub trait Nlme {
     fn get_transaction_seq(&mut self) -> u8;
 
     /// Get the PAN ID of the network manager.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
     fn get_pan_id(&mut self) -> impl Future<Output = Result<u16, Error>>;
+
+    /// Scan for available networks.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn scan_networks(&mut self) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
 
     /// Allow devices to join the network for the specified duration.
     ///
