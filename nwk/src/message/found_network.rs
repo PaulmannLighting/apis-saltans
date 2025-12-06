@@ -1,6 +1,9 @@
 use macaddr::MacAddr8;
 
 /// A found network with additional link quality information.
+///
+/// You should implement `From<T> for FoundNetwork` on your
+/// implementation-specific _found network_ message type.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FoundNetwork {
     network: Network,

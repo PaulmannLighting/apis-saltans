@@ -1,6 +1,9 @@
 use aps::{Control, Destination};
 
 /// An APS frame that has been received.
+///
+/// You should implement `From<T> for ReceivedApsFrame` on your
+/// implementation-specific APS frame type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReceivedApsFrame {
     // FIXME: E.g. EZSP does not provide the full APS frame, so we need to keep the control optional.
