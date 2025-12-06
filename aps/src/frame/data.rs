@@ -59,18 +59,7 @@ impl<T> Data<T> {
     ) -> Self {
         let mut control = Control::empty();
         control.set_frame_type(FrameType::Data);
-
-        match destination {
-            Destination::Unicast(_) => {
-                control.set_delivery_mode(DeliveryMode::Unicast);
-            }
-            Destination::Broadcast(_) => {
-                control.set_delivery_mode(DeliveryMode::Broadcast);
-            }
-            Destination::Group(_) => {
-                control.set_delivery_mode(DeliveryMode::Group);
-            }
-        }
+        control.set_destination(destination);
 
         if extended.is_some() {
             control.insert(Control::EXTENDED_HEADER);

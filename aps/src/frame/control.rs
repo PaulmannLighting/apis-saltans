@@ -4,6 +4,7 @@ use num_traits::FromPrimitive;
 
 pub use self::delivery_mode::DeliveryMode;
 pub use self::frame_type::FrameType;
+use crate::Destination;
 
 mod delivery_mode;
 mod frame_type;
@@ -58,5 +59,20 @@ impl Control {
     pub const fn set_delivery_mode(&mut self, delivery_mode: DeliveryMode) {
         self.0 = (self.bits() & !Self::DELIVERY_MODE.bits())
             | ((delivery_mode as u8) << Self::DELIVERY_MODE.bits().trailing_zeros());
+    }
+
+    /// Set the delivery mode based on the destination type.
+    pub const fn set_destination(&mut self, destination: Destination) {
+        match destination {
+            Destination::Unicast(_) => {
+                self.set_delivery_mode(DeliveryMode::Unicast);
+            }
+            Destination::Broadcast(_) => {
+                self.set_delivery_mode(DeliveryMode::Broadcast);
+            }
+            Destination::Group(_) => {
+                self.set_delivery_mode(DeliveryMode::Group);
+            }
+        }
     }
 }
