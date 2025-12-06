@@ -11,12 +11,6 @@ pub use self::nlme::Nlme;
 pub use self::proxy::Proxy;
 pub use self::waiter::Waiter;
 
-/// Type alias for the NWK layer proxy sender.
-pub type ProxySender = Sender<message::Message>;
-
-/// Type alias for the NWK layer actor receiver.
-pub type ActorReceiver = Receiver<message::Message>;
-
 mod actor;
 mod device_proxy;
 mod endpoint_proxy;
@@ -28,3 +22,9 @@ mod nlme;
 mod proxy;
 mod waiter;
 mod zcl_proxy;
+
+/// Type alias for the NWK layer proxy sender.
+pub type ProxySender = Sender<message::Message>;
+
+/// Type alias for the NWK layer actor receiver.
+pub type ActorReceiver = Receiver<message::Message>;
