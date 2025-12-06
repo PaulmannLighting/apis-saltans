@@ -19,6 +19,8 @@ pub enum Message {
         response: Sender<Result<u16, Error>>,
     },
     ScanNetworks {
+        channel_mask: u32,
+        duration: Duration,
         response: Sender<Result<Vec<FoundNetwork>, Error>>,
     },
     AllowJoins {

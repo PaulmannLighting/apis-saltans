@@ -31,9 +31,13 @@ where
                             error!("Failed to send get PAN ID command response: {error:?}");
                         });
                 }
-                Message::ScanNetworks { response } => {
+                Message::ScanNetworks {
+                    channel_mask,
+                    duration,
+                    response,
+                } => {
                     response
-                        .send(self.scan_networks().await)
+                        .send(self.scan_networks(channel_mask, duration).await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send scan networks command response: {error:?}");
                         });

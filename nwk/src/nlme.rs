@@ -23,7 +23,11 @@ pub trait Nlme {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn scan_networks(&mut self) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
+    fn scan_networks(
+        &mut self,
+        channel_mask: u32,
+        duration: Duration,
+    ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
 
     /// Allow devices to join the network for the specified duration.
     ///
