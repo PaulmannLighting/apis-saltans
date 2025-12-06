@@ -2,7 +2,7 @@ use log::error;
 use tokio::sync::mpsc::Receiver;
 
 use crate::Nlme;
-pub use crate::message::Message;
+use crate::message::Message;
 
 /// Actor trait for handling NWK layer messages.
 ///

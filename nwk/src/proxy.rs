@@ -6,8 +6,8 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zigbee::Endpoint;
 
-use crate::actor::Message;
 use crate::device_proxy::DeviceProxy;
+use crate::message::Message;
 use crate::zcl_proxy::ZclProxy;
 use crate::{Error, Frame};
 
