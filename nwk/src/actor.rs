@@ -5,6 +5,9 @@ use crate::Nlme;
 pub use crate::message::Message;
 
 /// Actor trait for handling NWK layer messages.
+///
+/// This trait should not be implemented directly. Instead, implement the `Nlme` trait
+/// for your NCP implementation, and the `Actor` trait will be automatically implemented.
 pub trait Actor {
     /// Run the actor, processing incoming messages.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()>;

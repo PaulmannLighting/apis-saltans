@@ -12,6 +12,8 @@ use crate::zcl_proxy::ZclProxy;
 use crate::{Error, Frame};
 
 /// Proxy trait for sending NWK layer messages.
+///
+/// This trait is implemented for `Sender<Message>`, allowing you to communicate with a Zigbee NCP.
 pub trait Proxy {
     /// Get the next transaction sequence number.
     fn get_transaction_seq(&self) -> impl Future<Output = u8>;
