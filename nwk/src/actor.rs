@@ -45,6 +45,17 @@ where
                             error!("Failed to send scan networks command response: {error:?}");
                         });
                 }
+                Message::ScanChannels {
+                    channel_mask,
+                    duration,
+                    response,
+                } => {
+                    response
+                        .send(self.scan_channels(channel_mask, duration).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send scan channels command response: {error:?}");
+                        });
+                }
                 Message::AllowJoins { duration, response } => {
                     response
                         .send(self.allow_joins(duration).await)

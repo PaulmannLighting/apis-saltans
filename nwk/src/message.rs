@@ -6,9 +6,11 @@ use tokio::sync::oneshot::Sender;
 use zigbee::Endpoint;
 
 pub use self::found_network::{FoundNetwork, Network};
+pub use self::scanned_channel::ScannedChannel;
 use crate::{Error, Frame};
 
 mod found_network;
+mod scanned_channel;
 
 /// Messages sent to the NWK actor.
 pub enum Message {
@@ -22,6 +24,11 @@ pub enum Message {
         channel_mask: u32,
         duration: u8,
         response: Sender<Result<Vec<FoundNetwork>, Error>>,
+    },
+    ScanChannels {
+        channel_mask: u32,
+        duration: u8,
+        response: Sender<Result<Vec<ScannedChannel>, Error>>,
     },
     AllowJoins {
         duration: Duration,

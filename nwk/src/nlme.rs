@@ -4,7 +4,7 @@ use std::time::Duration;
 use macaddr::MacAddr8;
 use zigbee::Endpoint;
 
-use crate::{Error, FoundNetwork, Frame};
+use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
@@ -33,6 +33,22 @@ pub trait Nlme {
         channel_mask: u32,
         duration: u8,
     ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
+
+    /// Scan channels for activity.
+    ///
+    /// # Parameters
+    ///
+    /// - `channel_mask`: A bitmask representing the channels to scan.
+    /// - `duration`: The duration to scan each channel. The meaning is implementation-specific.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn scan_channels(
+        &mut self,
+        channel_mask: u32,
+        duration: u8,
+    ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>>;
 
     /// Allow devices to join the network for the specified duration.
     ///

@@ -36,6 +36,17 @@ pub trait Proxy {
         duration: u8,
     ) -> impl Future<Output = Result<Vec<crate::FoundNetwork>, Error>>;
 
+    /// Scan channels for activity.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn scan_channels(
+        &self,
+        channel_mask: u32,
+        duration: u8,
+    ) -> impl Future<Output = Result<Vec<crate::ScannedChannel>, Error>>;
+
     /// Allow devices to join the network for the specified duration.
     ///
     /// # Errors
@@ -104,6 +115,22 @@ impl Proxy for Sender<Message> {
     ) -> Result<Vec<crate::FoundNetwork>, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::ScanNetworks {
+            channel_mask,
+            duration,
+            response,
+        })
+        .await
+        .map_err(|_| Error::ActorSend)?;
+        rx.await.map_err(|_| Error::ActorReceive)?
+    }
+
+    async fn scan_channels(
+        &self,
+        channel_mask: u32,
+        duration: u8,
+    ) -> Result<Vec<crate::ScannedChannel>, Error> {
+        let (response, rx) = oneshot::channel();
+        self.send(Message::ScanChannels {
             channel_mask,
             duration,
             response,
