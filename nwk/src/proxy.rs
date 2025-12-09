@@ -9,7 +9,7 @@ use zigbee::Endpoint;
 use crate::device_proxy::DeviceProxy;
 use crate::message::Message;
 use crate::zcl_proxy::ZclProxy;
-use crate::{Error, Frame};
+use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
 /// Proxy trait for sending NWK layer messages.
 ///
@@ -34,7 +34,7 @@ pub trait Proxy {
         &self,
         channel_mask: u32,
         duration: u8,
-    ) -> impl Future<Output = Result<Vec<crate::FoundNetwork>, Error>>;
+    ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
 
     /// Scan channels for activity.
     ///
@@ -45,7 +45,7 @@ pub trait Proxy {
         &self,
         channel_mask: u32,
         duration: u8,
-    ) -> impl Future<Output = Result<Vec<crate::ScannedChannel>, Error>>;
+    ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>>;
 
     /// Allow devices to join the network for the specified duration.
     ///
@@ -112,7 +112,7 @@ impl Proxy for Sender<Message> {
         &self,
         channel_mask: u32,
         duration: u8,
-    ) -> Result<Vec<crate::FoundNetwork>, Error> {
+    ) -> Result<Vec<FoundNetwork>, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::ScanNetworks {
             channel_mask,
@@ -128,7 +128,7 @@ impl Proxy for Sender<Message> {
         &self,
         channel_mask: u32,
         duration: u8,
-    ) -> Result<Vec<crate::ScannedChannel>, Error> {
+    ) -> Result<Vec<ScannedChannel>, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::ScanChannels {
             channel_mask,
