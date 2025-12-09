@@ -1,7 +1,8 @@
-pub use aps_frame::ReceivedApsFrame;
 use macaddr::MacAddr8;
 
-mod aps_frame;
+pub use self::command::Command;
+
+mod command;
 
 /// Events that can occur in the network module.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -45,5 +46,5 @@ pub enum Event {
         pan_id: u16,
     },
     /// Message received from a device.
-    MessageReceived(ReceivedApsFrame),
+    MessageReceived(Command),
 }

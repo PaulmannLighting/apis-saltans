@@ -9,9 +9,10 @@ le-stream = "6.0.0"
 log = "0.4.29"
 macaddr = "1.0.1"
 tokio = { version = "1.48.0", features = ["sync"] }
-zcl = { path = "../zcl" }
-zigbee = { path = "../zigbee" }
 tokio-mpmc = "0.2.4"
+zcl = { path = "../zcl" }
+zdp = { path = "../zdp" }
+zigbee = { path = "../zigbee" }
 
 [lints]
 workspace = true
