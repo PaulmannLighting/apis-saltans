@@ -1,3 +1,5 @@
+//! APS Data frame.
+
 use le_stream::FromLeStream;
 
 use crate::frame::destination::Destination;
@@ -5,7 +7,7 @@ use crate::{Control, DeliveryMode, Extended, FrameType};
 
 /// APS Data frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Data<T> {
+pub struct Frame<T> {
     control: Control,
     destination: Destination,
     cluster_id: u16,
@@ -16,7 +18,7 @@ pub struct Data<T> {
     payload: T,
 }
 
-impl<T> Data<T> {
+impl<T> Frame<T> {
     /// Creates a new APS Data frame header without any validation.
     ///
     /// # Safety
@@ -78,7 +80,7 @@ impl<T> Data<T> {
     }
 }
 
-impl<T> Data<T>
+impl<T> Frame<T>
 where
     T: FromLeStream,
 {

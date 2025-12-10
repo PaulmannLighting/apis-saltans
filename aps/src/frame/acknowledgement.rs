@@ -1,3 +1,5 @@
+//! APS Acknowledgment Frame.
+
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::ack_fmt::AckFmt;
@@ -7,14 +9,14 @@ mod ack_fmt;
 
 /// APS Acknowledgment Frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
-pub struct Acknowledgment {
+pub struct Frame {
     control: Control,
     fmt: Option<AckFmt>, // Present if "ack format" is NOT set in control.
     counter: u8,
     extended: Option<Extended>,
 }
 
-impl Acknowledgment {
+impl Frame {
     /// Creates a new APS Acknowledgment frame header without any validation.
     ///
     /// # Safety

@@ -1,17 +1,19 @@
+//! APS Command Frame.
+
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::Control;
 
 /// APS Command Frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
-pub struct Command<T> {
+pub struct Frame<T> {
     control: Control,
     counter: u8,
     id: u8,
     payload: T,
 }
 
-impl<T> Command<T> {
+impl<T> Frame<T> {
     /// Create a new command frame.
     ///
     /// # Safety
@@ -53,7 +55,7 @@ impl<T> Command<T> {
     }
 }
 
-impl<T> Command<T>
+impl<T> Frame<T>
 where
     T: FromLeStream,
 {
