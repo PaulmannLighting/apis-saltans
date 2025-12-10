@@ -1,13 +1,15 @@
 use le_stream::FromLeStream;
 
 pub use self::manufacturer_specific::ManufacturerSpecific;
-use self::pan_id_conflict_report::PanIdConflictReport;
+pub use self::next_pan_id_change::NextPanIdChange;
+pub use self::pan_id_conflict_report::PanIdConflictReport;
 pub use self::supported_key_negotiation::{
     KeyNegotiationProtocols, PreSharedSecrets, SupportedKeyNegotiation,
 };
 use super::Tag;
 
 mod manufacturer_specific;
+mod next_pan_id_change;
 mod pan_id_conflict_report;
 mod supported_key_negotiation;
 
@@ -17,8 +19,10 @@ pub enum Global {
     ManufacturerSpecific(ManufacturerSpecific),
     /// Supported Key Negotiation TLV.
     SupportedKeyNegotiationMethods(SupportedKeyNegotiation),
+    /// Pan ID Conflict Report TLV.
     PanIdConflictReport(PanIdConflictReport),
-    NextPanId,
+    /// Next PAN ID Change TLV.
+    NextPanIdChange(NextPanIdChange),
     NextChannelChange,
     SymmetricPassphrase,
     RouterInformation,
@@ -44,6 +48,9 @@ impl Global {
                 .map(Self::SupportedKeyNegotiationMethods),
             PanIdConflictReport::TAG => {
                 PanIdConflictReport::from_le_stream_exact(bytes).map(Self::PanIdConflictReport)
+            }
+            NextPanIdChange::TAG => {
+                NextPanIdChange::from_le_stream_exact(bytes).map(Self::NextPanIdChange)
             }
             _ => todo!("Implement and parse other TLVs"),
         }
