@@ -1,4 +1,4 @@
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
 
@@ -96,4 +96,40 @@ impl Cluster for BindReq {
 
 impl Service for BindReq {
     const NAME: &'static str = "Bind_req";
+}
+
+// TODO: Use constants for magic numbers.
+impl FromLeStream for BindReq {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let src_address = MacAddr8::from_le_stream(&mut bytes)?;
+        let src_endpoint = u8::from_le_stream(&mut bytes)?;
+        let cluster_id = u16::from_le_stream(&mut bytes)?;
+        let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
+        let dst_address = match dst_addr_mode {
+            0x01 => {
+                let group_addr = u16::from_le_stream(&mut bytes)?;
+                Address::Group(group_addr)
+            }
+            0x03 => {
+                let extended_addr = MacAddr8::from_le_stream(&mut bytes)?;
+                Address::Extended(extended_addr)
+            }
+            _ => return None,
+        };
+        let dst_endpoint = match dst_addr_mode {
+            0x03 => Some(u8::from_le_stream(&mut bytes)?),
+            _ => None,
+        };
+        Some(Self {
+            src_address,
+            src_endpoint,
+            cluster_id,
+            dst_addr_mode,
+            dst_address,
+            dst_endpoint,
+        })
+    }
 }

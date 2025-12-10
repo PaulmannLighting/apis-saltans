@@ -4,7 +4,7 @@ use zigbee::Cluster;
 use crate::Service;
 
 /// A frame with a sequence number and associated data.
-#[derive(Clone, Debug, Eq, PartialEq, ToLeStream, FromLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream, FromLeStream)]
 pub struct Frame<T> {
     seq: u8,
     data: T,
