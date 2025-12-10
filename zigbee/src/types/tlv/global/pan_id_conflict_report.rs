@@ -11,7 +11,7 @@ pub struct PanIdConflictReport {
 impl PanIdConflictReport {
     /// Get the Network PAN ID Conflict Count.
     #[must_use]
-    pub const fn nwk_pan_id_conflict_count(&self) -> u16 {
+    pub const fn nwk_pan_id_conflict_count(self) -> u16 {
         self.nwk_pan_id_conflict_count
     }
 }

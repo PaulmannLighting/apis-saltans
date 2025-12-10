@@ -5,6 +5,7 @@ pub use self::supported_key_negotiation::{
     KeyNegotiationProtocols, PreSharedSecrets, SupportedKeyNegotiation,
 };
 use super::tlv::Tlv;
+use crate::types::tlv::global::pan_id_conflict_report::PanIdConflictReport;
 
 mod manufacturer_specific;
 mod pan_id_conflict_report;
@@ -16,7 +17,7 @@ pub enum Global {
     ManufacturerSpecific(ManufacturerSpecific),
     /// Supported Key Negotiation TLV.
     SupportedKeyNegotiationMethods(SupportedKeyNegotiation),
-    PanIdConflictReport,
+    PanIdConflictReport(PanIdConflictReport),
     NextPanId,
     NextChannelChange,
     SymmetricPassphrase,
