@@ -14,6 +14,12 @@ mod ieee_addr_req;
 mod mgmt_permit_joining_req;
 mod nwk_addr_req;
 
+/// A ZDP client service.
+pub trait Service {
+    /// The name of the service.
+    const NAME: &'static str;
+}
+
 /// Available ZDP commands.
 // TODO: Implement all commands.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

@@ -4,7 +4,7 @@
 pub enum Command {
     /// A ZDP frame was received.
     // TODO: Is theis ZDP or ZDO?
-    Zdp(zdp::Frames),
+    Zdp(zdp::Frame<zdp::Command>),
     /// A ZCL command was received.
     Zcl(zcl::Frame<zcl::Cluster>),
 }

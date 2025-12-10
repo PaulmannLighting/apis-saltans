@@ -4,17 +4,13 @@
 
 extern crate core;
 
-pub use self::clusters::Clusters;
 pub use self::frame::Frame;
 pub use self::parse_frame_error::ParseFrameError;
-pub use self::service::Service;
 pub use self::services::{
     BindReq, BindReqDestination, Command, IeeeAddrReq, MgmtPermitJoiningReq, NwkAddrReq,
-    RequestType,
+    RequestType, Service,
 };
 
-mod clusters;
 mod frame;
 mod parse_frame_error;
-mod service;
 mod services;
