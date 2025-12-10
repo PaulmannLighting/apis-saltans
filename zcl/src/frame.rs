@@ -111,7 +111,7 @@ impl Frame<Cluster> {
     /// # Errors
     ///
     /// Returns [`ParseFrameError`] if the frame cannot be parsed.
-    pub fn from_le_stream<T>(cluster_id: u16, mut bytes: T) -> Result<Self, ParseFrameError>
+    pub fn parse<T>(cluster_id: u16, mut bytes: T) -> Result<Self, ParseFrameError>
     where
         T: Iterator<Item = u8>,
     {
