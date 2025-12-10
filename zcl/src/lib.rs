@@ -3,15 +3,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 
-pub use clusters::{general, lighting};
-pub use frame::{Control, Direction, Frame, Header, Type};
-pub use frames::Frames;
-pub use status::Status;
-pub use zigbee::{Cluster, Command};
+pub use self::clusters::{Cluster, general, lighting};
+pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Type};
+pub use self::status::Status;
 
 mod attribute;
 mod clusters;
 mod command_frame_id;
 mod frame;
-mod frames;
 mod status;

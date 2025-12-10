@@ -1,11 +1,13 @@
-use zigbee::Direction;
+use le_stream::{FromLeStream, ToLeStream};
+use zigbee::{Cluster, Command, Direction};
 
 use crate::clusters::general::identify::CLUSTER_ID;
-use crate::{Cluster, Command};
 
 /// Request the target to respond if they are currently identifying themselves.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
+)]
 #[repr(transparent)]
 pub struct IdentifyQuery;
 

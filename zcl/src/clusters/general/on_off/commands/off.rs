@@ -1,11 +1,11 @@
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Command, Direction};
 
 use crate::general::on_off::CLUSTER_ID;
 
 /// Switch a device off.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, ToLeStream)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct Off;
 
 impl Cluster for Off {

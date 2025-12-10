@@ -1,17 +1,16 @@
-use le_stream::ToLeStream;
-use zigbee::Direction;
+use le_stream::{FromLeStream, ToLeStream};
+use zigbee::{Cluster, Command, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
 use crate::clusters::general::identify::CLUSTER_ID;
-use crate::{Cluster, Command};
 
 mod effect_identifier;
 mod effect_variant;
 
 /// Trigger an effect on a device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, ToLeStream)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct TriggerEffect {
     identifier: u8,
     variant: u8,

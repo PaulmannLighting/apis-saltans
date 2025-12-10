@@ -1,10 +1,9 @@
 use core::time::Duration;
 
-use zigbee::Direction;
 use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
+use zigbee::{Cluster, Command, Direction};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
-use crate::{Cluster, Command};
 
 /// Command to step a light's color.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

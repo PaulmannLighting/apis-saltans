@@ -1,9 +1,12 @@
 //! On/Off cluster.
 
 pub use self::attribute::Attribute;
-pub use self::commands::{DelayedAllOff, DyingLight, Effect, Off, OffWithEffect, On, Toggle};
+pub use self::commands::{
+    Command, DelayedAllOff, DyingLight, Effect, Off, OffWithEffect, On, Toggle,
+};
 
 mod attribute;
 mod commands;
 
-const CLUSTER_ID: u16 = 0x0006;
+/// On/Off cluster ID.
+pub const CLUSTER_ID: u16 = 0x0006;

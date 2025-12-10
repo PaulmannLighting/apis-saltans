@@ -1,11 +1,10 @@
 use core::str::Utf8Error;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Direction;
 use zigbee::types::{String, Uint16};
+use zigbee::{Cluster, Command, Direction};
 
 use crate::clusters::general::groups::CLUSTER_ID;
-use crate::{Cluster, Command};
 
 /// Command to add a group to the device's group table.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]

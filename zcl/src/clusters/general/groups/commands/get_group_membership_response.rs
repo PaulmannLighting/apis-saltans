@@ -1,12 +1,11 @@
 use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Direction;
 use zigbee::types::{Uint8, Uint16};
+use zigbee::{Cluster, Command, Direction};
 
 use crate::clusters::general::groups::CLUSTER_ID;
 use crate::clusters::general::groups::types::GroupList;
-use crate::{Cluster, Command};
 
 /// Represents a response to an `GetGroupMembership` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

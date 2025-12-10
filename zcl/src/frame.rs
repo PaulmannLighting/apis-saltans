@@ -1,11 +1,14 @@
 //! ZCL frame representation.
 
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Command;
 
 pub use self::header::{Control, Direction, Header, Type};
-use crate::Command;
+pub use self::parse_frame_error::ParseFrameError;
+use crate::clusters::Cluster;
 
 mod header;
+mod parse_frame_error;
 
 /// A ZCL frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -93,5 +96,31 @@ where
             0x00,
             payload,
         )
+    }
+}
+
+/// A parsed ZCL frame.
+impl Frame<Cluster> {
+    /// Parse a ZCL frame from a little-endian byte stream.
+    ///
+    /// # Arguments
+    ///
+    /// * `cluster_id` - The cluster ID to identify the cluster of the frame.
+    /// * `direction` - The direction of the command (`ClientToServer` or `ServerToClient`).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ParseFrameError`] if the frame cannot be parsed.
+    pub fn from_le_stream<T>(
+        cluster_id: u16,
+        direction: Direction,
+        mut bytes: T,
+    ) -> Result<Self, ParseFrameError>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let header = Header::from_le_stream(&mut bytes).ok_or(ParseFrameError::InvalidHeader)?;
+        let payload = Cluster::from_le_stream(cluster_id, header.command_id(), direction, bytes)?;
+        Ok(Self { header, payload })
     }
 }

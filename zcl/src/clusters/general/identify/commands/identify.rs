@@ -1,14 +1,14 @@
 use core::time::Duration;
 
-use zigbee::Direction;
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
+use zigbee::{Cluster, Command, Direction};
 
 use crate::clusters::general::identify::CLUSTER_ID;
-use crate::{Cluster, Command};
 
 /// Toggle the identify state of a device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct Identify {
     identify_time_secs: Uint16,
 }
