@@ -5,14 +5,14 @@ use crate::types::tlv::Tag;
 /// Next PAN ID TLV structure.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct NextPanIdChange {
-    next_channel: u16,
+    pan_id: u16,
 }
 
 impl NextPanIdChange {
-    /// Get the Next Channel.
+    /// Get the nex PAN ID.
     #[must_use]
-    pub const fn next_channel(self) -> u16 {
-        self.next_channel
+    pub const fn pan_id(self) -> u16 {
+        self.pan_id
     }
 }
 
