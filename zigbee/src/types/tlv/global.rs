@@ -48,7 +48,7 @@ pub enum Global {
 
 impl Global {
     /// Parse a Global TLV from a byte stream with a given tag.
-    pub(crate) fn from_le_stream_with_tag<T>(tag: u8, mut bytes: T) -> le_stream::Result<Self>
+    pub(crate) fn from_le_stream_with_tag<T>(tag: u8, bytes: T) -> le_stream::Result<Self>
     where
         T: Iterator<Item = u8>,
     {
