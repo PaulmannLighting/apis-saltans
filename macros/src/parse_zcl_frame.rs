@@ -50,14 +50,13 @@ pub fn parse_zcl_frame(input: TokenStream) -> TokenStream {
             /// This function will return [`ParseFrameError`](crate::ParseFrameError) if the command
             /// ID does not correspond to any variant or if the payload could not be parsed.
             pub(crate) fn parse_zcl_frame<T>(
-                command_id: u8,
-                direction: ::zigbee::Direction,
+                header: crate::Header,
                 bytes: T,
             ) -> ::core::result::Result<Self, crate::ParseFrameError>
             where
                 T: ::core::iter::Iterator<Item = u8>,
             {
-                match (command_id, direction) {
+                match (header.command_id(), header.control().direction()) {
                     #match_arms
                     (command_id, _) => Err(crate::ParseFrameError::InvalidCommandId(command_id)),
                 }
