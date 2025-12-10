@@ -1,5 +1,6 @@
 use le_stream::FromLeStream;
 
+pub use self::fragmentation_parameters::{FragmentationOptions, FragmentationParameters};
 pub use self::manufacturer_specific::ManufacturerSpecific;
 pub use self::next_channel_change::NextChannelChange;
 pub use self::next_pan_id_change::NextPanIdChange;
@@ -11,6 +12,7 @@ pub use self::symmetric_passphrase::SymmetricPassphrase;
 use super::Tag;
 use crate::types::tlv::global::router_information::RouterInformation;
 
+mod fragmentation_parameters;
 mod manufacturer_specific;
 mod next_channel_change;
 mod next_pan_id_change;
@@ -35,7 +37,8 @@ pub enum Global {
     SymmetricPassphrase(SymmetricPassphrase),
     /// Router Information TLV.
     RouterInformation(RouterInformation),
-    FragmentationParameters,
+    /// Fragmentation Parameters TLV.
+    FragmentationParameters(FragmentationParameters),
     JoinerEncapsulation,
     BeaconAppendixEncapsulation,
     BdbEncapsulation,
@@ -70,6 +73,8 @@ impl Global {
             RouterInformation::TAG => {
                 RouterInformation::from_le_stream_exact(bytes).map(Self::RouterInformation)
             }
+            FragmentationParameters::TAG => FragmentationParameters::from_le_stream_exact(bytes)
+                .map(Self::FragmentationParameters),
             _ => todo!("Implement and parse other TLVs"),
         }
     }
