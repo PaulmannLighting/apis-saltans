@@ -8,5 +8,4 @@ pub use self::commands::{
 mod attribute;
 mod commands;
 
-/// On/Off cluster ID.
-pub const CLUSTER_ID: u16 = 0x0006;
+const CLUSTER_ID: u16 = 0x0006;

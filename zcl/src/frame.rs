@@ -111,16 +111,12 @@ impl Frame<Cluster> {
     /// # Errors
     ///
     /// Returns [`ParseFrameError`] if the frame cannot be parsed.
-    pub fn from_le_stream<T>(
-        cluster_id: u16,
-        direction: Direction,
-        mut bytes: T,
-    ) -> Result<Self, ParseFrameError>
+    pub fn from_le_stream<T>(cluster_id: u16, mut bytes: T) -> Result<Self, ParseFrameError>
     where
         T: Iterator<Item = u8>,
     {
         let header = Header::from_le_stream(&mut bytes).ok_or(ParseFrameError::InvalidHeader)?;
-        let payload = Cluster::from_le_stream(cluster_id, header.command_id(), direction, bytes)?;
+        let payload = Cluster::parse_zcl_cluster(cluster_id, header, bytes)?;
         Ok(Self { header, payload })
     }
 }

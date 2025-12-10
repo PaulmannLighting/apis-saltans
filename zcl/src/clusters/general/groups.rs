@@ -11,5 +11,4 @@ mod attribute;
 mod commands;
 mod types;
 
-/// Cluster ID for the Groups cluster.
-pub const CLUSTER_ID: u16 = 0x0004;
+const CLUSTER_ID: u16 = 0x0004;

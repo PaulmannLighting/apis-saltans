@@ -9,5 +9,4 @@ pub use self::commands::{
 mod attribute;
 mod commands;
 
-/// Identify Cluster ID.
-pub const CLUSTER_ID: u16 = 0x0003;
+const CLUSTER_ID: u16 = 0x0003;

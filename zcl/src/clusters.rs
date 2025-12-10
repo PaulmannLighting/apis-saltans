@@ -1,53 +1,23 @@
 //! Cluster groups.
 
-use zigbee::Direction;
+use zigbee_macros::ParseZclCluster;
 
-use crate::ParseFrameError;
 use crate::general::{basic, groups, identify, on_off};
 
 pub mod general;
 pub mod lighting;
 
-/// Available ZCL frames.
-// TODO: Add all ZCL commands.
+/// Available ZCL clusters.
+// TODO: Add all ZCL clusters.
 #[expect(clippy::large_enum_variant)]
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-#[repr(u16)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclCluster)]
 pub enum Cluster {
     /// Basic cluster commands.
-    Basic(basic::Command) = basic::CLUSTER_ID,
+    Basic(basic::Command),
     /// Groups cluster commands.
-    Groups(groups::Command) = groups::CLUSTER_ID,
+    Groups(groups::Command),
     /// Identify cluster commands.
-    Identify(identify::Command) = identify::CLUSTER_ID,
+    Identify(identify::Command),
     /// On/Off cluster commands.
-    OnOff(on_off::Command) = on_off::CLUSTER_ID,
-}
-
-impl Cluster {
-    pub(crate) fn from_le_stream<T>(
-        cluster_id: u16,
-        command_id: u8,
-        direction: Direction,
-        bytes: T,
-    ) -> Result<Self, ParseFrameError>
-    where
-        T: Iterator<Item = u8>,
-    {
-        match cluster_id {
-            basic::CLUSTER_ID => {
-                basic::Command::from_le_stream(command_id, direction, bytes).map(Self::Basic)
-            }
-            groups::CLUSTER_ID => {
-                groups::Command::from_le_stream(command_id, direction, bytes).map(Self::Groups)
-            }
-            identify::CLUSTER_ID => {
-                identify::Command::from_le_stream(command_id, direction, bytes).map(Self::Identify)
-            }
-            on_off::CLUSTER_ID => {
-                on_off::Command::from_le_stream(command_id, direction, bytes).map(Self::OnOff)
-            }
-            other => Err(ParseFrameError::InvalidClusterId(other)),
-        }
-    }
+    OnOff(on_off::Command),
 }

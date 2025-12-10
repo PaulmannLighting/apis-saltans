@@ -9,5 +9,4 @@ pub use self::commands::{Command, ResetToFactoryDefaults};
 mod attribute;
 mod commands;
 
-/// Basic Cluster ID.
-pub const CLUSTER_ID: u16 = 0x0000;
+const CLUSTER_ID: u16 = 0x0000;
