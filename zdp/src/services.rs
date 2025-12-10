@@ -12,6 +12,7 @@ use crate::ParseFrameError;
 mod bind_req;
 mod ieee_addr_req;
 mod mgmt_permit_joining_req;
+mod node_desc_req;
 mod nwk_addr_req;
 
 /// A ZDP client service.
