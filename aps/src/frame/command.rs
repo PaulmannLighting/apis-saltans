@@ -1,7 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 
-use crate::frame::destination::Destination;
-use crate::{Control, FrameType};
+use crate::Control;
 
 /// APS Command Frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
@@ -51,26 +50,6 @@ impl<T> Command<T> {
     #[must_use]
     pub fn into_payload(self) -> T {
         self.payload
-    }
-}
-
-impl<T> Command<T>
-where
-    T: zcl::Command,
-{
-    /// Creates a new APS Command frame.
-    #[must_use]
-    pub const fn new(destination: Destination, counter: u8, payload: T) -> Self {
-        let mut control = Control::empty();
-        control.set_frame_type(FrameType::Command);
-        control.set_destination(destination);
-
-        Self {
-            control,
-            counter,
-            id: <T as zcl::Command>::ID,
-            payload,
-        }
     }
 }
 
