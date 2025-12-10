@@ -115,7 +115,7 @@ impl Frame<Cluster> {
     where
         T: Iterator<Item = u8>,
     {
-        let header = Header::from_le_stream(&mut bytes).ok_or(ParseFrameError::InvalidHeader)?;
+        let header = Header::from_le_stream(&mut bytes).ok_or(ParseFrameError::MissingHeader)?;
         let payload = Cluster::parse_zcl_cluster(cluster_id, header, bytes)?;
         Ok(Self { header, payload })
     }
