@@ -5,12 +5,12 @@ pub use self::manufacturer_specific::ManufacturerSpecific;
 pub use self::next_channel_change::NextChannelChange;
 pub use self::next_pan_id_change::NextPanIdChange;
 pub use self::pan_id_conflict_report::PanIdConflictReport;
+pub use self::router_information::RouterInformation;
 pub use self::supported_key_negotiation::{
     KeyNegotiationProtocols, PreSharedSecrets, SupportedKeyNegotiation,
 };
 pub use self::symmetric_passphrase::SymmetricPassphrase;
 use super::Tag;
-use crate::types::tlv::global::router_information::RouterInformation;
 
 mod fragmentation_parameters;
 mod manufacturer_specific;
