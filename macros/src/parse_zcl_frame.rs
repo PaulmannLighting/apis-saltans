@@ -52,7 +52,7 @@ pub fn parse_zcl_frame(input: TokenStream) -> TokenStream {
             pub(crate) fn parse_zcl_frame<T>(
                 command_id: u8,
                 direction: ::zigbee::Direction,
-                bytes: &mut T,
+                bytes: T,
             ) -> ::core::result::Result<Self, crate::ParseFrameError>
             where
                 T: ::core::iter::Iterator<Item = u8>,
