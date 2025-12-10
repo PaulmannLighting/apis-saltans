@@ -19,3 +19,17 @@ impl PanIdConflictReport {
 impl Tag for PanIdConflictReport {
     const TAG: u8 = 66;
 }
+
+impl From<PanIdConflictReport> for u16 {
+    fn from(value: PanIdConflictReport) -> Self {
+        value.nwk_pan_id_conflict_count
+    }
+}
+
+impl From<u16> for PanIdConflictReport {
+    fn from(nwk_pan_id_conflict_count: u16) -> Self {
+        Self {
+            nwk_pan_id_conflict_count,
+        }
+    }
+}

@@ -1,9 +1,9 @@
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::FromLeStream;
 
 use crate::types::tlv::Tag;
 
 /// Symmetric Passphrase TLV structure.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
 pub struct SymmetricPassphrase {
     passphrase: [u8; 16],
 }
