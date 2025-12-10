@@ -7,8 +7,10 @@ pub use self::supported_key_negotiation::{
     KeyNegotiationProtocols, PreSharedSecrets, SupportedKeyNegotiation,
 };
 use super::Tag;
+use crate::types::tlv::global::next_channel_change::NextChannelChange;
 
 mod manufacturer_specific;
+mod next_channel_change;
 mod next_pan_id_change;
 mod pan_id_conflict_report;
 mod supported_key_negotiation;
@@ -23,7 +25,8 @@ pub enum Global {
     PanIdConflictReport(PanIdConflictReport),
     /// Next PAN ID Change TLV.
     NextPanIdChange(NextPanIdChange),
-    NextChannelChange,
+    /// Next Channel Change TLV.
+    NextChannelChange(NextChannelChange),
     SymmetricPassphrase,
     RouterInformation,
     FragmentationParameters,
@@ -51,6 +54,9 @@ impl Global {
             }
             NextPanIdChange::TAG => {
                 NextPanIdChange::from_le_stream_exact(bytes).map(Self::NextPanIdChange)
+            }
+            NextChannelChange::TAG => {
+                NextChannelChange::from_le_stream_exact(bytes).map(Self::NextChannelChange)
             }
             _ => todo!("Implement and parse other TLVs"),
         }
