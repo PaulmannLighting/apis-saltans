@@ -2,8 +2,9 @@ use le_stream::{FromLeStream, FromLeStreamTagged};
 
 use crate::types::tlv::Tag;
 use crate::types::tlv::global::{
-    FragmentationParameters, ManufacturerSpecific, NextChannelChange, NextPanIdChange,
-    PanIdConflictReport, RouterInformation, SupportedKeyNegotiation, SymmetricPassphrase,
+    ConfigurationParameters, DeviceCapabilityExtension, FragmentationParameters,
+    ManufacturerSpecific, NextChannelChange, NextPanIdChange, PanIdConflictReport,
+    RouterInformation, SupportedKeyNegotiation, SymmetricPassphrase,
 };
 
 /// Encapsulated Global TLV types.
@@ -25,8 +26,12 @@ pub enum EncapsulatedGlobal {
     RouterInformation(RouterInformation),
     /// Fragmentation Parameters TLV.
     FragmentationParameters(FragmentationParameters),
-    ConfigurationParameters,
-    DeviceCapabilityExtension,
+    /// BDB Encapsulation TLV.
+    BdbEncapsulation,
+    /// Configuration Parameters TLV.
+    ConfigurationParameters(ConfigurationParameters),
+    /// Device Capability Extension TLV.
+    DeviceCapabilityExtension(DeviceCapabilityExtension),
 }
 
 impl FromLeStreamTagged for EncapsulatedGlobal {
@@ -65,7 +70,18 @@ impl FromLeStreamTagged for EncapsulatedGlobal {
                     .map(Self::FragmentationParameters)
                     .ok())
             }
-            _ => Err(tag),
+            // TODO: Implement BdbEncapsulation parsing when needed
+            ConfigurationParameters::TAG => {
+                Ok(ConfigurationParameters::from_le_stream_exact(bytes)
+                    .map(Self::ConfigurationParameters)
+                    .ok())
+            }
+            DeviceCapabilityExtension::TAG => {
+                Ok(DeviceCapabilityExtension::from_le_stream_exact(bytes)
+                    .map(Self::DeviceCapabilityExtension)
+                    .ok())
+            }
+            unknown_tag => Err(unknown_tag),
         }
     }
 }

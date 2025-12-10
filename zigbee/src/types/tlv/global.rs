@@ -1,5 +1,8 @@
 use le_stream::{FromLeStream, FromLeStreamTagged};
 
+pub use self::beacon_appendix_encapsulation::BeaconAppendixEncapsulation;
+pub use self::configuration_parameters::ConfigurationParameters;
+pub use self::device_capability_extension::DeviceCapabilityExtension;
 pub use self::fragmentation_parameters::{FragmentationOptions, FragmentationParameters};
 pub use self::joiner_encapsulation::JoinerEncapsulation;
 pub use self::manufacturer_specific::ManufacturerSpecific;
@@ -12,9 +15,10 @@ pub use self::supported_key_negotiation::{
 };
 pub use self::symmetric_passphrase::SymmetricPassphrase;
 use super::Tag;
-use crate::types::tlv::global::beacon_appendix_encapsulation::BeaconAppendixEncapsulation;
 
 mod beacon_appendix_encapsulation;
+mod configuration_parameters;
+mod device_capability_extension;
 mod fragmentation_parameters;
 mod joiner_encapsulation;
 mod manufacturer_specific;
@@ -25,6 +29,7 @@ mod router_information;
 mod supported_key_negotiation;
 mod symmetric_passphrase;
 
+/// Global TLV tags.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Global {
     /// Manufacturer Specific TLV.
@@ -47,9 +52,12 @@ pub enum Global {
     JoinerEncapsulation(JoinerEncapsulation),
     /// Beacon Appendix Encapsulation TLV.
     BeaconAppendixEncapsulation(BeaconAppendixEncapsulation),
+    /// BDB Encapsulation TLV.
     BdbEncapsulation,
-    ConfigurationParameters,
-    DeviceCapabilityExtension,
+    /// Configuration Parameters TLV.
+    ConfigurationParameters(ConfigurationParameters),
+    /// Device Capability Extension TLV.
+    DeviceCapabilityExtension(DeviceCapabilityExtension),
 }
 
 impl FromLeStreamTagged for Global {
@@ -96,7 +104,18 @@ impl FromLeStreamTagged for Global {
                     .map(Self::BeaconAppendixEncapsulation)
                     .ok())
             }
-            _ => Err(tag),
+            // TODO: Define BdbEncapsulation parsing when its structure is known.
+            ConfigurationParameters::TAG => {
+                Ok(ConfigurationParameters::from_le_stream_exact(bytes)
+                    .map(Self::ConfigurationParameters)
+                    .ok())
+            }
+            DeviceCapabilityExtension::TAG => {
+                Ok(DeviceCapabilityExtension::from_le_stream_exact(bytes)
+                    .map(Self::DeviceCapabilityExtension)
+                    .ok())
+            }
+            unknown_tag => Err(unknown_tag),
         }
     }
 }

@@ -2,13 +2,12 @@ use std::ops::{Deref, DerefMut};
 
 use le_stream::FromLeStream;
 
-use crate::types::tlv::{EncapsulatedGlobal, Tag, Tlv};
+use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv};
 
 /// Beacon Appendix Encapsulation TLV structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
 pub struct BeaconAppendixEncapsulation {
-    // TODO: replace () with appropriate type for local TLVs.
-    inner: Vec<Tlv<(), EncapsulatedGlobal>>,
+    inner: Vec<Tlv<Local, EncapsulatedGlobal>>,
 }
 
 impl Tag for BeaconAppendixEncapsulation {
@@ -16,7 +15,7 @@ impl Tag for BeaconAppendixEncapsulation {
 }
 
 impl Deref for BeaconAppendixEncapsulation {
-    type Target = Vec<Tlv<(), EncapsulatedGlobal>>;
+    type Target = Vec<Tlv<Local, EncapsulatedGlobal>>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner

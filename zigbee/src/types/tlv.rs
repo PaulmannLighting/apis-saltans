@@ -1,16 +1,25 @@
-pub use encapsulated_global::EncapsulatedGlobal;
+//! Type-Length-Value (TLV) encoded structures for Zigbee.
+
 use le_stream::{FromLeStream, FromLeStreamTagged};
 
-pub use self::global::Global;
+pub use self::encapsulated_global::EncapsulatedGlobal;
+pub use self::global::{
+    BeaconAppendixEncapsulation, DeviceCapabilityExtension, FragmentationOptions, Global,
+    JoinerEncapsulation, KeyNegotiationProtocols, ManufacturerSpecific, NextChannelChange,
+    NextPanIdChange, PanIdConflictReport, PreSharedSecrets, RouterInformation,
+    SupportedKeyNegotiation, SymmetricPassphrase,
+};
+pub use self::local::Local;
 pub use self::tag::Tag;
 
 mod encapsulated_global;
 mod global;
+mod local;
 mod tag;
 
 /// A Type-Length-Value (TLV) encoded structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum Tlv<L = (), G = Global> {
+pub enum Tlv<L = Local, G = Global> {
     /// Local TLV tags.
     Local(L),
     /// Global TLV tags.
@@ -19,6 +28,7 @@ pub enum Tlv<L = (), G = Global> {
 
 impl<L, G> FromLeStream for Tlv<L, G>
 where
+    L: FromLeStreamTagged<Tag = u8>,
     G: FromLeStreamTagged<Tag = u8>,
 {
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
@@ -41,7 +51,7 @@ where
         let bytes = buffer.into_iter();
 
         match tag {
-            0..=63 => todo!("Parse local TLV tags"),
+            0..=63 => L::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Local),
             64..=255 => G::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Global),
         }
     }

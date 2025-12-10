@@ -18,4 +18,4 @@ mod channels_field;
 mod composite;
 mod discrete;
 mod null;
-mod tlv;
+pub mod tlv;
