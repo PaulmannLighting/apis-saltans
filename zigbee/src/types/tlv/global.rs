@@ -8,12 +8,14 @@ pub use self::supported_key_negotiation::{
 };
 use super::Tag;
 use crate::types::tlv::global::next_channel_change::NextChannelChange;
+use crate::types::tlv::global::symmetric_passphrase::SymmetricPassphrase;
 
 mod manufacturer_specific;
 mod next_channel_change;
 mod next_pan_id_change;
 mod pan_id_conflict_report;
 mod supported_key_negotiation;
+mod symmetric_passphrase;
 
 #[derive(Clone, Debug)]
 pub enum Global {
@@ -27,7 +29,8 @@ pub enum Global {
     NextPanIdChange(NextPanIdChange),
     /// Next Channel Change TLV.
     NextChannelChange(NextChannelChange),
-    SymmetricPassphrase,
+    /// Symmetric Passphrase TLV.
+    SymmetricPassphrase(SymmetricPassphrase),
     RouterInformation,
     FragmentationParameters,
     JoinerEncapsulation,
@@ -57,6 +60,9 @@ impl Global {
             }
             NextChannelChange::TAG => {
                 NextChannelChange::from_le_stream_exact(bytes).map(Self::NextChannelChange)
+            }
+            SymmetricPassphrase::TAG => {
+                SymmetricPassphrase::from_le_stream_exact(bytes).map(Self::SymmetricPassphrase)
             }
             _ => todo!("Implement and parse other TLVs"),
         }
