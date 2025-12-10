@@ -1,6 +1,6 @@
 use le_stream::FromLeStream;
 
-use crate::types::tlv::tlv::Tlv;
+use crate::types::tlv::Tag;
 
 /// Manufacturer Specific TLV global.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
@@ -23,6 +23,6 @@ impl ManufacturerSpecific {
     }
 }
 
-impl Tlv for ManufacturerSpecific {
+impl Tag for ManufacturerSpecific {
     const TAG: u8 = 64;
 }

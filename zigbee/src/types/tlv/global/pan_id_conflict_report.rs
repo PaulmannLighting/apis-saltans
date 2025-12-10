@@ -1,6 +1,6 @@
 use le_stream::FromLeStream;
 
-use crate::types::tlv::tlv::Tlv;
+use crate::types::tlv::Tag;
 
 /// Pan ID Conflict Report TLV.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream)]
@@ -16,6 +16,6 @@ impl PanIdConflictReport {
     }
 }
 
-impl Tlv for PanIdConflictReport {
+impl Tag for PanIdConflictReport {
     const TAG: u8 = 66;
 }

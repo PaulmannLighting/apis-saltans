@@ -3,7 +3,7 @@ use macaddr::MacAddr8;
 
 pub use self::key_negotiation_protocols::KeyNegotiationProtocols;
 pub use self::pre_shared_secrets::PreSharedSecrets;
-use crate::types::tlv::tlv::Tlv;
+use crate::types::tlv::Tag;
 
 mod key_negotiation_protocols;
 mod pre_shared_secrets;
@@ -36,6 +36,6 @@ impl SupportedKeyNegotiation {
     }
 }
 
-impl Tlv for SupportedKeyNegotiation {
+impl Tag for SupportedKeyNegotiation {
     const TAG: u8 = 65;
 }

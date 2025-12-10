@@ -1,11 +1,11 @@
 use le_stream::FromLeStream;
 
 pub use self::manufacturer_specific::ManufacturerSpecific;
+use self::pan_id_conflict_report::PanIdConflictReport;
 pub use self::supported_key_negotiation::{
     KeyNegotiationProtocols, PreSharedSecrets, SupportedKeyNegotiation,
 };
-use super::tlv::Tlv;
-use crate::types::tlv::global::pan_id_conflict_report::PanIdConflictReport;
+use super::Tag;
 
 mod manufacturer_specific;
 mod pan_id_conflict_report;
@@ -32,29 +32,19 @@ pub enum Global {
 
 impl Global {
     /// Parse a Global TLV from a byte stream with a given tag.
-    pub(crate) fn from_le_stream_with_tag<T>(tag: u8, mut bytes: T) -> Option<Self>
+    pub(crate) fn from_le_stream_with_tag<T>(tag: u8, mut bytes: T) -> le_stream::Result<Self>
     where
         T: Iterator<Item = u8>,
     {
-        #[expect(clippy::unwrap_in_result)]
-        let len = u8::from_le_stream(&mut bytes)
-            .map(usize::from)?
-            .checked_add(1)
-            .expect("u8::MAX + 1 cannot overflow usize");
-        let buffer = bytes.take(len).collect::<Vec<_>>();
-
-        if buffer.len() < len {
-            return None;
-        }
-
-        let bytes = buffer.into_iter();
-
         match tag {
             ManufacturerSpecific::TAG => {
-                ManufacturerSpecific::from_le_stream(bytes).map(Self::ManufacturerSpecific)
+                ManufacturerSpecific::from_le_stream_exact(bytes).map(Self::ManufacturerSpecific)
             }
-            SupportedKeyNegotiation::TAG => SupportedKeyNegotiation::from_le_stream(bytes)
+            SupportedKeyNegotiation::TAG => SupportedKeyNegotiation::from_le_stream_exact(bytes)
                 .map(Self::SupportedKeyNegotiationMethods),
+            PanIdConflictReport::TAG => {
+                PanIdConflictReport::from_le_stream_exact(bytes).map(Self::PanIdConflictReport)
+            }
             _ => todo!("Implement and parse other TLVs"),
         }
     }
