@@ -24,7 +24,7 @@ mod waiter;
 mod zcl_proxy;
 
 /// Type alias for the NWK layer proxy sender.
-pub type ProxySender = Sender<message::Message>;
+pub type ZigbeeTransmitter = Sender<message::Message>;
 
 /// Type alias for the NWK layer actor receiver.
-pub type ActorReceiver = Receiver<message::Message>;
+pub type ZigbeeReceiver = Receiver<message::Message>;
