@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged};
 
 pub use self::global::Global;
 pub use self::tag::Tag;
@@ -7,15 +7,18 @@ mod global;
 mod tag;
 
 /// A Type-Length-Value (TLV) encoded structure.
-#[derive(Clone, Debug)]
-pub enum Tlv {
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub enum Tlv<L = (), G = Global> {
     /// Local TLV tags.
-    Local,
+    Local(L),
     /// Global TLV tags.
-    Global(Global),
+    Global(G),
 }
 
-impl FromLeStream for Tlv {
+impl<L, G> FromLeStream for Tlv<L, G>
+where
+    G: FromLeStreamTagged<Tag = u8>,
+{
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
@@ -37,9 +40,7 @@ impl FromLeStream for Tlv {
 
         match tag {
             0..=63 => todo!("Parse local TLV tags"),
-            64..=255 => Global::from_le_stream_with_tag(tag, bytes)
-                .map(Self::Global)
-                .ok(),
+            64..=255 => G::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Global),
         }
     }
 }

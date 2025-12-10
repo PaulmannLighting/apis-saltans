@@ -1,30 +1,14 @@
 use le_stream::{FromLeStream, FromLeStreamTagged};
 
-pub use self::fragmentation_parameters::{FragmentationOptions, FragmentationParameters};
-pub use self::joiner_encapsulation::{EncapsulatedGlobal, JoinerEncapsulation};
-pub use self::manufacturer_specific::ManufacturerSpecific;
-pub use self::next_channel_change::NextChannelChange;
-pub use self::next_pan_id_change::NextPanIdChange;
-pub use self::pan_id_conflict_report::PanIdConflictReport;
-pub use self::router_information::RouterInformation;
-pub use self::supported_key_negotiation::{
-    KeyNegotiationProtocols, PreSharedSecrets, SupportedKeyNegotiation,
+use crate::types::tlv::Tag;
+use crate::types::tlv::global::{
+    FragmentationParameters, ManufacturerSpecific, NextChannelChange, NextPanIdChange,
+    PanIdConflictReport, RouterInformation, SupportedKeyNegotiation, SymmetricPassphrase,
 };
-pub use self::symmetric_passphrase::SymmetricPassphrase;
-use super::Tag;
 
-mod fragmentation_parameters;
-mod joiner_encapsulation;
-mod manufacturer_specific;
-mod next_channel_change;
-mod next_pan_id_change;
-mod pan_id_conflict_report;
-mod router_information;
-mod supported_key_negotiation;
-mod symmetric_passphrase;
-
+/// Encapsulated Global TLV types.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum Global {
+pub enum EncapsulatedGlobal {
     /// Manufacturer Specific TLV.
     ManufacturerSpecific(ManufacturerSpecific),
     /// Supported Key Negotiation TLV.
@@ -41,14 +25,11 @@ pub enum Global {
     RouterInformation(RouterInformation),
     /// Fragmentation Parameters TLV.
     FragmentationParameters(FragmentationParameters),
-    JoinerEncapsulation(JoinerEncapsulation),
-    BeaconAppendixEncapsulation,
-    BdbEncapsulation,
     ConfigurationParameters,
     DeviceCapabilityExtension,
 }
 
-impl FromLeStreamTagged for Global {
+impl FromLeStreamTagged for EncapsulatedGlobal {
     type Tag = u8;
 
     fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
@@ -84,9 +65,6 @@ impl FromLeStreamTagged for Global {
                     .map(Self::FragmentationParameters)
                     .ok())
             }
-            JoinerEncapsulation::TAG => Ok(JoinerEncapsulation::from_le_stream_exact(bytes)
-                .map(Self::JoinerEncapsulation)
-                .ok()),
             _ => Err(tag),
         }
     }
