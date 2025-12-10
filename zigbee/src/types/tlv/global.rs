@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, FromLeStreamTagged};
 
 pub use self::fragmentation_parameters::{FragmentationOptions, FragmentationParameters};
-pub use self::joiner_encapsulation::{EncapsulatedGlobal, JoinerEncapsulation};
+pub use self::joiner_encapsulation::JoinerEncapsulation;
 pub use self::manufacturer_specific::ManufacturerSpecific;
 pub use self::next_channel_change::NextChannelChange;
 pub use self::next_pan_id_change::NextPanIdChange;
@@ -12,7 +12,9 @@ pub use self::supported_key_negotiation::{
 };
 pub use self::symmetric_passphrase::SymmetricPassphrase;
 use super::Tag;
+use crate::types::tlv::global::beacon_appendix_encapsulation::BeaconAppendixEncapsulation;
 
+mod beacon_appendix_encapsulation;
 mod fragmentation_parameters;
 mod joiner_encapsulation;
 mod manufacturer_specific;
@@ -41,8 +43,10 @@ pub enum Global {
     RouterInformation(RouterInformation),
     /// Fragmentation Parameters TLV.
     FragmentationParameters(FragmentationParameters),
+    /// Joiner Encapsulation TLV.
     JoinerEncapsulation(JoinerEncapsulation),
-    BeaconAppendixEncapsulation,
+    /// Beacon Appendix Encapsulation TLV.
+    BeaconAppendixEncapsulation(BeaconAppendixEncapsulation),
     BdbEncapsulation,
     ConfigurationParameters,
     DeviceCapabilityExtension,
@@ -87,6 +91,11 @@ impl FromLeStreamTagged for Global {
             JoinerEncapsulation::TAG => Ok(JoinerEncapsulation::from_le_stream_exact(bytes)
                 .map(Self::JoinerEncapsulation)
                 .ok()),
+            BeaconAppendixEncapsulation::TAG => {
+                Ok(BeaconAppendixEncapsulation::from_le_stream_exact(bytes)
+                    .map(Self::BeaconAppendixEncapsulation)
+                    .ok())
+            }
             _ => Err(tag),
         }
     }

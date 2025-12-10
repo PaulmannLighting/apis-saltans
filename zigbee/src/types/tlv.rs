@@ -1,8 +1,10 @@
+pub use encapsulated_global::EncapsulatedGlobal;
 use le_stream::{FromLeStream, FromLeStreamTagged};
 
 pub use self::global::Global;
 pub use self::tag::Tag;
 
+mod encapsulated_global;
 mod global;
 mod tag;
 
