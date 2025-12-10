@@ -9,11 +9,13 @@ pub use self::supported_key_negotiation::{
 };
 pub use self::symmetric_passphrase::SymmetricPassphrase;
 use super::Tag;
+use crate::types::tlv::global::router_information::RouterInformation;
 
 mod manufacturer_specific;
 mod next_channel_change;
 mod next_pan_id_change;
 mod pan_id_conflict_report;
+mod router_information;
 mod supported_key_negotiation;
 mod symmetric_passphrase;
 
@@ -31,7 +33,8 @@ pub enum Global {
     NextChannelChange(NextChannelChange),
     /// Symmetric Passphrase TLV.
     SymmetricPassphrase(SymmetricPassphrase),
-    RouterInformation,
+    /// Router Information TLV.
+    RouterInformation(RouterInformation),
     FragmentationParameters,
     JoinerEncapsulation,
     BeaconAppendixEncapsulation,
@@ -63,6 +66,9 @@ impl Global {
             }
             SymmetricPassphrase::TAG => {
                 SymmetricPassphrase::from_le_stream_exact(bytes).map(Self::SymmetricPassphrase)
+            }
+            RouterInformation::TAG => {
+                RouterInformation::from_le_stream_exact(bytes).map(Self::RouterInformation)
             }
             _ => todo!("Implement and parse other TLVs"),
         }
