@@ -9,6 +9,5 @@ pub use self::status::Status;
 
 mod attribute;
 mod clusters;
-mod command_frame_id;
 mod frame;
 mod status;
