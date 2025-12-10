@@ -2,16 +2,19 @@
 //!
 //! TODO: Implement all services and an appropriate trait to send and receive the respective frames.
 
+extern crate core;
+
 pub use self::clusters::Clusters;
 pub use self::frame::Frame;
-pub use self::frames::Frames;
+pub use self::parse_frame_error::ParseFrameError;
 pub use self::service::Service;
 pub use self::services::{
-    BindReq, BindReqDestination, IeeeAddrReq, MgmtPermitJoiningReq, NwkAddrReq, RequestType,
+    BindReq, BindReqDestination, Command, IeeeAddrReq, MgmtPermitJoiningReq, NwkAddrReq,
+    RequestType,
 };
 
 mod clusters;
 mod frame;
-mod frames;
+mod parse_frame_error;
 mod service;
 mod services;

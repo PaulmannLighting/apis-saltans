@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
-use crate::Service;
+use crate::{Command, ParseFrameError, Service};
 
 /// A frame with a sequence number and associated data.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream, FromLeStream)]
@@ -49,5 +49,21 @@ where
     #[must_use]
     pub const fn cluster_id(&self) -> u16 {
         <T as Cluster>::ID
+    }
+}
+
+impl Frame<Command> {
+    /// Parses a `Frame<Command>` from the given cluster ID and byte iterator.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ParseFrameError`] if parsing fails.
+    pub fn parse<T>(cluster_id: u16, mut bytes: T) -> Result<Self, ParseFrameError>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let seq = u8::from_le_stream(&mut bytes).ok_or(ParseFrameError::MissingSeq)?;
+        let data = Command::parse(cluster_id, bytes)?;
+        Ok(Self { seq, data })
     }
 }
