@@ -32,9 +32,9 @@ pub fn parse_zcl_frame(input: TokenStream) -> TokenStream {
         let inner_type = field.ty;
 
         match_arms.extend(quote! {
-            <#inner_type as ::zigbee::DirectedCommand>::ID => ::le_stream::from_le_stream(#inner_type,bytes)
+            <#inner_type as ::zigbee::DirectedCommand>::ID => <#inner_type as ::le_stream::FromLeStream>::from_le_stream(bytes)
                 .map(Self::#variant_name)
-                .ok_or(::zcl::ParseFrameError::InsufficientPayload),
+                .ok_or(crate::ParseFrameError::InsufficientPayload),
         });
     }
 
@@ -44,19 +44,19 @@ pub fn parse_zcl_frame(input: TokenStream) -> TokenStream {
             ///
             /// # Errors
             ///
-            /// This function will return [`ParseFrameError`](::zcl::ParseFrameError) if the command
+            /// This function will return [`ParseFrameError`](crate::ParseFrameError) if the command
             /// ID does not correspond to any variant or if the payload could not be parsed.
             pub(crate) fn parse_zcl_frame<T>(
                 command_id: u8,
                 direction: ::zigbee::Direction,
                 bytes: &mut T,
-            ) -> Result<Self, ::zcl::ParseFrameError>
+            ) -> ::core::result::Result<Self, crate::ParseFrameError>
             where
                 T: ::core::iter::Iterator<Item = u8>,
             {
                 match (command_id, direction) {
                     #match_arms
-                    (command_id, _) => Err(::zcl::ParseFrameError::InvalidCommandId(command_id)),
+                    (command_id, _) => Err(crate::ParseFrameError::InvalidCommandId(command_id)),
                 }
             }
         }
