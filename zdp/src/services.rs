@@ -6,6 +6,7 @@ use zigbee::Cluster;
 pub use self::active_ep_req::ActiveEpReq;
 pub use self::bind_req::{BindReq, Destination as BindReqDestination};
 pub use self::ieee_addr_req::IeeeAddrReq;
+pub use self::match_desc_req::MatchDescReq;
 pub use self::mgmt_permit_joining_req::MgmtPermitJoiningReq;
 pub use self::node_desc_req::NodeDescReq;
 pub use self::nwk_addr_req::{NwkAddrReq, RequestType};
@@ -15,6 +16,7 @@ pub use self::simple_desc_req::SimpleDescReq;
 mod active_ep_req;
 mod bind_req;
 mod ieee_addr_req;
+mod match_desc_req;
 mod mgmt_permit_joining_req;
 mod node_desc_req;
 mod nwk_addr_req;
@@ -43,6 +45,8 @@ pub enum Command {
     SimpleDescReq(SimpleDescReq),
     /// Active Endpoint Request
     ActiveEpReq(ActiveEpReq),
+    /// Match Descriptor Request
+    MatchDescReq(MatchDescReq),
     /// Bind Request
     BindReq(BindReq),
     /// Management Permit Joining Request
@@ -63,6 +67,7 @@ impl FromLeStreamTagged for Command {
             PowerDescReq::ID => Ok(PowerDescReq::from_le_stream(bytes).map(Self::PowerDescReq)),
             SimpleDescReq::ID => Ok(SimpleDescReq::from_le_stream(bytes).map(Self::SimpleDescReq)),
             ActiveEpReq::ID => Ok(ActiveEpReq::from_le_stream(bytes).map(Self::ActiveEpReq)),
+            MatchDescReq::ID => Ok(MatchDescReq::from_le_stream(bytes).map(Self::MatchDescReq)),
             BindReq::ID => Ok(BindReq::from_le_stream(bytes).map(Self::BindReq)),
             MgmtPermitJoiningReq::ID => {
                 Ok(MgmtPermitJoiningReq::from_le_stream(bytes).map(Self::MgmtPermitJoiningReq))
