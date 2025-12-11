@@ -1,5 +1,5 @@
-use self::flags::Flags;
-use self::mac_capability_flags::MacCapabilityFlags;
+pub use self::flags::Flags;
+pub use self::mac_capability_flags::MacCapabilityFlags;
 
 mod device_type;
 mod flags;
