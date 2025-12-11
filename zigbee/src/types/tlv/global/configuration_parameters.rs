@@ -1,5 +1,7 @@
+use std::iter::Chain;
+
 use bitflags::bitflags;
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::tlv::Tag;
 
@@ -21,6 +23,10 @@ bitflags! {
 
 impl Tag for ConfigurationParameters {
     const TAG: u8 = 75;
+
+    fn size(&self) -> usize {
+        2
+    }
 }
 
 impl FromLeStream for ConfigurationParameters {
@@ -29,5 +35,17 @@ impl FromLeStream for ConfigurationParameters {
         T: Iterator<Item = u8>,
     {
         u16::from_le_stream(bytes).map(Self::from_bits_retain)
+    }
+}
+
+impl ToLeStream for ConfigurationParameters {
+    type Iter =
+        Chain<Chain<<u8 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>, <u16 as ToLeStream>::Iter>;
+
+    fn to_le_stream(self) -> Self::Iter {
+        Self::TAG
+            .to_le_stream()
+            .chain(self.serialized_size().to_le_stream())
+            .chain(self.bits().to_le_stream())
     }
 }

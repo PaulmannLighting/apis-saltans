@@ -1,5 +1,7 @@
+use std::iter::Chain;
+
 use bitflags::bitflags;
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::tlv::Tag;
 
@@ -40,4 +42,20 @@ impl FromLeStream for RouterInformation {
 
 impl Tag for RouterInformation {
     const TAG: u8 = 70;
+
+    fn size(&self) -> usize {
+        2
+    }
+}
+
+impl ToLeStream for RouterInformation {
+    type Iter =
+        Chain<Chain<<u8 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>, <u16 as ToLeStream>::Iter>;
+
+    fn to_le_stream(self) -> Self::Iter {
+        Self::TAG
+            .to_le_stream()
+            .chain(self.serialized_size().to_le_stream())
+            .chain(self.0.to_le_stream())
+    }
 }

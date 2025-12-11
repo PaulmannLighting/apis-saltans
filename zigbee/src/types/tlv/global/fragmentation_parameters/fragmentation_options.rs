@@ -1,8 +1,8 @@
 use bitflags::bitflags;
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 /// Fragmentation options.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, ToLeStream)]
 #[repr(transparent)]
 pub struct FragmentationOptions(u8);
 

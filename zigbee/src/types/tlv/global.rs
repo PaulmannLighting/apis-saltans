@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, FromLeStreamTagged};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 pub use self::beacon_appendix_encapsulation::BeaconAppendixEncapsulation;
 pub use self::configuration_parameters::ConfigurationParameters;
@@ -116,6 +116,102 @@ impl FromLeStreamTagged for Global {
                     .ok())
             }
             unknown_tag => Err(unknown_tag),
+        }
+    }
+}
+
+impl ToLeStream for Global {
+    type Iter = iter::GlobalLeStream;
+
+    fn to_le_stream(self) -> Self::Iter {
+        iter::GlobalLeStream::from(self)
+    }
+}
+
+mod iter {
+    use le_stream::ToLeStream;
+
+    use super::{
+        BeaconAppendixEncapsulation, ConfigurationParameters, DeviceCapabilityExtension,
+        FragmentationParameters, JoinerEncapsulation, ManufacturerSpecific, NextChannelChange,
+        NextPanIdChange, PanIdConflictReport, RouterInformation, SupportedKeyNegotiation,
+        SymmetricPassphrase,
+    };
+    use crate::types::tlv::Global;
+
+    pub enum GlobalLeStream {
+        ManufacturerSpecific(<ManufacturerSpecific as ToLeStream>::Iter),
+        SupportedKeyNegotiationMethods(<SupportedKeyNegotiation as ToLeStream>::Iter),
+        PanIdConflictReport(<PanIdConflictReport as ToLeStream>::Iter),
+        NextPanIdChange(<NextPanIdChange as ToLeStream>::Iter),
+        NextChannelChange(<NextChannelChange as ToLeStream>::Iter),
+        SymmetricPassphrase(<SymmetricPassphrase as ToLeStream>::Iter),
+        RouterInformation(<RouterInformation as ToLeStream>::Iter),
+        FragmentationParameters(<FragmentationParameters as ToLeStream>::Iter),
+        JoinerEncapsulation(<JoinerEncapsulation as ToLeStream>::Iter),
+        BeaconAppendixEncapsulation(<BeaconAppendixEncapsulation as ToLeStream>::Iter),
+        BdbEncapsulation(<() as ToLeStream>::Iter),
+        ConfigurationParameters(<ConfigurationParameters as ToLeStream>::Iter),
+        DeviceCapabilityExtension(<DeviceCapabilityExtension as ToLeStream>::Iter),
+    }
+
+    impl Iterator for GlobalLeStream {
+        type Item = u8;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                Self::ManufacturerSpecific(iter) => iter.next(),
+                Self::SupportedKeyNegotiationMethods(iter) => iter.next(),
+                Self::PanIdConflictReport(iter) => iter.next(),
+                Self::NextPanIdChange(iter) => iter.next(),
+                Self::NextChannelChange(iter) => iter.next(),
+                Self::SymmetricPassphrase(iter) => iter.next(),
+                Self::RouterInformation(iter) => iter.next(),
+                Self::FragmentationParameters(iter) => iter.next(),
+                Self::JoinerEncapsulation(iter) => iter.next(),
+                Self::BeaconAppendixEncapsulation(iter) => iter.next(),
+                Self::BdbEncapsulation(iter) => iter.next(),
+                Self::ConfigurationParameters(iter) => iter.next(),
+                Self::DeviceCapabilityExtension(iter) => iter.next(),
+            }
+        }
+    }
+
+    impl From<Global> for GlobalLeStream {
+        fn from(global: Global) -> Self {
+            match global {
+                Global::ManufacturerSpecific(value) => {
+                    Self::ManufacturerSpecific(value.to_le_stream())
+                }
+                Global::SupportedKeyNegotiationMethods(value) => {
+                    Self::SupportedKeyNegotiationMethods(value.to_le_stream())
+                }
+                Global::PanIdConflictReport(value) => {
+                    Self::PanIdConflictReport(value.to_le_stream())
+                }
+                Global::NextPanIdChange(value) => Self::NextPanIdChange(value.to_le_stream()),
+                Global::NextChannelChange(value) => Self::NextChannelChange(value.to_le_stream()),
+                Global::SymmetricPassphrase(value) => {
+                    Self::SymmetricPassphrase(value.to_le_stream())
+                }
+                Global::RouterInformation(value) => Self::RouterInformation(value.to_le_stream()),
+                Global::FragmentationParameters(value) => {
+                    Self::FragmentationParameters(value.to_le_stream())
+                }
+                Global::JoinerEncapsulation(value) => {
+                    Self::JoinerEncapsulation(value.to_le_stream())
+                }
+                Global::BeaconAppendixEncapsulation(value) => {
+                    Self::BeaconAppendixEncapsulation(value.to_le_stream())
+                }
+                Global::BdbEncapsulation => Self::BdbEncapsulation(().to_le_stream()),
+                Global::ConfigurationParameters(value) => {
+                    Self::ConfigurationParameters(value.to_le_stream())
+                }
+                Global::DeviceCapabilityExtension(value) => {
+                    Self::DeviceCapabilityExtension(value.to_le_stream())
+                }
+            }
         }
     }
 }

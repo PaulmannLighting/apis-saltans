@@ -1,8 +1,8 @@
 use bitflags::bitflags;
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 /// Pre Shared Secrets bitmask.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, ToLeStream)]
 #[repr(transparent)]
 pub struct PreSharedSecrets(u8);
 
