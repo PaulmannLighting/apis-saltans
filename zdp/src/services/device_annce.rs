@@ -1,6 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
+use zigbee::node::MacCapabilityFlags;
 
 use crate::Service;
 
@@ -9,13 +10,13 @@ use crate::Service;
 pub struct DeviceAnnce {
     nwk_addr: u16,
     ieee_addr: MacAddr8,
-    capabilities: u8,
+    capabilities: MacCapabilityFlags,
 }
 
 impl DeviceAnnce {
     /// Creates a new `DeviceAnnce` with the given parameters.
     #[must_use]
-    pub const fn new(nwk_addr: u16, ieee_addr: MacAddr8, capabilities: u8) -> Self {
+    pub const fn new(nwk_addr: u16, ieee_addr: MacAddr8, capabilities: MacCapabilityFlags) -> Self {
         Self {
             nwk_addr,
             ieee_addr,
@@ -37,7 +38,7 @@ impl DeviceAnnce {
 
     /// Returns the capabilities.
     #[must_use]
-    pub const fn capabilities(&self) -> u8 {
+    pub const fn capabilities(&self) -> MacCapabilityFlags {
         self.capabilities
     }
 }
