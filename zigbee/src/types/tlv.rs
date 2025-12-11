@@ -79,3 +79,59 @@ mod iter {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use le_stream::ToLeStream;
+    use macaddr::MacAddr8;
+
+    use super::*;
+
+    const SUPPORTED_KEY_NEGOTIATION_METHODS: Tlv = Tlv::Global(
+        Global::SupportedKeyNegotiationMethods(SupportedKeyNegotiation::new(
+            KeyNegotiationProtocols::STATIC_KEY_REQUEST,
+            PreSharedSecrets::INSTALL_CODE_KEY,
+            None,
+        )),
+    );
+    const SUPPORTED_KEY_NEGOTIATION_METHODS_WITH_SOURCE_DEVICE_EUI64: Tlv = Tlv::Global(
+        Global::SupportedKeyNegotiationMethods(SupportedKeyNegotiation::new(
+            KeyNegotiationProtocols::STATIC_KEY_REQUEST,
+            PreSharedSecrets::INSTALL_CODE_KEY,
+            Some(MacAddr8::new(1, 2, 3, 4, 5, 6, 7, 8)),
+        )),
+    );
+
+    #[test]
+    fn supported_key_negotiation_methods_to_le_stream() {
+        let bytes: Vec<_> = SUPPORTED_KEY_NEGOTIATION_METHODS.to_le_stream().collect();
+        assert_eq!(bytes, vec![65, 1, 0b1000_0000, 0b0100_0000]);
+    }
+
+    #[test]
+    fn supported_key_negotiation_methods_with_source_device_eui64_to_le_stream() {
+        let bytes: Vec<_> = SUPPORTED_KEY_NEGOTIATION_METHODS_WITH_SOURCE_DEVICE_EUI64
+            .to_le_stream()
+            .collect();
+        assert_eq!(
+            bytes,
+            vec![65, 9, 0b1000_0000, 0b0100_0000, 8, 7, 6, 5, 4, 3, 2, 1]
+        );
+    }
+    #[test]
+    fn supported_key_negotiation_methods_from_le_stream() {
+        let bytes = vec![65, 1, 0b1000_0000, 0b0100_0000];
+        let tlv: Option<Tlv> = Tlv::from_le_stream(bytes.into_iter());
+        assert_eq!(tlv, Some(SUPPORTED_KEY_NEGOTIATION_METHODS));
+    }
+
+    #[test]
+    fn supported_key_negotiation_methods_with_source_device_eui64_from_le_stream() {
+        let bytes = vec![65, 9, 0b1000_0000, 0b0100_0000, 8, 7, 6, 5, 4, 3, 2, 1];
+        let tlv: Option<Tlv> = Tlv::from_le_stream(bytes.into_iter());
+        assert_eq!(
+            tlv,
+            Some(SUPPORTED_KEY_NEGOTIATION_METHODS_WITH_SOURCE_DEVICE_EUI64)
+        );
+    }
+}
