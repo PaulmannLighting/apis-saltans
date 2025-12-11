@@ -1,10 +1,10 @@
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 use zigbee::Cluster;
 
-use crate::{Command, ParseFrameError, Service};
+use crate::Service;
 
 /// A frame with a sequence number and associated data.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream, FromLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Frame<T> {
     seq: u8,
     data: T,
@@ -52,18 +52,24 @@ where
     }
 }
 
-impl Frame<Command> {
-    /// Parses a `Frame<Command>` from the given cluster ID and byte iterator.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ParseFrameError`] if parsing fails.
-    pub fn parse<T>(cluster_id: u16, mut bytes: T) -> Result<Self, ParseFrameError>
+impl<T> FromLeStreamTagged for Frame<T>
+where
+    T: FromLeStreamTagged<Tag = u16>,
+{
+    type Tag = u16;
+
+    fn from_le_stream_tagged<I>(
+        cluster_id: Self::Tag,
+        mut bytes: I,
+    ) -> Result<Option<Self>, Self::Tag>
     where
-        T: Iterator<Item = u8>,
+        I: Iterator<Item = u8>,
     {
-        let seq = u8::from_le_stream(&mut bytes).ok_or(ParseFrameError::MissingSeq)?;
-        let data = Command::parse(cluster_id, bytes)?;
-        Ok(Self { seq, data })
+        let Some(seq) = u8::from_le_stream(&mut bytes) else {
+            return Ok(None);
+        };
+
+        T::from_le_stream_tagged(cluster_id, bytes)
+            .map(|data| data.map(|data| Self::new(seq, data)))
     }
 }

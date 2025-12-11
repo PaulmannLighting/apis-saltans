@@ -1,6 +1,6 @@
 //! ZDP services.
 
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, FromLeStreamTagged};
 use zigbee::Cluster;
 
 pub use self::bind_req::{BindReq, Destination as BindReqDestination};
@@ -10,7 +10,6 @@ pub use self::node_desc_req::NodeDescReq;
 pub use self::nwk_addr_req::{NwkAddrReq, RequestType};
 pub use self::power_desc_req::PowerDescReq;
 pub use self::simple_desc_req::SimpleDescReq;
-use crate::ParseFrameError;
 
 mod bind_req;
 mod ieee_addr_req;
@@ -46,36 +45,24 @@ pub enum Command {
     MgmtPermitJoiningReq(MgmtPermitJoiningReq),
 }
 
-impl Command {
-    /// Parses a ZDP command from the given cluster ID and byte iterator.
-    pub(crate) fn parse(
-        cluster_id: u16,
-        bytes: impl Iterator<Item = u8>,
-    ) -> Result<Self, ParseFrameError> {
-        // TODO: Use a macro to reduce boilerplate.
+impl FromLeStreamTagged for Command {
+    type Tag = u16;
+
+    fn from_le_stream_tagged<T>(cluster_id: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
         match cluster_id {
-            NwkAddrReq::ID => NwkAddrReq::from_le_stream(bytes)
-                .map(Self::NwkAddrReq)
-                .ok_or(ParseFrameError::InsufficientPayload),
-            IeeeAddrReq::ID => IeeeAddrReq::from_le_stream(bytes)
-                .map(Self::IeeeAddrReq)
-                .ok_or(ParseFrameError::InsufficientPayload),
-            NodeDescReq::ID => NodeDescReq::from_le_stream(bytes)
-                .map(Self::NodeDescReq)
-                .ok_or(ParseFrameError::InsufficientPayload),
-            PowerDescReq::ID => PowerDescReq::from_le_stream(bytes)
-                .map(Self::PowerDescReq)
-                .ok_or(ParseFrameError::InsufficientPayload),
-            SimpleDescReq::ID => SimpleDescReq::from_le_stream(bytes)
-                .map(Self::SimpleDescReq)
-                .ok_or(ParseFrameError::InsufficientPayload),
-            BindReq::ID => BindReq::from_le_stream(bytes)
-                .map(Self::BindReq)
-                .ok_or(ParseFrameError::InsufficientPayload),
-            MgmtPermitJoiningReq::ID => MgmtPermitJoiningReq::from_le_stream(bytes)
-                .map(Self::MgmtPermitJoiningReq)
-                .ok_or(ParseFrameError::InsufficientPayload),
-            other => Err(ParseFrameError::InvalidCluster(other)),
+            NwkAddrReq::ID => Ok(NwkAddrReq::from_le_stream(bytes).map(Self::NwkAddrReq)),
+            IeeeAddrReq::ID => Ok(IeeeAddrReq::from_le_stream(bytes).map(Self::IeeeAddrReq)),
+            NodeDescReq::ID => Ok(NodeDescReq::from_le_stream(bytes).map(Self::NodeDescReq)),
+            PowerDescReq::ID => Ok(PowerDescReq::from_le_stream(bytes).map(Self::PowerDescReq)),
+            SimpleDescReq::ID => Ok(SimpleDescReq::from_le_stream(bytes).map(Self::SimpleDescReq)),
+            BindReq::ID => Ok(BindReq::from_le_stream(bytes).map(Self::BindReq)),
+            MgmtPermitJoiningReq::ID => {
+                Ok(MgmtPermitJoiningReq::from_le_stream(bytes).map(Self::MgmtPermitJoiningReq))
+            }
+            other => Err(other),
         }
     }
 }
