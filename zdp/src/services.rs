@@ -8,6 +8,7 @@ pub use self::ieee_addr_req::IeeeAddrReq;
 pub use self::mgmt_permit_joining_req::MgmtPermitJoiningReq;
 pub use self::node_desc_req::NodeDescReq;
 pub use self::nwk_addr_req::{NwkAddrReq, RequestType};
+pub use self::power_desc_req::PowerDescReq;
 use crate::ParseFrameError;
 
 mod bind_req;
@@ -15,6 +16,7 @@ mod ieee_addr_req;
 mod mgmt_permit_joining_req;
 mod node_desc_req;
 mod nwk_addr_req;
+mod power_desc_req;
 
 /// A ZDP client service.
 pub trait Service {
