@@ -36,6 +36,10 @@ pub enum Command {
     IeeeAddrReq(IeeeAddrReq),
     /// Node Descriptor Request
     NodeDescReq(NodeDescReq),
+    /// Power Descriptor Request
+    PowerDescReq(PowerDescReq),
+    /// Simple Descriptor Request
+    SimpleDescReq(SimpleDescReq),
     /// Bind Request
     BindReq(BindReq),
     /// Management Permit Joining Request
@@ -58,6 +62,12 @@ impl Command {
                 .ok_or(ParseFrameError::InsufficientPayload),
             NodeDescReq::ID => NodeDescReq::from_le_stream(bytes)
                 .map(Self::NodeDescReq)
+                .ok_or(ParseFrameError::InsufficientPayload),
+            PowerDescReq::ID => PowerDescReq::from_le_stream(bytes)
+                .map(Self::PowerDescReq)
+                .ok_or(ParseFrameError::InsufficientPayload),
+            SimpleDescReq::ID => SimpleDescReq::from_le_stream(bytes)
+                .map(Self::SimpleDescReq)
                 .ok_or(ParseFrameError::InsufficientPayload),
             BindReq::ID => BindReq::from_le_stream(bytes)
                 .map(Self::BindReq)
