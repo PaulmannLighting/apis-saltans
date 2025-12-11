@@ -7,6 +7,7 @@ pub use self::reset_to_factory_defaults::ResetToFactoryDefaults;
 
 mod reset_to_factory_defaults;
 
+/// Available commands for the Basic cluster.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclFrame)]
 pub enum Command {
     /// Reset to Factory Defaults command.
