@@ -8,7 +8,7 @@ pub use self::frame::Frame;
 pub use self::parse_frame_error::ParseFrameError;
 pub use self::services::{
     BindReq, BindReqDestination, Command, IeeeAddrReq, MgmtPermitJoiningReq, NodeDescReq,
-    NwkAddrReq, PowerDescReq, RequestType, Service,
+    NwkAddrReq, PowerDescReq, RequestType, Service, SimpleDescReq,
 };
 
 mod frame;
