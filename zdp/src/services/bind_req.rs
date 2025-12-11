@@ -33,23 +33,20 @@ impl BindReq {
         cluster_id: u16,
         destination: Destination,
     ) -> Self {
-        match destination {
-            Destination::Group(group_addr) => Self {
-                src_address,
-                src_endpoint,
-                cluster_id,
-                dst_addr_mode: destination.discriminant(),
-                dst_address: Address::Group(group_addr),
-                dst_endpoint: None,
-            },
-            Destination::Extended { address, endpoint } => Self {
-                src_address,
-                src_endpoint,
-                cluster_id,
-                dst_addr_mode: destination.discriminant(),
-                dst_address: Address::Extended(address),
-                dst_endpoint: Some(endpoint),
-            },
+        let (dst_address, dst_endpoint) = match destination {
+            Destination::Group(group_addr) => (Address::Group(group_addr), None),
+            Destination::Extended { address, endpoint } => {
+                (Address::Extended(address), Some(endpoint))
+            }
+        };
+
+        Self {
+            src_address,
+            src_endpoint,
+            cluster_id,
+            dst_addr_mode: destination.discriminant(),
+            dst_address,
+            dst_endpoint,
         }
     }
 
