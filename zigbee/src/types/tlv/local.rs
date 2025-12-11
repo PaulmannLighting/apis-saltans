@@ -1,3 +1,5 @@
+use std::num::TryFromIntError;
+
 use le_stream::FromLeStreamTagged;
 
 /// Local TLV structure.
@@ -8,6 +10,19 @@ pub struct Local {
 }
 
 impl Local {
+    /// Create a new `Local` TLV.
+    ///
+    /// # Errors
+    ///
+    /// If the length of `data` minus one cannot be represented as a `u8`, an error is returned.
+    pub fn new(tag: u8, data: Vec<u8>) -> Result<Self, Option<TryFromIntError>> {
+        let Some(len) = data.len().checked_sub(1) else {
+            return Err(None);
+        };
+
+        u8::try_from(len).map(|_| Self { tag, data }).map_err(Some)
+    }
+
     /// Get the tag.
     #[must_use]
     pub const fn tag(&self) -> u8 {
