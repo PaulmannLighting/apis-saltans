@@ -25,6 +25,14 @@ impl PowerDescReq {
     }
 }
 
+impl Cluster for PowerDescReq {
+    const ID: u16 = 0x0003;
+}
+
+impl Service for PowerDescReq {
+    const NAME: &'static str = "Power_Desc_req";
+}
+
 impl From<PowerDescReq> for u16 {
     fn from(req: PowerDescReq) -> Self {
         req.nwk_addr_of_interest
@@ -37,12 +45,4 @@ impl From<u16> for PowerDescReq {
             nwk_addr_of_interest,
         }
     }
-}
-
-impl Cluster for PowerDescReq {
-    const ID: u16 = 0x0003;
-}
-
-impl Service for PowerDescReq {
-    const NAME: &'static str = "Power_Desc_req";
 }
