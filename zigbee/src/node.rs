@@ -1,5 +1,4 @@
 //! Zigbee network node representation.
-#![cfg(feature = "std")]
 
 use std::collections::BTreeSet;
 

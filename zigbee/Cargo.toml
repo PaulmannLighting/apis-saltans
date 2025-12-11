@@ -26,7 +26,6 @@ num-traits = "0.2.19"
 num-derive = "0.4.2"
 
 [features]
-std = []
 serde = ["serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
 
 [lints]
