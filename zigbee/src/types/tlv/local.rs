@@ -1,6 +1,7 @@
+use std::iter::Chain;
 use std::num::TryFromIntError;
 
-use le_stream::FromLeStreamTagged;
+use le_stream::{FromLeStreamTagged, ToLeStream};
 
 /// Local TLV structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -47,5 +48,21 @@ impl FromLeStreamTagged for Local {
             tag,
             data: bytes.collect(),
         }))
+    }
+}
+
+impl ToLeStream for Local {
+    type Iter = Chain<
+        Chain<<u8 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>,
+        <Vec<u8> as ToLeStream>::Iter,
+    >;
+
+    fn to_le_stream(self) -> Self::Iter {
+        let len = u8::try_from(self.data.len().checked_sub(1).expect("Data is not empty"))
+            .expect("Length fits in u8");
+        self.tag
+            .to_le_stream()
+            .chain(len.to_le_stream())
+            .chain(self.data.to_le_stream())
     }
 }
