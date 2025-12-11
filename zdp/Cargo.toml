@@ -10,6 +10,7 @@ num-derive = "0.4"
 num-traits = "0.2"
 repr-discriminant = { version = "3.0.1", features = ["derive"] }
 zigbee = { version = "0.1.0", path = "../zigbee" }
+log = "0.4.29"
 
 [lints]
 workspace = true

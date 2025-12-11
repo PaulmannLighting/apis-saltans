@@ -1,4 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
+use log::warn;
 use macaddr::MacAddr8;
 use zigbee::Cluster;
 
@@ -8,6 +9,9 @@ use crate::Service;
 
 mod address;
 mod destination;
+
+const GROUP_ADDRESS_MODE: u8 = 0x01;
+const EXTENDED_ADDRESS_MODE: u8 = 0x03;
 
 /// Request type for Bind Request.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
@@ -98,7 +102,6 @@ impl Service for BindReq {
     const NAME: &'static str = "Bind_req";
 }
 
-// TODO: Use constants for magic numbers.
 impl FromLeStream for BindReq {
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where
@@ -109,19 +112,20 @@ impl FromLeStream for BindReq {
         let cluster_id = u16::from_le_stream(&mut bytes)?;
         let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
         let dst_address = match dst_addr_mode {
-            0x01 => {
-                let group_addr = u16::from_le_stream(&mut bytes)?;
-                Address::Group(group_addr)
+            GROUP_ADDRESS_MODE => u16::from_le_stream(&mut bytes).map(Address::Group)?,
+            EXTENDED_ADDRESS_MODE => MacAddr8::from_le_stream(&mut bytes).map(Address::Extended)?,
+            _ => {
+                warn!(
+                    "Received {} with invalid destination address mode: {dst_addr_mode}",
+                    Self::NAME
+                );
+                return None;
             }
-            0x03 => {
-                let extended_addr = MacAddr8::from_le_stream(&mut bytes)?;
-                Address::Extended(extended_addr)
-            }
-            _ => return None,
         };
-        let dst_endpoint = match dst_addr_mode {
-            0x03 => Some(u8::from_le_stream(&mut bytes)?),
-            _ => None,
+        let dst_endpoint = if dst_addr_mode == EXTENDED_ADDRESS_MODE {
+            Some(u8::from_le_stream(&mut bytes)?)
+        } else {
+            None
         };
         Some(Self {
             src_address,
