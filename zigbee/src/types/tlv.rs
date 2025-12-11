@@ -36,24 +36,9 @@ where
     where
         T: Iterator<Item = u8>,
     {
-        let tag = u8::from_le_stream(&mut bytes)?;
-
-        #[expect(clippy::unwrap_in_result)]
-        let len = u8::from_le_stream(&mut bytes)
-            .map(usize::from)?
-            .checked_add(1)
-            .expect("u8::MAX + 1 cannot overflow usize");
-        let buffer = bytes.take(len).collect::<Vec<_>>();
-
-        if buffer.len() < len {
-            return None;
-        }
-
-        let bytes = buffer.into_iter();
-
-        match tag {
-            0..=63 => L::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Local),
-            64..=255 => G::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Global),
+        match u8::from_le_stream(&mut bytes)? {
+            tag @ 0..=63 => L::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Local),
+            tag @ 64..=255 => G::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Global),
         }
     }
 }

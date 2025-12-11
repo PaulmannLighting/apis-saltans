@@ -40,44 +40,36 @@ impl FromLeStreamTagged for EncapsulatedGlobal {
         T: Iterator<Item = u8>,
     {
         match tag {
-            ManufacturerSpecific::TAG => Ok(ManufacturerSpecific::from_le_stream_exact(bytes)
-                .map(Self::ManufacturerSpecific)
-                .ok()),
-            SupportedKeyNegotiation::TAG => {
-                Ok(SupportedKeyNegotiation::from_le_stream_exact(bytes)
-                    .map(Self::SupportedKeyNegotiationMethods)
-                    .ok())
+            ManufacturerSpecific::TAG => {
+                Ok(ManufacturerSpecific::from_le_stream(bytes).map(Self::ManufacturerSpecific))
             }
-            PanIdConflictReport::TAG => Ok(PanIdConflictReport::from_le_stream_exact(bytes)
-                .map(Self::PanIdConflictReport)
-                .ok()),
-            NextPanIdChange::TAG => Ok(NextPanIdChange::from_le_stream_exact(bytes)
-                .map(Self::NextPanIdChange)
-                .ok()),
-            NextChannelChange::TAG => Ok(NextChannelChange::from_le_stream_exact(bytes)
-                .map(Self::NextChannelChange)
-                .ok()),
-            SymmetricPassphrase::TAG => Ok(SymmetricPassphrase::from_le_stream_exact(bytes)
-                .map(Self::SymmetricPassphrase)
-                .ok()),
-            RouterInformation::TAG => Ok(RouterInformation::from_le_stream_exact(bytes)
-                .map(Self::RouterInformation)
-                .ok()),
+            SupportedKeyNegotiation::TAG => Ok(SupportedKeyNegotiation::from_le_stream(bytes)
+                .map(Self::SupportedKeyNegotiationMethods)),
+            PanIdConflictReport::TAG => {
+                Ok(PanIdConflictReport::from_le_stream(bytes).map(Self::PanIdConflictReport))
+            }
+            NextPanIdChange::TAG => {
+                Ok(NextPanIdChange::from_le_stream(bytes).map(Self::NextPanIdChange))
+            }
+            NextChannelChange::TAG => {
+                Ok(NextChannelChange::from_le_stream(bytes).map(Self::NextChannelChange))
+            }
+            SymmetricPassphrase::TAG => {
+                Ok(SymmetricPassphrase::from_le_stream(bytes).map(Self::SymmetricPassphrase))
+            }
+            RouterInformation::TAG => {
+                Ok(RouterInformation::from_le_stream(bytes).map(Self::RouterInformation))
+            }
             FragmentationParameters::TAG => {
-                Ok(FragmentationParameters::from_le_stream_exact(bytes)
-                    .map(Self::FragmentationParameters)
-                    .ok())
+                Ok(FragmentationParameters::from_le_stream(bytes)
+                    .map(Self::FragmentationParameters))
             }
             ConfigurationParameters::TAG => {
-                Ok(ConfigurationParameters::from_le_stream_exact(bytes)
-                    .map(Self::ConfigurationParameters)
-                    .ok())
+                Ok(ConfigurationParameters::from_le_stream(bytes)
+                    .map(Self::ConfigurationParameters))
             }
-            DeviceCapabilityExtension::TAG => {
-                Ok(DeviceCapabilityExtension::from_le_stream_exact(bytes)
-                    .map(Self::DeviceCapabilityExtension)
-                    .ok())
-            }
+            DeviceCapabilityExtension::TAG => Ok(DeviceCapabilityExtension::from_le_stream(bytes)
+                .map(Self::DeviceCapabilityExtension)),
             unknown_tag => Err(unknown_tag),
         }
     }
@@ -117,6 +109,7 @@ mod iter {
     impl Iterator for EncapsulatedGlobalIter {
         type Item = u8;
 
+        #[expect(clippy::match_same_arms)]
         fn next(&mut self) -> Option<Self::Item> {
             match self {
                 Self::ManufacturerSpecific(iter) => iter.next(),
