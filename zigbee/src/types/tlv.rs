@@ -1,6 +1,6 @@
 //! Type-Length-Value (TLV) encoded structures for Zigbee.
 
-use le_stream::{FromLeStream, FromLeStreamTagged};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 pub use self::encapsulated_global::EncapsulatedGlobal;
 pub use self::global::{
@@ -9,6 +9,7 @@ pub use self::global::{
     NextPanIdChange, PanIdConflictReport, PreSharedSecrets, RouterInformation,
     SupportedKeyNegotiation, SymmetricPassphrase,
 };
+use self::iter::TlvLeStream;
 pub use self::local::Local;
 pub use self::tag::Tag;
 
@@ -53,6 +54,43 @@ where
         match tag {
             0..=63 => L::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Local),
             64..=255 => G::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Global),
+        }
+    }
+}
+
+impl<L, G> ToLeStream for Tlv<L, G>
+where
+    L: ToLeStream,
+    G: ToLeStream,
+{
+    type Iter = TlvLeStream<L::Iter, G::Iter>;
+
+    fn to_le_stream(self) -> Self::Iter {
+        match self {
+            Self::Local(local) => TlvLeStream::Local(local.to_le_stream()),
+            Self::Global(global) => TlvLeStream::Global(global.to_le_stream()),
+        }
+    }
+}
+
+mod iter {
+    pub enum TlvLeStream<L, G> {
+        Local(L),
+        Global(G),
+    }
+
+    impl<L, G> Iterator for TlvLeStream<L, G>
+    where
+        L: Iterator<Item = u8>,
+        G: Iterator<Item = u8>,
+    {
+        type Item = u8;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                Self::Local(iter) => iter.next(),
+                Self::Global(iter) => iter.next(),
+            }
         }
     }
 }
