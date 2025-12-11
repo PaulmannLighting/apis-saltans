@@ -1,12 +1,12 @@
 use std::iter::Chain;
 use std::num::TryFromIntError;
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 use crate::types::tlv::Tag;
 
 /// Manufacturer Specific TLV global.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct ManufacturerSpecific {
     manufacturer_id: u16,
     data: Vec<u8>,
@@ -52,6 +52,42 @@ impl Tag for ManufacturerSpecific {
 
     fn size(&self) -> usize {
         2 + self.data.len()
+    }
+}
+
+impl FromLeStreamTagged for ManufacturerSpecific {
+    type Tag = u8;
+
+    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(length);
+        };
+
+        let Some(size) = size.checked_sub(2) else {
+            return Err(length);
+        };
+
+        let Some(manufacturer_id) = u16::from_le_stream(&mut bytes) else {
+            return Ok(None);
+        };
+
+        let mut data = Vec::with_capacity(size);
+
+        for _ in 0..size {
+            let Some(byte) = bytes.next() else {
+                return Ok(None);
+            };
+
+            data.push(byte);
+        }
+
+        Ok(Some(Self {
+            manufacturer_id,
+            data,
+        }))
     }
 }
 

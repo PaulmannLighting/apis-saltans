@@ -1,12 +1,12 @@
 use std::iter::Chain;
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 use crate::types::ChannelsField;
 use crate::types::tlv::Tag;
 
 /// Next Channel Change TLV structure.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct NextChannelChange {
     next_channel: ChannelsField,
 }
@@ -42,6 +42,25 @@ impl From<NextChannelChange> for ChannelsField {
 impl From<ChannelsField> for NextChannelChange {
     fn from(next_channel: ChannelsField) -> Self {
         Self { next_channel }
+    }
+}
+
+impl FromLeStreamTagged for NextChannelChange {
+    type Tag = u8;
+
+    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(length);
+        };
+
+        if size != 4 {
+            return Err(length);
+        }
+
+        Ok(ChannelsField::from_le_stream(&mut bytes).map(Self::new))
     }
 }
 

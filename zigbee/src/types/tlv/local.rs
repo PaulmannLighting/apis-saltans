@@ -1,7 +1,7 @@
 use std::iter::Chain;
 use std::num::TryFromIntError;
 
-use le_stream::{FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 /// Local TLV structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -40,14 +40,26 @@ impl Local {
 impl FromLeStreamTagged for Local {
     type Tag = u8;
 
-    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
+    fn from_le_stream_tagged<T>(tag: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
     where
         T: Iterator<Item = u8>,
     {
-        Ok(Some(Self {
-            tag,
-            data: bytes.collect(),
-        }))
+        let Some(length) = u8::from_le_stream(&mut bytes) else {
+            return Ok(None);
+        };
+
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(tag);
+        };
+
+        let mut data = Vec::with_capacity(size);
+        for _ in 0..size {
+            let Some(byte) = u8::from_le_stream(&mut bytes) else {
+                return Ok(None);
+            };
+            data.push(byte);
+        }
+        Ok(Some(Self { tag, data }))
     }
 }
 

@@ -1,11 +1,11 @@
 use std::iter::Chain;
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 use crate::types::tlv::Tag;
 
 /// Pan ID Conflict Report TLV.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct PanIdConflictReport {
     nwk_pan_id_conflict_count: u16,
 }
@@ -45,6 +45,25 @@ impl From<u16> for PanIdConflictReport {
         Self {
             nwk_pan_id_conflict_count,
         }
+    }
+}
+
+impl FromLeStreamTagged for PanIdConflictReport {
+    type Tag = u8;
+
+    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(length);
+        };
+
+        if size != 2 {
+            return Err(length);
+        }
+
+        Ok(u16::from_le_stream(&mut bytes).map(Self::new))
     }
 }
 

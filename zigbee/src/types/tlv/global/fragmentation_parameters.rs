@@ -1,6 +1,6 @@
 use std::iter::Chain;
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 pub use self::fragmentation_options::FragmentationOptions;
 use crate::types::tlv::Tag;
@@ -8,7 +8,7 @@ use crate::types::tlv::Tag;
 mod fragmentation_options;
 
 /// Fragmentation Parameters TLV structure.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct FragmentationParameters {
     node_id: u16,
     options: Option<FragmentationOptions>,
@@ -64,6 +64,49 @@ impl Tag for FragmentationParameters {
         }
 
         size
+    }
+}
+
+impl FromLeStreamTagged for FragmentationParameters {
+    type Tag = u8;
+
+    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(length);
+        };
+
+        let Some(size) = size.checked_sub(2) else {
+            return Err(length);
+        };
+
+        let Some(node_id) = u16::from_le_stream(&mut bytes) else {
+            return Ok(None);
+        };
+
+        let Some(size) = size.checked_sub(1) else {
+            return Ok(Some(Self::new(node_id, None, None)));
+        };
+
+        let Some(options) = FragmentationOptions::from_le_stream(&mut bytes) else {
+            return Ok(None);
+        };
+
+        let Some(size) = size.checked_sub(1) else {
+            return Ok(Some(Self::new(node_id, Some(options), None)));
+        };
+
+        if size != 0 {
+            return Err(length);
+        }
+
+        Ok(
+            u16::from_le_stream(&mut bytes).map(|maximum_incoming_transfer_unit| {
+                Self::new(node_id, Some(options), Some(maximum_incoming_transfer_unit))
+            }),
+        )
     }
 }
 

@@ -1,12 +1,12 @@
 use std::iter::Chain;
 use std::ops::{Deref, DerefMut};
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv};
 
 /// Joiner Encapsulation TLV structure.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct JoinerEncapsulation {
     inner: Vec<Tlv<Local, EncapsulatedGlobal>>,
 }
@@ -47,6 +47,30 @@ impl Deref for JoinerEncapsulation {
 impl DerefMut for JoinerEncapsulation {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
+    }
+}
+
+impl FromLeStreamTagged for JoinerEncapsulation {
+    type Tag = u8;
+
+    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(length);
+        };
+
+        let mut inner = Vec::with_capacity(size);
+
+        for _ in 0..size {
+            let Some(item) = Tlv::<Local, EncapsulatedGlobal>::from_le_stream(&mut bytes) else {
+                return Ok(None);
+            };
+            inner.push(item);
+        }
+
+        Ok(Some(Self { inner }))
     }
 }
 

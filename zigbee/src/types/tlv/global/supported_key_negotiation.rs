@@ -1,6 +1,6 @@
 use std::iter::Chain;
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 use macaddr::MacAddr8;
 
 pub use self::key_negotiation_protocols::KeyNegotiationProtocols;
@@ -11,7 +11,7 @@ mod key_negotiation_protocols;
 mod pre_shared_secrets;
 
 /// Supported Key Negotiation TLV structure.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct SupportedKeyNegotiation {
     key_negotiation_protocols: KeyNegotiationProtocols,
     pre_shared_secrets: PreSharedSecrets,
@@ -63,6 +63,48 @@ impl Tag for SupportedKeyNegotiation {
         }
 
         size
+    }
+}
+
+impl FromLeStreamTagged for SupportedKeyNegotiation {
+    type Tag = u8;
+
+    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(length);
+        };
+
+        let Some(size) = size.checked_sub(2) else {
+            return Err(length);
+        };
+
+        let Some(key_negotiation_protocols) = KeyNegotiationProtocols::from_le_stream(&mut bytes)
+        else {
+            return Ok(None);
+        };
+
+        let Some(pre_shared_secrets) = PreSharedSecrets::from_le_stream(&mut bytes) else {
+            return Ok(None);
+        };
+
+        match size {
+            0 => Ok(Some(Self::new(
+                key_negotiation_protocols,
+                pre_shared_secrets,
+                None,
+            ))),
+            8 => Ok(MacAddr8::from_le_stream(bytes).map(|source_device_eui64| {
+                Self::new(
+                    key_negotiation_protocols,
+                    pre_shared_secrets,
+                    Some(source_device_eui64),
+                )
+            })),
+            _ => Err(length),
+        }
     }
 }
 

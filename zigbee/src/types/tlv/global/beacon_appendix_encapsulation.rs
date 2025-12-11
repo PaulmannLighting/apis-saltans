@@ -2,12 +2,12 @@ use std::iter::Chain;
 use std::num::TryFromIntError;
 use std::ops::Deref;
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv};
 
 /// Beacon Appendix Encapsulation TLV structure.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct BeaconAppendixEncapsulation {
     inner: Vec<Tlv<Local, EncapsulatedGlobal>>,
 }
@@ -42,6 +42,30 @@ impl Deref for BeaconAppendixEncapsulation {
 
     fn deref(&self) -> &Self::Target {
         &self.inner
+    }
+}
+
+impl FromLeStreamTagged for BeaconAppendixEncapsulation {
+    type Tag = u8;
+
+    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(length);
+        };
+
+        let mut inner = Vec::with_capacity(size);
+
+        for _ in 0..size {
+            let Some(item) = Tlv::<Local, EncapsulatedGlobal>::from_le_stream(&mut bytes) else {
+                return Ok(None);
+            };
+            inner.push(item);
+        }
+
+        Ok(Some(Self { inner }))
     }
 }
 

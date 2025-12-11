@@ -1,11 +1,11 @@
 use std::iter::Chain;
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 use crate::types::tlv::Tag;
 
 /// Next PAN ID TLV structure.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct NextPanIdChange {
     pan_id: u16,
 }
@@ -41,6 +41,25 @@ impl From<NextPanIdChange> for u16 {
 impl From<u16> for NextPanIdChange {
     fn from(pan_id: u16) -> Self {
         Self { pan_id }
+    }
+}
+
+impl FromLeStreamTagged for NextPanIdChange {
+    type Tag = u8;
+
+    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let Some(size) = usize::from(length).checked_add(1) else {
+            return Err(length);
+        };
+
+        if size != 2 {
+            return Err(length);
+        }
+
+        Ok(u16::from_le_stream(&mut bytes).map(Self::new))
     }
 }
 
