@@ -62,24 +62,17 @@ impl UnbindReq {
     }
 
     /// Returns the destination.
-    ///
-    /// # Returns
-    ///
-    /// `Some(Destination)` if the destination is valid, otherwise `None`.
+    #[expect(clippy::missing_panics_doc)]
     #[must_use]
-    pub const fn destination(&self) -> Option<Destination> {
+    pub const fn destination(&self) -> Destination {
         match &self.dst_address {
-            Address::Group(addr) => Some(Destination::Group(*addr)),
-            Address::Extended(addr) => {
-                if let Some(endpoint) = self.dst_endpoint {
-                    Some(Destination::Extended {
-                        address: *addr,
-                        endpoint,
-                    })
-                } else {
-                    None
-                }
-            }
+            Address::Group(addr) => Destination::Group(*addr),
+            Address::Extended(addr) => Destination::Extended {
+                address: *addr,
+                endpoint: self
+                    .dst_endpoint
+                    .expect("Extended address is guaranteed to have an endpoint"),
+            },
         }
     }
 }
