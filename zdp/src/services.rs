@@ -10,7 +10,7 @@ pub use self::device_and_service_discovery::{
     ActiveEpReq, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq, NodeDescReq,
     NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, SimpleDescReq, SystemServerDiscoveryReq,
 };
-pub use self::network_management::{MgmtPermitJoiningReq, NetworkManagement};
+pub use self::network_management::{MgmtLqiReq, MgmtPermitJoiningReq, NetworkManagement};
 
 mod bind_management;
 mod device_and_service_discovery;
@@ -83,6 +83,9 @@ impl Command {
                 .map(BindManagement::ClearAllBindingsReq)
                 .map(Self::BindManagement)),
             // Network Management Commands
+            MgmtLqiReq::ID => Ok(MgmtLqiReq::from_le_stream(bytes)
+                .map(NetworkManagement::MgmtLqiReq)
+                .map(Self::NetworkManagement)),
             MgmtPermitJoiningReq::ID => Ok(MgmtPermitJoiningReq::from_le_stream(bytes)
                 .map(NetworkManagement::MgmtPermitJoiningReq)
                 .map(Self::NetworkManagement)),
