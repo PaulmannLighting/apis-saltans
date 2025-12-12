@@ -1,80 +1,70 @@
-use std::iter::Chain;
-use std::num::TryFromIntError;
+mod clear_all_bindings_req_eui64;
 
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
+pub use self::clear_all_bindings_req_eui64::ClearAllBindingsReqEui64;
+use self::iter::LocalIter;
+use crate::types::tlv::Tag;
+
 /// Local TLV structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct Local {
-    tag: u8,
-    data: Vec<u8>,
-}
-
-impl Local {
-    /// Create a new `Local` TLV.
-    ///
-    /// # Errors
-    ///
-    /// If the length of `data` minus one cannot be represented as a `u8`, an error is returned.
-    pub fn new(tag: u8, data: Vec<u8>) -> Result<Self, Option<TryFromIntError>> {
-        let Some(len) = data.len().checked_sub(1) else {
-            return Err(None);
-        };
-
-        u8::try_from(len).map(|_| Self { tag, data }).map_err(Some)
-    }
-
-    /// Get the tag.
-    #[must_use]
-    pub const fn tag(&self) -> u8 {
-        self.tag
-    }
-
-    /// Get the data.
-    #[must_use]
-    pub fn data(&self) -> &[u8] {
-        &self.data
-    }
+pub enum Local {
+    /// Clear All Bindings Request EUI64 List.
+    ClearAllBindingsReqEui64(ClearAllBindingsReqEui64),
 }
 
 impl FromLeStreamTagged for Local {
     type Tag = u8;
 
-    fn from_le_stream_tagged<T>(tag: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
+    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
     where
         T: Iterator<Item = u8>,
     {
-        let Some(length) = u8::from_le_stream(&mut bytes) else {
-            return Ok(None);
-        };
-
-        let Some(size) = usize::from(length).checked_add(1) else {
-            return Err(tag);
-        };
-
-        let mut data = Vec::with_capacity(size);
-        for _ in 0..size {
-            let Some(byte) = u8::from_le_stream(&mut bytes) else {
-                return Ok(None);
-            };
-            data.push(byte);
+        match tag {
+            ClearAllBindingsReqEui64::TAG => {
+                Ok(ClearAllBindingsReqEui64::from_le_stream(bytes)
+                    .map(Self::ClearAllBindingsReqEui64))
+            }
+            _ => Err(tag),
         }
-        Ok(Some(Self { tag, data }))
     }
 }
 
 impl ToLeStream for Local {
-    type Iter = Chain<
-        Chain<<u8 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>,
-        <Vec<u8> as ToLeStream>::Iter,
-    >;
+    type Iter = LocalIter;
 
     fn to_le_stream(self) -> Self::Iter {
-        let len = u8::try_from(self.data.len().checked_sub(1).expect("Data is not empty"))
-            .expect("Length fits in u8");
-        self.tag
-            .to_le_stream()
-            .chain(len.to_le_stream())
-            .chain(self.data.to_le_stream())
+        self.into()
+    }
+}
+
+mod iter {
+    use le_stream::ToLeStream;
+
+    use crate::types::tlv::Local;
+    use crate::types::tlv::local::ClearAllBindingsReqEui64;
+
+    pub enum LocalIter {
+        ClearAllBindingsReqEui64(<ClearAllBindingsReqEui64 as ToLeStream>::Iter),
+    }
+
+    impl Iterator for LocalIter {
+        type Item = u8;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                Self::ClearAllBindingsReqEui64(iter) => iter.next(),
+            }
+        }
+    }
+
+    impl From<Local> for LocalIter {
+        fn from(local: Local) -> Self {
+            match local {
+                Local::ClearAllBindingsReqEui64(value) => {
+                    Self::ClearAllBindingsReqEui64(value.to_le_stream())
+                }
+            }
+        }
     }
 }

@@ -10,7 +10,7 @@ pub use self::global::{
     SupportedKeyNegotiation, SymmetricPassphrase,
 };
 use self::iter::TlvLeStream;
-pub use self::local::Local;
+pub use self::local::{ClearAllBindingsReqEui64, Local};
 pub use self::tag::Tag;
 
 mod encapsulated_global;
