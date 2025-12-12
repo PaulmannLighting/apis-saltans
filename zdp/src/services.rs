@@ -14,6 +14,7 @@ pub use self::nwk_addr_req::{NwkAddrReq, RequestType};
 pub use self::parent_annce::ParentAnnce;
 pub use self::power_desc_req::PowerDescReq;
 pub use self::simple_desc_req::SimpleDescReq;
+pub use self::system_server_discovery_req::SystemServerDiscoveryReq;
 
 mod active_ep_req;
 mod bind_req;
@@ -26,6 +27,7 @@ mod nwk_addr_req;
 mod parent_annce;
 mod power_desc_req;
 mod simple_desc_req;
+mod system_server_discovery_req;
 
 /// A ZDP client service.
 pub trait Service {
@@ -55,6 +57,8 @@ pub enum Command {
     DeviceAnnce(DeviceAnnce),
     /// Parent Announcement
     ParentAnnce(ParentAnnce),
+    /// System Server Discovery Request
+    SystemServerDiscoveryReq(SystemServerDiscoveryReq),
     /// Bind Request
     BindReq(BindReq),
     /// Management Permit Joining Request
@@ -78,6 +82,10 @@ impl FromLeStreamTagged for Command {
             MatchDescReq::ID => Ok(MatchDescReq::from_le_stream(bytes).map(Self::MatchDescReq)),
             DeviceAnnce::ID => Ok(DeviceAnnce::from_le_stream(bytes).map(Self::DeviceAnnce)),
             ParentAnnce::ID => Ok(ParentAnnce::from_le_stream(bytes).map(Self::ParentAnnce)),
+            SystemServerDiscoveryReq::ID => {
+                Ok(SystemServerDiscoveryReq::from_le_stream(bytes)
+                    .map(Self::SystemServerDiscoveryReq))
+            }
             BindReq::ID => Ok(BindReq::from_le_stream(bytes).map(Self::BindReq)),
             MgmtPermitJoiningReq::ID => {
                 Ok(MgmtPermitJoiningReq::from_le_stream(bytes).map(Self::MgmtPermitJoiningReq))
