@@ -12,10 +12,12 @@ pub use self::discrete::{
     UtcTime,
 };
 pub use self::null::{NoData, Unknown};
+pub use self::scan_duration::ScanDuration;
 
 mod analog;
 mod channels_field;
 mod composite;
 mod discrete;
 mod null;
+mod scan_duration;
 pub mod tlv;
