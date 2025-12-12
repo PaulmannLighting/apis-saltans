@@ -1,5 +1,7 @@
 //! Bind, unbind and bind management related ZDP services.
 
+use std::fmt::{Display, Pointer};
+
 pub use self::bind_req::{Address, AddressMode, BindReq, Destination};
 pub use self::clear_all_bindings_req::ClearAllBindingsReq;
 pub use self::unbind_req::UnbindReq;
@@ -17,4 +19,14 @@ pub enum BindManagement {
     UnbindReq(UnbindReq),
     /// Clear All Bindings Request
     ClearAllBindingsReq(ClearAllBindingsReq),
+}
+
+impl Display for BindManagement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BindReq(cmd) => cmd.fmt(f),
+            Self::UnbindReq(cmd) => cmd.fmt(f),
+            Self::ClearAllBindingsReq(cmd) => cmd.fmt(f),
+        }
+    }
 }

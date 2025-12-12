@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::ToLeStream;
 use macaddr::MacAddr8;
 
@@ -10,6 +12,15 @@ pub enum Address {
     Group(u16),
     /// 64-bit extended address.
     Extended(MacAddr8),
+}
+
+impl Display for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Group(addr) => write!(f, "{addr:#06X}"),
+            Self::Extended(addr) => write!(f, "{addr}"),
+        }
+    }
 }
 
 impl ToLeStream for Address {

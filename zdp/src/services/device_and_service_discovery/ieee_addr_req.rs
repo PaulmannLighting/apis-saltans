@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
@@ -47,4 +49,17 @@ impl Cluster for IeeeAddrReq {
 
 impl Service for IeeeAddrReq {
     const NAME: &'static str = "IEEE_addr_req";
+}
+
+impl Display for IeeeAddrReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ nwk_addr_of_interest: {:#06X}, request_type: {:#04X}, start_index: {:#04X} }}",
+            Self::NAME,
+            self.nwk_addr_of_interest,
+            self.request_type,
+            self.start_index
+        )
+    }
 }

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
@@ -31,4 +33,15 @@ impl Cluster for ActiveEpReq {
 
 impl Service for ActiveEpReq {
     const NAME: &'static str = "Active_EP_req";
+}
+
+impl Display for ActiveEpReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ nwk_addr_of_interest: {:#06X} }}",
+            Self::NAME,
+            self.nwk_addr_of_interest
+        )
+    }
 }

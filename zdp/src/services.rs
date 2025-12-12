@@ -1,5 +1,7 @@
 //! ZDP services.
 
+use std::fmt::Display;
+
 use le_stream::FromLeStream;
 use zigbee::Cluster;
 
@@ -105,6 +107,16 @@ impl Command {
                 .map(NetworkManagement::MgmtNwkUpdateReq)
                 .map(Self::NetworkManagement)),
             other => Err(other),
+        }
+    }
+}
+
+impl Display for Command {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DeviceAndServiceDiscovery(cmd) => cmd.fmt(f),
+            Self::BindManagement(cmd) => cmd.fmt(f),
+            Self::NetworkManagement(cmd) => cmd.fmt(f),
         }
     }
 }

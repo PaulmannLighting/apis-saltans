@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
@@ -31,6 +33,17 @@ impl Cluster for PowerDescReq {
 
 impl Service for PowerDescReq {
     const NAME: &'static str = "Power_Desc_req";
+}
+
+impl Display for PowerDescReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ nwk_addr_of_interest: {:#06X} }}",
+            Self::NAME,
+            self.nwk_addr_of_interest
+        )
+    }
 }
 
 impl From<PowerDescReq> for u16 {

@@ -1,5 +1,7 @@
 //! Device and service discovery ZDP services.
 
+use std::fmt::Display;
+
 pub use self::active_ep_req::ActiveEpReq;
 pub use self::device_annce::DeviceAnnce;
 pub use self::ieee_addr_req::IeeeAddrReq;
@@ -45,4 +47,21 @@ pub enum DeviceAndServiceDiscovery {
     ParentAnnce(ParentAnnce),
     /// System Server Discovery Request
     SystemServerDiscoveryReq(SystemServerDiscoveryReq),
+}
+
+impl Display for DeviceAndServiceDiscovery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NwkAddrReq(cmd) => cmd.fmt(f),
+            Self::IeeeAddrReq(cmd) => cmd.fmt(f),
+            Self::NodeDescReq(cmd) => cmd.fmt(f),
+            Self::PowerDescReq(cmd) => cmd.fmt(f),
+            Self::SimpleDescReq(cmd) => cmd.fmt(f),
+            Self::ActiveEpReq(cmd) => cmd.fmt(f),
+            Self::MatchDescReq(cmd) => cmd.fmt(f),
+            Self::DeviceAnnce(cmd) => cmd.fmt(f),
+            Self::ParentAnnce(cmd) => cmd.fmt(f),
+            Self::SystemServerDiscoveryReq(cmd) => cmd.fmt(f),
+        }
+    }
 }

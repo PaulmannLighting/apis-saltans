@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
@@ -106,4 +108,28 @@ impl Cluster for MgmtNwkUpdateReq {
 
 impl Service for MgmtNwkUpdateReq {
     const NAME: &'static str = "Mgmt_NWK_Update_req";
+}
+
+impl Display for MgmtNwkUpdateReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.scan_duration() {
+            Ok(scan_duration) => {
+                write!(
+                    f,
+                    "{} {{ scan_channels: {:#010X}, scan_duration: {scan_duration} }}",
+                    Self::NAME,
+                    self.scan_channels,
+                )
+            }
+            Err(invalid_scan_duration) => {
+                write!(
+                    f,
+                    "{} {{ scan_channels: {:#010X}, invalid_scan_duration: {:#04X} }}",
+                    Self::NAME,
+                    self.scan_channels,
+                    invalid_scan_duration
+                )
+            }
+        }
+    }
 }

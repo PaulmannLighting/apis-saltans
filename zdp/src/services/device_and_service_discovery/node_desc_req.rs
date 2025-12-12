@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::FromLeStream;
 use zigbee::Cluster;
 use zigbee::types::tlv::Tlv;
@@ -37,4 +39,16 @@ impl Cluster for NodeDescReq {
 
 impl Service for NodeDescReq {
     const NAME: &'static str = "Node_Desc_req";
+}
+
+impl Display for NodeDescReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ nwk_addr: {:#06X}, tlvs: {:?} }}",
+            Self::NAME,
+            self.nwk_addr,
+            self.tlvs
+        )
+    }
 }

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 use zigbee::node::ServerMask;
@@ -30,6 +32,12 @@ impl Cluster for SystemServerDiscoveryReq {
 
 impl Service for SystemServerDiscoveryReq {
     const NAME: &'static str = "System_Server_Discovery_req";
+}
+
+impl Display for SystemServerDiscoveryReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {{ server_mask: {} }}", Self::NAME, self.server_mask)
+    }
 }
 
 impl From<ServerMask> for SystemServerDiscoveryReq {

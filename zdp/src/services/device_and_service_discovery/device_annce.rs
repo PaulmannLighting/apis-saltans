@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
@@ -49,4 +51,17 @@ impl Cluster for DeviceAnnce {
 
 impl Service for DeviceAnnce {
     const NAME: &'static str = "Device_annce";
+}
+
+impl Display for DeviceAnnce {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ nwk_addr: {:#06X}, ieee_addr: {}, capabilities: {} }}",
+            Self::NAME,
+            self.nwk_addr,
+            self.ieee_addr,
+            self.capabilities
+        )
+    }
 }

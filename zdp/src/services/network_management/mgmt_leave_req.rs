@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
@@ -43,4 +45,16 @@ impl Cluster for MgmtLeaveReq {
 
 impl Service for MgmtLeaveReq {
     const NAME: &'static str = "Mgmt_Leave_req";
+}
+
+impl Display for MgmtLeaveReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ device_address: {}, flags: {} }}",
+            Self::NAME,
+            self.device_address,
+            self.flags
+        )
+    }
 }

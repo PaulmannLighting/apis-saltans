@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use zigbee::Cluster;
 
@@ -63,4 +65,39 @@ impl Cluster for MatchDescReq {
 
 impl Service for MatchDescReq {
     const NAME: &'static str = "Match_Desc_req";
+}
+
+impl Display for MatchDescReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ nwk_addr_of_interest: {:#06X}, profile_id: {:#06X}, in_cluster_list: [",
+            Self::NAME,
+            self.nwk_addr_of_interest,
+            self.profile_id,
+        )?;
+        let mut in_clusters = self.in_cluster_list.iter();
+
+        if let Some(cluster) = in_clusters.next() {
+            write!(f, "{cluster:#06X}")?;
+
+            for cluster in in_clusters {
+                write!(f, ", {cluster:#06X}")?;
+            }
+        }
+
+        write!(f, "], out_cluster_list: [")?;
+
+        let mut out_clusters = self.out_cluster_list.iter();
+
+        if let Some(cluster) = out_clusters.next() {
+            write!(f, "{cluster:#06X}")?;
+
+            for cluster in out_clusters {
+                write!(f, ", {cluster:#06X}")?;
+            }
+        }
+
+        write!(f, "] }}")
+    }
 }

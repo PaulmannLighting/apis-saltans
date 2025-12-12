@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
@@ -39,4 +41,16 @@ impl Cluster for SimpleDescReq {
 
 impl Service for SimpleDescReq {
     const NAME: &'static str = "Simple_Desc_req";
+}
+
+impl Display for SimpleDescReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ nwk_address_of_interest: {:#06X}, endpoint: {:#04X} }}",
+            Self::NAME,
+            self.nwk_address_of_interest,
+            self.endpoint
+        )
+    }
 }

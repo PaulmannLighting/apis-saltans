@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use repr_discriminant::ReprDiscriminant;
 
 /// Scan Duration enumeration.
@@ -48,4 +50,41 @@ pub enum ScanDuration {
         /// Network manager address.
         nwk_manager_addr: u16,
     } = 0xFF,
+}
+
+impl Display for ScanDuration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ScanDuration::Zero { energy_scan } => {
+                write!(f, "Zero {{ energy_scan: {energy_scan} }}")
+            }
+            ScanDuration::One { energy_scan } => {
+                write!(f, "One {{ energy_scan: {energy_scan} }}")
+            }
+            ScanDuration::Two { energy_scan } => {
+                write!(f, "Two {{ energy_scan: {energy_scan} }}")
+            }
+            ScanDuration::Three { energy_scan } => {
+                write!(f, "Three {{ energy_scan: {energy_scan} }}")
+            }
+            ScanDuration::Four { energy_scan } => {
+                write!(f, "Four {{ energy_scan: {energy_scan} }}")
+            }
+            ScanDuration::Five { energy_scan } => {
+                write!(f, "Five {{ energy_scan: {energy_scan} }}")
+            }
+            ScanDuration::ChannelChange { nwk_update_id } => {
+                write!(f, "ChannelChange {{ nwk_update_id: {nwk_update_id:#04X} }}")
+            }
+            ScanDuration::AttributeChange {
+                nwk_update_id,
+                nwk_manager_addr,
+            } => {
+                write!(
+                    f,
+                    "AttributeChange {{ nwk_update_id: {nwk_update_id:#04X}, nwk_manager_addr: {nwk_manager_addr:#06X} }}"
+                )
+            }
+        }
+    }
 }

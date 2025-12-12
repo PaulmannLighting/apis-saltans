@@ -1,5 +1,7 @@
 //! Network Management Client ZDP Services.
 
+use std::fmt::Display;
+
 pub use self::mgmt_bind_req::MgmtBindReq;
 pub use self::mgmt_leave_req::{LeaveReqFlags, MgmtLeaveReq};
 pub use self::mgmt_lqi_req::MgmtLqiReq;
@@ -30,4 +32,17 @@ pub enum NetworkManagement {
     MgmtPermitJoiningReq(MgmtPermitJoiningReq),
     /// Management Network Update Request
     MgmtNwkUpdateReq(MgmtNwkUpdateReq),
+}
+
+impl Display for NetworkManagement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MgmtLqiReq(cmd) => cmd.fmt(f),
+            Self::MgmtRtgReq(cmd) => cmd.fmt(f),
+            Self::MgmtBindReq(cmd) => cmd.fmt(f),
+            Self::MgmtLeaveReq(cmd) => cmd.fmt(f),
+            Self::MgmtPermitJoiningReq(cmd) => cmd.fmt(f),
+            Self::MgmtNwkUpdateReq(cmd) => cmd.fmt(f),
+        }
+    }
 }

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
@@ -29,4 +31,15 @@ impl Cluster for MgmtLqiReq {
 
 impl Service for MgmtLqiReq {
     const NAME: &'static str = "Mgmt_Lqi_req";
+}
+
+impl Display for MgmtLqiReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ start_index: {:#04X} }}",
+            Self::NAME,
+            self.start_index
+        )
+    }
 }

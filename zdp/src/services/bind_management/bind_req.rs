@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
@@ -89,6 +91,20 @@ impl Cluster for BindReq {
 
 impl Service for BindReq {
     const NAME: &'static str = "Bind_req";
+}
+
+impl Display for BindReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ src_address: {}, src_endpoint: {:#04X}, cluster_id: {:#06X}, destination: {} }}",
+            Self::NAME,
+            self.src_address,
+            self.src_endpoint,
+            self.cluster_id,
+            self.destination(),
+        )
+    }
 }
 
 impl FromLeStream for BindReq {

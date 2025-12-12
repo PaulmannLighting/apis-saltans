@@ -1,8 +1,11 @@
+use std::fmt::Display;
 use std::ops::Deref;
 
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
+
+use crate::Service;
 
 /// Parent Announcement Service.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -31,7 +34,7 @@ impl Cluster for ParentAnnce {
     const ID: u16 = 0x001F;
 }
 
-impl crate::Service for ParentAnnce {
+impl Service for ParentAnnce {
     const NAME: &'static str = "Parent_annce";
 }
 
@@ -40,6 +43,24 @@ impl Deref for ParentAnnce {
 
     fn deref(&self) -> &Self::Target {
         &self.child_info
+    }
+}
+
+impl Display for ParentAnnce {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {{ child_info: [", Self::NAME)?;
+
+        let mut mac_addresses = self.child_info().iter();
+
+        if let Some(mac_address) = mac_addresses.next() {
+            write!(f, "{mac_address}")?;
+
+            for mac_address in mac_addresses {
+                write!(f, ", {mac_address}")?;
+            }
+        }
+
+        write!(f, "] }}")
     }
 }
 

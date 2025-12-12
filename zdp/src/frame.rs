@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::Command;
@@ -45,5 +47,14 @@ impl Frame<Command> {
 
         Command::parse_with_cluster_id(cluster_id, bytes)
             .map(|data| data.map(|data| Self::new(seq, data)))
+    }
+}
+
+impl<T> Display for Frame<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Frame {{ seq: {:#04X}, data: {} }}", self.seq, self.data)
     }
 }

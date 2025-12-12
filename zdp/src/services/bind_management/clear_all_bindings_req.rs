@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
@@ -46,4 +48,10 @@ impl Cluster for ClearAllBindingsReq {
 
 impl Service for ClearAllBindingsReq {
     const NAME: &'static str = "Clear_All_Bindings_req";
+}
+
+impl Display for ClearAllBindingsReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {{ tlvs: {:?} }}", Self::NAME, self.tlvs)
+    }
 }

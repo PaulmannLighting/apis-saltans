@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
@@ -55,4 +57,17 @@ impl Cluster for NwkAddrReq {
 
 impl Service for NwkAddrReq {
     const NAME: &'static str = "NWK_addr_req";
+}
+
+impl Display for NwkAddrReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ ieee_addr: {}, request_type: {:#04X}, start_index: {:#04X} }}",
+            Self::NAME,
+            self.ieee_addr,
+            self.request_type,
+            self.start_index
+        )
+    }
 }

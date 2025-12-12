@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 use zigbee::types::tlv::Tlv;
@@ -48,4 +50,17 @@ impl Cluster for MgmtPermitJoiningReq {
 
 impl Service for MgmtPermitJoiningReq {
     const NAME: &'static str = "Mgmt_Permit_Joining_req";
+}
+
+impl Display for MgmtPermitJoiningReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ duration: {:#04X}, tc_significance: {}, tlv_data: {:?} }}",
+            Self::NAME,
+            self.duration,
+            self.tc_significance,
+            self.tlv_data
+        )
+    }
 }
