@@ -17,7 +17,7 @@ impl ClearAllBindingsReq {
         Self { tlvs }
     }
 
-    /// Returns a reference to the EUI64 list.
+    /// Returns the provided TLVs.
     #[must_use]
     pub fn tlvs(&self) -> &[Tlv] {
         &self.tlvs
