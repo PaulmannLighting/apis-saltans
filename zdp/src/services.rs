@@ -11,6 +11,7 @@ pub use self::match_desc_req::MatchDescReq;
 pub use self::mgmt_permit_joining_req::MgmtPermitJoiningReq;
 pub use self::node_desc_req::NodeDescReq;
 pub use self::nwk_addr_req::{NwkAddrReq, RequestType};
+pub use self::parent_annce::ParentAnnce;
 pub use self::power_desc_req::PowerDescReq;
 pub use self::simple_desc_req::SimpleDescReq;
 
@@ -22,6 +23,7 @@ mod match_desc_req;
 mod mgmt_permit_joining_req;
 mod node_desc_req;
 mod nwk_addr_req;
+mod parent_annce;
 mod power_desc_req;
 mod simple_desc_req;
 
@@ -51,6 +53,8 @@ pub enum Command {
     MatchDescReq(MatchDescReq),
     /// Device Announcement
     DeviceAnnce(DeviceAnnce),
+    /// Parent Announcement
+    ParentAnnce(ParentAnnce),
     /// Bind Request
     BindReq(BindReq),
     /// Management Permit Joining Request
@@ -73,6 +77,7 @@ impl FromLeStreamTagged for Command {
             ActiveEpReq::ID => Ok(ActiveEpReq::from_le_stream(bytes).map(Self::ActiveEpReq)),
             MatchDescReq::ID => Ok(MatchDescReq::from_le_stream(bytes).map(Self::MatchDescReq)),
             DeviceAnnce::ID => Ok(DeviceAnnce::from_le_stream(bytes).map(Self::DeviceAnnce)),
+            ParentAnnce::ID => Ok(ParentAnnce::from_le_stream(bytes).map(Self::ParentAnnce)),
             BindReq::ID => Ok(BindReq::from_le_stream(bytes).map(Self::BindReq)),
             MgmtPermitJoiningReq::ID => {
                 Ok(MgmtPermitJoiningReq::from_le_stream(bytes).map(Self::MgmtPermitJoiningReq))
