@@ -77,10 +77,10 @@ impl Display for MacCapabilityFlags {
         let mut names = self.iter_names();
 
         if let Some((name, flag)) = names.next() {
-            write!(f, "{name} ({flag:#040X})")?;
+            write!(f, "{name} ({flag:#04X})")?;
 
             for (name, flag) in names {
-                write!(f, ", {name} ({flag:#040X})")?;
+                write!(f, ", {name} ({flag:#04X})")?;
             }
         }
 
