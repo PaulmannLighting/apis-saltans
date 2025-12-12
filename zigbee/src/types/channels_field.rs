@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
+/// Channels field bitmask.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, ToLeStream)]
 #[repr(transparent)]
 pub struct ChannelsField(u32);

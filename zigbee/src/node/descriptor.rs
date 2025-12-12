@@ -9,6 +9,7 @@ mod logical_type;
 mod mac_capability_flags;
 mod server_mask;
 
+/// Node Descriptor.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Descriptor {
