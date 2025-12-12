@@ -1,7 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Cluster;
 
-use crate::{Command, Service};
+use crate::Command;
 
 /// A frame with a sequence number and associated data.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
@@ -28,20 +27,6 @@ impl<T> Frame<T> {
     pub const fn data(&self) -> &T {
         &self.data
     }
-}
-
-impl<T> Cluster for Frame<T>
-where
-    T: Cluster,
-{
-    const ID: u16 = T::ID;
-}
-
-impl<T> Service for Frame<T>
-where
-    T: Service,
-{
-    const NAME: &'static str = T::NAME;
 }
 
 impl Frame<Command> {
