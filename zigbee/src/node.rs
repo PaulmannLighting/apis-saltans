@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use macaddr::MacAddr8;
 
 pub use self::capability::Capability;
-pub use self::descriptor::{Descriptor, Flags, MacCapabilityFlags};
+pub use self::descriptor::{Descriptor, Flags, MacCapabilityFlags, ServerMask};
 
 mod capability;
 mod descriptor;

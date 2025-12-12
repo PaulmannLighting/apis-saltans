@@ -1,5 +1,6 @@
 pub use self::flags::Flags;
 pub use self::mac_capability_flags::MacCapabilityFlags;
+pub use self::server_mask::ServerMask;
 
 mod device_type;
 mod flags;
