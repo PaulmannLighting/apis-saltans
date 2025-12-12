@@ -30,18 +30,18 @@ impl<T> Frame<T> {
     }
 }
 
-impl<T> Service for Frame<T>
-where
-    T: Service,
-{
-    const NAME: &'static str = T::NAME;
-}
-
 impl<T> Cluster for Frame<T>
 where
     T: Cluster,
 {
     const ID: u16 = T::ID;
+}
+
+impl<T> Service for Frame<T>
+where
+    T: Service,
+{
+    const NAME: &'static str = T::NAME;
 }
 
 impl Frame<Command> {
