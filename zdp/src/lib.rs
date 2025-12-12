@@ -8,7 +8,7 @@ pub use self::frame::Frame;
 pub use self::services::{
     ActiveEpReq, BindReq, Command, Destination, DeviceAnnce, IeeeAddrReq, MatchDescReq,
     MgmtPermitJoiningReq, NodeDescReq, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, Service,
-    SimpleDescReq, SystemServerDiscoveryReq,
+    SimpleDescReq, SystemServerDiscoveryReq, UnbindReq,
 };
 
 mod frame;
