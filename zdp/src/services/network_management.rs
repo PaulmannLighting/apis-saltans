@@ -1,9 +1,11 @@
 //! Network Management Client ZDP Services.
 
+pub use self::mgmt_bind_req::MgmtBindReq;
 pub use self::mgmt_lqi_req::MgmtLqiReq;
 pub use self::mgmt_permit_joining_req::MgmtPermitJoiningReq;
 pub use self::mgmt_rtg_req::MgmtRtgReq;
 
+mod mgmt_bind_req;
 mod mgmt_lqi_req;
 mod mgmt_permit_joining_req;
 mod mgmt_rtg_req;
@@ -18,4 +20,6 @@ pub enum NetworkManagement {
     MgmtLqiReq(MgmtLqiReq),
     /// Management Routing Request
     MgmtRtgReq(MgmtRtgReq),
+    /// Management Bind Request
+    MgmtBindReq(MgmtBindReq),
 }
