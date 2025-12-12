@@ -1,10 +1,12 @@
 //! Bind, unbind and bind management related ZDP services.
 
 pub use bind_req::{Address, AddressMode, BindReq, Destination};
+pub use clear_all_bindings_req::ClearAllBindingsReq;
 pub use mgmt_permit_joining_req::MgmtPermitJoiningReq;
 pub use unbind_req::UnbindReq;
 
 mod bind_req;
+mod clear_all_bindings_req;
 mod mgmt_permit_joining_req;
 mod unbind_req;
 
@@ -18,4 +20,6 @@ pub enum BindManagement {
     UnbindReq(UnbindReq),
     /// Management Permit Joining Request
     MgmtPermitJoiningReq(MgmtPermitJoiningReq),
+    /// Clear All Bindings Request
+    ClearAllBindingsReq(ClearAllBindingsReq),
 }
