@@ -30,26 +30,18 @@ impl<T> Frame<T> {
     }
 }
 
-impl<T> Frame<T>
+impl<T> Service for Frame<T>
 where
     T: Service,
 {
-    /// Returns the service name.
-    #[must_use]
-    pub const fn service_name(&self) -> &'static str {
-        T::NAME
-    }
+    const NAME: &'static str = T::NAME;
 }
 
-impl<T> Frame<T>
+impl<T> Cluster for Frame<T>
 where
     T: Cluster,
 {
-    /// Returns the cluster ID.
-    #[must_use]
-    pub const fn cluster_id(&self) -> u16 {
-        <T as Cluster>::ID
-    }
+    const ID: u16 = T::ID;
 }
 
 impl Frame<Command> {
