@@ -19,6 +19,7 @@ impl ParentAnnce {
     }
 
     /// Returns a reference to the child info.
+    #[must_use]
     pub fn child_info(&self) -> &[MacAddr8] {
         &self.child_info
     }
