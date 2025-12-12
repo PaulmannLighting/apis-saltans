@@ -3,4 +3,4 @@
 ## Implementations
 
 - [ ] Implement all services.
-    - [ ] Implement `Parent_annce`.
+    - [ ] Implement `Mgmt_NWK_Enhanced_Update_req`.
