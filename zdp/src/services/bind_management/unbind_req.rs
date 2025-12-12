@@ -3,18 +3,12 @@ use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
 use zigbee::Cluster;
 
-pub use self::address::Address;
-pub use self::address_mode::AddressMode;
-pub use self::destination::Destination;
+use super::{Address, AddressMode, Destination};
 use crate::Service;
-
-mod address;
-mod address_mode;
-mod destination;
 
 /// Request type for Bind Request.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
-pub struct BindReq {
+pub struct UnbindReq {
     src_address: MacAddr8,
     src_endpoint: u8,
     cluster_id: u16,
@@ -23,8 +17,8 @@ pub struct BindReq {
     dst_endpoint: Option<u8>,
 }
 
-impl BindReq {
-    /// Creates a new `BindReq`.
+impl UnbindReq {
+    /// Creates a new `UnbindReq`.
     #[must_use]
     pub const fn new(
         src_address: MacAddr8,
@@ -90,15 +84,15 @@ impl BindReq {
     }
 }
 
-impl Cluster for BindReq {
-    const ID: u16 = 0x0021;
+impl Cluster for UnbindReq {
+    const ID: u16 = 0x0022;
 }
 
-impl Service for BindReq {
-    const NAME: &'static str = "Bind_req";
+impl Service for UnbindReq {
+    const NAME: &'static str = "Unbind_req";
 }
 
-impl FromLeStream for BindReq {
+impl FromLeStream for UnbindReq {
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
