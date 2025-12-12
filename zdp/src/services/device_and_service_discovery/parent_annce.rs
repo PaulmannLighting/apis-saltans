@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
@@ -31,6 +33,14 @@ impl Cluster for ParentAnnce {
 
 impl crate::Service for ParentAnnce {
     const NAME: &'static str = "Parent_annce";
+}
+
+impl Deref for ParentAnnce {
+    type Target = [MacAddr8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.child_info
+    }
 }
 
 impl TryFrom<Box<[MacAddr8]>> for ParentAnnce {
