@@ -3,12 +3,14 @@
 pub use self::mgmt_bind_req::MgmtBindReq;
 pub use self::mgmt_leave_req::{LeaveReqFlags, MgmtLeaveReq};
 pub use self::mgmt_lqi_req::MgmtLqiReq;
+pub use self::mgmt_nwk_update_req::{MgmtNwkUpdateReq, ScanDuration};
 pub use self::mgmt_permit_joining_req::MgmtPermitJoiningReq;
 pub use self::mgmt_rtg_req::MgmtRtgReq;
 
 mod mgmt_bind_req;
 mod mgmt_leave_req;
 mod mgmt_lqi_req;
+mod mgmt_nwk_update_req;
 mod mgmt_permit_joining_req;
 mod mgmt_rtg_req;
 
@@ -26,4 +28,6 @@ pub enum NetworkManagement {
     MgmtLeaveReq(MgmtLeaveReq),
     /// Management Permit Joining Request
     MgmtPermitJoiningReq(MgmtPermitJoiningReq),
+    /// Management Network Update Request
+    MgmtNwkUpdateReq(MgmtNwkUpdateReq),
 }
