@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -29,5 +31,36 @@ bitflags! {
         const RESERVED = 0b0000_0001_1000_0000;
         /// Stack Compliance Revision
         const STACK_COMPLIANCE_REVISION = 0b0000_0000_0111_1111;
+    }
+}
+
+impl ServerMask {
+    /// Return the stack compliance revision.
+    #[expect(clippy::cast_possible_truncation)]
+    #[must_use]
+    pub const fn stack_compliance_revision(self) -> u8 {
+        (self.0 & Self::STACK_COMPLIANCE_REVISION.bits()) as u8
+    }
+}
+
+impl Display for ServerMask {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+
+        for (name, flag) in self.iter_names().filter_map(|(name, flag)| {
+            if flag == Self::STACK_COMPLIANCE_REVISION {
+                None
+            } else {
+                Some((name, flag))
+            }
+        }) {
+            write!(f, "{name} ({flag:#06X}), ")?;
+        }
+
+        write!(
+            f,
+            "STACK_COMPLIANCE_REVISION = {}]",
+            self.stack_compliance_revision()
+        )
     }
 }
