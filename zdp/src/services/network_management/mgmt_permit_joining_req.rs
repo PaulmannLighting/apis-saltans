@@ -1,5 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
+use zigbee::types::tlv::Tlv;
 
 use crate::Service;
 
@@ -8,15 +9,17 @@ use crate::Service;
 pub struct MgmtPermitJoiningReq {
     duration: u8,
     tc_significance: bool,
+    tlv_data: Vec<Tlv>,
 }
 
 impl MgmtPermitJoiningReq {
     /// Creates a new `MgmtPermitJoiningReq`.
     #[must_use]
-    pub const fn new(duration: u8, tc_significance: bool) -> Self {
+    pub const fn new(duration: u8, tc_significance: bool, tlv_data: Vec<Tlv>) -> Self {
         Self {
             duration,
             tc_significance,
+            tlv_data,
         }
     }
 
@@ -30,6 +33,12 @@ impl MgmtPermitJoiningReq {
     #[must_use]
     pub const fn tc_significance(&self) -> bool {
         self.tc_significance
+    }
+
+    /// Returns the TLV data.
+    #[must_use]
+    pub fn tlv_data(&self) -> &[Tlv] {
+        &self.tlv_data
     }
 }
 

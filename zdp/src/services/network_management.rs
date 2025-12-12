@@ -16,8 +16,6 @@ mod mgmt_rtg_req;
 // TODO: Implement all commands.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum NetworkManagement {
-    /// Management Permit Joining Request
-    MgmtPermitJoiningReq(MgmtPermitJoiningReq),
     /// Management LQI Request
     MgmtLqiReq(MgmtLqiReq),
     /// Management Routing Request
@@ -26,4 +24,6 @@ pub enum NetworkManagement {
     MgmtBindReq(MgmtBindReq),
     /// Management Leave Request
     MgmtLeaveReq(MgmtLeaveReq),
+    /// Management Permit Joining Request
+    MgmtPermitJoiningReq(MgmtPermitJoiningReq),
 }
