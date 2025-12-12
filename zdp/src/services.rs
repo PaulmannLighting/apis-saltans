@@ -4,15 +4,17 @@ use le_stream::FromLeStream;
 use zigbee::Cluster;
 
 pub use self::bind_management::{
-    BindManagement, BindReq, ClearAllBindingsReq, Destination, MgmtPermitJoiningReq, UnbindReq,
+    BindManagement, BindReq, ClearAllBindingsReq, Destination, UnbindReq,
 };
 pub use self::device_and_service_discovery::{
     ActiveEpReq, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq, NodeDescReq,
     NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, SimpleDescReq, SystemServerDiscoveryReq,
 };
+pub use self::network_management::{MgmtPermitJoiningReq, NetworkManagement};
 
 mod bind_management;
 mod device_and_service_discovery;
+mod network_management;
 
 /// A ZDP client service.
 pub trait Service {
@@ -28,6 +30,8 @@ pub enum Command {
     DeviceAndServiceDiscovery(DeviceAndServiceDiscovery),
     /// Bind Management Commands
     BindManagement(BindManagement),
+    /// Network Management Commands
+    NetworkManagement(NetworkManagement),
 }
 
 impl Command {
@@ -78,9 +82,10 @@ impl Command {
             ClearAllBindingsReq::ID => Ok(ClearAllBindingsReq::from_le_stream(bytes)
                 .map(BindManagement::ClearAllBindingsReq)
                 .map(Self::BindManagement)),
+            // Network Management Commands
             MgmtPermitJoiningReq::ID => Ok(MgmtPermitJoiningReq::from_le_stream(bytes)
-                .map(BindManagement::MgmtPermitJoiningReq)
-                .map(Self::BindManagement)),
+                .map(NetworkManagement::MgmtPermitJoiningReq)
+                .map(Self::NetworkManagement)),
             other => Err(other),
         }
     }
