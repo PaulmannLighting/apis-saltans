@@ -1,31 +1,42 @@
-use std::ops::Deref;
-
-use le_stream::{FromLeStream, Prefixed, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
+use zigbee::types::tlv::{Local, Tlv};
 
 use crate::Service;
 
 /// Clear All Bindings Request
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ClearAllBindingsReq {
-    eui64s: Prefixed<u8, Box<[MacAddr8]>>,
+    tlvs: Vec<Tlv>,
 }
 
 impl ClearAllBindingsReq {
     /// Creates a new `ClearAllBindingsReq`.
-    ///
-    /// # Errors
-    ///
-    /// Returns the EUI64 list whose size could not be represented as `u8`.
-    pub fn new(eui64s: Box<[MacAddr8]>) -> Result<Self, Box<[MacAddr8]>> {
-        eui64s.try_into().map(|eui64s| Self { eui64s })
+    pub const fn new(tlvs: Vec<Tlv>) -> Self {
+        Self { tlvs }
     }
 
     /// Returns a reference to the EUI64 list.
     #[must_use]
-    pub fn eui64s(&self) -> &[MacAddr8] {
-        &self.eui64s
+    pub fn tlvs(&self) -> &[Tlv] {
+        &self.tlvs
+    }
+
+    /// Returns an iterator over all EUI64s in the Clear All Bindings Request.
+    pub fn eui64s(&self) -> impl Iterator<Item = &'_ MacAddr8> {
+        self.tlvs
+            .iter()
+            .filter_map(|tlv| {
+                if let Tlv::Local(Local::ClearAllBindingsReqEui64(clear_all_bindings_req_eui64)) =
+                    tlv
+                {
+                    Some(clear_all_bindings_req_eui64.eui64s())
+                } else {
+                    None
+                }
+            })
+            .flatten()
     }
 }
 
@@ -35,36 +46,4 @@ impl Cluster for ClearAllBindingsReq {
 
 impl Service for ClearAllBindingsReq {
     const NAME: &'static str = "Clear_All_Bindings_req";
-}
-
-impl Deref for ClearAllBindingsReq {
-    type Target = [MacAddr8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.eui64s
-    }
-}
-
-impl TryFrom<Box<[MacAddr8]>> for ClearAllBindingsReq {
-    type Error = Box<[MacAddr8]>;
-
-    fn try_from(value: Box<[MacAddr8]>) -> Result<Self, Self::Error> {
-        Self::new(value)
-    }
-}
-
-impl TryFrom<Vec<MacAddr8>> for ClearAllBindingsReq {
-    type Error = Box<[MacAddr8]>;
-
-    fn try_from(value: Vec<MacAddr8>) -> Result<Self, Self::Error> {
-        Self::new(value.into_boxed_slice())
-    }
-}
-
-impl TryFrom<&[MacAddr8]> for ClearAllBindingsReq {
-    type Error = Box<[MacAddr8]>;
-
-    fn try_from(value: &[MacAddr8]) -> Result<Self, Self::Error> {
-        Self::new(value.into())
-    }
 }
