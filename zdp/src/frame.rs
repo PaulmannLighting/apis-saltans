@@ -1,7 +1,7 @@
-use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
-use crate::Service;
+use crate::{Command, Service};
 
 /// A frame with a sequence number and associated data.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
@@ -52,24 +52,21 @@ where
     }
 }
 
-impl<T> FromLeStreamTagged for Frame<T>
-where
-    T: FromLeStreamTagged<Tag = u16>,
-{
-    type Tag = u16;
-
-    fn from_le_stream_tagged<I>(
-        cluster_id: Self::Tag,
-        mut bytes: I,
-    ) -> Result<Option<Self>, Self::Tag>
+impl Frame<Command> {
+    /// Parses a `Frame` from a byte stream with the given cluster ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing the command fails.
+    pub fn parse_with_cluster_id<T>(cluster_id: u16, mut bytes: T) -> Result<Option<Self>, u16>
     where
-        I: Iterator<Item = u8>,
+        T: Iterator<Item = u8>,
     {
         let Some(seq) = u8::from_le_stream(&mut bytes) else {
             return Ok(None);
         };
 
-        T::from_le_stream_tagged(cluster_id, bytes)
+        Command::parse_with_cluster_id(cluster_id, bytes)
             .map(|data| data.map(|data| Self::new(seq, data)))
     }
 }

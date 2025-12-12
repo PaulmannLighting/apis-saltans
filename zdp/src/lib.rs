@@ -6,7 +6,7 @@ extern crate core;
 
 pub use self::frame::Frame;
 pub use self::services::{
-    ActiveEpReq, BindReq, BindReqDestination, Command, DeviceAnnce, IeeeAddrReq, MatchDescReq,
+    ActiveEpReq, BindReq, Command, Destination, DeviceAnnce, IeeeAddrReq, MatchDescReq,
     MgmtPermitJoiningReq, NodeDescReq, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, Service,
     SimpleDescReq, SystemServerDiscoveryReq,
 };
