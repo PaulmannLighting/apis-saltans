@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -65,5 +67,23 @@ impl MacCapabilityFlags {
     #[must_use]
     pub const fn allocate_address(self) -> bool {
         self.contains(Self::ALLOCATE_ADDRESS)
+    }
+}
+
+impl Display for MacCapabilityFlags {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+
+        let mut names = self.iter_names();
+
+        if let Some((name, flag)) = names.next() {
+            write!(f, "{name} ({flag:#040X})")?;
+
+            for (name, flag) in names {
+                write!(f, ", {name} ({flag:#040X})")?;
+            }
+        }
+
+        write!(f, "]")
     }
 }
