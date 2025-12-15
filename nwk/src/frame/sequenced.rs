@@ -1,8 +1,8 @@
 use le_stream::ToLeStream;
 
-use super::typ::Type;
+use super::header::Header;
 
-/// A sequenced, non-generic view on a ZCL frame for transmission via channels.
+/// A sequenced, non-generic view on a ZCL or ZDP frame for transmission via channels.
 ///
 /// # Invariants
 ///
@@ -13,14 +13,16 @@ use super::typ::Type;
 #[derive(Debug)]
 pub struct SequencedFrame {
     cluster_id: u16,
-    typ: Type,
+    typ: Header,
     payload: Box<[u8]>,
 }
 
 impl SequencedFrame {
     /// Creates a new `SequencedFrame`.
+    ///
+    /// This is a crate-private constructor.
     #[must_use]
-    pub(crate) const fn new(cluster_id: u16, typ: Type, payload: Box<[u8]>) -> Self {
+    pub(crate) const fn new(cluster_id: u16, typ: Header, payload: Box<[u8]>) -> Self {
         Self {
             cluster_id,
             typ,

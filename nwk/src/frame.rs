@@ -1,11 +1,11 @@
 use le_stream::ToLeStream;
 use zigbee::Cluster;
 
+pub use self::header::Header;
 use self::sequenced::SequencedFrame;
-pub use self::typ::Type;
 
+mod header;
 mod sequenced;
-mod typ;
 
 /// A non-sequenced, non-generic view on a ZCL frame for transmission via channels.
 ///
@@ -15,20 +15,20 @@ mod typ;
 #[derive(Debug)]
 pub struct Frame {
     cluster_id: u16,
-    typ: Type,
+    header: Header,
     payload: Box<[u8]>,
 }
 
 impl Frame {
     /// Create a new `Frame`.
     #[must_use]
-    pub(crate) fn new<T>(typ: Type, payload: T) -> Self
+    pub(crate) fn new<T>(header: Header, payload: T) -> Self
     where
         T: Cluster + ToLeStream,
     {
         Self {
             cluster_id: <T as Cluster>::ID,
-            typ,
+            header,
             payload: payload.to_le_stream().collect(),
         }
     }
@@ -38,15 +38,15 @@ impl Frame {
     /// The resulting frame will have a well-defined sequence number and can be serialized and sent.
     #[must_use]
     pub fn with_seq(mut self, seq: u8) -> SequencedFrame {
-        match self.typ {
-            Type::Zcl(ref mut header) => {
+        match self.header {
+            Header::Zcl(ref mut header) => {
                 header.set_seq(seq);
             }
-            Type::Zdp(ref mut transaction_seq) => {
+            Header::Zdp(ref mut transaction_seq) => {
                 *transaction_seq = seq;
             }
         }
-        SequencedFrame::new(self.cluster_id, self.typ, self.payload)
+        SequencedFrame::new(self.cluster_id, self.header, self.payload)
     }
 }
 
@@ -58,7 +58,7 @@ where
         let (header, payload) = frame.into_parts();
         Self {
             cluster_id: <T as Cluster>::ID,
-            typ: Type::Zcl(header),
+            header: Header::Zcl(header),
             payload: payload.to_le_stream().collect(),
         }
     }
@@ -72,7 +72,7 @@ where
         let (seq, payload) = frame.into_parts();
         Self {
             cluster_id: <T as Cluster>::ID,
-            typ: Type::Zdp(seq),
+            header: Header::Zdp(seq),
             payload: payload.to_le_stream().collect(),
         }
     }
