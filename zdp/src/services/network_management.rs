@@ -16,6 +16,7 @@ pub use self::mgmt_rtg_req::MgmtRtgReq;
 mod mgmt_bind_req;
 mod mgmt_leave_req;
 mod mgmt_lqi_req;
+mod mgmt_nwk_beacon_survey_req;
 mod mgmt_nwk_enhanced_update_req;
 mod mgmt_nwk_ieee_joining_list_req;
 mod mgmt_nwk_update_req;

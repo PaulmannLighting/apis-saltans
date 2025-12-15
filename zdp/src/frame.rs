@@ -29,6 +29,12 @@ impl<T> Frame<T> {
     pub const fn data(&self) -> &T {
         &self.data
     }
+
+    /// Decomposes the frame into its sequence number and associated data.
+    #[must_use]
+    pub fn into_parts(self) -> (u8, T) {
+        (self.seq, self.data)
+    }
 }
 
 impl Frame<Command> {
