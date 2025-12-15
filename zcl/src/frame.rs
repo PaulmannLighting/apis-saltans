@@ -1,10 +1,10 @@
 //! ZCL frame representation.
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Command;
 
 pub use self::header::{Control, Direction, Header, Type};
 pub use self::parse_frame_error::ParseFrameError;
+use crate::Command;
 use crate::clusters::Cluster;
 
 mod header;
@@ -55,19 +55,13 @@ where
 {
     /// Create a new ZCL frame.
     #[must_use]
-    pub fn new(
-        typ: Type,
-        disable_client_response: bool,
-        manufacturer_code: Option<u16>,
-        seq: u8,
-        payload: T,
-    ) -> Self {
+    pub fn new(seq: u8, payload: T) -> Self {
         Self {
             header: Header::new(
-                typ,
+                <T as Command>::TYPE,
                 <T as Command>::DIRECTION,
-                disable_client_response,
-                manufacturer_code,
+                <T as Command>::DISABLE_CLIENT_RESPONSE,
+                <T as Command>::MANUFACTURER_CODE,
                 seq,
                 <T as Command>::ID,
             ),
@@ -83,19 +77,8 @@ where
     /// before sending the frame, as using the default sequence number of `0x00` may lead to
     /// unexpected behavior.
     #[expect(unsafe_code)]
-    pub unsafe fn new_unsequenced(
-        typ: Type,
-        disable_client_response: bool,
-        manufacturer_code: Option<u16>,
-        payload: T,
-    ) -> Self {
-        Self::new(
-            typ,
-            disable_client_response,
-            manufacturer_code,
-            0x00,
-            payload,
-        )
+    pub unsafe fn new_unsequenced(payload: T) -> Self {
+        Self::new(0x00, payload)
     }
 }
 

@@ -1,7 +1,8 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::general::groups::CLUSTER_ID;
 
 /// Command to remove a group from the device's group table.

@@ -1,6 +1,7 @@
 use le_stream::ToLeStream;
+use zcl::Command;
 use zdp::Service;
-use zigbee::{Cluster, Command, Endpoint};
+use zigbee::{Cluster, Endpoint};
 
 use crate::{Error, Frame, Proxy};
 

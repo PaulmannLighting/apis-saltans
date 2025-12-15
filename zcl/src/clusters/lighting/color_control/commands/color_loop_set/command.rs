@@ -1,7 +1,8 @@
 use core::time::Duration;
 
-use zigbee::{Cluster, Command};
+use zigbee::Cluster;
 
+use crate::Command;
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::color_loop_set::{Action, Direction, Update};
 

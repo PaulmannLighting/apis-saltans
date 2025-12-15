@@ -1,5 +1,6 @@
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::move_hue::Mode;
 

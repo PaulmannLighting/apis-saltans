@@ -1,7 +1,8 @@
 use le_stream::FromLeStream;
 use zigbee::types::{String, Uint16};
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::general::groups::CLUSTER_ID;
 
 /// Command to add a group to the device's group table if the device is currently identifying.

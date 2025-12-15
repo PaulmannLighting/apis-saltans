@@ -33,8 +33,8 @@ pub fn parse_zcl_frame(input: TokenStream) -> TokenStream {
 
         match_arms.extend(quote! {
             (
-                <#inner_type as ::zigbee::Command>::ID,
-                <#inner_type as ::zigbee::Command>::DIRECTION
+                <#inner_type as crate::Command>::ID,
+                <#inner_type as crate::Command>::DIRECTION
             ) => <#inner_type as ::le_stream::FromLeStream>::from_le_stream(bytes)
                 .map(Self::#variant_name)
                 .ok_or(crate::ParseFrameError::InsufficientPayload),

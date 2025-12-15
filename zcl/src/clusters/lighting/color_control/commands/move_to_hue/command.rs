@@ -1,8 +1,9 @@
 use core::time::Duration;
 
+use zigbee::Cluster;
 use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
-use zigbee::{Cluster, Command};
 
+use crate::Command;
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::move_to_hue::Direction;
 

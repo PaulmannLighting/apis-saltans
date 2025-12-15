@@ -1,8 +1,9 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
+use crate::Command;
 use crate::clusters::general::identify::CLUSTER_ID;
 
 mod effect_identifier;

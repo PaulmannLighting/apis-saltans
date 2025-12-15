@@ -1,6 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::general::identify::CLUSTER_ID;
 
 /// Request the target to respond if they are currently identifying themselves.

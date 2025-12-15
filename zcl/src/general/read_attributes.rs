@@ -1,3 +1,5 @@
+//! Reading Attributes Command and Response.
+
 mod read_attributes_status;
 
 use alloc::boxed::Box;
@@ -5,13 +7,14 @@ use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use core::ops::Deref;
 
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Type;
+use zigbee::{Cluster, Direction};
 
 use self::read_attributes_status::ReadAttributesStatus;
 
 /// Read Attributes Command.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Command {
     attribute_ids: Box<[u16]>,
 }
@@ -24,9 +27,21 @@ impl Command {
     }
 
     /// Returns the attribute IDs of the command.
+    #[must_use]
     pub fn attribute_ids(&self) -> &[u16] {
         &self.attribute_ids
     }
+}
+
+impl Cluster for Command {
+    const ID: u16 = 0x0000;
+}
+
+impl crate::Command for Command {
+    const ID: u8 = 0x00;
+    const DIRECTION: Direction = Direction::ClientToServer;
+    const TYPE: crate::Type = crate::Type::Global;
+    const DISABLE_CLIENT_RESPONSE: bool = false;
 }
 
 /// Read Attributes Response.

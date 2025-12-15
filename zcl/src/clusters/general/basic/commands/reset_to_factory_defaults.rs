@@ -1,6 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::general::basic::CLUSTER_ID;
 
 /// Reset a device to factory defaults.

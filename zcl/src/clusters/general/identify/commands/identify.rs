@@ -2,8 +2,9 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::general::identify::CLUSTER_ID;
 
 /// Toggle the identify state of a device.

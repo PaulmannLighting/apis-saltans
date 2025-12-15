@@ -1,9 +1,9 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
-use crate::Status;
 use crate::clusters::general::groups::CLUSTER_ID;
+use crate::{Command, Status};
 
 /// Represents a response to an `AddGroups` command.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]

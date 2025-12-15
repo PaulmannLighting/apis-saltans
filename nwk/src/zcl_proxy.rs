@@ -1,6 +1,5 @@
 use le_stream::ToLeStream;
-use zcl::Type;
-use zigbee::Command;
+use zcl::Command;
 
 use crate::{Error, Proxy};
 
@@ -35,8 +34,7 @@ where
                 endpoint,
                 #[expect(unsafe_code)]
                 // SAFETY: The sequence ID will be set by the receiving actor.
-                unsafe { zcl::Frame::new_unsequenced(Type::ClusterSpecific, true, None, command) }
-                    .into(),
+                unsafe { zcl::Frame::new_unsequenced(command) }.into(),
             )
             .await
     }

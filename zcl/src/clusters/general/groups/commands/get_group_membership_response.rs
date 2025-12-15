@@ -2,8 +2,9 @@ use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{Uint8, Uint16};
-use zigbee::{Cluster, Command, Direction};
+use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::general::groups::CLUSTER_ID;
 use crate::clusters::general::groups::types::GroupList;
 
