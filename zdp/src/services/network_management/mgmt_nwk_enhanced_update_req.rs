@@ -5,7 +5,7 @@ use std::iter::once;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
-use zigbee::types::ChannelList;
+use zigbee::types::{ChannelList, ConfigurationBitmask};
 
 pub use self::enhanced_update_parameters::EnhancedNwkUpdateParameters;
 use crate::{ScanDuration, Service};
@@ -17,12 +17,16 @@ pub struct MgmtNwkEnhancedUpdateReq {
     scan_duration: u8,
     scan_count_or_nwk_update_id: u8,
     nwk_manager_addr: Option<u16>,
+    configuration_bitmask: Option<ConfigurationBitmask>,
 }
 
 impl MgmtNwkEnhancedUpdateReq {
     /// Creates a new `MgmtNwkEnhancedUpdateReq`.
     #[must_use]
-    pub fn new(parameters: EnhancedNwkUpdateParameters) -> Self {
+    pub fn new(
+        parameters: EnhancedNwkUpdateParameters,
+        configuration_bitmask: Option<ConfigurationBitmask>,
+    ) -> Self {
         let scan_duration = parameters.discriminant();
 
         match parameters {
@@ -54,6 +58,7 @@ impl MgmtNwkEnhancedUpdateReq {
                 scan_duration,
                 scan_count_or_nwk_update_id: u8::from(energy_scan),
                 nwk_manager_addr: None,
+                configuration_bitmask,
             },
             EnhancedNwkUpdateParameters::ChannelChange {
                 scan_channels,
@@ -63,6 +68,7 @@ impl MgmtNwkEnhancedUpdateReq {
                 scan_duration,
                 scan_count_or_nwk_update_id: nwk_update_id,
                 nwk_manager_addr: None,
+                configuration_bitmask,
             },
             EnhancedNwkUpdateParameters::AttributeChange {
                 scan_channels,
@@ -73,6 +79,7 @@ impl MgmtNwkEnhancedUpdateReq {
                 scan_duration,
                 scan_count_or_nwk_update_id: nwk_update_id,
                 nwk_manager_addr: Some(nwk_manager_addr),
+                configuration_bitmask,
             },
         }
     }
@@ -126,6 +133,12 @@ impl MgmtNwkEnhancedUpdateReq {
             invalid_scan_duration => Err(invalid_scan_duration),
         }
     }
+
+    /// Returns the configuration bitmask, if present.
+    #[must_use]
+    pub const fn configuration_bitmask(&self) -> Option<&ConfigurationBitmask> {
+        self.configuration_bitmask.as_ref()
+    }
 }
 
 impl Cluster for MgmtNwkEnhancedUpdateReq {
@@ -140,20 +153,40 @@ impl Display for MgmtNwkEnhancedUpdateReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.scan_duration() {
             Ok(scan_duration) => {
-                write!(
-                    f,
-                    "{} {{ scan_channels: {}, scan_duration: {scan_duration} }}",
-                    Self::NAME,
-                    self.scan_channels,
-                )
+                if let Some(configuration_bitmask) = self.configuration_bitmask() {
+                    write!(
+                        f,
+                        "{} {{ scan_channels: {}, scan_duration: {scan_duration}, configuration_bitmask: {:#04X} }}",
+                        Self::NAME,
+                        self.scan_channels,
+                        configuration_bitmask
+                    )
+                } else {
+                    write!(
+                        f,
+                        "{} {{ scan_channels: {}, scan_duration: {scan_duration} }}",
+                        Self::NAME,
+                        self.scan_channels,
+                    )
+                }
             }
             Err(invalid_scan_duration) => {
-                write!(
-                    f,
-                    "{} {{ scan_channels: {}, invalid_scan_duration: {invalid_scan_duration:#04X} }}",
-                    Self::NAME,
-                    self.scan_channels,
-                )
+                if let Some(configuration_bitmask) = self.configuration_bitmask() {
+                    write!(
+                        f,
+                        "{} {{ scan_channels: {}, invalid_scan_duration: {invalid_scan_duration:#04X}, configuration_bitmask: {:#04X} }}",
+                        Self::NAME,
+                        self.scan_channels,
+                        configuration_bitmask
+                    )
+                } else {
+                    write!(
+                        f,
+                        "{} {{ scan_channels: {}, invalid_scan_duration: {invalid_scan_duration:#04X} }}",
+                        Self::NAME,
+                        self.scan_channels,
+                    )
+                }
             }
         }
     }
