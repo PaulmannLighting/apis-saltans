@@ -1,7 +1,5 @@
 //! Cluster groups.
 
-use log::debug;
-
 use self::general::{basic, groups, identify, on_off};
 use crate::{Header, ParseFrameError, Type};
 
@@ -42,10 +40,7 @@ impl Cluster {
         };
 
         match typ {
-            Type::Global => {
-                debug!("Parsing global command for cluster ID: {cluster_id:#06X}, type: {typ:?}");
-                global::Command::parse_zcl_frame(header, bytes).map(Self::Global)
-            }
+            Type::Global => global::Command::parse_zcl_frame(header, bytes).map(Self::Global),
             Type::ClusterSpecific => match cluster_id {
                 <basic::Command as zigbee::Cluster>::ID => {
                     basic::Command::parse_zcl_frame(header, bytes).map(Self::Basic)
