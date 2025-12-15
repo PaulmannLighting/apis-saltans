@@ -9,6 +9,7 @@ use zigbee::Endpoint;
 use crate::device_proxy::DeviceProxy;
 use crate::message::Message;
 use crate::zcl_proxy::ZclProxy;
+use crate::zdp_proxy::ZdpProxy;
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
 /// Proxy trait for sending NWK layer messages.
@@ -87,6 +88,14 @@ pub trait Proxy {
         Self: Sized,
     {
         ZclProxy::new(self)
+    }
+
+    /// Get a ZDP proxy.
+    fn zdp(&self) -> ZdpProxy<'_, Self>
+    where
+        Self: Sized,
+    {
+        ZdpProxy::new(self)
     }
 }
 
