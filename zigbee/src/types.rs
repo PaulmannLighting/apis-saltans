@@ -7,6 +7,7 @@ pub use self::analog::{
 pub use self::channel_list::ChannelList;
 pub use self::channels_field::ChannelsField;
 pub use self::composite::{OctStr, String};
+pub use self::configuration_bitmask::ConfigurationBitmask;
 pub use self::discrete::{
     Bool, Data8, Data16, Data24, Data32, Data40, Data48, Data56, Data64, Date, TimeOfDay,
     TryFromNaiveDateError, TryFromNaiveTimeError, TryIntoNaiveDateError, TryIntoNaiveTimeError,
@@ -18,6 +19,7 @@ mod analog;
 mod channel_list;
 mod channels_field;
 mod composite;
+mod configuration_bitmask;
 mod discrete;
 mod null;
 pub mod tlv;
