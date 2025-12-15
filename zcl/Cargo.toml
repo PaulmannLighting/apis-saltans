@@ -25,6 +25,7 @@ repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1.0", optional = true }
 zigbee = { path = "../zigbee" }
 zigbee-macros = { path = "../macros" }
+log = "0.4.29"
 
 [features]
 std = []

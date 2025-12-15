@@ -29,13 +29,13 @@ impl AlarmMask {
         Self(mask)
     }
 
-    /// Return whether this is a general hardware fault.
+    /// Return whether this is a global hardware fault.
     #[must_use]
     pub const fn is_general_hardware_fault(self) -> bool {
         self.contains(Self::GENERAL_HARDWARE_FAULT)
     }
 
-    /// Return whether this is a general software fault.
+    /// Return whether this is a global software fault.
     #[must_use]
     pub const fn is_general_software_fault(self) -> bool {
         self.contains(Self::GENERAL_SOFTWARE_FAULT)

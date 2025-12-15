@@ -5,6 +5,7 @@ mod read_attributes_status;
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
+use core::iter::Empty;
 use core::ops::Deref;
 
 use le_stream::{FromLeStream, ToLeStream};
@@ -41,12 +42,24 @@ impl crate::Command for Command {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ClientToServer;
     const TYPE: crate::Type = crate::Type::Global;
-    const DISABLE_CLIENT_RESPONSE: bool = false;
+    const DISABLE_CLIENT_RESPONSE: bool = true;
 }
 
 /// Read Attributes Response.
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Response {
     attribute_values: BTreeMap<u16, Result<Type, u8>>,
+}
+
+impl Cluster for Response {
+    const ID: u16 = 0x0000;
+}
+
+impl crate::Command for Response {
+    const ID: u8 = 0x01;
+    const DIRECTION: Direction = Direction::ServerToClient;
+    const TYPE: crate::Type = crate::Type::Global;
+    const DISABLE_CLIENT_RESPONSE: bool = true;
 }
 
 impl Deref for Response {
@@ -54,6 +67,14 @@ impl Deref for Response {
 
     fn deref(&self) -> &Self::Target {
         &self.attribute_values
+    }
+}
+
+impl ToLeStream for Response {
+    type Iter = Empty<u8>;
+
+    fn to_le_stream(self) -> Self::Iter {
+        todo!("Not implemented")
     }
 }
 

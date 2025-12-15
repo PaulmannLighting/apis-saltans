@@ -7,6 +7,8 @@ use core::fmt::Display;
 pub enum ParseFrameError {
     /// The ZCL frame header is invalid.
     MissingHeader,
+    /// Invalid type field.
+    InvalidType(u8),
     /// Invalid cluster ID.
     InvalidClusterId(u16),
     /// Invalid command ID.
@@ -19,6 +21,9 @@ impl Display for ParseFrameError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::MissingHeader => write!(f, "Missing ZCL frame header"),
+            Self::InvalidType(typ) => {
+                write!(f, "Invalid type field: {typ}")
+            }
             Self::InvalidClusterId(cluster_id) => {
                 write!(f, "Invalid cluster ID: {cluster_id}")
             }

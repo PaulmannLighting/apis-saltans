@@ -5,7 +5,7 @@ use num_derive::FromPrimitive;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum Deprecated {
-    /// Indicates the general command is not supported.
+    /// Indicates the global command is not supported.
     ///
     /// Use `UnsupportedCommand` instead.
     UnsupportedGeneralCommand = 0x82,
@@ -13,7 +13,7 @@ pub enum Deprecated {
     ///
     /// Use `UnsupportedCommand` instead.
     UnsupportedManufacturerClusterCommand = 0x83,
-    /// Indicates the manufacturer-specific general command is not supported.
+    /// Indicates the manufacturer-specific global command is not supported.
     ///
     /// Use `UnsupportedCommand` instead.
     UnsupportedManufacturerGeneralCommand = 0x84,
