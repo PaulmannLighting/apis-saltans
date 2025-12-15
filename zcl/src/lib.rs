@@ -3,11 +3,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 
-pub use self::clusters::{Cluster, general, lighting};
+pub use self::clusters::Cluster;
 pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Type};
 pub use self::status::Status;
 
 mod attribute;
-mod clusters;
+pub mod clusters;
 mod frame;
+mod general;
 mod status;

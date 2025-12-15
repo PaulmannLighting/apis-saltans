@@ -3,7 +3,7 @@ use zigbee::types::Uint8;
 use zigbee::{Cluster, Command, Direction};
 
 pub use self::effect::{DelayedAllOff, DyingLight, Effect};
-use crate::general::on_off::CLUSTER_ID;
+use crate::clusters::general::on_off::CLUSTER_ID;
 
 mod effect;
 

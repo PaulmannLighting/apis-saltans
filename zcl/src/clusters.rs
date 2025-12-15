@@ -2,7 +2,7 @@
 
 use zigbee_macros::ParseZclCluster;
 
-use crate::general::{basic, groups, identify, on_off};
+use self::general::{basic, groups, identify, on_off};
 
 pub mod general;
 pub mod lighting;
