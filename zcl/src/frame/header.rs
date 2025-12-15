@@ -8,7 +8,7 @@ mod control;
 mod typ;
 
 /// A ZCL frame header.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Header {
     control: Control,
     manufacturer_code: Option<u16>,
@@ -67,5 +67,30 @@ impl Header {
     #[must_use]
     pub const fn command_id(self) -> u8 {
         self.command_id
+    }
+}
+
+impl FromLeStream for Header {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let control = Control::from_le_stream(&mut bytes)?;
+
+        let manufacturer_code = if control.is_manufacturer_specific() {
+            Some(u16::from_le_stream(&mut bytes)?)
+        } else {
+            None
+        };
+
+        let seq = bytes.next()?;
+        let command_id = bytes.next()?;
+
+        Some(Self {
+            control,
+            manufacturer_code,
+            seq,
+            command_id,
+        })
     }
 }
