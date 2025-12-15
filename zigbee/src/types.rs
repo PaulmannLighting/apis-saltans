@@ -28,7 +28,7 @@ mod null;
 pub mod tlv;
 
 /// Commonly used type identifiers.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum Type {
     /// Unknown type.
