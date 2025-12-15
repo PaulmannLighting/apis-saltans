@@ -1,6 +1,7 @@
 use core::ops::Add;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeDelta, TimeZone, Utc};
+use le_stream::{FromLeStream, ToLeStream};
 
 const BASE_DATE: NaiveDate = NaiveDate::from_ymd_opt(2000, 1, 1).expect("Default date is valid.");
 const BASE_TIME: NaiveTime = NaiveTime::from_hms_opt(0, 0, 0).expect("Default time is valid.");
@@ -9,7 +10,7 @@ const BASE_DATETIME: DateTime<Utc> = DateTime::from_naive_utc_and_offset(BASE_NA
 const NON_VALUE: u32 = 0xffff_ffff;
 
 /// UTC time data type.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct UtcTime(u32);
 
 impl From<UtcTime> for Option<u32> {

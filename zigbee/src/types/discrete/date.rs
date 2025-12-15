@@ -1,4 +1,5 @@
 use chrono::{Datelike, NaiveDate, Weekday};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::try_from_naive_date_error::TryFromNaiveDateError;
 pub use self::try_into_naive_date_error::TryIntoNaiveDateError;
@@ -10,7 +11,7 @@ const YEAR_OFFSET: u16 = 1900;
 const NON_VALUE: u8 = 0xff;
 
 /// Represents a date with year, month, day of the month, and day of the week.
-#[derive(Debug, Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct Date {
     year: u8,
     month: u8,

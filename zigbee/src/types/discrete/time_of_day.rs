@@ -1,4 +1,5 @@
 use chrono::{NaiveTime, Timelike};
+use le_stream::{FromLeStream, ToLeStream};
 use log::debug;
 
 pub use self::try_from_naive_time_error::TryFromNaiveTimeError;
@@ -11,7 +12,9 @@ const NANOS_PER_HUNDREDTHS: u32 = 10_000_000;
 const NON_VALUE: u8 = 0xff;
 
 /// Represents a time of day with hour, minute, second, and hundredths of a second.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
+)]
 pub struct TimeOfDay {
     hour: u8,
     minute: u8,
