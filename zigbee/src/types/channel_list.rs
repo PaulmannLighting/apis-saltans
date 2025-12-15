@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::ops::Deref;
 
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
@@ -33,6 +34,23 @@ impl Deref for ChannelList {
 
     fn deref(&self) -> &Self::Target {
         &self.pages
+    }
+}
+
+impl Display for ChannelList {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        let mut channels = self.pages.iter();
+
+        if let Some(channel) = channels.next() {
+            write!(f, "{channel:#010X}")?;
+
+            for channel in channels {
+                write!(f, ", {channel:#010X}")?;
+            }
+        }
+
+        write!(f, "]")
     }
 }
 
