@@ -29,3 +29,18 @@ pub trait Command {
     /// The manufacturer code for this command, if any.
     const MANUFACTURER_CODE: Option<u16> = None;
 }
+
+/// Trait to get the command identifier.
+pub trait CommandId {
+    /// Return the command identifier.
+    fn command_id(&self) -> u8;
+}
+
+impl<T> CommandId for T
+where
+    T: Command,
+{
+    fn command_id(&self) -> u8 {
+        T::ID
+    }
+}
