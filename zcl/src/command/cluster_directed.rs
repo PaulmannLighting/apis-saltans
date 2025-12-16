@@ -1,3 +1,4 @@
+use le_stream::ToLeStream;
 use zigbee::{ClusterId, Direction};
 
 use crate::{Command, Scope};
@@ -35,4 +36,15 @@ where
     const SCOPE: Scope = T::SCOPE;
     const DISABLE_CLIENT_RESPONSE: bool = T::DISABLE_CLIENT_RESPONSE;
     const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
+}
+
+impl<T> ToLeStream for ClusterDirected<T>
+where
+    T: ToLeStream,
+{
+    type Iter = T::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        self.payload.to_le_stream()
+    }
 }
