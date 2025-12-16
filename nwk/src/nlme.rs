@@ -83,7 +83,7 @@ pub trait Nlme {
     /// Returns an error if the operation fails.
     fn multicast(
         &mut self,
-        endpoint: Endpoint,
+        group_id: u16,
         hops: u8,
         radius: u8,
         frame: Frame,
