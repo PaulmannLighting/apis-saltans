@@ -2,8 +2,7 @@ use le_stream::ToLeStream;
 use zdp::Service;
 use zigbee::Cluster;
 
-use crate::frame::Header;
-use crate::{Error, Frame, Proxy};
+use crate::{Error, Proxy};
 
 pub struct ZdpProxy<'proxy, T> {
     proxy: &'proxy T,
@@ -26,12 +25,13 @@ where
         pan_id: u16,
         endpoint: zigbee::Endpoint,
         command: C,
-    ) -> Result<(), Error>
+    ) -> Result<u8, Error>
     where
         C: Cluster + Service + ToLeStream,
     {
+        let seq = self.proxy.next_transaction_seq().await;
         self.proxy
-            .unicast(pan_id, endpoint, Frame::new(Header::Zdp(0x00), command))
+            .unicast(pan_id, endpoint, zdp::Frame::new(seq, command).into())
             .await
     }
 }

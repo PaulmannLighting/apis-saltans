@@ -9,7 +9,7 @@ use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 /// Network layer management entity (NLME) trait.
 pub trait Nlme {
     /// Get the next transaction sequence number.
-    fn get_transaction_seq(&mut self) -> u8;
+    fn next_transaction_seq(&mut self) -> u8;
 
     /// Get the PAN ID of the network manager.
     ///
@@ -81,7 +81,7 @@ pub trait Nlme {
         pan_id: u16,
         endpoint: Endpoint,
         frame: Frame,
-    ) -> impl Future<Output = Result<(), Error>>;
+    ) -> impl Future<Output = Result<u8, Error>>;
 
     /// Send a multicast message.
     ///
@@ -94,7 +94,7 @@ pub trait Nlme {
         hops: u8,
         radius: u8,
         frame: Frame,
-    ) -> impl Future<Output = Result<(), Error>>;
+    ) -> impl Future<Output = Result<u8, Error>>;
 
     /// Send a broadcast message.
     ///
@@ -106,5 +106,5 @@ pub trait Nlme {
         pan_id: u16,
         radius: u8,
         frame: Frame,
-    ) -> impl Future<Output = Result<(), Error>>;
+    ) -> impl Future<Output = Result<u8, Error>>;
 }

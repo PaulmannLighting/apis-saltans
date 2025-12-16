@@ -1,5 +1,6 @@
 use le_stream::ToLeStream;
 use zcl::Command;
+use zigbee::ClusterId;
 
 use crate::{Error, Proxy};
 
@@ -24,18 +25,13 @@ where
         pan_id: u16,
         endpoint: zigbee::Endpoint,
         command: C,
-    ) -> Result<(), Error>
+    ) -> Result<u8, Error>
     where
-        C: Command + ToLeStream,
+        C: Command + ClusterId + ToLeStream,
     {
+        let seq = self.proxy.next_transaction_seq().await;
         self.proxy
-            .unicast(
-                pan_id,
-                endpoint,
-                #[expect(unsafe_code)]
-                // SAFETY: The sequence ID will be set by the receiving actor.
-                unsafe { zcl::Frame::new_unsequenced(command) }.into(),
-            )
+            .unicast(pan_id, endpoint, zcl::Frame::new(seq, command).into())
             .await
     }
 }

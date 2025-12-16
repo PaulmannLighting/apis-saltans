@@ -22,7 +22,7 @@ where
             match message {
                 Message::GetTransactionSeq { response } => {
                     response
-                        .send(self.get_transaction_seq())
+                        .send(self.next_transaction_seq())
                         .unwrap_or_else(|error| {
                             error!("Failed to send get PAN ID command response: {error:?}");
                         });

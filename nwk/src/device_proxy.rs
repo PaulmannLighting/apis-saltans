@@ -35,14 +35,14 @@ where
     }
 
     /// Send a unicast command to the device.
-    pub async fn unicast_command(&self, endpoint: Endpoint, frame: Frame) -> Result<(), Error> {
+    pub async fn unicast_command(&self, endpoint: Endpoint, frame: Frame) -> Result<u8, Error> {
         self.proxy.unicast(self.pan_id, endpoint, frame).await
     }
 
     /// Send a unicast ZCL command to the device.
-    pub async fn unicast_zcl<C>(&self, endpoint: Endpoint, command: C) -> Result<(), Error>
+    pub async fn unicast_zcl<C>(&self, endpoint: Endpoint, command: C) -> Result<u8, Error>
     where
-        C: Command + ToLeStream,
+        C: Command + Cluster + ToLeStream,
     {
         self.proxy
             .zcl()
@@ -51,7 +51,7 @@ where
     }
 
     /// Send a unicast ZCL command to the device.
-    pub async fn unicast_zdp<C>(&self, endpoint: Endpoint, command: C) -> Result<(), Error>
+    pub async fn unicast_zdp<C>(&self, endpoint: Endpoint, command: C) -> Result<u8, Error>
     where
         C: Cluster + Service + ToLeStream,
     {

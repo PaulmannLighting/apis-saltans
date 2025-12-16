@@ -29,14 +29,14 @@ where
     T: Proxy + Sync,
 {
     /// Send a unicast command to the endpoint.
-    pub async fn unicast(&self, frame: Frame) -> Result<(), Error> {
+    pub async fn unicast(&self, frame: Frame) -> Result<u8, Error> {
         self.proxy.unicast(self.pan_id, self.endpoint, frame).await
     }
 
     /// Send a unicast ZCL command to the endpoint.
-    pub async fn unicast_zcl<C>(&self, command: C) -> Result<(), Error>
+    pub async fn unicast_zcl<C>(&self, command: C) -> Result<u8, Error>
     where
-        C: Command + ToLeStream,
+        C: Command + Cluster + ToLeStream,
     {
         self.proxy
             .zcl()
@@ -45,7 +45,7 @@ where
     }
 
     /// Send a unicast ZCL command to the endpoint.
-    pub async fn unicast_zdp<C>(&self, command: C) -> Result<(), Error>
+    pub async fn unicast_zdp<C>(&self, command: C) -> Result<u8, Error>
     where
         C: Cluster + Service + ToLeStream,
     {

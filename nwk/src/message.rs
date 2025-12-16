@@ -45,19 +45,19 @@ pub enum Message {
         pan_id: u16,
         endpoint: Endpoint,
         frame: Frame,
-        response: Sender<Result<(), Error>>,
+        response: Sender<Result<u8, Error>>,
     },
     Multicast {
         group_id: u16,
         hops: u8,
         radius: u8,
         frame: Frame,
-        response: Sender<Result<(), Error>>,
+        response: Sender<Result<u8, Error>>,
     },
     Broadcast {
         pan_id: u16,
         radius: u8,
         frame: Frame,
-        response: Sender<Result<(), Error>>,
+        response: Sender<Result<u8, Error>>,
     },
 }

@@ -1,11 +1,5 @@
 use le_stream::ToLeStream;
-use zigbee::Cluster;
-
-pub use self::header::Header;
-use self::sequenced::SequencedFrame;
-
-mod header;
-mod sequenced;
+use zigbee::ClusterId;
 
 /// A non-sequenced, non-generic view on a ZCL frame for transmission via channels.
 ///
@@ -15,65 +9,43 @@ mod sequenced;
 #[derive(Debug)]
 pub struct Frame {
     cluster_id: u16,
-    header: Header,
     payload: Box<[u8]>,
 }
 
 impl Frame {
     /// Create a new `Frame`.
     #[must_use]
-    pub(crate) fn new<T>(header: Header, payload: T) -> Self
+    pub(crate) fn new<T>(payload: T) -> Self
     where
-        T: Cluster + ToLeStream,
+        T: ClusterId + ToLeStream,
     {
         Self {
-            cluster_id: <T as Cluster>::ID,
-            header,
+            cluster_id: payload.cluster_id(),
             payload: payload.to_le_stream().collect(),
         }
     }
 
-    /// Set the sequence number of the ZCL frame.
-    ///
-    /// The resulting frame will have a well-defined sequence number and can be serialized and sent.
+    /// Return the cluster ID and payload of the frame.
     #[must_use]
-    pub fn with_seq(mut self, seq: u8) -> SequencedFrame {
-        match self.header {
-            Header::Zcl(ref mut header) => {
-                header.set_seq(seq);
-            }
-            Header::Zdp(ref mut transaction_seq) => {
-                *transaction_seq = seq;
-            }
-        }
-        SequencedFrame::new(self.cluster_id, self.header, self.payload)
+    pub fn into_parts(self) -> (u16, Box<[u8]>) {
+        (self.cluster_id, self.payload)
     }
 }
 
 impl<T> From<zcl::Frame<T>> for Frame
 where
-    T: Cluster + ToLeStream,
+    T: ClusterId + ToLeStream,
 {
     fn from(frame: zcl::Frame<T>) -> Self {
-        let (header, payload) = frame.into_parts();
-        Self {
-            cluster_id: <T as Cluster>::ID,
-            header: Header::Zcl(header),
-            payload: payload.to_le_stream().collect(),
-        }
+        Self::new(frame)
     }
 }
 
 impl<T> From<zdp::Frame<T>> for Frame
 where
-    T: Cluster + ToLeStream,
+    T: ClusterId + ToLeStream,
 {
     fn from(frame: zdp::Frame<T>) -> Self {
-        let (seq, payload) = frame.into_parts();
-        Self {
-            cluster_id: <T as Cluster>::ID,
-            header: Header::Zdp(seq),
-            payload: payload.to_le_stream().collect(),
-        }
+        Self::new(frame)
     }
 }
