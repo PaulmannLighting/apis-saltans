@@ -71,6 +71,13 @@ pub trait Nlme {
     /// Returns an error if the operation fails.
     fn route_request(&mut self, radius: u8) -> impl Future<Output = Result<(), Error>>;
 
+    /// Get the IEEE address of the device with the specified PAN ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_ieee_address(&mut self, pan_id: u16) -> impl Future<Output = Result<MacAddr8, Error>>;
+
     /// Send a unicast message.
     ///
     /// # Errors

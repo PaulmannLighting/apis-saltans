@@ -41,6 +41,10 @@ pub enum Message {
         radius: u8,
         response: Sender<Result<(), Error>>,
     },
+    GetIeeeAddress {
+        pan_id: u16,
+        response: Sender<Result<MacAddr8, Error>>,
+    },
     Unicast {
         pan_id: u16,
         endpoint: Endpoint,

@@ -77,6 +77,13 @@ where
                             error!("Failed to send route request command response: {error:?}");
                         });
                 }
+                Message::GetIeeeAddress { pan_id, response } => {
+                    response
+                        .send(self.get_ieee_address(pan_id).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send get IEEE address command response: {error:?}");
+                        });
+                }
                 Message::Unicast {
                     pan_id,
                     endpoint,

@@ -69,6 +69,13 @@ pub trait Proxy {
     /// Returns an error if the operation fails.
     fn route_request(&self, radius: u8) -> impl Future<Output = Result<(), Error>>;
 
+    /// Get the IEEE address of the device with the specified PAN ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_ieee_address(&self, pan_id: u16) -> impl Future<Output = Result<MacAddr8, Error>>;
+
     /// Send a unicast ZCL command.
     ///
     /// # Errors
@@ -175,6 +182,14 @@ impl Proxy for Sender<Message> {
     async fn route_request(&self, radius: u8) -> Result<(), Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::RouteRequest { radius, response })
+            .await
+            .map_err(|_| Error::ActorSend)?;
+        rx.await.map_err(|_| Error::ActorReceive)?
+    }
+
+    async fn get_ieee_address(&self, pan_id: u16) -> Result<MacAddr8, Error> {
+        let (response, rx) = oneshot::channel();
+        self.send(Message::GetIeeeAddress { pan_id, response })
             .await
             .map_err(|_| Error::ActorSend)?;
         rx.await.map_err(|_| Error::ActorReceive)?
