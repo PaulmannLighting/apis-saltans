@@ -4,6 +4,7 @@ use zigbee_macros::ParseZclFrame;
 
 use crate::CommandId;
 
+pub mod configure_reporting;
 pub mod default_response;
 pub mod read_attributes;
 pub mod report_attributes;
@@ -19,6 +20,10 @@ pub enum Command {
     ReportAttributes(report_attributes::Command),
     /// Default Response command.
     DefaultResponse(default_response::DefaultResponse),
+    /// Configure Reporting command.
+    ConfigureReporting(configure_reporting::Command),
+    /// Configure Reporting Response command.
+    ConfigureReportingResponse(configure_reporting::Response),
 }
 
 impl CommandId for Command {
@@ -28,6 +33,8 @@ impl CommandId for Command {
             Self::ReadAttributesResponse(resp) => resp.command_id(),
             Self::ReportAttributes(cmd) => cmd.command_id(),
             Self::DefaultResponse(cmd) => cmd.command_id(),
+            Self::ConfigureReporting(cmd) => cmd.command_id(),
+            Self::ConfigureReportingResponse(resp) => resp.command_id(),
         }
     }
 }
