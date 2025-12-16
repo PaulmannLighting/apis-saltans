@@ -17,7 +17,7 @@ impl<'proxy, T> ZclProxy<'proxy, T> {
 
 impl<T> ZclProxy<'_, T>
 where
-    T: Proxy + Sync,
+    T: Proxy + Send,
 {
     /// Send a ZCL command to a specific endpoint on a device.
     pub async fn unicast<C>(
