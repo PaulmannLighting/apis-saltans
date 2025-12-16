@@ -1,9 +1,9 @@
-use zigbee::{Cluster, Direction};
+use zigbee::Direction;
 
 use crate::Type;
 
 /// Trait to identify a Zigbee command.
-pub trait Command: Cluster {
+pub trait Command {
     /// The command identifier.
     const ID: u8;
 

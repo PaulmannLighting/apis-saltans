@@ -1,6 +1,7 @@
 //! ZCL frame representation.
 
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::ClusterId;
 
 pub use self::header::{Control, Direction, Header, Type};
 pub use self::parse_frame_error::ParseFrameError;
@@ -79,18 +80,6 @@ where
             payload,
         }
     }
-
-    /// Create a new ZCL frame with an unspecified sequence number.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the sequence number is set appropriately
-    /// before sending the frame, as using the default sequence number of `0x00` may lead to
-    /// unexpected behavior.
-    #[expect(unsafe_code)]
-    pub unsafe fn new_unsequenced(payload: T) -> Self {
-        Self::new(0x00, payload)
-    }
 }
 
 /// A parsed ZCL frame.
@@ -112,5 +101,14 @@ impl Frame<Cluster> {
         let header = Header::from_le_stream(&mut bytes).ok_or(ParseFrameError::MissingHeader)?;
         let payload = Cluster::parse_zcl_cluster(cluster_id, header, bytes)?;
         Ok(Self { header, payload })
+    }
+}
+
+impl<T> ClusterId for Frame<T>
+where
+    T: ClusterId,
+{
+    fn cluster_id(&self) -> u16 {
+        self.payload.cluster_id()
     }
 }
