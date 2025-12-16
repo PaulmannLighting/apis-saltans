@@ -24,6 +24,7 @@ serde = { version = "1.0", optional = true }
 log = "0.4"
 num-traits = "0.2.19"
 num-derive = "0.4.2"
+repr-discriminant = { version = "3.0.1", features = ["derive"] }
 
 [features]
 serde = ["serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
