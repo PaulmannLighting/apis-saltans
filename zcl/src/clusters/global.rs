@@ -4,6 +4,7 @@ use zigbee::Cluster;
 use zigbee_macros::ParseZclFrame;
 
 pub mod read_attributes;
+mod report_attributes;
 
 /// Available global commands.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclFrame)]
@@ -12,6 +13,8 @@ pub enum Command {
     ReadAttributes(read_attributes::Command),
     /// Read Attributes Response command.
     ReadAttributesResponse(read_attributes::Response),
+    /// Report Attributes command.
+    ReportAttributes(report_attributes::Command),
 }
 
 impl Cluster for Command {

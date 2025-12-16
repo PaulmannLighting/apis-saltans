@@ -35,14 +35,13 @@ impl Command {
 }
 
 impl Cluster for Command {
-    const ID: u16 = 0x0000;
+    const ID: u16 = 0x0006;
 }
 
 impl crate::Command for Command {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ClientToServer;
     const TYPE: crate::Type = crate::Type::Global;
-    const DISABLE_CLIENT_RESPONSE: bool = true;
 }
 
 /// Read Attributes Response.
@@ -52,14 +51,13 @@ pub struct Response {
 }
 
 impl Cluster for Response {
-    const ID: u16 = 0x0000;
+    const ID: u16 = 0x0006;
 }
 
 impl crate::Command for Response {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ServerToClient;
     const TYPE: crate::Type = crate::Type::Global;
-    const DISABLE_CLIENT_RESPONSE: bool = true;
 }
 
 impl Deref for Response {
