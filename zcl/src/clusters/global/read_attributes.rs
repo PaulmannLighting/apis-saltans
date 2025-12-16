@@ -9,10 +9,11 @@ use core::iter::Empty;
 use core::ops::Deref;
 
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Direction;
 use zigbee::types::Type;
-use zigbee::{Cluster, Direction};
 
 use self::read_attributes_status::ReadAttributesStatus;
+use crate::Global;
 
 /// Read Attributes Command.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -34,14 +35,9 @@ impl Command {
     }
 }
 
-impl Cluster for Command {
-    const ID: u16 = 0x0006;
-}
-
-impl crate::Command for Command {
+impl Global for Command {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const TYPE: crate::Type = crate::Type::Global;
 }
 
 /// Read Attributes Response.
@@ -50,14 +46,9 @@ pub struct Response {
     attribute_values: BTreeMap<u16, Result<Type, u8>>,
 }
 
-impl Cluster for Response {
-    const ID: u16 = 0x0006;
-}
-
-impl crate::Command for Response {
+impl Global for Response {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ServerToClient;
-    const TYPE: crate::Type = crate::Type::Global;
 }
 
 impl Deref for Response {

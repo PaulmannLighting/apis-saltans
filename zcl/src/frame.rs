@@ -3,7 +3,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::ClusterId;
 
-pub use self::header::{Control, Direction, Header, Type};
+pub use self::header::{Control, Direction, Header, Scope};
 pub use self::parse_frame_error::ParseFrameError;
 use crate::Command;
 use crate::clusters::Cluster;
@@ -70,7 +70,7 @@ where
     pub fn new(seq: u8, payload: T) -> Self {
         Self {
             header: Header::new(
-                <T as Command>::TYPE,
+                <T as Command>::SCOPE,
                 <T as Command>::DIRECTION,
                 <T as Command>::DISABLE_CLIENT_RESPONSE,
                 <T as Command>::MANUFACTURER_CODE,

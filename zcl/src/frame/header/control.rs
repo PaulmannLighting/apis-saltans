@@ -2,7 +2,7 @@ use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Direction;
 
-use super::typ::Type;
+use super::scope::Scope;
 
 /// ZCL frame control flags.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -26,7 +26,7 @@ impl Control {
     /// Creates a new `Control` instance with the specified flags.
     #[must_use]
     pub fn new(
-        typ: Type,
+        typ: Scope,
         manufacturer_specific: bool,
         direction: Direction,
         disable_client_response: bool,
@@ -58,8 +58,8 @@ impl Control {
     /// # Errors
     ///
     /// If the command type is not recognized, it returns an error with the raw value.
-    pub fn typ(self) -> Result<Type, u8> {
-        Type::try_from(self.0 & Self::TYPE.bits())
+    pub fn typ(self) -> Result<Scope, u8> {
+        Scope::try_from(self.0 & Self::TYPE.bits())
     }
 
     /// Return whether the command is manufacturer specific.
@@ -91,8 +91,13 @@ mod tests {
 
     #[test]
     fn cluster_specific() {
-        let control = Control::new(Type::ClusterSpecific, true, Direction::ServerToClient, true);
-        assert_eq!(control.typ(), Ok(Type::ClusterSpecific));
+        let control = Control::new(
+            Scope::ClusterSpecific,
+            true,
+            Direction::ServerToClient,
+            true,
+        );
+        assert_eq!(control.typ(), Ok(Scope::ClusterSpecific));
         assert!(control.is_manufacturer_specific());
         assert_eq!(control.direction(), Direction::ServerToClient);
         assert!(control.disable_default_response());
@@ -100,8 +105,8 @@ mod tests {
 
     #[test]
     fn global() {
-        let control = Control::new(Type::Global, true, Direction::ServerToClient, true);
-        assert_eq!(control.typ(), Ok(Type::Global));
+        let control = Control::new(Scope::Global, true, Direction::ServerToClient, true);
+        assert_eq!(control.typ(), Ok(Scope::Global));
         assert!(control.is_manufacturer_specific());
         assert_eq!(control.direction(), Direction::ServerToClient);
         assert!(control.disable_default_response());
@@ -110,12 +115,12 @@ mod tests {
     #[test]
     fn manufacturer_unspecific() {
         let control = Control::new(
-            Type::ClusterSpecific,
+            Scope::ClusterSpecific,
             false,
             Direction::ServerToClient,
             true,
         );
-        assert_eq!(control.typ(), Ok(Type::ClusterSpecific));
+        assert_eq!(control.typ(), Ok(Scope::ClusterSpecific));
         assert!(!control.is_manufacturer_specific());
         assert_eq!(control.direction(), Direction::ServerToClient);
         assert!(control.disable_default_response());
@@ -123,8 +128,13 @@ mod tests {
 
     #[test]
     fn disable_client_to_server() {
-        let control = Control::new(Type::ClusterSpecific, true, Direction::ClientToServer, true);
-        assert_eq!(control.typ(), Ok(Type::ClusterSpecific));
+        let control = Control::new(
+            Scope::ClusterSpecific,
+            true,
+            Direction::ClientToServer,
+            true,
+        );
+        assert_eq!(control.typ(), Ok(Scope::ClusterSpecific));
         assert!(control.is_manufacturer_specific());
         assert_eq!(control.direction(), Direction::ClientToServer);
         assert!(control.disable_default_response());
@@ -133,12 +143,12 @@ mod tests {
     #[test]
     fn enable_client_response() {
         let control = Control::new(
-            Type::ClusterSpecific,
+            Scope::ClusterSpecific,
             true,
             Direction::ClientToServer,
             false,
         );
-        assert_eq!(control.typ(), Ok(Type::ClusterSpecific));
+        assert_eq!(control.typ(), Ok(Scope::ClusterSpecific));
         assert!(control.is_manufacturer_specific());
         assert_eq!(control.direction(), Direction::ClientToServer);
         assert!(!control.disable_default_response());

@@ -1,6 +1,6 @@
 use zigbee::{ClusterId, Direction};
 
-use crate::{Command, Type};
+use crate::{Command, Scope};
 
 /// A command which is directed towards a specific cluster.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -12,7 +12,7 @@ pub struct ClusterDirected<T> {
 impl<T> ClusterDirected<T> {
     /// Create a new `ClusterDirected` command.
     #[must_use]
-    pub const fn new(cluster_id: u16, payload: T) -> Self {
+    pub(crate) const fn new(cluster_id: u16, payload: T) -> Self {
         Self {
             cluster_id,
             payload,
@@ -32,7 +32,7 @@ where
 {
     const ID: u8 = T::ID;
     const DIRECTION: Direction = T::DIRECTION;
-    const TYPE: Type = T::TYPE;
+    const SCOPE: Scope = T::SCOPE;
     const DISABLE_CLIENT_RESPONSE: bool = T::DISABLE_CLIENT_RESPONSE;
     const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
 }

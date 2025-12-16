@@ -2,10 +2,10 @@ use le_stream::{FromLeStream, ToLeStream};
 pub use zigbee::Direction;
 
 pub use self::control::Control;
-pub use self::typ::Type;
+pub use self::scope::Scope;
 
 mod control;
-mod typ;
+mod scope;
 
 /// A ZCL frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
@@ -20,7 +20,7 @@ impl Header {
     /// Crate a new header.
     #[must_use]
     pub fn new(
-        typ: Type,
+        typ: Scope,
         direction: Direction,
         disable_client_response: bool,
         manufacturer_code: Option<u16>,

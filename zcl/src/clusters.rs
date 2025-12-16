@@ -1,7 +1,7 @@
 //! Cluster groups.
 
 use self::general::{basic, groups, identify, on_off};
-use crate::{Header, ParseFrameError, Type};
+use crate::{Header, ParseFrameError, Scope};
 
 pub mod general;
 pub mod global;
@@ -40,8 +40,8 @@ impl Cluster {
         };
 
         match typ {
-            Type::Global => global::Command::parse_zcl_frame(header, bytes).map(Self::Global),
-            Type::ClusterSpecific => match cluster_id {
+            Scope::Global => global::Command::parse_zcl_frame(header, bytes).map(Self::Global),
+            Scope::ClusterSpecific => match cluster_id {
                 <basic::Command as zigbee::Cluster>::ID => {
                     basic::Command::parse_zcl_frame(header, bytes).map(Self::Basic)
                 }

@@ -3,6 +3,7 @@
 use zigbee::Cluster;
 use zigbee_macros::ParseZclFrame;
 
+mod default_response;
 pub mod read_attributes;
 mod report_attributes;
 

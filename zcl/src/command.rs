@@ -1,6 +1,11 @@
 use zigbee::Direction;
 
-use crate::Type;
+pub use self::cluster_directed::ClusterDirected;
+pub use self::global::Global;
+use crate::Scope;
+
+mod cluster_directed;
+mod global;
 
 /// Trait to identify a Zigbee command.
 pub trait Command {
@@ -10,8 +15,13 @@ pub trait Command {
     /// The command direction.
     const DIRECTION: Direction;
 
-    /// The command type.
-    const TYPE: Type = Type::ClusterSpecific;
+    /// The command scope.
+    ///
+    /// `Scope::Global` commands can be sent to any cluster, while
+    /// `Scope::ClusterSpecific` commands are specific to a particular cluster.
+    ///
+    /// Default is `Scope::ClusterSpecific`.
+    const SCOPE: Scope = Scope::ClusterSpecific;
 
     /// Whether to disable the client response for this command.
     const DISABLE_CLIENT_RESPONSE: bool = false;

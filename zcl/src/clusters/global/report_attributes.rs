@@ -2,7 +2,8 @@ use alloc::vec::Vec;
 
 pub use attribute_report::AttributeReport;
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Cluster;
+
+use crate::Global;
 
 mod attribute_report;
 
@@ -25,12 +26,7 @@ impl Command {
     }
 }
 
-impl Cluster for Command {
-    const ID: u16 = 0x0000;
-}
-
-impl crate::Command for Command {
+impl Global for Command {
     const ID: u8 = 0x0A;
     const DIRECTION: zigbee::Direction = zigbee::Direction::ServerToClient;
-    const TYPE: crate::Type = crate::Type::Global;
 }
