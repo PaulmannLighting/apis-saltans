@@ -70,6 +70,13 @@ where
                             error!("Failed to send get neighbors command response: {error:?}");
                         });
                 }
+                Message::RouteRequest { radius, response } => {
+                    response
+                        .send(self.route_request(radius).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send route request command response: {error:?}");
+                        });
+                }
                 Message::Unicast {
                     pan_id,
                     endpoint,
@@ -80,6 +87,31 @@ where
                         .send(self.unicast(pan_id, endpoint, frame).await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send ZCL command response: {error:?}");
+                        });
+                }
+                Message::Multicast {
+                    group_id,
+                    hops,
+                    radius,
+                    frame,
+                    response,
+                } => {
+                    response
+                        .send(self.multicast(group_id, hops, radius, frame).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send multicast command response: {error:?}");
+                        });
+                }
+                Message::Broadcast {
+                    pan_id,
+                    radius,
+                    frame,
+                    response,
+                } => {
+                    response
+                        .send(self.broadcast(pan_id, radius, frame).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send broadcast command response: {error:?}");
                         });
                 }
             }

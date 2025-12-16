@@ -64,6 +64,13 @@ pub trait Nlme {
     /// Returns an error if the operation fails.
     fn get_neighbors(&mut self) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>>;
 
+    /// Send a route request.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn route_request(&mut self, radius: u8) -> impl Future<Output = Result<(), Error>>;
+
     /// Send a unicast message.
     ///
     /// # Errors

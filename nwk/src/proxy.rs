@@ -62,6 +62,13 @@ pub trait Proxy {
     /// Returns an error if the operation fails.
     fn get_neighbors(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>>;
 
+    /// Send a route request with the specified radius.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn route_request(&self, radius: u8) -> impl Future<Output = Result<(), Error>>;
+
     /// Send a unicast ZCL command.
     ///
     /// # Errors
@@ -160,6 +167,14 @@ impl Proxy for Sender<Message> {
     async fn get_neighbors(&self) -> Result<BTreeMap<MacAddr8, u16>, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::GetNeighbors { response })
+            .await
+            .map_err(|_| Error::ActorSend)?;
+        rx.await.map_err(|_| Error::ActorReceive)?
+    }
+
+    async fn route_request(&self, radius: u8) -> Result<(), Error> {
+        let (response, rx) = oneshot::channel();
+        self.send(Message::RouteRequest { radius, response })
             .await
             .map_err(|_| Error::ActorSend)?;
         rx.await.map_err(|_| Error::ActorReceive)?

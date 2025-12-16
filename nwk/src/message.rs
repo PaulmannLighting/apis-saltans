@@ -37,9 +37,26 @@ pub enum Message {
     GetNeighbors {
         response: Sender<Result<BTreeMap<MacAddr8, u16>, Error>>,
     },
+    RouteRequest {
+        radius: u8,
+        response: Sender<Result<(), Error>>,
+    },
     Unicast {
         pan_id: u16,
         endpoint: Endpoint,
+        frame: Frame,
+        response: Sender<Result<(), Error>>,
+    },
+    Multicast {
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        frame: Frame,
+        response: Sender<Result<(), Error>>,
+    },
+    Broadcast {
+        pan_id: u16,
+        radius: u8,
         frame: Frame,
         response: Sender<Result<(), Error>>,
     },
