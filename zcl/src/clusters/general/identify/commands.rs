@@ -5,6 +5,7 @@ pub use self::identify::Identify;
 pub use self::identify_query::IdentifyQuery;
 pub use self::identify_query_response::IdentifyQueryResponse;
 pub use self::trigger_effect::{EffectIdentifier, EffectVariant, TriggerEffect};
+use crate::CommandId;
 
 mod identify;
 mod identify_query;
@@ -26,4 +27,15 @@ pub enum Command {
 
 impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
+}
+
+impl CommandId for Command {
+    fn command_id(&self) -> u8 {
+        match self {
+            Self::Identify(cmd) => cmd.command_id(),
+            Self::IdentifyQuery(cmd) => cmd.command_id(),
+            Self::TriggerEffect(cmd) => cmd.command_id(),
+            Self::IdentifyQueryResponse(cmd) => cmd.command_id(),
+        }
+    }
 }

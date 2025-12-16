@@ -11,6 +11,7 @@ pub use self::remove_group::RemoveGroup;
 pub use self::remove_group_response::RemoveGroupResponse;
 pub use self::view_group::ViewGroup;
 pub use self::view_group_response::ViewGroupResponse;
+use crate::CommandId;
 
 mod add_group;
 mod add_group_if_identifying;
@@ -50,4 +51,21 @@ pub enum Command {
 
 impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
+}
+
+impl CommandId for Command {
+    fn command_id(&self) -> u8 {
+        match self {
+            Self::AddGroup(cmd) => cmd.command_id(),
+            Self::ViewGroup(cmd) => cmd.command_id(),
+            Self::GetGroupMembership(cmd) => cmd.command_id(),
+            Self::RemoveGroup(cmd) => cmd.command_id(),
+            Self::RemoveAllGroups(cmd) => cmd.command_id(),
+            Self::AddGroupIfIdentifying(cmd) => cmd.command_id(),
+            Self::AddGroupResponse(cmd) => cmd.command_id(),
+            Self::ViewGroupResponse(cmd) => cmd.command_id(),
+            Self::GetGroupMembershipResponse(cmd) => cmd.command_id(),
+            Self::RemoveGroupResponse(cmd) => cmd.command_id(),
+        }
+    }
 }

@@ -7,6 +7,7 @@ pub use self::off::Off;
 pub use self::off_with_effect::{DelayedAllOff, DyingLight, Effect, OffWithEffect};
 pub use self::on::On;
 pub use self::toggle::Toggle;
+use crate::CommandId;
 
 mod off;
 mod off_with_effect;
@@ -28,4 +29,15 @@ pub enum Command {
 
 impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
+}
+
+impl CommandId for Command {
+    fn command_id(&self) -> u8 {
+        match self {
+            Self::On(cmd) => cmd.command_id(),
+            Self::Off(cmd) => cmd.command_id(),
+            Self::OffWithEffect(cmd) => cmd.command_id(),
+            Self::Toggle(cmd) => cmd.command_id(),
+        }
+    }
 }

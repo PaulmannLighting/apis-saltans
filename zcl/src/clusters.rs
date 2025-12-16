@@ -1,7 +1,7 @@
 //! Cluster groups.
 
 use self::general::{basic, groups, identify, on_off};
-use crate::{Header, ParseFrameError, Scope};
+use crate::{CommandId, Header, ParseFrameError, Scope};
 
 pub mod general;
 pub mod global;
@@ -56,6 +56,18 @@ impl Cluster {
                 }
                 invalid_cluster_id => Err(ParseFrameError::InvalidClusterId(invalid_cluster_id)),
             },
+        }
+    }
+}
+
+impl CommandId for Cluster {
+    fn command_id(&self) -> u8 {
+        match self {
+            Self::Global(command) => command.command_id(),
+            Self::Basic(command) => command.command_id(),
+            Self::Groups(command) => command.command_id(),
+            Self::Identify(command) => command.command_id(),
+            Self::OnOff(command) => command.command_id(),
         }
     }
 }
