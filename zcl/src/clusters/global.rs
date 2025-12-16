@@ -16,6 +16,8 @@ pub enum Command {
     ReadAttributesResponse(read_attributes::Response),
     /// Report Attributes command.
     ReportAttributes(report_attributes::Command),
+    /// Default Response command.
+    DefaultResponse(default_response::DefaultResponse),
 }
 
 impl Cluster for Command {
