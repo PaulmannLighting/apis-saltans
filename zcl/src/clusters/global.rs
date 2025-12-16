@@ -2,9 +2,9 @@
 
 use zigbee_macros::ParseZclFrame;
 
-mod default_response;
-mod read_attributes;
-mod report_attributes;
+pub mod default_response;
+pub mod read_attributes;
+pub mod report_attributes;
 
 /// Available global commands.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclFrame)]
