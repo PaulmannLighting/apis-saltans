@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::ClusterId;
 
 use crate::Command;
 
@@ -62,5 +63,14 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Frame {{ seq: {:#04X}, data: {} }}", self.seq, self.data)
+    }
+}
+
+impl<T> ClusterId for Frame<T>
+where
+    T: ClusterId,
+{
+    fn cluster_id(&self) -> u16 {
+        self.data.cluster_id()
     }
 }
