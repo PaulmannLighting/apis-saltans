@@ -97,7 +97,6 @@ pub trait Nlme {
     fn broadcast(
         &mut self,
         pan_id: u16,
-        endpoint: Endpoint,
         radius: u8,
         frame: Frame,
     ) -> impl Future<Output = Result<(), Error>>;
