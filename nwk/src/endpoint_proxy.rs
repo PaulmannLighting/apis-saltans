@@ -26,7 +26,7 @@ impl<'proxy, T> EndpointProxy<'proxy, T> {
 
 impl<T> EndpointProxy<'_, T>
 where
-    T: Proxy + Send,
+    T: Proxy + Sync,
 {
     /// Send a unicast command to the endpoint.
     pub async fn unicast(&self, frame: Frame) -> Result<u8, Error> {

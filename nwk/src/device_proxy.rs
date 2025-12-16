@@ -22,7 +22,7 @@ impl<'proxy, T> DeviceProxy<'proxy, T> {
 
 impl<T> DeviceProxy<'_, T>
 where
-    T: Proxy + Send,
+    T: Proxy + Sync,
 {
     /// Get a proxy for a specific endpoint on the device.
     pub const fn endpoint(&self, endpoint_id: Endpoint) -> EndpointProxy<'_, T> {
