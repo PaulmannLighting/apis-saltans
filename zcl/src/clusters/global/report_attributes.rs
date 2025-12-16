@@ -1,3 +1,5 @@
+//! Report Attributes Command.
+
 use alloc::vec::Vec;
 
 pub use attribute_report::AttributeReport;
@@ -7,6 +9,7 @@ use crate::Global;
 
 mod attribute_report;
 
+/// Report Attributes Command.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Command {
     reports: Vec<AttributeReport>,

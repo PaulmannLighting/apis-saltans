@@ -1,3 +1,5 @@
+//! Default Response Command.
+
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Direction;
 
