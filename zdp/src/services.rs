@@ -9,8 +9,9 @@ pub use self::bind_management::{
     BindManagement, BindReq, ClearAllBindingsReq, Destination, UnbindReq,
 };
 pub use self::device_and_service_discovery::{
-    ActiveEpReq, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq, NodeDescReq,
-    NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, SimpleDescReq, SystemServerDiscoveryReq,
+    ActiveEpReq, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq, MatchDescRsp,
+    NodeDescReq, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, SimpleDescReq,
+    SystemServerDiscoveryReq,
 };
 pub use self::network_management::{
     EnhancedNwkUpdateParameters, LeaveReqFlags, MgmtBindReq, MgmtLeaveReq, MgmtLqiReq,
@@ -68,6 +69,9 @@ impl Command {
                 .map(Self::DeviceAndServiceDiscovery)),
             MatchDescReq::ID => Ok(MatchDescReq::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::MatchDescReq)
+                .map(Self::DeviceAndServiceDiscovery)),
+            MatchDescRsp::ID => Ok(MatchDescRsp::from_le_stream(bytes)
+                .map(DeviceAndServiceDiscovery::MatchDescRsp)
                 .map(Self::DeviceAndServiceDiscovery)),
             DeviceAnnce::ID => Ok(DeviceAnnce::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::DeviceAnnce)

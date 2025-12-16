@@ -6,6 +6,7 @@ pub use self::active_ep_req::ActiveEpReq;
 pub use self::device_annce::DeviceAnnce;
 pub use self::ieee_addr_req::IeeeAddrReq;
 pub use self::match_desc_req::MatchDescReq;
+pub use self::match_desc_rsp::MatchDescRsp;
 pub use self::node_desc_req::NodeDescReq;
 pub use self::nwk_addr_req::{NwkAddrReq, RequestType};
 pub use self::parent_annce::ParentAnnce;
@@ -17,6 +18,7 @@ mod active_ep_req;
 mod device_annce;
 mod ieee_addr_req;
 mod match_desc_req;
+mod match_desc_rsp;
 mod node_desc_req;
 mod nwk_addr_req;
 mod parent_annce;
@@ -41,6 +43,8 @@ pub enum DeviceAndServiceDiscovery {
     ActiveEpReq(ActiveEpReq),
     /// Match Descriptor Request
     MatchDescReq(MatchDescReq),
+    /// Match Descriptor Response.
+    MatchDescRsp(MatchDescRsp),
     /// Device Announcement
     DeviceAnnce(DeviceAnnce),
     /// Parent Announcement
@@ -59,6 +63,7 @@ impl Display for DeviceAndServiceDiscovery {
             Self::SimpleDescReq(cmd) => cmd.fmt(f),
             Self::ActiveEpReq(cmd) => cmd.fmt(f),
             Self::MatchDescReq(cmd) => cmd.fmt(f),
+            Self::MatchDescRsp(cmd) => cmd.fmt(f),
             Self::DeviceAnnce(cmd) => cmd.fmt(f),
             Self::ParentAnnce(cmd) => cmd.fmt(f),
             Self::SystemServerDiscoveryReq(cmd) => cmd.fmt(f),
