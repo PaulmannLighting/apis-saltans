@@ -1,4 +1,5 @@
 use macaddr::MacAddr8;
+use zigbee::Endpoint;
 
 pub use self::command::Command;
 
@@ -46,5 +47,12 @@ pub enum Event {
         pan_id: u16,
     },
     /// Message received from a device.
-    MessageReceived(Command),
+    MessageReceived {
+        /// The PAN ID of the sender.
+        src_address: u16,
+        /// The source endpoint.
+        src_endpoint: Endpoint,
+        /// The received command.
+        command: Box<Command>,
+    },
 }
