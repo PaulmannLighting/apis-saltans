@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use zigbee::ClusterId;
+use zigbee::{ClusterId, Endpoint};
 
 /// A non-sequenced, non-generic view on a ZCL frame for transmission via channels.
 ///
@@ -9,26 +9,28 @@ use zigbee::ClusterId;
 #[derive(Debug)]
 pub struct Frame {
     cluster_id: u16,
+    source_endpoint: Option<Endpoint>,
     payload: Box<[u8]>,
 }
 
 impl Frame {
     /// Create a new `Frame`.
     #[must_use]
-    pub(crate) fn new<T>(payload: T) -> Self
+    pub(crate) fn new<T>(source_endpoint: Option<Endpoint>, payload: T) -> Self
     where
         T: ClusterId + ToLeStream,
     {
         Self {
             cluster_id: payload.cluster_id(),
+            source_endpoint,
             payload: payload.to_le_stream().collect(),
         }
     }
 
     /// Return the cluster ID and payload of the frame.
     #[must_use]
-    pub fn into_parts(self) -> (u16, Box<[u8]>) {
-        (self.cluster_id, self.payload)
+    pub fn into_parts(self) -> (u16, Option<Endpoint>, Box<[u8]>) {
+        (self.cluster_id, self.source_endpoint, self.payload)
     }
 }
 
@@ -37,7 +39,7 @@ where
     T: ClusterId + ToLeStream,
 {
     fn from(frame: zcl::Frame<T>) -> Self {
-        Self::new(frame)
+        Self::new(None, frame)
     }
 }
 
@@ -46,6 +48,6 @@ where
     T: ClusterId + ToLeStream,
 {
     fn from(frame: zdp::Frame<T>) -> Self {
-        Self::new(frame)
+        Self::new(Some(Endpoint::Data), frame)
     }
 }
