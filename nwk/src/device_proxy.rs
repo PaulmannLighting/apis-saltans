@@ -1,7 +1,7 @@
 use le_stream::ToLeStream;
 use zcl::Command;
 use zdp::Service;
-use zigbee::{Cluster, Endpoint};
+use zigbee::{Cluster, ClusterId, Endpoint};
 
 use crate::endpoint_proxy::EndpointProxy;
 use crate::{Error, Frame, Proxy};
@@ -42,7 +42,7 @@ where
     /// Send a unicast ZCL command to the device.
     pub async fn unicast_zcl<C>(&self, endpoint: Endpoint, command: C) -> Result<u8, Error>
     where
-        C: Command + Cluster + ToLeStream,
+        C: Command + ClusterId + ToLeStream,
     {
         self.proxy
             .zcl()
