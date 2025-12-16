@@ -11,6 +11,7 @@ pub use self::mgmt_nwk_enhanced_update_req::{
 pub use self::mgmt_nwk_ieee_joining_list_req::MgmtNwkIeeeJoiningListReq;
 pub use self::mgmt_nwk_update_req::{MgmtNwkUpdateReq, ScanDuration};
 pub use self::mgmt_permit_joining_req::MgmtPermitJoiningReq;
+pub use self::mgmt_permit_joining_rsp::MgmtPermitJoiningRsp;
 pub use self::mgmt_rtg_req::MgmtRtgReq;
 
 mod mgmt_bind_req;
@@ -21,12 +22,14 @@ mod mgmt_nwk_enhanced_update_req;
 mod mgmt_nwk_ieee_joining_list_req;
 mod mgmt_nwk_update_req;
 mod mgmt_permit_joining_req;
+mod mgmt_permit_joining_rsp;
 mod mgmt_rtg_req;
 
 /// Network Management Commands.
 // TODO: Implement all commands.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum NetworkManagement {
+    // Requests
     /// Management LQI Request
     MgmtLqiReq(MgmtLqiReq),
     /// Management Routing Request
@@ -43,6 +46,9 @@ pub enum NetworkManagement {
     MgmtNwkEnhancedUpdateReq(MgmtNwkEnhancedUpdateReq),
     /// Management Network IEEE Joining List Request.
     MgmtNwkIeeeJoiningListReq(MgmtNwkIeeeJoiningListReq),
+    // Responses
+    /// Management Permit Joining Response.
+    MgmtPermitJoiningRsp(MgmtPermitJoiningRsp),
 }
 
 impl Display for NetworkManagement {
@@ -56,6 +62,7 @@ impl Display for NetworkManagement {
             Self::MgmtNwkUpdateReq(cmd) => cmd.fmt(f),
             Self::MgmtNwkEnhancedUpdateReq(cmd) => cmd.fmt(f),
             Self::MgmtNwkIeeeJoiningListReq(cmd) => cmd.fmt(f),
+            Self::MgmtPermitJoiningRsp(cmd) => cmd.fmt(f),
         }
     }
 }
