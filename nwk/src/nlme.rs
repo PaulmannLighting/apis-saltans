@@ -75,4 +75,17 @@ pub trait Nlme {
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<(), Error>>;
+
+    /// Send a broadcast message.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn broadcast(
+        &mut self,
+        pan_id: u16,
+        endpoint: Endpoint,
+        radius: u8,
+        frame: Frame,
+    ) -> impl Future<Output = Result<(), Error>>;
 }
