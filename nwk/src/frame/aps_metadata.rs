@@ -4,7 +4,7 @@ use zigbee::{Endpoint, Profile};
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct ApsMetadata {
     cluster_id: u16,
-    profile_id: Option<Profile>,
+    profile: Option<Profile>,
     source_endpoint: Option<Endpoint>,
 }
 
@@ -13,12 +13,12 @@ impl ApsMetadata {
     #[must_use]
     pub(crate) const fn new(
         cluster_id: u16,
-        profile_id: Option<Profile>,
+        profile: Option<Profile>,
         source_endpoint: Option<Endpoint>,
     ) -> Self {
         Self {
             cluster_id,
-            profile_id,
+            profile,
             source_endpoint,
         }
     }
@@ -31,8 +31,8 @@ impl ApsMetadata {
 
     /// Return the profile ID.
     #[must_use]
-    pub const fn profile_id(&self) -> Option<Profile> {
-        self.profile_id
+    pub const fn profile(&self) -> Option<Profile> {
+        self.profile
     }
 
     /// Return the source endpoint.
