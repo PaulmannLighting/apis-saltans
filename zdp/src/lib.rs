@@ -4,6 +4,8 @@
 
 extern crate core;
 
+pub use status::Status;
+
 pub use self::frame::Frame;
 pub use self::services::{
     ActiveEpReq, BindManagement, BindReq, ClearAllBindingsReq, Command, Destination,
@@ -17,3 +19,4 @@ pub use self::services::{
 
 mod frame;
 mod services;
+mod status;
