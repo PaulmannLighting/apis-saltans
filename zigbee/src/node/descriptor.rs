@@ -2,6 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::flags::Flags;
 pub use self::frequency_band::FrequencyBand;
+pub use self::logical_type::LogicalType;
 pub use self::mac_capability_flags::MacCapabilityFlags;
 pub use self::server_mask::ServerMask;
 
