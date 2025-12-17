@@ -9,6 +9,7 @@ use zigbee::{ClusterId, Endpoint};
 #[derive(Debug)]
 pub struct Frame {
     cluster_id: u16,
+    profile_id: Option<u16>,
     source_endpoint: Option<Endpoint>,
     payload: Box<[u8]>,
 }
@@ -16,12 +17,17 @@ pub struct Frame {
 impl Frame {
     /// Create a new `Frame`.
     #[must_use]
-    pub(crate) fn new<T>(source_endpoint: Option<Endpoint>, payload: T) -> Self
+    pub(crate) fn new<T>(
+        profile_id: Option<u16>,
+        source_endpoint: Option<Endpoint>,
+        payload: T,
+    ) -> Self
     where
         T: ClusterId + ToLeStream,
     {
         Self {
             cluster_id: payload.cluster_id(),
+            profile_id,
             source_endpoint,
             payload: payload.to_le_stream().collect(),
         }
@@ -29,8 +35,13 @@ impl Frame {
 
     /// Return the cluster ID and payload of the frame.
     #[must_use]
-    pub fn into_parts(self) -> (u16, Option<Endpoint>, Box<[u8]>) {
-        (self.cluster_id, self.source_endpoint, self.payload)
+    pub fn into_parts(self) -> (u16, Option<u16>, Option<Endpoint>, Box<[u8]>) {
+        (
+            self.cluster_id,
+            self.profile_id,
+            self.source_endpoint,
+            self.payload,
+        )
     }
 }
 
@@ -39,7 +50,7 @@ where
     T: ClusterId + ToLeStream,
 {
     fn from(frame: zcl::Frame<T>) -> Self {
-        Self::new(None, frame)
+        Self::new(None, None, frame)
     }
 }
 
@@ -48,6 +59,6 @@ where
     T: ClusterId + ToLeStream,
 {
     fn from(frame: zdp::Frame<T>) -> Self {
-        Self::new(Some(Endpoint::Data), frame)
+        Self::new(Some(0x0000), Some(Endpoint::Data), frame)
     }
 }
