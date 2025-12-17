@@ -3,7 +3,7 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
-use crate::Service;
+use crate::{Displayable, Service, Status};
 
 /// Response type for Mgmt Permit Joining Request.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -14,14 +14,19 @@ pub struct MgmtPermitJoiningRsp {
 impl MgmtPermitJoiningRsp {
     /// Creates a new `MgmtPermitJoiningRsp`.
     #[must_use]
-    pub const fn new(status: u8) -> Self {
-        Self { status }
+    pub const fn new(status: Status) -> Self {
+        Self {
+            status: status as u8,
+        }
     }
 
     /// Returns the status.
-    #[must_use]
-    pub const fn status(self) -> u8 {
-        self.status
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the status code is invalid.
+    pub fn status(self) -> Result<Status, u8> {
+        self.status.try_into()
     }
 }
 
@@ -35,6 +40,11 @@ impl Service for MgmtPermitJoiningRsp {
 
 impl Display for MgmtPermitJoiningRsp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {{ status: {} }}", Self::NAME, self.status)
+        write!(
+            f,
+            "{} {{ status: {} }}",
+            Self::NAME,
+            self.status().display()
+        )
     }
 }
