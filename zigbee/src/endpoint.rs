@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 pub use self::application::Application;
 pub use self::reserved::Reserved;
 
@@ -22,6 +24,17 @@ pub enum Endpoint {
 impl Default for Endpoint {
     fn default() -> Self {
         DEFAULT_ENDPOINT.into()
+    }
+}
+
+impl Display for Endpoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Data => write!(f, "Data (0x00)"),
+            Self::Application(app) => write!(f, "Application ({:#04X})", u8::from(*app)),
+            Self::Reserved(res) => write!(f, "Reserved ({:#04X})", u8::from(*res)),
+            Self::Broadcast => write!(f, "Broadcast (0xff)"),
+        }
     }
 }
 
