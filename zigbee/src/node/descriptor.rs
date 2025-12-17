@@ -1,5 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 
+pub use self::device_type::DeviceType;
 pub use self::flags::Flags;
 pub use self::frequency_band::FrequencyBand;
 pub use self::logical_type::LogicalType;
