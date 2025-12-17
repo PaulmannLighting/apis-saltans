@@ -15,6 +15,7 @@ pub struct ClearAllBindingsReq {
 
 impl ClearAllBindingsReq {
     /// Creates a new `ClearAllBindingsReq`.
+    #[must_use]
     pub const fn new(tlvs: Vec<Tlv>) -> Self {
         Self { tlvs }
     }

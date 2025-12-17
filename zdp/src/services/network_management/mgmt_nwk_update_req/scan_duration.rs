@@ -55,28 +55,28 @@ pub enum ScanDuration {
 impl Display for ScanDuration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ScanDuration::Zero { energy_scan } => {
+            Self::Zero { energy_scan } => {
                 write!(f, "Zero {{ energy_scan: {energy_scan} }}")
             }
-            ScanDuration::One { energy_scan } => {
+            Self::One { energy_scan } => {
                 write!(f, "One {{ energy_scan: {energy_scan} }}")
             }
-            ScanDuration::Two { energy_scan } => {
+            Self::Two { energy_scan } => {
                 write!(f, "Two {{ energy_scan: {energy_scan} }}")
             }
-            ScanDuration::Three { energy_scan } => {
+            Self::Three { energy_scan } => {
                 write!(f, "Three {{ energy_scan: {energy_scan} }}")
             }
-            ScanDuration::Four { energy_scan } => {
+            Self::Four { energy_scan } => {
                 write!(f, "Four {{ energy_scan: {energy_scan} }}")
             }
-            ScanDuration::Five { energy_scan } => {
+            Self::Five { energy_scan } => {
                 write!(f, "Five {{ energy_scan: {energy_scan} }}")
             }
-            ScanDuration::ChannelChange { nwk_update_id } => {
+            Self::ChannelChange { nwk_update_id } => {
                 write!(f, "ChannelChange {{ nwk_update_id: {nwk_update_id:#04X} }}")
             }
-            ScanDuration::AttributeChange {
+            Self::AttributeChange {
                 nwk_update_id,
                 nwk_manager_addr,
             } => {

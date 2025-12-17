@@ -3,6 +3,7 @@ use std::fmt::Display;
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
+/// Leave Request Flags.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, ToLeStream)]
 #[repr(transparent)]
 pub struct LeaveReqFlags(u8);

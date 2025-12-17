@@ -1,6 +1,6 @@
 //! Bind, unbind and bind management related ZDP services.
 
-use std::fmt::{Display, Pointer};
+use std::fmt::Display;
 
 pub use self::bind_req::{Address, AddressMode, BindReq, Destination};
 pub use self::bind_rsp::BindRsp;

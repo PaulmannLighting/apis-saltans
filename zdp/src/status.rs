@@ -77,21 +77,6 @@ impl Status {
             Self::TemporaryFailure => "TEMPORARY_FAILURE",
         }
     }
-
-    /// Formats the result of a parsed status code.
-    ///
-    /// # Errors
-    ///
-    /// Returns a formatting error if the formatter fails.
-    pub(crate) fn fmt_result(
-        f: &mut std::fmt::Formatter<'_>,
-        maybe_status: Result<Self, u8>,
-    ) -> std::fmt::Result {
-        match maybe_status {
-            Ok(status) => write!(f, "{status} ({:#04X})", status as u8),
-            Err(code) => write!(f, "RESERVED ({code:#04X})"),
-        }
-    }
 }
 
 impl Display for Status {
