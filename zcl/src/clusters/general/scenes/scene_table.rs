@@ -1,30 +1,39 @@
+mod scene_table_extension;
+
+use alloc::vec::Vec;
 use core::str::Utf8Error;
 
 use chrono::Duration;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String, Uint8, Uint16};
 
+use crate::general::scenes::scene_table::scene_table_extension::SceneTableExtension;
+
 /// Scene table entry.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct SceneTable {
     group_id: Uint16,
     scene_id: Uint8,
     scene_name: String<16>,
     transition_time: Uint16,
-    extension_field_sets: (),    // TODO: More specific type
-    transition_time100ms: Uint8, // TODO: Limit to 0x00..0x09.
+    extension_field_sets: Vec<SceneTableExtension>, // TODO: More specific type
+    transition_time100ms: Uint8,                    // TODO: Limit to 0x00..0x09.
 }
 
 impl SceneTable {
     /// Creates a new `SceneTable` entry.
+    ///
+    /// TODO:
+    /// - Validate that `transition_time100ms` is in the range 0x00..0x09.
+    /// - Group extensions by cluster.
     #[must_use]
     pub const fn new(
         group_id: Uint16,
         scene_id: Uint8,
         scene_name: String<16>,
         transition_time: Uint16,
-        extension_field_sets: (),
+        extension_field_sets: Vec<SceneTableExtension>,
         transition_time100ms: Uint8,
     ) -> Self {
         Self {
@@ -67,8 +76,8 @@ impl SceneTable {
 
     /// Returns the extension field sets.
     #[must_use]
-    pub const fn extension_field_sets(&self) -> () {
-        self.extension_field_sets
+    pub fn extension_field_sets(&self) -> &[SceneTableExtension] {
+        &self.extension_field_sets
     }
 
     /// Returns the transition time in 100ms units.
