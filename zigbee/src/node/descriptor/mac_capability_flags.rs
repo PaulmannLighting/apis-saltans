@@ -44,6 +44,18 @@ impl MacCapabilityFlags {
         }
     }
 
+    /// Sets the device type.
+    pub fn set_device_type(&mut self, device_type: DeviceType) {
+        match device_type {
+            DeviceType::FullFunctionDevice => {
+                self.insert(Self::DEVICE_TYPE);
+            }
+            DeviceType::ReducedFunctionDevice => {
+                self.remove(Self::DEVICE_TYPE);
+            }
+        }
+    }
+
     /// Returns whether the current power source is mains power.
     #[must_use]
     pub const fn is_mains_power(self) -> bool {
