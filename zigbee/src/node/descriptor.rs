@@ -38,7 +38,6 @@ impl Descriptor {
         maximum_incoming_transfer_size: u16,
         server_mask: ServerMask,
         maximum_outgoing_transfer_size: u16,
-        capability: u8,
     ) -> Self {
         Self {
             flags,
@@ -48,7 +47,7 @@ impl Descriptor {
             maximum_incoming_transfer_size,
             server_mask,
             maximum_outgoing_transfer_size,
-            capability,
+            capability: 0x00, // Currently unused as per Zigbee spec.
         }
     }
 
