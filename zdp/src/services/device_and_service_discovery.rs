@@ -8,6 +8,7 @@ pub use self::ieee_addr_req::IeeeAddrReq;
 pub use self::match_desc_req::MatchDescReq;
 pub use self::match_desc_rsp::MatchDescRsp;
 pub use self::node_desc_req::NodeDescReq;
+pub use self::node_desc_rsp::NodeDescRsp;
 pub use self::nwk_addr_req::{NwkAddrReq, RequestType};
 pub use self::parent_annce::ParentAnnce;
 pub use self::power_desc_req::PowerDescReq;
@@ -20,6 +21,7 @@ mod ieee_addr_req;
 mod match_desc_req;
 mod match_desc_rsp;
 mod node_desc_req;
+mod node_desc_rsp;
 mod nwk_addr_req;
 mod parent_annce;
 mod power_desc_req;
@@ -35,6 +37,8 @@ pub enum DeviceAndServiceDiscovery {
     IeeeAddrReq(IeeeAddrReq),
     /// Node Descriptor Request
     NodeDescReq(NodeDescReq),
+    /// Node Descriptor Response
+    NodeDescRsp(NodeDescRsp),
     /// Power Descriptor Request
     PowerDescReq(PowerDescReq),
     /// Simple Descriptor Request
@@ -59,6 +63,7 @@ impl Display for DeviceAndServiceDiscovery {
             Self::NwkAddrReq(cmd) => cmd.fmt(f),
             Self::IeeeAddrReq(cmd) => cmd.fmt(f),
             Self::NodeDescReq(cmd) => cmd.fmt(f),
+            Self::NodeDescRsp(cmd) => cmd.fmt(f),
             Self::PowerDescReq(cmd) => cmd.fmt(f),
             Self::SimpleDescReq(cmd) => cmd.fmt(f),
             Self::ActiveEpReq(cmd) => cmd.fmt(f),

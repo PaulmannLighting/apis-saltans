@@ -10,7 +10,7 @@ pub use self::bind_management::{
 };
 pub use self::device_and_service_discovery::{
     ActiveEpReq, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq, MatchDescRsp,
-    NodeDescReq, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, SimpleDescReq,
+    NodeDescReq, NodeDescRsp, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, SimpleDescReq,
     SystemServerDiscoveryReq,
 };
 pub use self::network_management::{
@@ -57,6 +57,9 @@ impl Command {
                 .map(Self::DeviceAndServiceDiscovery)),
             NodeDescReq::ID => Ok(NodeDescReq::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::NodeDescReq)
+                .map(Self::DeviceAndServiceDiscovery)),
+            NodeDescRsp::ID => Ok(NodeDescRsp::from_le_stream(bytes)
+                .map(DeviceAndServiceDiscovery::NodeDescRsp)
                 .map(Self::DeviceAndServiceDiscovery)),
             PowerDescReq::ID => Ok(PowerDescReq::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::PowerDescReq)
