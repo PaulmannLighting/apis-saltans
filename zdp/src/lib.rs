@@ -4,7 +4,7 @@
 
 extern crate core;
 
-pub use status::Status;
+pub use status::{Displayable, Status};
 
 pub use self::frame::Frame;
 pub use self::services::{

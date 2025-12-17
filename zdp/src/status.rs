@@ -3,6 +3,10 @@ use std::fmt::{Display, LowerHex, UpperHex};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
+pub use self::displayable::Displayable;
+
+mod displayable;
+
 /// Status codes returned by various ZDP services.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromPrimitive)]
 #[repr(u8)]
