@@ -179,6 +179,7 @@ impl ToLeStream for Type {
         let mut bytes = Vec::new();
         bytes.extend(self.discriminant().to_le_stream());
 
+        #[expect(clippy::match_same_arms)]
         match self {
             Self::Unknown => {}
             Self::NoData => {}

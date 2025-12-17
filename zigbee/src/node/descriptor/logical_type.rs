@@ -1,5 +1,3 @@
-const MASK: u8 = 0b0000_0111;
-
 /// The logical type of Zigbee device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
