@@ -31,6 +31,12 @@ impl ServerMask {
     pub const fn stack_compliance_revision(self) -> u8 {
         (self.0 & Self::STACK_COMPLIANCE_REVISION.bits()) as u8
     }
+
+    /// Set the stack compliance revision.
+    pub fn set_stack_compliance_revision(&mut self, revision: u8) {
+        *self = (*self & !Self::STACK_COMPLIANCE_REVISION)
+            | Self(Self::STACK_COMPLIANCE_REVISION.bits() & u16::from(revision));
+    }
 }
 
 impl Display for ServerMask {
