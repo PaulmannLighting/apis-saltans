@@ -6,7 +6,7 @@ use le_stream::FromLeStream;
 use zigbee::Cluster;
 
 pub use self::bind_management::{
-    BindManagement, BindReq, ClearAllBindingsReq, Destination, UnbindReq,
+    BindManagement, BindReq, BindRsp, ClearAllBindingsReq, Destination, UnbindReq,
 };
 pub use self::device_and_service_discovery::{
     ActiveEpReq, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq, MatchDescRsp,
@@ -85,6 +85,9 @@ impl Command {
             // Bind Management Commands
             BindReq::ID => Ok(BindReq::from_le_stream(bytes)
                 .map(BindManagement::BindReq)
+                .map(Self::BindManagement)),
+            BindRsp::ID => Ok(BindRsp::from_le_stream(bytes)
+                .map(BindManagement::BindRsp)
                 .map(Self::BindManagement)),
             UnbindReq::ID => Ok(UnbindReq::from_le_stream(bytes)
                 .map(BindManagement::UnbindReq)
