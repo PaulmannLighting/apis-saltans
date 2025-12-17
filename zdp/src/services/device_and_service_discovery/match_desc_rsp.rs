@@ -15,6 +15,10 @@ pub struct MatchDescRsp {
 
 impl MatchDescRsp {
     /// Creates a new `MatchDescRsp`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the length of `matches` exceeds `u8::MAX`.
     pub fn new(
         status: u8,
         nwk_addr_of_interest: u16,
