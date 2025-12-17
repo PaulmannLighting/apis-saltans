@@ -1,8 +1,9 @@
 use bitflags::bitflags;
+use le_stream::{FromLeStream, ToLeStream};
 
 /// Supported frequency bands.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct FrequencyBand(u8);
 
 bitflags! {

@@ -1,11 +1,12 @@
 use bitflags::bitflags;
+use le_stream::{FromLeStream, ToLeStream};
 
 use super::frequency_band::FrequencyBand;
 use super::logical_type::LogicalType;
 
 /// First two bytes of the node descriptor.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Flags(u16);
 
 bitflags! {

@@ -1,3 +1,5 @@
+use le_stream::{FromLeStream, ToLeStream};
+
 pub use self::flags::Flags;
 pub use self::mac_capability_flags::MacCapabilityFlags;
 pub use self::server_mask::ServerMask;
@@ -11,14 +13,14 @@ mod server_mask;
 
 /// Node Descriptor.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct Descriptor {
     flags: Flags,
     mac_capability_flags: MacCapabilityFlags,
     manufacturer_code: u16,
     maximum_buffer_size: u8,
     maximum_incoming_transfer_size: u16,
-    server_mask: u16,
+    server_mask: ServerMask,
     maximum_outgoing_transfer_size: u16,
     capability: u8,
 }
