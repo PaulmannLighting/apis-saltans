@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use zigbee::{ClusterId, Endpoint};
+use zigbee::{ClusterId, Endpoint, Profile};
 
 pub use self::aps_metadata::ApsMetadata;
 
@@ -51,7 +51,11 @@ where
 {
     fn from(frame: zdp::Frame<T>) -> Self {
         Self::new(
-            ApsMetadata::new(frame.cluster_id(), Some(0x0000), Some(Endpoint::Data)),
+            ApsMetadata::new(
+                frame.cluster_id(),
+                Some(Profile::Network),
+                Some(Endpoint::Data),
+            ),
             frame.to_le_stream().collect(),
         )
     }
