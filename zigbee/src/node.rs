@@ -1,15 +1,11 @@
 //! Zigbee network node representation.
 
-use std::collections::BTreeSet;
-
 use macaddr::MacAddr8;
 
-pub use self::capability::Capability;
 pub use self::descriptor::{
     Descriptor, DeviceType, Flags, FrequencyBand, LogicalType, MacCapabilityFlags, ServerMask,
 };
 
-mod capability;
 mod descriptor;
 
 /// A Zigbee node.
@@ -18,7 +14,6 @@ mod descriptor;
 pub struct Node {
     address: MacAddr8,
     short_address: Option<u16>,
-    capabilities: BTreeSet<Capability>,
     descriptor: Descriptor,
 }
 
@@ -28,13 +23,11 @@ impl Node {
     pub const fn new(
         address: MacAddr8,
         short_address: Option<u16>,
-        capabilities: BTreeSet<Capability>,
         descriptor: Descriptor,
     ) -> Self {
         Self {
             address,
             short_address,
-            capabilities,
             descriptor,
         }
     }
@@ -49,12 +42,6 @@ impl Node {
     #[must_use]
     pub const fn short_address(&self) -> Option<u16> {
         self.short_address
-    }
-
-    /// Return the capabilities of the node.
-    #[must_use]
-    pub const fn capabilities(&self) -> &BTreeSet<Capability> {
-        &self.capabilities
     }
 
     /// Return the descriptor of the node.
