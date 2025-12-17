@@ -21,6 +21,10 @@ impl BindRsp {
     }
 
     /// Returns the status.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the status code is invalid.
     pub fn status(self) -> Result<Status, u8> {
         self.status.try_into()
     }
