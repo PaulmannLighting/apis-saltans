@@ -15,8 +15,8 @@ pub use self::device_and_service_discovery::{
 };
 pub use self::network_management::{
     EnhancedNwkUpdateParameters, LeaveReqFlags, MgmtBindReq, MgmtLeaveReq, MgmtLqiReq,
-    MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq, MgmtNwkUpdateReq, MgmtPermitJoiningReq,
-    MgmtPermitJoiningRsp, MgmtRtgReq, NetworkManagement, ScanDuration,
+    MgmtNwkBeaconSurveyReq, MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq, MgmtNwkUpdateReq,
+    MgmtPermitJoiningReq, MgmtPermitJoiningRsp, MgmtRtgReq, NetworkManagement, ScanDuration,
 };
 
 mod bind_management;
@@ -122,6 +122,9 @@ impl Command {
                 .map(Self::NetworkManagement)),
             MgmtNwkIeeeJoiningListReq::ID => Ok(MgmtNwkIeeeJoiningListReq::from_le_stream(bytes)
                 .map(NetworkManagement::MgmtNwkIeeeJoiningListReq)
+                .map(Self::NetworkManagement)),
+            MgmtNwkBeaconSurveyReq::ID => Ok(MgmtNwkBeaconSurveyReq::from_le_stream(bytes)
+                .map(NetworkManagement::MgmtNwkBeaconSurveyReq)
                 .map(Self::NetworkManagement)),
             MgmtPermitJoiningRsp::ID => Ok(MgmtPermitJoiningRsp::from_le_stream(bytes)
                 .map(NetworkManagement::MgmtPermitJoiningRsp)

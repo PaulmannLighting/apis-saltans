@@ -5,6 +5,7 @@ use std::fmt::Display;
 pub use self::mgmt_bind_req::MgmtBindReq;
 pub use self::mgmt_leave_req::{LeaveReqFlags, MgmtLeaveReq};
 pub use self::mgmt_lqi_req::MgmtLqiReq;
+pub use self::mgmt_nwk_beacon_survey_req::MgmtNwkBeaconSurveyReq;
 pub use self::mgmt_nwk_enhanced_update_req::{
     EnhancedNwkUpdateParameters, MgmtNwkEnhancedUpdateReq,
 };
@@ -46,6 +47,8 @@ pub enum NetworkManagement {
     MgmtNwkEnhancedUpdateReq(MgmtNwkEnhancedUpdateReq),
     /// Management Network IEEE Joining List Request.
     MgmtNwkIeeeJoiningListReq(MgmtNwkIeeeJoiningListReq),
+    /// Management Network Beacon Survey Request.
+    MgmtNwkBeaconSurveyReq(MgmtNwkBeaconSurveyReq),
     // Responses
     /// Management Permit Joining Response.
     MgmtPermitJoiningRsp(MgmtPermitJoiningRsp),
@@ -62,6 +65,7 @@ impl Display for NetworkManagement {
             Self::MgmtNwkUpdateReq(cmd) => cmd.fmt(f),
             Self::MgmtNwkEnhancedUpdateReq(cmd) => cmd.fmt(f),
             Self::MgmtNwkIeeeJoiningListReq(cmd) => cmd.fmt(f),
+            Self::MgmtNwkBeaconSurveyReq(cmd) => cmd.fmt(f),
             Self::MgmtPermitJoiningRsp(cmd) => cmd.fmt(f),
         }
     }

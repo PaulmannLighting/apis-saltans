@@ -11,10 +11,10 @@ pub use self::services::{
     ActiveEpReq, BindManagement, BindReq, BindRsp, ClearAllBindingsReq, Command, Destination,
     DeviceAndServiceDiscovery, DeviceAnnce, EnhancedNwkUpdateParameters, IeeeAddrReq,
     LeaveReqFlags, MatchDescReq, MatchDescRsp, MgmtBindReq, MgmtLeaveReq, MgmtLqiReq,
-    MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq, MgmtNwkUpdateReq, MgmtPermitJoiningReq,
-    MgmtPermitJoiningRsp, MgmtRtgReq, NetworkManagement, NodeDescReq, NodeDescRsp, NwkAddrReq,
-    ParentAnnce, PowerDescReq, RequestType, ScanDuration, Service, SimpleDescReq,
-    SystemServerDiscoveryReq, UnbindReq,
+    MgmtNwkBeaconSurveyReq, MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq, MgmtNwkUpdateReq,
+    MgmtPermitJoiningReq, MgmtPermitJoiningRsp, MgmtRtgReq, NetworkManagement, NodeDescReq,
+    NodeDescRsp, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, ScanDuration, Service,
+    SimpleDescReq, SystemServerDiscoveryReq, UnbindReq,
 };
 
 mod frame;
