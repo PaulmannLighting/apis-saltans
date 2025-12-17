@@ -3,7 +3,7 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use zigbee::Cluster;
 
-use crate::{Service, Status};
+use crate::{Displayable, Service, Status};
 
 /// Match Descriptor Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -65,9 +65,9 @@ impl Display for MatchDescRsp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} {{ status: {:#04X}, nwk_addr_of_interest: {:#06X}, matches: [",
+            "{} {{ status: {}, nwk_addr_of_interest: {:#06X}, matches: [",
             Self::NAME,
-            self.status,
+            self.status().display(),
             self.nwk_addr_of_interest,
         )?;
 

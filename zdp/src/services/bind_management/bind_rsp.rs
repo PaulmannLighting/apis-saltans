@@ -3,7 +3,7 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
-use crate::{Service, Status};
+use crate::{Displayable, Service, Status};
 
 /// Binding response.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -36,6 +36,11 @@ impl Service for BindRsp {
 
 impl Display for BindRsp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {{ status: {:#04X} }}", Self::NAME, self.status)
+        write!(
+            f,
+            "{} {{ status: {} }}",
+            Self::NAME,
+            self.status().display()
+        )
     }
 }
