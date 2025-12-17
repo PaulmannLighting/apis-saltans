@@ -11,7 +11,7 @@ pub struct ApsMetadata {
 impl ApsMetadata {
     /// Create new APS metadata.
     #[must_use]
-    pub(crate) fn new(
+    pub(crate) const fn new(
         cluster_id: u16,
         profile_id: Option<u16>,
         source_endpoint: Option<Endpoint>,
@@ -25,19 +25,19 @@ impl ApsMetadata {
 
     /// Return the cluster ID.
     #[must_use]
-    pub fn cluster_id(&self) -> u16 {
+    pub const fn cluster_id(&self) -> u16 {
         self.cluster_id
     }
 
     /// Return the profile ID.
     #[must_use]
-    pub fn profile_id(&self) -> Option<u16> {
+    pub const fn profile_id(&self) -> Option<u16> {
         self.profile_id
     }
 
     /// Return the source endpoint.
     #[must_use]
-    pub fn source_endpoint(&self) -> Option<Endpoint> {
+    pub const fn source_endpoint(&self) -> Option<Endpoint> {
         self.source_endpoint
     }
 }
