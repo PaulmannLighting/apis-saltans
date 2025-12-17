@@ -31,12 +31,13 @@ impl Flags {
     ///
     /// Returns an error if the logical type is set to the reserved bits.
     pub fn logical_type(self) -> Result<LogicalType, u8> {
-        match ((self & Self::LOGICAL_TYPE).bits() >> 13) as u8 {
-            0b000 => Ok(LogicalType::Coordinator),
-            0b001 => Ok(LogicalType::Router),
-            0b010 => Ok(LogicalType::EndDevice),
-            reserved => Err(reserved),
-        }
+        LogicalType::try_from(((self & Self::LOGICAL_TYPE).bits() >> 13) as u8)
+    }
+
+    /// Sets the logical type.
+    pub fn set_logical_type(&mut self, logical_type: LogicalType) {
+        *self = (*self & !Self::LOGICAL_TYPE)
+            | Self(u16::from(logical_type as u8) << Self::LOGICAL_TYPE.bits().trailing_zeros());
     }
 
     /// Returns whether the complex descriptor is available.
@@ -63,5 +64,75 @@ impl Flags {
     pub fn frequency_band(self) -> FrequencyBand {
         #[expect(clippy::cast_possible_truncation)]
         FrequencyBand::from_bits_truncate((self & Self::FREQUENCY_BAND).bits() as u8)
+    }
+
+    /// Sets the frequency band.
+    pub fn set_frequency_band(&mut self, band: FrequencyBand) {
+        *self = (*self & !Self::FREQUENCY_BAND) | Self(u16::from(band.bits()));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flags_modification() {
+        let mut flags = Flags::COMPLEX_DESCRIPTOR_AVAILABLE;
+
+        flags.set_logical_type(LogicalType::Router);
+        assert!(flags.contains(Flags::COMPLEX_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::USER_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::APS_FLAGS));
+        assert!(!flags.contains(Flags::FREQUENCY_BAND));
+        assert_eq!(flags.logical_type(), Ok(LogicalType::Router));
+
+        flags.set_logical_type(LogicalType::Coordinator);
+        assert!(flags.contains(Flags::COMPLEX_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::USER_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::APS_FLAGS));
+        assert!(!flags.contains(Flags::FREQUENCY_BAND));
+        assert_eq!(flags.logical_type(), Ok(LogicalType::Coordinator));
+
+        flags.set_logical_type(LogicalType::EndDevice);
+        assert!(flags.contains(Flags::COMPLEX_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::USER_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::APS_FLAGS));
+        assert!(!flags.contains(Flags::FREQUENCY_BAND));
+        assert_eq!(flags.logical_type(), Ok(LogicalType::EndDevice));
+
+        flags.set_frequency_band(FrequencyBand::FROM_2400_TO_2483_5_MHZ);
+        assert!(flags.contains(Flags::COMPLEX_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::USER_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::APS_FLAGS));
+        assert!(!flags.contains(Flags::FREQUENCY_BAND));
+        assert_eq!(
+            flags.frequency_band(),
+            FrequencyBand::FROM_2400_TO_2483_5_MHZ
+        );
+
+        flags.set_logical_type(LogicalType::Coordinator);
+        assert!(flags.contains(Flags::COMPLEX_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::USER_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::APS_FLAGS));
+        assert!(!flags.contains(Flags::FREQUENCY_BAND));
+        assert_eq!(flags.logical_type(), Ok(LogicalType::Coordinator));
+        assert_eq!(
+            flags.frequency_band(),
+            FrequencyBand::FROM_2400_TO_2483_5_MHZ
+        );
+
+        flags.set_frequency_band(
+            FrequencyBand::FROM_863_TO_868_MHZ | FrequencyBand::GB_SMART_ENEGERGY_SUB_GHZ,
+        );
+        assert!(flags.contains(Flags::COMPLEX_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::USER_DESCRIPTOR_AVAILABLE));
+        assert!(!flags.contains(Flags::APS_FLAGS));
+        assert!(!flags.contains(Flags::FREQUENCY_BAND));
+        assert_eq!(flags.logical_type(), Ok(LogicalType::Coordinator));
+        assert_eq!(
+            flags.frequency_band(),
+            FrequencyBand::FROM_863_TO_868_MHZ | FrequencyBand::GB_SMART_ENEGERGY_SUB_GHZ
+        );
     }
 }
