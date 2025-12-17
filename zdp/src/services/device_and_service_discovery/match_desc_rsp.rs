@@ -3,7 +3,7 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use zigbee::Cluster;
 
-use crate::Service;
+use crate::{Service, Status};
 
 /// Match Descriptor Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -20,21 +20,24 @@ impl MatchDescRsp {
     ///
     /// Returns an error if the length of `matches` exceeds `u8::MAX`.
     pub fn new(
-        status: u8,
+        status: Status,
         nwk_addr_of_interest: u16,
         matches: Box<[u8]>,
     ) -> Result<Self, Box<[u8]>> {
         Ok(Self {
-            status,
+            status: status.into(),
             nwk_addr_of_interest,
             matches: matches.try_into()?,
         })
     }
 
     /// Returns the status.
-    #[must_use]
-    pub const fn status(&self) -> u8 {
-        self.status
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the status code is invalid.
+    pub fn status(&self) -> Result<Status, u8> {
+        self.status.try_into()
     }
 
     /// Returns the network address of interest.
