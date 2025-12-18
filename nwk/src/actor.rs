@@ -1,4 +1,4 @@
-use log::error;
+use log::{error, trace};
 use tokio::sync::mpsc::Receiver;
 
 use crate::Nlme;
@@ -124,5 +124,7 @@ where
                 }
             }
         }
+
+        trace!("Message channel closed, NWK actor exiting.");
     }
 }
