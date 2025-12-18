@@ -2,12 +2,15 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use macaddr::MacAddr8;
+use tokio::sync::mpsc::Receiver;
 use zigbee::Endpoint;
 
+use crate::actor::Actor;
+use crate::message::Message;
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
-/// Network layer management entity (NLME) trait.
-pub trait Nlme {
+/// A Zigbee network manager.
+pub trait NetworkManager {
     /// Get the next transaction sequence number.
     fn next_transaction_seq(&mut self) -> u8;
 
@@ -114,4 +117,12 @@ pub trait Nlme {
         radius: u8,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>>;
+
+    /// Run the network manager actor.
+    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()>
+    where
+        Self: Sized + Actor,
+    {
+        Actor::run(self, rx)
+    }
 }

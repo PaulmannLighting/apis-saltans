@@ -1,13 +1,13 @@
 use log::{error, trace};
 use tokio::sync::mpsc::Receiver;
 
-use crate::Nlme;
+use crate::NetworkManager;
 use crate::message::Message;
 
-/// Actor trait for handling NWK layer messages.
+/// Sealed actor trait for handling communication with the Zigbee NCP.
 ///
-/// This trait should not be implemented directly. Instead, implement the `Nlme` trait for your
-/// NCP type, and the `Actor` trait will be automatically implemented for it.
+/// This trait should not be implemented directly. Instead, implement the `NetworkManager` trait
+/// for your  NCP type, and the `Actor` trait will be automatically implemented for it.
 pub trait Actor {
     /// Run the actor, processing incoming messages.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()>;
@@ -15,7 +15,7 @@ pub trait Actor {
 
 impl<T> Actor for T
 where
-    T: Nlme,
+    T: NetworkManager,
 {
     #[expect(clippy::too_many_lines)]
     async fn run(mut self, mut rx: Receiver<Message>) {

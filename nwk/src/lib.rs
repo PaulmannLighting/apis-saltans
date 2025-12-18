@@ -2,12 +2,11 @@
 
 use tokio::sync::mpsc::{Receiver, Sender};
 
-pub use self::actor::Actor;
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::frame::{ApsMetadata, Frame};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
-pub use self::nlme::Nlme;
+pub use self::network_manager::NetworkManager;
 pub use self::proxy::Proxy;
 pub use self::waiter::Waiter;
 
@@ -18,7 +17,7 @@ mod error;
 mod event;
 mod frame;
 mod message;
-mod nlme;
+mod network_manager;
 mod proxy;
 mod waiter;
 mod zcl_proxy;
