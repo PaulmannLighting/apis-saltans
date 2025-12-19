@@ -5,7 +5,9 @@ use zcl::Cluster;
 use zcl::general::on_off;
 use zdp::{BindReq, Destination};
 use zigbee::Endpoint;
-use zigbee::node::{Descriptor, Node};
+use zigbee::node::{
+    Descriptor, Flags, FrequencyBand, LogicalType, MacCapabilityFlags, Node, ServerMask,
+};
 
 use self::network_state::NetworkState;
 use crate::{Command, Error, Event, Proxy};
@@ -99,8 +101,10 @@ where
                     command,
                     ..
                 } => match *command {
-                    Command::Zdp(zdp_command) => {
-                        info!("Received ZDP command: {zdp_command:?}");
+                    Command::Zdp(command) => {
+                        if let Err(error) = self.handle_zdp_command(src_address, command).await {
+                            error!("Failed to handle ZDP command: {error}");
+                        }
                     }
                     Command::Zcl(command) => {
                         self.handle_zcl_command(src_address, src_endpoint, command)
@@ -145,6 +149,77 @@ where
         Ok(())
     }
 
+    async fn handle_zdp_command(
+        &self,
+        src_address: u16,
+        command: zdp::Frame<zdp::Command>,
+    ) -> Result<(), Error> {
+        info!("Received ZDP command: {command:?}");
+        let (seq, command) = command.into_parts();
+
+        match command {
+            zdp::Command::NetworkManagement(network_management) => match network_management {
+                zdp::NetworkManagement::MgmtPermitJoiningReq(mgmt_permit_joining_req) => {
+                    info!("Received Mgmt Permit Joining Request: {mgmt_permit_joining_req:?}");
+                    self.proxy
+                        .zdp()
+                        .unicast(
+                            src_address,
+                            Endpoint::Data,
+                            zdp::MgmtPermitJoiningRsp::new(zdp::Status::Success),
+                        )
+                        .await?;
+                }
+                command => {
+                    warn!(
+                        "Received unhandled Network Management command (seq: {seq}): {command:?}"
+                    );
+                }
+            },
+            zdp::Command::DeviceAndServiceDiscovery(device_and_service) => match device_and_service
+            {
+                zdp::DeviceAndServiceDiscovery::MatchDescReq(match_desc_req) => {
+                    info!("Received Match Descriptor Request: {match_desc_req:?}");
+                    self.proxy
+                        .zdp()
+                        .unicast(
+                            src_address,
+                            Endpoint::Data,
+                            zdp::MatchDescRsp::new(zdp::Status::Success, 0x0000, vec![0x01].into())
+                                .expect("Endpoint list fits."),
+                        )
+                        .await?;
+                }
+                zdp::DeviceAndServiceDiscovery::NodeDescReq(node_desc_req) => {
+                    info!("Received Node Descriptor Request: {node_desc_req:?}");
+                    self.proxy
+                        .zdp()
+                        .unicast(
+                            src_address,
+                            Endpoint::Data,
+                            zdp::NodeDescRsp::new(
+                                node_desc_req.nwk_addr(),
+                                zdp::Status::Success,
+                                create_node_descriptor(),
+                                vec![],
+                            ),
+                        )
+                        .await?;
+                }
+                command => {
+                    warn!(
+                        "Received unhandled Device and Service Discovery command (seq: {seq}): {command:?}"
+                    );
+                }
+            },
+            zdp::Command::BindManagement(_) => {
+                warn!("Received unhandled ZDP command (seq: {seq}): {command:?}");
+            }
+        }
+
+        Ok(())
+    }
+
     async fn handle_zcl_command(
         &self,
         src_address: u16,
@@ -182,4 +257,31 @@ where
             }
         }
     }
+}
+
+/// Creates a node descriptor for the coordinator.
+fn create_node_descriptor() -> Descriptor {
+    let mut flags = Flags::empty();
+    flags.set_frequency_band(FrequencyBand::FROM_2400_TO_2483_5_MHZ);
+    flags.set_logical_type(LogicalType::Coordinator);
+
+    let mac_capability_flags = MacCapabilityFlags::ALTERNATE_PAN_COORDINATOR
+        | MacCapabilityFlags::DEVICE_TYPE
+        | MacCapabilityFlags::POWER_SOURCE
+        | MacCapabilityFlags::RECEIVER_ON_WHEN_IDLE
+        | MacCapabilityFlags::SECURITY_CAPABLE
+        | MacCapabilityFlags::ALLOCATE_ADDRESS;
+
+    let mut server_mask = ServerMask::NETWORK_MANAGER | ServerMask::PRIMARY_TRUST_CENTER;
+    server_mask.set_stack_compliance_revision(23);
+
+    Descriptor::new(
+        flags,
+        mac_capability_flags,
+        0x1218,
+        0x7f,
+        0x7fff,
+        server_mask,
+        0x7fff,
+    )
 }
