@@ -1,130 +1,129 @@
-use log::{error, trace};
+use std::collections::BTreeMap;
+use std::time::Duration;
+
+use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
+use zigbee::Endpoint;
 
-use crate::NetworkManager;
 use crate::message::Message;
+use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
-/// Sealed actor trait for handling communication with the Zigbee NCP.
-///
-/// This trait should not be implemented directly. Instead, implement the `NetworkManager` trait
-/// for your  NCP type, and the `Actor` trait will be automatically implemented for it.
+mod sealed;
+
+/// A Zigbee network manager.
 pub trait Actor {
-    /// Run the actor, processing incoming messages.
-    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()>;
-}
+    /// Get the next transaction sequence number.
+    fn next_transaction_seq(&mut self) -> u8;
 
-impl<T> Actor for T
-where
-    T: NetworkManager,
-{
-    #[expect(clippy::too_many_lines)]
-    async fn run(mut self, mut rx: Receiver<Message>) {
-        while let Some(message) = rx.recv().await {
-            match message {
-                Message::GetTransactionSeq { response } => {
-                    response
-                        .send(self.next_transaction_seq())
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send get PAN ID command response: {error:?}");
-                        });
-                }
-                Message::GetPanId { response } => {
-                    response
-                        .send(self.get_pan_id().await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send get PAN ID command response: {error:?}");
-                        });
-                }
-                Message::ScanNetworks {
-                    channel_mask,
-                    duration,
-                    response,
-                } => {
-                    response
-                        .send(self.scan_networks(channel_mask, duration).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send scan networks command response: {error:?}");
-                        });
-                }
-                Message::ScanChannels {
-                    channel_mask,
-                    duration,
-                    response,
-                } => {
-                    response
-                        .send(self.scan_channels(channel_mask, duration).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send scan channels command response: {error:?}");
-                        });
-                }
-                Message::AllowJoins { duration, response } => {
-                    response
-                        .send(self.allow_joins(duration).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send allow joins command response: {error:?}");
-                        });
-                }
-                Message::GetNeighbors { response } => {
-                    response
-                        .send(self.get_neighbors().await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send get neighbors command response: {error:?}");
-                        });
-                }
-                Message::RouteRequest { radius, response } => {
-                    response
-                        .send(self.route_request(radius).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send route request command response: {error:?}");
-                        });
-                }
-                Message::GetIeeeAddress { pan_id, response } => {
-                    response
-                        .send(self.get_ieee_address(pan_id).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send get IEEE address command response: {error:?}");
-                        });
-                }
-                Message::Unicast {
-                    pan_id,
-                    endpoint,
-                    frame,
-                    response,
-                } => {
-                    response
-                        .send(self.unicast(pan_id, endpoint, frame).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send ZCL command response: {error:?}");
-                        });
-                }
-                Message::Multicast {
-                    group_id,
-                    hops,
-                    radius,
-                    frame,
-                    response,
-                } => {
-                    response
-                        .send(self.multicast(group_id, hops, radius, frame).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send multicast command response: {error:?}");
-                        });
-                }
-                Message::Broadcast {
-                    pan_id,
-                    radius,
-                    frame,
-                    response,
-                } => {
-                    response
-                        .send(self.broadcast(pan_id, radius, frame).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send broadcast command response: {error:?}");
-                        });
-                }
-            }
-        }
+    /// Get the PAN ID of the network manager.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_pan_id(&mut self) -> impl Future<Output = Result<u16, Error>>;
 
-        trace!("Message channel closed, NWK actor exiting.");
+    /// Scan for available networks.
+    ///
+    /// # Parameters
+    ///
+    /// - `channel_mask`: A bitmask representing the channels to scan.
+    /// - `duration`: The duration to scan each channel. The meaning is implementation-specific.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn scan_networks(
+        &mut self,
+        channel_mask: u32,
+        duration: u8,
+    ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
+
+    /// Scan channels for activity.
+    ///
+    /// # Parameters
+    ///
+    /// - `channel_mask`: A bitmask representing the channels to scan.
+    /// - `duration`: The duration to scan each channel. The meaning is implementation-specific.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn scan_channels(
+        &mut self,
+        channel_mask: u32,
+        duration: u8,
+    ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>>;
+
+    /// Allow devices to join the network for the specified duration.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn allow_joins(&mut self, duration: Duration) -> impl Future<Output = Result<(), Error>>;
+
+    /// Get the list of neighbor devices.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_neighbors(&mut self) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>>;
+
+    /// Send a route request.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn route_request(&mut self, radius: u8) -> impl Future<Output = Result<(), Error>>;
+
+    /// Get the IEEE address of the device with the specified PAN ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_ieee_address(&mut self, pan_id: u16) -> impl Future<Output = Result<MacAddr8, Error>>;
+
+    /// Send a unicast message.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn unicast(
+        &mut self,
+        pan_id: u16,
+        endpoint: Endpoint,
+        frame: Frame,
+    ) -> impl Future<Output = Result<u8, Error>>;
+
+    /// Send a multicast message.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn multicast(
+        &mut self,
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        frame: Frame,
+    ) -> impl Future<Output = Result<u8, Error>>;
+
+    /// Send a broadcast message.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn broadcast(
+        &mut self,
+        pan_id: u16,
+        radius: u8,
+        frame: Frame,
+    ) -> impl Future<Output = Result<u8, Error>>;
+
+    /// Run the network manager actor.
+    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()>
+    where
+        Self: Sized + sealed::Actor,
+    {
+        sealed::Actor::run(self, rx)
     }
 }
