@@ -8,7 +8,7 @@ use le_stream::{FromLeStream, ToLeStream};
 ///
 /// It is used to facilitate discovery of particular system servers by other nodes on the system.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ServerMask(u16);
 
 bitflags! {

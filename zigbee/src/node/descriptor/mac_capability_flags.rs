@@ -7,7 +7,7 @@ use super::device_type::DeviceType;
 
 /// MAC Capability Flags as defined in the IEEE 802.15.4 standard.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct MacCapabilityFlags(u8);
 
 bitflags! {

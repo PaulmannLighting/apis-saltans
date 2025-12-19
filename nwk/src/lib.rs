@@ -1,5 +1,6 @@
 //! Zigbee Network (NWK) Layer implementation.
 
+pub use network_manager::NetworkManager;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::actor::Actor;
@@ -17,6 +18,7 @@ mod error;
 mod event;
 mod frame;
 mod message;
+mod network_manager;
 mod proxy;
 mod waiter;
 mod zcl_proxy;

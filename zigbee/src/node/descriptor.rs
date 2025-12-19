@@ -16,7 +16,7 @@ mod server_mask;
 
 /// Node Descriptor.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct Descriptor {
     flags: Flags,
     mac_capability_flags: MacCapabilityFlags,
