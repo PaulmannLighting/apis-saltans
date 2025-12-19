@@ -1,4 +1,4 @@
-use tokio_mpmc::{ChannelError, Receiver};
+use tokio::sync::mpsc::Receiver;
 
 use crate::Event;
 
@@ -10,10 +10,7 @@ pub trait Waiter {
     ///
     /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
     /// - `None` if the underlying channel closed without any left messages queued.
-    fn event(
-        &mut self,
-        expected_event: Event,
-    ) -> impl Future<Output = Result<(), Option<ChannelError>>>;
+    fn event(&mut self, expected_event: Event) -> impl Future<Output = Result<(), ()>>;
 
     /// Wait for the network to be up.
     ///
@@ -21,7 +18,7 @@ pub trait Waiter {
     ///
     /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
     /// - `None` if the underlying channel closed without any left messages queued.
-    fn network_up(&mut self) -> impl Future<Output = Result<(), Option<ChannelError>>> {
+    fn network_up(&mut self) -> impl Future<Output = Result<(), ()>> {
         self.event(Event::NetworkUp)
     }
 
@@ -31,7 +28,7 @@ pub trait Waiter {
     ///
     /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
     /// - `None` if the underlying channel closed without any left messages queued.
-    fn network_down(&mut self) -> impl Future<Output = Result<(), Option<ChannelError>>> {
+    fn network_down(&mut self) -> impl Future<Output = Result<(), ()>> {
         self.event(Event::NetworkDown)
     }
 
@@ -41,7 +38,7 @@ pub trait Waiter {
     ///
     /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
     /// - `None` if the underlying channel closed without any left messages queued.
-    fn network_opened(&mut self) -> impl Future<Output = Result<(), Option<ChannelError>>> {
+    fn network_opened(&mut self) -> impl Future<Output = Result<(), ()>> {
         self.event(Event::NetworkOpened)
     }
 
@@ -51,19 +48,19 @@ pub trait Waiter {
     ///
     /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
     /// - `None` if the underlying channel closed without any left messages queued.
-    fn network_closed(&mut self) -> impl Future<Output = Result<(), Option<ChannelError>>> {
+    fn network_closed(&mut self) -> impl Future<Output = Result<(), ()>> {
         self.event(Event::NetworkClosed)
     }
 }
 
 impl Waiter for Receiver<Event> {
-    async fn event(&mut self, expected_event: Event) -> Result<(), Option<ChannelError>> {
-        while let Some(received_event) = self.recv().await? {
+    async fn event(&mut self, expected_event: Event) -> Result<(), ()> {
+        while let Some(received_event) = self.recv().await {
             if received_event == expected_event {
                 return Ok(());
             }
         }
 
-        Err(None)
+        Err(())
     }
 }
