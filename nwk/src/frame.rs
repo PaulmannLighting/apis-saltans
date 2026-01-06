@@ -18,8 +18,13 @@ pub struct Frame {
 
 impl Frame {
     /// Create a new `Frame`.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the `aps_metadata` and `payload` are valid and consistent with each other.
+    #[expect(unsafe_code)]
     #[must_use]
-    pub(crate) const fn new(aps_metadata: ApsMetadata, payload: Box<[u8]>) -> Self {
+    pub const unsafe fn new(aps_metadata: ApsMetadata, payload: Box<[u8]>) -> Self {
         Self {
             aps_metadata,
             payload,
@@ -38,10 +43,14 @@ where
     T: ClusterId + ToLeStream,
 {
     fn from(frame: zcl::Frame<T>) -> Self {
-        Self::new(
-            ApsMetadata::new(frame.cluster_id(), None, None),
-            frame.to_le_stream().collect(),
-        )
+        #[expect(unsafe_code)]
+        // SAFETY: We ensure that the ApsMetadata contains the correct cluster ID.
+        unsafe {
+            Self::new(
+                ApsMetadata::new(frame.cluster_id(), None, None),
+                frame.to_le_stream().collect(),
+            )
+        }
     }
 }
 
@@ -50,13 +59,17 @@ where
     T: ClusterId + ToLeStream,
 {
     fn from(frame: zdp::Frame<T>) -> Self {
-        Self::new(
-            ApsMetadata::new(
-                frame.cluster_id(),
-                Some(Profile::Network),
-                Some(Endpoint::Data),
-            ),
-            frame.to_le_stream().collect(),
-        )
+        #[expect(unsafe_code)]
+        // SAFETY: We ensure that the ApsMetadata contains the correct cluster ID, profile ID and endpoint.
+        unsafe {
+            Self::new(
+                ApsMetadata::new(
+                    frame.cluster_id(),
+                    Some(Profile::Network),
+                    Some(Endpoint::Data),
+                ),
+                frame.to_le_stream().collect(),
+            )
+        }
     }
 }
