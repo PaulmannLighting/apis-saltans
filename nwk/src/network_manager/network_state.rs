@@ -40,7 +40,7 @@ impl NetworkState {
     }
 
     /// Retrieves the PAN ID for a given IEEE address.
-    pub fn get_pan_id(&self, ieee_address: &MacAddr8) -> Option<u16> {
-        self.ieee_addresses_to_pan_id.get(ieee_address).copied()
+    pub fn get_pan_id(&self, ieee_address: MacAddr8) -> Option<u16> {
+        self.ieee_addresses_to_pan_id.get(&ieee_address).copied()
     }
 }
