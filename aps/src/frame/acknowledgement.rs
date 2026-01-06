@@ -17,11 +17,11 @@ pub struct Frame {
 }
 
 impl Frame {
-    /// Creates a new APS Acknowledgment frame header without any validation.
+    /// Creates a new APS Acknowledgment aps header without any validation.
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the provided `control` is consistent with an Acknowledgment frame.
+    /// The caller must ensure that the provided `control` is consistent with an Acknowledgment aps.
     #[expect(unsafe_code)]
     #[must_use]
     pub const unsafe fn new_unchecked(
@@ -38,7 +38,7 @@ impl Frame {
         }
     }
 
-    /// Creates a new APS Acknowledgment frame header.
+    /// Creates a new APS Acknowledgment aps header.
     #[must_use]
     pub fn new(counter: u8, fmt: Option<AckFmt>, extended: Option<Extended>) -> Self {
         let mut control = Control::empty();
@@ -60,7 +60,7 @@ impl Frame {
         }
     }
 
-    /// Parses an APS Acknowledgment frame from a little-endian byte stream with the given control field.
+    /// Parses an APS Acknowledgment aps from a little-endian byte stream with the given control field.
     pub fn from_le_stream_with_control<T>(control: Control, mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,

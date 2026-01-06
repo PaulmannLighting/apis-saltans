@@ -1,14 +1,14 @@
 use zigbee::{Endpoint, Profile};
 
-/// APS metadata for a frame.
+/// APS metadata for a aps.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct ApsMetadata {
+pub struct Metadata {
     cluster_id: u16,
     profile: Option<Profile>,
     source_endpoint: Option<Endpoint>,
 }
 
-impl ApsMetadata {
+impl Metadata {
     /// Create new APS metadata.
     #[must_use]
     pub(crate) const fn new(

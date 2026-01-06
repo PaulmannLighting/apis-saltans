@@ -1,4 +1,4 @@
-//! ZCL frame representation.
+//! ZCL aps representation.
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::ClusterId;
@@ -11,7 +11,7 @@ use crate::clusters::Cluster;
 mod header;
 mod parse_frame_error;
 
-/// A ZCL frame.
+/// A ZCL aps.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct Frame<T> {
     header: Header,
@@ -19,7 +19,7 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
-    /// Create a new ZCL frame from the given header and payload.
+    /// Create a new ZCL aps from the given header and payload.
     ///
     /// # Safety
     ///
@@ -30,31 +30,31 @@ impl<T> Frame<T> {
         Self { header, payload }
     }
 
-    /// Return the header of the ZCL frame.
+    /// Return the header of the ZCL aps.
     #[must_use]
     pub const fn header(&self) -> &Header {
         &self.header
     }
 
-    /// Return the payload of the ZCL frame.
+    /// Return the payload of the ZCL aps.
     #[must_use]
     pub const fn payload(&self) -> &T {
         &self.payload
     }
 
-    /// Consume the frame and return its header.
+    /// Consume the aps and return its header.
     #[must_use]
     pub fn into_header(self) -> Header {
         self.header
     }
 
-    /// Consume the frame and return its payload.
+    /// Consume the aps and return its payload.
     #[must_use]
     pub fn into_payload(self) -> T {
         self.payload
     }
 
-    /// Consume the frame and return its header and payload.
+    /// Consume the aps and return its header and payload.
     #[must_use]
     pub fn into_parts(self) -> (Header, T) {
         (self.header, self.payload)
@@ -65,7 +65,7 @@ impl<T> Frame<T>
 where
     T: Command,
 {
-    /// Create a new ZCL frame.
+    /// Create a new ZCL aps.
     #[must_use]
     pub fn new(seq: u8, payload: T) -> Self {
         Self {
@@ -82,18 +82,18 @@ where
     }
 }
 
-/// A parsed ZCL frame.
+/// A parsed ZCL aps.
 impl Frame<Cluster> {
-    /// Parse a ZCL frame from a little-endian byte stream.
+    /// Parse a ZCL aps from a little-endian byte stream.
     ///
     /// # Arguments
     ///
-    /// * `cluster_id` - The cluster ID to identify the cluster of the frame.
+    /// * `cluster_id` - The cluster ID to identify the cluster of the aps.
     /// * `direction` - The direction of the command (`ClientToServer` or `ServerToClient`).
     ///
     /// # Errors
     ///
-    /// Returns [`ParseFrameError`] if the frame cannot be parsed.
+    /// Returns [`ParseFrameError`] if the aps cannot be parsed.
     pub fn parse<T>(cluster_id: u16, mut bytes: T) -> Result<Self, ParseFrameError>
     where
         T: Iterator<Item = u8>,

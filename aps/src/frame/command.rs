@@ -14,11 +14,11 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
-    /// Create a new command frame.
+    /// Create a new command aps.
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the provided `control` and `id` are consistent with a Command frame.
+    /// The caller must ensure that the provided `control` and `id` are consistent with a Command aps.
     #[expect(unsafe_code)]
     #[must_use]
     pub const unsafe fn new_unchecked(control: Control, counter: u8, id: u8, payload: T) -> Self {
@@ -48,7 +48,7 @@ impl<T> Frame<T> {
         &self.payload
     }
 
-    /// Consumes the command frame and returns the payload.
+    /// Consumes the command aps and returns the payload.
     #[must_use]
     pub fn into_payload(self) -> T {
         self.payload
@@ -59,7 +59,7 @@ impl<T> Frame<T>
 where
     T: FromLeStream,
 {
-    /// Creates a new APS Command frame from a little-endian byte stream with the given control field.
+    /// Creates a new APS Command aps from a little-endian byte stream with the given control field.
     pub fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
     where
         U: Iterator<Item = u8>,

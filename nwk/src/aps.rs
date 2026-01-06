@@ -1,18 +1,18 @@
 use le_stream::ToLeStream;
 use zigbee::{ClusterId, Endpoint, Profile};
 
-pub use self::aps_metadata::ApsMetadata;
+pub use self::metadata::Metadata;
 
-mod aps_metadata;
+mod metadata;
 
-/// A non-sequenced, non-generic view on a ZCL frame for transmission via channels.
+/// A non-sequenced, non-generic view on a ZCL aps for transmission via channels.
 ///
 /// # Invariants
 ///
-/// The underlying frame's sequence number must be overridden and is assumed to be undefined.
+/// The underlying aps's sequence number must be overridden and is assumed to be undefined.
 #[derive(Debug)]
 pub struct Frame {
-    aps_metadata: ApsMetadata,
+    aps_metadata: Metadata,
     payload: Box<[u8]>,
 }
 
@@ -24,16 +24,16 @@ impl Frame {
     /// The caller must ensure that the `aps_metadata` and `payload` are valid and consistent with each other.
     #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new(aps_metadata: ApsMetadata, payload: Box<[u8]>) -> Self {
+    pub const unsafe fn new(aps_metadata: Metadata, payload: Box<[u8]>) -> Self {
         Self {
             aps_metadata,
             payload,
         }
     }
 
-    /// Return the cluster ID and payload of the frame.
+    /// Return the cluster ID and payload of the aps.
     #[must_use]
-    pub fn into_parts(self) -> (ApsMetadata, Box<[u8]>) {
+    pub fn into_parts(self) -> (Metadata, Box<[u8]>) {
         (self.aps_metadata, self.payload)
     }
 }
@@ -47,7 +47,7 @@ where
         // SAFETY: We ensure that the ApsMetadata contains the correct cluster ID.
         unsafe {
             Self::new(
-                ApsMetadata::new(frame.cluster_id(), None, None),
+                Metadata::new(frame.cluster_id(), None, None),
                 frame.to_le_stream().collect(),
             )
         }
@@ -63,7 +63,7 @@ where
         // SAFETY: We ensure that the ApsMetadata contains the correct cluster ID, profile ID and endpoint.
         unsafe {
             Self::new(
-                ApsMetadata::new(
+                Metadata::new(
                     frame.cluster_id(),
                     Some(Profile::Network),
                     Some(Endpoint::Data),

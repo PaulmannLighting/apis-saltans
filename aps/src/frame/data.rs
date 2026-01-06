@@ -1,11 +1,11 @@
-//! APS Data frame.
+//! APS Data aps.
 
 use le_stream::FromLeStream;
 
 use crate::frame::destination::Destination;
 use crate::{Control, DeliveryMode, Extended, FrameType};
 
-/// APS Data frame.
+/// APS Data aps.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Frame<T> {
     control: Control,
@@ -19,11 +19,11 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
-    /// Creates a new APS Data frame header without any validation.
+    /// Creates a new APS Data aps header without any validation.
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the provided `control` is consistent with a Data frame.
+    /// The caller must ensure that the provided `control` is consistent with a Data aps.
     #[expect(unsafe_code, clippy::too_many_arguments)]
     #[must_use]
     pub const unsafe fn new_unchecked(
@@ -48,7 +48,7 @@ impl<T> Frame<T> {
         }
     }
 
-    /// Creates a new APS Data frame header.
+    /// Creates a new APS Data aps header.
     #[must_use]
     pub fn new(
         destination: Destination,
@@ -84,7 +84,7 @@ impl<T> Frame<T>
 where
     T: FromLeStream,
 {
-    /// Creates an APS Data frame from a little-endian byte stream, given the control field.
+    /// Creates an APS Data aps from a little-endian byte stream, given the control field.
     pub fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
     where
         U: Iterator<Item = u8>,

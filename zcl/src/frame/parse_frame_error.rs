@@ -5,7 +5,7 @@ use core::fmt::Display;
 /// Frame parsing error.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ParseFrameError {
-    /// The ZCL frame header is invalid.
+    /// The ZCL aps header is invalid.
     MissingHeader,
     /// Invalid type field.
     InvalidType(u8),
@@ -20,7 +20,7 @@ pub enum ParseFrameError {
 impl Display for ParseFrameError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::MissingHeader => write!(f, "Missing ZCL frame header"),
+            Self::MissingHeader => write!(f, "Missing ZCL aps header"),
             Self::InvalidType(typ) => {
                 write!(f, "Invalid type field: {typ}")
             }

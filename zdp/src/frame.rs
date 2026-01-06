@@ -5,7 +5,7 @@ use zigbee::ClusterId;
 
 use crate::Command;
 
-/// A frame with a sequence number and associated data.
+/// A aps with a sequence number and associated data.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Frame<T> {
     seq: u8,
@@ -31,7 +31,7 @@ impl<T> Frame<T> {
         &self.data
     }
 
-    /// Decomposes the frame into its sequence number and associated data.
+    /// Decomposes the aps into its sequence number and associated data.
     #[must_use]
     pub fn into_parts(self) -> (u8, T) {
         (self.seq, self.data)
