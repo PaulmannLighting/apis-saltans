@@ -92,11 +92,6 @@ where
 impl Frame<Cluster> {
     /// Parse a ZCL aps from a little-endian byte stream.
     ///
-    /// # Arguments
-    ///
-    /// * `cluster_id` - The cluster ID to identify the cluster of the aps.
-    /// * `direction` - The direction of the command (`ClientToServer` or `ServerToClient`).
-    ///
     /// # Errors
     ///
     /// Returns [`ParseFrameError`] if the aps cannot be parsed.
