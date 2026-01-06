@@ -68,16 +68,22 @@ where
     /// Create a new ZCL aps.
     #[must_use]
     pub fn new(seq: u8, payload: T) -> Self {
-        Self {
-            header: Header::new(
-                <T as Command>::SCOPE,
-                <T as Command>::DIRECTION,
-                <T as Command>::DISABLE_CLIENT_RESPONSE,
-                <T as Command>::MANUFACTURER_CODE,
-                seq,
-                <T as Command>::ID,
-            ),
-            payload,
+        #[expect(unsafe_code)]
+        // SAFETY: We ensure that the header fields are consistent with the command type by passing
+        // the scope, direction, disable-client-response flag, manufacturer code, seq and command ID
+        // into the header.
+        unsafe {
+            Self::new_unchecked(
+                Header::new(
+                    <T as Command>::SCOPE,
+                    <T as Command>::DIRECTION,
+                    <T as Command>::DISABLE_CLIENT_RESPONSE,
+                    <T as Command>::MANUFACTURER_CODE,
+                    seq,
+                    <T as Command>::ID,
+                ),
+                payload,
+            )
         }
     }
 }
