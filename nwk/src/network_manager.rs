@@ -230,8 +230,6 @@ where
         let (_header, payload) = command.into_parts();
 
         if let Cluster::OnOff(on_off) = payload {
-            let neighbors = self.proxy.get_neighbors().await.unwrap_or_default();
-
             match on_off {
                 on_off::Command::On(_) => {
                     for node in self.state.iter_nodes() {
