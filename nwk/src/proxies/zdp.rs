@@ -4,6 +4,8 @@ use zigbee::{Cluster, Endpoint};
 
 use crate::{Error, Proxy};
 
+/// A proxy structure to send ZDP commands.
+#[derive(Clone, Copy, Debug)]
 pub struct ZdpProxy<'proxy, T> {
     proxy: &'proxy T,
 }

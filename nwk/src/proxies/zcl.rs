@@ -4,6 +4,8 @@ use zigbee::{ClusterId, Endpoint};
 
 use crate::{Error, Proxy};
 
+/// A proxy structure to send ZCL commands.
+#[derive(Clone, Copy, Debug)]
 pub struct ZclProxy<'proxy, T> {
     proxy: &'proxy T,
 }

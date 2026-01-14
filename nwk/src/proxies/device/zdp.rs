@@ -7,7 +7,7 @@ use zigbee::Cluster;
 use crate::{Error, Proxy};
 
 /// A proxy structure to interact with ZDP commands on a specific device.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ZdpProxy<'proxy, T> {
     proxy: &'proxy T,
     pan_id: u16,

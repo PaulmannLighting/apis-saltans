@@ -7,7 +7,7 @@ use zigbee::{ClusterId, Endpoint};
 use crate::{Error, Proxy};
 
 /// A proxy structure to interact with ZCL commands on a specific endpoint.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ZclProxy<'proxy, T> {
     proxy: &'proxy T,
     pan_id: u16,
