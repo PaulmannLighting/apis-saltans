@@ -1,13 +1,17 @@
-use le_stream::ToLeStream;
-use macaddr::MacAddr8;
-use zcl::Command;
-use zdp::Service;
-use zigbee::{Cluster, ClusterId, Endpoint};
+use std::ops::Deref;
 
+use macaddr::MacAddr8;
+use zigbee::Endpoint;
+
+use self::zcl::ZclProxy;
+use self::zdp::ZdpProxy;
 use crate::{Error, Frame, Proxy};
 
+mod zcl;
+mod zdp;
+
 /// A proxy for an endpoint within a network layer management entity (NLME).
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct EndpointProxy<'proxy, T> {
     proxy: &'proxy T,
     pan_id: u16,
@@ -22,6 +26,18 @@ impl<'proxy, T> EndpointProxy<'proxy, T> {
             pan_id,
             endpoint,
         }
+    }
+
+    /// Return a ZCL proxy for the endpoint.
+    #[must_use]
+    pub const fn zcl(&self) -> ZclProxy<'proxy, T> {
+        ZclProxy::new(self.proxy, self.pan_id, self.endpoint)
+    }
+
+    /// Return a ZDP proxy for the endpoint.
+    #[must_use]
+    pub const fn zdp(&self) -> ZdpProxy<'proxy, T> {
+        ZdpProxy::new(self.proxy, self.pan_id, self.endpoint)
     }
 }
 
@@ -45,33 +61,23 @@ where
     ///
     /// TODO: Cache the result to avoid multiple requests.
     pub async fn ieee_address(&self) -> Result<MacAddr8, Error> {
-        self.proxy.get_ieee_address(self.pan_id).await
+        self.proxy.get_ieee_address(self.pan_id()).await
     }
 
-    /// Send a unicast command to the endpoint.
+    /// Send a frame to a specific endpoint on the device.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the frame could not be sent.
     pub async fn unicast(&self, frame: Frame) -> Result<u8, Error> {
         self.proxy.unicast(self.pan_id, self.endpoint, frame).await
     }
+}
 
-    /// Send a unicast ZCL command to the endpoint.
-    pub async fn unicast_zcl<C>(&self, command: C) -> Result<u8, Error>
-    where
-        C: Command + ClusterId + ToLeStream,
-    {
-        self.proxy
-            .zcl()
-            .unicast(self.pan_id, self.endpoint, command)
-            .await
-    }
+impl<T> Deref for EndpointProxy<'_, T> {
+    type Target = T;
 
-    /// Send a unicast ZCL command to the endpoint.
-    pub async fn unicast_zdp<C>(&self, command: C) -> Result<u8, Error>
-    where
-        C: Cluster + Service + ToLeStream,
-    {
-        self.proxy
-            .zdp()
-            .unicast(self.pan_id, self.endpoint, command)
-            .await
+    fn deref(&self) -> &Self::Target {
+        &self.proxy
     }
 }

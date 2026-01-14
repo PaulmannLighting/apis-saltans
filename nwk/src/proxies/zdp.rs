@@ -1,39 +1,34 @@
 use le_stream::ToLeStream;
-use zcl::Command;
-use zigbee::ClusterId;
+use zdp::Service;
+use zigbee::{Cluster, Endpoint};
 
 use crate::{Error, Proxy};
 
-pub struct ZclProxy<'proxy, T> {
+pub struct ZdpProxy<'proxy, T> {
     proxy: &'proxy T,
 }
 
-impl<'proxy, T> ZclProxy<'proxy, T> {
+impl<'proxy, T> ZdpProxy<'proxy, T> {
     /// Create a new `ZclProxy`.
     pub(crate) const fn new(proxy: &'proxy T) -> Self {
         Self { proxy }
     }
 }
 
-impl<T> ZclProxy<'_, T>
+impl<T> ZdpProxy<'_, T>
 where
     T: Proxy + Sync,
 {
     /// Send a ZCL command to a specific endpoint on a device.
-    pub async fn unicast<C>(
-        &self,
-        pan_id: u16,
-        endpoint: zigbee::Endpoint,
-        command: C,
-    ) -> Result<u8, Error>
+    pub async fn unicast<C>(&self, pan_id: u16, endpoint: Endpoint, command: C) -> Result<u8, Error>
     where
-        C: Command + ClusterId + ToLeStream,
+        C: Cluster + Service + ToLeStream,
     {
         self.proxy
             .unicast(
                 pan_id,
                 endpoint,
-                zcl::Frame::new(self.proxy.next_transaction_seq().await, command).into(),
+                zdp::Frame::new(self.proxy.next_transaction_seq().await, command).into(),
             )
             .await
     }

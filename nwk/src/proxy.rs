@@ -6,10 +6,8 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zigbee::Endpoint;
 
-use crate::device_proxy::DeviceProxy;
 use crate::message::Message;
-use crate::zcl_proxy::ZclProxy;
-use crate::zdp_proxy::ZdpProxy;
+use crate::proxies::{DeviceProxy, ZclProxy, ZdpProxy};
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
 /// Proxy trait for sending NWK layer messages.

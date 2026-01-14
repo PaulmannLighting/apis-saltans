@@ -2,7 +2,7 @@
 
 use zdp::{BindReq, Destination};
 
-use crate::endpoint_proxy::EndpointProxy;
+use crate::proxies::EndpointProxy;
 use crate::{Error, Proxy};
 
 /// Trait for binding management operations.
@@ -27,22 +27,24 @@ where
     T: Proxy + Sync,
 {
     async fn bind(&self, cluster_id: u16, destination: Destination) -> Result<u8, Error> {
-        self.unicast_zdp(BindReq::new(
-            self.ieee_address().await?,
-            self.endpoint().into(),
-            cluster_id,
-            destination,
-        ))
-        .await
+        self.zdp()
+            .unicast(BindReq::new(
+                self.ieee_address().await?,
+                self.endpoint().into(),
+                cluster_id,
+                destination,
+            ))
+            .await
     }
 
     async fn unbind(&self, cluster_id: u16, destination: Destination) -> Result<u8, Error> {
-        self.unicast_zdp(zdp::UnbindReq::new(
-            self.ieee_address().await?,
-            self.endpoint().into(),
-            cluster_id,
-            destination,
-        ))
-        .await
+        self.zdp()
+            .unicast(zdp::UnbindReq::new(
+                self.ieee_address().await?,
+                self.endpoint().into(),
+                cluster_id,
+                destination,
+            ))
+            .await
     }
 }

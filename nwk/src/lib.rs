@@ -14,16 +14,13 @@ pub use self::waiter::Waiter;
 mod actor;
 mod aps;
 mod binding;
-mod device_proxy;
-mod endpoint_proxy;
 mod error;
 mod event;
 mod message;
 mod network_manager;
+mod proxies;
 mod proxy;
 mod waiter;
-mod zcl_proxy;
-mod zdp_proxy;
 
 /// Type alias for the NWK layer proxy sender.
 pub type ZigbeeTransmitter = Sender<message::Message>;
