@@ -5,6 +5,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::actor::Actor;
 pub use self::aps::{Frame, Metadata};
+pub use self::binding::Binding;
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
