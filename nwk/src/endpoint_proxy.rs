@@ -1,4 +1,5 @@
 use le_stream::ToLeStream;
+use macaddr::MacAddr8;
 use zcl::Command;
 use zdp::Service;
 use zigbee::{Cluster, ClusterId, Endpoint};
@@ -28,6 +29,23 @@ impl<T> EndpointProxy<'_, T>
 where
     T: Proxy + Sync,
 {
+    /// Get the PAN ID of the device.
+    pub fn pan_id(&self) -> u16 {
+        self.pan_id
+    }
+
+    /// Get the endpoint of the device.
+    pub fn endpoint(&self) -> Endpoint {
+        self.endpoint
+    }
+
+    /// Get the IEEE address of the device.
+    ///
+    /// TODO: Cache the result to avoid multiple requests.
+    pub async fn ieee_address(&self) -> Result<MacAddr8, Error> {
+        self.proxy.get_ieee_address(self.pan_id).await
+    }
+
     /// Send a unicast command to the endpoint.
     pub async fn unicast(&self, frame: Frame) -> Result<u8, Error> {
         self.proxy.unicast(self.pan_id, self.endpoint, frame).await

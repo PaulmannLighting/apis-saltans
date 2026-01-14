@@ -13,6 +13,7 @@ pub use self::waiter::Waiter;
 
 mod actor;
 mod aps;
+mod binding;
 mod device_proxy;
 mod endpoint_proxy;
 mod error;
