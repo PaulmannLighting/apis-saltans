@@ -30,12 +30,14 @@ where
     T: Proxy + Sync,
 {
     /// Get the PAN ID of the device.
-    pub fn pan_id(&self) -> u16 {
+    #[must_use]
+    pub const fn pan_id(&self) -> u16 {
         self.pan_id
     }
 
     /// Get the endpoint of the device.
-    pub fn endpoint(&self) -> Endpoint {
+    #[must_use]
+    pub const fn endpoint(&self) -> Endpoint {
         self.endpoint
     }
 
