@@ -8,16 +8,14 @@ pub trait Waiter {
     ///
     /// # Errors
     ///
-    /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
-    /// - `None` if the underlying channel closed without any left messages queued.
+    /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
     fn event(&mut self, expected_event: Event) -> impl Future<Output = Result<(), ()>>;
 
     /// Wait for the network to be up.
     ///
     /// # Errors
     ///
-    /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
-    /// - `None` if the underlying channel closed without any left messages queued.
+    /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
     fn network_up(&mut self) -> impl Future<Output = Result<(), ()>> {
         self.event(Event::NetworkUp)
     }
@@ -26,8 +24,7 @@ pub trait Waiter {
     ///
     /// # Errors
     ///
-    /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
-    /// - `None` if the underlying channel closed without any left messages queued.
+    /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
     fn network_down(&mut self) -> impl Future<Output = Result<(), ()>> {
         self.event(Event::NetworkDown)
     }
@@ -36,8 +33,7 @@ pub trait Waiter {
     ///
     /// # Errors
     ///
-    /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
-    /// - `None` if the underlying channel closed without any left messages queued.
+    /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
     fn network_opened(&mut self) -> impl Future<Output = Result<(), ()>> {
         self.event(Event::NetworkOpened)
     }
@@ -46,8 +42,7 @@ pub trait Waiter {
     ///
     /// # Errors
     ///
-    /// - `Some(ChannelError)` if the underlying channel is closed while there were still messaged queued.
-    /// - `None` if the underlying channel closed without any left messages queued.
+    /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
     fn network_closed(&mut self) -> impl Future<Output = Result<(), ()>> {
         self.event(Event::NetworkClosed)
     }
