@@ -61,7 +61,7 @@ where
     ///
     /// TODO: Cache the result to avoid multiple requests.
     pub async fn ieee_address(&self) -> Result<MacAddr8, Error> {
-        self.proxy.get_ieee_address(self.pan_id()).await
+        self.proxy.get_ieee_address(self.pan_id).await
     }
 
     /// Send a frame to a specific endpoint on the device.
