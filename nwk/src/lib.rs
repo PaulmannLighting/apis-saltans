@@ -1,20 +1,20 @@
 //! Zigbee Network (NWK) Layer implementation.
 
-pub use network_manager::NetworkManager;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::actor::Actor;
 pub use self::aps::{Frame, Metadata};
-pub use self::binding::Binding;
+pub use self::clusters::Binding;
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
+pub use self::network_manager::NetworkManager;
 pub use self::proxy::Proxy;
 pub use self::waiter::Waiter;
 
 mod actor;
 mod aps;
-mod binding;
+mod clusters;
 mod error;
 mod event;
 mod message;
