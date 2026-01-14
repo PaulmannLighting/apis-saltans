@@ -78,6 +78,6 @@ impl<T> Deref for EndpointProxy<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        &self.proxy
+        self.proxy
     }
 }
