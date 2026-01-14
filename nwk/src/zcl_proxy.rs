@@ -29,9 +29,12 @@ where
     where
         C: Command + ClusterId + ToLeStream,
     {
-        let seq = self.proxy.next_transaction_seq().await;
         self.proxy
-            .unicast(pan_id, endpoint, zcl::Frame::new(seq, command).into())
+            .unicast(
+                pan_id,
+                endpoint,
+                zcl::Frame::new(self.proxy.next_transaction_seq().await, command).into(),
+            )
             .await
     }
 }

@@ -29,9 +29,12 @@ where
     where
         C: Cluster + Service + ToLeStream,
     {
-        let seq = self.proxy.next_transaction_seq().await;
         self.proxy
-            .unicast(pan_id, endpoint, zdp::Frame::new(seq, command).into())
+            .unicast(
+                pan_id,
+                endpoint,
+                zdp::Frame::new(self.proxy.next_transaction_seq().await, command).into(),
+            )
             .await
     }
 }
