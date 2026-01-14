@@ -11,7 +11,7 @@ use crate::{Error, Frame, Proxy};
 mod zcl;
 mod zdp;
 
-/// A proxy structure to interact with a Zigbee device via the Network Layer Management Entity (NLME).
+/// A proxy structure to interact with a Zigbee device.
 #[derive(Clone, Debug)]
 pub struct DeviceProxy<'proxy, T> {
     proxy: &'proxy T,

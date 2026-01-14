@@ -10,7 +10,7 @@ use crate::{Error, Frame, Proxy};
 mod zcl;
 mod zdp;
 
-/// A proxy for an endpoint within a network layer management entity (NLME).
+/// A proxy structure to interact with a specific endpoint on a Zigbee device.
 #[derive(Clone, Debug)]
 pub struct EndpointProxy<'proxy, T> {
     proxy: &'proxy T,
