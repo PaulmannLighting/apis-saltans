@@ -1,4 +1,4 @@
-//! Traits and types for working with clusters.
+//! Traits and types for working with zcl.
 
 pub use self::binding::Binding;
 pub use self::color_control::ColorControl;

@@ -1,4 +1,4 @@
-/// Trait to identify Zigbee clusters.
+/// Trait to identify Zigbee zcl.
 pub trait Cluster {
     /// The cluster identifier.
     const ID: u16;

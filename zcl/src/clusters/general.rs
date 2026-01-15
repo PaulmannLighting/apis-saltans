@@ -1,4 +1,4 @@
-//! General ZCL clusters.
+//! General ZCL zcl.
 
 pub mod basic;
 pub mod device_temperature_configuration;

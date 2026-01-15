@@ -5,7 +5,7 @@ use proc_macro::TokenStream;
 use self::parse_zcl_cluster::parse_zcl_cluster;
 use self::parse_zcl_frame::parse_zcl_frame;
 
-/// Implement a crate-internal aps parser for an enum representing ZCL clusters.
+/// Implement a crate-internal aps parser for an enum representing ZCL zcl.
 ///
 /// # Panics
 ///

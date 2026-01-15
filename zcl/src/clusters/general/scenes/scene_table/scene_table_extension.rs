@@ -5,7 +5,7 @@ use zigbee::types::{Bool, Uint8, Uint16};
 
 /// Scene table extension field set.
 ///
-/// TODO: The possible extensions depend on the clusters supported by the device.
+/// TODO: The possible extensions depend on the zcl supported by the device.
 /// - Group extensions by cluster.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum SceneTableExtension {
