@@ -59,6 +59,7 @@ where
                     return;
                 };
 
+                // TODO: For testing only. Outsource to some kind of binding manager.
                 if let Err(error) = self
                     .send_bind_reqs(
                         *pan_id,
