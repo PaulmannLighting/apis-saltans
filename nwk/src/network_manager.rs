@@ -1,8 +1,6 @@
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
-use zcl::Cluster;
-use zcl::general::on_off;
+use tokio::sync::mpsc::Receiver;
 use zdp::Destination;
 use zigbee::Endpoint;
 use zigbee::node::{
@@ -18,29 +16,19 @@ mod network_state;
 #[derive(Debug)]
 pub struct NetworkManager<T> {
     proxy: T,
-    events_in: Receiver<Event>,
-    events_out: Sender<Event>,
+    events: Receiver<Event>,
     state: NetworkState,
 }
 
 impl<T> NetworkManager<T> {
     /// Creates a new `NetworkManager`.
     #[must_use]
-    pub fn new(
-        proxy: T,
-        events_in: Receiver<Event>,
-        channel_size: usize,
-    ) -> (Self, Receiver<Event>) {
-        let (events_out, events_rx) = channel(channel_size);
-        (
-            Self {
-                proxy,
-                events_in,
-                events_out,
-                state: NetworkState::new(),
-            },
-            events_rx,
-        )
+    pub const fn new(proxy: T, events: Receiver<Event>) -> Self {
+        Self {
+            proxy,
+            events,
+            state: NetworkState::new(),
+        }
     }
 }
 
@@ -49,83 +37,73 @@ where
     T: Proxy + Sync,
 {
     /// Runs the network manager, processing incoming events.
-    pub async fn run(mut self) {
-        while let Some(event) = self.events_in.recv().await {
-            // TODO: forward unhandled events.
-            match event {
-                Event::DeviceJoined {
-                    ieee_address,
-                    pan_id,
-                } => {
-                    info!("Device joined: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}");
-                    self.state
-                        .add_node(Node::new(ieee_address, pan_id, Descriptor::default()));
+    pub async fn recv(&mut self) -> Option<Event> {
+        let event = self.events.recv().await?;
+        self.handle_event(&event).await;
+        Some(event)
+    }
 
-                    let Ok(dst_address) = self.proxy.get_ieee_address(0x0000).await else {
-                        error!("Failed to get coordinator IEEE address.");
-                        continue;
-                    };
+    /// Handles an incoming event.
+    async fn handle_event(&mut self, event: &Event) {
+        match event {
+            Event::DeviceJoined {
+                ieee_address,
+                pan_id,
+            } => {
+                info!("Device joined: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}");
+                self.state
+                    .add_node(Node::new(*ieee_address, *pan_id, Descriptor::default()));
 
-                    if let Err(error) = self
-                        .send_bind_reqs(
-                            pan_id,
-                            ieee_address,
-                            dst_address,
-                            &[1, 2],
-                            &[0x0006, 0x0008],
-                        )
-                        .await
-                    {
-                        error!("Failed to send bind requests: {error}");
+                let Ok(dst_address) = self.proxy.get_ieee_address(0x0000).await else {
+                    error!("Failed to get coordinator IEEE address.");
+                    return;
+                };
+
+                if let Err(error) = self
+                    .send_bind_reqs(
+                        *pan_id,
+                        *ieee_address,
+                        dst_address,
+                        &[1, 2],
+                        &[0x0006, 0x0008],
+                    )
+                    .await
+                {
+                    error!("Failed to send bind requests: {error}");
+                }
+            }
+            Event::DeviceRejoined {
+                ieee_address,
+                pan_id,
+                secured,
+            } => {
+                info!(
+                    "Device rejoined: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}, Secured: {secured}"
+                );
+                self.state
+                    .add_node(Node::new(*ieee_address, *pan_id, Descriptor::default()));
+            }
+            Event::DeviceLeft {
+                ieee_address,
+                pan_id,
+            } => {
+                info!("Device left: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}");
+                self.state.remove_node(*pan_id);
+            }
+            Event::MessageReceived {
+                src_address,
+                command,
+                ..
+            } => match &**command {
+                Command::Zdp(command) => {
+                    if let Err(error) = self.handle_zdp_command(*src_address, command).await {
+                        error!("Failed to handle ZDP command: {error}");
                     }
                 }
-                Event::DeviceRejoined {
-                    ieee_address,
-                    pan_id,
-                    secured,
-                } => {
-                    info!(
-                        "Device rejoined: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}, Secured: {secured}"
-                    );
-                    self.state
-                        .add_node(Node::new(ieee_address, pan_id, Descriptor::default()));
-                }
-                Event::DeviceLeft {
-                    ieee_address,
-                    pan_id,
-                } => {
-                    info!("Device left: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}");
-                    self.state.remove_node(pan_id);
-                }
-                Event::MessageReceived {
-                    src_address,
-                    src_endpoint,
-                    cluster_id,
-                    command,
-                } => match *command {
-                    Command::Zdp(command) => {
-                        if let Err(error) = self.handle_zdp_command(src_address, command).await {
-                            error!("Failed to handle ZDP command: {error}");
-                        }
-                    }
-                    command @ Command::Zcl(_) => {
-                        if let Err(error) = self
-                            .events_out
-                            .send(Event::MessageReceived {
-                                src_address,
-                                src_endpoint,
-                                cluster_id,
-                                command: Box::new(command),
-                            })
-                            .await
-                        {
-                            error!("Failed to forward ZCL command event: {error}");
-                        }
-                    }
-                },
-                other => {
-                    warn!("Unhandled event: {other:?}");
-                }
+                Command::Zcl(_) => (),
+            },
+            other => {
+                warn!("Unhandled event: {other:?}");
             }
         }
     }
@@ -164,10 +142,11 @@ where
     async fn handle_zdp_command(
         &self,
         src_address: u16,
-        command: zdp::Frame<zdp::Command>,
+        command: &zdp::Frame<zdp::Command>,
     ) -> Result<(), Error> {
         info!("Received ZDP command: {command:?}");
-        let (seq, command) = command.into_parts();
+        let seq = command.seq();
+        let command = command.data();
 
         match command {
             zdp::Command::NetworkManagement(network_management) => match network_management {
