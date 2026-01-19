@@ -100,17 +100,27 @@ where
                 Event::MessageReceived {
                     src_address,
                     src_endpoint,
+                    cluster_id,
                     command,
-                    ..
                 } => match *command {
                     Command::Zdp(command) => {
                         if let Err(error) = self.handle_zdp_command(src_address, command).await {
                             error!("Failed to handle ZDP command: {error}");
                         }
                     }
-                    Command::Zcl(command) => {
-                        self.handle_zcl_command(src_address, src_endpoint, command)
-                            .await;
+                    command @ Command::Zcl(_) => {
+                        if let Err(error) = self
+                            .events_out
+                            .send(Event::MessageReceived {
+                                src_address,
+                                src_endpoint,
+                                cluster_id,
+                                command: Box::new(command),
+                            })
+                            .await
+                        {
+                            error!("Failed to forward ZCL command event: {error}");
+                        }
                     }
                 },
                 other => {
@@ -220,48 +230,6 @@ where
         }
 
         Ok(())
-    }
-
-    async fn handle_zcl_command(
-        &self,
-        src_address: u16,
-        src_endpoint: Endpoint,
-        command: zcl::Frame<Cluster>,
-    ) {
-        info!("Received ZCL command from {src_address:#06X}/{src_endpoint}: {command:?}");
-        let (_header, payload) = command.into_parts();
-
-        if let Cluster::OnOff(on_off) = payload {
-            match on_off {
-                on_off::Command::On(_) => {
-                    for node in self.state.iter_nodes() {
-                        for endpoint in 1..4 {
-                            debug!("Sending On command to {:#06X}/{}", node.pan_id(), endpoint);
-                            self.proxy
-                                .zcl()
-                                .unicast(node.pan_id(), endpoint.into(), on_off::On)
-                                .await
-                                .expect("Failed to send On command.");
-                        }
-                    }
-                }
-                on_off::Command::Off(_) => {
-                    for node in self.state.iter_nodes() {
-                        for endpoint in 1..4 {
-                            debug!("Sending Off command to {:#06X}/{}", node.pan_id(), endpoint);
-                            self.proxy
-                                .zcl()
-                                .unicast(node.pan_id(), endpoint.into(), on_off::Off)
-                                .await
-                                .expect("Failed to send Off command.");
-                        }
-                    }
-                }
-                other => {
-                    warn!("Received unhandled On/Off command: {other:?}");
-                }
-            }
-        }
     }
 }
 
