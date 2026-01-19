@@ -41,6 +41,11 @@ impl<'proxy, T> DeviceProxy<'proxy, T> {
         EndpointProxy::new(self.proxy, self.pan_id, endpoint_id)
     }
 
+    /// Get a proxy for the data endpoint on the device.
+    pub const fn data(&self) -> EndpointProxy<'proxy, T> {
+        self.endpoint(Endpoint::Data)
+    }
+
     /// Get a proxy for the default endpoint on the device.
     pub fn default_endpoint(&self) -> EndpointProxy<'proxy, T> {
         self.endpoint(Endpoint::default())
