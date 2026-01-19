@@ -3,14 +3,14 @@ use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use zcl::Cluster;
 use zcl::general::on_off;
-use zdp::{BindReq, Destination};
+use zdp::Destination;
 use zigbee::Endpoint;
 use zigbee::node::{
     Descriptor, Flags, FrequencyBand, LogicalType, MacCapabilityFlags, Node, ServerMask,
 };
 
 use self::network_state::NetworkState;
-use crate::{Command, Error, Event, Proxy};
+use crate::{Binding, Command, Error, Event, Proxy};
 
 mod network_state;
 
@@ -61,20 +61,22 @@ where
                     self.state
                         .add_node(Node::new(ieee_address, pan_id, Descriptor::default()));
 
-                    if let Err(error) = self.send_bind_req(ieee_address, pan_id, 1, 0x0006).await {
-                        error!("Failed to send bind request for endpoint 1: {error}");
-                    }
+                    let Ok(dst_address) = self.proxy.get_ieee_address(0x0000).await else {
+                        error!("Failed to get coordinator IEEE address.");
+                        continue;
+                    };
 
-                    if let Err(error) = self.send_bind_req(ieee_address, pan_id, 2, 0x0006).await {
-                        error!("Failed to send bind request for endpoint 2: {error}");
-                    }
-
-                    if let Err(error) = self.send_bind_req(ieee_address, pan_id, 1, 0x0008).await {
-                        error!("Failed to send bind request for endpoint 1: {error}");
-                    }
-
-                    if let Err(error) = self.send_bind_req(ieee_address, pan_id, 2, 0x0008).await {
-                        error!("Failed to send bind request for endpoint 2: {error}");
+                    if let Err(error) = self
+                        .send_bind_reqs(
+                            pan_id,
+                            ieee_address,
+                            dst_address,
+                            &[1, 2],
+                            &[0x0006, 0x0008],
+                        )
+                        .await
+                    {
+                        error!("Failed to send bind requests: {error}");
                     }
                 }
                 Event::DeviceRejoined {
@@ -118,33 +120,33 @@ where
         }
     }
 
-    async fn send_bind_req(
+    async fn send_bind_reqs(
         &self,
-        ieee_address: MacAddr8,
         pan_id: u16,
-        src_endpoint: u8,
-        cluster_id: u16,
+        src_address: MacAddr8,
+        dst_address: MacAddr8,
+        dst_endpoints: &[u8],
+        cluster_ids: &[u16],
     ) -> Result<(), Error> {
-        let dst_address = self.proxy.get_ieee_address(0x0000).await?;
-        info!(
-            "Requesting bind to {pan_id} of {ieee_address}/{src_endpoint} to {dst_address}/1 for cluster {cluster_id:#06X}"
-        );
-        self.proxy
-            .zdp()
-            .unicast(
-                pan_id,
-                Endpoint::Data,
-                BindReq::new(
-                    ieee_address,
-                    src_endpoint,
-                    cluster_id,
-                    Destination::Extended {
-                        address: dst_address,
-                        endpoint: 1,
-                    },
-                ),
-            )
-            .await?;
+        for &endpoint in dst_endpoints {
+            for &cluster_id in cluster_ids {
+                info!(
+                    "Requesting bind to {pan_id} of {src_address}/{endpoint} to {dst_address}/1 for cluster {cluster_id:#06X}"
+                );
+                self.proxy
+                    .device(pan_id)
+                    .data()
+                    .bind(
+                        src_address,
+                        cluster_id,
+                        Destination::Extended {
+                            address: dst_address,
+                            endpoint,
+                        },
+                    )
+                    .await?;
+            }
+        }
 
         Ok(())
     }
