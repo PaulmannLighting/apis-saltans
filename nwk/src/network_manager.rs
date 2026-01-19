@@ -30,6 +30,18 @@ impl<T> NetworkManager<T> {
             state: NetworkState::new(),
         }
     }
+
+    /// Returns a reference to the proxy.
+    #[must_use]
+    pub const fn proxy(&self) -> &T {
+        &self.proxy
+    }
+
+    /// Returns a reference to the network state.
+    #[must_use]
+    pub const fn state(&self) -> &NetworkState {
+        &self.state
+    }
 }
 
 impl<T> NetworkManager<T>
