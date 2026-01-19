@@ -1,4 +1,4 @@
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use zcl::Cluster;
@@ -233,20 +233,26 @@ where
             match on_off {
                 on_off::Command::On(_) => {
                     for node in self.state.iter_nodes() {
-                        self.proxy
-                            .zcl()
-                            .unicast(node.pan_id(), 0x01.into(), on_off::On)
-                            .await
-                            .expect("Failed to send On command.");
+                        for endpoint in 1..4 {
+                            debug!("Sending On command to {:#06X}/{}", node.pan_id(), endpoint);
+                            self.proxy
+                                .zcl()
+                                .unicast(node.pan_id(), endpoint.into(), on_off::On)
+                                .await
+                                .expect("Failed to send On command.");
+                        }
                     }
                 }
                 on_off::Command::Off(_) => {
                     for node in self.state.iter_nodes() {
-                        self.proxy
-                            .zcl()
-                            .unicast(node.pan_id(), 0x01.into(), on_off::Off)
-                            .await
-                            .expect("Failed to send Off command.");
+                        for endpoint in 1..4 {
+                            debug!("Sending Off command to {:#06X}/{}", node.pan_id(), endpoint);
+                            self.proxy
+                                .zcl()
+                                .unicast(node.pan_id(), endpoint.into(), on_off::Off)
+                                .await
+                                .expect("Failed to send Off command.");
+                        }
                     }
                 }
                 other => {
