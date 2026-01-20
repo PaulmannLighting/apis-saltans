@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bitflags = "2.10.0"
+bitflags = "2.10"
 le-stream = { version = "6", features = ["derive"] }
-num-derive = "0.4.2"
-num-traits = "0.2.19"
+num-derive = "0.4"
+num-traits = "0.2"
 
 [lints]
 workspace = true

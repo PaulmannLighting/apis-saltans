@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-le-stream = "6.0.0"
-log = "0.4.29"
-macaddr = "1.0.1"
-tokio = { version = "1.48.0", features = ["sync"] }
+le-stream = "6.0"
+log = "0.4"
+macaddr = "1.0"
+tokio = { version = "1.49", features = ["sync"] }
 zcl = { path = "../zcl" }
 zdp = { path = "../zdp" }
 zigbee = { path = "../zigbee" }
