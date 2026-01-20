@@ -2,6 +2,7 @@
 
 use macaddr::MacAddr8;
 use zdp::{BindReq, Destination};
+use zigbee::Endpoint;
 
 use crate::proxies::EndpointProxy;
 use crate::{Error, Proxy};
@@ -12,6 +13,7 @@ pub trait Binding {
     fn bind(
         &self,
         src_address: MacAddr8,
+        src_endpoint: Endpoint,
         cluster_id: u16,
         destination: Destination,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
@@ -20,6 +22,7 @@ pub trait Binding {
     fn unbind(
         &self,
         src_address: MacAddr8,
+        src_endpoint: Endpoint,
         cluster_id: u16,
         destination: Destination,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
@@ -32,13 +35,14 @@ where
     async fn bind(
         &self,
         src_address: MacAddr8,
+        src_endpoint: Endpoint,
         cluster_id: u16,
         destination: Destination,
     ) -> Result<u8, Error> {
         self.zdp()
             .unicast(BindReq::new(
                 src_address,
-                self.endpoint().into(),
+                src_endpoint.into(),
                 cluster_id,
                 destination,
             ))
@@ -48,13 +52,14 @@ where
     async fn unbind(
         &self,
         src_address: MacAddr8,
+        src_endpoint: Endpoint,
         cluster_id: u16,
         destination: Destination,
     ) -> Result<u8, Error> {
         self.zdp()
             .unicast(zdp::UnbindReq::new(
                 src_address,
-                self.endpoint().into(),
+                src_endpoint.into(),
                 cluster_id,
                 destination,
             ))

@@ -76,8 +76,8 @@ where
                     .send_bind_reqs(
                         *pan_id,
                         *ieee_address,
-                        dst_address,
                         &[1, 2],
+                        dst_address,
                         &[0x0006, 0x0008],
                     )
                     .await
@@ -125,24 +125,25 @@ where
         &self,
         pan_id: u16,
         src_address: MacAddr8,
+        src_endpoints: &[u8],
         dst_address: MacAddr8,
-        dst_endpoints: &[u8],
         cluster_ids: &[u16],
     ) -> Result<(), Error> {
-        for &endpoint in dst_endpoints {
+        for src_endpoint in src_endpoints.iter().copied().map(Endpoint::from) {
             for &cluster_id in cluster_ids {
                 info!(
-                    "Requesting bind to {pan_id} of {src_address}/{endpoint} to {dst_address}/1 for cluster {cluster_id:#06X}"
+                    "Requesting bind to {pan_id} of {src_address}/{src_endpoint} to {dst_address}/1 for cluster {cluster_id:#06X}"
                 );
                 self.proxy
                     .device(pan_id)
                     .data()
                     .bind(
                         src_address,
+                        src_endpoint,
                         cluster_id,
                         Destination::Extended {
                             address: dst_address,
-                            endpoint,
+                            endpoint: 1,
                         },
                     )
                     .await?;
