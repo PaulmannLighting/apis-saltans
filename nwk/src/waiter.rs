@@ -9,14 +9,14 @@ pub trait Waiter {
     /// # Errors
     ///
     /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
-    fn event(&mut self, expected_event: Event) -> impl Future<Output = Result<(), ()>>;
+    fn event(&mut self, expected_event: Event) -> impl Future<Output = Result<(), ()>> + Send;
 
     /// Wait for the network to be up.
     ///
     /// # Errors
     ///
     /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
-    fn network_up(&mut self) -> impl Future<Output = Result<(), ()>> {
+    fn network_up(&mut self) -> impl Future<Output = Result<(), ()>> + Send {
         self.event(Event::NetworkUp)
     }
 
@@ -25,7 +25,7 @@ pub trait Waiter {
     /// # Errors
     ///
     /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
-    fn network_down(&mut self) -> impl Future<Output = Result<(), ()>> {
+    fn network_down(&mut self) -> impl Future<Output = Result<(), ()>> + Send {
         self.event(Event::NetworkDown)
     }
 
@@ -34,7 +34,7 @@ pub trait Waiter {
     /// # Errors
     ///
     /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
-    fn network_opened(&mut self) -> impl Future<Output = Result<(), ()>> {
+    fn network_opened(&mut self) -> impl Future<Output = Result<(), ()>> + Send {
         self.event(Event::NetworkOpened)
     }
 
@@ -43,7 +43,7 @@ pub trait Waiter {
     /// # Errors
     ///
     /// Returns `Err(())` if the underlying channel is closed while still waiting for the event.
-    fn network_closed(&mut self) -> impl Future<Output = Result<(), ()>> {
+    fn network_closed(&mut self) -> impl Future<Output = Result<(), ()>> + Send {
         self.event(Event::NetworkClosed)
     }
 }

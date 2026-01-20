@@ -15,14 +15,14 @@ use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 /// This trait is implemented for `Sender<Message>`, allowing you to communicate with a Zigbee NCP.
 pub trait Proxy {
     /// Get the next transaction sequence number.
-    fn next_transaction_seq(&self) -> impl Future<Output = u8>;
+    fn next_transaction_seq(&self) -> impl Future<Output = u8> + Send;
 
     /// Get the PAN ID of the network manager.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_pan_id(&self) -> impl Future<Output = Result<u16, Error>>;
+    fn get_pan_id(&self) -> impl Future<Output = Result<u16, Error>> + Send;
 
     /// Scan for available networks.
     ///
@@ -33,7 +33,7 @@ pub trait Proxy {
         &self,
         channel_mask: u32,
         duration: u8,
-    ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
+    ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>> + Send;
 
     /// Scan channels for activity.
     ///
@@ -44,35 +44,36 @@ pub trait Proxy {
         &self,
         channel_mask: u32,
         duration: u8,
-    ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>>;
+    ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>> + Send;
 
     /// Allow devices to join the network for the specified duration.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn allow_joins(&self, duration: Duration) -> impl Future<Output = Result<(), Error>>;
+    fn allow_joins(&self, duration: Duration) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Get the list of neighbor devices.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_neighbors(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>>;
+    fn get_neighbors(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>> + Send;
 
     /// Send a route request with the specified radius.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn route_request(&self, radius: u8) -> impl Future<Output = Result<(), Error>>;
+    fn route_request(&self, radius: u8) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Get the IEEE address of the device with the specified PAN ID.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_ieee_address(&self, pan_id: u16) -> impl Future<Output = Result<MacAddr8, Error>>;
+    fn get_ieee_address(&self, pan_id: u16)
+    -> impl Future<Output = Result<MacAddr8, Error>> + Send;
 
     /// Send a unicast ZCL command.
     ///
@@ -84,7 +85,7 @@ pub trait Proxy {
         pan_id: u16,
         endpoint: Endpoint,
         frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>>;
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Get a device proxy for the specified PAN ID.
     fn device(&self, pan_id: u16) -> DeviceProxy<'_, Self>

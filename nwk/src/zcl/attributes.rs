@@ -15,7 +15,7 @@ pub trait Attributes {
         &self,
         cluster_id: u16,
         attribute_ids: Box<[u16]>,
-    ) -> impl Future<Output = Result<u8, Error>>;
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 }
 
 impl<T> Attributes for EndpointProxy<'_, T>

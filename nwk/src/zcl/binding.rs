@@ -14,7 +14,7 @@ pub trait Binding {
         src_address: MacAddr8,
         cluster_id: u16,
         destination: Destination,
-    ) -> impl Future<Output = Result<u8, Error>>;
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Remove a binding for the specified cluster ID to the given destination.
     fn unbind(
@@ -22,7 +22,7 @@ pub trait Binding {
         src_address: MacAddr8,
         cluster_id: u16,
         destination: Destination,
-    ) -> impl Future<Output = Result<u8, Error>>;
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 }
 
 impl<T> Binding for EndpointProxy<'_, T>

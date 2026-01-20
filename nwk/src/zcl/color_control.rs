@@ -11,7 +11,7 @@ pub trait ColorControl {
         color_x: u16,
         color_y: u16,
         transition_time: u16,
-    ) -> impl Future<Output = Result<u8, Error>>;
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 }
 
 impl<T> ColorControl for EndpointProxy<'_, T>
