@@ -7,8 +7,8 @@ pub mod general;
 pub mod global;
 pub mod lighting;
 
-/// Available ZCL zcl.
-// TODO: Add all ZCL zcl.
+/// Available ZCL clusters.
+// TODO: Add all ZCL clusters.
 #[expect(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Cluster {
