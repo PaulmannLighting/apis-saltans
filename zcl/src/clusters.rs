@@ -1,6 +1,6 @@
 //! Cluster groups.
 
-use self::general::{basic, groups, identify, on_off};
+use self::general::{basic, groups, identify, level, on_off};
 use crate::{CommandId, Header, ParseFrameError, Scope};
 
 pub mod general;
@@ -22,6 +22,8 @@ pub enum Cluster {
     Identify(identify::Command),
     /// On/Off cluster commands.
     OnOff(on_off::Command),
+    /// Level commands.
+    Level(level::Command),
 }
 
 impl Cluster {
@@ -54,6 +56,9 @@ impl Cluster {
                 <on_off::Command as zigbee::Cluster>::ID => {
                     on_off::Command::parse_zcl_frame(header, bytes).map(Self::OnOff)
                 }
+                <level::Command as zigbee::Cluster>::ID => {
+                    level::Command::parse_zcl_frame(header, bytes).map(Self::Level)
+                }
                 invalid_cluster_id => Err(ParseFrameError::InvalidClusterId(invalid_cluster_id)),
             },
         }
@@ -68,6 +73,7 @@ impl CommandId for Cluster {
             Self::Groups(command) => command.command_id(),
             Self::Identify(command) => command.command_id(),
             Self::OnOff(command) => command.command_id(),
+            Self::Level(command) => command.command_id(),
         }
     }
 }
