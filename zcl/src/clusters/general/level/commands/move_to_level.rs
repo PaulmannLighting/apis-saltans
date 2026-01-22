@@ -2,11 +2,10 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, Direction, FromDeciSeconds};
 
 use super::CLUSTER_ID;
 use crate::Command;
-use crate::utils::FromDeciSeconds;
 
 /// Move to level command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

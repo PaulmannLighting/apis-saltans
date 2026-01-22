@@ -1,7 +1,6 @@
 use core::time::Duration;
 
-use zigbee::Cluster;
-use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
+use zigbee::{Cluster, FromDeciSeconds};
 
 use crate::Command;
 use crate::clusters::lighting::color_control::CLUSTER_ID;
@@ -41,7 +40,7 @@ impl MoveToHue {
     /// Return the transition time in deci-seconds.
     #[must_use]
     pub fn transition_time(self) -> Duration {
-        Duration::from_millis(u64::from(self.transition_time) * DECI_SECONDS_PER_MILLISECOND)
+        Duration::from_deci_seconds(self.transition_time)
     }
 }
 

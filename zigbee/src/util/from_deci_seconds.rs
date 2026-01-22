@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use zigbee::constants::DECI_SECONDS_PER_MILLISECOND;
+use crate::constants::DECI_SECONDS_PER_MILLISECOND;
 
 /// Trait to create a Duration from deciseconds.
 pub trait FromDeciSeconds {
