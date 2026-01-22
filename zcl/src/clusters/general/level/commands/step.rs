@@ -4,14 +4,15 @@ use zigbee::{Cluster, Direction};
 use crate::Command;
 use crate::general::level::CLUSTER_ID;
 
+/// Step command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct Step {
     mode: u8,
     size: u8,
     transition_time: u16,
-    options_mask: Option<u8>,
-    options_override: Option<u8>,
+    options_mask: u8,
+    options_override: u8,
 }
 
 impl Cluster for Step {
