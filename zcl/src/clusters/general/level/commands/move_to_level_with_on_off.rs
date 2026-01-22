@@ -1,57 +1,44 @@
 use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
-use num_traits::FromPrimitive;
+use zigbee::types::Uint16;
 use zigbee::{Cluster, Direction};
 
 use super::CLUSTER_ID;
 use crate::Command;
-use crate::general::level::Mode;
 use crate::utils::FromDeciSeconds;
 
-/// Step command.
+/// Move to level with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
-pub struct Step {
-    mode: u8,
-    size: u8,
-    transition_time: u16,
+pub struct MoveToLevelWithOnOff {
+    level: u8,
+    transition_time: Uint16,
     options_mask: u8,
     options_override: u8,
 }
 
-impl Step {
-    /// Creates a new `Step` command.
+impl MoveToLevelWithOnOff {
+    /// Creates a new `MoveToLevelWithOnOff` command.
     #[must_use]
     pub const fn new(
-        mode: Mode,
-        size: u8,
-        transition_time: u16,
+        level: u8,
+        transition_time: Uint16,
         options_mask: u8,
         options_override: u8,
     ) -> Self {
         Self {
-            mode: mode as u8,
-            size,
+            level,
             transition_time,
             options_mask,
             options_override,
         }
     }
 
-    /// Get the mode.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw mode value if it is invalid.
-    pub fn mode(self) -> Result<Mode, u8> {
-        Mode::from_u8(self.mode).ok_or(self.mode)
-    }
-
-    /// Get the size.
+    /// Get the level.
     #[must_use]
-    pub const fn size(self) -> u8 {
-        self.size
+    pub const fn level(self) -> u8 {
+        self.level
     }
 
     /// Get the transition time.
@@ -73,11 +60,11 @@ impl Step {
     }
 }
 
-impl Cluster for Step {
+impl Cluster for MoveToLevelWithOnOff {
     const ID: u16 = CLUSTER_ID;
 }
 
-impl Command for Step {
-    const ID: u8 = 0x02;
+impl Command for MoveToLevelWithOnOff {
+    const ID: u8 = 0x04;
     const DIRECTION: Direction = Direction::ClientToServer;
 }

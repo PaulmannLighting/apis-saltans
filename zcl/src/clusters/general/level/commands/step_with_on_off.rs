@@ -9,10 +9,10 @@ use crate::Command;
 use crate::general::level::Mode;
 use crate::utils::FromDeciSeconds;
 
-/// Step command.
+/// Step with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
-pub struct Step {
+pub struct StepWithOnOff {
     mode: u8,
     size: u8,
     transition_time: u16,
@@ -20,8 +20,8 @@ pub struct Step {
     options_override: u8,
 }
 
-impl Step {
-    /// Creates a new `Step` command.
+impl StepWithOnOff {
+    /// Creates a new `StepWithOnOff` command.
     #[must_use]
     pub const fn new(
         mode: Mode,
@@ -73,11 +73,11 @@ impl Step {
     }
 }
 
-impl Cluster for Step {
+impl Cluster for StepWithOnOff {
     const ID: u16 = CLUSTER_ID;
 }
 
-impl Command for Step {
-    const ID: u8 = 0x02;
+impl Command for StepWithOnOff {
+    const ID: u8 = 0x06;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
