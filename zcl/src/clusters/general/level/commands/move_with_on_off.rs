@@ -5,6 +5,7 @@ use zigbee::{Cluster, Direction};
 use super::CLUSTER_ID;
 use crate::Command;
 use crate::general::level::Mode;
+use crate::options::Options;
 
 /// Move with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -12,19 +13,17 @@ use crate::general::level::Mode;
 pub struct MoveWithOnOff {
     mode: u8,
     rate: u8,
-    options_mask: Option<u8>,
-    options_override: Option<u8>,
+    options: Options,
 }
 
 impl MoveWithOnOff {
     /// Crate a new `MoveWithOnOff` command.
     #[must_use]
-    pub const fn new(mode: Mode, rate: u8, options_mask: u8, options_override: u8) -> Self {
+    pub const fn new(mode: Mode, rate: u8, options: Options) -> Self {
         Self {
             mode: mode as u8,
             rate,
-            options_mask: Some(options_mask),
-            options_override: Some(options_override),
+            options,
         }
     }
 
@@ -43,16 +42,10 @@ impl MoveWithOnOff {
         self.rate
     }
 
-    /// Get the options mask.
+    /// Get the options.
     #[must_use]
-    pub fn options_mask(self) -> u8 {
-        self.options_mask.unwrap_or_default()
-    }
-
-    /// Get the options override.
-    #[must_use]
-    pub fn options_override(self) -> u8 {
-        self.options_override.unwrap_or_default()
+    pub fn options(self) -> Options {
+        self.options
     }
 }
 

@@ -6,6 +6,7 @@ use zigbee::{Cluster, Direction, FromDeciSeconds};
 
 use super::CLUSTER_ID;
 use crate::Command;
+use crate::options::Options;
 
 /// Move to level with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -13,24 +14,17 @@ use crate::Command;
 pub struct MoveToLevelWithOnOff {
     level: u8,
     transition_time: Uint16,
-    options_mask: u8,
-    options_override: u8,
+    options: Options,
 }
 
 impl MoveToLevelWithOnOff {
     /// Creates a new `MoveToLevelWithOnOff` command.
     #[must_use]
-    pub const fn new(
-        level: u8,
-        transition_time: Uint16,
-        options_mask: u8,
-        options_override: u8,
-    ) -> Self {
+    pub const fn new(level: u8, transition_time: Uint16, options: Options) -> Self {
         Self {
             level,
             transition_time,
-            options_mask,
-            options_override,
+            options,
         }
     }
 
@@ -46,16 +40,10 @@ impl MoveToLevelWithOnOff {
         Option::<u16>::from(self.transition_time).map(Duration::from_deci_seconds)
     }
 
-    /// Get the options mask.
+    /// Get the options.
     #[must_use]
-    pub const fn options_mask(self) -> u8 {
-        self.options_mask
-    }
-
-    /// Get the options override.
-    #[must_use]
-    pub const fn options_override(self) -> u8 {
-        self.options_override
+    pub const fn options(self) -> Options {
+        self.options
     }
 }
 

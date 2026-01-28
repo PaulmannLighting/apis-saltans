@@ -5,6 +5,7 @@ use zigbee::{Cluster, Direction, FromDeciSeconds};
 
 use crate::Command;
 use crate::clusters::lighting::color_control::CLUSTER_ID;
+use crate::options::Options;
 
 /// Command to move a light to a specific color.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
@@ -12,26 +13,18 @@ pub struct MoveToColor {
     color_x: u16,
     color_y: u16,
     transition_time: u16,
-    options_mask: u8,
-    options_override: u8,
+    options: Options,
 }
 
 impl MoveToColor {
     /// Create a new `MoveToColor` command.
     #[must_use]
-    pub const fn new(
-        color_x: u16,
-        color_y: u16,
-        transition_time: u16,
-        options_mask: u8,
-        options_override: u8,
-    ) -> Self {
+    pub const fn new(color_x: u16, color_y: u16, transition_time: u16, options: Options) -> Self {
         Self {
             color_x,
             color_y,
             transition_time,
-            options_mask,
-            options_override,
+            options,
         }
     }
 
@@ -53,16 +46,10 @@ impl MoveToColor {
         Duration::from_deci_seconds(self.transition_time)
     }
 
-    /// Return the options mask.
+    /// Return the options.
     #[must_use]
-    pub const fn options_mask(self) -> u8 {
-        self.options_mask
-    }
-
-    /// Return the options override.
-    #[must_use]
-    pub const fn options_override(self) -> u8 {
-        self.options_override
+    pub const fn options(self) -> Options {
+        self.options
     }
 }
 
