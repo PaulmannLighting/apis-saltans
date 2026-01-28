@@ -6,6 +6,7 @@ extern crate alloc;
 pub use self::clusters::{Cluster, general, global, lighting};
 pub use self::command::{ClusterDirected, Command, CommandId, Global};
 pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Scope};
+pub use self::options::Options;
 pub use self::status::Status;
 
 mod attribute;
