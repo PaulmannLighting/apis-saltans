@@ -1,4 +1,5 @@
 use bunt::Xy;
+use zcl::Options;
 use zcl::lighting::color_control::MoveToColor;
 
 use crate::proxies::EndpointProxy;
@@ -11,6 +12,7 @@ pub trait ColorControl {
         &self,
         color: Xy,
         transition_time: u16,
+        options: Options,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Move to the specified color (x, y) over the given transition time.
@@ -18,11 +20,12 @@ pub trait ColorControl {
         &self,
         color: T,
         transition_time: u16,
+        options: Options,
     ) -> impl Future<Output = Result<u8, Error>> + Send
     where
         T: Into<Xy>,
     {
-        self.move_to_xy(color.into(), transition_time)
+        self.move_to_xy(color.into(), transition_time, options)
     }
 }
 
@@ -30,14 +33,18 @@ impl<T> ColorControl for EndpointProxy<'_, T>
 where
     T: Proxy + Sync,
 {
-    async fn move_to_xy(&self, color: Xy, transition_time: u16) -> Result<u8, Error> {
+    async fn move_to_xy(
+        &self,
+        color: Xy,
+        transition_time: u16,
+        options: Options,
+    ) -> Result<u8, Error> {
         self.zcl()
             .unicast(MoveToColor::new(
                 color.x(),
                 color.y(),
                 transition_time,
-                0,
-                0,
+                options,
             ))
             .await
     }
