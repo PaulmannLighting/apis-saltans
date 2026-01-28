@@ -12,8 +12,8 @@ use crate::general::level::Mode;
 pub struct MoveWithOnOff {
     mode: u8,
     rate: u8,
-    options_mask: u8,
-    options_override: u8,
+    options_mask: Option<u8>,
+    options_override: Option<u8>,
 }
 
 impl MoveWithOnOff {
@@ -23,8 +23,8 @@ impl MoveWithOnOff {
         Self {
             mode: mode as u8,
             rate,
-            options_mask,
-            options_override,
+            options_mask: Some(options_mask),
+            options_override: Some(options_override),
         }
     }
 
@@ -45,14 +45,14 @@ impl MoveWithOnOff {
 
     /// Get the options mask.
     #[must_use]
-    pub const fn options_mask(self) -> u8 {
-        self.options_mask
+    pub fn options_mask(self) -> u8 {
+        self.options_mask.unwrap_or_default()
     }
 
     /// Get the options override.
     #[must_use]
-    pub const fn options_override(self) -> u8 {
-        self.options_override
+    pub fn options_override(self) -> u8 {
+        self.options_override.unwrap_or_default()
     }
 }
 
