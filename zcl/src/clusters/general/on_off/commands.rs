@@ -7,6 +7,7 @@ pub use self::off::Off;
 pub use self::off_with_effect::{DelayedAllOff, DyingLight, Effect, OffWithEffect};
 pub use self::on::On;
 pub use self::on_with_recall_global_scene::OnWithRecallGlobalScene;
+pub use self::on_with_timed_off::{OnOffControl, OnWithTimedOff};
 pub use self::toggle::Toggle;
 use crate::CommandId;
 
@@ -14,9 +15,11 @@ mod off;
 mod off_with_effect;
 mod on;
 mod on_with_recall_global_scene;
+mod on_with_timed_off;
 mod toggle;
 
 /// Available On/Off cluster commands.
+#[expect(variant_size_differences)]
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclFrame)]
 pub enum Command {
     /// Off command.
@@ -29,6 +32,8 @@ pub enum Command {
     OffWithEffect(OffWithEffect),
     /// On with Recall Global Scene command.
     OnWithRecallGlobalScene(OnWithRecallGlobalScene),
+    /// On with Timed Off command.
+    OnWithTimedOff(OnWithTimedOff),
 }
 
 impl Cluster for Command {
@@ -43,6 +48,7 @@ impl CommandId for Command {
             Self::On(cmd) => cmd.command_id(),
             Self::OffWithEffect(cmd) => cmd.command_id(),
             Self::OnWithRecallGlobalScene(cmd) => cmd.command_id(),
+            Self::OnWithTimedOff(cmd) => cmd.command_id(),
         }
     }
 }

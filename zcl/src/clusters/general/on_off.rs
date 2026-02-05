@@ -2,8 +2,8 @@
 
 pub use self::attribute::Attribute;
 pub use self::commands::{
-    Command, DelayedAllOff, DyingLight, Effect, Off, OffWithEffect, On, OnWithRecallGlobalScene,
-    Toggle,
+    Command, DelayedAllOff, DyingLight, Effect, Off, OffWithEffect, On, OnOffControl,
+    OnWithRecallGlobalScene, OnWithTimedOff, Toggle,
 };
 
 mod attribute;
