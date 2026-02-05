@@ -14,3 +14,7 @@
         - [ ] OnTime
         - [ ] OffWaitTime
         - [x] StartUpOnOff
+
+# Design
+
+- [ ] Define a strategy for handling attributes in different clusters.
