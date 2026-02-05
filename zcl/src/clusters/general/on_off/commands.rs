@@ -43,9 +43,9 @@ impl Cluster for Command {
 impl CommandId for Command {
     fn command_id(&self) -> u8 {
         match self {
-            Self::Toggle(cmd) => cmd.command_id(),
             Self::Off(cmd) => cmd.command_id(),
             Self::On(cmd) => cmd.command_id(),
+            Self::Toggle(cmd) => cmd.command_id(),
             Self::OffWithEffect(cmd) => cmd.command_id(),
             Self::OnWithRecallGlobalScene(cmd) => cmd.command_id(),
             Self::OnWithTimedOff(cmd) => cmd.command_id(),
