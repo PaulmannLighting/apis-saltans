@@ -17,4 +17,4 @@
 
 # Design
 
-- [ ] Define a strategy for handling attributes in different clusters.
+- [ ] Define a strategy for handling reporting of attributes from different clusters.
