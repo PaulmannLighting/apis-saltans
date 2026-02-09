@@ -11,6 +11,7 @@ const YEAR_OFFSET: u16 = 1900;
 const NON_VALUE: u8 = 0xff;
 
 /// Represents a date with year, month, day of the month, and day of the week.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct Date {
     year: u8,

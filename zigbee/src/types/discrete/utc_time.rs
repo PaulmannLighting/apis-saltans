@@ -10,6 +10,7 @@ const BASE_DATETIME: DateTime<Utc> = DateTime::from_naive_utc_and_offset(BASE_NA
 const NON_VALUE: u32 = 0xffff_ffff;
 
 /// UTC time data type.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct UtcTime(u32);
 

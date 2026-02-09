@@ -31,6 +31,11 @@ mod null;
 pub mod tlv;
 
 /// Commonly used type identifiers.
+#[cfg_attr(
+    feature = "serde",
+    expect(clippy::unsafe_derive_deserialize),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ReprDiscriminant)]
 #[repr(u8)]
 pub enum Type {

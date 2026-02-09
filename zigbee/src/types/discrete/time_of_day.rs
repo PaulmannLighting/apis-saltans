@@ -12,6 +12,7 @@ const NANOS_PER_HUNDREDTHS: u32 = 10_000_000;
 const NON_VALUE: u8 = 0xff;
 
 /// Represents a time of day with hour, minute, second, and hundredths of a second.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
