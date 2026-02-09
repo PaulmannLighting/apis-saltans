@@ -25,7 +25,7 @@
         - [x] ResetAlarm
         - [x] ResetAllAlarms
         - [x] GetAlarm
-        - [x] GetAlarm
+        - [x] ResetAlarmLog
         - [x] Alarm
         - [x] GetAlarmResponse
     - [x] Attributes
