@@ -9,3 +9,4 @@ pub mod level;
 pub mod on_off;
 pub mod power_configuration;
 pub mod scenes;
+pub mod time;

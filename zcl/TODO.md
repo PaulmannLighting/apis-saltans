@@ -29,6 +29,8 @@
         - [x] Alarm
         - [x] GetAlarmResponse
     - [x] Attributes
+- [x] Time
+    - [x] Attributes
 
 # Design
 
