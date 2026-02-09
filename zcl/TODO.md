@@ -8,12 +8,7 @@
         - [x] OffWithEffect
         - [x] OnWithRecallGlobalScene
         - [x] OnWithTimedOff
-    - [ ] Attributes
-        - [ ] OnOff
-        - [ ] GlobalSceneControl
-        - [ ] OnTime
-        - [ ] OffWaitTime
-        - [x] StartUpOnOff
+    - [x] Attributes
 - [x] LevelControl
     - [x] Commands
         - [x] MoveToLevel
