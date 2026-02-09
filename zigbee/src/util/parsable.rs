@@ -23,6 +23,11 @@ where
     pub fn parse(self) -> Result<Dst, <Dst as TryFrom<Src>>::Error> {
         Dst::try_from(self.src)
     }
+
+    /// Consume the parsable and return the raw source value.
+    pub fn into_src(self) -> Src {
+        self.src
+    }
 }
 
 impl<Src, Dst> From<Dst> for Parsable<Src, Dst>

@@ -3,6 +3,7 @@ use core::iter::Chain;
 use le_stream::{FromLeStreamTagged, ToLeStream};
 use repr_discriminant::ReprDiscriminant;
 use zigbee::Parsable;
+use zigbee::types::Type;
 
 pub use self::name_support::NameSupport;
 
@@ -18,14 +19,14 @@ pub enum Attribute {
 }
 
 impl ToLeStream for Attribute {
-    type Iter = Chain<<u16 as ToLeStream>::Iter, <NameSupport as ToLeStream>::Iter>;
+    type Iter = Chain<<u16 as ToLeStream>::Iter, <Type as ToLeStream>::Iter>;
 
     fn to_le_stream(self) -> Self::Iter {
         match self {
             Self::NameSupport(name_support) => self
                 .discriminant()
                 .to_le_stream()
-                .chain(name_support.to_le_stream()),
+                .chain(Type::Map8(name_support.into_src()).to_le_stream()),
         }
     }
 }
