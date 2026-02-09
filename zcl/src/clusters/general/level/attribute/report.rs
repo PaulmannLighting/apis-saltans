@@ -9,6 +9,8 @@ use zigbee::types::Uint8;
 #[repr(u16)]
 #[derive(ReprDiscriminant, FromLeStreamTagged)]
 pub enum Attribute {
+    /// Current level of the device.
     CurrentLevel(Uint8) = 0x0000,
+    /// Current frequency of the device.
     CurrentFrequency(u16) = 0x0004,
 }
