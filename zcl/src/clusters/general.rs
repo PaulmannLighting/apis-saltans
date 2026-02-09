@@ -1,5 +1,6 @@
 //! General ZCL zcl.
 
+pub mod alarms;
 pub mod basic;
 pub mod device_temperature_configuration;
 pub mod groups;

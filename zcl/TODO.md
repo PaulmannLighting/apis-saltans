@@ -20,6 +20,13 @@
         - [x] StepWithOnOff
         - [x] StopWithOnOff
     - [x] Attributes
+- [x] Alarms
+    - [x] Commands
+        - [x] ResetAlarm
+        - [x] ResetAllAlarms
+        - [x] GetAlarm
+        - [x] GetAlarms
+    - [x] Attributes
 
 # Design
 
