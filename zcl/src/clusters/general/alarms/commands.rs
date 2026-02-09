@@ -3,14 +3,18 @@
 use zigbee::Cluster;
 use zigbee_macros::ParseZclFrame;
 
+pub use self::alarm::Alarm;
 pub use self::get_alarm::GetAlarm;
+pub use self::get_alarm_response::GetAlarmResponse;
 pub use self::reset_alarm::ResetAlarm;
 pub use self::reset_alarm_log::ResetAlarmLog;
 pub use self::reset_all_alarms::ResetAllAlarms;
 use super::CLUSTER_ID;
 use crate::CommandId;
 
+mod alarm;
 mod get_alarm;
+mod get_alarm_response;
 mod reset_alarm;
 mod reset_alarm_log;
 mod reset_all_alarms;
@@ -26,6 +30,10 @@ pub enum Command {
     ResetAllAlarms(ResetAllAlarms),
     /// Reset Alarm Log command.
     ResetAlarmLog(ResetAlarmLog),
+    /// Alarm command.
+    Alarm(Alarm),
+    /// Get Alarm Response command.
+    GetAlarmResponse(GetAlarmResponse),
 }
 
 impl Cluster for Command {
@@ -39,6 +47,8 @@ impl CommandId for Command {
             Self::ResetAlarm(cmd) => cmd.command_id(),
             Self::ResetAllAlarms(cmd) => cmd.command_id(),
             Self::ResetAlarmLog(cmd) => cmd.command_id(),
+            Self::Alarm(cmd) => cmd.command_id(),
+            Self::GetAlarmResponse(cmd) => cmd.command_id(),
         }
     }
 }
