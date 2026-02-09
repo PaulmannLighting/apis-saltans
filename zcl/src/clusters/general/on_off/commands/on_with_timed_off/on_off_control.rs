@@ -2,6 +2,7 @@ use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
 /// Control field for the On with Timed Off command.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
 )]

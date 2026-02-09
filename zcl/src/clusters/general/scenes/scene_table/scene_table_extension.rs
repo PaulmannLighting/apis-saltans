@@ -7,6 +7,7 @@ use zigbee::types::{Bool, Uint8, Uint16};
 ///
 /// TODO: The possible extensions depend on the zcl supported by the device.
 /// - Group extensions by cluster.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum SceneTableExtension {
     /// On/Off state of the device.
