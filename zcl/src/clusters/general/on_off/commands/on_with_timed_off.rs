@@ -31,6 +31,11 @@ impl OnWithTimedOff {
     }
 
     /// Create a new `OnWithTimedOff` command with durations.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the on time or off wait time cannot be converted to deci-seconds
+    /// or if the resulting deci-seconds value cannot fit in a `u16`.
     pub fn try_new(
         on_off_control: OnOffControl,
         on_time: Duration,
