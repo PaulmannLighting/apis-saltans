@@ -68,14 +68,6 @@ impl IntoIterator for Response {
     }
 }
 
-impl ToLeStream for Response {
-    type Iter = Empty<u8>;
-
-    fn to_le_stream(self) -> Self::Iter {
-        todo!("Not implemented")
-    }
-}
-
 impl FromLeStream for Response {
     fn from_le_stream<T>(bytes: T) -> Option<Self>
     where
@@ -87,5 +79,13 @@ impl FromLeStream for Response {
                 .map(ReadAttributesStatus::into_parts)
                 .collect(),
         })
+    }
+}
+
+impl ToLeStream for Response {
+    type Iter = Empty<u8>;
+
+    fn to_le_stream(self) -> Self::Iter {
+        todo!("Not implemented")
     }
 }
