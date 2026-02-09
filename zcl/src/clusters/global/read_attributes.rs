@@ -59,6 +59,15 @@ impl Deref for Response {
     }
 }
 
+impl IntoIterator for Response {
+    type Item = (u16, Result<Type, u8>);
+    type IntoIter = alloc::collections::btree_map::IntoIter<u16, Result<Type, u8>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.attribute_values.into_iter()
+    }
+}
+
 impl ToLeStream for Response {
     type Iter = Empty<u8>;
 
