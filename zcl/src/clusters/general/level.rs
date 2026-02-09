@@ -6,6 +6,7 @@ pub use commands::{
 };
 pub use mode::Mode;
 
+pub mod attribute;
 mod commands;
 mod mode;
 

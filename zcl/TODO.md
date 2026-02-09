@@ -14,6 +14,17 @@
         - [ ] OnTime
         - [ ] OffWaitTime
         - [x] StartUpOnOff
+- [x] LevelControl
+    - [x] Commands
+        - [x] MoveToLevel
+        - [x] Move
+        - [x] Step
+        - [x] Stop
+        - [x] MoveToLevelWithOnOff
+        - [x] MoveWithOnOff
+        - [x] StepWithOnOff
+        - [x] StopWithOnOff
+    - [x] Attributes
 
 # Design
 
