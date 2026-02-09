@@ -1,6 +1,6 @@
 # Implement clusters
 
-- [ ] OnOff
+- [x] OnOff
     - [x] Commands
         - [x] Off
         - [x] On
