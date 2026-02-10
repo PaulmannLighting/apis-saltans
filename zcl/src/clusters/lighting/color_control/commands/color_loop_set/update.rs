@@ -1,7 +1,10 @@
 use bitflags::bitflags;
+use le_stream::{FromLeStream, ToLeStream};
 
 /// The `Update` flags for the Color Loop Set command in the Lighting cluster.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
+)]
 pub struct Update(u8);
 
 bitflags! {

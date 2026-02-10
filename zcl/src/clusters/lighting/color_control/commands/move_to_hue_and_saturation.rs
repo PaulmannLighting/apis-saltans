@@ -1,13 +1,14 @@
 use core::num::TryFromIntError;
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::{Command, Options};
 
 /// Command to move a light to a specific hue and saturation.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct MoveToHueAndSaturation {
     hue: u8,
     saturation: u8,

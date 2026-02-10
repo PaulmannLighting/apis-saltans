@@ -1,5 +1,7 @@
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 use zigbee::{Cluster, Direction, FromDeciSeconds};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
@@ -7,9 +9,9 @@ use crate::clusters::lighting::color_control::step_hue::Mode;
 use crate::{Command, Options};
 
 /// Command to step a light's color temperature in a specified range.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct StepColorTemperature {
-    mode: Mode,
+    mode: u8,
     size: u16,
     transition_time: u16,
     color_temp_min_mireds: u16,
@@ -29,7 +31,7 @@ impl StepColorTemperature {
         options: Options,
     ) -> Self {
         Self {
-            mode,
+            mode: mode as u8,
             size,
             transition_time,
             color_temp_min_mireds,
@@ -39,9 +41,12 @@ impl StepColorTemperature {
     }
 
     /// Return the mode of color temperature step.
-    #[must_use]
-    pub const fn mode(&self) -> Mode {
-        self.mode
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw mode value if it cannot be converted into a `Mode` enum.
+    pub fn mode(&self) -> Result<Mode, u8> {
+        Mode::from_u8(self.mode).ok_or(self.mode)
     }
 
     /// Return the size of color temperature step.

@@ -1,7 +1,7 @@
 use core::num::TryFromIntError;
 use core::time::Duration;
 
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::Command;
@@ -9,7 +9,7 @@ use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::options::Options;
 
 /// Command to move a light to a specific color.
-#[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct MoveToColor {
     color_x: u16,
     color_y: u16,

@@ -1,6 +1,8 @@
 use core::num::TryFromIntError;
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 use zigbee::{Cluster, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
@@ -8,10 +10,10 @@ use crate::clusters::lighting::color_control::move_to_hue::Direction;
 use crate::{Command, Options};
 
 /// Command to move a light to a specific extended hue with a direction and transition time.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct EnhancedMoveToHue {
     enhanced_hue: u16,
-    direction: Direction,
+    direction: u8,
     transition_time: u16,
     options: Options,
 }
@@ -27,7 +29,7 @@ impl EnhancedMoveToHue {
     ) -> Self {
         Self {
             enhanced_hue,
-            direction,
+            direction: direction as u8,
             transition_time,
             options,
         }
@@ -57,9 +59,12 @@ impl EnhancedMoveToHue {
     }
 
     /// Return the direction of the hue change.
-    #[must_use]
-    pub const fn direction(&self) -> Direction {
-        self.direction
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the direction value is not a valid `Direction`.
+    pub fn direction(&self) -> Result<Direction, u8> {
+        Direction::from_u8(self.direction).ok_or(self.direction)
     }
 
     /// Return the transition time.

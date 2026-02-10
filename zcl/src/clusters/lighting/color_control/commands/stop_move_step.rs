@@ -1,10 +1,11 @@
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::{Command, Options};
 
 /// Command to stop a move step in a lighting device.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct StopMoveStep {
     options: Options,
 }

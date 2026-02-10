@@ -2,6 +2,8 @@
 
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 use zigbee::Cluster;
 
 pub use self::action::{Action, Source};
@@ -15,11 +17,11 @@ mod direction;
 mod update;
 
 /// Activate a light's color loop.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct ColorLoopSet {
     update: Update,
-    action: Action,
-    direction: Direction,
+    action: u8,
+    direction: u8,
     time: u16,
     start_hue: u16,
     options: Options,
@@ -38,8 +40,8 @@ impl ColorLoopSet {
     ) -> Self {
         Self {
             update,
-            action,
-            direction,
+            action: action.as_u8(),
+            direction: direction as u8,
             time,
             start_hue,
             options,
@@ -53,15 +55,17 @@ impl ColorLoopSet {
     }
 
     /// Return the action to perform.
-    #[must_use]
-    pub const fn action(self) -> Action {
-        self.action
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw `u8` value if it does not correspond to a valid `Action`.
+    pub fn action(self) -> Result<Action, u8> {
+        Action::from_u8(self.action).ok_or(self.action)
     }
 
     /// Return the direction of the color loop.
-    #[must_use]
-    pub const fn direction(self) -> Direction {
-        self.direction
+    pub fn direction(self) -> Result<Direction, u8> {
+        Direction::from_u8(self.direction).ok_or(self.direction)
     }
 
     /// Return the time.

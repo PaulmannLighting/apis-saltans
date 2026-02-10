@@ -3,6 +3,8 @@
 use core::num::TryFromIntError;
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::mode::Mode;
@@ -12,9 +14,9 @@ use crate::{Command, Options};
 mod mode;
 
 /// Command to step a light to a specific hue.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct StepSaturation {
-    mode: Mode,
+    mode: u8,
     size: u8,
     transition_time: u8,
     options: Options,
@@ -25,7 +27,7 @@ impl StepSaturation {
     #[must_use]
     pub const fn new(mode: Mode, size: u8, transition_time: u8, options: Options) -> Self {
         Self {
-            mode,
+            mode: mode as u8,
             size,
             transition_time,
             options,
@@ -50,9 +52,12 @@ impl StepSaturation {
     }
 
     /// Return the misc of saturation step.
-    #[must_use]
-    pub const fn mode(&self) -> Mode {
-        self.mode
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw mode value if it cannot be converted into a `Mode` enum.
+    pub fn mode(&self) -> Result<Mode, u8> {
+        Mode::from_u8(self.mode).ok_or(self.mode)
     }
 
     /// Return the size of saturation step.

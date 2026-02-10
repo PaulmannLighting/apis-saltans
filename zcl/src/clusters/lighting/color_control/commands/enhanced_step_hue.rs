@@ -1,6 +1,8 @@
 use core::num::TryFromIntError;
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
@@ -8,9 +10,9 @@ use crate::clusters::lighting::color_control::step_hue::Mode;
 use crate::{Command, Options};
 
 /// Command to step a light's hue in an enhanced way, allowing for more control over the size.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct EnhancedStepHue {
-    mode: Mode,
+    mode: u8,
     size: u16,
     transition_time: u16,
     options: Options,
@@ -21,7 +23,7 @@ impl EnhancedStepHue {
     #[must_use]
     pub const fn new(mode: Mode, size: u16, transition_time: u16, options: Options) -> Self {
         Self {
-            mode,
+            mode: mode as u8,
             size,
             transition_time,
             options,
@@ -45,10 +47,13 @@ impl EnhancedStepHue {
             .map(|transition_time| Self::new(mode, size, transition_time, options))
     }
 
-    /// Return the misc of hue step.
-    #[must_use]
-    pub const fn mode(&self) -> Mode {
-        self.mode
+    /// Return the mode of hue step.
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw mode value if it cannot be converted into a `Mode` enum.
+    pub fn mode(&self) -> Result<Mode, u8> {
+        Mode::from_u8(self.mode).ok_or(self.mode)
     }
 
     /// Return the size of hue step.

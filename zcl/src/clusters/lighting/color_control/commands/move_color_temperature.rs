@@ -1,3 +1,5 @@
+use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 use zigbee::{Cluster, Direction};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
@@ -5,9 +7,9 @@ use crate::clusters::lighting::color_control::move_hue::Mode;
 use crate::{Command, Options};
 
 /// Command to move a light's color temperature.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct MoveColorTemperature {
-    mode: Mode,
+    mode: u8,
     rate: u16,
     color_temp_min_mireds: u16,
     color_temp_max_mireds: u16,
@@ -25,7 +27,7 @@ impl MoveColorTemperature {
         options: Options,
     ) -> Self {
         Self {
-            mode,
+            mode: mode as u8,
             rate,
             color_temp_min_mireds,
             color_temp_max_mireds,
@@ -34,9 +36,12 @@ impl MoveColorTemperature {
     }
 
     /// Return the mode of color temperature movement.
-    #[must_use]
-    pub const fn mode(&self) -> Mode {
-        self.mode
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw mode value if it does not correspond to a valid `Mode` variant.
+    pub fn mode(&self) -> Result<Mode, u8> {
+        Mode::from_u8(self.mode).ok_or(self.mode)
     }
 
     /// Return the rate of color temperature change in mireds per second.

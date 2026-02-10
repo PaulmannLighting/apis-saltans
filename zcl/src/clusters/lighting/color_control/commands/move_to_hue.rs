@@ -3,6 +3,8 @@
 use core::num::TryFromIntError;
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 use zigbee::{Cluster, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::direction::Direction;
@@ -12,10 +14,10 @@ use crate::{Command, Options};
 mod direction;
 
 /// Command to move a light to a specific hue.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct MoveToHue {
     hue: u8,
-    direction: Direction,
+    direction: u8,
     transition_time: u16,
     options: Options,
 }
@@ -31,7 +33,7 @@ impl MoveToHue {
     ) -> Self {
         Self {
             hue,
-            direction,
+            direction: direction as u8,
             transition_time,
             options,
         }
@@ -61,9 +63,12 @@ impl MoveToHue {
     }
 
     /// Return the direction of the hue move.
-    #[must_use]
-    pub const fn direction(&self) -> Direction {
-        self.direction
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the direction value is not a valid `Direction`.
+    pub fn direction(&self) -> Result<Direction, u8> {
+        Direction::from_u8(self.direction).ok_or(self.direction)
     }
 
     /// Return the transition time in deci-seconds.

@@ -25,6 +25,12 @@ impl Action {
     }
 }
 
+impl From<Action> for u8 {
+    fn from(action: Action) -> Self {
+        action.as_u8()
+    }
+}
+
 impl FromPrimitive for Action {
     fn from_i64(n: i64) -> Option<Self> {
         match u8::try_from(n).ok()? {

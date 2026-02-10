@@ -1,13 +1,14 @@
 use core::num::TryFromIntError;
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::{Command, Options};
 
 /// Command to move a light's color temperature to a specific value in mireds.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct MoveToColorTemperature {
     mireds: u16,
     transition_time: u16,

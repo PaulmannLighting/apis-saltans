@@ -9,7 +9,7 @@ pub use self::color_information_attribute::enhanced_color_mode::EnhancedColorMod
 pub use self::color_information_attribute::options::Options;
 pub use self::color_information_attribute::startup_color_temperature::StartupColorTemperature;
 pub use self::commands::{
-    ColorLoopSet, EnhancedMoveHue, EnhancedMoveToHue, EnhancedMoveToHueAndSaturation,
+    ColorLoopSet, Command, EnhancedMoveHue, EnhancedMoveToHue, EnhancedMoveToHueAndSaturation,
     EnhancedStepHue, MoveColor, MoveColorTemperature, MoveHue, MoveSaturation, MoveToColor,
     MoveToColorTemperature, MoveToHue, MoveToHueAndSaturation, MoveToSaturation, StepColor,
     StepColorTemperature, StepHue, StepSaturation, StopMoveStep, color_loop_set, move_hue,
