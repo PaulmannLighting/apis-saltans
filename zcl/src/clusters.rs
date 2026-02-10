@@ -1,6 +1,7 @@
 //! Cluster groups.
 
 use self::general::{basic, groups, identify, level, on_off};
+use self::lighting::color_control;
 use crate::{CommandId, Header, ParseFrameError, Scope};
 
 pub mod general;
@@ -25,6 +26,8 @@ pub enum Cluster {
     OnOff(on_off::Command),
     /// Level commands.
     Level(level::Command),
+    /// Color Control cluster commands.
+    ColorControl(color_control::Command),
 }
 
 impl Cluster {
@@ -60,6 +63,9 @@ impl Cluster {
                 <level::Command as zigbee::Cluster>::ID => {
                     level::Command::parse_zcl_frame(header, bytes).map(Self::Level)
                 }
+                <color_control::Command as zigbee::Cluster>::ID => {
+                    color_control::Command::parse_zcl_frame(header, bytes).map(Self::ColorControl)
+                }
                 invalid_cluster_id => Err(ParseFrameError::InvalidClusterId(invalid_cluster_id)),
             },
         }
@@ -75,6 +81,7 @@ impl CommandId for Cluster {
             Self::Identify(command) => command.command_id(),
             Self::OnOff(command) => command.command_id(),
             Self::Level(command) => command.command_id(),
+            Self::ColorControl(command) => command.command_id(),
         }
     }
 }
