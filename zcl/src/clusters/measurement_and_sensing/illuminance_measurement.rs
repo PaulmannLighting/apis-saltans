@@ -1,3 +1,5 @@
+//! Illuminance Measurement Cluster.
+
 pub use light_sensor_type::{LightSensorType, ManufacturerSpecific};
 
 mod attribute;
