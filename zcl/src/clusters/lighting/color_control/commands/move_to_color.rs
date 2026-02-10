@@ -1,14 +1,15 @@
+use core::num::TryFromIntError;
 use core::time::Duration;
 
 use le_stream::ToLeStream;
-use zigbee::{Cluster, Direction, FromDeciSeconds};
+use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::Command;
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::options::Options;
 
 /// Command to move a light to a specific color.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct MoveToColor {
     color_x: u16,
     color_y: u16,
@@ -28,27 +29,44 @@ impl MoveToColor {
         }
     }
 
+    /// Try to create a new `MoveToColor` command.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`TryFromIntError`] if the resulting deci-seconds value cannot fit in a `u16`.
+    pub fn try_new(
+        color_x: u16,
+        color_y: u16,
+        transition_time: Duration,
+        options: Options,
+    ) -> Result<Self, TryFromIntError> {
+        transition_time
+            .into_deci_seconds()
+            .try_into()
+            .map(|transition_time| Self::new(color_x, color_y, transition_time, options))
+    }
+
     /// Return the color X value.
     #[must_use]
-    pub const fn color_x(self) -> u16 {
+    pub const fn color_x(&self) -> u16 {
         self.color_x
     }
 
     /// Return the color Y value.
     #[must_use]
-    pub const fn color_y(self) -> u16 {
+    pub const fn color_y(&self) -> u16 {
         self.color_y
     }
 
     /// Return the transition time.
     #[must_use]
-    pub fn transition_time(self) -> Duration {
+    pub fn transition_time(&self) -> Duration {
         Duration::from_deci_seconds(self.transition_time)
     }
 
     /// Return the options.
     #[must_use]
-    pub const fn options(self) -> Options {
+    pub const fn options(&self) -> Options {
         self.options
     }
 }

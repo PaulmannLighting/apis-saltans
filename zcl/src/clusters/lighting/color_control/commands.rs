@@ -1,21 +1,21 @@
-pub use self::color_loop_set::command::ColorLoopSet;
+pub use self::color_loop_set::ColorLoopSet;
 pub use self::enhanced_move_hue::EnhancedMoveHue;
 pub use self::enhanced_move_to_hue::EnhancedMoveToHue;
 pub use self::enhanced_move_to_hue_and_saturation::EnhancedMoveToHueAndSaturation;
 pub use self::enhanced_step_hue::EnhancedStepHue;
 pub use self::move_color::MoveColor;
 pub use self::move_color_temperature::MoveColorTemperature;
-pub use self::move_hue::command::MoveHue;
-pub use self::move_saturation::command::MoveSaturation;
+pub use self::move_hue::MoveHue;
+pub use self::move_saturation::MoveSaturation;
 pub use self::move_to_color::MoveToColor;
 pub use self::move_to_color_temperature::MoveToColorTemperature;
-pub use self::move_to_hue::command::MoveToHue;
+pub use self::move_to_hue::MoveToHue;
 pub use self::move_to_hue_and_saturation::MoveToHueAndSaturation;
 pub use self::move_to_saturation::MoveToSaturation;
 pub use self::step_color::StepColor;
 pub use self::step_color_temperature::StepColorTemperature;
-pub use self::step_hue::command::StepHue;
-pub use self::step_saturation::command::StepSaturation;
+pub use self::step_hue::StepHue;
+pub use self::step_saturation::StepSaturation;
 pub use self::stop_move_step::StopMoveStep;
 
 pub mod color_loop_set;
