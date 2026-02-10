@@ -34,6 +34,12 @@
 - [x] Identify
     - [x] Commands
     - [x] Attributes
+- [ ] Illuminance Measurement
+    - [x] Attributes
+    - [ ] Commands
+- [ ] Illuminance Level Sensing
+    - [ ] Attributes
+    - [ ] Commands
 
 # Design
 
