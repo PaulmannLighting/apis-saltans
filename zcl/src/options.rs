@@ -31,8 +31,8 @@ impl Options {
 impl FromLeStream for Options {
     /// Create an `Options` instance from a little-endian byte stream.
     ///
-    /// Make this infallible, by defaulting to `0` on failure.
-    /// This ensures that deserialization always succeeds, also for legacy devices not sending these fields.
+    /// This is infallible, by defaulting to `0` on insufficient bytes.
+    /// This ensures that deserialization also succeeds for legacy devices not sending these fields.
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
