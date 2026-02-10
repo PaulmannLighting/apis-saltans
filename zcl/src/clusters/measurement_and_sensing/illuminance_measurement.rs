@@ -2,3 +2,5 @@ pub use light_sensor_type::{LightSensorType, ManufacturerSpecific};
 
 mod attribute;
 mod light_sensor_type;
+
+const CLUSTER_ID: u16 = 0x0400;
