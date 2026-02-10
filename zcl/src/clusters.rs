@@ -6,6 +6,7 @@ use crate::{CommandId, Header, ParseFrameError, Scope};
 pub mod general;
 pub mod global;
 pub mod lighting;
+mod measurement_and_sensing;
 
 /// Available ZCL clusters.
 // TODO: Add all ZCL clusters.
