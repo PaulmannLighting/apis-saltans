@@ -1,5 +1,6 @@
 //! Occupancy information set attributes.
 
+use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::Parsable;
 
@@ -12,7 +13,7 @@ mod sensor_bitmap;
 mod sensor_type;
 
 /// Attributes for the occupancy sensing cluster.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStreamTagged)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
 pub enum Attribute {

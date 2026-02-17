@@ -7,9 +7,9 @@ use zigbee::types::{Uint8, Uint16};
 #[derive(ReprDiscriminant)]
 pub enum Attribute {
     /// Delay in seconds before the sensor changes from occupied to unoccupied.
-    OccupiedToUnoccupiedDelay(Uint16) = 0x0010,
+    OccupiedToUnoccupiedDelay(Uint16) = 0x0030,
     /// Delay in seconds before the sensor changes from unoccupied to occupied.
-    UnoccupiedToOccupiedDelay(Uint16) = 0x0011,
+    UnoccupiedToOccupiedDelay(Uint16) = 0x0031,
     /// Number of movement detection events before the sensor changes state.
-    UnoccupiedToOccupiedThreshold(Uint8) = 0x0012,
+    UnoccupiedToOccupiedThreshold(Uint8) = 0x0032,
 }
