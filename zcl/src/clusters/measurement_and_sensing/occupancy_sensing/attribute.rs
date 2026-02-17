@@ -1,6 +1,6 @@
 //! Attributes for the occupancy sensing cluster.
 
-use le_stream::{FromLeStream, FromLeStreamTagged};
+use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 
 pub mod occupancy_sensor_information_set;
