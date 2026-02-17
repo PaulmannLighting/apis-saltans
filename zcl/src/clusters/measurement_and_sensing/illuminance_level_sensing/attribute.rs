@@ -1,11 +1,9 @@
-use repr_discriminant::ReprDiscriminant;
-use zigbee::types::Uint16;
+//! Attributes for the illuminance and level sensing cluster.
 
-/// Attributes for the illuminance level sensing cluster.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[repr(u16)]
-#[derive(ReprDiscriminant)]
-pub enum Attribute {
-    /// Target illuminance level in lux.
-    IlluminanceTargetLevel(Uint16) = 0x0010,
-}
+pub use level_status::LevelStatus;
+pub use light_sensor_type::LightSensorType;
+
+mod level_status;
+mod light_sensor_type;
+pub mod read;
+pub mod write;

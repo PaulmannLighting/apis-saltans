@@ -1,7 +1,7 @@
 //! Illuminance Level Sensing cluster.
 
-pub use attribute::Attribute;
+pub use attribute::{LevelStatus, LightSensorType};
 
-mod attribute;
+pub mod attribute;
 
 const CLUSTER_ID: u16 = 0x0401;
