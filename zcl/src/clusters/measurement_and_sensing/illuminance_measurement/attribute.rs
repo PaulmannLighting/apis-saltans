@@ -4,7 +4,7 @@ use zigbee::types::Uint16;
 use super::LightSensorType;
 
 /// Attributes for the Illuminance Measurement cluster.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
 pub enum Attribute {
