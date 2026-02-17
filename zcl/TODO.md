@@ -1,8 +1,8 @@
 # Implement clusters
 
-- [ ] Measurement and Sensing
-    - [ ] Attributes
-    - [ ] Commands
+- [x] Measurement and Sensing
+    - [x] Attributes
+    - [ ] Split attributes into /R/W/P
 
 # Design
 
