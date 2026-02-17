@@ -1,5 +1,5 @@
 //! Occupancy sensing cluster.
 
-pub use attribute::{Attribute, Occupancy, SensorBitmap, SensorType};
+pub use attribute::occupancy_sensor_information_set;
 
 mod attribute;
