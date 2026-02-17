@@ -8,10 +8,16 @@ pub mod physical_contact_configuration_set;
 pub mod pir_configuration_set;
 pub mod ultrasonic_configuration_set;
 
+/// Attributes of the occupancy sensing cluster.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Attribute {
+    /// Occupancy sensor attributes.
     Occupancy(occupancy_sensor_information_set::Attribute),
+    /// PIR sensor attributes.
     Pir(pir_configuration_set::Attribute),
+    /// Ultrasonic sensor attributes.
     Ultrasonic(ultrasonic_configuration_set::Attribute),
+    /// Physical contact sensor attributes.
     PhysicalContact(physical_contact_configuration_set::Attribute),
 }
 
