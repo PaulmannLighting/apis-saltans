@@ -1,4 +1,4 @@
-use zcl::general::on_off::{Off, On};
+use zcl::general::on_off::{Off, On, Toggle};
 
 use crate::proxies::EndpointProxy;
 use crate::{Error, Proxy};
@@ -10,6 +10,9 @@ pub trait OnOff {
 
     /// Turns the device off.
     fn off(&self) -> impl Future<Output = Result<u8, Error>> + Send;
+
+    /// Toggle the device state.
+    fn toggle(&self) -> impl Future<Output = Result<u8, Error>> + Send;
 }
 
 impl<T> OnOff for EndpointProxy<'_, T>
@@ -22,5 +25,9 @@ where
 
     async fn off(&self) -> Result<u8, Error> {
         self.zcl().unicast(Off).await
+    }
+
+    async fn toggle(&self) -> Result<u8, Error> {
+        self.zcl().unicast(Toggle).await
     }
 }
