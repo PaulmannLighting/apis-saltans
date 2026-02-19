@@ -1,7 +1,5 @@
 //! Reading Attributes Command and Response.
 
-mod read_attributes_status;
-
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
@@ -14,6 +12,8 @@ use zigbee::types::Type;
 
 use self::read_attributes_status::ReadAttributesStatus;
 use crate::Global;
+
+mod read_attributes_status;
 
 /// Read Attributes Command.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
