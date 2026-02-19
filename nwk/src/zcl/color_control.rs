@@ -8,6 +8,10 @@ use crate::{Error, Proxy};
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {
     /// Move to the specified color (x, y) over the given transition time.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if execution of the command failed.
     fn move_to_xy(
         &self,
         color: Xy,
@@ -16,6 +20,10 @@ pub trait ColorControl {
     ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Move to the specified color (x, y) over the given transition time.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if execution of the command failed.
     fn move_to_color<T>(
         &self,
         color: T,

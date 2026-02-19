@@ -10,7 +10,7 @@ pub trait Attributes {
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the read operation fails.
+    /// Returns an [`Error`] if execution of the command failed.
     fn read_attributes(
         &self,
         cluster_id: u16,
