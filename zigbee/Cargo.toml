@@ -14,7 +14,7 @@ publish = false
 
 
 [dependencies]
-bitflags = "2.6"
+bitflags = "2.11"
 chrono = "0.4"
 heapless = "0.9"
 intx = "0.1"
