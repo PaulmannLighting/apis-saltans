@@ -5,6 +5,7 @@ use le_stream::{FromLeStream, ToLeStream};
 #[derive(
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
 )]
+#[repr(transparent)]
 pub struct Occupancy(u8);
 
 bitflags! {
