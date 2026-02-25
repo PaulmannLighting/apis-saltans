@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
+use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 
 /// A generic error type for the NWK layer.
@@ -43,6 +44,12 @@ impl std::error::Error for Error {
 impl From<RecvError> for Error {
     fn from(_: RecvError) -> Self {
         Self::ActorReceive
+    }
+}
+
+impl<T> From<SendError<T>> for Error {
+    fn from(_: SendError<T>) -> Self {
+        Self::ActorSend
     }
 }
 

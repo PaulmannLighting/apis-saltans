@@ -15,11 +15,7 @@ use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 /// This trait is implemented for `Sender<Message>`, allowing you to communicate with a Zigbee NCP.
 pub trait Proxy {
     /// Get the next transaction sequence number.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn next_transaction_seq(&self) -> impl Future<Output = Result<u8, Error>> + Send;
+    fn next_transaction_seq(&self) -> impl Future<Output = u8> + Send;
 
     /// Get the PAN ID of the network manager.
     ///
@@ -117,19 +113,17 @@ pub trait Proxy {
 }
 
 impl Proxy for Sender<Message> {
-    async fn next_transaction_seq(&self) -> Result<u8, Error> {
+    async fn next_transaction_seq(&self) -> u8 {
         let (response, rx) = oneshot::channel();
         self.send(Message::GetTransactionSeq { response })
             .await
-            .map_err(|_| Error::ActorSend)?;
-        Ok(rx.await?)
+            .unwrap();
+        rx.await.unwrap()
     }
 
     async fn get_pan_id(&self) -> Result<u16, Error> {
         let (response, rx) = oneshot::channel();
-        self.send(Message::GetPanId { response })
-            .await
-            .map_err(|_| Error::ActorSend)?;
+        self.send(Message::GetPanId { response }).await?;
         rx.await?
     }
 
@@ -144,8 +138,7 @@ impl Proxy for Sender<Message> {
             duration,
             response,
         })
-        .await
-        .map_err(|_| Error::ActorSend)?;
+        .await?;
         rx.await?
     }
 
@@ -160,40 +153,34 @@ impl Proxy for Sender<Message> {
             duration,
             response,
         })
-        .await
-        .map_err(|_| Error::ActorSend)?;
+        .await?;
         rx.await?
     }
 
     async fn allow_joins(&self, duration: Duration) -> Result<(), Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::AllowJoins { duration, response })
-            .await
-            .map_err(|_| Error::ActorSend)?;
+            .await?;
         rx.await?
     }
 
     async fn get_neighbors(&self) -> Result<BTreeMap<MacAddr8, u16>, Error> {
         let (response, rx) = oneshot::channel();
-        self.send(Message::GetNeighbors { response })
-            .await
-            .map_err(|_| Error::ActorSend)?;
+        self.send(Message::GetNeighbors { response }).await?;
         rx.await?
     }
 
     async fn route_request(&self, radius: u8) -> Result<(), Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::RouteRequest { radius, response })
-            .await
-            .map_err(|_| Error::ActorSend)?;
+            .await?;
         rx.await?
     }
 
     async fn get_ieee_address(&self, pan_id: u16) -> Result<MacAddr8, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::GetIeeeAddress { pan_id, response })
-            .await
-            .map_err(|_| Error::ActorSend)?;
+            .await?;
         rx.await?
     }
 
@@ -205,8 +192,7 @@ impl Proxy for Sender<Message> {
             frame,
             response,
         })
-        .await
-        .map_err(|_| Error::ActorSend)?;
+        .await?;
         rx.await?
     }
 }
