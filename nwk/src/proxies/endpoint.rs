@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use ::zdp::Destination;
 use macaddr::MacAddr8;
 use zigbee::Endpoint;
@@ -72,14 +70,6 @@ where
     /// This function will return an error if the frame could not be sent.
     pub async fn unicast(&self, frame: Frame) -> Result<u8, Error> {
         self.proxy.unicast(self.pan_id, self.endpoint, frame).await
-    }
-}
-
-impl<T> Deref for EndpointProxy<'_, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.proxy
     }
 }
 

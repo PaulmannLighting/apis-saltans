@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use le_stream::ToLeStream;
 use macaddr::MacAddr8;
 use zdp::{BindReq, Destination, Frame, Service, UnbindReq};
@@ -39,17 +37,9 @@ where
             .unicast(
                 self.pan_id,
                 self.endpoint,
-                Frame::new(self.next_transaction_seq().await?, command).into(),
+                Frame::new(self.proxy.next_transaction_seq().await?, command).into(),
             )
             .await
-    }
-}
-
-impl<T> Deref for ZdpProxy<'_, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.proxy
     }
 }
 

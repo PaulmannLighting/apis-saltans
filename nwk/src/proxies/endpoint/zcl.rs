@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use le_stream::ToLeStream;
 use zcl::{Command, Frame};
 use zigbee::{ClusterId, Endpoint};
@@ -38,16 +36,8 @@ where
             .unicast(
                 self.pan_id,
                 self.endpoint,
-                Frame::new(self.next_transaction_seq().await?, command).into(),
+                Frame::new(self.proxy.next_transaction_seq().await?, command).into(),
             )
             .await
-    }
-}
-
-impl<T> Deref for ZclProxy<'_, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.proxy
     }
 }
