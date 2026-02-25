@@ -1,4 +1,4 @@
-//! Traits and types for working with zcl.
+//! Traits and types for working with the ZCL.
 
 pub use self::attributes::Attributes;
 pub use self::binding::Binding;
