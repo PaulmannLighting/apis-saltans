@@ -6,6 +6,7 @@ use zigbee::node::Node;
 #[derive(Debug, Default, Clone)]
 pub struct NetworkState {
     nodes: BTreeMap<u16, Node>,
+    pan_ids: BTreeMap<MacAddr8, u16>,
 }
 
 impl NetworkState {
@@ -14,11 +15,13 @@ impl NetworkState {
     pub const fn new() -> Self {
         Self {
             nodes: BTreeMap::new(),
+            pan_ids: BTreeMap::new(),
         }
     }
 
     /// Adds a node to the network state.
     pub fn add_node(&mut self, node: Node) {
+        self.pan_ids.insert(node.ieee_address(), node.pan_id());
         self.nodes.insert(node.pan_id(), node);
     }
 
@@ -29,7 +32,9 @@ impl NetworkState {
 
     /// Removes a node by its PAN ID.
     pub fn remove_node(&mut self, pan_id: u16) {
-        self.nodes.remove(&pan_id);
+        if let Some(node) = self.nodes.remove(&pan_id) {
+            self.pan_ids.remove(&node.ieee_address());
+        }
     }
 
     /// Returns an iterator over all nodes in the network state.
@@ -39,12 +44,6 @@ impl NetworkState {
 
     /// Retrieves the PAN ID for a given IEEE address.
     pub fn get_pan_id(&self, ieee_address: MacAddr8) -> Option<u16> {
-        self.nodes.iter().find_map(|(pan_id, node)| {
-            if node.ieee_address() == ieee_address {
-                Some(*pan_id)
-            } else {
-                None
-            }
-        })
+        self.pan_ids.get(&ieee_address).copied()
     }
 }
