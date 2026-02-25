@@ -30,11 +30,11 @@ impl TryFrom<SensorBitmap> for SensorType {
         } else if value.contains(SensorBitmap::PIR | SensorBitmap::PHYSICAL_CONTACT) {
             Ok(Self::Pir)
         } else if value.contains(SensorBitmap::PIR | SensorBitmap::ULTRASONIC) {
-            Ok(SensorType::PirAndUltrasonic)
+            Ok(Self::PirAndUltrasonic)
         } else if value.contains(SensorBitmap::ULTRASONIC) {
-            Ok(SensorType::Ultrasonic)
+            Ok(Self::Ultrasonic)
         } else if value.contains(SensorBitmap::PIR) {
-            Ok(SensorType::Pir)
+            Ok(Self::Pir)
         } else {
             Err(())
         }
