@@ -23,16 +23,19 @@ impl Entry {
     }
 
     /// Returns the alarm code.
+    #[must_use]
     pub const fn code(&self) -> Uint8 {
         self.code
     }
 
     /// Returns the cluster ID associated with the alarm.
+    #[must_use]
     pub const fn cluster_id(&self) -> u16 {
         self.cluster_id
     }
 
     /// Returns the timestamp of when the alarm was triggered.
+    #[must_use]
     pub const fn timestamp(&self) -> Uint32 {
         // TODO: Is this really a `Uint32` or actually a `UtcTime`?
         self.timestamp
