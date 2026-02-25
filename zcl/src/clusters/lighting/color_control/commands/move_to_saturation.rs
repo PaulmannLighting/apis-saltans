@@ -31,7 +31,7 @@ impl MoveToSaturation {
     /// # Errors
     ///
     /// Returns an [`TryFromIntError`] if the resulting deci-seconds value cannot fit in a `u16`.
-    fn try_new(
+    pub fn try_new(
         saturation: u8,
         transition_time: Duration,
         options: Options,
