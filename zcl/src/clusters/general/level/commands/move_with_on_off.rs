@@ -44,7 +44,7 @@ impl MoveWithOnOff {
 
     /// Get the options.
     #[must_use]
-    pub fn options(self) -> Options {
+    pub const fn options(self) -> Options {
         self.options
     }
 }
