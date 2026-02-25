@@ -33,7 +33,7 @@ where
             .unicast(
                 self.pan_id,
                 endpoint,
-                Frame::new(self.next_transaction_seq().await, command).into(),
+                Frame::new(self.next_transaction_seq().await?, command).into(),
             )
             .await
     }

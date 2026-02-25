@@ -38,7 +38,7 @@ where
             .unicast(
                 self.pan_id,
                 self.endpoint,
-                Frame::new(self.next_transaction_seq().await, command).into(),
+                Frame::new(self.next_transaction_seq().await?, command).into(),
             )
             .await
     }

@@ -15,7 +15,11 @@ use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 /// This trait is implemented for `Sender<Message>`, allowing you to communicate with a Zigbee NCP.
 pub trait Proxy {
     /// Get the next transaction sequence number.
-    fn next_transaction_seq(&self) -> impl Future<Output = u8> + Send;
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn next_transaction_seq(&self) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Get the PAN ID of the network manager.
     ///
@@ -113,12 +117,10 @@ pub trait Proxy {
 }
 
 impl Proxy for Sender<Message> {
-    async fn next_transaction_seq(&self) -> u8 {
+    async fn next_transaction_seq(&self) -> Result<u8, Error> {
         let (response, rx) = oneshot::channel();
-        self.send(Message::GetTransactionSeq { response })
-            .await
-            .unwrap();
-        rx.await.unwrap()
+        self.send(Message::GetTransactionSeq { response }).await?;
+        Ok(rx.await?)
     }
 
     async fn get_pan_id(&self) -> Result<u16, Error> {

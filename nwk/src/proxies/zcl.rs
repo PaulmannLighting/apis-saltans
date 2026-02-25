@@ -30,7 +30,7 @@ where
             .unicast(
                 pan_id,
                 endpoint,
-                zcl::Frame::new(self.proxy.next_transaction_seq().await, command).into(),
+                zcl::Frame::new(self.proxy.next_transaction_seq().await?, command).into(),
             )
             .await
     }
