@@ -6,7 +6,6 @@ use zigbee::node::Node;
 #[derive(Debug, Default, Clone)]
 pub struct NetworkState {
     nodes: BTreeMap<u16, Node>,
-    ieee_addresses_to_pan_id: BTreeMap<MacAddr8, u16>,
 }
 
 impl NetworkState {
@@ -15,7 +14,6 @@ impl NetworkState {
     pub const fn new() -> Self {
         Self {
             nodes: BTreeMap::new(),
-            ieee_addresses_to_pan_id: BTreeMap::new(),
         }
     }
 
@@ -41,6 +39,12 @@ impl NetworkState {
 
     /// Retrieves the PAN ID for a given IEEE address.
     pub fn get_pan_id(&self, ieee_address: MacAddr8) -> Option<u16> {
-        self.ieee_addresses_to_pan_id.get(&ieee_address).copied()
+        self.nodes.iter().find_map(|(pan_id, node)| {
+            if node.ieee_address() == ieee_address {
+                Some(*pan_id)
+            } else {
+                None
+            }
+        })
     }
 }
