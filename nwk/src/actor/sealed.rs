@@ -9,12 +9,12 @@ use crate::message::Message;
 /// for your  NCP type, and the `Actor` trait will be automatically implemented for it.
 pub trait Actor {
     /// Run the actor, processing incoming messages.
-    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()>;
+    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send;
 }
 
 impl<T> Actor for T
 where
-    T: super::Actor,
+    T: super::Actor + Send,
 {
     #[expect(clippy::too_many_lines)]
     async fn run(mut self, mut rx: Receiver<Message>) {

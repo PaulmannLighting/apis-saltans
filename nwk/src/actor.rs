@@ -20,7 +20,7 @@ pub trait Actor {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_pan_id(&mut self) -> impl Future<Output = Result<u16, Error>>;
+    fn get_pan_id(&mut self) -> impl Future<Output = Result<u16, Error>> + Send;
 
     /// Scan for available networks.
     ///
@@ -36,7 +36,7 @@ pub trait Actor {
         &mut self,
         channel_mask: u32,
         duration: u8,
-    ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>>;
+    ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>> + Send;
 
     /// Scan channels for activity.
     ///
@@ -52,35 +52,41 @@ pub trait Actor {
         &mut self,
         channel_mask: u32,
         duration: u8,
-    ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>>;
+    ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>> + Send;
 
     /// Allow devices to join the network for the specified duration.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn allow_joins(&mut self, duration: Duration) -> impl Future<Output = Result<(), Error>>;
+    fn allow_joins(&mut self, duration: Duration)
+    -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Get the list of neighbor devices.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_neighbors(&mut self) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>>;
+    fn get_neighbors(
+        &mut self,
+    ) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>> + Send;
 
     /// Send a route request.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn route_request(&mut self, radius: u8) -> impl Future<Output = Result<(), Error>>;
+    fn route_request(&mut self, radius: u8) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Get the IEEE address of the device with the specified PAN ID.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_ieee_address(&mut self, pan_id: u16) -> impl Future<Output = Result<MacAddr8, Error>>;
+    fn get_ieee_address(
+        &mut self,
+        pan_id: u16,
+    ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
 
     /// Send a unicast message.
     ///
@@ -92,7 +98,7 @@ pub trait Actor {
         pan_id: u16,
         endpoint: Endpoint,
         frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>>;
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Send a multicast message.
     ///
@@ -105,7 +111,7 @@ pub trait Actor {
         hops: u8,
         radius: u8,
         frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>>;
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Send a broadcast message.
     ///
@@ -117,10 +123,10 @@ pub trait Actor {
         pan_id: u16,
         radius: u8,
         frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>>;
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Run the network manager actor.
-    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()>
+    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send
     where
         Self: Sized + sealed::Actor,
     {
