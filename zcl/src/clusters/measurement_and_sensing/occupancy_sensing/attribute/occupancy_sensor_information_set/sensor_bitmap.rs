@@ -11,8 +11,11 @@ pub struct SensorBitmap(u8);
 
 bitflags! {
     impl SensorBitmap: u8 {
+        /// PIR sensor.
         const PIR = 0b0000_0001;
+        /// Ultrasonic sensor.
         const ULTRASONIC = 0b0000_0010;
+        /// Physical contact sensor.
         const PHYSICAL_CONTACT = 0b0000_0100;
     }
 }
