@@ -64,6 +64,10 @@ impl ColorLoopSet {
     }
 
     /// Return the direction of the color loop.
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw `u8` value if the direction is invalid.
     pub fn direction(self) -> Result<Direction, u8> {
         Direction::from_u8(self.direction).ok_or(self.direction)
     }

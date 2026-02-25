@@ -1,3 +1,5 @@
+//! Attributes of the illuminance measurement cluster.
+
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::Uint16;
 

@@ -1,3 +1,5 @@
+//! Readable attributes.
+
 use repr_discriminant::ReprDiscriminant;
 use zigbee::Parsable;
 

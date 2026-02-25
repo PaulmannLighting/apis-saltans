@@ -1,3 +1,5 @@
+//! Writable attributes.
+
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::Uint16;
 

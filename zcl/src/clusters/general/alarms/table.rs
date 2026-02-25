@@ -42,6 +42,10 @@ impl Entry {
     }
 
     /// Returns the Alarm code.
+    ///
+    /// # Errors
+    ///
+    /// Returns a tuple of a [`Uint8`] and a `u16` if the code and cluster ID do not correspond to a known alarm.
     pub fn alarm(&self) -> Result<(), (Uint8, u16)> {
         todo!(
             "Return a variant of a generic Alarm enum based on the code and cluster ID, \

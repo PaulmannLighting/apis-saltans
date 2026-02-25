@@ -1,7 +1,10 @@
+//! Configuration attributes of ultrasonic sensors.
+
 use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
+/// Available configuration attributes of ultrasonic sensors.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStreamTagged)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
