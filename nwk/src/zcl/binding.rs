@@ -1,7 +1,7 @@
 //! Binding management.
 
 use macaddr::MacAddr8;
-use zdp::{BindReq, Destination};
+use zdp::Destination;
 use zigbee::Endpoint;
 
 use crate::proxies::EndpointProxy;
@@ -48,12 +48,7 @@ where
         destination: Destination,
     ) -> Result<u8, Error> {
         self.zdp()
-            .unicast(BindReq::new(
-                src_address,
-                src_endpoint.into(),
-                cluster_id,
-                destination,
-            ))
+            .bind(src_address, src_endpoint, cluster_id, destination)
             .await
     }
 
@@ -65,12 +60,7 @@ where
         destination: Destination,
     ) -> Result<u8, Error> {
         self.zdp()
-            .unicast(zdp::UnbindReq::new(
-                src_address,
-                src_endpoint.into(),
-                cluster_id,
-                destination,
-            ))
+            .unbind(src_address, src_endpoint, cluster_id, destination)
             .await
     }
 }

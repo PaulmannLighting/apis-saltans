@@ -1,10 +1,11 @@
 use std::ops::Deref;
 
 use le_stream::ToLeStream;
-use zdp::{Frame, Service};
+use macaddr::MacAddr8;
+use zdp::{BindReq, Destination, Frame, Service, UnbindReq};
 use zigbee::{Cluster, Endpoint};
 
-use crate::{Error, Proxy};
+use crate::{Binding, Error, Proxy};
 
 /// A proxy structure to interact with ZDP commands on a specific endpoint.
 #[derive(Clone, Debug)]
@@ -49,5 +50,42 @@ impl<T> Deref for ZdpProxy<'_, T> {
 
     fn deref(&self) -> &Self::Target {
         self.proxy
+    }
+}
+
+impl<T> Binding for ZdpProxy<'_, T>
+where
+    T: Proxy + Sync,
+{
+    async fn bind(
+        &self,
+        src_address: MacAddr8,
+        src_endpoint: Endpoint,
+        cluster_id: u16,
+        destination: Destination,
+    ) -> Result<u8, Error> {
+        self.unicast(BindReq::new(
+            src_address,
+            src_endpoint.into(),
+            cluster_id,
+            destination,
+        ))
+        .await
+    }
+
+    async fn unbind(
+        &self,
+        src_address: MacAddr8,
+        src_endpoint: Endpoint,
+        cluster_id: u16,
+        destination: Destination,
+    ) -> Result<u8, Error> {
+        self.unicast(UnbindReq::new(
+            src_address,
+            src_endpoint.into(),
+            cluster_id,
+            destination,
+        ))
+        .await
     }
 }
