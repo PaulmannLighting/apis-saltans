@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
+/// Occupancy status as reported by the sensor.
 #[derive(
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
 )]
@@ -8,6 +9,7 @@ pub struct Occupancy(u8);
 
 bitflags! {
     impl Occupancy: u8 {
+        /// Flag, whether the sensor detected an occupation.
         const OCCUPIED = 0b0000_0001;
     }
 }

@@ -2,6 +2,7 @@ pub use self::manufacturer_specific::ManufacturerSpecific;
 
 mod manufacturer_specific;
 
+/// Type of light sensor.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum LightSensorType {
     /// The illuminance measurement is being performed by a photodiode.

@@ -11,11 +11,18 @@ use crate::general::time::attribute::TimeStatus;
 #[repr(u16)]
 #[derive(ReprDiscriminant, FromLeStreamTagged)]
 pub enum Attribute {
+    /// Current time.
     Time(UtcTime) = 0x0000,
+    /// Time status.
     TimeStatus(TimeStatus) = 0x0001,
+    /// Time zone.
     TimeZone(i32) = 0x0002,
+    /// DST start time.
     DstStart(UtcTime) = 0x0003,
+    /// DST end time.
     DstEnd(UtcTime) = 0x0004,
+    /// DST time shift.
     DstShift(i32) = 0x0005,
+    /// Deadline until which the `Time` attribute can be trusted.
     ValidUntilTime(UtcTime) = 0x0009,
 }
