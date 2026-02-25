@@ -1,11 +1,12 @@
 use std::ops::Deref;
 
+use ::zdp::Destination;
 use macaddr::MacAddr8;
 use zigbee::Endpoint;
 
 use self::zcl::ZclProxy;
 use self::zdp::ZdpProxy;
-use crate::{Error, Frame, Proxy};
+use crate::{Binding, Error, Frame, Proxy};
 
 mod zcl;
 mod zdp;
@@ -79,5 +80,34 @@ impl<T> Deref for EndpointProxy<'_, T> {
 
     fn deref(&self) -> &Self::Target {
         self.proxy
+    }
+}
+
+impl<T> Binding for EndpointProxy<'_, T>
+where
+    T: Proxy + Sync,
+{
+    async fn bind(
+        &self,
+        src_address: MacAddr8,
+        src_endpoint: Endpoint,
+        cluster_id: u16,
+        destination: Destination,
+    ) -> Result<u8, Error> {
+        self.zdp()
+            .bind(src_address, src_endpoint, cluster_id, destination)
+            .await
+    }
+
+    async fn unbind(
+        &self,
+        src_address: MacAddr8,
+        src_endpoint: Endpoint,
+        cluster_id: u16,
+        destination: Destination,
+    ) -> Result<u8, Error> {
+        self.zdp()
+            .unbind(src_address, src_endpoint, cluster_id, destination)
+            .await
     }
 }
