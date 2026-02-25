@@ -39,12 +39,9 @@ impl NetworkState {
 
     /// Retrieves the PAN ID for a given IEEE address.
     pub fn get_pan_id(&self, ieee_address: MacAddr8) -> Option<u16> {
-        self.nodes.iter().find_map(|(&pan_id, node)| {
-            if node.ieee_address() == ieee_address {
-                Some(pan_id)
-            } else {
-                None
-            }
-        })
+        self.nodes
+            .iter()
+            .find(|(_, node)| node.ieee_address() == ieee_address)
+            .map(|(&pan_id, _)| pan_id)
     }
 }
