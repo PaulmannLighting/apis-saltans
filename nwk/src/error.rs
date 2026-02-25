@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
+use tokio::sync::oneshot::error::RecvError;
+
 /// A generic error type for the NWK layer.
 #[derive(Debug)]
 pub enum Error {
@@ -35,6 +37,12 @@ impl std::error::Error for Error {
             Self::Zigbee(error) => Some(error),
             Self::ActorSend | Self::ActorReceive | Self::NotImplemented => None,
         }
+    }
+}
+
+impl From<RecvError> for Error {
+    fn from(_: RecvError) -> Self {
+        Self::ActorReceive
     }
 }
 
