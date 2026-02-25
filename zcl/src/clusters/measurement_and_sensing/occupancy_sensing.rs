@@ -2,4 +2,4 @@
 
 pub use attribute::occupancy_sensor_information_set;
 
-mod attribute;
+pub mod attribute;
