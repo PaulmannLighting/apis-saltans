@@ -1,6 +1,6 @@
 //! Reporting configuration command for the Global cluster.
 
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Direction;
@@ -15,13 +15,13 @@ mod attribute_status;
 /// Command to configure reporting for attributes.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Command {
-    attributes: Vec<AttributeReportingConfiguration>,
+    attributes: Box<[AttributeReportingConfiguration]>,
 }
 
 impl Command {
     /// Creates a new `Command`.
     #[must_use]
-    pub const fn new(attributes: Vec<AttributeReportingConfiguration>) -> Self {
+    pub const fn new(attributes: Box<[AttributeReportingConfiguration]>) -> Self {
         Self { attributes }
     }
 
@@ -40,13 +40,13 @@ impl Global for Command {
 /// Status of an attribute reporting configuration.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Response {
-    status: Vec<AttributeStatus>,
+    status: Box<[AttributeStatus]>,
 }
 
 impl Response {
     /// Creates a new `Response`.
     #[must_use]
-    pub const fn new(status: Vec<AttributeStatus>) -> Self {
+    pub const fn new(status: Box<[AttributeStatus]>) -> Self {
         Self { status }
     }
 

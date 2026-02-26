@@ -1,6 +1,6 @@
 //! Report Attributes Command.
 
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -12,13 +12,13 @@ mod attribute_report;
 /// Report Attributes Command.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Command {
-    reports: Vec<AttributeReport>,
+    reports: Box<[AttributeReport]>,
 }
 
 impl Command {
     /// Creates a new `Report Attributes` command with the given attribute reports.
     #[must_use]
-    pub const fn new(reports: Vec<AttributeReport>) -> Self {
+    pub const fn new(reports: Box<[AttributeReport]>) -> Self {
         Self { reports }
     }
 

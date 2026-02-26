@@ -2,7 +2,7 @@
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
-use alloc::vec::Vec;
+use alloc::collections::btree_map::IntoIter;
 use core::iter::Empty;
 use core::ops::Deref;
 
@@ -61,7 +61,7 @@ impl Deref for Response {
 
 impl IntoIterator for Response {
     type Item = (u16, Result<Type, u8>);
-    type IntoIter = alloc::collections::btree_map::IntoIter<u16, Result<Type, u8>>;
+    type IntoIter = IntoIter<u16, Result<Type, u8>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.attribute_values.into_iter()
@@ -73,7 +73,7 @@ impl FromLeStream for Response {
     where
         T: Iterator<Item = u8>,
     {
-        Vec::<ReadAttributesStatus>::from_le_stream(bytes).map(|items| Self {
+        Box::<[ReadAttributesStatus]>::from_le_stream(bytes).map(|items| Self {
             attribute_values: items
                 .into_iter()
                 .map(ReadAttributesStatus::into_parts)
