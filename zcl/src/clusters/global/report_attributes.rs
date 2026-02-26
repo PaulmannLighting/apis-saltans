@@ -2,9 +2,9 @@
 
 use alloc::vec::Vec;
 
-pub use attribute_report::AttributeReport;
 use le_stream::{FromLeStream, ToLeStream};
 
+pub use self::attribute_report::AttributeReport;
 use crate::Global;
 
 mod attribute_report;
