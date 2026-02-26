@@ -1,4 +1,4 @@
-//! Macros for deriving parsing functionality for aps-like data structures.
+//! Macros for deriving parsing functionality for frame-like data structures.
 
 use proc_macro::TokenStream;
 
@@ -8,7 +8,7 @@ use self::parse_zcl_frame::parse_zcl_frame;
 mod parse_zcl_cluster;
 mod parse_zcl_frame;
 
-/// Implement a crate-internal aps parser for an enum representing ZCL zcl.
+/// Implement a crate-internal frame parser for an enum representing ZCL frame.
 ///
 /// # Panics
 ///
@@ -18,7 +18,7 @@ pub fn derive_parse_zcl_cluster(input: TokenStream) -> TokenStream {
     parse_zcl_cluster(input)
 }
 
-/// Implement a crate-internal aps parser for an enum representing a ZCL cluster's commands.
+/// Implement a crate-internal frame parser for an enum representing a ZCL cluster's commands.
 ///
 /// # Panics
 ///

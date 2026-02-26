@@ -9,7 +9,7 @@ use crate::Destination;
 mod delivery_mode;
 mod frame_type;
 
-/// APS aps control field.
+/// APS frame control field.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 #[repr(transparent)]
 pub struct Control(u8);
@@ -20,7 +20,7 @@ bitflags! {
         const FRAME_TYPE = 0b1100_0000;
         /// Delivery mode mask.
         const DELIVERY_MODE = 0b0011_0000;
-        /// Indicate if the aps is a command aps.
+        /// Indicate if the frame is a command frame.
         const ACK_FORMAT = 0b0000_1000;
         /// Security provider flag.
         const SECURITY = 0b0000_0100;
@@ -32,7 +32,7 @@ bitflags! {
 }
 
 impl Control {
-    /// Return the aps type.
+    /// Return the frame type.
     #[must_use]
     pub fn frame_type(self) -> FrameType {
         FrameType::from_u8(
@@ -41,7 +41,7 @@ impl Control {
         .unwrap_or_else(|| unreachable!("Frame type covers all possible values."))
     }
 
-    /// Set the aps type.
+    /// Set the frame type.
     pub const fn set_frame_type(&mut self, frame_type: FrameType) {
         self.0 = (self.bits() & !Self::FRAME_TYPE.bits())
             | ((frame_type as u8) << Self::FRAME_TYPE.bits().trailing_zeros());

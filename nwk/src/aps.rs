@@ -5,11 +5,11 @@ pub use self::metadata::Metadata;
 
 mod metadata;
 
-/// A non-sequenced, non-generic view on a ZCL aps for transmission via channels.
+/// A non-sequenced, non-generic view on a ZCL frame for transmission via channels.
 ///
 /// # Invariants
 ///
-/// The underlying aps's sequence number must be overridden and is assumed to be undefined.
+/// The underlying frame's sequence number must be overridden and is assumed to be undefined.
 #[derive(Debug)]
 pub struct Frame {
     aps_metadata: Metadata,
@@ -31,7 +31,7 @@ impl Frame {
         }
     }
 
-    /// Return the cluster ID and payload of the aps.
+    /// Return the cluster ID and payload of the frame.
     #[must_use]
     pub fn into_parts(self) -> (Metadata, Box<[u8]>) {
         (self.aps_metadata, self.payload)

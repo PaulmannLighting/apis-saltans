@@ -1,4 +1,4 @@
-//! ZCL aps representation.
+//! ZCL frame representation.
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::ClusterId;

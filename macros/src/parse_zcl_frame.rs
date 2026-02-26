@@ -43,7 +43,7 @@ pub fn parse_zcl_frame(input: TokenStream) -> TokenStream {
 
     quote! {
         impl #enum_name {
-            /// Parses a ZCL aps from a little-endian byte stream given the command ID and direction.
+            /// Parses a ZCL frame from a little-endian byte stream given the command ID and direction.
             ///
             /// # Errors
             ///

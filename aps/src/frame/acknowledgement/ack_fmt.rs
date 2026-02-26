@@ -1,6 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 
-/// Additional ack aps format information.
+/// Additional ack frame format information.
 ///
 /// This structure is present in acknowledgment frames when the `ack format` bit
 /// in the control field is *not* set.

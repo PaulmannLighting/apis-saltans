@@ -4,7 +4,7 @@ use zigbee::Direction;
 
 use super::scope::Scope;
 
-/// ZCL aps control flags.
+/// ZCL frame control flags.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 #[repr(transparent)]
 pub struct Control(u8);

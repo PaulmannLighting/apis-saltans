@@ -7,7 +7,7 @@ pub use self::scope::Scope;
 mod control;
 mod scope;
 
-/// A ZCL aps header.
+/// A ZCL frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Header {
     control: Control,
