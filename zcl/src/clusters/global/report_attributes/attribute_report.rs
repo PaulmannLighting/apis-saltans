@@ -37,4 +37,10 @@ impl AttributeReport {
     pub fn into_data(self) -> Type {
         self.data
     }
+
+    /// Returns the attribute ID.
+    #[must_use]
+    pub fn into_parts(self) -> (u16, Type) {
+        (self.attribute_id, self.data)
+    }
 }
