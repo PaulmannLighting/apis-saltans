@@ -85,7 +85,12 @@ where
     T: FromLeStream,
 {
     /// Creates an APS Data frame from a little-endian byte stream, given the control field.
-    pub fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the control field indicates a valid Data frame.
+    #[expect(unsafe_code)]
+    pub unsafe fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
     where
         U: Iterator<Item = u8>,
     {
