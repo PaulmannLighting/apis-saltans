@@ -11,6 +11,17 @@ pub struct ReadAttributesStatus {
 }
 
 impl ReadAttributesStatus {
+    /// Create a new `ReadAttributesStatus`.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the attribute and data type match.
+    #[must_use]
+    #[expect(unsafe_code)]
+    pub const unsafe fn new(attribute_id: u16, data: Result<Type, u8>) -> Self {
+        Self { attribute_id, data }
+    }
+
     /// Returns the attribute ID.
     pub fn into_parts(self) -> (u16, Result<Type, u8>) {
         (self.attribute_id, self.data)
