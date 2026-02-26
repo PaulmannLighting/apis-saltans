@@ -22,7 +22,7 @@ impl Header {
     pub fn new(
         typ: Scope,
         direction: Direction,
-        disable_client_response: bool,
+        disable_default_response: bool,
         manufacturer_code: Option<u16>,
         seq: u8,
         command_id: u8,
@@ -32,7 +32,7 @@ impl Header {
                 typ,
                 manufacturer_code.is_some(),
                 direction,
-                disable_client_response,
+                disable_default_response,
             ),
             manufacturer_code,
             seq,

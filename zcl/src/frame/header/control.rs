@@ -29,7 +29,7 @@ impl Control {
         typ: Scope,
         manufacturer_specific: bool,
         direction: Direction,
-        disable_client_response: bool,
+        disable_default_response: bool,
     ) -> Self {
         let mut flags = Self(typ as u8);
 
@@ -46,7 +46,7 @@ impl Control {
             }
         }
 
-        if disable_client_response {
+        if disable_default_response {
             flags.insert(Self::DISABLE_DEFAULT_RESPONSE);
         }
 

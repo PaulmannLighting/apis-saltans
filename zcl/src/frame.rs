@@ -77,7 +77,7 @@ where
                 Header::new(
                     <T as Command>::SCOPE,
                     <T as Command>::DIRECTION,
-                    <T as Command>::DISABLE_CLIENT_RESPONSE,
+                    <T as Command>::DISABLE_DEFAULT_RESPONSE,
                     <T as Command>::MANUFACTURER_CODE,
                     seq,
                     <T as Command>::ID,

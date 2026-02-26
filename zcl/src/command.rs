@@ -23,8 +23,8 @@ pub trait Command {
     /// Default is `Scope::ClusterSpecific`.
     const SCOPE: Scope = Scope::ClusterSpecific;
 
-    /// Whether to disable the client response for this command.
-    const DISABLE_CLIENT_RESPONSE: bool = false;
+    /// Whether to disable the default response for this command.
+    const DISABLE_DEFAULT_RESPONSE: bool = false;
 
     /// The manufacturer code for this command, if any.
     const MANUFACTURER_CODE: Option<u16> = None;

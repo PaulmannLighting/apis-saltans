@@ -33,6 +33,6 @@ where
     const ID: u8 = T::ID;
     const DIRECTION: Direction = T::DIRECTION;
     const SCOPE: Scope = Scope::Global;
-    const DISABLE_CLIENT_RESPONSE: bool = T::DISABLE_CLIENT_RESPONSE;
+    const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_CLIENT_RESPONSE;
     const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
 }
