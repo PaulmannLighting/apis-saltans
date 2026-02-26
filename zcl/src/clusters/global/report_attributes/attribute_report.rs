@@ -31,4 +31,10 @@ impl AttributeReport {
     pub const fn data(&self) -> &Type {
         &self.data
     }
+
+    /// Return the data.
+    #[must_use]
+    pub fn into_data(self) -> Type {
+        self.data
+    }
 }
