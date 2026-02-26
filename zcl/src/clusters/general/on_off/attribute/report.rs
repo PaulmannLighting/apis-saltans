@@ -4,7 +4,6 @@ use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Bool, Type};
 
-use crate::ParseAttributeError;
 use crate::global::report_attributes::AttributeReport;
 
 /// Readable attributes for the On/Off cluster.
@@ -29,15 +28,18 @@ impl From<Attribute> for AttributeReport {
 }
 
 impl TryFrom<AttributeReport> for Attribute {
-    type Error = ParseAttributeError;
+    type Error = AttributeReport;
 
     fn try_from(attribute_report: AttributeReport) -> Result<Self, Self::Error> {
-        match attribute_report.attribute_id() {
-            0x0000 => match attribute_report.into_data() {
-                Type::Boolean(on_off) => Ok(Self::OnOff(on_off)),
-                other => Err(ParseAttributeError::InvalidType(other)),
-            },
-            other => Err(ParseAttributeError::InvalidId(other)),
+        match attribute_report.into_parts() {
+            (0x0000, Type::Boolean(on_off)) => Ok(Self::OnOff(on_off)),
+            (id, typ) => Err(
+                #[expect(unsafe_code)]
+                // SAFETY: We reconstruct the original `AttributeReport`.
+                unsafe {
+                    AttributeReport::new(id, typ)
+                },
+            ),
         }
     }
 }
