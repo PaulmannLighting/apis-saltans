@@ -9,7 +9,6 @@ pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Scope}
 pub use self::options::Options;
 pub use self::status::Status;
 
-mod attribute;
 mod clusters;
 mod command;
 mod frame;
