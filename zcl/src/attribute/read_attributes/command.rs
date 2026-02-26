@@ -18,7 +18,7 @@ impl<const CAPACITY: usize> Command<CAPACITY> {
     }
 
     /// Add the respective attribute and return `Self`.
-    pub fn with_attribute(mut self, attribute: u16) -> Result<Self, u16> {
+    pub fn with_attribute(&mut self, attribute: u16) -> Result<&mut Self, u16> {
         self.add_attribute(attribute).map(|()| self)
     }
 }
