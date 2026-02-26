@@ -45,4 +45,5 @@ impl Cluster for RemoveGroupResponse {
 impl Command for RemoveGroupResponse {
     const ID: u8 = 0x03;
     const DIRECTION: Direction = Direction::ServerToClient;
+    const DISABLE_DEFAULT_RESPONSE: bool = true;
 }

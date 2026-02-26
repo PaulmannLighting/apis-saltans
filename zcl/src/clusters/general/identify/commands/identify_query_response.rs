@@ -41,4 +41,5 @@ impl Cluster for IdentifyQueryResponse {
 impl Command for IdentifyQueryResponse {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ServerToClient;
+    const DISABLE_DEFAULT_RESPONSE: bool = true;
 }

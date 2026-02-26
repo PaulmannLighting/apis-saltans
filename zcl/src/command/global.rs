@@ -11,7 +11,7 @@ pub trait Global {
     const DIRECTION: Direction;
 
     /// Whether to disable the client response for this command.
-    const DISABLE_CLIENT_RESPONSE: bool = false;
+    const DISABLE_DEFAULT_RESPONSE: bool = false;
 
     /// The manufacturer code for this command, if any.
     const MANUFACTURER_CODE: Option<u16> = None;
@@ -33,6 +33,6 @@ where
     const ID: u8 = T::ID;
     const DIRECTION: Direction = T::DIRECTION;
     const SCOPE: Scope = Scope::Global;
-    const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_CLIENT_RESPONSE;
+    const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
     const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
 }

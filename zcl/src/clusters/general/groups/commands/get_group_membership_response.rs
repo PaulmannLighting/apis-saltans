@@ -70,6 +70,7 @@ impl Cluster for GetGroupMembershipResponse {
 impl Command for GetGroupMembershipResponse {
     const ID: u8 = 0x02;
     const DIRECTION: Direction = Direction::ServerToClient;
+    const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
 
 impl FromLeStream for GetGroupMembershipResponse {

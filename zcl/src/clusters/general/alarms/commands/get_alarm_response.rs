@@ -59,4 +59,5 @@ impl Cluster for GetAlarmResponse {
 impl Command for GetAlarmResponse {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ServerToClient;
+    const DISABLE_DEFAULT_RESPONSE: bool = true;
 }

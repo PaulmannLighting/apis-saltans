@@ -35,4 +35,5 @@ impl DefaultResponse {
 impl Global for DefaultResponse {
     const ID: u8 = 0x0b;
     const DIRECTION: Direction = Direction::ClientToServer;
+    const DISABLE_DEFAULT_RESPONSE: bool = true;
 }

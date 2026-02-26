@@ -53,4 +53,5 @@ impl Cluster for ViewGroupResponse {
 impl Command for ViewGroupResponse {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ServerToClient;
+    const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
