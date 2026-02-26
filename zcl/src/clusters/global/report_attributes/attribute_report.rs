@@ -10,8 +10,13 @@ pub struct AttributeReport {
 
 impl AttributeReport {
     /// Create a new `AttributeReport`.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the attribute and data type match.
     #[must_use]
-    pub const fn new(attribute_id: u16, data: Type) -> Self {
+    #[expect(unsafe_code)]
+    pub const unsafe fn new(attribute_id: u16, data: Type) -> Self {
         Self { attribute_id, data }
     }
 
