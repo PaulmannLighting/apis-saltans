@@ -15,6 +15,15 @@ impl<Src, Dst> Parsable<Src, Dst>
 where
     Dst: TryFrom<Src>,
 {
+    /// Create a new `Parsable` value from a source value.
+    #[must_use]
+    pub const fn new(src: Src) -> Self {
+        Self {
+            src,
+            dst: PhantomData,
+        }
+    }
+
     /// Parse the source value into the destination type.
     ///
     /// # Errors
