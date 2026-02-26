@@ -64,11 +64,13 @@ impl TryFrom<ReadAttributesStatus> for Attribute {
             (0x4003, Ok(Type::Map8(startup_on_off))) => {
                 Ok(Self::StartUpOnOff(Parsable::new(startup_on_off)))
             }
-            (id, typ) => {
+            (id, typ) => Err(
                 #[expect(unsafe_code)]
                 // SAFETY: We reconstruct the original `ReadAttributeStatus` value.
-                Err(unsafe { ReadAttributesStatus::new(id, typ) })
-            }
+                unsafe {
+                    ReadAttributesStatus::new(id, typ)
+                },
+            ),
         }
     }
 }
