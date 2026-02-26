@@ -5,12 +5,14 @@ extern crate alloc;
 
 pub use self::clusters::{Cluster, general, global, lighting, measurement_and_sensing};
 pub use self::command::{ClusterDirected, Command, CommandId, Global};
+pub use self::error::ParseAttributeError;
 pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Scope};
 pub use self::options::Options;
 pub use self::status::Status;
 
 mod clusters;
 mod command;
+mod error;
 mod frame;
 mod options;
 mod status;
