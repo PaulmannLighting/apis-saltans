@@ -10,7 +10,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Direction;
 use zigbee::types::Type;
 
-use self::read_attributes_status::ReadAttributesStatus;
+pub use self::read_attributes_status::ReadAttributesStatus;
 use crate::Global;
 
 mod read_attributes_status;
