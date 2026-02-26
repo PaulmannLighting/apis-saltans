@@ -23,6 +23,7 @@ impl ReadAttributesStatus {
     }
 
     /// Returns the attribute ID.
+    #[must_use]
     pub fn into_parts(self) -> (u16, Result<Type, u8>) {
         (self.attribute_id, self.data)
     }
