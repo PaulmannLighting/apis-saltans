@@ -1,4 +1,3 @@
-use repr_discriminant::ReprDiscriminant;
 use zcl::global::read_attributes::Command;
 use zcl::{Global, ReadableAttribute};
 
@@ -31,7 +30,8 @@ pub trait Attributes {
             T::ID,
             attributes
                 .iter()
-                .map(ReprDiscriminant::repr_discriminant)
+                .copied()
+                .map(Into::into)
                 .collect::<Box<[u16]>>(),
         )
     }
