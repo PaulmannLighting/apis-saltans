@@ -8,7 +8,7 @@ use zigbee::types::{Uint8, Uint32};
 pub struct Entry {
     code: Uint8,
     cluster_id: u16,
-    timestamp: Uint32,
+    timestamp: Uint32, // TODO: Is this really a `Uint32` or actually a `UtcTime`?
 }
 
 impl Entry {
@@ -37,7 +37,6 @@ impl Entry {
     /// Returns the timestamp of when the alarm was triggered.
     #[must_use]
     pub const fn timestamp(&self) -> Uint32 {
-        // TODO: Is this really a `Uint32` or actually a `UtcTime`?
         self.timestamp
     }
 
