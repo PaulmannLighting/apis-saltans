@@ -2,8 +2,8 @@
 
 use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
-use zigbee::Parsable;
 use zigbee::types::{OctStr, String, Uint8};
+use zigbee::{Cluster, Parsable};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;
@@ -14,6 +14,8 @@ use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
 use super::write;
+use crate::ReadableAttribute;
+use crate::general::basic::CLUSTER_ID;
 
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -76,6 +78,63 @@ impl From<write::Attribute> for Attribute {
             write::Attribute::DisableLocalConfig(value) => Self::DisableLocalConfig(value),
         }
     }
+}
+
+/// Readable attributes in the Basic cluster.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[repr(u16)]
+#[derive(ReprDiscriminant, FromLeStreamTagged)]
+pub enum AttributeId {
+    /// The ZCL version.
+    ZclVersion = 0x0000,
+    /// The application version.
+    ApplicationVersion = 0x0001,
+    /// The stack version.
+    StackVersion = 0x0002,
+    /// The hardware version.
+    HwVersion = 0x0003,
+    /// The manufacturer name.
+    ManufacturerName = 0x0004,
+    /// The model identifier.
+    ModelIdentifier = 0x0005,
+    /// The date code.
+    DateCode = 0x0006,
+    /// The power source.
+    PowerSource = 0x0007,
+    /// The generic device class.
+    GenericDeviceClass = 0x0008,
+    /// The generic device type.
+    GenericDeviceType = 0x0009,
+    /// The product code.
+    ProductCode = 0x000a,
+    /// The product URL.
+    ProductUrl = 0x000b,
+    /// The manufacturer version details.
+    ManufacturerVersionDetails = 0x000c,
+    /// The serial number.
+    SerialNumber = 0x000d,
+    /// The product label.
+    ProductLabel = 0x000e,
+    /// The generic device class.
+    LocationDescription = 0x0010,
+    /// The physical environment.
+    PhysicalEnvironment = 0x0011,
+    /// The device enabled state.
+    DeviceEnabled = 0x0012,
+    /// The alarm mask.
+    AlarmMask = 0x0013,
+    /// The disable local configuration attribute.
+    DisableLocalConfig = 0x0014,
+    /// The cluster revision.
+    SwBuildId = 0x4000,
+}
+
+impl Cluster for AttributeId {
+    const ID: u16 = CLUSTER_ID;
+}
+
+impl ReadableAttribute for AttributeId {
+    type ReadAttribute = Attribute;
 }
 
 #[cfg(test)]
