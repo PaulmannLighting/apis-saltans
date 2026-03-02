@@ -11,7 +11,7 @@ pub trait Attributes {
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn read_attributes(
+    fn read_attributes_raw(
         &self,
         cluster_id: u16,
         attribute_ids: Box<[u16]>,
@@ -22,7 +22,7 @@ impl<T> Attributes for EndpointProxy<'_, T>
 where
     T: Proxy + Sync,
 {
-    async fn read_attributes(
+    async fn read_attributes_raw(
         &self,
         cluster_id: u16,
         attribute_ids: Box<[u16]>,
