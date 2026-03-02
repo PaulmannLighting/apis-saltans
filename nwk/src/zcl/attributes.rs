@@ -12,7 +12,7 @@ pub trait Attributes {
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn read_attributes_raw(
+    fn read_raw(
         &self,
         cluster_id: u16,
         attribute_ids: Box<[u16]>,
@@ -27,7 +27,7 @@ pub trait Attributes {
     where
         T: ReadableAttribute,
     {
-        self.read_attributes_raw(
+        self.read_raw(
             T::ID,
             attributes
                 .iter()
@@ -41,11 +41,7 @@ impl<T> Attributes for EndpointProxy<'_, T>
 where
     T: Proxy + Sync,
 {
-    async fn read_attributes_raw(
-        &self,
-        cluster_id: u16,
-        attribute_ids: Box<[u16]>,
-    ) -> Result<u8, Error> {
+    async fn read_raw(&self, cluster_id: u16, attribute_ids: Box<[u16]>) -> Result<u8, Error> {
         self.zcl()
             .unicast(Command::new(attribute_ids).for_cluster(cluster_id))
             .await
