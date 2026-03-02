@@ -4,8 +4,7 @@ use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
-use super::Options;
-use crate::general::level::attribute::{report, write};
+use super::{Options, report, write};
 
 /// Readable attributes for the Level cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
