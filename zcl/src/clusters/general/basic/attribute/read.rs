@@ -81,9 +81,8 @@ impl From<write::Attribute> for Attribute {
 }
 
 /// Readable attributes in the Basic cluster.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
-#[derive(ReprDiscriminant, FromLeStreamTagged)]
 pub enum AttributeId {
     /// The ZCL version.
     ZclVersion = 0x0000,
@@ -127,6 +126,12 @@ pub enum AttributeId {
     DisableLocalConfig = 0x0014,
     /// The cluster revision.
     SwBuildId = 0x4000,
+}
+
+impl From<AttributeId> for u16 {
+    fn from(value: AttributeId) -> Self {
+        value as Self
+    }
 }
 
 impl Cluster for AttributeId {
