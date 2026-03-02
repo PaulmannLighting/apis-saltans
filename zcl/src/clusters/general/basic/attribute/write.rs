@@ -10,7 +10,7 @@ use super::alarm_mask::AlarmMask;
 use super::device_enabled::DeviceEnabled;
 use super::disable_local_config::DisableLocalConfig;
 use super::physical_environment::PhysicalEnvironment;
-use crate::clusters::general::basic::read;
+use super::read;
 
 mod iterator;
 

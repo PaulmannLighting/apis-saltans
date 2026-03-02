@@ -13,7 +13,7 @@ use super::generic_device_class::GenericDeviceClass;
 use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
-use crate::clusters::general::basic::write;
+use super::write;
 
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
