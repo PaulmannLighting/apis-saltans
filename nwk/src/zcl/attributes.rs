@@ -1,5 +1,6 @@
-use zcl::Global;
+use repr_discriminant::ReprDiscriminant;
 use zcl::global::read_attributes::Command;
+use zcl::{Global, ReadableAttribute};
 
 use crate::proxies::EndpointProxy;
 use crate::{Error, Proxy};
@@ -16,6 +17,24 @@ pub trait Attributes {
         cluster_id: u16,
         attribute_ids: Box<[u16]>,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
+
+    /// Read attributes of a specific cluster.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if execution of the command failed.
+    fn read<T>(&self, attributes: &[T]) -> impl Future<Output = Result<u8, Error>> + Send
+    where
+        T: ReadableAttribute,
+    {
+        self.read_attributes_raw(
+            T::ID,
+            attributes
+                .iter()
+                .map(ReprDiscriminant::repr_discriminant)
+                .collect::<Box<[u16]>>(),
+        )
+    }
 }
 
 impl<T> Attributes for EndpointProxy<'_, T>

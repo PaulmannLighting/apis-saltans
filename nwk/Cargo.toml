@@ -8,6 +8,7 @@ bunt = { git = "https://github.com/PaulmannLighting/bunt.git", version = "0.1.0"
 le-stream = "6.0"
 log = "0.4"
 macaddr = "1.0"
+repr-discriminant = { version = "3", features = ["derive"] }
 tokio = { version = "1.49", features = ["sync"] }
 zcl = { path = "../zcl" }
 zdp = { path = "../zdp" }
