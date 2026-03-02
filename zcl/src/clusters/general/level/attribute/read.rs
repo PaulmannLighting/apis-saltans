@@ -5,6 +5,7 @@ use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
 use super::Options;
+use crate::general::level::attribute::{report, write};
 
 /// Readable attributes for the Level cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -39,4 +40,27 @@ pub enum Attribute {
     Options(Options) = 0x000F,
     /// Level to move to when the device is turned on, if the previous level is not known.
     StartUpCurrentLevel(u8) = 0x4000,
+}
+
+impl From<report::Attribute> for Attribute {
+    fn from(report: report::Attribute) -> Self {
+        match report {
+            report::Attribute::CurrentLevel(level) => Self::CurrentLevel(level),
+            report::Attribute::CurrentFrequency(freq) => Self::CurrentFrequency(freq),
+        }
+    }
+}
+
+impl From<write::Attribute> for Attribute {
+    fn from(write: write::Attribute) -> Self {
+        match write {
+            write::Attribute::OnOffTransitionTime(time) => Self::OnOffTransitionTime(time),
+            write::Attribute::OnLevel(level) => Self::OnLevel(level),
+            write::Attribute::OnTransitionTime(time) => Self::OnTransitionTime(time),
+            write::Attribute::OffTransitionTime(time) => Self::OffTransitionTime(time),
+            write::Attribute::DefaultMoveRate(rate) => Self::DefaultMoveRate(rate),
+            write::Attribute::Options(options) => Self::Options(options),
+            write::Attribute::StartUpCurrentLevel(level) => Self::StartUpCurrentLevel(level),
+        }
+    }
 }
