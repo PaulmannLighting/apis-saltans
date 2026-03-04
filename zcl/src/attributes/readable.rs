@@ -9,6 +9,7 @@ use crate::measurement_and_sensing::{
 };
 
 /// Readable attributes across all clusters.
+// TODO: Consider renaming this to `Attribute` and providing a Box<[T]> of the respective attribute types.
 #[non_exhaustive]
 pub enum Attribute {
     Alarms(alarms::attributes::Attribute),
