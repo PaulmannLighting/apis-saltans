@@ -10,6 +10,7 @@ const VALID_LUX_VALUES: RangeInclusive<u32> = 1..=3_576_000;
 
 /// Measured value of a sensor.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream)]
+#[repr(transparent)]
 pub struct MeasuredValue(Uint16);
 
 impl MeasuredValue {
