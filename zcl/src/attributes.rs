@@ -1,3 +1,5 @@
+mod readable;
+
 use zigbee::Cluster;
 
 /// A trait to allow the reading of attributes by their respective IDs in a type-safe manner.
