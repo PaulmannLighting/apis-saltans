@@ -3,7 +3,10 @@
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::Uint16;
 
+pub use self::measured_value::MeasuredValue;
 use super::LightSensorType;
+
+mod measured_value;
 
 /// Attributes for the Illuminance Measurement cluster.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -13,7 +16,7 @@ pub enum Attribute {
     /// The measured illuminance value.
     /// The unit of the measured illuminance value is lux.
     /// The non-value of 0xFFFF indicates that the measured illuminance value is invalid.
-    MeasuredValue(Uint16) = 0x0000,
+    MeasuredValue(MeasuredValue) = 0x0000,
     /// The minimum measured illuminance value that can be measured by the device.
     /// The unit of the minimum measured illuminance value is lux.
     /// The non-value of 0xFFFF indicates that the minimum measured illuminance value is invalid.
