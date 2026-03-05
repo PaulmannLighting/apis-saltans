@@ -4,16 +4,14 @@ use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
-use self::battery::Battery;
-use super::mains_alarm_mask::MainsAlarmMask;
+pub use self::battery::{Battery, Information, Settings};
+use super::MainsAlarmMask;
 
 mod battery;
-mod battery_information;
-mod battery_settings;
 
 const MASK: u16 = 0xfff0;
 
-/// Power configuration cluster attribute.
+/// Readable attributes.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]

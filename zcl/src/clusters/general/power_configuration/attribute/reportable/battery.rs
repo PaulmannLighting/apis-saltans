@@ -16,7 +16,6 @@ const SETTINGS: u16 = 0x0010;
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
-#[expect(variant_size_differences)]
 pub enum Battery {
     /// Information about the battery status of a device.
     Information(Information) = INFORMATION,

@@ -8,4 +8,5 @@ mod battery_alarm_state;
 mod battery_size;
 mod mains_alarm_mask;
 pub mod readable;
+pub mod reportable;
 pub mod writable;

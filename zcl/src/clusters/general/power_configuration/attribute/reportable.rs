@@ -1,17 +1,17 @@
-//! Writable attributes of the Power Configuration cluster.
+//! Reportable attributes of the Power Configuration cluster.
 
 use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
-pub use self::settings::Settings;
+pub use self::battery::{Battery, Information, Settings};
 use super::MainsAlarmMask;
 
-mod settings;
+mod battery;
 
 const MASK: u16 = 0xfff0;
 
-/// Writable attributes.
+/// Reportable attributes.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
@@ -29,11 +29,11 @@ pub enum Attribute {
     /// Mains voltage dwell trip point in seconds.
     VoltageDwellTripPoint(Uint16) = 0x0013,
     /// Primary battery data.
-    Battery(Settings) = 0x0020,
+    Battery(Battery) = 0x0020,
     /// Secondary battery data.
-    Battery2(Settings) = 0x0040,
+    Battery2(Battery) = 0x0040,
     /// Tertiary battery data.
-    Battery3(Settings) = 0x0060,
+    Battery3(Battery) = 0x0060,
 }
 
 impl Attribute {
@@ -64,13 +64,13 @@ impl FromLeStreamTagged for Attribute {
             0x0012 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageMaxThreshold)),
             0x0013 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageDwellTripPoint)),
             tag if tag & MASK == 0x0020 || tag & MASK == 0x0030 => {
-                Ok(Settings::from_le_stream_tagged(tag, bytes)?.map(Self::Battery))
+                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery))
             }
             tag if tag & MASK == 0x0040 || tag & MASK == 0x0050 => {
-                Ok(Settings::from_le_stream_tagged(tag, bytes)?.map(Self::Battery2))
+                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery2))
             }
             tag if tag & MASK == 0x0060 || tag & MASK == 0x0070 => {
-                Ok(Settings::from_le_stream_tagged(tag, bytes)?.map(Self::Battery3))
+                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery3))
             }
             unknown => Err(unknown),
         }

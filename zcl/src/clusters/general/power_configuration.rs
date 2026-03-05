@@ -1,7 +1,8 @@
 //! Power configuration cluster.
 
 pub use self::attribute::{
-    BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask, readable, writable,
+    BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask, readable, reportable,
+    writable,
 };
 pub use self::battery_alarm::BatteryAlarm;
 

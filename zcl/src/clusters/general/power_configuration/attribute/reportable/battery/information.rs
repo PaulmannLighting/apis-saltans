@@ -9,14 +9,12 @@ const MASK: u16 = 0x000f;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
-pub enum BatteryInformation {
-    /// Battery voltage in 100mV.
-    BatteryVoltage(Uint8) = 0x0000,
+pub enum Information {
     /// Battery percentage remaining.
-    BatteryPercentageRemaining(Uint8) = 0x0001,
+    PercentageRemaining(Uint8) = 0x0001,
 }
 
-impl FromLeStreamTagged for BatteryInformation {
+impl FromLeStreamTagged for Information {
     type Tag = u16;
 
     fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
@@ -24,8 +22,7 @@ impl FromLeStreamTagged for BatteryInformation {
         T: Iterator<Item = u8>,
     {
         match tag & MASK {
-            0x0000 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryVoltage)),
-            0x0001 => Ok(Uint8::from_le_stream(bytes).map(Self::BatteryPercentageRemaining)),
+            0x0001 => Ok(Uint8::from_le_stream(bytes).map(Self::PercentageRemaining)),
             _ => Err(tag),
         }
     }
