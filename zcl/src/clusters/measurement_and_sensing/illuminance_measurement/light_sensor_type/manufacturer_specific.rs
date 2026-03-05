@@ -1,5 +1,3 @@
-use core::ops::RangeInclusive;
-
 use le_stream::{FromLeStream, ToLeStream};
 
 /// Manufacturer Specific Light Sensor Type.
@@ -7,11 +5,12 @@ use le_stream::{FromLeStream, ToLeStream};
 pub struct ManufacturerSpecific(u8);
 
 impl ManufacturerSpecific {
-    /// Valid range of manufacturer specific light sensor types.
-    pub const VALID_RANGE: RangeInclusive<u8> = 0x40..=0xFE;
-}
+    /// Minimum allowed value.
+    pub const MIN: u8 = 0x40;
 
-impl ManufacturerSpecific {
+    /// Maximum allowed value.
+    pub const MAX: u8 = 0xFE;
+
     /// Return the raw value of the manufacturer specific light sensor type.
     #[must_use]
     pub const fn as_u8(self) -> u8 {
@@ -29,7 +28,7 @@ impl TryFrom<u8> for ManufacturerSpecific {
     type Error = u8;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        if Self::VALID_RANGE.contains(&value) {
+        if (Self::MIN..=Self::MAX).contains(&value) {
             Ok(Self(value))
         } else {
             Err(value)

@@ -41,7 +41,9 @@ impl TryFrom<u8> for LightSensorType {
         match value {
             0x00 => Ok(Self::Photodiode),
             0x01 => Ok(Self::Cmos),
-            0x40..=0xFE => ManufacturerSpecific::try_from(value).map(Self::ManufacturerSpecific),
+            ManufacturerSpecific::MIN..=ManufacturerSpecific::MAX => {
+                ManufacturerSpecific::try_from(value).map(Self::ManufacturerSpecific)
+            }
             0xFF => Ok(Self::Unknown),
             other => Err(other),
         }
