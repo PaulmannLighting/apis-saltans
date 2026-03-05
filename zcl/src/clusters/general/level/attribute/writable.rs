@@ -4,7 +4,7 @@ use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
-use super::{Options, read};
+use super::{Options, readable};
 
 /// Writable attributes for the Level cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -27,18 +27,18 @@ pub enum Attribute {
     StartUpCurrentLevel(u8) = 0x4000,
 }
 
-impl TryFrom<read::Attribute> for Attribute {
-    type Error = read::Attribute;
+impl TryFrom<readable::Attribute> for Attribute {
+    type Error = readable::Attribute;
 
-    fn try_from(read: read::Attribute) -> Result<Self, Self::Error> {
+    fn try_from(read: readable::Attribute) -> Result<Self, Self::Error> {
         match read {
-            read::Attribute::OnOffTransitionTime(time) => Ok(Self::OnOffTransitionTime(time)),
-            read::Attribute::OnLevel(level) => Ok(Self::OnLevel(level)),
-            read::Attribute::OnTransitionTime(time) => Ok(Self::OnTransitionTime(time)),
-            read::Attribute::OffTransitionTime(time) => Ok(Self::OffTransitionTime(time)),
-            read::Attribute::DefaultMoveRate(rate) => Ok(Self::DefaultMoveRate(rate)),
-            read::Attribute::Options(options) => Ok(Self::Options(options)),
-            read::Attribute::StartUpCurrentLevel(level) => Ok(Self::StartUpCurrentLevel(level)),
+            readable::Attribute::OnOffTransitionTime(time) => Ok(Self::OnOffTransitionTime(time)),
+            readable::Attribute::OnLevel(level) => Ok(Self::OnLevel(level)),
+            readable::Attribute::OnTransitionTime(time) => Ok(Self::OnTransitionTime(time)),
+            readable::Attribute::OffTransitionTime(time) => Ok(Self::OffTransitionTime(time)),
+            readable::Attribute::DefaultMoveRate(rate) => Ok(Self::DefaultMoveRate(rate)),
+            readable::Attribute::Options(options) => Ok(Self::Options(options)),
+            readable::Attribute::StartUpCurrentLevel(level) => Ok(Self::StartUpCurrentLevel(level)),
             other => Err(other),
         }
     }

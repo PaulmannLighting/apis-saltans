@@ -1,12 +1,13 @@
 //! Level Control Cluster.
 
-pub use commands::{
+pub use self::attribute::{readable, reportable, writable};
+pub use self::commands::{
     Command, Move, MoveToLevel, MoveToLevelWithOnOff, MoveWithOnOff, Step, StepWithOnOff, Stop,
     StopWithOnOff,
 };
-pub use mode::Mode;
+pub use self::mode::Mode;
 
-pub mod attribute;
+mod attribute;
 mod commands;
 mod mode;
 

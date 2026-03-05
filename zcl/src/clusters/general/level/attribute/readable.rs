@@ -4,7 +4,7 @@ use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
-use super::{Options, report, write};
+use super::{Options, reportable, writable};
 
 /// Readable attributes for the Level cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -41,25 +41,25 @@ pub enum Attribute {
     StartUpCurrentLevel(u8) = 0x4000,
 }
 
-impl From<report::Attribute> for Attribute {
-    fn from(report: report::Attribute) -> Self {
+impl From<reportable::Attribute> for Attribute {
+    fn from(report: reportable::Attribute) -> Self {
         match report {
-            report::Attribute::CurrentLevel(level) => Self::CurrentLevel(level),
-            report::Attribute::CurrentFrequency(freq) => Self::CurrentFrequency(freq),
+            reportable::Attribute::CurrentLevel(level) => Self::CurrentLevel(level),
+            reportable::Attribute::CurrentFrequency(freq) => Self::CurrentFrequency(freq),
         }
     }
 }
 
-impl From<write::Attribute> for Attribute {
-    fn from(write: write::Attribute) -> Self {
+impl From<writable::Attribute> for Attribute {
+    fn from(write: writable::Attribute) -> Self {
         match write {
-            write::Attribute::OnOffTransitionTime(time) => Self::OnOffTransitionTime(time),
-            write::Attribute::OnLevel(level) => Self::OnLevel(level),
-            write::Attribute::OnTransitionTime(time) => Self::OnTransitionTime(time),
-            write::Attribute::OffTransitionTime(time) => Self::OffTransitionTime(time),
-            write::Attribute::DefaultMoveRate(rate) => Self::DefaultMoveRate(rate),
-            write::Attribute::Options(options) => Self::Options(options),
-            write::Attribute::StartUpCurrentLevel(level) => Self::StartUpCurrentLevel(level),
+            writable::Attribute::OnOffTransitionTime(time) => Self::OnOffTransitionTime(time),
+            writable::Attribute::OnLevel(level) => Self::OnLevel(level),
+            writable::Attribute::OnTransitionTime(time) => Self::OnTransitionTime(time),
+            writable::Attribute::OffTransitionTime(time) => Self::OffTransitionTime(time),
+            writable::Attribute::DefaultMoveRate(rate) => Self::DefaultMoveRate(rate),
+            writable::Attribute::Options(options) => Self::Options(options),
+            writable::Attribute::StartUpCurrentLevel(level) => Self::StartUpCurrentLevel(level),
         }
     }
 }

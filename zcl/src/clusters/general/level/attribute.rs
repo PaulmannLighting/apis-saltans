@@ -1,8 +1,8 @@
 //! Level cluster attributes.
 
-pub use options::Options;
+pub use self::options::Options;
 
 mod options;
-pub mod read;
-pub mod report;
-pub mod write;
+pub mod readable;
+pub mod reportable;
+pub mod writable;
