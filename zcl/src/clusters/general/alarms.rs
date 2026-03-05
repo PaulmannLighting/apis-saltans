@@ -1,9 +1,10 @@
 //! Alarms cluster implementation.
 
+pub use self::attribute::readable;
 pub use self::commands::{Command, GetAlarm, ResetAlarm, ResetAlarmLog, ResetAllAlarms};
 pub use self::table::Entry;
 
-pub mod attributes;
+mod attribute;
 mod commands;
 mod table;
 

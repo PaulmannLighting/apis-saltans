@@ -14,7 +14,7 @@ use crate::measurement_and_sensing::{
 // TODO: Consider renaming this to `Attribute` and providing a Box<[T]> of the respective attribute types.
 #[non_exhaustive]
 pub enum Attribute {
-    Alarms(Box<alarms::attributes::Attribute>),
+    Alarms(Box<alarms::readable::Attribute>),
     Basic(Box<basic::read::Attribute>),
     DeviceTemperatureConfiguration(
         Box<device_temperature_configuration::attribute::read::Attribute>,

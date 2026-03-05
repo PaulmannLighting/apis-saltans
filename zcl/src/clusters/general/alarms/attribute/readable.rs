@@ -1,4 +1,4 @@
-//! Attributes for the Alarms cluster.
+//! Readable attributes of the Alarms cluster.
 
 use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
