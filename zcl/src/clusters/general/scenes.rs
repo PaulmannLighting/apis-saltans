@@ -1,6 +1,6 @@
 //! Scenes cluster.
 
-pub use self::attribute::Attribute;
+pub use self::attribute::readable;
 pub use self::scene_table::SceneTable;
 pub use self::types::CurrentGroup;
 
