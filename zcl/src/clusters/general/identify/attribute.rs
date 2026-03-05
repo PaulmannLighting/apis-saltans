@@ -25,3 +25,15 @@ impl ToLeStream for Attribute {
         }
     }
 }
+
+pub mod readable {
+    //! Readable attributes of the Identify cluster.
+
+    pub use super::Attribute;
+}
+
+pub mod writable {
+    //! Writable attributes of the Identify cluster.
+
+    pub use super::Attribute;
+}

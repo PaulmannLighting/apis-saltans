@@ -17,7 +17,7 @@ pub enum Attribute {
     Basic(Box<basic::readable::Attribute>),
     DeviceTemperatureConfiguration(Box<device_temperature_configuration::readable::Attribute>),
     Groups(Box<groups::readable::Attribute>),
-    Identify(Box<identify::Attribute>),
+    Identify(Box<identify::readable::Attribute>),
     Level(Box<level::attribute::read::Attribute>),
     OnOff(Box<on_off::attribute::read::Attribute>),
     PowerConfiguration(Box<power_configuration::read::Attribute>),
