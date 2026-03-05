@@ -2,6 +2,6 @@
 
 pub use self::time_status::TimeStatus;
 
-pub mod read;
+pub mod readable;
 mod time_status;
-pub mod write;
+pub mod writable;

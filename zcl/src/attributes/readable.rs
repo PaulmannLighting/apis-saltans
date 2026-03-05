@@ -22,7 +22,7 @@ pub enum Attribute {
     OnOff(Box<on_off::readable::Attribute>),
     PowerConfiguration(Box<power_configuration::readable::Attribute>),
     Scenes(Box<scenes::readable::Attribute>),
-    Time(Box<time::attribute::read::Attribute>),
+    Time(Box<time::readable::Attribute>),
     BallastConfiguration, // TODO: Implement ballast configuration attributes enum.
     ColorControl,         // TODO: Implement color control attributes enum.
     IlluminanceLevelSensing(Box<illuminance_level_sensing::attribute::read::Attribute>),
