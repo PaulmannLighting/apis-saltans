@@ -26,7 +26,7 @@ pub enum Status {
     UnsupportedAttribute = 0x86,
     /// Indicates the value of the attribute is invalid.
     InvalidValue = 0x87,
-    /// Indicates the attribute is read-only.
+    /// Indicates the attribute is readable-only.
     ReadOnly = 0x88,
     /// Indicates there is insufficient space to perform the operation.
     InsufficientSpace = 0x89,

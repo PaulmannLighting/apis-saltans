@@ -7,5 +7,5 @@ mod battery_alarm_mask;
 mod battery_alarm_state;
 mod battery_size;
 mod mains_alarm_mask;
-pub mod read;
-pub mod write;
+pub mod readable;
+pub mod writable;

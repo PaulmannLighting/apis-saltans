@@ -20,7 +20,7 @@ pub enum Attribute {
     Identify(Box<identify::readable::Attribute>),
     Level(Box<level::readable::Attribute>),
     OnOff(Box<on_off::readable::Attribute>),
-    PowerConfiguration(Box<power_configuration::read::Attribute>),
+    PowerConfiguration(Box<power_configuration::readable::Attribute>),
     Scenes(Box<scenes::Attribute>),
     Time(Box<time::attribute::read::Attribute>),
     BallastConfiguration, // TODO: Implement ballast configuration attributes enum.
