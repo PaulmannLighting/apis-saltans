@@ -1,5 +1,7 @@
 //! Readable attributees.
 
+use alloc::boxed::Box;
+
 use crate::general::{
     alarms, basic, device_temperature_configuration, groups, identify, level, on_off,
     power_configuration, scenes, time,
@@ -12,19 +14,21 @@ use crate::measurement_and_sensing::{
 // TODO: Consider renaming this to `Attribute` and providing a Box<[T]> of the respective attribute types.
 #[non_exhaustive]
 pub enum Attribute {
-    Alarms(alarms::attributes::Attribute),
-    Basic(basic::read::Attribute),
-    DeviceTemperatureConfiguration(device_temperature_configuration::attribute::read::Attribute),
-    Groups(groups::Attribute),
-    Identify(identify::Attribute),
-    Level(level::attribute::read::Attribute),
-    OnOff(on_off::attribute::read::Attribute),
-    PowerConfiguration(power_configuration::read::Attribute),
-    Scenes(scenes::Attribute),
-    Time(time::attribute::read::Attribute),
+    Alarms(Box<alarms::attributes::Attribute>),
+    Basic(Box<basic::read::Attribute>),
+    DeviceTemperatureConfiguration(
+        Box<device_temperature_configuration::attribute::read::Attribute>,
+    ),
+    Groups(Box<groups::Attribute>),
+    Identify(Box<identify::Attribute>),
+    Level(Box<level::attribute::read::Attribute>),
+    OnOff(Box<on_off::attribute::read::Attribute>),
+    PowerConfiguration(Box<power_configuration::read::Attribute>),
+    Scenes(Box<scenes::Attribute>),
+    Time(Box<time::attribute::read::Attribute>),
     BallastConfiguration, // TODO: Implement ballast configuration attributes enum.
     ColorControl,         // TODO: Implement color control attributes enum.
-    IlluminanceLevelSensing(illuminance_level_sensing::attribute::read::Attribute),
-    IlluminanceMeasurement(illuminance_measurement::attribute::Attribute),
-    OccupancySensing(occupancy_sensing::attribute::Attribute),
+    IlluminanceLevelSensing(Box<illuminance_level_sensing::attribute::read::Attribute>),
+    IlluminanceMeasurement(Box<illuminance_measurement::attribute::Attribute>),
+    OccupancySensing(Box<occupancy_sensing::attribute::Attribute>),
 }
