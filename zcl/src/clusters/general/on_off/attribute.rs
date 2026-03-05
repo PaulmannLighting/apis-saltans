@@ -2,8 +2,8 @@
 
 pub use self::start_up_on_off::StartUpOnOff;
 
-pub mod read;
-pub mod report;
+pub mod readable;
+pub mod reportable;
 pub mod scene;
 mod start_up_on_off;
-pub mod write;
+pub mod writable;

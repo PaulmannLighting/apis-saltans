@@ -19,7 +19,7 @@ pub enum Attribute {
     Groups(Box<groups::readable::Attribute>),
     Identify(Box<identify::readable::Attribute>),
     Level(Box<level::readable::Attribute>),
-    OnOff(Box<on_off::attribute::read::Attribute>),
+    OnOff(Box<on_off::readable::Attribute>),
     PowerConfiguration(Box<power_configuration::read::Attribute>),
     Scenes(Box<scenes::Attribute>),
     Time(Box<time::attribute::read::Attribute>),
