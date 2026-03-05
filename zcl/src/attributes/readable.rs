@@ -15,9 +15,7 @@ use crate::measurement_and_sensing::{
 pub enum Attribute {
     Alarms(Box<alarms::readable::Attribute>),
     Basic(Box<basic::readable::Attribute>),
-    DeviceTemperatureConfiguration(
-        Box<device_temperature_configuration::attribute::read::Attribute>,
-    ),
+    DeviceTemperatureConfiguration(Box<device_temperature_configuration::readable::Attribute>),
     Groups(Box<groups::readable::Attribute>),
     Identify(Box<identify::Attribute>),
     Level(Box<level::attribute::read::Attribute>),

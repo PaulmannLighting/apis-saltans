@@ -1,4 +1,4 @@
-//! Readable attributes for the Device Temperature Configuration cluster.
+//! Readable attributes of the Device Temperature Configuration cluster.
 
 use core::iter::Chain;
 
@@ -6,7 +6,7 @@ use le_stream::{FromLeStreamTagged, ToLeStream};
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint16, Uint24};
 
-use super::{iterator, write};
+use super::{iterator, writable};
 use crate::clusters::general::device_temperature_configuration::{
     DeviceTempAlarmMask, Temperature,
 };
@@ -38,16 +38,16 @@ pub enum Attribute {
     HighTempDwellTripPoint(Uint24) = 0x0014,
 }
 
-impl From<write::Attribute> for Attribute {
-    fn from(value: write::Attribute) -> Self {
+impl From<writable::Attribute> for Attribute {
+    fn from(value: writable::Attribute) -> Self {
         match value {
-            write::Attribute::DeviceTempAlarmMask(mask) => Self::DeviceTempAlarmMask(mask),
-            write::Attribute::LowTempThreshold(thresh) => Self::LowTempThreshold(thresh),
-            write::Attribute::HighTempThreshold(thresh) => Self::HighTempThreshold(thresh),
-            write::Attribute::LowTempDwellTripPoint(seconds) => {
+            writable::Attribute::DeviceTempAlarmMask(mask) => Self::DeviceTempAlarmMask(mask),
+            writable::Attribute::LowTempThreshold(thresh) => Self::LowTempThreshold(thresh),
+            writable::Attribute::HighTempThreshold(thresh) => Self::HighTempThreshold(thresh),
+            writable::Attribute::LowTempDwellTripPoint(seconds) => {
                 Self::LowTempDwellTripPoint(seconds)
             }
-            write::Attribute::HighTempDwellTripPoint(seconds) => {
+            writable::Attribute::HighTempDwellTripPoint(seconds) => {
                 Self::HighTempDwellTripPoint(seconds)
             }
         }
