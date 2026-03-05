@@ -21,7 +21,7 @@ pub enum Deprecated {
     ///
     /// Use `Success` instead.
     DuplicateExists = 0x8a,
-    /// Indicates the attribute is write-only.
+    /// Indicates the attribute is writable-only.
     ///
     /// Use `NotAuthorized` instead.
     WriteOnly = 0x8f,

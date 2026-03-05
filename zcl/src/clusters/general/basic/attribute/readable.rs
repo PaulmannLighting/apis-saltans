@@ -13,7 +13,7 @@ use super::generic_device_class::GenericDeviceClass;
 use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
-use super::write;
+use super::writable;
 use crate::ReadableAttribute;
 use crate::general::basic::CLUSTER_ID;
 
@@ -66,16 +66,16 @@ pub enum Attribute {
     SwBuildId(String<16>) = 0x4000,
 }
 
-impl From<write::Attribute> for Attribute {
-    fn from(value: write::Attribute) -> Self {
+impl From<writable::Attribute> for Attribute {
+    fn from(value: writable::Attribute) -> Self {
         match value {
-            write::Attribute::LocationDescription(string) => Self::LocationDescription(string),
-            write::Attribute::PhysicalEnvironment(environment) => {
+            writable::Attribute::LocationDescription(string) => Self::LocationDescription(string),
+            writable::Attribute::PhysicalEnvironment(environment) => {
                 Self::PhysicalEnvironment(environment.into())
             }
-            write::Attribute::DeviceEnabled(enabled) => Self::DeviceEnabled(enabled.into()),
-            write::Attribute::AlarmMask(mask) => Self::AlarmMask(mask),
-            write::Attribute::DisableLocalConfig(value) => Self::DisableLocalConfig(value),
+            writable::Attribute::DeviceEnabled(enabled) => Self::DeviceEnabled(enabled.into()),
+            writable::Attribute::AlarmMask(mask) => Self::AlarmMask(mask),
+            writable::Attribute::DisableLocalConfig(value) => Self::DisableLocalConfig(value),
         }
     }
 }

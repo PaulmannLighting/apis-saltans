@@ -10,7 +10,7 @@ use super::alarm_mask::AlarmMask;
 use super::device_enabled::DeviceEnabled;
 use super::disable_local_config::DisableLocalConfig;
 use super::physical_environment::PhysicalEnvironment;
-use super::read;
+use super::readable;
 
 mod iterator;
 
@@ -32,22 +32,24 @@ pub enum Attribute {
     DisableLocalConfig(DisableLocalConfig) = 0x0014,
 }
 
-impl TryFrom<read::Attribute> for Attribute {
-    type Error = read::Attribute;
+impl TryFrom<readable::Attribute> for Attribute {
+    type Error = readable::Attribute;
 
-    fn try_from(value: read::Attribute) -> Result<Self, Self::Error> {
+    fn try_from(value: readable::Attribute) -> Result<Self, Self::Error> {
         match value {
-            read::Attribute::LocationDescription(string) => Ok(Self::LocationDescription(string)),
-            read::Attribute::PhysicalEnvironment(parsable) => parsable.parse().map_or_else(
-                |_| Err(read::Attribute::PhysicalEnvironment(parsable)),
+            readable::Attribute::LocationDescription(string) => {
+                Ok(Self::LocationDescription(string))
+            }
+            readable::Attribute::PhysicalEnvironment(parsable) => parsable.parse().map_or_else(
+                |_| Err(readable::Attribute::PhysicalEnvironment(parsable)),
                 |physical_environment| Ok(Self::PhysicalEnvironment(physical_environment)),
             ),
-            read::Attribute::DeviceEnabled(parsable) => parsable.parse().map_or_else(
-                |_| Err(read::Attribute::DeviceEnabled(parsable)),
+            readable::Attribute::DeviceEnabled(parsable) => parsable.parse().map_or_else(
+                |_| Err(readable::Attribute::DeviceEnabled(parsable)),
                 |device_enabled| Ok(Self::DeviceEnabled(device_enabled)),
             ),
-            read::Attribute::AlarmMask(mask) => Ok(Self::AlarmMask(mask)),
-            read::Attribute::DisableLocalConfig(value) => Ok(Self::DisableLocalConfig(value)),
+            readable::Attribute::AlarmMask(mask) => Ok(Self::AlarmMask(mask)),
+            readable::Attribute::DisableLocalConfig(value) => Ok(Self::DisableLocalConfig(value)),
             other => Err(other),
         }
     }

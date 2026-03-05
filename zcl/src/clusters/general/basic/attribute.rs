@@ -14,5 +14,5 @@ mod generic_device_class;
 mod generic_device_type;
 mod physical_environment;
 mod power_source;
-pub mod read;
-pub mod write;
+pub mod readable;
+pub mod writable;
