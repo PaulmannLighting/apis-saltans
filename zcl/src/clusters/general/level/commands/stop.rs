@@ -2,8 +2,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction};
 
 use super::CLUSTER_ID;
+use crate::Command;
 use crate::options::Options;
-use crate::{Command, Scope};
 
 /// Stop command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -35,5 +35,4 @@ impl Cluster for Stop {
 impl Command for Stop {
     const ID: u8 = 0x03;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const SCOPE: Scope = Scope::ClusterSpecific;
 }

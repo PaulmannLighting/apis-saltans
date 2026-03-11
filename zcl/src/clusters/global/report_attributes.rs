@@ -6,6 +6,7 @@ use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::attribute_report::AttributeReport;
 use crate::Scope;
+use crate::command::Scoped;
 
 mod attribute_report;
 
@@ -32,5 +33,8 @@ impl Command {
 impl crate::Command for Command {
     const ID: u8 = 0x0A;
     const DIRECTION: zigbee::Direction = zigbee::Direction::ServerToClient;
+}
+
+impl Scoped for Command {
     const SCOPE: Scope = Scope::Global;
 }

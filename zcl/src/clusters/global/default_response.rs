@@ -4,6 +4,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Direction;
 
 use crate::Scope;
+use crate::command::Scoped;
 
 /// Default Response Command
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -35,6 +36,9 @@ impl DefaultResponse {
 impl crate::Command for DefaultResponse {
     const ID: u8 = 0x0b;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const SCOPE: Scope = Scope::Global;
     const DISABLE_DEFAULT_RESPONSE: bool = true;
+}
+
+impl Scoped for DefaultResponse {
+    const SCOPE: Scope = Scope::Global;
 }

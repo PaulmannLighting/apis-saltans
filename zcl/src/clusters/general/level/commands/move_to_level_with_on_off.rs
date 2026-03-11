@@ -5,8 +5,8 @@ use zigbee::types::Uint16;
 use zigbee::{Cluster, Direction, FromDeciSeconds};
 
 use super::CLUSTER_ID;
+use crate::Command;
 use crate::options::Options;
-use crate::{Command, Scope};
 
 /// Move to level with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -54,5 +54,4 @@ impl Cluster for MoveToLevelWithOnOff {
 impl Command for MoveToLevelWithOnOff {
     const ID: u8 = 0x04;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const SCOPE: Scope = Scope::ClusterSpecific;
 }

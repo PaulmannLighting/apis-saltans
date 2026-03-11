@@ -5,7 +5,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
-use crate::{Command, Options, Scope};
+use crate::{Command, Options};
 
 /// Command to move a light to a specific hue and saturation.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -77,5 +77,4 @@ impl Cluster for MoveToHueAndSaturation {
 impl Command for MoveToHueAndSaturation {
     const ID: u8 = 0x06;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const SCOPE: Scope = Scope::ClusterSpecific;
 }

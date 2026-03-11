@@ -11,6 +11,7 @@ use zigbee::Direction;
 use zigbee::types::Type;
 
 pub use self::read_attributes_status::ReadAttributesStatus;
+use crate::command::Scoped;
 use crate::{Customizable, Global, Scope};
 
 mod read_attributes_status;
@@ -38,6 +39,9 @@ impl Command {
 impl crate::Command for Command {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ClientToServer;
+}
+
+impl Scoped for Command {
     const SCOPE: Scope = Scope::Global;
 }
 
@@ -53,6 +57,9 @@ pub struct Response {
 impl crate::Command for Response {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ServerToClient;
+}
+
+impl Scoped for Response {
     const SCOPE: Scope = Scope::Global;
 }
 

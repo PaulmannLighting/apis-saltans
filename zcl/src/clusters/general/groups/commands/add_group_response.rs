@@ -3,7 +3,7 @@ use zigbee::types::Uint16;
 use zigbee::{Cluster, Direction};
 
 use crate::clusters::general::groups::CLUSTER_ID;
-use crate::{Command, Scope, Status};
+use crate::{Command, Status};
 
 /// Represents a response to an `AddGroups` command.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
@@ -45,6 +45,5 @@ impl Cluster for AddGroupResponse {
 impl Command for AddGroupResponse {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ServerToClient;
-    const SCOPE: Scope = Scope::ClusterSpecific;
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }

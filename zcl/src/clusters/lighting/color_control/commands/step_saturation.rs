@@ -9,7 +9,7 @@ use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::mode::Mode;
 use crate::lighting::color_control::CLUSTER_ID;
-use crate::{Command, Options, Scope};
+use crate::{Command, Options};
 
 mod mode;
 
@@ -86,5 +86,4 @@ impl Cluster for StepSaturation {
 impl Command for StepSaturation {
     const ID: u8 = 0x04;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const SCOPE: Scope = Scope::ClusterSpecific;
 }

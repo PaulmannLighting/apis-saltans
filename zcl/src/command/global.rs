@@ -1,6 +1,7 @@
 use le_stream::ToLeStream;
 use zigbee::{ClusterId, Direction};
 
+use crate::command::Scoped;
 use crate::{Command, Customizable, Header, HeaderFactory, Scope};
 
 /// Trait to mark global commands.
@@ -32,8 +33,14 @@ where
 {
     const ID: u8 = T::ID;
     const DIRECTION: Direction = T::DIRECTION;
-    const SCOPE: Scope = T::SCOPE;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
+}
+
+impl<T> Scoped for ClusterTargeted<T>
+where
+    T: Scoped,
+{
+    const SCOPE: Scope = T::SCOPE;
 }
 
 #[expect(unsafe_code)]

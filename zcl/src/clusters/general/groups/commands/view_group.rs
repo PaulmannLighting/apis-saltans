@@ -2,8 +2,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
 use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::general::groups::CLUSTER_ID;
-use crate::{Command, Scope};
 
 /// Command to view a group in the device's group table.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
@@ -33,5 +33,4 @@ impl Cluster for ViewGroup {
 impl Command for ViewGroup {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const SCOPE: Scope = Scope::ClusterSpecific;
 }

@@ -1,6 +1,7 @@
 use le_stream::ToLeStream;
 use zigbee::{ClusterId, Direction};
 
+use crate::command::Scoped;
 use crate::{Command, Header, HeaderFactory, Scope};
 
 /// Trait to mark commands as customizable.
@@ -40,15 +41,21 @@ where
 {
     const ID: u8 = T::ID;
     const DIRECTION: Direction = T::DIRECTION;
-    const SCOPE: Scope = T::SCOPE;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
+}
+
+impl<T> Scoped for ManufacturerSpecific<T>
+where
+    T: Scoped,
+{
+    const SCOPE: Scope = T::SCOPE;
 }
 
 #[expect(unsafe_code)]
 // SAFETY: We forward the appropriate fields of `<T as Command>` and the manufacturer code to the header.
 unsafe impl<T> HeaderFactory for ManufacturerSpecific<T>
 where
-    T: Command,
+    T: Command + Scoped,
 {
     fn header(&self, seq: u8) -> Header {
         Header::new(

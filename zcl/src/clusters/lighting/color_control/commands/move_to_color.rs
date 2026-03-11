@@ -6,7 +6,7 @@ use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::options::Options;
-use crate::{Command, Native, Scope};
+use crate::{Command, Native};
 
 /// Command to move a light to a specific color.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -78,7 +78,6 @@ impl Cluster for MoveToColor {
 impl Command for MoveToColor {
     const ID: u8 = 0x07;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const SCOPE: Scope = Scope::ClusterSpecific;
 }
 
 impl Native for MoveToColor {}

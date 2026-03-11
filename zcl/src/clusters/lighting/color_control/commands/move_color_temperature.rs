@@ -4,7 +4,7 @@ use zigbee::{Cluster, Direction};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::move_hue::Mode;
-use crate::{Command, Options, Scope};
+use crate::{Command, Options};
 
 /// Command to move a light's color temperature.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -76,5 +76,4 @@ impl Cluster for MoveColorTemperature {
 impl Command for MoveColorTemperature {
     const ID: u8 = 0x4b;
     const DIRECTION: Direction = Direction::ClientToServer;
-    const SCOPE: Scope = Scope::ClusterSpecific;
 }

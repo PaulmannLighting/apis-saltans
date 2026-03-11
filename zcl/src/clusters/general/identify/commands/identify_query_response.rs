@@ -4,8 +4,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
 use zigbee::{Cluster, Direction};
 
+use crate::Command;
 use crate::clusters::general::identify::CLUSTER_ID;
-use crate::{Command, Scope};
 
 /// Response to the [`IdentifyQuery`](crate::clusters::general::identify::IdentifyQuery) command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -41,6 +41,5 @@ impl Cluster for IdentifyQueryResponse {
 impl Command for IdentifyQueryResponse {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ServerToClient;
-    const SCOPE: Scope = Scope::ClusterSpecific;
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }

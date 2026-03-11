@@ -1,3 +1,4 @@
+use crate::command::Scoped;
 use crate::frame::HeaderFactory;
 use crate::{Command, Header};
 
@@ -8,7 +9,7 @@ pub trait Native {}
 // SAFETY: We pass in the appropriate scope, direction, disable-default-response flag and command ID.
 unsafe impl<T> HeaderFactory for T
 where
-    T: Command + Native,
+    T: Command + Scoped + Native,
 {
     fn header(&self, seq: u8) -> Header {
         Header::new(
