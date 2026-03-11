@@ -78,7 +78,7 @@ where
                     <T as Command>::SCOPE,
                     <T as Command>::DIRECTION,
                     <T as Command>::DISABLE_DEFAULT_RESPONSE,
-                    <T as Command>::MANUFACTURER_CODE,
+                    payload.manufacturer_code(),
                     seq,
                     <T as Command>::ID,
                 ),

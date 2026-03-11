@@ -26,8 +26,10 @@ pub trait Command {
     /// Whether to disable the default response for this command.
     const DISABLE_DEFAULT_RESPONSE: bool = false;
 
-    /// The manufacturer code for this command, if any.
-    const MANUFACTURER_CODE: Option<u16> = None;
+    /// Return the manufacturer code, if any.
+    fn manufacturer_code(&self) -> Option<u16> {
+        None
+    }
 }
 
 /// Trait to get the command identifier.

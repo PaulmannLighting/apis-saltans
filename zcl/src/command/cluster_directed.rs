@@ -35,7 +35,10 @@ where
     const DIRECTION: Direction = T::DIRECTION;
     const SCOPE: Scope = T::SCOPE;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
-    const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
+
+    fn manufacturer_code(&self) -> Option<u16> {
+        self.payload.manufacturer_code()
+    }
 }
 
 impl<T> ToLeStream for ClusterDirected<T>

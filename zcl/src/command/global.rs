@@ -13,8 +13,10 @@ pub trait Global {
     /// Whether to disable the client response for this command.
     const DISABLE_DEFAULT_RESPONSE: bool = false;
 
-    /// The manufacturer code for this command, if any.
-    const MANUFACTURER_CODE: Option<u16> = None;
+    /// Return the manufacturer code, if any.
+    fn manufacturer_code(&self) -> Option<u16> {
+        None
+    }
 
     /// Direct this global command to a specific cluster.
     #[must_use]
@@ -34,5 +36,8 @@ where
     const DIRECTION: Direction = T::DIRECTION;
     const SCOPE: Scope = Scope::Global;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
-    const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
+
+    fn manufacturer_code(&self) -> Option<u16> {
+        self.manufacturer_code()
+    }
 }
