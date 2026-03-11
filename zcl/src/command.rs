@@ -2,10 +2,12 @@ use zigbee::Direction;
 
 pub use self::cluster_directed::ClusterDirected;
 pub use self::global::Global;
+pub use self::manufacturer_specific::ManufacturerSpecific;
 use crate::Scope;
 
 mod cluster_directed;
 mod global;
+mod manufacturer_specific;
 
 /// Trait to identify a Zigbee command.
 pub trait Command {
