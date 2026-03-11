@@ -2,7 +2,7 @@ use le_stream::ToLeStream;
 use zigbee::{ClusterId, Direction};
 
 use crate::command::Scoped;
-use crate::{Command, Header, HeaderFactory, Scope};
+use crate::{Command, Global, Header, HeaderFactory, Scope};
 
 /// Trait to mark commands as customizable.
 pub trait Customizable: Sized {
@@ -79,3 +79,5 @@ where
         self.payload.to_le_stream()
     }
 }
+
+impl<T> Global for ManufacturerSpecific<T> where T: Global {}

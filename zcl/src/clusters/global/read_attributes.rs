@@ -104,3 +104,35 @@ impl ToLeStream for Response {
         todo!("Not implemented")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::HeaderFactory;
+
+    #[test]
+    fn test_commutativeness() {
+        let command = Command::new(Box::new([1, 2, 3]));
+        let a = command
+            .clone()
+            .for_cluster(123)
+            .with_manufacturer_code(Some(42));
+        let b = command.with_manufacturer_code(Some(42)).for_cluster(123);
+        assert_eq!(a.header(0x42), b.header(0x42));
+    }
+
+    #[test]
+    fn test_header() {
+        let header = Command::new(Box::new([1, 2, 3]))
+            .for_cluster(123)
+            .with_manufacturer_code(Some(42))
+            .header(0x42);
+        let control = header.control();
+        assert_eq!(control.typ(), Ok(Scope::Global));
+        assert_eq!(control.direction(), Direction::ClientToServer);
+        assert!(!control.disable_default_response());
+        assert_eq!(header.manufacturer_code(), Some(42));
+        assert_eq!(header.seq(), 0x42);
+        assert_eq!(header.command_id(), 0x00);
+    }
+}
