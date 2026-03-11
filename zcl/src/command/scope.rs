@@ -2,7 +2,7 @@ use zigbee::Cluster;
 
 use crate::Scope;
 
-/// Trait to associate a scope with
+/// Trait to associate a scope with a command.
 pub trait Scoped {
     /// The scope of the command.
     const SCOPE: Scope;
