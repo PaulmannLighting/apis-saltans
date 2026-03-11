@@ -1,8 +1,8 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction};
 
-use crate::Command;
 use crate::clusters::general::on_off::CLUSTER_ID;
+use crate::{Command, Native, Scope};
 
 /// Toggle a device on/off state.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -16,4 +16,7 @@ impl Cluster for Toggle {
 impl Command for Toggle {
     const ID: u8 = 0x02;
     const DIRECTION: Direction = Direction::ClientToServer;
+    const SCOPE: Scope = Scope::ClusterSpecific;
 }
+
+impl Native for Toggle {}

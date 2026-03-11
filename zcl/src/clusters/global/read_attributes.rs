@@ -11,7 +11,7 @@ use zigbee::Direction;
 use zigbee::types::Type;
 
 pub use self::read_attributes_status::ReadAttributesStatus;
-use crate::Global;
+use crate::{Customizable, Global, Scope};
 
 mod read_attributes_status;
 
@@ -35,10 +35,14 @@ impl Command {
     }
 }
 
-impl Global for Command {
+impl crate::Command for Command {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ClientToServer;
+    const SCOPE: Scope = Scope::Global;
 }
+
+impl Customizable for Command {}
+impl Global for Command {}
 
 /// Read Attributes Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -46,10 +50,14 @@ pub struct Response {
     attribute_values: BTreeMap<u16, Result<Type, u8>>,
 }
 
-impl Global for Response {
+impl crate::Command for Response {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ServerToClient;
+    const SCOPE: Scope = Scope::Global;
 }
+
+impl Customizable for Response {}
+impl Global for Response {}
 
 impl Deref for Response {
     type Target = BTreeMap<u16, Result<Type, u8>>;

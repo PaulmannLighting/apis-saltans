@@ -5,9 +5,9 @@ use num_traits::FromPrimitive;
 use zigbee::{Cluster, Direction, FromDeciSeconds};
 
 use super::CLUSTER_ID;
-use crate::Command;
 use crate::general::level::Mode;
 use crate::options::Options;
+use crate::{Command, Scope};
 
 /// Step with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -66,4 +66,5 @@ impl Cluster for StepWithOnOff {
 impl Command for StepWithOnOff {
     const ID: u8 = 0x06;
     const DIRECTION: Direction = Direction::ClientToServer;
+    const SCOPE: Scope = Scope::ClusterSpecific;
 }

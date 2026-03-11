@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use zcl::Command;
+use zcl::HeaderFactory;
 use zigbee::{ClusterId, Endpoint};
 
 use crate::{Error, Proxy};
@@ -22,15 +22,17 @@ where
     T: Proxy + Sync,
 {
     /// Send a ZCL command to a specific endpoint on a device.
-    pub async fn unicast<C>(&self, pan_id: u16, endpoint: Endpoint, command: C) -> Result<u8, Error>
+    pub async fn unicast<P>(&self, pan_id: u16, endpoint: Endpoint, payload: P) -> Result<u8, Error>
     where
-        C: Command + ClusterId + ToLeStream,
+        P: HeaderFactory + ClusterId + ToLeStream,
     {
         self.proxy
             .unicast(
                 pan_id,
                 endpoint,
-                zcl::Frame::new(self.proxy.next_transaction_seq().await?, command).into(),
+                payload
+                    .frame(self.proxy.next_transaction_seq().await?)
+                    .into(),
             )
             .await
     }

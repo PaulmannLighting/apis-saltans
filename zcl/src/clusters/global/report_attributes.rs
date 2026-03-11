@@ -5,7 +5,7 @@ use alloc::boxed::Box;
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::attribute_report::AttributeReport;
-use crate::Global;
+use crate::Scope;
 
 mod attribute_report;
 
@@ -29,7 +29,8 @@ impl Command {
     }
 }
 
-impl Global for Command {
+impl crate::Command for Command {
     const ID: u8 = 0x0A;
     const DIRECTION: zigbee::Direction = zigbee::Direction::ServerToClient;
+    const SCOPE: Scope = Scope::Global;
 }

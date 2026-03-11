@@ -1,13 +1,15 @@
 use zigbee::Direction;
 
-pub use self::cluster_directed::ClusterDirected;
+pub use self::command_id::CommandId;
+pub use self::customizable::Customizable;
 pub use self::global::Global;
-pub use self::manufacturer_specific::ManufacturerSpecific;
+pub use self::native::Native;
 use crate::Scope;
 
-mod cluster_directed;
+mod command_id;
+mod customizable;
 mod global;
-mod manufacturer_specific;
+mod native;
 
 /// Trait to identify a Zigbee command.
 pub trait Command {
@@ -23,28 +25,8 @@ pub trait Command {
     /// `Scope::ClusterSpecific` commands are specific to a particular cluster.
     ///
     /// Default is `Scope::ClusterSpecific`.
-    const SCOPE: Scope = Scope::ClusterSpecific;
+    const SCOPE: Scope;
 
     /// Whether to disable the default response for this command.
     const DISABLE_DEFAULT_RESPONSE: bool = false;
-
-    /// Return the manufacturer code, if any.
-    fn manufacturer_code(&self) -> Option<u16> {
-        None
-    }
-}
-
-/// Trait to get the command identifier.
-pub trait CommandId {
-    /// Return the command identifier.
-    fn command_id(&self) -> u8;
-}
-
-impl<T> CommandId for T
-where
-    T: Command,
-{
-    fn command_id(&self) -> u8 {
-        T::ID
-    }
 }

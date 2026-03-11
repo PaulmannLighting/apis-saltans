@@ -1,5 +1,5 @@
 use zcl::global::read_attributes::Command;
-use zcl::{Global, ReadableAttribute};
+use zcl::{Customizable, Global, ReadableAttribute};
 
 use crate::proxies::EndpointProxy;
 use crate::{Error, Proxy};
@@ -15,6 +15,7 @@ pub trait Attributes {
         &self,
         cluster_id: u16,
         attribute_ids: Box<[u16]>,
+        manufacturer_code: Option<u16>,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Read attributes of a specific cluster.
@@ -22,7 +23,11 @@ pub trait Attributes {
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn read<T>(&self, attributes: &[T]) -> impl Future<Output = Result<u8, Error>> + Send
+    fn read<T>(
+        &self,
+        attributes: &[T],
+        manufacturer_code: Option<u16>,
+    ) -> impl Future<Output = Result<u8, Error>> + Send
     where
         T: ReadableAttribute,
     {
@@ -33,6 +38,7 @@ pub trait Attributes {
                 .copied()
                 .map(Into::into)
                 .collect::<Box<[u16]>>(),
+            manufacturer_code,
         )
     }
 }
@@ -41,9 +47,18 @@ impl<T> Attributes for EndpointProxy<'_, T>
 where
     T: Proxy + Sync,
 {
-    async fn read_raw(&self, cluster_id: u16, attribute_ids: Box<[u16]>) -> Result<u8, Error> {
+    async fn read_raw(
+        &self,
+        cluster_id: u16,
+        attribute_ids: Box<[u16]>,
+        manufacturer_code: Option<u16>,
+    ) -> Result<u8, Error> {
         self.zcl()
-            .unicast(Command::new(attribute_ids).for_cluster(cluster_id))
+            .unicast(
+                Command::new(attribute_ids)
+                    .for_cluster(cluster_id)
+                    .with_manufacturer_code(manufacturer_code),
+            )
             .await
     }
 }

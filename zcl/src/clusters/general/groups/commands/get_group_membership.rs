@@ -4,9 +4,9 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{Uint8, Uint16};
 use zigbee::{Cluster, Direction};
 
-use crate::Command;
 use crate::clusters::general::groups::CLUSTER_ID;
 use crate::clusters::general::groups::types::GroupList;
+use crate::{Command, Scope};
 
 /// Command to request the membership of a device in multiple groups.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -63,6 +63,7 @@ impl Cluster for GetGroupMembership {
 impl Command for GetGroupMembership {
     const ID: u8 = 0x02;
     const DIRECTION: Direction = Direction::ClientToServer;
+    const SCOPE: Scope = Scope::ClusterSpecific;
 }
 
 impl FromLeStream for GetGroupMembership {

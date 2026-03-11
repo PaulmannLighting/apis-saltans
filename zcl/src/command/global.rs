@@ -1,43 +1,61 @@
-use zigbee::Direction;
+use le_stream::ToLeStream;
+use zigbee::{ClusterId, Direction};
 
-use crate::{ClusterDirected, Command, Scope};
+use crate::{Command, Customizable, Header, HeaderFactory, Scope};
 
-/// Trait to identify a Zigbee global command.
-pub trait Global {
-    /// The command identifier.
-    const ID: u8;
-
-    /// The command direction.
-    const DIRECTION: Direction;
-
-    /// Whether to disable the client response for this command.
-    const DISABLE_DEFAULT_RESPONSE: bool = false;
-
-    /// Return the manufacturer code, if any.
-    fn manufacturer_code(&self) -> Option<u16> {
-        None
-    }
-
-    /// Direct this global command to a specific cluster.
-    #[must_use]
-    fn for_cluster(self, cluster_id: u16) -> ClusterDirected<Self>
-    where
-        Self: Sized,
-    {
-        ClusterDirected::new(cluster_id, self)
+/// Trait to mark global commands.
+pub trait Global: Sized {
+    /// Target the global command towards a cluster.
+    fn for_cluster(self, cluster_id: u16) -> ClusterTargeted<Self> {
+        ClusterTargeted {
+            cluster_id,
+            payload: self,
+        }
     }
 }
 
-impl<T> Command for T
+#[derive(Debug)]
+pub struct ClusterTargeted<T> {
+    cluster_id: u16,
+    payload: T,
+}
+
+impl<T> ClusterId for ClusterTargeted<T> {
+    fn cluster_id(&self) -> u16 {
+        self.cluster_id
+    }
+}
+
+impl<T> Command for ClusterTargeted<T>
 where
-    T: Global,
+    T: Command,
 {
     const ID: u8 = T::ID;
     const DIRECTION: Direction = T::DIRECTION;
-    const SCOPE: Scope = Scope::Global;
+    const SCOPE: Scope = T::SCOPE;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
+}
 
-    fn manufacturer_code(&self) -> Option<u16> {
-        self.manufacturer_code()
+#[expect(unsafe_code)]
+// SAFETY: We delegate to another implementation of `HeaderFactory`.
+unsafe impl<T> HeaderFactory for ClusterTargeted<T>
+where
+    T: HeaderFactory,
+{
+    fn header(&self, seq: u8) -> Header {
+        self.payload.header(seq)
     }
 }
+
+impl<T> ToLeStream for ClusterTargeted<T>
+where
+    T: ToLeStream,
+{
+    type Iter = T::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        self.payload.to_le_stream()
+    }
+}
+
+impl<T> Customizable for ClusterTargeted<T> where T: Customizable {}

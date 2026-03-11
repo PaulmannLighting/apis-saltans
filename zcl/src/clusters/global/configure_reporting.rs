@@ -7,7 +7,7 @@ use zigbee::Direction;
 
 pub use self::attribute_reporting_configuration::AttributeReportingConfiguration;
 pub use self::attribute_status::AttributeStatus;
-use crate::Global;
+use crate::Scope;
 
 mod attribute_reporting_configuration;
 mod attribute_status;
@@ -32,9 +32,10 @@ impl Command {
     }
 }
 
-impl Global for Command {
+impl crate::Command for Command {
     const ID: u8 = 0x06;
     const DIRECTION: Direction = Direction::ClientToServer;
+    const SCOPE: Scope = Scope::Global;
 }
 
 /// Status of an attribute reporting configuration.
@@ -57,7 +58,8 @@ impl Response {
     }
 }
 
-impl Global for Response {
+impl crate::Command for Response {
     const ID: u8 = 0x07;
     const DIRECTION: Direction = Direction::ServerToClient;
+    const SCOPE: Scope = Scope::Global;
 }

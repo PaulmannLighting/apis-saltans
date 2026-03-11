@@ -10,7 +10,7 @@ pub use self::action::{Action, Source};
 pub use self::direction::Direction;
 pub use self::update::Update;
 use crate::lighting::color_control::CLUSTER_ID;
-use crate::{Command, Options};
+use crate::{Command, Options, Scope};
 
 mod action;
 mod direction;
@@ -98,4 +98,5 @@ impl Cluster for ColorLoopSet {
 impl Command for ColorLoopSet {
     const ID: u8 = 0x44;
     const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
+    const SCOPE: Scope = Scope::ClusterSpecific;
 }
