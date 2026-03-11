@@ -113,12 +113,16 @@ mod tests {
     #[test]
     fn test_commutativeness() {
         let command = Command::new(Box::new([1, 2, 3]));
-        let a = command
-            .clone()
-            .for_cluster(123)
-            .with_manufacturer_code(Some(42));
-        let b = command.with_manufacturer_code(Some(42)).for_cluster(123);
-        assert_eq!(a.header(0x42), b.header(0x42));
+        let a = command.clone();
+        let b = command;
+        assert_eq!(
+            a.with_manufacturer_code(Some(42))
+                .for_cluster(123)
+                .header(0x42),
+            b.for_cluster(123)
+                .with_manufacturer_code(Some(42))
+                .header(0x42)
+        );
     }
 
     #[test]
