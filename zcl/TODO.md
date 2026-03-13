@@ -10,6 +10,3 @@
 - [ ] Implement serialization of `read_attributes::Response`.
 - [ ] Revisit Power Configuration attributes.
 - [ ] Remove `MANUFACTURER_CODE` from `Command` trait and make it runtime-changeable.
-- [ ] Remove `DISABLE_DEFAULT_RESPONSE` from `Command` trait and make it runtime-changeable.
-- [ ] Use associated type for `Command` to disambiguate between global / cluster-specific commands and / or
-  manufacturer-targeted commands.
