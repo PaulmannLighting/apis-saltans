@@ -12,3 +12,5 @@
 
 - [x] ZCL and ZDP frames are framed within APS frames, but e.g. EZSP does not allow the passing-in and retrieval of
   entire APS frames and only processes and provides part of the APS metadata.
+- [ ] Remove `zigbee_nwk::aps` in favor of `aps::Data` frame.
+- [ ] Introduce APS transport layer underneath ZCL and ZDP layers which will be used to send those frames.
