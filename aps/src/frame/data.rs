@@ -21,7 +21,7 @@ impl<T> Frame<T> {
     /// # Safety
     ///
     /// The caller must ensure that the provided `control` is consistent with a Data frame.
-    #[expect(unsafe_code, clippy::too_many_arguments)]
+    #[expect(unsafe_code)]
     #[must_use]
     pub const unsafe fn new_unchecked(header: Header, payload: T) -> Self {
         Self { header, payload }
