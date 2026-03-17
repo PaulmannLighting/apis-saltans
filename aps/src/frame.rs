@@ -14,18 +14,19 @@ mod extended;
 
 /// A generic APS frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub enum Frame<T> {
+pub enum Frame<C, D> {
     /// The frame is an acknowledgement frame.
     Acknowledgement(acknowledgement::Frame),
     /// The frame is a command frame.
-    Command(command::Frame<T>),
+    Command(command::Frame<C>),
     /// The frame is a data frame.
-    Data(data::Frame<T>),
+    Data(data::Frame<D>),
 }
 
-impl<T> FromLeStream for Frame<T>
+impl<C, D> FromLeStream for Frame<C, D>
 where
-    T: FromLeStream,
+    C: FromLeStream,
+    D: FromLeStream,
 {
     fn from_le_stream<I>(mut bytes: I) -> Option<Self>
     where
