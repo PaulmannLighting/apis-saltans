@@ -2,14 +2,15 @@
 
 use le_stream::{FromLeStream, ToLeStream};
 
+pub use self::header::Header;
 use crate::Control;
+
+mod header;
 
 /// APS Command Frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Frame<T> {
-    control: Control,
-    counter: u8,
-    id: u8,
+    header: Header,
     payload: T,
 }
 
@@ -18,40 +19,29 @@ impl<T> Frame<T> {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the provided `control` and `id` are consistent with a Command frame.
+    /// The caller must ensure that the provided header is consistent with the payload.
     #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new_unchecked(control: Control, counter: u8, id: u8, payload: T) -> Self {
-        Self {
-            control,
-            counter,
-            id,
-            payload,
-        }
+    pub const unsafe fn new_unchecked(header: Header, payload: T) -> Self {
+        Self { header, payload }
     }
 
-    /// Returns the control field.
+    /// Return a reference to the header.
     #[must_use]
-    pub const fn control(&self) -> Control {
-        self.control
+    pub const fn header(&self) -> &Header {
+        &self.header
     }
 
-    /// Returns the counter.
-    #[must_use]
-    pub const fn counter(&self) -> u8 {
-        self.counter
-    }
-
-    /// Returns a reference to the payload.
+    /// Return a reference to the payload.
     #[must_use]
     pub const fn payload(&self) -> &T {
         &self.payload
     }
 
-    /// Consumes the command frame and returns the payload.
+    /// Return the header and payload consuming the frame.
     #[must_use]
-    pub fn into_payload(self) -> T {
-        self.payload
+    pub fn into_parts(self) -> (Header, T) {
+        (self.header, self.payload)
     }
 }
 
@@ -74,9 +64,7 @@ where
         let payload = T::from_le_stream(&mut bytes)?;
 
         Some(Self {
-            control,
-            counter,
-            id,
+            header: Header::new(control, counter, id),
             payload,
         })
     }
