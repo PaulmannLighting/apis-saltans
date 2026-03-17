@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 bitflags = "2.11"
-le-stream = { version = "7", features = ["derive"] }
+le-stream = { version = "8", features = ["derive"] }
 num-derive = "0.4"
 num-traits = "0.2"
 
