@@ -105,9 +105,8 @@ where
             }
             Event::MessageReceived {
                 src_address,
-                command,
-                ..
-            } => match &**command {
+                aps_frame,
+            } => match aps_frame.paylaod() {
                 Command::Zdp(command) => {
                     if let Err(error) = self.handle_zdp_command(*src_address, command).await {
                         error!("Failed to handle ZDP command: {error}");
