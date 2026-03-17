@@ -78,6 +78,12 @@ impl<T> Frame<T> {
             payload,
         }
     }
+
+    /// Return the payload, consuming the frame.
+    #[must_use]
+    pub fn into_payload(self) -> T {
+        self.payload
+    }
 }
 
 impl<T> Frame<T>
