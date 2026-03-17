@@ -2,10 +2,14 @@
 
 use zigbee_macros::ParseZclFrame;
 
+pub use self::raw_attribute::RawAttribute;
+pub use self::raw_attributes::RawAttributes;
 use crate::CommandId;
 
 pub mod configure_reporting;
 pub mod default_response;
+mod raw_attribute;
+mod raw_attributes;
 pub mod read_attributes;
 pub mod report_attributes;
 
