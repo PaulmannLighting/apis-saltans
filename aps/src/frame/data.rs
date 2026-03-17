@@ -2,19 +2,16 @@
 
 use le_stream::FromLeStream;
 
+pub use self::header::Header;
 use crate::frame::destination::Destination;
 use crate::{Control, DeliveryMode, Extended, FrameType};
+
+mod header;
 
 /// APS Data frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Frame<T> {
-    control: Control,
-    destination: Destination,
-    cluster_id: u16,
-    profile_id: u16,
-    source_endpoint: u8,
-    counter: u8,
-    extended: Option<Extended>,
+    header: Header,
     payload: T,
 }
 
@@ -26,26 +23,8 @@ impl<T> Frame<T> {
     /// The caller must ensure that the provided `control` is consistent with a Data frame.
     #[expect(unsafe_code, clippy::too_many_arguments)]
     #[must_use]
-    pub const unsafe fn new_unchecked(
-        control: Control,
-        destination: Destination,
-        cluster_id: u16,
-        profile_id: u16,
-        source_endpoint: u8,
-        counter: u8,
-        extended: Option<Extended>,
-        payload: T,
-    ) -> Self {
-        Self {
-            control,
-            destination,
-            cluster_id,
-            profile_id,
-            source_endpoint,
-            counter,
-            extended,
-            payload,
-        }
+    pub const unsafe fn new_unchecked(header: Header, payload: T) -> Self {
+        Self { header, payload }
     }
 
     /// Creates a new APS Data frame header.
@@ -68,57 +47,23 @@ impl<T> Frame<T> {
         }
 
         Self {
-            control,
-            destination,
-            cluster_id,
-            profile_id,
-            source_endpoint,
-            counter,
-            extended,
+            header: Header::new(
+                control,
+                destination,
+                cluster_id,
+                profile_id,
+                source_endpoint,
+                counter,
+                extended,
+            ),
             payload,
         }
     }
 
-    /// Return the control field.
+    /// Return a reference to the header.
     #[must_use]
-    pub const fn control(&self) -> Control {
-        self.control
-    }
-
-    /// Return the destination.
-    #[must_use]
-    pub const fn destination(&self) -> Destination {
-        self.destination
-    }
-
-    /// Return the cluster ID.
-    #[must_use]
-    pub const fn cluster_id(&self) -> u16 {
-        self.cluster_id
-    }
-
-    /// Return the profile ID.
-    #[must_use]
-    pub const fn profile_id(&self) -> u16 {
-        self.profile_id
-    }
-
-    /// Return the source endpoint.
-    #[must_use]
-    pub const fn source_endpoint(&self) -> u8 {
-        self.source_endpoint
-    }
-
-    /// Return the APS frame counter.
-    #[must_use]
-    pub const fn counter(&self) -> u8 {
-        self.counter
-    }
-
-    /// Return the extended header.
-    #[must_use]
-    pub const fn extended(&self) -> Option<Extended> {
-        self.extended
+    pub const fn header(&self) -> &Header {
+        &self.header
     }
 
     /// Return a reference to the payload.
@@ -127,10 +72,10 @@ impl<T> Frame<T> {
         &self.payload
     }
 
-    /// Return the payload, consuming the frame.
+    /// Return the header and payload, consuming the frame.
     #[must_use]
-    pub fn into_payload(self) -> T {
-        self.payload
+    pub fn into_party(self) -> (Header, T) {
+        (self.header, self.payload)
     }
 }
 
@@ -168,13 +113,15 @@ where
         let payload = T::from_le_stream(&mut bytes)?;
 
         Some(Self {
-            control,
-            destination,
-            cluster_id,
-            profile_id,
-            source_endpoint,
-            counter,
-            extended,
+            header: Header::new(
+                control,
+                destination,
+                cluster_id,
+                profile_id,
+                source_endpoint,
+                counter,
+                extended,
+            ),
             payload,
         })
     }

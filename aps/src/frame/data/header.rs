@@ -1,0 +1,79 @@
+use crate::{Control, Destination, Extended};
+
+/// A data frame header.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct Header {
+    control: Control,
+    destination: Destination,
+    cluster_id: u16,
+    profile_id: u16,
+    source_endpoint: u8,
+    counter: u8,
+    extended: Option<Extended>,
+}
+
+impl Header {
+    /// Create a new `Header`.
+    #[must_use]
+    pub const fn new(
+        control: Control,
+        destination: Destination,
+        cluster_id: u16,
+        profile_id: u16,
+        source_endpoint: u8,
+        counter: u8,
+        extended: Option<Extended>,
+    ) -> Self {
+        Self {
+            control,
+            destination,
+            cluster_id,
+            profile_id,
+            source_endpoint,
+            counter,
+            extended,
+        }
+    }
+
+    /// Return the control field.
+    #[must_use]
+    pub const fn control(&self) -> Control {
+        self.control
+    }
+
+    /// Return the destination.
+    #[must_use]
+    pub const fn destination(&self) -> Destination {
+        self.destination
+    }
+
+    /// Return the cluster ID.
+    #[must_use]
+    pub const fn cluster_id(&self) -> u16 {
+        self.cluster_id
+    }
+
+    /// Return the profile ID.
+    #[must_use]
+    pub const fn profile_id(&self) -> u16 {
+        self.profile_id
+    }
+
+    /// Return the source endpoint.
+    #[must_use]
+    pub const fn source_endpoint(&self) -> u8 {
+        self.source_endpoint
+    }
+
+    /// Return the APS frame counter.
+    #[must_use]
+    pub const fn counter(&self) -> u8 {
+        self.counter
+    }
+
+    /// Return the extended header.
+    #[must_use]
+    pub const fn extended(&self) -> Option<Extended> {
+        self.extended
+    }
+}
