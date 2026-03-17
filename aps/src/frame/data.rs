@@ -79,6 +79,54 @@ impl<T> Frame<T> {
         }
     }
 
+    /// Return the control field.
+    #[must_use]
+    pub const fn control(&self) -> Control {
+        self.control
+    }
+
+    /// Return the destination.
+    #[must_use]
+    pub const fn destination(&self) -> Destination {
+        self.destination
+    }
+
+    /// Return the cluster ID.
+    #[must_use]
+    pub const fn cluster_id(&self) -> u16 {
+        self.cluster_id
+    }
+
+    /// Return the profile ID.
+    #[must_use]
+    pub const fn profile_id(&self) -> u16 {
+        self.profile_id
+    }
+
+    /// Return the source endpoint.
+    #[must_use]
+    pub const fn source_endpoint(&self) -> u8 {
+        self.source_endpoint
+    }
+
+    /// Return the APS frame counter.
+    #[must_use]
+    pub const fn counter(&self) -> u8 {
+        self.counter
+    }
+
+    /// Return the extended header.
+    #[must_use]
+    pub const fn extended(&self) -> Option<Extended> {
+        self.extended
+    }
+
+    /// Return a reference to the payload.
+    #[must_use]
+    pub const fn payload(&self) -> &T {
+        &self.payload
+    }
+
     /// Return the payload, consuming the frame.
     #[must_use]
     pub fn into_payload(self) -> T {
