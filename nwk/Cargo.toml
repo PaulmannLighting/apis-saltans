@@ -4,14 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+aps = { path = "../aps", version = "0.1" }
 bunt = { git = "https://github.com/PaulmannLighting/bunt.git", version = "0.1.0" }
 le-stream = "7"
 log = "0.4"
 macaddr = "1.0"
 tokio = { version = "1.49", features = ["sync"] }
-zcl = { path = "../zcl" }
-zdp = { path = "../zdp" }
-zigbee = { path = "../zigbee" }
+zcl = { path = "../zcl", version = "0.1" }
+zdp = { path = "../zdp", version = "0.1" }
+zigbee = { path = "../zigbee", version = "0.1" }
 
 [lints]
 workspace = true
