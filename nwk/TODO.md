@@ -10,5 +10,5 @@
 
 ## Architectural challenges
 
-- [ ] ZCL and ZDP frames are framed within APS frames, but e.g. EZSP does not allow the passing-in and retrieval of
+- [x] ZCL and ZDP frames are framed within APS frames, but e.g. EZSP does not allow the passing-in and retrieval of
   entire APS frames and only processes and provides part of the APS metadata.
