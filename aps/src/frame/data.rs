@@ -1,16 +1,16 @@
-//! APS Data frame.
+//! APS Data frame definitions.
 
 use le_stream::FromLeStream;
 
 pub use self::header::Header;
 pub use self::unicast::Unicast;
 use crate::frame::destination::Destination;
-use crate::{Control, DeliveryMode, Extended, FrameType};
+use crate::{Control, DeliveryMode, Extended};
 
 mod header;
 mod unicast;
 
-/// APS Data frame.
+/// An APS Data frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Frame<T> {
     header: Header,
@@ -40,17 +40,8 @@ impl<T> Frame<T> {
         extended: Option<Extended>,
         payload: T,
     ) -> Self {
-        let mut control = Control::empty();
-        control.set_frame_type(FrameType::Data);
-        control.set_destination(destination);
-
-        if extended.is_some() {
-            control.insert(Control::EXTENDED_HEADER);
-        }
-
         Self {
             header: Header::new(
-                control,
                 destination,
                 cluster_id,
                 profile_id,
@@ -115,15 +106,19 @@ where
         let payload = T::from_le_stream(&mut bytes)?;
 
         Some(Self {
-            header: Header::new(
-                control,
-                destination,
-                cluster_id,
-                profile_id,
-                source_endpoint,
-                counter,
-                extended,
-            ),
+            #[expect(unsafe_code)]
+            // SAFETY: This function requires to control field to be consistent as per its safety section.
+            header: unsafe {
+                Header::new_unchecked(
+                    control,
+                    destination,
+                    cluster_id,
+                    profile_id,
+                    source_endpoint,
+                    counter,
+                    extended,
+                )
+            },
             payload,
         })
     }

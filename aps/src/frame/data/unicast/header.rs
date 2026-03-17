@@ -1,6 +1,6 @@
 //! Header definitions for an APS data unicast frame.
 
-use crate::{Control, Extended};
+use crate::{Control, DeliveryMode, Extended, FrameType};
 
 /// A header for an APS unicast frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -16,14 +16,11 @@ pub struct Header {
 
 impl Header {
     /// Create a new header for an APS unicast frame.
-    ///
-    /// # Side effects
-    ///
-    /// This will override the control flag for the extended header,
-    /// depending on whether an extended header is set or not.
+    #[expect(clippy::too_many_arguments)]
     #[must_use]
     pub fn new(
-        mut control: Control,
+        security: bool,
+        ack_request: bool,
         dst_endpoint: u8,
         cluster_id: u16,
         profile_id: u16,
@@ -31,40 +28,19 @@ impl Header {
         counter: u8,
         extended: Option<Extended>,
     ) -> Self {
-        // Ensure that we have the correct flag set in either case.
-        if extended.is_some() {
-            control.insert(Control::EXTENDED_HEADER);
-        } else {
-            control.remove(Control::EXTENDED_HEADER);
+        let mut control = Control::empty();
+        control.set_frame_type(FrameType::Data);
+        control.set_delivery_mode(DeliveryMode::Unicast);
+        control.set_extended_header(extended.is_some());
+
+        if security {
+            control.insert(Control::SECURITY);
         }
 
-        Self {
-            control,
-            dst_endpoint,
-            cluster_id,
-            profile_id,
-            source_endpoint,
-            counter,
-            extended,
+        if ack_request {
+            control.insert(Control::ACK_REQUEST);
         }
-    }
 
-    /// Create a new header for an APS unicast frame.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the control field correctly indicates whether there's an extended header.
-    #[expect(unsafe_code)]
-    #[must_use]
-    pub const unsafe fn new_unchecked(
-        control: Control,
-        dst_endpoint: u8,
-        cluster_id: u16,
-        profile_id: u16,
-        source_endpoint: u8,
-        counter: u8,
-        extended: Option<Extended>,
-    ) -> Self {
         Self {
             control,
             dst_endpoint,

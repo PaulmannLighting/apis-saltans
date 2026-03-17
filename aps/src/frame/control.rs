@@ -75,4 +75,13 @@ impl Control {
             }
         }
     }
+
+    /// Set whether an extended header is present.
+    pub fn set_extended_header(&mut self, extended_header_present: bool) {
+        if extended_header_present {
+            self.insert(Self::EXTENDED_HEADER);
+        } else {
+            self.remove(Self::EXTENDED_HEADER);
+        }
+    }
 }

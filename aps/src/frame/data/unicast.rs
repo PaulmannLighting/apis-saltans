@@ -1,7 +1,7 @@
 //! Distinct type for a unicast frame.
 
 pub use self::header::Header;
-use crate::{Control, DeliveryMode, Extended, FrameType};
+use crate::Extended;
 
 mod header;
 
@@ -27,21 +27,10 @@ impl<T> Unicast<T> {
         extended: Option<Extended>,
         payload: T,
     ) -> Self {
-        let mut control = Control::empty();
-        control.set_frame_type(FrameType::Data);
-        control.set_delivery_mode(DeliveryMode::Unicast);
-
-        if security {
-            control.insert(Control::SECURITY);
-        }
-
-        if ack_request {
-            control.insert(Control::ACK_REQUEST);
-        }
-
         Self {
             header: Header::new(
-                control,
+                security,
+                ack_request,
                 dst_endpoint,
                 cluster_id,
                 profile_id,

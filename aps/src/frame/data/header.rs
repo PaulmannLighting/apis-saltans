@@ -1,5 +1,7 @@
+//! Header definitions for a generic APS Data frame.
+
 use crate::frame::data::unicast;
-use crate::{Control, Destination, Extended};
+use crate::{Control, Destination, Extended, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -15,8 +17,44 @@ pub struct Header {
 
 impl Header {
     /// Create a new `Header`.
+    pub fn new(
+        destination: Destination,
+        cluster_id: u16,
+        profile_id: u16,
+        source_endpoint: u8,
+        counter: u8,
+        extended: Option<Extended>,
+    ) -> Self {
+        let mut control = Control::empty();
+        control.set_frame_type(FrameType::Data);
+        control.set_destination(destination);
+
+        if extended.is_some() {
+            control.insert(Control::EXTENDED_HEADER);
+        }
+
+        Self {
+            control,
+            destination,
+            cluster_id,
+            profile_id,
+            source_endpoint,
+            counter,
+            extended,
+        }
+    }
+
+    /// Create a new `Header`.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that:
+    ///
+    /// 1) the delivery mode corresponds to the destination and
+    /// 2) that the extended flag corresponds to the presence of the extended header.
+    #[expect(unsafe_code)]
     #[must_use]
-    pub const fn new(
+    pub const unsafe fn new_unchecked(
         control: Control,
         destination: Destination,
         cluster_id: u16,
