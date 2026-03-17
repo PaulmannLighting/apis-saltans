@@ -1,10 +1,12 @@
 //! Header definitions for a generic APS Data frame.
 
+use le_stream::ToLeStream;
+
 use crate::frame::data::unicast;
 use crate::{Control, Destination, Extended, FrameType};
 
 /// A data frame header.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Header {
     control: Control,
     destination: Destination,
