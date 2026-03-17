@@ -44,36 +44,6 @@ impl Header {
         }
     }
 
-    /// Create a new `Header`.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that:
-    ///
-    /// 1) the delivery mode corresponds to the destination and
-    /// 2) that the extended flag corresponds to the presence of the extended header.
-    #[expect(unsafe_code)]
-    #[must_use]
-    pub const unsafe fn new_unchecked(
-        control: Control,
-        destination: Destination,
-        cluster_id: u16,
-        profile_id: u16,
-        source_endpoint: u8,
-        counter: u8,
-        extended: Option<Extended>,
-    ) -> Self {
-        Self {
-            control,
-            destination,
-            cluster_id,
-            profile_id,
-            source_endpoint,
-            counter,
-            extended,
-        }
-    }
-
     /// Return the control field.
     #[must_use]
     pub const fn control(&self) -> Control {

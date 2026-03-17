@@ -1,11 +1,9 @@
 //! APS Data frame definitions.
 
-use le_stream::FromLeStream;
-
 pub use self::header::Header;
 pub use self::unicast::Unicast;
+use crate::Extended;
 use crate::frame::destination::Destination;
-use crate::{Control, DeliveryMode, Extended};
 
 mod header;
 mod unicast;
@@ -69,58 +67,6 @@ impl<T> Frame<T> {
     #[must_use]
     pub fn into_party(self) -> (Header, T) {
         (self.header, self.payload)
-    }
-}
-
-impl<T> Frame<T>
-where
-    T: FromLeStream,
-{
-    /// Creates an APS Data frame from a little-endian byte stream, given the control field.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the control field indicates a valid Data frame.
-    #[expect(unsafe_code)]
-    pub unsafe fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
-    where
-        U: Iterator<Item = u8>,
-    {
-        let destination = match control.delivery_mode()? {
-            DeliveryMode::Unicast => Destination::Unicast(u8::from_le_stream(&mut bytes)?),
-            DeliveryMode::Broadcast => Destination::Broadcast(u8::from_le_stream(&mut bytes)?),
-            DeliveryMode::Group => Destination::Group(u16::from_le_stream(&mut bytes)?),
-        };
-
-        let cluster_id = u16::from_le_stream(&mut bytes)?;
-        let profile_id = u16::from_le_stream(&mut bytes)?;
-        let source_endpoint = u8::from_le_stream(&mut bytes)?;
-        let counter = u8::from_le_stream(&mut bytes)?;
-
-        let extended = if control.contains(Control::EXTENDED_HEADER) {
-            Some(Extended::from_le_stream(false, &mut bytes)?)
-        } else {
-            None
-        };
-
-        let payload = T::from_le_stream(&mut bytes)?;
-
-        Some(Self {
-            #[expect(unsafe_code)]
-            // SAFETY: This function requires to control field to be consistent as per its safety section.
-            header: unsafe {
-                Header::new_unchecked(
-                    control,
-                    destination,
-                    cluster_id,
-                    profile_id,
-                    source_endpoint,
-                    counter,
-                    extended,
-                )
-            },
-            payload,
-        })
     }
 }
 

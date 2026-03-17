@@ -1,6 +1,6 @@
 //! APS Acknowledgment Frame.
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::ToLeStream;
 
 pub use self::ack_fmt::AckFmt;
 use crate::{Control, Extended, FrameType};
@@ -58,38 +58,6 @@ impl Frame {
             counter,
             extended,
         }
-    }
-
-    /// Parses an APS Acknowledgment frame from a little-endian byte stream with the given control field.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the control field indicates a valid Acknowledgment frame.
-    #[expect(unsafe_code)]
-    pub unsafe fn from_le_stream_with_control<T>(control: Control, mut bytes: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        let fmt = if control.contains(Control::ACK_FORMAT) {
-            None
-        } else {
-            Some(AckFmt::from_le_stream(&mut bytes)?)
-        };
-
-        let counter = u8::from_le_stream(&mut bytes)?;
-
-        let extended = if control.contains(Control::EXTENDED_HEADER) {
-            Some(Extended::from_le_stream(true, &mut bytes)?)
-        } else {
-            None
-        };
-
-        Some(Self {
-            control,
-            fmt,
-            counter,
-            extended,
-        })
     }
 
     /// Returns the control field.

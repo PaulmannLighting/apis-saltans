@@ -1,9 +1,8 @@
 //! APS Command Frame.
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::ToLeStream;
 
 pub use self::header::Header;
-use crate::Control;
 
 mod header;
 
@@ -42,30 +41,5 @@ impl<T> Frame<T> {
     #[must_use]
     pub fn into_parts(self) -> (Header, T) {
         (self.header, self.payload)
-    }
-}
-
-impl<T> Frame<T>
-where
-    T: FromLeStream,
-{
-    /// Creates a new APS Command frame from a little-endian byte stream with the given control field.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the control field indicates a valid Command frame.
-    #[expect(unsafe_code)]
-    pub unsafe fn from_le_stream_with_control<U>(control: Control, mut bytes: U) -> Option<Self>
-    where
-        U: Iterator<Item = u8>,
-    {
-        let counter = u8::from_le_stream(&mut bytes)?;
-        let id = u8::from_le_stream(&mut bytes)?;
-        let payload = T::from_le_stream(&mut bytes)?;
-
-        Some(Self {
-            header: Header::new(control, counter, id),
-            payload,
-        })
     }
 }
