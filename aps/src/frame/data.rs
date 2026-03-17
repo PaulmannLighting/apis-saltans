@@ -3,10 +3,12 @@
 use le_stream::FromLeStream;
 
 pub use self::header::Header;
+pub use self::unicast::Unicast;
 use crate::frame::destination::Destination;
 use crate::{Control, DeliveryMode, Extended, FrameType};
 
 mod header;
+mod unicast;
 
 /// APS Data frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
