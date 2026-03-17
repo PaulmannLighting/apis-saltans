@@ -81,15 +81,3 @@ where
         })
     }
 }
-
-/// Types of available commands.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub enum Command {
-    /// A ZCL command.
-    #[cfg(feature = "zcl")]
-    Zcl(Box<zcl::Cluster>),
-
-    /// A ZDP command.
-    #[cfg(feature = "zdp")]
-    Zdp(Box<zdp::Command>),
-}
