@@ -8,6 +8,12 @@ bitflags = "2.11"
 le-stream = { version = "8", features = ["derive"] }
 num-derive = "0.4"
 num-traits = "0.2"
+zcl = { path = "../zcl", version = "0.1", optional = true }
+zdp = { path = "../zdp", version = "0.1", optional = true }
+
+[features]
+zcl = ["dep:zcl"]
+zdp = ["dep:zdp"]
 
 [lints]
 workspace = true
