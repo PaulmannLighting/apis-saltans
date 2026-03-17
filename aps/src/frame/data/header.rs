@@ -1,3 +1,4 @@
+use crate::frame::data::unicast;
 use crate::{Control, Destination, Extended};
 
 /// A data frame header.
@@ -75,5 +76,19 @@ impl Header {
     #[must_use]
     pub const fn extended(&self) -> Option<Extended> {
         self.extended
+    }
+}
+
+impl From<unicast::Header> for Header {
+    fn from(header: unicast::Header) -> Self {
+        Self {
+            control: header.control(),
+            destination: Destination::Unicast(header.dst_endpoint()),
+            cluster_id: header.cluster_id(),
+            profile_id: header.profile_id(),
+            source_endpoint: header.source_endpoint(),
+            counter: header.counter(),
+            extended: header.extended(),
+        }
     }
 }

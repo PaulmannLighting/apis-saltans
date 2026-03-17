@@ -128,3 +128,14 @@ where
         })
     }
 }
+
+impl<T> From<Unicast<T>> for Frame<T> {
+    fn from(unicast: Unicast<T>) -> Self {
+        let (header, payload) = unicast.into_parts();
+
+        Self {
+            header: header.into(),
+            payload,
+        }
+    }
+}
