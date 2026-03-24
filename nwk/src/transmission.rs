@@ -1,3 +1,10 @@
+//! Transmission frame abstraction for the network layer.
+//!
+//! This module provides [`Frame`] and [`Metadata`] types that abstract over
+//! application-layer protocols (ZCL, ZDP) for transmission through the network layer.
+//! Unlike raw APS frames, these types hide implementation details like frame counters
+//! and extended headers, providing a clean interface for coordinator implementations.
+
 use le_stream::ToLeStream;
 use zigbee::{ClusterId, Endpoint, Profile};
 
@@ -5,7 +12,12 @@ pub use self::metadata::Metadata;
 
 mod metadata;
 
-/// A non-sequenced, non-generic view on a ZCL frame for transmission via channels.
+/// A transmission-ready frame with application-layer metadata.
+///
+/// This frame type abstracts over ZCL and ZDP frames, providing a unified
+/// representation for transmission via the network layer. It contains:
+/// - A serialized payload (ZCL or ZDP frame)
+/// - Metadata: cluster ID, profile ID (optional), source endpoint (optional)
 ///
 /// # Invariants
 ///

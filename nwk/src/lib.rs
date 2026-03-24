@@ -3,7 +3,7 @@
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::actor::Actor;
-pub use self::aps::{Frame, Metadata};
+pub use self::transmission::{Frame, Metadata};
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
@@ -13,7 +13,7 @@ pub use self::waiter::Waiter;
 pub use self::zcl::{Attributes, Binding, ColorControl, OnOff};
 
 mod actor;
-mod aps;
+mod transmission;
 mod error;
 mod event;
 mod message;
