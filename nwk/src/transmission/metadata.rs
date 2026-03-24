@@ -29,15 +29,30 @@ impl Metadata {
         self.cluster_id
     }
 
+    /// set the cluster ID.
+    pub const fn set_cluster_id(&mut self, cluster_id: u16) {
+        self.cluster_id = cluster_id;
+    }
+
     /// Return the profile ID.
     #[must_use]
     pub const fn profile(&self) -> Option<Profile> {
         self.profile
     }
 
+    /// Set the profile.
+    pub const fn set_profile(&mut self, profile: Profile) {
+        self.profile = Some(profile);
+    }
+
     /// Return the source endpoint.
     #[must_use]
     pub const fn source_endpoint(&self) -> Option<Endpoint> {
         self.source_endpoint
+    }
+
+    /// Set the source endpoint.
+    pub const fn set_source_endpoint(&mut self, source: Endpoint) {
+        self.source_endpoint = Some(source);
     }
 }

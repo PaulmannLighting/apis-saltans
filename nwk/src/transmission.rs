@@ -43,6 +43,18 @@ impl Frame {
         }
     }
 
+    /// Return the metadata.
+    #[must_use]
+    pub const fn metadata(&self) -> &Metadata {
+        &self.aps_metadata
+    }
+
+    /// Return the metadata.
+    #[must_use]
+    pub const fn metadata_mut(&mut self) -> &mut Metadata {
+        &mut self.aps_metadata
+    }
+
     /// Return the cluster ID and payload of the frame.
     #[must_use]
     pub fn into_parts(self) -> (Metadata, Box<[u8]>) {
