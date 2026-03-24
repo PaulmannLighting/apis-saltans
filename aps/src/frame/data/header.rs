@@ -1,9 +1,9 @@
 //! Header definitions for a generic APS Data frame.
 
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::frame::data::unicast;
-use crate::{Control, Destination, Extended, FrameType};
+use crate::{Control, DeliveryMode, Destination, Extended, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
@@ -100,5 +100,47 @@ impl From<unicast::Header> for Header {
             counter: header.counter(),
             extended: header.extended(),
         }
+    }
+}
+
+impl FromLeStream for Header {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let control = Control::from_le_stream(&mut bytes)?;
+
+        let destination = match control.delivery_mode() {
+            Some(delivery_mode) => match delivery_mode {
+                DeliveryMode::Unicast => Destination::Unicast(u8::from_le_stream(&mut bytes)?),
+                DeliveryMode::Broadcast => Destination::Broadcast(u8::from_le_stream(&mut bytes)?),
+                DeliveryMode::Group => Destination::Group(u16::from_le_stream(&mut bytes)?),
+            },
+            None => return None, // TODO: Do we have a better option to handle the error case here?
+        };
+
+        let cluster_id = u16::from_le_stream(&mut bytes)?;
+        let profile_id = u16::from_le_stream(&mut bytes)?;
+        let source_endpoint = u8::from_le_stream(&mut bytes)?;
+        let counter = u8::from_le_stream(&mut bytes)?;
+
+        let extended = if control.contains(Control::EXTENDED_HEADER) {
+            Some(Extended::from_le_stream(
+                matches!(control.frame_type(), FrameType::Acknowledgment),
+                &mut bytes,
+            )?)
+        } else {
+            None
+        };
+
+        Some(Self {
+            control,
+            destination,
+            cluster_id,
+            profile_id,
+            source_endpoint,
+            counter,
+            extended,
+        })
     }
 }
