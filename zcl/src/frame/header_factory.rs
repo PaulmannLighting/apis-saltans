@@ -15,6 +15,12 @@ pub unsafe trait HeaderFactory {
     where
         Self: Sized,
     {
-        Frame::new(seq, self)
+        #[expect(unsafe_code)]
+        // SAFETY: We crate the header with the trait method as defined for this type.
+        // Since this trait is marked as unsafe itself, it is up to the implementor to uphold
+        // the invariant that the header matches the given payload.
+        unsafe {
+            Frame::new_unchecked(self.header(seq), self)
+        }
     }
 }
