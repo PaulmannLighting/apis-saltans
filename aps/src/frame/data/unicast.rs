@@ -1,12 +1,14 @@
 //! Distinct type for a unicast frame.
 
+use le_stream::ToLeStream;
+
 pub use self::header::Header;
 use crate::Extended;
 
 mod header;
 
 /// An APS unicast frame.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Unicast<T> {
     header: Header,
     payload: T,

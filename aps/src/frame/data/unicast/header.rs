@@ -1,9 +1,11 @@
 //! Header definitions for an APS data unicast frame.
 
+use le_stream::ToLeStream;
+
 use crate::{Control, DeliveryMode, Extended, FrameType};
 
 /// A header for an APS unicast frame.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Header {
     control: Control,
     dst_endpoint: u8,
