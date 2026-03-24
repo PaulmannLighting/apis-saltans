@@ -18,10 +18,6 @@ mod metadata;
 /// representation for transmission via the network layer. It contains:
 /// - A serialized payload (ZCL or ZDP frame)
 /// - Metadata: cluster ID, profile ID (optional), source endpoint (optional)
-///
-/// # Invariants
-///
-/// The underlying frame's sequence number must be overridden and is assumed to be undefined.
 #[derive(Debug)]
 pub struct Frame {
     aps_metadata: Metadata,
