@@ -4,13 +4,13 @@ pub use self::command_id::CommandId;
 pub use self::customizable::Customizable;
 pub use self::global::Global;
 pub use self::native::Native;
-pub use self::scope::Scoped;
+pub use self::scoped::Scoped;
 
 mod command_id;
 mod customizable;
 mod global;
 mod native;
-mod scope;
+mod scoped;
 
 /// Trait to identify a Zigbee command.
 pub trait Command {
