@@ -9,7 +9,7 @@ use zigbee::{Cluster, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::direction::Direction;
 use crate::lighting::color_control::CLUSTER_ID;
-use crate::{Command, Options};
+use crate::{Command, Native, Options};
 
 mod direction;
 
@@ -92,3 +92,5 @@ impl Command for MoveToHue {
     const ID: u8 = 0x00;
     const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }
+
+impl Native for MoveToHue {}

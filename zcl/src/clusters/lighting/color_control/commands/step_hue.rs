@@ -9,7 +9,7 @@ use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::mode::Mode;
 use crate::lighting::color_control::CLUSTER_ID;
-use crate::{Command, Options};
+use crate::{Command, Native, Options};
 
 mod mode;
 
@@ -87,3 +87,5 @@ impl Command for StepHue {
     const ID: u8 = 0x02;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
+
+impl Native for StepHue {}

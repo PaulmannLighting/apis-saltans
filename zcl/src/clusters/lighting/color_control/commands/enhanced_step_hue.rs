@@ -7,7 +7,7 @@ use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::step_hue::Mode;
-use crate::{Command, Options};
+use crate::{Command, Native, Options};
 
 /// Command to step a light's hue in an enhanced way, allowing for more control over the size.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -83,3 +83,5 @@ impl Command for EnhancedStepHue {
     const ID: u8 = 0x42;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
+
+impl Native for EnhancedStepHue {}
