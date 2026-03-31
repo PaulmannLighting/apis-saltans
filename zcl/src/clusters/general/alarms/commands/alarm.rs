@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction};
 
 use super::CLUSTER_ID;
-use crate::Command;
+use crate::{Command, Native};
 
 /// An issued alarm.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -40,3 +40,5 @@ impl Command for Alarm {
     const ID: u8 = 0x00;
     const DIRECTION: Direction = Direction::ServerToClient;
 }
+
+impl Native for Alarm {}

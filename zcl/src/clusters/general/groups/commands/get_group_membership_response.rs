@@ -4,9 +4,9 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{Uint8, Uint16};
 use zigbee::{Cluster, Direction};
 
-use crate::Command;
 use crate::clusters::general::groups::CLUSTER_ID;
 use crate::clusters::general::groups::types::GroupList;
+use crate::{Command, Native};
 
 /// Represents a response to an `GetGroupMembership` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -72,6 +72,8 @@ impl Command for GetGroupMembershipResponse {
     const DIRECTION: Direction = Direction::ServerToClient;
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
+
+impl Native for GetGroupMembershipResponse {}
 
 impl FromLeStream for GetGroupMembershipResponse {
     fn from_le_stream<I>(mut bytes: I) -> Option<Self>

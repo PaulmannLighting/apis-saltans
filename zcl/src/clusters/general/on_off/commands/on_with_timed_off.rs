@@ -5,8 +5,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::on_off_control::OnOffControl;
-use crate::Command;
 use crate::general::on_off::CLUSTER_ID;
+use crate::{Command, Native};
 
 mod on_off_control;
 
@@ -75,3 +75,5 @@ impl Command for OnWithTimedOff {
     const ID: u8 = 0x42;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
+
+impl Native for OnWithTimedOff {}

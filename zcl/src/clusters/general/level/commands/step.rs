@@ -5,9 +5,9 @@ use num_traits::FromPrimitive;
 use zigbee::{Cluster, Direction, FromDeciSeconds};
 
 use super::CLUSTER_ID;
-use crate::Command;
 use crate::general::level::Mode;
 use crate::options::Options;
+use crate::{Command, Native};
 
 /// Step command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -67,3 +67,5 @@ impl Command for Step {
     const ID: u8 = 0x02;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
+
+impl Native for Step {}

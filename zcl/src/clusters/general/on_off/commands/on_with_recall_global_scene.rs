@@ -1,8 +1,8 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction};
 
-use crate::Command;
 use crate::general::on_off::CLUSTER_ID;
+use crate::{Command, Native};
 
 /// Switch a device on and recall its settings of before it was switched off.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -17,3 +17,5 @@ impl Command for OnWithRecallGlobalScene {
     const ID: u8 = 0x41;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
+
+impl Native for OnWithRecallGlobalScene {}

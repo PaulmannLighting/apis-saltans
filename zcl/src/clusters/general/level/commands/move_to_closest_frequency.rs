@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction};
 
 use super::CLUSTER_ID;
-use crate::Command;
+use crate::{Command, Native};
 
 /// Move to the closest frequency command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -33,3 +33,5 @@ impl Command for MoveToClosestFrequency {
     const ID: u8 = 0x08;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
+
+impl Native for MoveToClosestFrequency {}

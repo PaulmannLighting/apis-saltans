@@ -3,7 +3,7 @@ use zigbee::types::Uint16;
 use zigbee::{Cluster, Direction};
 
 use crate::clusters::general::groups::CLUSTER_ID;
-use crate::{Command, Status};
+use crate::{Command, Native, Status};
 
 /// Represents a response to an `RemoveGroup` command.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
@@ -47,3 +47,5 @@ impl Command for RemoveGroupResponse {
     const DIRECTION: Direction = Direction::ServerToClient;
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
+
+impl Native for RemoveGroupResponse {}

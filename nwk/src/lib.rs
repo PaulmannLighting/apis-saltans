@@ -3,23 +3,23 @@
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::actor::Actor;
-pub use self::transmission::{Frame, Metadata};
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
 pub use self::network_manager::NetworkManager;
 pub use self::proxy::Proxy;
+pub use self::transmission::{Frame, Metadata};
 pub use self::waiter::Waiter;
 pub use self::zcl::{Attributes, Binding, ColorControl, OnOff};
 
 mod actor;
-mod transmission;
 mod error;
 mod event;
 mod message;
 mod network_manager;
 mod proxies;
 mod proxy;
+mod transmission;
 mod waiter;
 mod zcl;
 

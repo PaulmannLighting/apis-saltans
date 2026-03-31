@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Direction};
 
 use super::CLUSTER_ID;
-use crate::Command;
+use crate::{Command, Native};
 
 /// Clear the alarm table.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -19,3 +19,5 @@ impl Command for ResetAlarmLog {
     const ID: u8 = 0x03;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
+
+impl Native for ResetAlarmLog {}
