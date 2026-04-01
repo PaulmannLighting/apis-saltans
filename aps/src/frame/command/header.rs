@@ -23,19 +23,19 @@ impl Header {
 
     /// Return the control field.
     #[must_use]
-    pub const fn control(&self) -> Control {
+    pub const fn control(self) -> Control {
         self.control
     }
 
     /// Return the APS counter.
     #[must_use]
-    pub const fn counter(&self) -> u8 {
+    pub const fn counter(self) -> u8 {
         self.counter
     }
 
     /// Return the APS command ID.
     #[must_use]
-    pub const fn id(&self) -> u8 {
+    pub const fn id(self) -> u8 {
         self.id
     }
 }
