@@ -13,7 +13,7 @@ pub struct Header {
 impl Header {
     /// Create a new `Header`.
     #[must_use]
-    pub fn new(control: Control, counter: u8, id: u8) -> Self {
+    pub const fn new(control: Control, counter: u8, id: u8) -> Self {
         Self {
             control,
             counter,
