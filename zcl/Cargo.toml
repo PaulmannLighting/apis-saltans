@@ -23,12 +23,14 @@ num-derive = "0.4"
 num-traits = "0.2"
 repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1.0", optional = true }
+smarthomelib = { path = "../../smarthomelib", version = "0.1", optional = true }
 zigbee = { path = "../zigbee" }
 zigbee-macros = { path = "../macros" }
 
 [features]
 std = []
 serde = ["serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
+smarthomelib = ["dep:smarthomelib"]
 
 [lints]
 workspace = true

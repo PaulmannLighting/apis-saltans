@@ -2,8 +2,8 @@ use ::zdp::Destination;
 use macaddr::MacAddr8;
 use zigbee::Endpoint;
 
-use self::zcl::ZclProxy;
-use self::zdp::ZdpProxy;
+pub use self::zcl::ZclProxy;
+pub use self::zdp::ZdpProxy;
 use crate::{Binding, Error, Frame, Proxy};
 
 mod zcl;

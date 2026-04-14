@@ -65,7 +65,7 @@ impl<T> Frame<T> {
 
     /// Return the header and payload, consuming the frame.
     #[must_use]
-    pub fn into_party(self) -> (Header, T) {
+    pub fn into_parts(self) -> (Header, T) {
         (self.header, self.payload)
     }
 }

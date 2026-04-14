@@ -9,10 +9,14 @@ bunt = { git = "https://github.com/PaulmannLighting/bunt.git", version = "0.1.0"
 le-stream = "8"
 log = "0.4"
 macaddr = "1.0"
+smarthomelib = { path = "../../smarthomelib", version = "0.1", optional = true }
 tokio = { version = "1.49", features = ["sync"] }
 zcl = { path = "../zcl", version = "0.1" }
 zdp = { path = "../zdp", version = "0.1" }
 zigbee = { path = "../zigbee", version = "0.1" }
+
+[features]
+smarthomelib = ["dep:smarthomelib", "zcl/smarthomelib"]
 
 [lints]
 workspace = true

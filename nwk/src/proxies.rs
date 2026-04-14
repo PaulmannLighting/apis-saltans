@@ -7,7 +7,7 @@ pub use endpoint::EndpointProxy;
 pub use zcl::ZclProxy;
 pub use zdp::ZdpProxy;
 
-mod device;
-mod endpoint;
+pub mod device;
+pub mod endpoint;
 mod zcl;
 mod zdp;

@@ -59,3 +59,22 @@ impl Command for MoveWithOnOff {
 }
 
 impl Native for MoveWithOnOff {}
+
+#[cfg(feature = "smarthomelib")]
+mod smarthomelib {
+    use smarthomelib::Dimming;
+
+    use super::MoveWithOnOff;
+    use crate::general::level::Mode;
+
+    impl TryFrom<MoveWithOnOff> for Dimming {
+        type Error = u8;
+
+        fn try_from(value: MoveWithOnOff) -> Result<Self, Self::Error> {
+            match value.mode()? {
+                Mode::Up => Ok(Self::Up { rate: value.rate() }),
+                Mode::Down => Ok(Self::Down { rate: value.rate() }),
+            }
+        }
+    }
+}

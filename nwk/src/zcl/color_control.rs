@@ -2,7 +2,7 @@ use bunt::Xy;
 use zcl::Options;
 use zcl::lighting::color_control::MoveToColor;
 
-use crate::proxies::EndpointProxy;
+use crate::proxies::endpoint::ZclProxy;
 use crate::{Error, Proxy};
 
 /// Trait for Color Control cluster operations.
@@ -37,7 +37,7 @@ pub trait ColorControl {
     }
 }
 
-impl<T> ColorControl for EndpointProxy<'_, T>
+impl<T> ColorControl for ZclProxy<'_, T>
 where
     T: Proxy + Sync,
 {
@@ -47,13 +47,12 @@ where
         transition_time: u16,
         options: Options,
     ) -> Result<u8, Error> {
-        self.zcl()
-            .unicast(MoveToColor::new(
-                color.x(),
-                color.y(),
-                transition_time,
-                options,
-            ))
-            .await
+        self.unicast(MoveToColor::new(
+            color.x(),
+            color.y(),
+            transition_time,
+            options,
+        ))
+        .await
     }
 }

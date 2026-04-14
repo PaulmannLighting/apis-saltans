@@ -59,3 +59,22 @@ impl Command for Move {
 }
 
 impl Native for Move {}
+
+#[cfg(feature = "smarthomelib")]
+mod smarthomelib {
+    use smarthomelib::Dimming;
+
+    use super::Move;
+    use crate::general::level::Mode;
+
+    impl TryFrom<Move> for Dimming {
+        type Error = u8;
+
+        fn try_from(value: Move) -> Result<Self, Self::Error> {
+            match value.mode()? {
+                Mode::Up => Ok(Self::Up { rate: value.rate() }),
+                Mode::Down => Ok(Self::Down { rate: value.rate() }),
+            }
+        }
+    }
+}

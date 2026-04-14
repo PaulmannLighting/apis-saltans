@@ -19,6 +19,7 @@ mod message;
 mod network_manager;
 mod proxies;
 mod proxy;
+mod smarthomelib;
 mod transmission;
 mod waiter;
 mod zcl;

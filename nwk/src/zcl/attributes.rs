@@ -1,7 +1,7 @@
 use zcl::global::read_attributes::Command;
 use zcl::{Customizable, Global, ReadableAttribute};
 
-use crate::proxies::EndpointProxy;
+use crate::proxies::endpoint::ZclProxy;
 use crate::{Error, Proxy};
 
 /// Trait for managing ZCL attributes.
@@ -43,7 +43,7 @@ pub trait Attributes {
     }
 }
 
-impl<T> Attributes for EndpointProxy<'_, T>
+impl<T> Attributes for ZclProxy<'_, T>
 where
     T: Proxy + Sync,
 {
@@ -53,12 +53,11 @@ where
         attribute_ids: Box<[u16]>,
         manufacturer_code: Option<u16>,
     ) -> Result<u8, Error> {
-        self.zcl()
-            .unicast(
-                Command::new(attribute_ids)
-                    .for_cluster(cluster_id)
-                    .with_manufacturer_code(manufacturer_code),
-            )
-            .await
+        self.unicast(
+            Command::new(attribute_ids)
+                .for_cluster(cluster_id)
+                .with_manufacturer_code(manufacturer_code),
+        )
+        .await
     }
 }

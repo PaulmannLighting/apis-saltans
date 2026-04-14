@@ -1,6 +1,6 @@
 use zcl::general::on_off::{Off, On, Toggle};
 
-use crate::proxies::EndpointProxy;
+use crate::proxies::endpoint::ZclProxy;
 use crate::{Error, Proxy};
 
 /// Trait for On/Off cluster operations.
@@ -27,19 +27,19 @@ pub trait OnOff {
     fn toggle(&self) -> impl Future<Output = Result<u8, Error>> + Send;
 }
 
-impl<T> OnOff for EndpointProxy<'_, T>
+impl<T> OnOff for ZclProxy<'_, T>
 where
     T: Proxy + Sync,
 {
     async fn on(&self) -> Result<u8, Error> {
-        self.zcl().unicast(On).await
+        self.unicast(On).await
     }
 
     async fn off(&self) -> Result<u8, Error> {
-        self.zcl().unicast(Off).await
+        self.unicast(Off).await
     }
 
     async fn toggle(&self) -> Result<u8, Error> {
-        self.zcl().unicast(Toggle).await
+        self.unicast(Toggle).await
     }
 }
