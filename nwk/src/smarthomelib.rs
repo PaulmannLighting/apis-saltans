@@ -2,6 +2,10 @@
 
 #![cfg(feature = "smarthomelib")]
 
+mod event;
+mod network_manager;
+mod zcl_proxy;
+
 use zigbee::Endpoint;
 
 /// A Zigbee source.
