@@ -9,6 +9,7 @@ use crate::Event;
 mod message;
 
 /// Incoming events demultiplexer.
+#[derive(Debug)]
 pub struct Demux {
     incoming: Receiver<Message>,
     subscribers: BTreeMap<u8, Sender<Event>>,
