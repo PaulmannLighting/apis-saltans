@@ -7,3 +7,14 @@ pub enum Command {
     /// A ZCL command was received.
     Zcl(zcl::Frame<zcl::Cluster>),
 }
+
+impl Command {
+    /// Return the sequence number.
+    #[must_use]
+    pub const fn seq(&self) -> u8 {
+        match self {
+            Self::Zdp(zdp) => zdp.seq(),
+            Self::Zcl(zcl) => zcl.header().seq(),
+        }
+    }
+}

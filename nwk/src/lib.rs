@@ -13,6 +13,7 @@ pub use self::waiter::Waiter;
 pub use self::zcl::{Attributes, Binding, ColorControl, OnOff};
 
 mod actor;
+mod demux;
 mod error;
 mod event;
 mod message;
