@@ -3,6 +3,7 @@
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::actor::Actor;
+pub use self::demux::Demux;
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
