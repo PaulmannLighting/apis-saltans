@@ -14,3 +14,9 @@ pub enum Message {
         response: Sender<Event>,
     },
 }
+
+impl From<Event> for Message {
+    fn from(event: Event) -> Self {
+        Self::Event(event)
+    }
+}
