@@ -36,8 +36,13 @@ where
     type Error = crate::Error;
 
     async fn move_to_color(&self, color: Rgb, delay: Duration) -> Result<(), Self::Error> {
-        crate::ColorControl::move_to_color(self, color, delay.deciseconds(), Options::default())
-            .await?;
+        crate::ColorControl::move_to_color(
+            self,
+            color,
+            delay.saturated_deciseconds(),
+            Options::default(),
+        )
+        .await?;
         Ok(())
     }
 }
