@@ -1,8 +1,4 @@
-use std::time::Duration;
-
-use bunt::Rgb;
-use smarthomelib::{Action, ColorControl, Deciseconds, Executor, OnOff};
-use zcl::Options;
+use smarthomelib::{Action, Executor, OnOff};
 
 use crate::Proxy;
 use crate::proxies::endpoint::ZclProxy;
@@ -25,24 +21,6 @@ where
 
     async fn toggle(&self) -> Result<(), Self::Error> {
         crate::zcl::OnOff::toggle(self).await?;
-        Ok(())
-    }
-}
-
-impl<T> ColorControl for ZclProxy<'_, T>
-where
-    T: Proxy + Sync,
-{
-    type Error = crate::Error;
-
-    async fn move_to_color(&self, color: Rgb, delay: Duration) -> Result<(), Self::Error> {
-        crate::ColorControl::move_to_color(
-            self,
-            color,
-            delay.saturated_deciseconds(),
-            Options::default(),
-        )
-        .await?;
         Ok(())
     }
 }

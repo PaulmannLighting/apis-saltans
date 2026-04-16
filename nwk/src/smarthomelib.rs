@@ -2,6 +2,7 @@
 
 #![cfg(feature = "smarthomelib")]
 
+mod color_control;
 mod event;
 mod network_manager;
 mod zcl_proxy;
