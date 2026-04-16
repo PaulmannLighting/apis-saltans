@@ -2,13 +2,15 @@
 
 #![cfg(feature = "smarthomelib")]
 
+use zigbee::Endpoint;
+
+pub use self::color_control::Error as ColorControlError;
+
 mod color_control;
 mod event;
 mod executor;
 mod network_manager;
 mod on_off;
-
-use zigbee::Endpoint;
 
 /// A Zigbee source.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
