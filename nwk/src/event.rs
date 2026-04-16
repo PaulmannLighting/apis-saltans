@@ -50,6 +50,6 @@ pub enum Event {
         /// The PAN ID of the sender.
         src_address: u16,
         /// The APS frame.
-        aps_frame: aps::Data<Command>,
+        aps_frame: Box<aps::Data<Command>>,
     },
 }
