@@ -4,8 +4,9 @@
 
 mod color_control;
 mod event;
+mod executor;
 mod network_manager;
-mod zcl_proxy;
+mod on_off;
 
 use zigbee::Endpoint;
 
