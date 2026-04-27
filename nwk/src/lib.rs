@@ -22,6 +22,7 @@ mod network_manager;
 mod proxies;
 mod proxy;
 pub mod smarthomelib;
+mod transceiver;
 mod transmission;
 mod waiter;
 mod zcl;
