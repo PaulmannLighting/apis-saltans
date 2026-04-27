@@ -1,6 +1,6 @@
 # TODOs
 
-- [ ] Continue working on demultiplexer.
+- [x] Continue working on demultiplexer.
 - [x] Split APS and ZCL/ZDP layers.
 - [x] Add basic APS frame to incoming Zigbee events.
 - [ ] Implement Zigbee event handler, which auto-responds to appropriate requests.
