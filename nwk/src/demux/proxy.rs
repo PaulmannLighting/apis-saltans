@@ -15,7 +15,7 @@ pub trait Proxy {
     fn subscribe(
         &self,
         seq: u8,
-    ) -> impl Future<Output = Result<Receiver<Event>, SendError<Message>>>;
+    ) -> impl Future<Output = Result<Receiver<Event>, SendError<Message>>> + Send;
 }
 
 impl Proxy for Sender<Message> {
