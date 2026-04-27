@@ -22,7 +22,7 @@ where
     T: Proxy,
     R: DemuxProxy,
 {
-    fn transceive(&self) {
+    fn zcl_transceive(&self) {
         todo!(
             "
                 1) Obtain ZCL sequence number `seq`.
