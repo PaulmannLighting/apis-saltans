@@ -33,11 +33,7 @@ pub trait Attributes {
     {
         self.read_raw(
             T::ID,
-            attributes
-                .iter()
-                .copied()
-                .map(Into::into)
-                .collect::<Box<[u16]>>(),
+            attributes.iter().copied().map(Into::into).collect(),
             manufacturer_code,
         )
     }
