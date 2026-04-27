@@ -19,6 +19,7 @@ pub struct Header {
 
 impl Header {
     /// Create a new `Header`.
+    #[must_use]
     pub fn new(
         destination: Destination,
         cluster_id: u16,
