@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use tokio::sync::mpsc::Receiver;
-use tokio::sync::oneshot::Sender;
+use log::error;
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::message::Message;
 use crate::Event;
@@ -12,16 +12,18 @@ mod message;
 #[derive(Debug)]
 pub struct Demux {
     incoming: Receiver<Message>,
-    subscribers: BTreeMap<u8, Sender<Event>>,
+    subscribers: BTreeMap<u8, tokio::sync::oneshot::Sender<Event>>,
+    outgoing: Sender<Event>,
 }
 
 impl Demux {
     /// Create a new demultiplexer.
     #[must_use]
-    pub const fn new(incoming: Receiver<Message>) -> Self {
+    pub const fn new(incoming: Receiver<Message>, outgoing: Sender<Event>) -> Self {
         Self {
             incoming,
             subscribers: BTreeMap::new(),
+            outgoing,
         }
     }
 
@@ -29,7 +31,14 @@ impl Demux {
     pub async fn run(mut self) {
         while let Some(message) = self.incoming.recv().await {
             match message {
-                Message::Event(event) => self.demux(event),
+                Message::Event(event) => {
+                    if let Some(event) = self.demux(event) {
+                        self.outgoing
+                            .send(event)
+                            .await
+                            .unwrap_or_else(|error| error!("{error:?}"));
+                    }
+                }
                 Message::Subscribe {
                     transaction,
                     response,
@@ -40,19 +49,33 @@ impl Demux {
         }
     }
 
-    fn demux(&mut self, event: Event) {
+    /// Demultiplex an incoming event.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(Event)` if the event could not be forwarded to any subscriber.
+    /// - `None` if the event was successfully forwarded to a subscriber.
+    fn demux(&mut self, event: Event) -> Option<Event> {
         if let Event::MessageReceived {
             src_address,
             aps_frame,
         } = event
-            && let Some(subscriber) = self.subscribers.remove(&aps_frame.payload().seq())
         {
-            subscriber
-                .send(Event::MessageReceived {
+            if let Some(subscriber) = self.subscribers.remove(&aps_frame.payload().seq()) {
+                subscriber
+                    .send(Event::MessageReceived {
+                        src_address,
+                        aps_frame,
+                    })
+                    .err()
+            } else {
+                Some(Event::MessageReceived {
                     src_address,
                     aps_frame,
                 })
-                .expect("Failed to send response.");
+            }
+        } else {
+            Some(event)
         }
     }
 }
