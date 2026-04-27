@@ -4,9 +4,11 @@ use log::error;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::message::Message;
+pub use self::proxy::Proxy;
 use crate::Event;
 
 mod message;
+mod proxy;
 
 /// Incoming events demultiplexer.
 #[derive(Debug)]
