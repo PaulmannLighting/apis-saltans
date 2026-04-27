@@ -1,5 +1,6 @@
 use zcl::global::read_attributes::Command;
-use zcl::{Customizable, Global, ReadableAttribute};
+use zcl::{Customizable, Global};
+use zigbee::Cluster;
 
 use crate::proxies::endpoint::ZclProxy;
 use crate::{Error, Proxy};
@@ -29,7 +30,7 @@ pub trait Attributes {
         manufacturer_code: Option<u16>,
     ) -> impl Future<Output = Result<u8, Error>> + Send
     where
-        T: ReadableAttribute,
+        T: Cluster + Copy + Into<u16>,
     {
         self.read_raw(
             T::ID,
