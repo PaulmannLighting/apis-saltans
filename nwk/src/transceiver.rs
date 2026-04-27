@@ -33,7 +33,7 @@ where
         cluster_id: u16,
         attribute_ids: Box<[u16]>,
         manufacturer_code: Option<u16>,
-    ) -> Result<Event, Error> {
+    ) -> Result<read_attributes::Response, Error> {
         let seq = self.tx_proxy.next_transaction_seq().await?;
         let response = self.demux_proxy.subscribe(seq).await?;
         self.tx_proxy
@@ -59,11 +59,12 @@ where
 
             let (aps_header, payload) = aps_frame.into_parts();
 
-            if let Command::Zcl(frame) = payload {
-                let (zcl_header, payload) = frame.into_parts();
+            if let Command::Zcl(zcl_frame) = payload {
+                let (zcl_header, payload) = zcl_frame.into_parts();
 
-                if let Cluster::Global(global::Command::ReadAttributesResponse(resp)) = payload {
-                    todo!("Handle read attributes response.")
+                if let Cluster::Global(global::Command::ReadAttributesResponse(response)) = payload
+                {
+                    return Ok(response);
                 } else {
                     todo!("Handle unexpected payload.")
                 }
