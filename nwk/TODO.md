@@ -3,11 +3,11 @@
 - [x] Continue working on demultiplexer.
 - [x] Split APS and ZCL/ZDP layers.
 - [x] Add basic APS frame to incoming Zigbee events.
+- [x] <s>Implement persistent storage of nodes.</s> _Not here, but in a separate crate._
 - [ ] Implement Zigbee event handler, which auto-responds to appropriate requests.
 - [ ] Implement node discovery. See `ZigBeeNodeServiceDiscoverer`.
 - [ ] Implement retrieving Node Descriptor from `NetworkManager`.
 - [ ] Implement binding management.
-- [ ] <s>Implement persistent storage of nodes.</s> _Not here, but in a separate crate._
 
 ## Architectural challenges
 
