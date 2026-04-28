@@ -5,8 +5,8 @@ use crate::message::Message;
 
 /// Sealed actor trait for handling communication with the Zigbee NCP.
 ///
-/// This trait should not be implemented directly. Instead, implement the `NetworkManager` trait
-/// for your  NCP type, and the `Actor` trait will be automatically implemented for it.
+/// This trait should not be implemented directly. Instead, implement the `crate::Actor` trait
+/// for your  NCP type, and this sealed `Actor` trait will be automatically implemented for it.
 pub trait Actor {
     /// Run the actor, processing incoming messages.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send;
