@@ -31,13 +31,13 @@ impl<T> Frame<T> {
         Self { header, payload }
     }
 
-    /// Return the header of the ZCL frame.
+    /// Return a reference to the header.
     #[must_use]
     pub const fn header(&self) -> &Header {
         &self.header
     }
 
-    /// Return the payload of the ZCL frame.
+    /// Return a reference to the payload.
     #[must_use]
     pub const fn payload(&self) -> &T {
         &self.payload
