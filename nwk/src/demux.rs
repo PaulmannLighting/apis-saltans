@@ -83,6 +83,7 @@ impl Demux {
     }
 }
 
+// TODO: Remove panicking paths.
 impl Rx for Demux {
     async fn recv(&mut self, seq: u8) -> Result<Frame<Cluster>, Error> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
