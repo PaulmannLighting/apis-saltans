@@ -4,6 +4,7 @@ pub use self::attributes::Attributes;
 pub use self::binding::Binding;
 pub use self::color_control::ColorControl;
 pub use self::on_off::OnOff;
+pub use self::tx_rx::{Rx, Tx, TxRx};
 
 mod attributes;
 mod binding;

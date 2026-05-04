@@ -11,7 +11,7 @@ pub use self::network_manager::NetworkManager;
 pub use self::proxy::Proxy;
 pub use self::transmission::{Frame, Metadata};
 pub use self::waiter::Waiter;
-pub use self::zcl::{Attributes, Binding, ColorControl, OnOff};
+pub use self::zcl::{Attributes, Binding, ColorControl, OnOff, Rx, Tx, TxRx};
 
 mod actor;
 mod demux;
