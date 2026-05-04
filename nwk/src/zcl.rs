@@ -9,3 +9,4 @@ mod attributes;
 mod binding;
 mod color_control;
 mod on_off;
+mod tx_rx;
