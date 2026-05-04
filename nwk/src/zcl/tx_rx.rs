@@ -36,22 +36,24 @@ pub trait TxRx {
     /// # Errors
     ///
     /// Returns an [`Error`] if sending or receiving the frame fails.
-    fn communicate<R, C>(&self, frame: C) -> impl Future<Output = Result<R, Error>> + Send
+    fn communicate<T>(
+        &self,
+        frame: T,
+    ) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send
     where
-        C: HeaderFactory + Send;
+        T: HeaderFactory + Send;
 }
 
 impl<T> TxRx for T
 where
     T: Tx + Rx + Sync,
 {
-    async fn communicate<R, C>(&self, frame: C) -> Result<R, Error>
+    async fn communicate<U>(&self, frame: U) -> Result<Frame<Cluster>, Error>
     where
-        C: HeaderFactory + Send,
+        U: HeaderFactory + Send,
     {
         let seq = self.next_seq().await;
         self.send(seq, frame).await?;
-        let response = self.recv(seq).await?;
-        todo!("Use a macro or so to parse `R` from the response frame.")
+        self.recv(seq).await
     }
 }
