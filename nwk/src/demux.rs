@@ -84,10 +84,15 @@ impl Demux {
 }
 
 // TODO: Remove panicking paths.
-impl Rx for Demux {
+impl Rx for Sender<Message> {
     async fn recv(&mut self, seq: u8) -> Result<Frame<Cluster>, Error> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        self.subscribers.insert(seq, sender);
+        self.send(Message::Subscribe {
+            transaction: seq,
+            response: sender,
+        })
+        .await
+        .map_err(|_| Error::ActorSend)?;
         let event = receiver.await.map_err(|_| Error::ActorReceive)?;
 
         let (src_address, (aps_header, command)) = match event {
