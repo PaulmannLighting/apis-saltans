@@ -2,12 +2,13 @@ use std::collections::BTreeMap;
 
 use log::error;
 use tokio::sync::mpsc::{Receiver, Sender};
-use zcl::{Cluster, Frame};
 
+pub use self::error::Error;
 pub use self::message::Message;
 pub use self::proxy::Proxy;
-use crate::{Command, Error, Event, Rx};
+use crate::{Event, Rx};
 
+mod error;
 mod message;
 mod proxy;
 
@@ -79,33 +80,6 @@ impl Demux {
             }
         } else {
             Some(event)
-        }
-    }
-}
-
-// TODO: Remove panicking paths.
-impl Rx for Sender<Message> {
-    async fn recv(&mut self, seq: u8) -> Result<Frame<Cluster>, Error> {
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        self.send(Message::Subscribe {
-            transaction: seq,
-            response: sender,
-        })
-        .await
-        .map_err(|_| Error::ActorSend)?;
-        let event = receiver.await.map_err(|_| Error::ActorReceive)?;
-
-        let (src_address, (aps_header, command)) = match event {
-            Event::MessageReceived {
-                src_address,
-                aps_frame,
-            } => (src_address, aps_frame.into_parts()),
-            other => todo!("Handle unexpected event."),
-        };
-
-        match command {
-            Command::Zcl(frame) => Ok(frame),
-            other => todo!("Handle unexpected command type."),
         }
     }
 }

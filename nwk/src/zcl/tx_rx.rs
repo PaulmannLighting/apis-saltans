@@ -2,7 +2,7 @@
 
 use zcl::{Cluster, Frame, HeaderFactory};
 
-use crate::Error;
+use crate::{Command, DemuxProxy, Error, Event};
 
 /// ZCL transmission layer.
 pub trait Tx {
@@ -26,7 +26,30 @@ pub trait Rx {
     /// # Error
     ///
     /// Returns an [`Error`] if receiving the frame fails.
-    fn recv(&mut self, seq: u8) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send;
+    fn recv(&self, seq: u8) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send;
+}
+
+// TODO: Remove panicking paths.
+impl<T> Rx for T
+where
+    T: DemuxProxy + Sync,
+{
+    async fn recv(&self, seq: u8) -> Result<Frame<Cluster>, Error> {
+        let event = self.recv(seq).await?;
+
+        let (src_address, (aps_header, command)) = match event {
+            Event::MessageReceived {
+                src_address,
+                aps_frame,
+            } => (src_address, aps_frame.into_parts()),
+            other => todo!("Handle unexpected event."),
+        };
+
+        match command {
+            Command::Zcl(frame) => Ok(frame),
+            other => todo!("Handle unexpected command type."),
+        }
+    }
 }
 
 /// ZCL transmission and reception layer.
@@ -37,7 +60,7 @@ pub trait TxRx {
     ///
     /// Returns an [`Error`] if sending or receiving the frame fails.
     fn communicate<T>(
-        &mut self,
+        &self,
         frame: T,
     ) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send
     where
@@ -46,9 +69,9 @@ pub trait TxRx {
 
 impl<T> TxRx for T
 where
-    T: Tx + Rx + Send,
+    T: Tx + Rx + Sync,
 {
-    async fn communicate<U>(&mut self, frame: U) -> Result<Frame<Cluster>, Error>
+    async fn communicate<U>(&self, frame: U) -> Result<Frame<Cluster>, Error>
     where
         U: HeaderFactory + Send,
     {
