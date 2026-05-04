@@ -89,16 +89,15 @@ impl Rx for Demux {
         self.subscribers.insert(seq, sender);
         let event = receiver.await.map_err(|_| Error::ActorReceive)?;
 
-        let (src_address, aps_frame) = match event {
+        let (src_address, (aps_header, command)) = match event {
             Event::MessageReceived {
                 src_address,
                 aps_frame,
-            } => (src_address, *aps_frame),
+            } => (src_address, aps_frame.into_parts()),
             other => todo!("Handle unexpected event."),
         };
 
-        let (header, payload) = aps_frame.into_parts();
-        match payload {
+        match command {
             Command::Zcl(frame) => Ok(frame),
             other => todo!("Handle unexpected command type."),
         }
