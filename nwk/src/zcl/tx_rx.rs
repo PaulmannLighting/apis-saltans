@@ -26,7 +26,7 @@ pub trait Rx {
     /// # Error
     ///
     /// Returns an [`Error`] if receiving the frame fails.
-    fn recv(&self, seq: u8) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send;
+    fn recv(&mut self, seq: u8) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send;
 }
 
 /// ZCL transmission and reception layer.
@@ -37,7 +37,7 @@ pub trait TxRx {
     ///
     /// Returns an [`Error`] if sending or receiving the frame fails.
     fn communicate<T>(
-        &self,
+        &mut self,
         frame: T,
     ) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send
     where
@@ -46,9 +46,9 @@ pub trait TxRx {
 
 impl<T> TxRx for T
 where
-    T: Tx + Rx + Sync,
+    T: Tx + Rx + Send,
 {
-    async fn communicate<U>(&self, frame: U) -> Result<Frame<Cluster>, Error>
+    async fn communicate<U>(&mut self, frame: U) -> Result<Frame<Cluster>, Error>
     where
         U: HeaderFactory + Send,
     {
