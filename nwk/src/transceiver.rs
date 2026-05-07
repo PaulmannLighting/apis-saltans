@@ -2,7 +2,7 @@ use zcl::global::read_attributes;
 use zcl::{Cluster, Customizable, Global, HeaderFactory, global};
 use zigbee::Endpoint;
 
-use crate::demux::Proxy as DemuxProxy;
+use crate::demux::Subscribe;
 use crate::{Command, Error, Event, Proxy};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -25,7 +25,7 @@ impl<T, R> Transceiver<T, R> {
 impl<T, R> Transceiver<T, R>
 where
     T: Proxy,
-    R: DemuxProxy,
+    R: Subscribe,
 {
     async fn read_attributes(
         &self,

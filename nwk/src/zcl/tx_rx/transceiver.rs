@@ -3,7 +3,7 @@ use zcl::{Cluster, Frame, HeaderFactory};
 use zigbee::Endpoint;
 
 use crate::Error;
-use crate::demux::Proxy;
+use crate::demux::Subscribe;
 use crate::zcl::tx_rx::receiver::Receiver;
 use crate::zcl::tx_rx::transmitter::Transmitter;
 
@@ -26,7 +26,7 @@ pub trait Transceiver {
 
 impl<T> Transceiver for T
 where
-    T: Transmitter + Proxy + Sync,
+    T: Transmitter + Subscribe + Sync,
 {
     async fn communicate<F>(
         &self,

@@ -5,8 +5,8 @@ use tokio::sync::oneshot::{Receiver, channel};
 use crate::Event;
 use crate::demux::Message;
 
-/// Proxy to access the demultiplexer.
-pub trait Proxy {
+/// Proxy to subscribe to the demultiplexer.
+pub trait Subscribe {
     /// Subscribe to the demux.
     ///
     /// # Errors
@@ -18,7 +18,7 @@ pub trait Proxy {
     ) -> impl Future<Output = Result<Receiver<Event>, SendError<Message>>> + Send;
 }
 
-impl Proxy for Sender<Message> {
+impl Subscribe for Sender<Message> {
     async fn subscribe(&self, seq: u8) -> Result<Receiver<Event>, SendError<Message>> {
         let (tx, rx) = channel();
         self.send(Message::subscribe(seq, tx)).await.map(|()| rx)
