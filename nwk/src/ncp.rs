@@ -9,10 +9,10 @@ use zigbee::Endpoint;
 use crate::message::Message;
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
-/// Proxy trait for sending NWK layer messages.
+/// Proxy trait to communicate with Zigbee NCPs.
 ///
 /// This trait is implemented for `Sender<Message>`, allowing you to communicate with a Zigbee NCP.
-pub trait Proxy {
+pub trait Ncp {
     /// Get the next transaction sequence number.
     ///
     /// # Errors
@@ -91,7 +91,7 @@ pub trait Proxy {
     ) -> impl Future<Output = Result<u8, Error>> + Send;
 }
 
-impl Proxy for Sender<Message> {
+impl Ncp for Sender<Message> {
     async fn next_transaction_seq(&self) -> Result<u8, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::GetTransactionSeq { response }).await?;

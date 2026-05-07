@@ -3,7 +3,7 @@ use zcl::{Cluster, Customizable, Global, HeaderFactory, global};
 use zigbee::Endpoint;
 
 use crate::demux::Subscribe;
-use crate::{Command, Error, Event, Proxy};
+use crate::{Command, Error, Event, Ncp};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Transceiver<T, R> {
@@ -24,7 +24,7 @@ impl<T, R> Transceiver<T, R> {
 
 impl<T, R> Transceiver<T, R>
 where
-    T: Proxy,
+    T: Ncp,
     R: Subscribe,
 {
     async fn read_attributes(

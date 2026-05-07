@@ -1,11 +1,11 @@
 use smarthomelib::OnOff;
 
-use crate::Proxy;
+use crate::Ncp;
 use crate::proxies::endpoint::ZclProxy;
 
 impl<T> OnOff for ZclProxy<'_, T>
 where
-    T: Proxy + Sync,
+    T: Ncp + Sync,
 {
     type Error = crate::Error;
 

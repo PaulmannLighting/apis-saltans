@@ -8,7 +8,7 @@ use zigbee::node::{
 };
 
 use self::network_state::NetworkState;
-use crate::{Binding, Command, Error, Event, Proxy};
+use crate::{Binding, Command, Error, Event, Ncp};
 
 mod network_state;
 
@@ -46,7 +46,7 @@ impl<T> NetworkManager<T> {
 
 impl<T> NetworkManager<T>
 where
-    T: Proxy + Sync,
+    T: Ncp + Sync,
 {
     /// Runs the network manager, processing incoming events.
     pub async fn recv(&mut self) -> Option<Event> {

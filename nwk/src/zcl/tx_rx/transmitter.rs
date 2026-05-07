@@ -1,7 +1,6 @@
-use zcl::HeaderFactory;
 use zigbee::Endpoint;
 
-use crate::{Error, Frame, Proxy};
+use crate::{Error, Frame, Ncp};
 
 /// ZCL transmission layer.
 pub trait Transmitter {
@@ -29,16 +28,16 @@ pub trait Transmitter {
 
 impl<T> Transmitter for T
 where
-    T: Proxy + Sync,
+    T: Ncp + Sync,
 {
     async fn next_seq(&self) -> Result<u8, Error> {
-        Proxy::next_transaction_seq(self).await
+        Ncp::next_transaction_seq(self).await
     }
 
     async fn send<F>(&self, pan_id: u16, endpoint: Endpoint, frame: F) -> Result<u8, Error>
     where
         F: Into<Frame> + Send,
     {
-        Proxy::unicast(self, pan_id, endpoint, frame.into()).await
+        Ncp::unicast(self, pan_id, endpoint, frame.into()).await
     }
 }

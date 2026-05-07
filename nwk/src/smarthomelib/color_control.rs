@@ -5,7 +5,7 @@ use smarthomelib::ColorControl;
 use zcl::Options;
 
 pub use self::error::Error;
-use crate::Proxy;
+use crate::Ncp;
 use crate::proxies::endpoint::ZclProxy;
 
 mod error;
@@ -14,7 +14,7 @@ const DECISECONDS_PER_MILLISECOND: u128 = 100;
 
 impl<T> ColorControl for ZclProxy<'_, T>
 where
-    T: Proxy + Sync,
+    T: Ncp + Sync,
 {
     type Error = Error;
 

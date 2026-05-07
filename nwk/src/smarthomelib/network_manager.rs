@@ -1,11 +1,11 @@
 use smarthomelib::{Event, Receiver};
 
 use super::Source;
-use crate::{NetworkManager, Proxy};
+use crate::{Ncp, NetworkManager};
 
 impl<T> Receiver<Source> for NetworkManager<T>
 where
-    T: Proxy + Sync,
+    T: Ncp + Sync,
 {
     async fn receive(&mut self) -> Option<Event<Source>> {
         self.recv().await.map(Into::into)
