@@ -1,9 +1,10 @@
 use bunt::Xy;
-use zcl::Options;
 use zcl::lighting::color_control::MoveToColor;
+use zcl::{HeaderFactory, Options};
+use zigbee::Endpoint;
 
-use crate::proxies::endpoint::ZclProxy;
-use crate::{Error, Proxy};
+use crate::Error;
+use crate::zcl::tx_rx::Transmitter;
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {
@@ -14,6 +15,8 @@ pub trait ColorControl {
     /// Returns an [`Error`] if execution of the command failed.
     fn move_to_xy(
         &self,
+        pan_id: u16,
+        endpoint: Endpoint,
         color: Xy,
         transition_time: u16,
         options: Options,
@@ -26,6 +29,8 @@ pub trait ColorControl {
     /// Returns an [`Error`] if execution of the command failed.
     fn move_to_color<T>(
         &self,
+        pan_id: u16,
+        endpoint: Endpoint,
         color: T,
         transition_time: u16,
         options: Options,
@@ -33,26 +38,28 @@ pub trait ColorControl {
     where
         T: Into<Xy>,
     {
-        self.move_to_xy(color.into(), transition_time, options)
+        self.move_to_xy(pan_id, endpoint, color.into(), transition_time, options)
     }
 }
 
-impl<T> ColorControl for ZclProxy<'_, T>
+impl<T> ColorControl for T
 where
-    T: Proxy + Sync,
+    T: Transmitter + Sync,
 {
     async fn move_to_xy(
         &self,
+        pan_id: u16,
+        endpoint: Endpoint,
         color: Xy,
         transition_time: u16,
         options: Options,
     ) -> Result<u8, Error> {
-        self.unicast(MoveToColor::new(
-            color.x(),
-            color.y(),
-            transition_time,
-            options,
-        ))
+        self.send(
+            pan_id,
+            endpoint,
+            MoveToColor::new(color.x(), color.y(), transition_time, options)
+                .frame(self.next_seq().await?),
+        )
         .await
     }
 }

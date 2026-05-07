@@ -19,7 +19,6 @@ mod error;
 mod event;
 mod message;
 mod network_manager;
-mod proxies;
 mod proxy;
 pub mod smarthomelib;
 mod transceiver;

@@ -3,7 +3,7 @@ use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::{Receiver, channel};
 
 use crate::Event;
-use crate::demux::{Error, Message};
+use crate::demux::Message;
 
 /// Proxy to access the demultiplexer.
 pub trait Proxy {
@@ -16,16 +16,6 @@ pub trait Proxy {
         &self,
         seq: u8,
     ) -> impl Future<Output = Result<Receiver<Event>, SendError<Message>>> + Send;
-
-    /// Receive an event from the demultiplexer.
-    ///
-    /// # Errors
-    ///
-    /// Returns a [`Error`] if the message could not be sent to the actor.
-    fn recv(&self, seq: u8) -> impl Future<Output = Result<Event, Error>> + Send {
-        let fut = self.subscribe(seq);
-        async { Ok(fut.await?.await?) }
-    }
 }
 
 impl Proxy for Sender<Message> {

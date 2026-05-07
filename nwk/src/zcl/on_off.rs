@@ -1,7 +1,9 @@
+use zcl::HeaderFactory;
 use zcl::general::on_off::{Off, On, Toggle};
+use zigbee::Endpoint;
 
-use crate::proxies::endpoint::ZclProxy;
-use crate::{Error, Proxy};
+use crate::Error;
+use crate::zcl::tx_rx::Transmitter;
 
 /// Trait for On/Off cluster operations.
 pub trait OnOff {
@@ -10,36 +12,48 @@ pub trait OnOff {
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn on(&self) -> impl Future<Output = Result<u8, Error>> + Send;
+    fn on(&self, pan_id: u16, endpoint: Endpoint)
+    -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Turns the device off.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn off(&self) -> impl Future<Output = Result<u8, Error>> + Send;
+    fn off(
+        &self,
+        pan_id: u16,
+        endpoint: Endpoint,
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Toggle the device state.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn toggle(&self) -> impl Future<Output = Result<u8, Error>> + Send;
+    fn toggle(
+        &self,
+        pan_id: u16,
+        endpoint: Endpoint,
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 }
 
-impl<T> OnOff for ZclProxy<'_, T>
+impl<T> OnOff for T
 where
-    T: Proxy + Sync,
+    T: Transmitter + Sync,
 {
-    async fn on(&self) -> Result<u8, Error> {
-        self.unicast(On).await
+    async fn on(&self, pan_id: u16, endpoint: Endpoint) -> Result<u8, Error> {
+        self.send(pan_id, endpoint, On.frame(self.next_seq().await?))
+            .await
     }
 
-    async fn off(&self) -> Result<u8, Error> {
-        self.unicast(Off).await
+    async fn off(&self, pan_id: u16, endpoint: Endpoint) -> Result<u8, Error> {
+        self.send(pan_id, endpoint, Off.frame(self.next_seq().await?))
+            .await
     }
 
-    async fn toggle(&self) -> Result<u8, Error> {
-        self.unicast(Toggle).await
+    async fn toggle(&self, pan_id: u16, endpoint: Endpoint) -> Result<u8, Error> {
+        self.send(pan_id, endpoint, Toggle.frame(self.next_seq().await?))
+            .await
     }
 }

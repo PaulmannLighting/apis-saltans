@@ -1,82 +1,65 @@
 //! ZCL transmission layer.
 
-use zcl::{Cluster, Frame, HeaderFactory};
+use tokio::sync::mpsc::error::SendError;
+use tokio::sync::oneshot::Receiver;
+pub use transceiver::Transceiver;
+pub use transmitter::Transmitter;
+use zigbee::Endpoint;
 
-use crate::{Command, DemuxProxy, Error, Event};
+use crate::demux::Message;
+use crate::{DemuxProxy, Error, Event, Frame};
 
-/// ZCL transmission layer.
-pub trait Tx {
-    /// Return the next sequence number.
-    fn next_seq(&self) -> impl Future<Output = u8> + Send;
+mod receiver;
+mod transceiver;
+mod transmitter;
 
-    /// Send a ZCL frame.
-    ///
-    /// # Error
-    ///
-    /// Returns an [`Error`] if sending the frame fails.
-    fn send<T>(&self, seq: u8, frame: T) -> impl Future<Output = Result<(), Error>> + Send
-    where
-        T: HeaderFactory;
+/// ZCL transceiver struct.
+// TODO: Find a better name.
+pub struct ZclTransceiver<T, R> {
+    transmitter: T,
+    receiver: R,
 }
 
-/// ZCL reception layer.
-pub trait Rx {
-    /// Receive a ZCL frame.
-    ///
-    /// # Error
-    ///
-    /// Returns an [`Error`] if receiving the frame fails.
-    fn recv(&self, seq: u8) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send;
-}
-
-// TODO: Remove panicking paths.
-impl<T> Rx for T
-where
-    T: DemuxProxy + Sync,
-{
-    async fn recv(&self, seq: u8) -> Result<Frame<Cluster>, Error> {
-        let event = self.recv(seq).await?;
-
-        let (src_address, (aps_header, command)) = match event {
-            Event::MessageReceived {
-                src_address,
-                aps_frame,
-            } => (src_address, aps_frame.into_parts()),
-            other => todo!("Handle unexpected event."),
-        };
-
-        match command {
-            Command::Zcl(frame) => Ok(frame),
-            other => todo!("Handle unexpected command type."),
+impl<T, R> ZclTransceiver<T, R> {
+    /// Crate a new ZCL transceiver.
+    #[must_use]
+    pub const fn new(transmitter: T, receiver: R) -> Self {
+        Self {
+            transmitter,
+            receiver,
         }
     }
 }
 
-/// ZCL transmission and reception layer.
-pub trait TxRx {
-    /// Communicate two-way. Send and receive a ZCL frame.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if sending or receiving the frame fails.
-    fn communicate<T>(
+impl<T, R> Transmitter for ZclTransceiver<T, R>
+where
+    T: Transmitter,
+{
+    fn next_seq(&self) -> impl Future<Output = Result<u8, Error>> + Send {
+        self.transmitter.next_seq()
+    }
+
+    fn send<F>(
         &self,
-        frame: T,
-    ) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send
+        pan_id: u16,
+        endpoint: Endpoint,
+        frame: F,
+    ) -> impl Future<Output = Result<u8, Error>> + Send
     where
-        T: HeaderFactory + Send;
+        F: Into<Frame> + Send,
+    {
+        self.transmitter.send(pan_id, endpoint, frame)
+    }
 }
 
-impl<T> TxRx for T
+impl<T, R> DemuxProxy for ZclTransceiver<T, R>
 where
-    T: Tx + Rx + Sync,
+    R: DemuxProxy,
 {
-    async fn communicate<U>(&self, frame: U) -> Result<Frame<Cluster>, Error>
-    where
-        U: HeaderFactory + Send,
-    {
-        let seq = self.next_seq().await;
-        self.send(seq, frame).await?;
-        self.recv(seq).await
+    fn subscribe(
+        &self,
+        seq: u8,
+    ) -> impl Future<Output = Result<Receiver<Event>, SendError<Message>>> + Send {
+        self.receiver.subscribe(seq)
     }
 }

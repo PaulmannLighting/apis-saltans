@@ -7,7 +7,6 @@ use tokio::sync::oneshot;
 use zigbee::Endpoint;
 
 use crate::message::Message;
-use crate::proxies::{DeviceProxy, ZclProxy, ZdpProxy};
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
 /// Proxy trait for sending NWK layer messages.
@@ -90,30 +89,6 @@ pub trait Proxy {
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
-
-    /// Get a device proxy for the specified PAN ID.
-    fn device(&self, pan_id: u16) -> DeviceProxy<'_, Self>
-    where
-        Self: Sized,
-    {
-        DeviceProxy::new(self, pan_id)
-    }
-
-    /// Get a ZCL proxy.
-    fn zcl(&self) -> ZclProxy<'_, Self>
-    where
-        Self: Sized,
-    {
-        ZclProxy::new(self)
-    }
-
-    /// Get a ZDP proxy.
-    fn zdp(&self) -> ZdpProxy<'_, Self>
-    where
-        Self: Sized,
-    {
-        ZdpProxy::new(self)
-    }
 }
 
 impl Proxy for Sender<Message> {
