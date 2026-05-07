@@ -27,14 +27,14 @@ impl<T> Transceiver for T
 where
     T: Transmitter + DemuxProxy + Sync,
 {
-    async fn communicate<U>(
+    async fn communicate<F>(
         &self,
         pan_id: u16,
         endpoint: Endpoint,
-        frame: U,
+        frame: F,
     ) -> Result<Frame<Cluster>, Error>
     where
-        U: zigbee::Cluster + HeaderFactory + ToLeStream + Send,
+        F: zigbee::Cluster + HeaderFactory + ToLeStream + Send,
     {
         let seq = self.next_seq().await?;
         let response = self.subscribe(seq).await?;
