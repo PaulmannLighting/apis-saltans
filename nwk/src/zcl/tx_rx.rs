@@ -15,6 +15,7 @@ mod transmitter;
 
 /// ZCL transceiver struct.
 // TODO: Find a better name.
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct ZclTransceiver<T, R> {
     transmitter: T,
     receiver: R,
