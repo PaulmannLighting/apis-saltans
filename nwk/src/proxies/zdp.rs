@@ -11,7 +11,7 @@ pub struct ZdpProxy<'proxy, T> {
 }
 
 impl<'proxy, T> ZdpProxy<'proxy, T> {
-    /// Create a new `ZclProxy`.
+    /// Create a new `ZdpProxy`.
     pub(crate) const fn new(proxy: &'proxy T) -> Self {
         Self { proxy }
     }
@@ -21,7 +21,7 @@ impl<T> ZdpProxy<'_, T>
 where
     T: Proxy + Sync,
 {
-    /// Send a ZCL command to a specific endpoint on a device.
+    /// Send a ZDP command to a specific endpoint on a device.
     pub async fn unicast<C>(&self, pan_id: u16, endpoint: Endpoint, command: C) -> Result<u8, Error>
     where
         C: Cluster + Service + ToLeStream,
