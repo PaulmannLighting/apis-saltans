@@ -2,10 +2,10 @@ use log::{error, info, warn};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use zdp::Destination;
+use zigbee::Endpoint;
 use zigbee::node::{
     Descriptor, Flags, FrequencyBand, LogicalType, MacCapabilityFlags, Node, ServerMask,
 };
-use zigbee::Endpoint;
 
 use self::network_state::NetworkState;
 use crate::{Binding, Command, Error, Event, Ncp};
