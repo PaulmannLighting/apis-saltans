@@ -2,10 +2,10 @@ use log::{error, info, warn};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use zdp::Destination;
-use zigbee::Endpoint;
 use zigbee::node::{
     Descriptor, Flags, FrequencyBand, LogicalType, MacCapabilityFlags, Node, ServerMask,
 };
+use zigbee::Endpoint;
 
 use self::network_state::NetworkState;
 use crate::{Binding, Command, Error, Event, Ncp};
@@ -15,7 +15,7 @@ mod network_state;
 /// Zigbee coordinator handling communication via an NCP proxy.
 #[derive(Debug)]
 pub struct Coordinator<T> {
-    proxy: T,
+    ncp: T,
     events: Receiver<Event>,
     state: NetworkState,
 }
@@ -23,18 +23,18 @@ pub struct Coordinator<T> {
 impl<T> Coordinator<T> {
     /// Creates a new  Zigbee coordinator.
     #[must_use]
-    pub const fn new(proxy: T, events: Receiver<Event>) -> Self {
+    pub const fn new(ncp: T, events: Receiver<Event>) -> Self {
         Self {
-            proxy,
+            ncp,
             events,
             state: NetworkState::new(),
         }
     }
 
-    /// Returns a reference to the proxy.
+    /// Returns a reference to the NCP proxy.
     #[must_use]
-    pub const fn proxy(&self) -> &T {
-        &self.proxy
+    pub const fn ncp(&self) -> &T {
+        &self.ncp
     }
 
     /// Returns a reference to the network state.
@@ -66,7 +66,7 @@ where
                 self.state
                     .add_node(Node::new(*ieee_address, *pan_id, Descriptor::default()));
 
-                let Ok(dst_address) = self.proxy.get_ieee_address(0x0000).await else {
+                let Ok(dst_address) = self.ncp.get_ieee_address(0x0000).await else {
                     error!("Failed to get coordinator IEEE address.");
                     return;
                 };
@@ -133,7 +133,7 @@ where
                 info!(
                     "Requesting bind to {pan_id} of {src_address}/{src_endpoint} to {dst_address}/1 for cluster {cluster_id:#06X}"
                 );
-                self.proxy
+                self.ncp
                     .device(pan_id)
                     .data()
                     .bind(
@@ -165,7 +165,7 @@ where
             zdp::Command::NetworkManagement(network_management) => match network_management {
                 zdp::NetworkManagement::MgmtPermitJoiningReq(mgmt_permit_joining_req) => {
                     info!("Received Mgmt Permit Joining Request: {mgmt_permit_joining_req:?}");
-                    self.proxy
+                    self.ncp
                         .zdp()
                         .unicast(
                             src_address,
@@ -184,7 +184,7 @@ where
             {
                 zdp::DeviceAndServiceDiscovery::MatchDescReq(match_desc_req) => {
                     info!("Received Match Descriptor Request: {match_desc_req:?}");
-                    self.proxy
+                    self.ncp
                         .zdp()
                         .unicast(
                             src_address,
@@ -196,7 +196,7 @@ where
                 }
                 zdp::DeviceAndServiceDiscovery::NodeDescReq(node_desc_req) => {
                     info!("Received Node Descriptor Request: {node_desc_req:?}");
-                    self.proxy
+                    self.ncp
                         .zdp()
                         .unicast(
                             src_address,
