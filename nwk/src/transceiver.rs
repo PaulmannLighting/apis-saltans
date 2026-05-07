@@ -2,7 +2,8 @@ use zcl::global::read_attributes;
 use zcl::{Cluster, Customizable, Global, HeaderFactory, global};
 use zigbee::Endpoint;
 
-use crate::{Command, DemuxProxy, Error, Event, Proxy};
+use crate::demux::Proxy as DemuxProxy;
+use crate::{Command, Error, Event, Proxy};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Transceiver<T, R> {

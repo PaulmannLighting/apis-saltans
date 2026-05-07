@@ -6,8 +6,8 @@ use zigbee::Endpoint;
 
 pub use self::transceiver::Transceiver;
 pub use self::transmitter::Transmitter;
-use crate::demux::Message;
-use crate::{DemuxProxy, Error, Event, Frame};
+use crate::demux::{Message, Proxy};
+use crate::{Error, Event, Frame};
 
 mod receiver;
 mod transceiver;
@@ -52,9 +52,9 @@ where
     }
 }
 
-impl<T, R> DemuxProxy for ZclTransceiver<T, R>
+impl<T, R> Proxy for ZclTransceiver<T, R>
 where
-    R: DemuxProxy,
+    R: Proxy,
 {
     fn subscribe(
         &self,

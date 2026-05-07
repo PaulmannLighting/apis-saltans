@@ -2,9 +2,10 @@ use le_stream::ToLeStream;
 use zcl::{Cluster, Frame, HeaderFactory};
 use zigbee::Endpoint;
 
+use crate::Error;
+use crate::demux::Proxy;
 use crate::zcl::tx_rx::receiver::Receiver;
 use crate::zcl::tx_rx::transmitter::Transmitter;
-use crate::{DemuxProxy, Error};
 
 /// ZCL transmission and reception layer.
 pub trait Transceiver {
@@ -25,7 +26,7 @@ pub trait Transceiver {
 
 impl<T> Transceiver for T
 where
-    T: Transmitter + DemuxProxy + Sync,
+    T: Transmitter + Proxy + Sync,
 {
     async fn communicate<F>(
         &self,
