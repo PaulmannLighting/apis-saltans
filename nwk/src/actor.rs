@@ -10,7 +10,7 @@ use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
 mod sealed;
 
-/// A Zigbee network manager.
+/// A Zigbee coordinator actor.
 pub trait Actor {
     /// Get the next transaction sequence number.
     fn next_transaction_seq(&mut self) -> u8;
