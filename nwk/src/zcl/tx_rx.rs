@@ -7,7 +7,7 @@ use zigbee::Endpoint;
 pub use self::transceiver::Transceiver;
 pub use self::transmitter::Transmitter;
 use crate::demux::{Message, Proxy};
-use crate::{Error, Event, Frame};
+use crate::{DeviceProxy, Error, Event, Frame};
 
 mod receiver;
 mod transceiver;
@@ -29,6 +29,11 @@ impl<T, R> ZclTransceiver<T, R> {
             transmitter,
             receiver,
         }
+    }
+
+    /// Return a device proxy.
+    pub fn device(self, pan_id: u16) -> DeviceProxy<Self> {
+        DeviceProxy::new(self, pan_id)
     }
 }
 

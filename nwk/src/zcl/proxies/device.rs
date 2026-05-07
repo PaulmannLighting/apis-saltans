@@ -3,7 +3,7 @@ use zcl::{Cluster, HeaderFactory};
 use zigbee::Endpoint;
 
 use crate::zcl::tx_rx::{Transceiver, Transmitter};
-use crate::{Error, Frame};
+use crate::{EndpointProxy, Error, Frame};
 
 /// Device-level ZCL proxy.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -17,6 +17,11 @@ impl<T> Proxy<T> {
     #[must_use]
     pub const fn new(inner: T, pan_id: u16) -> Self {
         Self { inner, pan_id }
+    }
+
+    /// Return an endpoint proxy.
+    pub fn endpoint(self, endpoint: Endpoint) -> EndpointProxy<T> {
+        EndpointProxy::new(self.inner, self.pan_id, endpoint)
     }
 
     /// Send a frame.
