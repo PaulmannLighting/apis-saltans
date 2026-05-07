@@ -3,12 +3,12 @@
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::actor::Actor;
+pub use self::coordinator::Coordinator;
 pub use self::demux::Demux;
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
 pub use self::ncp::Ncp;
-pub use self::network_manager::NetworkManager;
 pub use self::transmission::{Frame, Metadata};
 pub use self::waiter::Waiter;
 pub use self::zcl::{
@@ -17,12 +17,12 @@ pub use self::zcl::{
 };
 
 mod actor;
+mod coordinator;
 mod demux;
 mod error;
 mod event;
 mod message;
 mod ncp;
-mod network_manager;
 pub mod smarthomelib;
 mod transceiver;
 mod transmission;

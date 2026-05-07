@@ -12,16 +12,16 @@ use crate::{Binding, Command, Error, Event, Ncp};
 
 mod network_state;
 
-/// Zigbee Network Manager handling communication via an NCP actor.
+/// Zigbee coordinator handling communication via an NCP proxy.
 #[derive(Debug)]
-pub struct NetworkManager<T> {
+pub struct Coordinator<T> {
     proxy: T,
     events: Receiver<Event>,
     state: NetworkState,
 }
 
-impl<T> NetworkManager<T> {
-    /// Creates a new `NetworkManager`.
+impl<T> Coordinator<T> {
+    /// Creates a new  Zigbee coordinator.
     #[must_use]
     pub const fn new(proxy: T, events: Receiver<Event>) -> Self {
         Self {
@@ -44,7 +44,7 @@ impl<T> NetworkManager<T> {
     }
 }
 
-impl<T> NetworkManager<T>
+impl<T> Coordinator<T>
 where
     T: Ncp + Sync,
 {

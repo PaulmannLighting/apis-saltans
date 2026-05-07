@@ -1,9 +1,9 @@
 use smarthomelib::{Event, Receiver};
 
 use super::Source;
-use crate::{Ncp, NetworkManager};
+use crate::{Coordinator, Ncp};
 
-impl<T> Receiver<Source> for NetworkManager<T>
+impl<T> Receiver<Source> for Coordinator<T>
 where
     T: Ncp + Sync,
 {
