@@ -2,10 +2,10 @@
 
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::Receiver;
-pub use transceiver::Transceiver;
-pub use transmitter::Transmitter;
 use zigbee::Endpoint;
 
+pub use self::transceiver::Transceiver;
+pub use self::transmitter::Transmitter;
 use crate::demux::Message;
 use crate::{DemuxProxy, Error, Event, Frame};
 
