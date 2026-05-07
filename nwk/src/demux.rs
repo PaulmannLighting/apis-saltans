@@ -3,10 +3,9 @@ use std::collections::BTreeMap;
 use log::error;
 use tokio::sync::mpsc::{Receiver, Sender};
 
-pub use self::error::Error;
 pub use self::message::Message;
 pub use self::proxy::Proxy;
-use crate::{Event, Rx};
+use crate::Event;
 
 mod error;
 mod message;
