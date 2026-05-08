@@ -1,5 +1,6 @@
 # TODOs
 
+- [ ] Split `Coordinator` into an actor managing the network and a proxy allowing sending and reception of ZCL frames.
 - [ ] Fix `Coordinator`.
 - [ ] Implement a method or function to spawn a network of appropriate agents to provide a `Coordinator` from an NCP
   driver implementation.
