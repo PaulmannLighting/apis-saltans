@@ -1,6 +1,9 @@
 # TODOs
 
-- [ ] Implement ZCL `tx`, `rx` and `tx_rx` modules with traits to send and receive ZCL frames.
+- [ ] Fix `Coordinator`.
+- [ ] Implement a method or function to spawn a network of appropriate agents to provide a `Coordinator` from an NCP
+  driver implementation.
+- [x] Implement ZCL `tx`, `rx` and `tx_rx` modules with traits to send and receive ZCL frames.
 - [x] Continue working on demultiplexer.
 - [x] Split APS and ZCL/ZDP layers.
 - [x] Add basic APS frame to incoming Zigbee events.
