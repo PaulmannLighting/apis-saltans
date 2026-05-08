@@ -31,13 +31,13 @@ where
     T: Ncp + Sync,
 {
     async fn next_seq(&self) -> Result<u8, Error> {
-        Ncp::next_transaction_seq(self).await
+        self.next_transaction_seq().await
     }
 
     async fn send<F>(&self, pan_id: u16, endpoint: Endpoint, frame: F) -> Result<u8, Error>
     where
         F: Into<Frame> + Send,
     {
-        Ncp::unicast(self, pan_id, endpoint, frame.into()).await
+        self.unicast(pan_id, endpoint, frame.into()).await
     }
 }
