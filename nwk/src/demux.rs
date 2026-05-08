@@ -5,17 +5,19 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::message::Message;
 pub use self::subscribe::Subscribe;
+use self::subscribers::Subscribers;
 use crate::Event;
 
 mod error;
 mod message;
 mod subscribe;
+mod subscribers;
 
 /// Incoming events demultiplexer.
 #[derive(Debug)]
 pub struct Demux {
     incoming: Receiver<Message>,
-    subscribers: BTreeMap<u8, tokio::sync::oneshot::Sender<Event>>,
+    subscribers: Subscribers,
     outgoing: Sender<Event>,
 }
 
