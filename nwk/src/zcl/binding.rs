@@ -15,6 +15,7 @@ pub trait Binding {
     /// Returns an [`Error`] if execution of the command failed.
     fn bind(
         &self,
+        short_id: u16,
         src_address: MacAddr8,
         src_endpoint: Endpoint,
         cluster_id: u16,
@@ -28,6 +29,7 @@ pub trait Binding {
     /// Returns an [`Error`] if execution of the command failed.
     fn unbind(
         &self,
+        short_id: u16,
         src_address: MacAddr8,
         src_endpoint: Endpoint,
         cluster_id: u16,
