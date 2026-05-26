@@ -3,7 +3,7 @@ use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot;
-use zdp::Destination;
+use zdp::{BindReq, Destination};
 use zigbee::Endpoint;
 use zigbee::node::{
     Descriptor, Flags, FrequencyBand, LogicalType, MacCapabilityFlags, Node, ServerMask,
@@ -11,7 +11,7 @@ use zigbee::node::{
 
 use self::network_state::NetworkState;
 use crate::demux::{Message, Subscribe};
-use crate::{Binding, Command, Error, Event, Frame, Ncp, Transmitter};
+use crate::{Binding, Command, DeviceProxy, EndpointProxy, Error, Event, Frame, Ncp, Transmitter};
 
 mod network_state;
 
@@ -43,7 +43,10 @@ impl<T, R> Coordinator<T, R> {
     }
 }
 
-impl<T, R> Coordinator<T, R> {
+impl<T, R> Coordinator<T, R>
+where
+    T: Transmitter + Sync,
+{
     /// Runs the network manager, processing incoming events.
     async fn recv(&mut self) -> Option<Event> {
         let event = self.events.recv().await?;
@@ -62,7 +65,7 @@ impl<T, R> Coordinator<T, R> {
                 self.state
                     .add_node(Node::new(*ieee_address, *short_id, Descriptor::default()));
 
-                let Ok(dst_address) = self.ncp.get_ieee_address(0x0000).await else {
+                let Ok(dst_address) = self.transmitter.get_ieee_address(0x0000).await else {
                     error!("Failed to get coordinator IEEE address.");
                     return;
                 };
@@ -129,17 +132,22 @@ impl<T, R> Coordinator<T, R> {
                 info!(
                     "Requesting bind to {short_id} of {src_address}/{src_endpoint} to {dst_address}/1 for cluster {cluster_id:#06X}"
                 );
-                self.ncp
-                    .device(short_id)
-                    .data()
-                    .bind(
-                        src_address,
-                        src_endpoint,
-                        cluster_id,
-                        Destination::Extended {
-                            address: dst_address,
-                            endpoint: 1,
-                        },
+                self.transmitter
+                    .send(
+                        short_id,
+                        Endpoint::Data,
+                        zdp::Frame::new(
+                            self.transmitter.next_seq().await?,
+                            BindReq::new(
+                                src_address,
+                                src_endpoint.into(),
+                                cluster_id,
+                                Destination::Extended {
+                                    address: dst_address,
+                                    endpoint: 1,
+                                },
+                            ),
+                        ),
                     )
                     .await?;
             }
@@ -255,6 +263,8 @@ where
 }
 
 /// Creates a node descriptor for the coordinator.
+///
+/// TODO: Get this data by actually reading the attributes.
 fn create_node_descriptor() -> Descriptor {
     let mut flags = Flags::empty();
     flags.set_frequency_band(FrequencyBand::FROM_2400_TO_2483_5_MHZ);
