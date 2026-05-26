@@ -16,7 +16,7 @@ pub trait Transceiver {
     /// Returns an [`Error`] if sending or receiving the frame fails.
     fn communicate<T>(
         &self,
-        pan_id: u16,
+        short_id: u16,
         endpoint: Endpoint,
         frame: T,
     ) -> impl Future<Output = Result<Frame<Cluster>, Error>> + Send
@@ -30,7 +30,7 @@ where
 {
     async fn communicate<F>(
         &self,
-        pan_id: u16,
+        short_id: u16,
         endpoint: Endpoint,
         frame: F,
     ) -> Result<Frame<Cluster>, Error>
@@ -39,7 +39,7 @@ where
     {
         let seq = self.next_seq().await?;
         let response = self.subscribe(seq).await?;
-        self.send(pan_id, endpoint, frame.frame(seq)).await?;
+        self.send(short_id, endpoint, frame.frame(seq)).await?;
         response.recv().await
     }
 }

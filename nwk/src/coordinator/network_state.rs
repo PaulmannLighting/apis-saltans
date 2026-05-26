@@ -19,17 +19,17 @@ impl NetworkState {
 
     /// Adds a node to the network state.
     pub fn add_node(&mut self, node: Node) {
-        self.nodes.insert(node.pan_id(), node);
+        self.nodes.insert(node.short_id(), node);
     }
 
-    /// Retrieves a node by its PAN ID.
-    pub fn get_node(&self, pan_id: u16) -> Option<&Node> {
-        self.nodes.get(&pan_id)
+    /// Retrieves a node by its short ID.
+    pub fn get_node(&self, short_id: u16) -> Option<&Node> {
+        self.nodes.get(&short_id)
     }
 
-    /// Removes a node by its PAN ID.
-    pub fn remove_node(&mut self, pan_id: u16) -> Option<Node> {
-        self.nodes.remove(&pan_id)
+    /// Removes a node by its short ID.
+    pub fn remove_node(&mut self, short_id: u16) -> Option<Node> {
+        self.nodes.remove(&short_id)
     }
 
     /// Returns an iterator over all nodes in the network state.
@@ -37,10 +37,10 @@ impl NetworkState {
         self.nodes.values()
     }
 
-    /// Retrieves the PAN ID for a given IEEE address.
-    pub fn get_pan_id(&self, ieee_address: MacAddr8) -> Option<u16> {
+    /// Retrieves the short ID for a given IEEE address.
+    pub fn get_short_id(&self, ieee_address: MacAddr8) -> Option<u16> {
         self.nodes
             .iter()
-            .find_map(|(pan_id, node)| (node.ieee_address() == ieee_address).then_some(*pan_id))
+            .find_map(|(short_id, node)| (node.ieee_address() == ieee_address).then_some(*short_id))
     }
 }

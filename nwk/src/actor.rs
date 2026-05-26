@@ -15,12 +15,12 @@ pub trait Actor {
     /// Get the next transaction sequence number.
     fn next_transaction_seq(&mut self) -> u8;
 
-    /// Get the PAN ID of the network manager.
+    /// Get the short ID of the network manager.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_pan_id(&mut self) -> impl Future<Output = Result<u16, Error>> + Send;
+    fn get_short_id(&mut self) -> impl Future<Output = Result<u16, Error>> + Send;
 
     /// Scan for available networks.
     ///
@@ -78,14 +78,14 @@ pub trait Actor {
     /// Returns an error if the operation fails.
     fn route_request(&mut self, radius: u8) -> impl Future<Output = Result<(), Error>> + Send;
 
-    /// Get the IEEE address of the device with the specified PAN ID.
+    /// Get the IEEE address of the device with the specified short ID.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
     fn get_ieee_address(
         &mut self,
-        pan_id: u16,
+        short_id: u16,
     ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
 
     /// Send a unicast message.
@@ -95,7 +95,7 @@ pub trait Actor {
     /// Returns an error if the operation fails.
     fn unicast(
         &mut self,
-        pan_id: u16,
+        short_id: u16,
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
@@ -120,7 +120,7 @@ pub trait Actor {
     /// Returns an error if the operation fails.
     fn broadcast(
         &mut self,
-        pan_id: u16,
+        short_id: u16,
         radius: u8,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;

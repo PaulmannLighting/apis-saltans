@@ -29,7 +29,7 @@ where
 {
     async fn read_attributes(
         &self,
-        pan_id: u16,
+        short_id: u16,
         endpoint: Endpoint,
         cluster_id: u16,
         attribute_ids: Box<[u16]>,
@@ -39,7 +39,7 @@ where
         let response = self.demux_proxy.subscribe(seq).await?;
         self.tx_proxy
             .unicast(
-                pan_id,
+                short_id,
                 endpoint,
                 read_attributes::Command::new(attribute_ids)
                     .for_cluster(cluster_id)
@@ -54,7 +54,7 @@ where
             aps_frame,
         } = response.await?
         {
-            if src_address != pan_id {
+            if src_address != short_id {
                 todo!("Handle unexpected source address.")
             }
 

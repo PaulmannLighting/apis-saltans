@@ -18,7 +18,7 @@ pub trait Transmitter {
     /// Returns an [`Error`] if sending the frame fails.
     fn send<T>(
         &self,
-        pan_id: u16,
+        short_id: u16,
         endpoint: Endpoint,
         frame: T,
     ) -> impl Future<Output = Result<u8, Error>> + Send
@@ -34,10 +34,10 @@ where
         self.next_transaction_seq().await
     }
 
-    async fn send<F>(&self, pan_id: u16, endpoint: Endpoint, frame: F) -> Result<u8, Error>
+    async fn send<F>(&self, short_id: u16, endpoint: Endpoint, frame: F) -> Result<u8, Error>
     where
         F: Into<Frame> + Send,
     {
-        self.unicast(pan_id, endpoint, frame.into()).await
+        self.unicast(short_id, endpoint, frame.into()).await
     }
 }

@@ -32,8 +32,8 @@ impl<T, R> ZclTransceiver<T, R> {
     }
 
     /// Return a device proxy.
-    pub fn device(self, pan_id: u16) -> DeviceProxy<Self> {
-        DeviceProxy::new(self, pan_id)
+    pub fn device(self, short_id: u16) -> DeviceProxy<Self> {
+        DeviceProxy::new(self, short_id)
     }
 }
 
@@ -47,14 +47,14 @@ where
 
     fn send<F>(
         &self,
-        pan_id: u16,
+        short_id: u16,
         endpoint: Endpoint,
         frame: F,
     ) -> impl Future<Output = Result<u8, Error>> + Send
     where
         F: Into<Frame> + Send,
     {
-        self.transmitter.send(pan_id, endpoint, frame)
+        self.transmitter.send(short_id, endpoint, frame)
     }
 }
 

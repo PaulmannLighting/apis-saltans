@@ -29,7 +29,7 @@ where
                 }
                 Message::GetPanId { response } => {
                     response
-                        .send(self.get_pan_id().await)
+                        .send(self.get_short_id().await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send get PAN ID command response: {error:?}");
                         });
@@ -77,21 +77,21 @@ where
                             error!("Failed to send route request command response: {error:?}");
                         });
                 }
-                Message::GetIeeeAddress { pan_id, response } => {
+                Message::GetIeeeAddress { short_id, response } => {
                     response
-                        .send(self.get_ieee_address(pan_id).await)
+                        .send(self.get_ieee_address(short_id).await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send get IEEE address command response: {error:?}");
                         });
                 }
                 Message::Unicast {
-                    pan_id,
+                    short_id,
                     endpoint,
                     frame,
                     response,
                 } => {
                     response
-                        .send(self.unicast(pan_id, endpoint, frame).await)
+                        .send(self.unicast(short_id, endpoint, frame).await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send ZCL command response: {error:?}");
                         });
@@ -110,13 +110,13 @@ where
                         });
                 }
                 Message::Broadcast {
-                    pan_id,
+                    short_id,
                     radius,
                     frame,
                     response,
                 } => {
                     response
-                        .send(self.broadcast(pan_id, radius, frame).await)
+                        .send(self.broadcast(short_id, radius, frame).await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send broadcast command response: {error:?}");
                         });

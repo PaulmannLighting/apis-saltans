@@ -9,19 +9,19 @@ use crate::{EndpointProxy, Error, Frame};
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Proxy<T> {
     inner: T,
-    pan_id: u16,
+    short_id: u16,
 }
 
 impl<T> Proxy<T> {
     /// Create a new device-level proxy.
     #[must_use]
-    pub const fn new(inner: T, pan_id: u16) -> Self {
-        Self { inner, pan_id }
+    pub const fn new(inner: T, short_id: u16) -> Self {
+        Self { inner, short_id }
     }
 
     /// Return an endpoint proxy.
     pub fn endpoint(self, endpoint: Endpoint) -> EndpointProxy<T> {
-        EndpointProxy::new(self.inner, self.pan_id, endpoint)
+        EndpointProxy::new(self.inner, self.short_id, endpoint)
     }
 
     /// Send a frame.
@@ -30,7 +30,7 @@ impl<T> Proxy<T> {
         T: Transmitter,
         F: Into<Frame> + Send,
     {
-        self.inner.send(self.pan_id, endpoint, frame).await
+        self.inner.send(self.short_id, endpoint, frame).await
     }
 
     /// Send a frame and receive a response.
@@ -43,6 +43,6 @@ impl<T> Proxy<T> {
         T: Transceiver,
         F: zigbee::Cluster + HeaderFactory + ToLeStream + Send,
     {
-        self.inner.communicate(self.pan_id, endpoint, frame).await
+        self.inner.communicate(self.short_id, endpoint, frame).await
     }
 }

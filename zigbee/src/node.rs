@@ -12,7 +12,7 @@ mod descriptor;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct Node {
-    pan_id: u16,
+    short_id: u16,
     ieee_address: MacAddr8,
     descriptor: Descriptor,
 }
@@ -20,18 +20,18 @@ pub struct Node {
 impl Node {
     /// Create a new Zigbee node.
     #[must_use]
-    pub const fn new(ieee_address: MacAddr8, pan_id: u16, descriptor: Descriptor) -> Self {
+    pub const fn new(ieee_address: MacAddr8, short_id: u16, descriptor: Descriptor) -> Self {
         Self {
-            pan_id,
+            short_id,
             ieee_address,
             descriptor,
         }
     }
 
-    /// Return the PAN ID of the node.
+    /// Return the short ID of the node.
     #[must_use]
-    pub const fn pan_id(&self) -> u16 {
-        self.pan_id
+    pub const fn short_id(&self) -> u16 {
+        self.short_id
     }
 
     /// Return the IEEE address of the node.

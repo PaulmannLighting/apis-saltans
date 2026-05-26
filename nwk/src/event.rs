@@ -19,15 +19,15 @@ pub enum Event {
     DeviceJoined {
         /// The IEEE address of the joined device.
         ieee_address: MacAddr8,
-        /// The PAN ID of the joined device.
-        pan_id: u16,
+        /// The short ID of the joined device.
+        short_id: u16,
     },
     /// A device has rejoined the network.
     DeviceRejoined {
         /// The IEEE address of the joined device.
         ieee_address: MacAddr8,
-        /// The PAN ID of the joined device.
-        pan_id: u16,
+        /// The short ID of the joined device.
+        short_id: u16,
         /// Whether the rejoin was secured.
         secured: bool,
     },
@@ -35,15 +35,15 @@ pub enum Event {
     DeviceLeft {
         /// The IEEE address of the left device.
         ieee_address: MacAddr8,
-        /// The PAN ID of the left device.
-        pan_id: u16,
+        /// The short ID of the left device.
+        short_id: u16,
     },
     /// A new device has been discovered.
     DeviceDiscovered {
         /// The IEEE address of the discovered device.
         ieee_address: MacAddr8,
-        /// The PAN ID of the discovered device.
-        pan_id: u16,
+        /// The short ID of the discovered device.
+        short_id: u16,
     },
     /// Message received from a device.
     MessageReceived {

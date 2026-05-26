@@ -42,11 +42,11 @@ pub enum Message {
         response: Sender<Result<(), Error>>,
     },
     GetIeeeAddress {
-        pan_id: u16,
+        short_id: u16,
         response: Sender<Result<MacAddr8, Error>>,
     },
     Unicast {
-        pan_id: u16,
+        short_id: u16,
         endpoint: Endpoint,
         frame: Frame,
         response: Sender<Result<u8, Error>>,
@@ -59,7 +59,7 @@ pub enum Message {
         response: Sender<Result<u8, Error>>,
     },
     Broadcast {
-        pan_id: u16,
+        short_id: u16,
         radius: u8,
         frame: Frame,
         response: Sender<Result<u8, Error>>,

@@ -20,12 +20,12 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn next_transaction_seq(&self) -> impl Future<Output = Result<u8, Error>> + Send;
 
-    /// Get the PAN ID of the network manager.
+    /// Get the short ID of the network manager.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_pan_id(&self) -> impl Future<Output = Result<u16, Error>> + Send;
+    fn get_short_id(&self) -> impl Future<Output = Result<u16, Error>> + Send;
 
     /// Scan for available networks.
     ///
@@ -70,13 +70,15 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn route_request(&self, radius: u8) -> impl Future<Output = Result<(), Error>> + Send;
 
-    /// Get the IEEE address of the device with the specified PAN ID.
+    /// Get the IEEE address of the device with the specified short ID.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_ieee_address(&self, pan_id: u16)
-    -> impl Future<Output = Result<MacAddr8, Error>> + Send;
+    fn get_ieee_address(
+        &self,
+        short_id: u16,
+    ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
 
     /// Send a unicast ZCL command.
     ///
@@ -85,7 +87,7 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn unicast(
         &self,
-        pan_id: u16,
+        short_id: u16,
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
@@ -98,7 +100,7 @@ impl Ncp for Sender<Message> {
         Ok(rx.await?)
     }
 
-    async fn get_pan_id(&self) -> Result<u16, Error> {
+    async fn get_short_id(&self) -> Result<u16, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::GetPanId { response }).await?;
         rx.await?
@@ -154,17 +156,17 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn get_ieee_address(&self, pan_id: u16) -> Result<MacAddr8, Error> {
+    async fn get_ieee_address(&self, short_id: u16) -> Result<MacAddr8, Error> {
         let (response, rx) = oneshot::channel();
-        self.send(Message::GetIeeeAddress { pan_id, response })
+        self.send(Message::GetIeeeAddress { short_id, response })
             .await?;
         rx.await?
     }
 
-    async fn unicast(&self, pan_id: u16, endpoint: Endpoint, frame: Frame) -> Result<u8, Error> {
+    async fn unicast(&self, short_id: u16, endpoint: Endpoint, frame: Frame) -> Result<u8, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::Unicast {
-            pan_id,
+            short_id,
             endpoint,
             frame,
             response,

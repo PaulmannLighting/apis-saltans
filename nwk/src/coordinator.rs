@@ -1,6 +1,8 @@
 use log::{error, info, warn};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::error::SendError;
+use tokio::sync::oneshot;
 use zdp::Destination;
 use zigbee::Endpoint;
 use zigbee::node::{
@@ -8,33 +10,30 @@ use zigbee::node::{
 };
 
 use self::network_state::NetworkState;
-use crate::{Binding, Command, Error, Event, Ncp};
+use crate::demux::{Message, Subscribe};
+use crate::{Binding, Command, Error, Event, Frame, Ncp, Transmitter};
 
 mod network_state;
 
 /// Zigbee coordinator handling communication via an NCP proxy.
 #[derive(Debug)]
-pub struct Coordinator<T> {
-    ncp: T,
+pub struct Coordinator<T, R> {
+    transmitter: T,
+    receiver: R,
     events: Receiver<Event>,
     state: NetworkState,
 }
 
-impl<T> Coordinator<T> {
+impl<T, R> Coordinator<T, R> {
     /// Creates a new  Zigbee coordinator.
     #[must_use]
-    pub const fn new(ncp: T, events: Receiver<Event>) -> Self {
+    pub const fn new(transmitter: T, receiver: R, events: Receiver<Event>) -> Self {
         Self {
-            ncp,
+            transmitter,
+            receiver,
             events,
             state: NetworkState::new(),
         }
-    }
-
-    /// Returns a reference to the NCP proxy.
-    #[must_use]
-    pub const fn ncp(&self) -> &T {
-        &self.ncp
     }
 
     /// Returns a reference to the network state.
@@ -44,12 +43,9 @@ impl<T> Coordinator<T> {
     }
 }
 
-impl<T> Coordinator<T>
-where
-    T: Ncp + Sync,
-{
+impl<T, R> Coordinator<T, R> {
     /// Runs the network manager, processing incoming events.
-    pub async fn recv(&mut self) -> Option<Event> {
+    async fn recv(&mut self) -> Option<Event> {
         let event = self.events.recv().await?;
         self.handle_event(&event).await;
         Some(event)
@@ -60,11 +56,11 @@ where
         match event {
             Event::DeviceJoined {
                 ieee_address,
-                pan_id,
+                short_id,
             } => {
-                info!("Device joined: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}");
+                info!("Device joined: IEEE Address: {ieee_address}, PAN ID: {short_id:#06X}");
                 self.state
-                    .add_node(Node::new(*ieee_address, *pan_id, Descriptor::default()));
+                    .add_node(Node::new(*ieee_address, *short_id, Descriptor::default()));
 
                 let Ok(dst_address) = self.ncp.get_ieee_address(0x0000).await else {
                     error!("Failed to get coordinator IEEE address.");
@@ -74,7 +70,7 @@ where
                 // TODO: For testing only. Outsource to some kind of binding manager.
                 if let Err(error) = self
                     .send_bind_reqs(
-                        *pan_id,
+                        *short_id,
                         *ieee_address,
                         &[1, 2],
                         dst_address,
@@ -87,21 +83,21 @@ where
             }
             Event::DeviceRejoined {
                 ieee_address,
-                pan_id,
+                short_id,
                 secured,
             } => {
                 info!(
-                    "Device rejoined: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}, Secured: {secured}"
+                    "Device rejoined: IEEE Address: {ieee_address}, PAN ID: {short_id:#06X}, Secured: {secured}"
                 );
                 self.state
-                    .add_node(Node::new(*ieee_address, *pan_id, Descriptor::default()));
+                    .add_node(Node::new(*ieee_address, *short_id, Descriptor::default()));
             }
             Event::DeviceLeft {
                 ieee_address,
-                pan_id,
+                short_id,
             } => {
-                info!("Device left: IEEE Address: {ieee_address}, PAN ID: {pan_id:#06X}");
-                self.state.remove_node(*pan_id);
+                info!("Device left: IEEE Address: {ieee_address}, PAN ID: {short_id:#06X}");
+                self.state.remove_node(*short_id);
             }
             Event::MessageReceived {
                 src_address,
@@ -122,7 +118,7 @@ where
 
     async fn send_bind_reqs(
         &self,
-        pan_id: u16,
+        short_id: u16,
         src_address: MacAddr8,
         src_endpoints: &[u8],
         dst_address: MacAddr8,
@@ -131,10 +127,10 @@ where
         for src_endpoint in src_endpoints.iter().copied().map(Endpoint::from) {
             for &cluster_id in cluster_ids {
                 info!(
-                    "Requesting bind to {pan_id} of {src_address}/{src_endpoint} to {dst_address}/1 for cluster {cluster_id:#06X}"
+                    "Requesting bind to {short_id} of {src_address}/{src_endpoint} to {dst_address}/1 for cluster {cluster_id:#06X}"
                 );
                 self.ncp
-                    .device(pan_id)
+                    .device(short_id)
                     .data()
                     .bind(
                         src_address,
@@ -222,6 +218,39 @@ where
         }
 
         Ok(())
+    }
+}
+
+impl<T, R> Transmitter for Coordinator<T, R>
+where
+    T: Transmitter + Sync,
+{
+    fn next_seq(&self) -> impl Future<Output = Result<u8, Error>> + Send {
+        self.transmitter.next_seq()
+    }
+
+    fn send<F>(
+        &self,
+        short_id: u16,
+        endpoint: Endpoint,
+        frame: F,
+    ) -> impl Future<Output = Result<u8, Error>> + Send
+    where
+        F: Into<Frame> + Send,
+    {
+        self.transmitter.send(short_id, endpoint, frame)
+    }
+}
+
+impl<T, R> Subscribe for Coordinator<T, R>
+where
+    R: Subscribe,
+{
+    fn subscribe(
+        &self,
+        seq: u8,
+    ) -> impl Future<Output = Result<oneshot::Receiver<Event>, SendError<Message>>> + Send {
+        self.receiver.subscribe(seq)
     }
 }
 

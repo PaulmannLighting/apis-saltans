@@ -36,22 +36,22 @@ impl From<Event> for smarthomelib::Event<Source> {
 }
 
 fn translate_zcl_command(
-    pan_id: u16,
+    short_id: u16,
     header: &Header,
     command: zcl::Frame<Cluster>,
 ) -> smarthomelib::Event<Source> {
     let endpoint: Endpoint = header.source_endpoint().into();
-    info!("Received ZCL command from {pan_id:#06X}/{endpoint}: {command:?}");
+    info!("Received ZCL command from {short_id:#06X}/{endpoint}: {command:?}");
     let (_header, payload) = command.into_parts();
 
     match payload {
         Cluster::OnOff(on_off) => match on_off {
             on_off::Command::On(_) => smarthomelib::Event::Command {
-                sender: Source::new(pan_id, endpoint),
+                sender: Source::new(short_id, endpoint),
                 command: Command::On,
             },
             on_off::Command::Off(_) => smarthomelib::Event::Command {
-                sender: Source::new(pan_id, endpoint),
+                sender: Source::new(short_id, endpoint),
                 command: Command::Off,
             },
             other => {
@@ -62,7 +62,7 @@ fn translate_zcl_command(
         Cluster::Level(level) => match level {
             level::Command::Move(r#move) => match r#move.try_into() {
                 Ok(dimming) => smarthomelib::Event::Command {
-                    sender: Source::new(pan_id, endpoint),
+                    sender: Source::new(short_id, endpoint),
                     command: Command::Dimming(Some(dimming)),
                 },
                 Err(err) => {
@@ -72,7 +72,7 @@ fn translate_zcl_command(
             },
             level::Command::MoveWithOnOff(move_with_on_off) => match move_with_on_off.try_into() {
                 Ok(dimming) => smarthomelib::Event::Command {
-                    sender: Source::new(pan_id, endpoint),
+                    sender: Source::new(short_id, endpoint),
                     command: Command::Dimming(Some(dimming)),
                 },
                 Err(err) => {
@@ -82,7 +82,7 @@ fn translate_zcl_command(
             },
             level::Command::Stop(_) | level::Command::StopWithOnOff(_) => {
                 smarthomelib::Event::Command {
-                    sender: Source::new(pan_id, endpoint),
+                    sender: Source::new(short_id, endpoint),
                     command: Command::Dimming(None),
                 }
             }

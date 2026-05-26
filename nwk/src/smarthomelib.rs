@@ -15,21 +15,21 @@ mod on_off;
 /// A Zigbee source.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Source {
-    pan_id: u16,
+    short_id: u16,
     endpoint: Endpoint,
 }
 
 impl Source {
     /// Crate a new Zigbee source.
     #[must_use]
-    pub const fn new(pan_id: u16, endpoint: Endpoint) -> Self {
-        Self { pan_id, endpoint }
+    pub const fn new(short_id: u16, endpoint: Endpoint) -> Self {
+        Self { short_id, endpoint }
     }
 
-    /// Return the PAN ID.
+    /// Return the short ID.
     #[must_use]
-    pub const fn pan_id(&self) -> u16 {
-        self.pan_id
+    pub const fn short_id(&self) -> u16 {
+        self.short_id
     }
 
     /// Return the endpoint.
