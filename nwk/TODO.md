@@ -1,5 +1,7 @@
 # TODOs
 
+- [ ] Split this module into `zigbee-coordinator` and `zigbee-hw` crates, where the former contains the coordinator
+  logic and the latter contains the NCP driver and related hardware interaction code.
 - [ ] Split `Coordinator` into an actor managing the network and a proxy allowing sending and reception of ZCL frames.
 - [ ] Fix `Coordinator`.
 - [ ] Implement a method or function to spawn a network of appropriate agents to provide a `Coordinator` from an NCP
