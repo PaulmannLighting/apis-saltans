@@ -14,7 +14,11 @@ pub trait SealedDriver {
     /// Run the actor, processing incoming messages.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send;
 
-    /// Spawn the actor in a new tokio task and return a proxy object.
+    /// Spawn the actor in a new tokio task.
+    ///
+    /// # Returns
+    ///
+    /// Returns a tuple of the tokio task's join handle and an actor proxy.
     fn spawn(self, channel_size: usize) -> (JoinHandle<()>, impl Ncp + Clone + Send)
     where
         Self: 'static;

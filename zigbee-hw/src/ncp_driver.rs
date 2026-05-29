@@ -140,7 +140,11 @@ pub trait NcpDriver {
         SealedDriver::run(self, rx)
     }
 
-    /// Spawn the actor in a tokio task and return a clonable [`Ncp`] proxy.
+    /// Spawn the actor in a tokio task.
+    ///
+    /// # Returns
+    ///
+    /// Returns a tuple of the tokio task's join handle and an actor proxy.
     fn spawn(self, channel_size: usize) -> (JoinHandle<()>, impl Ncp + Clone + Send)
     where
         Self: Sized + SealedDriver + 'static,
