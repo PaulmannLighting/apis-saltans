@@ -5,7 +5,7 @@ pub use self::command::Command;
 
 mod command;
 
-/// Events that can occur in the network module.
+/// Events that can occur on the hardware layer.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Event {
     /// The network is up and running.
