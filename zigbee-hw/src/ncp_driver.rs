@@ -15,14 +15,6 @@ mod sealed_driver;
 
 /// A common Zigbee NCP driver interface.
 pub trait NcpDriver {
-    /// Spawn the actor in a tokio task and return a clonable [`Ncp`] proxy.
-    fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
-    where
-        Self: Sized + SealedDriver + 'static,
-    {
-        SealedDriver::spawn(self, channel_size)
-    }
-
     /// Get the next transaction sequence number.
     fn next_transaction_seq(&mut self) -> u8;
 
@@ -145,5 +137,13 @@ pub trait NcpDriver {
         Self: Sized + SealedDriver,
     {
         SealedDriver::run(self, rx)
+    }
+
+    /// Spawn the actor in a tokio task and return a clonable [`Ncp`] proxy.
+    fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
+    where
+        Self: Sized + SealedDriver + 'static,
+    {
+        SealedDriver::spawn(self, channel_size)
     }
 }
