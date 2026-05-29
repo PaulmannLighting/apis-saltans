@@ -121,6 +121,13 @@ where
                             error!("Failed to send broadcast command response: {error:?}");
                         });
                 }
+                Message::Subscribe { response } => {
+                    response
+                        .send(self.subscribe().await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send subscribe command response: {error:?}");
+                        });
+                }
             }
         }
 

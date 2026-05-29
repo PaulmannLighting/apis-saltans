@@ -8,7 +8,7 @@ use tokio::sync::mpsc::Receiver;
 use zigbee::Endpoint;
 
 use crate::message::Message;
-use crate::{Error, FoundNetwork, Frame, ScannedChannel};
+use crate::{Error, Event, FoundNetwork, Frame, ScannedChannel};
 
 mod sealed;
 
@@ -114,6 +114,9 @@ pub trait NcpDriver {
         radius: u8,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
+
+    /// Subscribe to the inner event multiplexer.
+    fn subscribe(&mut self) -> impl Future<Output = Receiver<Event>> + Send;
 
     /// Send a broadcast message.
     ///
