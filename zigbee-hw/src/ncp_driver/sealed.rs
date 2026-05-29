@@ -1,6 +1,8 @@
 use log::{error, trace};
-use tokio::sync::mpsc::Receiver;
+use tokio::spawn;
+use tokio::sync::mpsc::{Receiver, channel};
 
+use crate::Ncp;
 use crate::message::Message;
 
 /// Sealed actor trait for handling communication with the Zigbee NCP.
@@ -8,14 +10,27 @@ use crate::message::Message;
 /// This trait should not be implemented directly. Instead, implement the `crate::Actor` trait
 /// for your  NCP type, and this sealed `Actor` trait will be automatically implemented for it.
 pub trait Actor {
+    fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
+    where
+        Self: 'static;
+
     /// Run the actor, processing incoming messages.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send;
 }
 
 impl<T> Actor for T
 where
-    T: super::NcpDriver + Send,
+    T: super::NcpDriver + Send + 'static,
 {
+    fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
+    where
+        Self: 'static,
+    {
+        let (tx, rx) = channel(channel_size);
+        spawn(self.run(rx));
+        tx
+    }
+
     #[expect(clippy::too_many_lines)]
     async fn run(mut self, mut rx: Receiver<Message>) {
         while let Some(message) = rx.recv().await {

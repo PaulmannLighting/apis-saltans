@@ -8,12 +8,20 @@ use tokio::sync::mpsc::Receiver;
 use zigbee::Endpoint;
 
 use crate::message::Message;
-use crate::{Error, Event, FoundNetwork, Frame, ScannedChannel};
+use crate::{Error, Event, FoundNetwork, Frame, Ncp, ScannedChannel};
 
 mod sealed;
 
 /// A common Zigbee NCP driver interface.
 pub trait NcpDriver {
+    /// Spawn the actor in a tokio task and return a clonable [`Ncp`] proxy.
+    fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
+    where
+        Self: Sized + sealed::Actor + 'static,
+    {
+        sealed::Actor::spawn(self, channel_size)
+    }
+
     /// Get the next transaction sequence number.
     fn next_transaction_seq(&mut self) -> u8;
 
