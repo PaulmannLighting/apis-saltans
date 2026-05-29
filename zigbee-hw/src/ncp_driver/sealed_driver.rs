@@ -5,11 +5,11 @@ use tokio::sync::mpsc::{Receiver, channel};
 use crate::message::Message;
 use crate::{Ncp, NcpDriver};
 
-/// Sealed actor trait for handling communication with the Zigbee NCP.
+/// Sealed driver trait for handling communication with the Zigbee NCP.
 ///
-/// This trait should not be implemented directly. Instead, implement the `crate::Actor` trait
-/// for your  NCP type, and this sealed `Actor` trait will be automatically implemented for it.
-pub trait Actor {
+/// This trait should not be implemented directly. Instead, implement the `NcpDriver` trait
+/// for your  NCP type, and this `SealedDriver` trait will be automatically implemented for it.
+pub trait SealedDriver {
     fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
     where
         Self: 'static;
@@ -18,7 +18,7 @@ pub trait Actor {
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send;
 }
 
-impl<T> Actor for T
+impl<T> SealedDriver for T
 where
     T: NcpDriver + Send + 'static,
 {

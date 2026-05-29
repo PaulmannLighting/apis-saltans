@@ -7,19 +7,20 @@ use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use zigbee::Endpoint;
 
+use self::sealed_driver::SealedDriver;
 use crate::message::Message;
 use crate::{Error, Event, FoundNetwork, Frame, Ncp, ScannedChannel};
 
-mod sealed;
+mod sealed_driver;
 
 /// A common Zigbee NCP driver interface.
 pub trait NcpDriver {
     /// Spawn the actor in a tokio task and return a clonable [`Ncp`] proxy.
     fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
     where
-        Self: Sized + sealed::Actor + 'static,
+        Self: Sized + SealedDriver + 'static,
     {
-        sealed::Actor::spawn(self, channel_size)
+        SealedDriver::spawn(self, channel_size)
     }
 
     /// Get the next transaction sequence number.
@@ -141,8 +142,8 @@ pub trait NcpDriver {
     /// Run the network manager actor.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send
     where
-        Self: Sized + sealed::Actor,
+        Self: Sized + SealedDriver,
     {
-        sealed::Actor::run(self, rx)
+        SealedDriver::run(self, rx)
     }
 }
