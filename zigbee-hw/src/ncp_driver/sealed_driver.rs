@@ -1,6 +1,7 @@
 use log::{error, trace};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, channel};
+use tokio::task::JoinHandle;
 
 use crate::message::Message;
 use crate::{Ncp, NcpDriver};
@@ -14,7 +15,7 @@ pub trait SealedDriver {
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send;
 
     /// Spawn the actor in a new tokio task and return a proxy object.
-    fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
+    fn spawn(self, channel_size: usize) -> (JoinHandle<()>, impl Ncp + Clone + Send)
     where
         Self: 'static;
 }
@@ -141,12 +142,12 @@ where
         trace!("Message channel closed, NWK actor exiting.");
     }
 
-    fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
+    fn spawn(self, channel_size: usize) -> (JoinHandle<()>, impl Ncp + Clone + Send)
     where
         Self: 'static,
     {
         let (tx, rx) = channel(channel_size);
-        spawn(self.run(rx));
-        tx
+        let join_handle = spawn(self.run(rx));
+        (join_handle, tx)
     }
 }

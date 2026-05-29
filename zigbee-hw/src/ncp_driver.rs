@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
+use tokio::task::JoinHandle;
 use zigbee::Endpoint;
 
 use self::sealed_driver::SealedDriver;
@@ -140,7 +141,7 @@ pub trait NcpDriver {
     }
 
     /// Spawn the actor in a tokio task and return a clonable [`Ncp`] proxy.
-    fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
+    fn spawn(self, channel_size: usize) -> (JoinHandle<()>, impl Ncp + Clone + Send)
     where
         Self: Sized + SealedDriver + 'static,
     {
