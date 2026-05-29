@@ -6,9 +6,11 @@
 pub use self::error::Error;
 pub use self::frame::Frame;
 pub use self::message::{FoundNetwork, ScannedChannel};
+pub use self::ncp::Ncp;
 pub use self::ncp_driver::NcpDriver;
 
 mod error;
 mod frame;
 mod message;
+mod ncp;
 mod ncp_driver;
