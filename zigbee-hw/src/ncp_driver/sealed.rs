@@ -2,8 +2,8 @@ use log::{error, trace};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, channel};
 
-use crate::Ncp;
 use crate::message::Message;
+use crate::{Ncp, NcpDriver};
 
 /// Sealed actor trait for handling communication with the Zigbee NCP.
 ///
@@ -20,7 +20,7 @@ pub trait Actor {
 
 impl<T> Actor for T
 where
-    T: super::NcpDriver + Send + 'static,
+    T: NcpDriver + Send + 'static,
 {
     fn spawn(self, channel_size: usize) -> impl Ncp + Clone + Send
     where
