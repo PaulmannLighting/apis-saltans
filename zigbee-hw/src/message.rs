@@ -13,7 +13,7 @@ use crate::{Error, Event, Frame};
 mod found_network;
 mod scanned_channel;
 
-/// Messages sent to the NWK actor.
+/// Messages exchanged with the NCP driver actor.
 pub enum Message {
     /// Return the transaction sequence number.
     GetTransactionSeq { response: Sender<u8> },
