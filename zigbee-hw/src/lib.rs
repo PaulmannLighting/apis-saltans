@@ -6,7 +6,7 @@
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::frame::{Frame, Metadata};
-pub use self::message::{FoundNetwork, ScannedChannel};
+pub use self::message::{FoundNetwork, Network, ScannedChannel};
 pub use self::ncp::Ncp;
 pub use self::ncp_driver::NcpDriver;
 
