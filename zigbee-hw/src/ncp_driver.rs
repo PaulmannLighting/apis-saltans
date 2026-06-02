@@ -118,7 +118,10 @@ pub trait NcpDriver {
     ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Subscribe to the inner event multiplexer.
-    fn subscribe(&mut self, sender: Sender<Event>) -> impl Future<Output = ()> + Send;
+    fn subscribe(
+        &mut self,
+        buffer: usize,
+    ) -> impl Future<Output = Result<Receiver<Event>, Error>> + Send;
 
     /// Send a broadcast message.
     ///

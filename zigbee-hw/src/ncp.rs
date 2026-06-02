@@ -99,7 +99,7 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn subscribe(
         &self,
-        buf_size: usize,
+        buffer: usize,
     ) -> impl Future<Output = Result<Receiver<Event>, Error>> + Send;
 }
 
@@ -185,9 +185,9 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn subscribe(&self, buf_size: usize) -> Result<Receiver<Event>, Error> {
-        let (tx, rx) = channel(buf_size);
-        self.send(Message::Subscribe { sender: tx }).await?;
-        Ok(rx)
+    async fn subscribe(&self, buffer: usize) -> Result<Receiver<Event>, Error> {
+        let (response, rx) = oneshot::channel();
+        self.send(Message::Subscribe { buffer, response }).await?;
+        rx.await?
     }
 }
