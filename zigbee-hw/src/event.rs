@@ -12,12 +12,12 @@ pub enum Event {
     /// Channel found.
     ChannelFound {
         /// The channel that has been found.
-        channel: ScannedChannel,
+        channels: Vec<ScannedChannel>,
     },
     /// Network found.
     NetworkFound {
         /// The network that has been found.
-        network: FoundNetwork,
+        networks: Vec<FoundNetwork>,
     },
     /// The network is up and running.
     NetworkUp,
