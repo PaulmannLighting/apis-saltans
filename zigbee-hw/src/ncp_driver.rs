@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
 use zigbee::Endpoint;
 
@@ -136,7 +136,7 @@ pub trait NcpDriver {
     ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Run the network manager actor.
-    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send
+    fn run(self, rx: Receiver<Message>) -> impl Future<Output = Self> + Send
     where
         Self: Sized + SealedDriver,
     {
@@ -148,7 +148,7 @@ pub trait NcpDriver {
     /// # Returns
     ///
     /// Returns a tuple of the tokio task's join handle and an actor proxy.
-    fn spawn(self, channel_size: usize) -> (JoinHandle<()>, impl Ncp + Clone + Send)
+    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, impl Ncp + Clone + Send)
     where
         Self: Sized + SealedDriver + 'static,
     {

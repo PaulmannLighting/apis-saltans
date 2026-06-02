@@ -12,16 +12,16 @@ use crate::{Ncp, NcpDriver};
 /// for your  NCP type, and this `SealedDriver` trait will be automatically implemented for it.
 pub trait SealedDriver {
     /// Run the actor, processing incoming messages.
-    fn run(self, rx: Receiver<Message>) -> impl Future<Output = ()> + Send;
+    fn run(self, rx: Receiver<Message>) -> impl Future<Output = Self> + Send;
 
     /// Spawn the actor in a new tokio task.
     ///
     /// # Returns
     ///
     /// Returns a tuple of the tokio task's join handle and an actor proxy.
-    fn spawn(self, channel_size: usize) -> (JoinHandle<()>, impl Ncp + Clone + Send)
+    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, impl Ncp + Clone + Send)
     where
-        Self: 'static;
+        Self: Sized + 'static;
 }
 
 impl<T> SealedDriver for T
@@ -29,7 +29,7 @@ where
     T: NcpDriver + Send + 'static,
 {
     #[expect(clippy::too_many_lines)]
-    async fn run(mut self, mut rx: Receiver<Message>) {
+    async fn run(mut self, mut rx: Receiver<Message>) -> Self {
         while let Some(message) = rx.recv().await {
             match message {
                 Message::GetTransactionSeq { response } => {
@@ -144,9 +144,10 @@ where
         }
 
         trace!("Message channel closed, NWK actor exiting.");
+        self
     }
 
-    fn spawn(self, channel_size: usize) -> (JoinHandle<()>, impl Ncp + Clone + Send)
+    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, impl Ncp + Clone + Send)
     where
         Self: 'static,
     {
