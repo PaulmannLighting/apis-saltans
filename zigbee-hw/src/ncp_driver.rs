@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 use zigbee::Endpoint;
 
@@ -118,7 +118,7 @@ pub trait NcpDriver {
     ) -> impl Future<Output = Result<u8, Error>> + Send;
 
     /// Subscribe to the inner event multiplexer.
-    fn subscribe(&mut self, buf_size: usize) -> impl Future<Output = Receiver<Event>> + Send;
+    fn subscribe(&mut self, sender: Sender<Event>) -> impl Future<Output = ()> + Send;
 
     /// Send a broadcast message.
     ///

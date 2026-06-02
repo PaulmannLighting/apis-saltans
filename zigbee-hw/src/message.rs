@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc;
 use tokio::sync::oneshot::Sender;
 use zigbee::Endpoint;
 
@@ -76,7 +76,7 @@ pub enum Message {
     },
     /// Subscribe for events.
     Subscribe {
-        buf_size: usize,
-        response: Sender<Receiver<Event>>,
+        /// The sender to register on the multiplexer.
+        sender: mpsc::Sender<Event>,
     },
 }
