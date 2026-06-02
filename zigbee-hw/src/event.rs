@@ -9,13 +9,10 @@ mod command;
 /// Events that can occur on the hardware layer.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Event {
-    /// Channel found.
-    ChannelFound {
+    /// Result of a channel and/or network scan.
+    ScanResult {
         /// The channel that has been found.
         channels: Vec<ScannedChannel>,
-    },
-    /// Network found.
-    NetworkFound {
         /// The network that has been found.
         networks: Vec<FoundNetwork>,
     },
