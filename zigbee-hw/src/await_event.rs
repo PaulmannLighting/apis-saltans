@@ -3,7 +3,7 @@ use tokio::sync::mpsc::Receiver;
 use crate::Event;
 
 /// Trait for waiting on Zigbee network events.
-pub trait Waiter {
+pub trait AwaitEvent {
     /// Wait for the expected event to occur.
     ///
     /// # Errors
@@ -48,7 +48,7 @@ pub trait Waiter {
     }
 }
 
-impl Waiter for Receiver<Event> {
+impl AwaitEvent for Receiver<Event> {
     async fn event(&mut self, expected_event: Event) -> Result<(), ()> {
         while let Some(received_event) = self.recv().await {
             if received_event == expected_event {

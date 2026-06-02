@@ -10,7 +10,6 @@ pub use self::event::{Command, Event};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
 pub use self::ncp::Ncp;
 pub use self::transmission::{Frame, Metadata};
-pub use self::waiter::Waiter;
 pub use self::zcl::{
     Attributes, Binding, ColorControl, DeviceProxy, EndpointProxy, OnOff, Transceiver, Transmitter,
     ZclTransceiver,
@@ -26,7 +25,6 @@ mod ncp;
 pub mod smarthomelib;
 mod transceiver;
 mod transmission;
-mod waiter;
 mod zcl;
 
 /// Type alias for the NWK layer proxy sender.
