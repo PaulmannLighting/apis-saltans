@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use zigbee::Endpoint;
 
