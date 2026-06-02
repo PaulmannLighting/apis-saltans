@@ -2,12 +2,23 @@ use aps::Data;
 use macaddr::MacAddr8;
 
 pub use self::command::Command;
+use crate::{FoundNetwork, ScannedChannel};
 
 mod command;
 
 /// Events that can occur on the hardware layer.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Event {
+    /// Channel found.
+    ChannelFound {
+        /// The channel that has been found.
+        channel: ScannedChannel,
+    },
+    /// Network found.
+    NetworkFound {
+        /// The network that has been found.
+        network: FoundNetwork,
+    },
     /// The network is up and running.
     NetworkUp,
     /// The network is down.
