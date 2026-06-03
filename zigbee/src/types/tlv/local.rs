@@ -44,6 +44,7 @@ mod iter {
     use crate::types::tlv::Local;
     use crate::types::tlv::local::ClearAllBindingsReqEui64;
 
+    #[derive(Debug)]
     pub enum LocalIter {
         ClearAllBindingsReqEui64(<ClearAllBindingsReqEui64 as ToLeStream>::Iter),
     }

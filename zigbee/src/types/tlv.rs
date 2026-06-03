@@ -59,6 +59,7 @@ where
 }
 
 mod iter {
+    #[derive(Debug)]
     pub enum TlvLeStream<L, G> {
         Local(L),
         Global(G),

@@ -130,6 +130,7 @@ mod iter {
     };
     use crate::types::tlv::Global;
 
+    #[derive(Debug)]
     pub enum GlobalLeStream {
         ManufacturerSpecific(<ManufacturerSpecific as ToLeStream>::Iter),
         SupportedKeyNegotiationMethods(<SupportedKeyNegotiation as ToLeStream>::Iter),

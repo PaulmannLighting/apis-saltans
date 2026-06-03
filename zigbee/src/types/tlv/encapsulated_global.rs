@@ -93,6 +93,7 @@ mod iter {
         SymmetricPassphrase,
     };
 
+    #[derive(Debug)]
     pub enum EncapsulatedGlobalIter {
         ManufacturerSpecific(<ManufacturerSpecific as ToLeStream>::Iter),
         SupportedKeyNegotiationMethods(<SupportedKeyNegotiation as ToLeStream>::Iter),
