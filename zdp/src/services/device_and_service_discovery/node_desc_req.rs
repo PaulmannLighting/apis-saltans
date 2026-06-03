@@ -1,13 +1,13 @@
 use std::fmt::Display;
 
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 use zigbee::types::tlv::Tlv;
 
 use crate::Service;
 
 /// Node Descriptor Request structure.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct NodeDescReq {
     nwk_addr: u16,
     tlvs: Vec<Tlv>,

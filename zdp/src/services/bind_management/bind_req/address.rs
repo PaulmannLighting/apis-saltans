@@ -39,6 +39,7 @@ mod iterator {
     use macaddr::MacAddr8;
 
     /// Iterator for little-endian stream of `Address`.
+    #[derive(Debug)]
     pub enum AddressLeStream {
         Group(<u16 as ToLeStream>::Iter),
         Extended(<MacAddr8 as ToLeStream>::Iter),

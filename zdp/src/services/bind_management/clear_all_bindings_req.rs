@@ -10,13 +10,13 @@ use crate::Service;
 /// Clear All Bindings Request
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ClearAllBindingsReq {
-    tlvs: Vec<Tlv>,
+    tlvs: Box<[Tlv]>,
 }
 
 impl ClearAllBindingsReq {
     /// Creates a new `ClearAllBindingsReq`.
     #[must_use]
-    pub const fn new(tlvs: Vec<Tlv>) -> Self {
+    pub const fn new(tlvs: Box<[Tlv]>) -> Self {
         Self { tlvs }
     }
 

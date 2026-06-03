@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
 pub use self::bind_management::{
@@ -140,6 +140,149 @@ impl Display for Command {
             Self::DeviceAndServiceDiscovery(cmd) => cmd.fmt(f),
             Self::BindManagement(cmd) => cmd.fmt(f),
             Self::NetworkManagement(cmd) => cmd.fmt(f),
+        }
+    }
+}
+
+impl ToLeStream for Command {
+    type Iter = Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        match self {
+            Self::DeviceAndServiceDiscovery(cmd) => match cmd {
+                DeviceAndServiceDiscovery::NwkAddrReq(cmd) => Iter::NwkAddrReq(cmd.to_le_stream()),
+                DeviceAndServiceDiscovery::IeeeAddrReq(cmd) => {
+                    Iter::IeeeAddrReq(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::NodeDescReq(cmd) => {
+                    Iter::NodeDescReq(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::NodeDescRsp(cmd) => {
+                    Iter::NodeDescRsp(cmd.to_le_stream().into())
+                }
+                DeviceAndServiceDiscovery::PowerDescReq(cmd) => {
+                    Iter::PowerDescReq(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::SimpleDescReq(cmd) => {
+                    Iter::SimpleDescReq(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::ActiveEpReq(cmd) => {
+                    Iter::ActiveEpReq(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::MatchDescReq(cmd) => {
+                    Iter::MatchDescReq(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::MatchDescRsp(cmd) => {
+                    Iter::MatchDescRsp(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::DeviceAnnce(cmd) => {
+                    Iter::DeviceAnnce(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::ParentAnnce(cmd) => {
+                    Iter::ParentAnnce(cmd.to_le_stream())
+                }
+                DeviceAndServiceDiscovery::SystemServerDiscoveryReq(cmd) => {
+                    Iter::SystemServerDiscoveryReq(cmd.to_le_stream())
+                }
+            },
+            Self::BindManagement(cmd) => match cmd {
+                BindManagement::BindReq(cmd) => Iter::BindReq(cmd.to_le_stream()),
+                BindManagement::BindRsp(cmd) => Iter::BindRsp(cmd.to_le_stream()),
+                BindManagement::UnbindReq(cmd) => Iter::UnbindReq(cmd.to_le_stream()),
+                BindManagement::ClearAllBindingsReq(cmd) => {
+                    Iter::ClearAllBindingsReq(cmd.to_le_stream())
+                }
+            },
+            Self::NetworkManagement(cmd) => match cmd {
+                NetworkManagement::MgmtLqiReq(cmd) => Iter::MgmtLqiReq(cmd.to_le_stream()),
+                NetworkManagement::MgmtRtgReq(cmd) => Iter::MgmtRtgReq(cmd.to_le_stream()),
+                NetworkManagement::MgmtBindReq(cmd) => Iter::MgmtBindReq(cmd.to_le_stream()),
+                NetworkManagement::MgmtLeaveReq(cmd) => Iter::MgmtLeaveReq(cmd.to_le_stream()),
+                NetworkManagement::MgmtPermitJoiningReq(cmd) => {
+                    Iter::MgmtPermitJoiningReq(cmd.to_le_stream())
+                }
+                NetworkManagement::MgmtNwkUpdateReq(cmd) => {
+                    Iter::MgmtNwkUpdateReq(cmd.to_le_stream())
+                }
+                NetworkManagement::MgmtNwkEnhancedUpdateReq(cmd) => {
+                    Iter::MgmtNwkEnhancedUpdateReq(cmd.to_le_stream())
+                }
+                NetworkManagement::MgmtNwkIeeeJoiningListReq(cmd) => {
+                    Iter::MgmtNwkIeeeJoiningListReq(cmd.to_le_stream())
+                }
+                NetworkManagement::MgmtNwkBeaconSurveyReq(cmd) => {
+                    Iter::MgmtNwkBeaconSurveyReq(cmd.to_le_stream())
+                }
+                NetworkManagement::MgmtPermitJoiningRsp(cmd) => {
+                    Iter::MgmtPermitJoiningRsp(cmd.to_le_stream())
+                }
+            },
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Iter {
+    NwkAddrReq(<NwkAddrReq as ToLeStream>::Iter),
+    IeeeAddrReq(<IeeeAddrReq as ToLeStream>::Iter),
+    NodeDescReq(<NodeDescReq as ToLeStream>::Iter),
+    NodeDescRsp(Box<<NodeDescRsp as ToLeStream>::Iter>),
+    PowerDescReq(<PowerDescReq as ToLeStream>::Iter),
+    SimpleDescReq(<SimpleDescReq as ToLeStream>::Iter),
+    ActiveEpReq(<ActiveEpReq as ToLeStream>::Iter),
+    MatchDescReq(<MatchDescReq as ToLeStream>::Iter),
+    MatchDescRsp(<MatchDescRsp as ToLeStream>::Iter),
+    DeviceAnnce(<DeviceAnnce as ToLeStream>::Iter),
+    ParentAnnce(<ParentAnnce as ToLeStream>::Iter),
+    SystemServerDiscoveryReq(<SystemServerDiscoveryReq as ToLeStream>::Iter),
+    BindReq(<BindReq as ToLeStream>::Iter),
+    BindRsp(<BindRsp as ToLeStream>::Iter),
+    UnbindReq(<UnbindReq as ToLeStream>::Iter),
+    ClearAllBindingsReq(<ClearAllBindingsReq as ToLeStream>::Iter),
+    MgmtLqiReq(<MgmtLqiReq as ToLeStream>::Iter),
+    MgmtRtgReq(<MgmtRtgReq as ToLeStream>::Iter),
+    MgmtBindReq(<MgmtBindReq as ToLeStream>::Iter),
+    MgmtLeaveReq(<MgmtLeaveReq as ToLeStream>::Iter),
+    MgmtPermitJoiningReq(<MgmtPermitJoiningReq as ToLeStream>::Iter),
+    MgmtNwkUpdateReq(<MgmtNwkUpdateReq as ToLeStream>::Iter),
+    MgmtNwkEnhancedUpdateReq(<MgmtNwkEnhancedUpdateReq as ToLeStream>::Iter),
+    MgmtNwkIeeeJoiningListReq(<MgmtNwkIeeeJoiningListReq as ToLeStream>::Iter),
+    MgmtNwkBeaconSurveyReq(<MgmtNwkBeaconSurveyReq as ToLeStream>::Iter),
+    MgmtPermitJoiningRsp(<MgmtPermitJoiningRsp as ToLeStream>::Iter),
+}
+
+impl Iterator for Iter {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        #[expect(clippy::match_same_arms)]
+        match self {
+            Self::NwkAddrReq(iter) => iter.next(),
+            Self::IeeeAddrReq(iter) => iter.next(),
+            Self::NodeDescReq(iter) => iter.next(),
+            Self::NodeDescRsp(iter) => iter.next(),
+            Self::PowerDescReq(iter) => iter.next(),
+            Self::SimpleDescReq(iter) => iter.next(),
+            Self::ActiveEpReq(iter) => iter.next(),
+            Self::MatchDescReq(iter) => iter.next(),
+            Self::MatchDescRsp(iter) => iter.next(),
+            Self::DeviceAnnce(iter) => iter.next(),
+            Self::ParentAnnce(iter) => iter.next(),
+            Self::SystemServerDiscoveryReq(iter) => iter.next(),
+            Self::BindReq(iter) => iter.next(),
+            Self::BindRsp(iter) => iter.next(),
+            Self::UnbindReq(iter) => iter.next(),
+            Self::ClearAllBindingsReq(iter) => iter.next(),
+            Self::MgmtLqiReq(iter) => iter.next(),
+            Self::MgmtRtgReq(iter) => iter.next(),
+            Self::MgmtBindReq(iter) => iter.next(),
+            Self::MgmtLeaveReq(iter) => iter.next(),
+            Self::MgmtPermitJoiningReq(iter) => iter.next(),
+            Self::MgmtNwkUpdateReq(iter) => iter.next(),
+            Self::MgmtNwkEnhancedUpdateReq(iter) => iter.next(),
+            Self::MgmtNwkIeeeJoiningListReq(iter) => iter.next(),
+            Self::MgmtNwkBeaconSurveyReq(iter) => iter.next(),
+            Self::MgmtPermitJoiningRsp(iter) => iter.next(),
         }
     }
 }

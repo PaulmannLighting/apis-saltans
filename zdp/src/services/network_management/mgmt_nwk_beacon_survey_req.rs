@@ -9,7 +9,7 @@ use crate::Service;
 /// Management Network Beacon Survey Request.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct MgmtNwkBeaconSurveyReq {
-    tlvs: Vec<Tlv>,
+    tlvs: Box<[Tlv]>,
 }
 
 impl Cluster for MgmtNwkBeaconSurveyReq {
