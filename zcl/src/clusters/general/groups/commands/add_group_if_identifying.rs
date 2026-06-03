@@ -1,4 +1,4 @@
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String, Uint16};
 use zigbee::{Cluster, Direction};
 
@@ -6,7 +6,7 @@ use crate::clusters::general::groups::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Command to add a group to the device's group table if the device is currently identifying.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct AddGroupIfIdentifying {
     group_id: Uint16,
     group_name: String,

@@ -1,11 +1,12 @@
-use zigbee::Cluster;
+use le_stream::ToLeStream;
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::identify::Identify;
 pub use self::identify_query::IdentifyQuery;
 pub use self::identify_query_response::IdentifyQueryResponse;
 pub use self::trigger_effect::{EffectIdentifier, EffectVariant, TriggerEffect};
-use crate::CommandId;
+use crate::{CommandDispatch, Scope};
 
 mod identify;
 mod identify_query;
@@ -29,13 +30,75 @@ impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
 }
 
-impl CommandId for Command {
+impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {
             Self::Identify(cmd) => cmd.command_id(),
             Self::IdentifyQuery(cmd) => cmd.command_id(),
             Self::TriggerEffect(cmd) => cmd.command_id(),
             Self::IdentifyQueryResponse(cmd) => cmd.command_id(),
+        }
+    }
+
+    fn scope(&self) -> Scope {
+        match self {
+            Self::Identify(cmd) => cmd.scope(),
+            Self::IdentifyQuery(cmd) => cmd.scope(),
+            Self::TriggerEffect(cmd) => cmd.scope(),
+            Self::IdentifyQueryResponse(cmd) => cmd.scope(),
+        }
+    }
+
+    fn direction(&self) -> Direction {
+        match self {
+            Self::Identify(cmd) => cmd.direction(),
+            Self::IdentifyQuery(cmd) => cmd.direction(),
+            Self::TriggerEffect(cmd) => cmd.direction(),
+            Self::IdentifyQueryResponse(cmd) => cmd.direction(),
+        }
+    }
+
+    fn disable_default_response(&self) -> bool {
+        match self {
+            Self::Identify(cmd) => cmd.disable_default_response(),
+            Self::IdentifyQuery(cmd) => cmd.disable_default_response(),
+            Self::TriggerEffect(cmd) => cmd.disable_default_response(),
+            Self::IdentifyQueryResponse(cmd) => cmd.disable_default_response(),
+        }
+    }
+}
+
+impl ToLeStream for Command {
+    type Iter = Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        match self {
+            Self::Identify(cmd) => Iter::Identify(cmd.to_le_stream()),
+            Self::IdentifyQuery(cmd) => Iter::IdentifyQuery(cmd.to_le_stream()),
+            Self::TriggerEffect(cmd) => Iter::TriggerEffect(cmd.to_le_stream()),
+            Self::IdentifyQueryResponse(cmd) => Iter::IdentifyQueryResponse(cmd.to_le_stream()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Iter {
+    Identify(<Identify as ToLeStream>::Iter),
+    IdentifyQuery(<IdentifyQuery as ToLeStream>::Iter),
+    TriggerEffect(<TriggerEffect as ToLeStream>::Iter),
+    IdentifyQueryResponse(<IdentifyQueryResponse as ToLeStream>::Iter),
+}
+
+impl Iterator for Iter {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        #[expect(clippy::match_same_arms)]
+        match self {
+            Self::Identify(iter) => iter.next(),
+            Self::IdentifyQuery(iter) => iter.next(),
+            Self::TriggerEffect(iter) => iter.next(),
+            Self::IdentifyQueryResponse(iter) => iter.next(),
         }
     }
 }

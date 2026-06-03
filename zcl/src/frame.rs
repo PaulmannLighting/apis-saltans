@@ -6,6 +6,7 @@ use zigbee::ClusterId;
 pub use self::header::{Control, Direction, Header, Scope};
 pub use self::header_factory::HeaderFactory;
 pub use self::parse_frame_error::ParseFrameError;
+use crate::CommandDispatch;
 use crate::clusters::Cluster;
 
 mod header;

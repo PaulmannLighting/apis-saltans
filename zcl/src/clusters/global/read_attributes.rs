@@ -11,8 +11,8 @@ use zigbee::Direction;
 use zigbee::types::Type;
 
 pub use self::read_attributes_status::ReadAttributesStatus;
+use crate::Scope;
 use crate::command::Scoped;
-use crate::{Customizable, Global, Scope};
 
 mod read_attributes_status;
 
@@ -45,9 +45,6 @@ impl Scoped for Command {
     const SCOPE: Scope = Scope::Global;
 }
 
-impl Customizable for Command {}
-impl Global for Command {}
-
 /// Read Attributes Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Response {
@@ -62,9 +59,6 @@ impl crate::Command for Response {
 impl Scoped for Response {
     const SCOPE: Scope = Scope::Global;
 }
-
-impl Customizable for Response {}
-impl Global for Response {}
 
 impl Deref for Response {
     type Target = BTreeMap<u16, Result<Type, u8>>;
@@ -102,41 +96,5 @@ impl ToLeStream for Response {
 
     fn to_le_stream(self) -> Self::Iter {
         todo!("Not implemented")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::HeaderFactory;
-
-    #[test]
-    fn test_commutativeness() {
-        let command = Command::new(Box::new([1, 2, 3]));
-        let a = command.clone();
-        let b = command;
-        assert_eq!(
-            a.with_manufacturer_code(Some(42))
-                .for_cluster(123)
-                .header(0x42),
-            b.for_cluster(123)
-                .with_manufacturer_code(Some(42))
-                .header(0x42)
-        );
-    }
-
-    #[test]
-    fn test_header() {
-        let header = Command::new(Box::new([1, 2, 3]))
-            .for_cluster(123)
-            .with_manufacturer_code(Some(42))
-            .header(0x42);
-        let control = header.control();
-        assert_eq!(control.typ(), Ok(Scope::Global));
-        assert_eq!(control.direction(), Direction::ClientToServer);
-        assert!(!control.disable_default_response());
-        assert_eq!(header.manufacturer_code(), Some(42));
-        assert_eq!(header.seq(), 0x42);
-        assert_eq!(header.command_id(), 0x00);
     }
 }

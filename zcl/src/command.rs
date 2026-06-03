@@ -1,14 +1,10 @@
 use zigbee::Direction;
 
-pub use self::command_id::CommandId;
-pub use self::customizable::Customizable;
-pub use self::global::Global;
+pub use self::command_dispatch::CommandDispatch;
 pub use self::native::Native;
 pub use self::scoped::Scoped;
 
-mod command_id;
-mod customizable;
-mod global;
+mod command_dispatch;
 mod native;
 mod scoped;
 

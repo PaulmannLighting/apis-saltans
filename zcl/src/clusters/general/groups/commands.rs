@@ -1,4 +1,5 @@
-use zigbee::Cluster;
+use le_stream::ToLeStream;
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::add_group::AddGroup;
@@ -11,7 +12,7 @@ pub use self::remove_group::RemoveGroup;
 pub use self::remove_group_response::RemoveGroupResponse;
 pub use self::view_group::ViewGroup;
 pub use self::view_group_response::ViewGroupResponse;
-use crate::CommandId;
+use crate::{CommandDispatch, Scope};
 
 mod add_group;
 mod add_group_if_identifying;
@@ -53,7 +54,7 @@ impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
 }
 
-impl CommandId for Command {
+impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {
             Self::AddGroup(cmd) => cmd.command_id(),
@@ -66,6 +67,106 @@ impl CommandId for Command {
             Self::ViewGroupResponse(cmd) => cmd.command_id(),
             Self::GetGroupMembershipResponse(cmd) => cmd.command_id(),
             Self::RemoveGroupResponse(cmd) => cmd.command_id(),
+        }
+    }
+
+    fn scope(&self) -> Scope {
+        match self {
+            Self::AddGroup(cmd) => cmd.scope(),
+            Self::ViewGroup(cmd) => cmd.scope(),
+            Self::GetGroupMembership(cmd) => cmd.scope(),
+            Self::RemoveGroup(cmd) => cmd.scope(),
+            Self::RemoveAllGroups(cmd) => cmd.scope(),
+            Self::AddGroupIfIdentifying(cmd) => cmd.scope(),
+            Self::AddGroupResponse(cmd) => cmd.scope(),
+            Self::ViewGroupResponse(cmd) => cmd.scope(),
+            Self::GetGroupMembershipResponse(cmd) => cmd.scope(),
+            Self::RemoveGroupResponse(cmd) => cmd.scope(),
+        }
+    }
+
+    fn direction(&self) -> Direction {
+        match self {
+            Self::AddGroup(cmd) => cmd.direction(),
+            Self::ViewGroup(cmd) => cmd.direction(),
+            Self::GetGroupMembership(cmd) => cmd.direction(),
+            Self::RemoveGroup(cmd) => cmd.direction(),
+            Self::RemoveAllGroups(cmd) => cmd.direction(),
+            Self::AddGroupIfIdentifying(cmd) => cmd.direction(),
+            Self::AddGroupResponse(cmd) => cmd.direction(),
+            Self::ViewGroupResponse(cmd) => cmd.direction(),
+            Self::GetGroupMembershipResponse(cmd) => cmd.direction(),
+            Self::RemoveGroupResponse(cmd) => cmd.direction(),
+        }
+    }
+
+    fn disable_default_response(&self) -> bool {
+        match self {
+            Self::AddGroup(cmd) => cmd.disable_default_response(),
+            Self::ViewGroup(cmd) => cmd.disable_default_response(),
+            Self::GetGroupMembership(cmd) => cmd.disable_default_response(),
+            Self::RemoveGroup(cmd) => cmd.disable_default_response(),
+            Self::RemoveAllGroups(cmd) => cmd.disable_default_response(),
+            Self::AddGroupIfIdentifying(cmd) => cmd.disable_default_response(),
+            Self::AddGroupResponse(cmd) => cmd.disable_default_response(),
+            Self::ViewGroupResponse(cmd) => cmd.disable_default_response(),
+            Self::GetGroupMembershipResponse(cmd) => cmd.disable_default_response(),
+            Self::RemoveGroupResponse(cmd) => cmd.disable_default_response(),
+        }
+    }
+}
+
+impl ToLeStream for Command {
+    type Iter = Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        match self {
+            Self::AddGroup(cmd) => Iter::AddGroup(cmd.to_le_stream()),
+            Self::ViewGroup(cmd) => Iter::ViewGroup(cmd.to_le_stream()),
+            Self::GetGroupMembership(cmd) => Iter::GetGroupMembership(cmd.to_le_stream()),
+            Self::RemoveGroup(cmd) => Iter::RemoveGroup(cmd.to_le_stream()),
+            Self::RemoveAllGroups(cmd) => Iter::RemoveAllGroups(cmd.to_le_stream()),
+            Self::AddGroupIfIdentifying(cmd) => Iter::AddGroupIfIdentifying(cmd.to_le_stream()),
+            Self::AddGroupResponse(cmd) => Iter::AddGroupResponse(cmd.to_le_stream()),
+            Self::ViewGroupResponse(cmd) => Iter::ViewGroupResponse(cmd.to_le_stream()),
+            Self::GetGroupMembershipResponse(cmd) => {
+                Iter::GetGroupMembershipResponse(cmd.to_le_stream())
+            }
+            Self::RemoveGroupResponse(cmd) => Iter::RemoveGroupResponse(cmd.to_le_stream()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Iter {
+    AddGroup(<AddGroup as ToLeStream>::Iter),
+    ViewGroup(<ViewGroup as ToLeStream>::Iter),
+    GetGroupMembership(<GetGroupMembership as ToLeStream>::Iter),
+    RemoveGroup(<RemoveGroup as ToLeStream>::Iter),
+    RemoveAllGroups(<RemoveAllGroups as ToLeStream>::Iter),
+    AddGroupIfIdentifying(<AddGroupIfIdentifying as ToLeStream>::Iter),
+    AddGroupResponse(<AddGroupResponse as ToLeStream>::Iter),
+    ViewGroupResponse(<ViewGroupResponse as ToLeStream>::Iter),
+    GetGroupMembershipResponse(<GetGroupMembershipResponse as ToLeStream>::Iter),
+    RemoveGroupResponse(<RemoveGroupResponse as ToLeStream>::Iter),
+}
+
+impl Iterator for Iter {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        #[expect(clippy::match_same_arms)]
+        match self {
+            Self::AddGroup(iter) => iter.next(),
+            Self::ViewGroup(iter) => iter.next(),
+            Self::GetGroupMembership(iter) => iter.next(),
+            Self::RemoveGroup(iter) => iter.next(),
+            Self::RemoveAllGroups(iter) => iter.next(),
+            Self::AddGroupIfIdentifying(iter) => iter.next(),
+            Self::AddGroupResponse(iter) => iter.next(),
+            Self::ViewGroupResponse(iter) => iter.next(),
+            Self::GetGroupMembershipResponse(iter) => iter.next(),
+            Self::RemoveGroupResponse(iter) => iter.next(),
         }
     }
 }

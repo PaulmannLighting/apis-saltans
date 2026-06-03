@@ -1,6 +1,7 @@
 //! Commands for the On/Off cluster.
 
-use zigbee::Cluster;
+use le_stream::ToLeStream;
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::off::Off;
@@ -9,7 +10,7 @@ pub use self::on::On;
 pub use self::on_with_recall_global_scene::OnWithRecallGlobalScene;
 pub use self::on_with_timed_off::{OnOffControl, OnWithTimedOff};
 pub use self::toggle::Toggle;
-use crate::CommandId;
+use crate::{CommandDispatch, Scope};
 
 mod off;
 mod off_with_effect;
@@ -40,7 +41,7 @@ impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
 }
 
-impl CommandId for Command {
+impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {
             Self::Off(cmd) => cmd.command_id(),
@@ -49,6 +50,80 @@ impl CommandId for Command {
             Self::OffWithEffect(cmd) => cmd.command_id(),
             Self::OnWithRecallGlobalScene(cmd) => cmd.command_id(),
             Self::OnWithTimedOff(cmd) => cmd.command_id(),
+        }
+    }
+
+    fn scope(&self) -> Scope {
+        match self {
+            Self::Off(cmd) => cmd.scope(),
+            Self::On(cmd) => cmd.scope(),
+            Self::Toggle(cmd) => cmd.scope(),
+            Self::OffWithEffect(cmd) => cmd.scope(),
+            Self::OnWithRecallGlobalScene(cmd) => cmd.scope(),
+            Self::OnWithTimedOff(cmd) => cmd.scope(),
+        }
+    }
+
+    fn direction(&self) -> Direction {
+        match self {
+            Self::Off(cmd) => cmd.direction(),
+            Self::On(cmd) => cmd.direction(),
+            Self::Toggle(cmd) => cmd.direction(),
+            Self::OffWithEffect(cmd) => cmd.direction(),
+            Self::OnWithRecallGlobalScene(cmd) => cmd.direction(),
+            Self::OnWithTimedOff(cmd) => cmd.direction(),
+        }
+    }
+
+    fn disable_default_response(&self) -> bool {
+        match self {
+            Self::Off(cmd) => cmd.disable_default_response(),
+            Self::On(cmd) => cmd.disable_default_response(),
+            Self::Toggle(cmd) => cmd.disable_default_response(),
+            Self::OffWithEffect(cmd) => cmd.disable_default_response(),
+            Self::OnWithRecallGlobalScene(cmd) => cmd.disable_default_response(),
+            Self::OnWithTimedOff(cmd) => cmd.disable_default_response(),
+        }
+    }
+}
+
+impl ToLeStream for Command {
+    type Iter = Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        match self {
+            Self::Off(cmd) => Iter::Off(cmd.to_le_stream()),
+            Self::On(cmd) => Iter::On(cmd.to_le_stream()),
+            Self::Toggle(cmd) => Iter::Toggle(cmd.to_le_stream()),
+            Self::OffWithEffect(cmd) => Iter::OffWithEffect(cmd.to_le_stream()),
+            Self::OnWithRecallGlobalScene(cmd) => Iter::OnWithRecallGlobalScene(cmd.to_le_stream()),
+            Self::OnWithTimedOff(cmd) => Iter::OnWithTimedOff(cmd.to_le_stream()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Iter {
+    Off(<Off as ToLeStream>::Iter),
+    On(<On as ToLeStream>::Iter),
+    Toggle(<Toggle as ToLeStream>::Iter),
+    OffWithEffect(<OffWithEffect as ToLeStream>::Iter),
+    OnWithRecallGlobalScene(<OnWithRecallGlobalScene as ToLeStream>::Iter),
+    OnWithTimedOff(<OnWithTimedOff as ToLeStream>::Iter),
+}
+
+impl Iterator for Iter {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        #[expect(clippy::match_same_arms)]
+        match self {
+            Self::Off(iter) => iter.next(),
+            Self::On(iter) => iter.next(),
+            Self::Toggle(iter) => iter.next(),
+            Self::OffWithEffect(iter) => iter.next(),
+            Self::OnWithRecallGlobalScene(iter) => iter.next(),
+            Self::OnWithTimedOff(iter) => iter.next(),
         }
     }
 }
