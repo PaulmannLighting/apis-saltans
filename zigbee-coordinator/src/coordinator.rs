@@ -93,7 +93,6 @@ where
                 .make_zcl_frame(manufacturer_code, payload)
                 .to_le_stream()
                 .collect(),
-
             Payload::Zdp(command) => self.make_zdp_frame(command).to_le_stream().collect(),
         };
 
