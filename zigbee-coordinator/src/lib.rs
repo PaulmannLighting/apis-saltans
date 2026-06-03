@@ -4,3 +4,8 @@
 //! a Zigbee coordinator regardless of the underlying hardware.
 //!
 //! TODO: This shall replace `zigbee-nwk`.
+
+pub use coordinator::Coordinator;
+
+mod coordinator;
+mod message;
