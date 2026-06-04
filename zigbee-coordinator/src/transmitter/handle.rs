@@ -25,13 +25,16 @@ pub trait Handle {
         command: T,
     ) -> Result<(), Error>
     where
-        T: Cluster + Into<Payload>,
+        T: Cluster + Into<zcl::Cluster>,
     {
         self.unicast(
             short_id,
             endpoint,
             Metadata::for_cluster::<T>(None, None),
-            command.into(),
+            Payload::Zcl {
+                manufacturer_code: None,
+                payload: command.into(),
+            },
         )
         .await
     }
