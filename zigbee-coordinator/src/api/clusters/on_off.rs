@@ -45,35 +45,44 @@ pub trait OnOff {
 
 impl OnOff for Coordinator {
     async fn on(&self, short_id: u16, endpoint: Endpoint) -> Result<(), Error> {
-        let metadata = Metadata::for_cluster::<On>(None, None);
-        let payload = Payload::Zcl {
-            manufacturer_code: None,
-            payload: Cluster::OnOff(on_off::Command::On(On)),
-        };
         self.transmitter
-            .unicast(short_id, endpoint, metadata, payload)
+            .unicast(
+                short_id,
+                endpoint,
+                Metadata::for_cluster::<On>(None, None),
+                Payload::Zcl {
+                    manufacturer_code: None,
+                    payload: Cluster::OnOff(on_off::Command::On(On)),
+                },
+            )
             .await
     }
 
     async fn off(&self, short_id: u16, endpoint: Endpoint) -> Result<(), Error> {
-        let metadata = Metadata::for_cluster::<Off>(None, None);
-        let payload = Payload::Zcl {
-            manufacturer_code: None,
-            payload: Cluster::OnOff(on_off::Command::Off(Off)),
-        };
         self.transmitter
-            .unicast(short_id, endpoint, metadata, payload)
+            .unicast(
+                short_id,
+                endpoint,
+                Metadata::for_cluster::<Off>(None, None),
+                Payload::Zcl {
+                    manufacturer_code: None,
+                    payload: Cluster::OnOff(on_off::Command::Off(Off)),
+                },
+            )
             .await
     }
 
     async fn toggle(&self, short_id: u16, endpoint: Endpoint) -> Result<(), Error> {
-        let metadata = Metadata::for_cluster::<Toggle>(None, None);
-        let payload = Payload::Zcl {
-            manufacturer_code: None,
-            payload: Cluster::OnOff(on_off::Command::Toggle(Toggle)),
-        };
         self.transmitter
-            .unicast(short_id, endpoint, metadata, payload)
+            .unicast(
+                short_id,
+                endpoint,
+                Metadata::for_cluster::<Toggle>(None, None),
+                Payload::Zcl {
+                    manufacturer_code: None,
+                    payload: Cluster::OnOff(on_off::Command::Toggle(Toggle)),
+                },
+            )
             .await
     }
 }
