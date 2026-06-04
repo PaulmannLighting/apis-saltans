@@ -7,6 +7,8 @@
 
 pub use coordinator::Coordinator;
 
+pub use self::api::OnOff;
+
 mod api;
 mod binding;
 mod coordinator;
