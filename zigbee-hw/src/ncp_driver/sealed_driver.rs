@@ -4,7 +4,7 @@ use tokio::sync::mpsc::{Receiver, channel};
 use tokio::task::JoinHandle;
 
 use crate::message::Message;
-use crate::{Ncp, NcpDriver};
+use crate::{Ncp, NcpDriver, NcpHandle};
 
 /// Sealed driver trait for handling communication with the Zigbee NCP.
 ///
@@ -19,7 +19,7 @@ pub trait SealedDriver {
     /// # Returns
     ///
     /// Returns a tuple of the tokio task's join handle and an actor proxy.
-    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, impl Ncp + Clone + Send)
+    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, NcpHandle)
     where
         Self: Sized + 'static;
 }
@@ -140,7 +140,7 @@ where
         self
     }
 
-    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, impl Ncp + Clone + Send)
+    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, NcpHandle)
     where
         Self: 'static,
     {

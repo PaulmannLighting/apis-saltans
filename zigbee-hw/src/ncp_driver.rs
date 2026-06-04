@@ -10,7 +10,7 @@ use zigbee::Endpoint;
 
 use self::sealed_driver::SealedDriver;
 use crate::message::Message;
-use crate::{Error, Event, FoundNetwork, Frame, Ncp, ScannedChannel};
+use crate::{Error, Event, FoundNetwork, Frame, Ncp, NcpHandle, ScannedChannel};
 
 mod sealed_driver;
 
@@ -142,7 +142,7 @@ pub trait NcpDriver {
     /// # Returns
     ///
     /// Returns a tuple of the tokio task's join handle and an actor proxy.
-    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, impl Ncp + Clone + Send)
+    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, NcpHandle)
     where
         Self: Sized + SealedDriver + 'static,
     {
