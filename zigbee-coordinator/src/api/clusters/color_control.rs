@@ -1,10 +1,10 @@
-use zcl::lighting::color_control::{Command, MoveToColor};
-use zcl::{Cluster, Options};
+use zcl::Options;
+use zcl::lighting::color_control::MoveToColor;
 use zigbee::Endpoint;
-use zigbee_hw::{Error, Metadata};
+use zigbee_hw::Error;
 
 use crate::Coordinator;
-use crate::transmitter::{Handle, Payload};
+use crate::transmitter::Handle;
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {
@@ -35,19 +35,10 @@ impl ColorControl for Coordinator {
         options: Options,
     ) -> Result<(), Error> {
         self.transmitter
-            .unicast(
+            .unicast_zcl_native(
                 short_id,
                 endpoint,
-                Metadata::for_cluster::<MoveToColor>(None, None),
-                Payload::Zcl {
-                    manufacturer_code: None,
-                    payload: Cluster::ColorControl(Command::MoveToColor(MoveToColor::new(
-                        color_x,
-                        color_y,
-                        transition_time,
-                        options,
-                    ))),
-                },
+                MoveToColor::new(color_x, color_y, transition_time, options),
             )
             .await
     }
