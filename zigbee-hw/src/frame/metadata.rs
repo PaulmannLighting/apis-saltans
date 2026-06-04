@@ -1,4 +1,4 @@
-use zigbee::{Endpoint, Profile};
+use zigbee::{Cluster, Endpoint, Profile};
 
 /// APS metadata for a frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -18,6 +18,19 @@ impl Metadata {
     ) -> Self {
         Self {
             cluster_id,
+            profile,
+            source_endpoint,
+        }
+    }
+
+    /// Create new APS metadata for the given cluster type.
+    #[must_use]
+    pub const fn for_cluster<T>(profile: Option<Profile>, source_endpoint: Option<Endpoint>) -> Self
+    where
+        T: Cluster,
+    {
+        Self {
+            cluster_id: T::ID,
             profile,
             source_endpoint,
         }
