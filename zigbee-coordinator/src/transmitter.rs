@@ -10,8 +10,10 @@ use zcl::{Cluster, CommandDispatch};
 use zigbee::Endpoint;
 use zigbee_hw::{Command, Event, Metadata, Ncp};
 
+pub use self::handle::Handle;
 pub use self::message::{Message, Payload};
 
+mod handle;
 mod message;
 
 /// Zigbee transmitter actor.

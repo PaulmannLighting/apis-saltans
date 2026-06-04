@@ -7,6 +7,7 @@
 
 pub use coordinator::Coordinator;
 
+mod api;
 mod binding;
 mod coordinator;
 mod discovery;

@@ -9,10 +9,10 @@ use crate::{binding, discovery, mux, network_manager, transmitter};
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
 pub struct Coordinator {
-    transmitter: Sender<transmitter::Message>,
-    network_manager: Sender<network_manager::Message>,
-    binding_manager: Sender<binding::Message>,
-    mux: Sender<mux::Message>,
+    pub(crate) transmitter: Sender<transmitter::Message>,
+    pub(crate) network_manager: Sender<network_manager::Message>,
+    pub(crate) binding_manager: Sender<binding::Message>,
+    pub(crate) mux: Sender<mux::Message>,
 }
 
 impl Coordinator {
