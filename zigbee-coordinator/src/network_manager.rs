@@ -1,15 +1,24 @@
+use tokio::sync::mpsc::Sender;
+use tokio::sync::oneshot;
+use zigbee_hw::Event;
+
 /// The network management actor.
 pub struct Actor {}
+
+#[derive(Debug)]
+pub struct Device {}
 
 /// Messages received by the network management actor.
 #[derive(Debug)]
 pub enum Message {
-    /// The network is up.
-    NetworkUp,
-    /// The network is down.
-    NetworkDown,
-    /// The network is open for new devices to join.
-    NetworkOpened,
-    /// The network has been closed.
-    NetworkClosed,
+    Event(Event),
+    GetDevices {
+        sender: oneshot::Sender<Box<[Device]>>,
+    },
+    Subscribe {
+        sender: Sender<Box<[Device]>>,
+    },
+    DeviceUpdate {
+        device: Device,
+    },
 }

@@ -9,7 +9,6 @@ pub use transmitter::Transmitter;
 
 mod binding;
 mod discovery;
-mod log_send_error;
 mod mux;
 mod network_manager;
 mod transmitter;
