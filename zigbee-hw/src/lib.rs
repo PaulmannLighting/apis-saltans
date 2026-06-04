@@ -4,6 +4,7 @@
 //! Zigbee hardware (NCP) drivers.
 
 pub use self::await_event::AwaitEvent;
+pub use self::bridge::bridge;
 pub use self::error::Error;
 pub use self::event::{Command, Event};
 pub use self::frame::{Frame, Metadata};
@@ -13,6 +14,7 @@ pub use self::ncp_driver::NcpDriver;
 pub use self::start::Start;
 
 mod await_event;
+mod bridge;
 mod error;
 mod event;
 mod frame;
