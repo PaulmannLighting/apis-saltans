@@ -11,6 +11,7 @@ impl Subscribers {
     /// Send an event to all subscribers.
     pub async fn send(&mut self, event: &Event) {
         for subscriber in self.subscribers.drain(..) {
+            // Only keep subscribes, whose channels are not closed.
             if subscriber.send(event.clone()).await.is_ok() {
                 self.retain.push(subscriber);
             }
