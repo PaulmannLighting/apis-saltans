@@ -1,5 +1,5 @@
 //! Zigbee API.
 
-pub use clusters::{ColorControl, OnOff};
+pub use self::clusters::{ColorControl, OnOff};
 
 mod clusters;
