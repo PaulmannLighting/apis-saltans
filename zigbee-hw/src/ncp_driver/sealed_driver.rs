@@ -133,13 +133,6 @@ where
                             error!("Failed to send broadcast command response: {error:?}");
                         });
                 }
-                Message::Subscribe { buffer, response } => {
-                    response
-                        .send(self.subscribe(buffer).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send subscribe command response: {error:?}");
-                        });
-                }
             }
         }
 

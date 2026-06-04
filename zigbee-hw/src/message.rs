@@ -74,9 +74,4 @@ pub enum Message {
         frame: Frame,
         response: Sender<Result<u8, Error>>,
     },
-    /// Subscribe for events.
-    Subscribe {
-        buffer: usize,
-        response: Sender<Result<Receiver<Event>, Error>>,
-    },
 }

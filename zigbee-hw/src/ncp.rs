@@ -91,16 +91,6 @@ pub trait Ncp {
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
-
-    /// Subscribe to the events multiplexer.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn subscribe(
-        &self,
-        buffer: usize,
-    ) -> impl Future<Output = Result<Receiver<Event>, Error>> + Send;
 }
 
 impl Ncp for Sender<Message> {
@@ -182,12 +172,6 @@ impl Ncp for Sender<Message> {
             response,
         })
         .await?;
-        rx.await?
-    }
-
-    async fn subscribe(&self, buffer: usize) -> Result<Receiver<Event>, Error> {
-        let (response, rx) = oneshot::channel();
-        self.send(Message::Subscribe { buffer, response }).await?;
         rx.await?
     }
 }
