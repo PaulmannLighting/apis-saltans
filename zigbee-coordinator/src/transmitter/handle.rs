@@ -34,6 +34,6 @@ impl Handle for Sender<Message> {
             response,
         })
         .await?;
-        Ok(result.await??)
+        result.await?
     }
 }
