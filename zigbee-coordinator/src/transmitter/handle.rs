@@ -18,7 +18,7 @@ pub trait Handle {
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Send a unicast of a native command belonging to a static cluster.
-    async fn unicast_native_cluster<T>(
+    async fn unicast_zcl_native<T>(
         &self,
         short_id: u16,
         endpoint: Endpoint,
