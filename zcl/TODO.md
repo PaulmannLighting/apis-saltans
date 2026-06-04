@@ -1,5 +1,6 @@
 # Implement clusters
 
+- [ ] Implement a `ClusterId` enum and use it in the `Cluster` trait.
 - [x] Measurement and Sensing
     - [x] Attributes
     - [ ] Split attributes into /R/W/P
