@@ -4,7 +4,7 @@ use zigbee_hw::{Error, Event, NcpHandle, Start, bridge};
 
 use crate::mux::{Handle as MuxHandle, Mux};
 use crate::transmitter::Transmitter;
-use crate::{binding, mux, network_manager, transmitter};
+use crate::{binding, discovery, mux, network_manager, transmitter};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
@@ -29,7 +29,14 @@ impl Api {
         let mux_tx = Self::start_mux(events);
         let transmitter_tx = Self::start_transmitter(ncp, &mux_tx).await?;
         let network_manager_tx = Self::start_network_manager(&mux_tx).await?;
-        let binding_manager_tx = Self::start_binding_manager(&mux_tx).await?;
+        let binding_manager_tx = Self::start_binding_manager(
+            &mux_tx,
+            transmitter_tx.clone(),
+            network_manager_tx.clone(),
+        )
+        .await?;
+        Self::start_discovery_manager(&mux_tx, transmitter_tx.clone(), binding_manager_tx.clone())
+            .await?;
 
         Ok(Self {
             transmitter: transmitter_tx,
@@ -77,13 +84,28 @@ impl Api {
     /// Start the binding manager.
     async fn start_binding_manager(
         mux: &Sender<mux::Message>,
+        transmitter: Sender<transmitter::Message>,
+        network_manager: Sender<network_manager::Message>,
     ) -> Result<Sender<binding::Message>, Error> {
-        let binding_manager = binding::Actor {};
+        let binding_manager = binding::Actor::new(transmitter, network_manager);
         let (binding_manager_tx, binding_manager_rx) = channel(100);
         let (events_tx, events_rx) = channel(100);
         mux.subscribe(events_tx).await?;
         spawn(bridge(events_rx, binding_manager_tx.clone()));
         spawn(binding_manager.run(binding_manager_rx));
         Ok(binding_manager_tx)
+    }
+
+    /// Start the discovery manager.
+    async fn start_discovery_manager(
+        mux: &Sender<mux::Message>,
+        transmitter: Sender<transmitter::Message>,
+        binding_manager: Sender<binding::Message>,
+    ) -> Result<(), Error> {
+        let discovery_manager = discovery::Actor::new(transmitter, binding_manager);
+        let (events_tx, events_rx) = channel(100);
+        mux.subscribe(events_tx).await?;
+        spawn(discovery_manager.run(events_rx));
+        Ok(())
     }
 }
