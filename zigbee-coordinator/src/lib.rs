@@ -5,9 +5,8 @@
 //!
 //! TODO: This shall replace `zigbee-nwk`.
 
-pub use coordinator::Coordinator;
-
 pub use self::api::OnOff;
+pub use self::coordinator::Coordinator;
 
 mod api;
 mod binding;
