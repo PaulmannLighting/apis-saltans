@@ -80,6 +80,16 @@ pub trait Ncp {
         short_id: u16,
     ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
 
+    /// Get the short ID of the device with the specified IEEE address.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_short_id(
+        &self,
+        ieee_address: MacAddr8,
+    ) -> impl Future<Output = Result<u16, Error>> + Send;
+
     /// Send a unicast ZCL command.
     ///
     /// # Errors
@@ -160,6 +170,16 @@ impl Ncp for Sender<Message> {
         let (response, rx) = oneshot::channel();
         self.send(Message::GetIeeeAddress { short_id, response })
             .await?;
+        rx.await?
+    }
+
+    async fn get_short_id(&self, ieee_address: MacAddr8) -> Result<u16, Error> {
+        let (response, rx) = oneshot::channel();
+        self.send(Message::GetShortId {
+            ieee_address,
+            response,
+        })
+        .await?;
         rx.await?
     }
 

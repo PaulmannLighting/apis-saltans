@@ -52,6 +52,11 @@ pub enum Message {
         short_id: u16,
         response: Sender<Result<MacAddr8, Error>>,
     },
+    /// Return the short ID corresponding to an IEEE address.
+    GetShortId {
+        ieee_address: MacAddr8,
+        response: Sender<Result<u16, Error>>,
+    },
     /// Send a unicast request.
     Unicast {
         short_id: u16,

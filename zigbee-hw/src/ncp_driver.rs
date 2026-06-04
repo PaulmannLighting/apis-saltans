@@ -92,6 +92,16 @@ pub trait NcpDriver {
         short_id: u16,
     ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
 
+    /// Get the short ID of the device with the specified IEEE address.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_short_id(
+        &mut self,
+        ieee_address: MacAddr8,
+    ) -> impl Future<Output = Result<u16, Error>> + Send;
+
     /// Send a unicast message.
     ///
     /// # Errors

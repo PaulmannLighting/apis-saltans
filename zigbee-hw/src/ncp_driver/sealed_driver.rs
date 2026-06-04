@@ -96,6 +96,16 @@ where
                             error!("Failed to send get IEEE address command response: {error:?}");
                         });
                 }
+                Message::GetShortId {
+                    ieee_address,
+                    response,
+                } => {
+                    response
+                        .send(self.get_short_id(ieee_address).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send get IEEE address command response: {error:?}");
+                        });
+                }
                 Message::Unicast {
                     short_id,
                     endpoint,
