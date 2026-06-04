@@ -94,3 +94,9 @@ impl Command for MoveToHue {
 }
 
 impl Native for MoveToHue {}
+
+impl From<MoveToHue> for crate::Cluster {
+    fn from(command: MoveToHue) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

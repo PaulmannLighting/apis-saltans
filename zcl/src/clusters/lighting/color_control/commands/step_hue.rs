@@ -89,3 +89,9 @@ impl Command for StepHue {
 }
 
 impl Native for StepHue {}
+
+impl From<StepHue> for crate::Cluster {
+    fn from(command: StepHue) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

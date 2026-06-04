@@ -57,3 +57,9 @@ impl Command for ViewGroupResponse {
 }
 
 impl Native for ViewGroupResponse {}
+
+impl From<ViewGroupResponse> for crate::Cluster {
+    fn from(command: ViewGroupResponse) -> Self {
+        Self::Groups(command.into())
+    }
+}

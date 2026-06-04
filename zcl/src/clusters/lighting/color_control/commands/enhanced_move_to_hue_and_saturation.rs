@@ -85,3 +85,9 @@ impl Command for EnhancedMoveToHueAndSaturation {
 }
 
 impl Native for EnhancedMoveToHueAndSaturation {}
+
+impl From<EnhancedMoveToHueAndSaturation> for crate::Cluster {
+    fn from(command: EnhancedMoveToHueAndSaturation) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

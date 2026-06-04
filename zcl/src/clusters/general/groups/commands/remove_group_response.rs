@@ -49,3 +49,9 @@ impl Command for RemoveGroupResponse {
 }
 
 impl Native for RemoveGroupResponse {}
+
+impl From<RemoveGroupResponse> for crate::Cluster {
+    fn from(command: RemoveGroupResponse) -> Self {
+        Self::Groups(command.into())
+    }
+}

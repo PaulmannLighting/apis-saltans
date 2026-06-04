@@ -71,3 +71,9 @@ impl Command for MoveToSaturation {
 }
 
 impl Native for MoveToSaturation {}
+
+impl From<MoveToSaturation> for crate::Cluster {
+    fn from(command: MoveToSaturation) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

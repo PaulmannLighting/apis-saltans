@@ -91,6 +91,126 @@ impl Cluster for Command {
     const ID: u16 = CLUSTER_ID;
 }
 
+impl From<Command> for crate::Cluster {
+    fn from(command: Command) -> Self {
+        Self::ColorControl(command)
+    }
+}
+
+impl From<MoveToHue> for Command {
+    fn from(command: MoveToHue) -> Self {
+        Self::MoveToHue(command)
+    }
+}
+
+impl From<MoveHue> for Command {
+    fn from(command: MoveHue) -> Self {
+        Self::MoveHue(command)
+    }
+}
+
+impl From<StepHue> for Command {
+    fn from(command: StepHue) -> Self {
+        Self::StepHue(command)
+    }
+}
+
+impl From<MoveToSaturation> for Command {
+    fn from(command: MoveToSaturation) -> Self {
+        Self::MoveToSaturation(command)
+    }
+}
+
+impl From<MoveSaturation> for Command {
+    fn from(command: MoveSaturation) -> Self {
+        Self::MoveSaturation(command)
+    }
+}
+
+impl From<StepSaturation> for Command {
+    fn from(command: StepSaturation) -> Self {
+        Self::StepSaturation(command)
+    }
+}
+
+impl From<MoveToHueAndSaturation> for Command {
+    fn from(command: MoveToHueAndSaturation) -> Self {
+        Self::MoveToHueAndSaturation(command)
+    }
+}
+
+impl From<MoveToColor> for Command {
+    fn from(command: MoveToColor) -> Self {
+        Self::MoveToColor(command)
+    }
+}
+
+impl From<MoveColor> for Command {
+    fn from(command: MoveColor) -> Self {
+        Self::MoveColor(command)
+    }
+}
+
+impl From<StepColor> for Command {
+    fn from(command: StepColor) -> Self {
+        Self::StepColor(command)
+    }
+}
+
+impl From<MoveToColorTemperature> for Command {
+    fn from(command: MoveToColorTemperature) -> Self {
+        Self::MoveToColorTemperature(command)
+    }
+}
+
+impl From<EnhancedMoveToHue> for Command {
+    fn from(command: EnhancedMoveToHue) -> Self {
+        Self::EnhancedMoveToHue(command)
+    }
+}
+
+impl From<EnhancedMoveHue> for Command {
+    fn from(command: EnhancedMoveHue) -> Self {
+        Self::EnhancedMoveHue(command)
+    }
+}
+
+impl From<EnhancedStepHue> for Command {
+    fn from(command: EnhancedStepHue) -> Self {
+        Self::EnhancedStepHue(command)
+    }
+}
+
+impl From<EnhancedMoveToHueAndSaturation> for Command {
+    fn from(command: EnhancedMoveToHueAndSaturation) -> Self {
+        Self::EnhancedMoveToHueAndSaturation(command)
+    }
+}
+
+impl From<ColorLoopSet> for Command {
+    fn from(command: ColorLoopSet) -> Self {
+        Self::ColorLoopSet(command)
+    }
+}
+
+impl From<StopMoveStep> for Command {
+    fn from(command: StopMoveStep) -> Self {
+        Self::StopMoveStep(command)
+    }
+}
+
+impl From<MoveColorTemperature> for Command {
+    fn from(command: MoveColorTemperature) -> Self {
+        Self::MoveColorTemperature(command)
+    }
+}
+
+impl From<StepColorTemperature> for Command {
+    fn from(command: StepColorTemperature) -> Self {
+        Self::StepColorTemperature(command)
+    }
+}
+
 impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {

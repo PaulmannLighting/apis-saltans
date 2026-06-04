@@ -20,6 +20,18 @@ impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
 }
 
+impl From<Command> for crate::Cluster {
+    fn from(command: Command) -> Self {
+        Self::Basic(command)
+    }
+}
+
+impl From<ResetToFactoryDefaults> for Command {
+    fn from(command: ResetToFactoryDefaults) -> Self {
+        Self::ResetToFactoryDefaults(command)
+    }
+}
+
 impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {

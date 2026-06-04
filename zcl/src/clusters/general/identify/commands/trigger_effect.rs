@@ -56,3 +56,9 @@ impl Command for TriggerEffect {
 }
 
 impl Native for TriggerEffect {}
+
+impl From<TriggerEffect> for crate::Cluster {
+    fn from(command: TriggerEffect) -> Self {
+        Self::Identify(command.into())
+    }
+}

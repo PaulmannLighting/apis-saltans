@@ -35,3 +35,9 @@ impl Command for MoveToClosestFrequency {
 }
 
 impl Native for MoveToClosestFrequency {}
+
+impl From<MoveToClosestFrequency> for crate::Cluster {
+    fn from(command: MoveToClosestFrequency) -> Self {
+        Self::Level(command.into())
+    }
+}

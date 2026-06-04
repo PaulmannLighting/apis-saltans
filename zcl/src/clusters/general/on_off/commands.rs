@@ -41,6 +41,48 @@ impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
 }
 
+impl From<Command> for crate::Cluster {
+    fn from(command: Command) -> Self {
+        Self::OnOff(command)
+    }
+}
+
+impl From<Off> for Command {
+    fn from(command: Off) -> Self {
+        Self::Off(command)
+    }
+}
+
+impl From<On> for Command {
+    fn from(command: On) -> Self {
+        Self::On(command)
+    }
+}
+
+impl From<Toggle> for Command {
+    fn from(command: Toggle) -> Self {
+        Self::Toggle(command)
+    }
+}
+
+impl From<OffWithEffect> for Command {
+    fn from(command: OffWithEffect) -> Self {
+        Self::OffWithEffect(command)
+    }
+}
+
+impl From<OnWithRecallGlobalScene> for Command {
+    fn from(command: OnWithRecallGlobalScene) -> Self {
+        Self::OnWithRecallGlobalScene(command)
+    }
+}
+
+impl From<OnWithTimedOff> for Command {
+    fn from(command: OnWithTimedOff) -> Self {
+        Self::OnWithTimedOff(command)
+    }
+}
+
 impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {

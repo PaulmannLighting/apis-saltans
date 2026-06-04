@@ -42,6 +42,12 @@ impl Scoped for Command {
     const SCOPE: Scope = Scope::Global;
 }
 
+impl From<Command> for crate::Cluster {
+    fn from(command: Command) -> Self {
+        Self::Global(command.into())
+    }
+}
+
 /// Status of an attribute reporting configuration.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Response {
@@ -69,4 +75,10 @@ impl crate::Command for Response {
 
 impl Scoped for Response {
     const SCOPE: Scope = Scope::Global;
+}
+
+impl From<Response> for crate::Cluster {
+    fn from(command: Response) -> Self {
+        Self::Global(command.into())
+    }
 }

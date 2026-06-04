@@ -101,3 +101,9 @@ impl Command for ColorLoopSet {
 }
 
 impl Native for ColorLoopSet {}
+
+impl From<ColorLoopSet> for crate::Cluster {
+    fn from(command: ColorLoopSet) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

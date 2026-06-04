@@ -38,3 +38,9 @@ impl Command for StopWithOnOff {
 }
 
 impl Native for StopWithOnOff {}
+
+impl From<StopWithOnOff> for crate::Cluster {
+    fn from(command: StopWithOnOff) -> Self {
+        Self::Level(command.into())
+    }
+}

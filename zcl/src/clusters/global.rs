@@ -6,7 +6,7 @@ use le_stream::ToLeStream;
 use zigbee::Direction;
 use zigbee_macros::ParseZclFrame;
 
-use crate::{CommandDispatch, Scope};
+use crate::{Cluster, CommandDispatch, Scope};
 
 pub mod configure_reporting;
 pub mod default_response;
@@ -28,6 +28,48 @@ pub enum Command {
     ConfigureReporting(configure_reporting::Command),
     /// Configure Reporting Response command.
     ConfigureReportingResponse(configure_reporting::Response),
+}
+
+impl From<Command> for Cluster {
+    fn from(command: Command) -> Self {
+        Self::Global(command)
+    }
+}
+
+impl From<read_attributes::Command> for Command {
+    fn from(command: read_attributes::Command) -> Self {
+        Self::ReadAttributes(command)
+    }
+}
+
+impl From<read_attributes::Response> for Command {
+    fn from(response: read_attributes::Response) -> Self {
+        Self::ReadAttributesResponse(response)
+    }
+}
+
+impl From<report_attributes::Command> for Command {
+    fn from(command: report_attributes::Command) -> Self {
+        Self::ReportAttributes(command)
+    }
+}
+
+impl From<default_response::DefaultResponse> for Command {
+    fn from(response: default_response::DefaultResponse) -> Self {
+        Self::DefaultResponse(response)
+    }
+}
+
+impl From<configure_reporting::Command> for Command {
+    fn from(command: configure_reporting::Command) -> Self {
+        Self::ConfigureReporting(command)
+    }
+}
+
+impl From<configure_reporting::Response> for Command {
+    fn from(response: configure_reporting::Response) -> Self {
+        Self::ConfigureReportingResponse(response)
+    }
 }
 
 impl CommandDispatch for Command {

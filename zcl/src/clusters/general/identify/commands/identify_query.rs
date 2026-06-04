@@ -22,3 +22,9 @@ impl Command for IdentifyQuery {
 }
 
 impl Native for IdentifyQuery {}
+
+impl From<IdentifyQuery> for crate::Cluster {
+    fn from(command: IdentifyQuery) -> Self {
+        Self::Identify(command.into())
+    }
+}

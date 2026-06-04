@@ -45,3 +45,9 @@ impl Command for AddGroupIfIdentifying {
 }
 
 impl Native for AddGroupIfIdentifying {}
+
+impl From<AddGroupIfIdentifying> for crate::Cluster {
+    fn from(command: AddGroupIfIdentifying) -> Self {
+        Self::Groups(command.into())
+    }
+}

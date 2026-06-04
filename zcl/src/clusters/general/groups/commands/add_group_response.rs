@@ -49,3 +49,9 @@ impl Command for AddGroupResponse {
 }
 
 impl Native for AddGroupResponse {}
+
+impl From<AddGroupResponse> for crate::Cluster {
+    fn from(command: AddGroupResponse) -> Self {
+        Self::Groups(command.into())
+    }
+}

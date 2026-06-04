@@ -42,3 +42,9 @@ impl crate::Command for DefaultResponse {
 impl Scoped for DefaultResponse {
     const SCOPE: Scope = Scope::Global;
 }
+
+impl From<DefaultResponse> for crate::Cluster {
+    fn from(command: DefaultResponse) -> Self {
+        Self::Global(command.into())
+    }
+}

@@ -51,6 +51,66 @@ impl Cluster for Command {
     const ID: u16 = CLUSTER_ID;
 }
 
+impl From<Command> for crate::Cluster {
+    fn from(command: Command) -> Self {
+        Self::Level(command)
+    }
+}
+
+impl From<MoveToLevel> for Command {
+    fn from(command: MoveToLevel) -> Self {
+        Self::MoveToLevel(command)
+    }
+}
+
+impl From<Move> for Command {
+    fn from(command: Move) -> Self {
+        Self::Move(command)
+    }
+}
+
+impl From<Step> for Command {
+    fn from(command: Step) -> Self {
+        Self::Step(command)
+    }
+}
+
+impl From<Stop> for Command {
+    fn from(command: Stop) -> Self {
+        Self::Stop(command)
+    }
+}
+
+impl From<MoveToLevelWithOnOff> for Command {
+    fn from(command: MoveToLevelWithOnOff) -> Self {
+        Self::MoveToLevelWithOnOff(command)
+    }
+}
+
+impl From<MoveWithOnOff> for Command {
+    fn from(command: MoveWithOnOff) -> Self {
+        Self::MoveWithOnOff(command)
+    }
+}
+
+impl From<StepWithOnOff> for Command {
+    fn from(command: StepWithOnOff) -> Self {
+        Self::StepWithOnOff(command)
+    }
+}
+
+impl From<StopWithOnOff> for Command {
+    fn from(command: StopWithOnOff) -> Self {
+        Self::StopWithOnOff(command)
+    }
+}
+
+impl From<MoveToClosestFrequency> for Command {
+    fn from(command: MoveToClosestFrequency) -> Self {
+        Self::MoveToClosestFrequency(command)
+    }
+}
+
 impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {

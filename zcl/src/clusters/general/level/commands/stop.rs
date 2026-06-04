@@ -38,3 +38,9 @@ impl Command for Stop {
 }
 
 impl Native for Stop {}
+
+impl From<Stop> for crate::Cluster {
+    fn from(command: Stop) -> Self {
+        Self::Level(command.into())
+    }
+}

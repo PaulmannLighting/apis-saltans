@@ -49,3 +49,9 @@ impl Command for OffWithEffect {
 }
 
 impl Native for OffWithEffect {}
+
+impl From<OffWithEffect> for crate::Cluster {
+    fn from(command: OffWithEffect) -> Self {
+        Self::OnOff(command.into())
+    }
+}

@@ -45,3 +45,9 @@ impl Command for IdentifyQueryResponse {
 }
 
 impl Native for IdentifyQueryResponse {}
+
+impl From<IdentifyQueryResponse> for crate::Cluster {
+    fn from(command: IdentifyQueryResponse) -> Self {
+        Self::Identify(command.into())
+    }
+}

@@ -90,3 +90,9 @@ impl Command for EnhancedMoveToHue {
 }
 
 impl Native for EnhancedMoveToHue {}
+
+impl From<EnhancedMoveToHue> for crate::Cluster {
+    fn from(command: EnhancedMoveToHue) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

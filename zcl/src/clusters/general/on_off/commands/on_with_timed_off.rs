@@ -77,3 +77,9 @@ impl Command for OnWithTimedOff {
 }
 
 impl Native for OnWithTimedOff {}
+
+impl From<OnWithTimedOff> for crate::Cluster {
+    fn from(command: OnWithTimedOff) -> Self {
+        Self::OnOff(command.into())
+    }
+}

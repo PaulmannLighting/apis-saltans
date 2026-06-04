@@ -67,6 +67,12 @@ impl Command for GetGroupMembership {
 
 impl Native for GetGroupMembership {}
 
+impl From<GetGroupMembership> for crate::Cluster {
+    fn from(command: GetGroupMembership) -> Self {
+        Self::Groups(command.into())
+    }
+}
+
 impl FromLeStream for GetGroupMembership {
     fn from_le_stream<I>(mut bytes: I) -> Option<Self>
     where

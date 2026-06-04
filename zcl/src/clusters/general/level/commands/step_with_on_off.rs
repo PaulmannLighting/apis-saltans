@@ -69,3 +69,9 @@ impl Command for StepWithOnOff {
 }
 
 impl Native for StepWithOnOff {}
+
+impl From<StepWithOnOff> for crate::Cluster {
+    fn from(command: StepWithOnOff) -> Self {
+        Self::Level(command.into())
+    }
+}

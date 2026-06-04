@@ -71,3 +71,9 @@ impl Command for MoveToColorTemperature {
 }
 
 impl Native for MoveToColorTemperature {}
+
+impl From<MoveToColorTemperature> for crate::Cluster {
+    fn from(command: MoveToColorTemperature) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

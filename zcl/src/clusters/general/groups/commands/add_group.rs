@@ -58,3 +58,9 @@ impl Command for AddGroup {
 }
 
 impl Native for AddGroup {}
+
+impl From<AddGroup> for crate::Cluster {
+    fn from(command: AddGroup) -> Self {
+        Self::Groups(command.into())
+    }
+}

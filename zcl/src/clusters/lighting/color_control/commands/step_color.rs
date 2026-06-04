@@ -80,3 +80,9 @@ impl Command for StepColor {
 }
 
 impl Native for StepColor {}
+
+impl From<StepColor> for crate::Cluster {
+    fn from(command: StepColor) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

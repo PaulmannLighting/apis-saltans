@@ -18,3 +18,9 @@ impl Command for RemoveAllGroups {
 }
 
 impl Native for RemoveAllGroups {}
+
+impl From<RemoveAllGroups> for crate::Cluster {
+    fn from(command: RemoveAllGroups) -> Self {
+        Self::Groups(command.into())
+    }
+}

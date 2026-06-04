@@ -19,3 +19,9 @@ impl Command for OnWithRecallGlobalScene {
 }
 
 impl Native for OnWithRecallGlobalScene {}
+
+impl From<OnWithRecallGlobalScene> for crate::Cluster {
+    fn from(command: OnWithRecallGlobalScene) -> Self {
+        Self::OnOff(command.into())
+    }
+}

@@ -60,6 +60,12 @@ impl Command for MoveWithOnOff {
 
 impl Native for MoveWithOnOff {}
 
+impl From<MoveWithOnOff> for crate::Cluster {
+    fn from(command: MoveWithOnOff) -> Self {
+        Self::Level(command.into())
+    }
+}
+
 #[cfg(feature = "smarthomelib")]
 mod smarthomelib {
     use smarthomelib::Dimming;

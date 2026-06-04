@@ -34,3 +34,9 @@ impl Command for StopMoveStep {
 }
 
 impl Native for StopMoveStep {}
+
+impl From<StopMoveStep> for crate::Cluster {
+    fn from(command: StopMoveStep) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

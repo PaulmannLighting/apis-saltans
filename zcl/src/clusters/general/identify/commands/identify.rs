@@ -46,3 +46,9 @@ impl Command for Identify {
 }
 
 impl Native for Identify {}
+
+impl From<Identify> for crate::Cluster {
+    fn from(command: Identify) -> Self {
+        Self::Identify(command.into())
+    }
+}

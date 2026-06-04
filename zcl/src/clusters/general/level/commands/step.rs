@@ -69,3 +69,9 @@ impl Command for Step {
 }
 
 impl Native for Step {}
+
+impl From<Step> for crate::Cluster {
+    fn from(command: Step) -> Self {
+        Self::Level(command.into())
+    }
+}

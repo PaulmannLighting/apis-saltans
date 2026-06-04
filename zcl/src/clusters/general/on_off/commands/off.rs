@@ -19,3 +19,9 @@ impl Command for Off {
 }
 
 impl Native for Off {}
+
+impl From<Off> for crate::Cluster {
+    fn from(command: Off) -> Self {
+        Self::OnOff(command.into())
+    }
+}

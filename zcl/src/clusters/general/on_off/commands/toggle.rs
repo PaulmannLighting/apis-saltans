@@ -19,3 +19,9 @@ impl Command for Toggle {
 }
 
 impl Native for Toggle {}
+
+impl From<Toggle> for crate::Cluster {
+    fn from(command: Toggle) -> Self {
+        Self::OnOff(command.into())
+    }
+}

@@ -57,3 +57,9 @@ impl Command for MoveToLevelWithOnOff {
 }
 
 impl Native for MoveToLevelWithOnOff {}
+
+impl From<MoveToLevelWithOnOff> for crate::Cluster {
+    fn from(command: MoveToLevelWithOnOff) -> Self {
+        Self::Level(command.into())
+    }
+}

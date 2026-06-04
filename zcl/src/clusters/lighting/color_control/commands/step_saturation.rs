@@ -89,3 +89,9 @@ impl Command for StepSaturation {
 }
 
 impl Native for StepSaturation {}
+
+impl From<StepSaturation> for crate::Cluster {
+    fn from(command: StepSaturation) -> Self {
+        Self::ColorControl(command.into())
+    }
+}

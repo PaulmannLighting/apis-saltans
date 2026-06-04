@@ -54,6 +54,72 @@ impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
 }
 
+impl From<Command> for crate::Cluster {
+    fn from(command: Command) -> Self {
+        Self::Groups(command)
+    }
+}
+
+impl From<AddGroup> for Command {
+    fn from(command: AddGroup) -> Self {
+        Self::AddGroup(command)
+    }
+}
+
+impl From<ViewGroup> for Command {
+    fn from(command: ViewGroup) -> Self {
+        Self::ViewGroup(command)
+    }
+}
+
+impl From<GetGroupMembership> for Command {
+    fn from(command: GetGroupMembership) -> Self {
+        Self::GetGroupMembership(command)
+    }
+}
+
+impl From<RemoveGroup> for Command {
+    fn from(command: RemoveGroup) -> Self {
+        Self::RemoveGroup(command)
+    }
+}
+
+impl From<RemoveAllGroups> for Command {
+    fn from(command: RemoveAllGroups) -> Self {
+        Self::RemoveAllGroups(command)
+    }
+}
+
+impl From<AddGroupIfIdentifying> for Command {
+    fn from(command: AddGroupIfIdentifying) -> Self {
+        Self::AddGroupIfIdentifying(command)
+    }
+}
+
+impl From<AddGroupResponse> for Command {
+    fn from(response: AddGroupResponse) -> Self {
+        Self::AddGroupResponse(response)
+    }
+}
+
+impl From<ViewGroupResponse> for Command {
+    fn from(response: ViewGroupResponse) -> Self {
+        Self::ViewGroupResponse(response)
+    }
+}
+
+impl From<GetGroupMembershipResponse> for Command {
+    fn from(response: GetGroupMembershipResponse) -> Self {
+        Self::GetGroupMembershipResponse(response)
+    }
+}
+
+impl From<RemoveGroupResponse> for Command {
+    fn from(response: RemoveGroupResponse) -> Self {
+        Self::RemoveGroupResponse(response)
+    }
+}
+
 impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {

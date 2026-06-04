@@ -36,3 +36,9 @@ impl Command for ViewGroup {
 }
 
 impl Native for ViewGroup {}
+
+impl From<ViewGroup> for crate::Cluster {
+    fn from(command: ViewGroup) -> Self {
+        Self::Groups(command.into())
+    }
+}

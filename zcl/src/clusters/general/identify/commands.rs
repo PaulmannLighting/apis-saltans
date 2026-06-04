@@ -30,6 +30,36 @@ impl Cluster for Command {
     const ID: u16 = super::CLUSTER_ID;
 }
 
+impl From<Command> for crate::Cluster {
+    fn from(command: Command) -> Self {
+        Self::Identify(command)
+    }
+}
+
+impl From<Identify> for Command {
+    fn from(command: Identify) -> Self {
+        Self::Identify(command)
+    }
+}
+
+impl From<IdentifyQuery> for Command {
+    fn from(command: IdentifyQuery) -> Self {
+        Self::IdentifyQuery(command)
+    }
+}
+
+impl From<TriggerEffect> for Command {
+    fn from(command: TriggerEffect) -> Self {
+        Self::TriggerEffect(command)
+    }
+}
+
+impl From<IdentifyQueryResponse> for Command {
+    fn from(response: IdentifyQueryResponse) -> Self {
+        Self::IdentifyQueryResponse(response)
+    }
+}
+
 impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {

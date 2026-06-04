@@ -85,7 +85,6 @@ impl CommandDispatch for Command {
             Self::GetAlarmResponse(cmd) => cmd.disable_default_response(),
         }
     }
-
 }
 
 impl ToLeStream for Command {
@@ -127,4 +126,3 @@ impl Iterator for Iter {
         }
     }
 }
-

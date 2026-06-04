@@ -60,6 +60,12 @@ impl Scoped for Response {
     const SCOPE: Scope = Scope::Global;
 }
 
+impl From<Response> for crate::Cluster {
+    fn from(command: Response) -> Self {
+        Self::Global(command.into())
+    }
+}
+
 impl Deref for Response {
     type Target = BTreeMap<u16, Result<Type, u8>>;
 
