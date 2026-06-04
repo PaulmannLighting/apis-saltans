@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
-use zigbee::Endpoint;
+use zigbee::{Cluster, Endpoint};
 use zigbee_hw::{Error, Metadata};
 
 use crate::transmitter::{Message, Payload};
@@ -15,6 +15,25 @@ pub trait Handle {
         metadata: Metadata,
         payload: Payload,
     ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    /// Send a unicast of a native command belonging to a static cluster.
+    async fn unicast_native_cluster<T>(
+        &self,
+        short_id: u16,
+        endpoint: Endpoint,
+        command: T,
+    ) -> Result<(), Error>
+    where
+        T: Cluster + Into<Payload>,
+    {
+        self.unicast(
+            short_id,
+            endpoint,
+            Metadata::for_cluster::<T>(None, None),
+            command.into(),
+        )
+        .await
+    }
 }
 
 impl Handle for Sender<Message> {
