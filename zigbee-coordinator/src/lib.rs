@@ -5,10 +5,10 @@
 //!
 //! TODO: This shall replace `zigbee-nwk`.
 
-pub use api::Api;
+pub use coordinator::Coordinator;
 
-mod api;
 mod binding;
+mod coordinator;
 mod discovery;
 mod mux;
 mod network_manager;
