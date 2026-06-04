@@ -1,11 +1,16 @@
-//! Zigbee coordinator API.
+//! Zigbee transmitter API.
 //!
 //! This library provides a fully abstracted interface to expose an interface to communicate with
-//! a Zigbee coordinator regardless of the underlying hardware.
+//! a Zigbee transmitter regardless of the underlying hardware.
 //!
 //! TODO: This shall replace `zigbee-nwk`.
 
-pub use coordinator::Coordinator;
+pub use transmitter::Transmitter;
 
-mod coordinator;
-mod message;
+mod binding;
+mod discovery;
+mod log_send_error;
+mod mux;
+mod network_manager;
+mod transmitter;
+mod zcl_message;

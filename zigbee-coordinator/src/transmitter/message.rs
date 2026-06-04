@@ -8,7 +8,7 @@ pub use self::payload::Payload;
 
 mod payload;
 
-/// Messages exchanged with the coordinator actor.
+/// Messages exchanged with the transmitter actor.
 #[derive(Debug)]
 pub enum Message {
     /// Allow new devices to join the network.

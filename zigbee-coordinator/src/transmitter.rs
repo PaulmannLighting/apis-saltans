@@ -1,4 +1,4 @@
-//! The coordinator represents the main external Zigbee coordinator API.
+//! The transmitter represents the main external Zigbee transmitter API.
 
 use le_stream::ToLeStream;
 use log::error;
@@ -8,18 +8,20 @@ use zdp::Command;
 use zigbee::Endpoint;
 use zigbee_hw::{Metadata, Ncp};
 
-use crate::message::{Message, Payload};
+pub use self::message::{Message, Payload};
 
-/// Zigbee coordinator actor.
+mod message;
+
+/// Zigbee transmitter actor.
 #[derive(Debug)]
-pub struct Coordinator<T> {
+pub struct Transmitter<T> {
     ncp: T,
     zcl_seq: u8,
     zdp_seq: u8,
 }
 
-impl<T> Coordinator<T> {
-    /// Crate a new coordinator.
+impl<T> Transmitter<T> {
+    /// Crate a new transmitter.
     #[must_use]
     pub const fn new(ncp: T) -> Self {
         Self {
@@ -30,11 +32,11 @@ impl<T> Coordinator<T> {
     }
 }
 
-impl<T> Coordinator<T>
+impl<T> Transmitter<T>
 where
     T: Ncp,
 {
-    /// Run the coordinator.
+    /// Run the transmitter.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {

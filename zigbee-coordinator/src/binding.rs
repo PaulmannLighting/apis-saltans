@@ -1,21 +1,12 @@
-use aps::Data;
 use macaddr::MacAddr8;
 
-pub use self::command::Command;
+/// The binding management actor.
+pub struct Actor {}
 
-mod command;
-
-/// Events that can occur on the hardware layer.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Event {
-    /// The network is up and running.
-    NetworkUp,
-    /// The network is down.
-    NetworkDown,
-    /// The network has been opened for new joins.
-    NetworkOpened,
-    /// The network has been closed for new joins.
-    NetworkClosed,
+/// Messages received by the binding management actor.
+#[expect(clippy::enum_variant_names)]
+#[derive(Debug)]
+pub enum Message {
     /// A new device has joined the network.
     DeviceJoined {
         /// The IEEE address of the joined device.
@@ -38,12 +29,5 @@ pub enum Event {
         ieee_address: MacAddr8,
         /// The short ID of the left device.
         short_id: u16,
-    },
-    /// Message received from a device.
-    MessageReceived {
-        /// The PAN ID of the sender.
-        src_address: u16,
-        /// The APS frame.
-        aps_frame: Box<Data<Command>>,
     },
 }
