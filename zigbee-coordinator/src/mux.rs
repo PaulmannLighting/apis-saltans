@@ -6,13 +6,14 @@ use self::subscribers::Subscribers;
 mod message;
 mod subscribers;
 
-/// Event multiplexer
+/// Event multiplexer.
 #[derive(Debug, Default)]
 pub struct Mux {
     subscribers: Subscribers,
 }
 
 impl Mux {
+    /// Run the multiplexer.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {

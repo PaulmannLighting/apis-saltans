@@ -12,4 +12,3 @@ mod discovery;
 mod mux;
 mod network_manager;
 mod transmitter;
-mod zcl_message;

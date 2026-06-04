@@ -12,6 +12,8 @@ mod payload;
 /// Messages exchanged with the transmitter actor.
 #[derive(Debug)]
 pub enum Message {
+    /// A hardware-level event.
+    Event(Event),
     /// Allow new devices to join the network.
     AllowJoins {
         /// The duration for which to allow joins.
@@ -36,6 +38,10 @@ pub enum Message {
         /// ZCL response channel.
         response: Sender<Cluster>,
     },
-    /// A hardware-level event.
-    Event(Event),
+}
+
+impl From<Event> for Message {
+    fn from(event: Event) -> Self {
+        Self::Event(event)
+    }
 }

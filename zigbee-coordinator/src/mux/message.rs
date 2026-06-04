@@ -12,3 +12,15 @@ pub enum Message {
         sender: Sender<Event>,
     },
 }
+
+impl From<Event> for Message {
+    fn from(event: Event) -> Self {
+        Self::Event(event)
+    }
+}
+
+impl From<Sender<Event>> for Message {
+    fn from(sender: Sender<Event>) -> Self {
+        Self::Subscribe { sender }
+    }
+}

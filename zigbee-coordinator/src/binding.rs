@@ -1,13 +1,6 @@
-use zigbee_hw::Event;
+pub use self::message::Message;
 
-use crate::network_manager::Device;
+mod message;
 
 /// The binding management actor.
 pub struct Actor {}
-
-/// Messages received by the binding management actor.
-#[derive(Debug)]
-pub enum Message {
-    Event(Event),
-    Device(Device),
-}
