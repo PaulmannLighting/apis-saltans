@@ -1,12 +1,14 @@
 //! The transmitter represents the main external Zigbee transmitter API.
 
+use std::collections::BTreeMap;
+
 use le_stream::ToLeStream;
-use log::error;
+use log::{error, warn};
 use tokio::sync::mpsc::Receiver;
+use tokio::sync::oneshot::Sender;
 use zcl::{Cluster, CommandDispatch};
-use zdp::Command;
 use zigbee::Endpoint;
-use zigbee_hw::{Metadata, Ncp};
+use zigbee_hw::{Command, Event, Metadata, Ncp};
 
 pub use self::message::{Message, Payload};
 
@@ -16,6 +18,7 @@ mod message;
 #[derive(Debug)]
 pub struct Transmitter<T> {
     ncp: T,
+    zcl_responses: BTreeMap<u8, Sender<Cluster>>,
     zcl_seq: u8,
     zdp_seq: u8,
 }
@@ -26,6 +29,7 @@ impl<T> Transmitter<T> {
     pub const fn new(ncp: T) -> Self {
         Self {
             ncp,
+            zcl_responses: BTreeMap::new(),
             zcl_seq: 0,
             zdp_seq: 0,
         }
@@ -41,7 +45,7 @@ where
         while let Some(message) = messages.recv().await {
             match message {
                 Message::AllowJoins { duration } => {
-                    todo!()
+                    todo!("Allow joins")
                 }
                 Message::Unicast {
                     short_id,
@@ -55,6 +59,25 @@ where
                         error!("Failed to send unicast response: {error:?}");
                     });
                 }
+                Message::Subscribe { seq, response } => {
+                    self.zcl_responses.insert(seq, response);
+                }
+                Message::Event(event) => match event {
+                    Event::MessageReceived { aps_frame, .. } => {
+                        let (_aps_header, payload) = aps_frame.into_parts();
+
+                        if let Command::Zcl(frame) = payload {
+                            let (header, payload) = frame.into_parts();
+
+                            if let Some(sender) = self.zcl_responses.remove(&header.seq()) {
+                                sender.send(payload).unwrap_or_else(|error| {
+                                    error!("Failed to send ZCL response: {error:?}");
+                                });
+                            }
+                        }
+                    }
+                    other => warn!("Unhandled ZCL event: {other:?}"),
+                },
             }
         }
     }
@@ -129,7 +152,7 @@ where
     }
 
     /// Create a new ZDP frame.
-    const fn make_zdp_frame(&mut self, command: Command) -> zdp::Frame<Command> {
+    const fn make_zdp_frame(&mut self, command: zdp::Command) -> zdp::Frame<zdp::Command> {
         zdp::Frame::new(self.next_zdp_seq(), command)
     }
 }

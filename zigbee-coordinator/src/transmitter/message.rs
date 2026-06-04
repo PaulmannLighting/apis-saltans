@@ -1,8 +1,9 @@
 use std::time::Duration;
 
 use tokio::sync::oneshot::Sender;
+use zcl::Cluster;
 use zigbee::Endpoint;
-use zigbee_hw::{Error, Metadata};
+use zigbee_hw::{Error, Event, Metadata};
 
 pub use self::payload::Payload;
 
@@ -28,4 +29,13 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
+    /// Subscribe to the response multiplexer.
+    Subscribe {
+        /// ZCL sequence number.
+        seq: u8,
+        /// ZCL response channel.
+        response: Sender<Cluster>,
+    },
+    /// A hardware-level event.
+    Event(Event),
 }
