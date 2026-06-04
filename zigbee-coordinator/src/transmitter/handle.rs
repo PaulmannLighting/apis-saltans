@@ -8,6 +8,7 @@ use crate::transmitter::{Message, Payload};
 /// Handle trait on the zigbee transmitter.
 pub trait Handle {
     /// Send a unicast.
+    // TODO: Maybe mark this `unsafe` and document invariants?
     fn unicast(
         &self,
         short_id: u16,
