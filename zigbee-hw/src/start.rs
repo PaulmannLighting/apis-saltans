@@ -1,0 +1,11 @@
+use tokio::sync::mpsc::Receiver;
+
+use crate::{Error, Event, Ncp};
+
+/// Trait for starting an NCP driver.
+pub trait Start {
+    /// Start the NCP driver.
+    fn start(
+        self,
+    ) -> impl Future<Output = Result<(impl Ncp + Clone + Send, Receiver<Event>), Error>>;
+}

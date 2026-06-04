@@ -10,6 +10,7 @@ pub use self::frame::{Frame, Metadata};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
 pub use self::ncp::Ncp;
 pub use self::ncp_driver::NcpDriver;
+pub use self::start::Start;
 
 mod await_event;
 mod error;
@@ -18,3 +19,4 @@ mod frame;
 mod message;
 mod ncp;
 mod ncp_driver;
+mod start;
