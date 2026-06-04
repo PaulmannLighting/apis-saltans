@@ -1,7 +1,9 @@
 use tokio::sync::mpsc::{Receiver, Sender};
-use zigbee_hw::Event;
 
+pub use self::message::Message;
 use crate::{binding, transmitter};
+
+mod message;
 
 /// The device discovery actor.
 #[derive(Debug)]
@@ -24,8 +26,8 @@ impl Actor {
     }
 
     /// Run the discovery actor.
-    pub async fn run(self, mut events: Receiver<Event>) {
-        while let Some(event) = events.recv().await {
+    pub async fn run(self, mut messages: Receiver<Message>) {
+        while let Some(message) = messages.recv().await {
             todo!("Handle events.")
         }
     }

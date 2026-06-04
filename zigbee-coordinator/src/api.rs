@@ -103,9 +103,11 @@ impl Api {
         binding_manager: Sender<binding::Message>,
     ) -> Result<(), Error> {
         let discovery_manager = discovery::Actor::new(transmitter, binding_manager);
+        let (discovery_manager_tx, discovery_manager_rx) = channel(100);
         let (events_tx, events_rx) = channel(100);
         mux.subscribe(events_tx).await?;
-        spawn(discovery_manager.run(events_rx));
+        spawn(bridge(events_rx, discovery_manager_tx.clone()));
+        spawn(discovery_manager.run(discovery_manager_rx));
         Ok(())
     }
 }
