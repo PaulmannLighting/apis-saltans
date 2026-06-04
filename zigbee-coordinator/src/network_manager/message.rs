@@ -2,7 +2,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zigbee_hw::Event;
 
-use crate::network_manager::Device;
+use super::Device;
 
 /// Messages received by the network management actor.
 #[derive(Debug)]

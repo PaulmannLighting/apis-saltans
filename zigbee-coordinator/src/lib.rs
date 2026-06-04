@@ -5,8 +5,9 @@
 //!
 //! TODO: This shall replace `zigbee-nwk`.
 
-pub use transmitter::Transmitter;
+pub use api::Api;
 
+mod api;
 mod binding;
 mod discovery;
 mod mux;
