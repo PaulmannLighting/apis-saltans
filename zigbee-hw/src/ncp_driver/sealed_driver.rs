@@ -41,7 +41,7 @@ where
                 }
                 Message::GetPanId { response } => {
                     response
-                        .send(self.get_short_id().await)
+                        .send(self.get_pan_id().await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send get PAN ID command response: {error:?}");
                         });

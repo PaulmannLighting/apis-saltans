@@ -19,12 +19,12 @@ pub trait NcpDriver {
     /// Get the next transaction sequence number.
     fn next_transaction_seq(&mut self) -> u8;
 
-    /// Get the short ID of the network manager.
+    /// Get the PAN ID of the network.
     ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_short_id(&mut self) -> impl Future<Output = Result<u16, Error>> + Send;
+    fn get_pan_id(&mut self) -> impl Future<Output = Result<u16, Error>> + Send;
 
     /// Scan for available networks.
     ///

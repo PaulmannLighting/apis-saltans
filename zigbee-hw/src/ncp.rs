@@ -25,7 +25,7 @@ pub trait Ncp {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_short_id(&self) -> impl Future<Output = Result<u16, Error>> + Send;
+    fn get_pan_id(&self) -> impl Future<Output = Result<u16, Error>> + Send;
 
     /// Scan for available networks.
     ///
@@ -100,7 +100,7 @@ impl Ncp for Sender<Message> {
         Ok(rx.await?)
     }
 
-    async fn get_short_id(&self) -> Result<u16, Error> {
+    async fn get_pan_id(&self) -> Result<u16, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::GetPanId { response }).await?;
         rx.await?
