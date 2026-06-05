@@ -1,12 +1,10 @@
 //! ZCL frame representation.
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::ClusterIdAware;
 
 pub use self::header::{Control, Direction, Header, Scope};
 pub use self::header_factory::HeaderFactory;
 pub use self::parse_frame_error::ParseFrameError;
-use crate::CommandDispatch;
 use crate::clusters::Cluster;
 
 mod header;
@@ -77,14 +75,5 @@ impl Frame<Cluster> {
         let header = Header::from_le_stream(&mut bytes).ok_or(ParseFrameError::MissingHeader)?;
         let payload = Cluster::parse_zcl_cluster(cluster_id, header, bytes)?;
         Ok(Self { header, payload })
-    }
-}
-
-impl<T> ClusterIdAware for Frame<T>
-where
-    T: ClusterIdAware,
-{
-    fn cluster_id(&self) -> u16 {
-        self.payload.cluster_id()
     }
 }

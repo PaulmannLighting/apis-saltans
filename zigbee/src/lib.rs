@@ -1,6 +1,6 @@
 //! Zigbee library.
 
-pub use self::cluster::{Cluster, ClusterId, ClusterIdAware, ClusterSpecific};
+pub use self::cluster::{Cluster, ClusterId, ClusterSpecific};
 pub use self::direction::Direction;
 pub use self::endpoint::{Application, Endpoint, Reserved};
 pub use self::profile::Profile;

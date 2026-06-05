@@ -6,7 +6,7 @@
 //! and extended headers, providing a clean interface for coordinator implementations.
 
 use le_stream::ToLeStream;
-use zigbee::{ClusterIdAware, Endpoint, Profile};
+use zigbee::{Cluster, Endpoint, Profile};
 
 pub use self::metadata::Metadata;
 
@@ -60,14 +60,14 @@ impl Frame {
 
 impl<T> From<zcl::Frame<T>> for Frame
 where
-    T: ClusterIdAware + ToLeStream,
+    T: Cluster + ToLeStream,
 {
     fn from(frame: zcl::Frame<T>) -> Self {
         #[expect(unsafe_code)]
         // SAFETY: We ensure that the ApsMetadata contains the correct cluster ID.
         unsafe {
             Self::new(
-                Metadata::new(frame.cluster_id(), None, None),
+                Metadata::new(T::ID, None, None),
                 frame.to_le_stream().collect(),
             )
         }
@@ -76,18 +76,14 @@ where
 
 impl<T> From<zdp::Frame<T>> for Frame
 where
-    T: ClusterIdAware + ToLeStream,
+    T: Cluster + ToLeStream,
 {
     fn from(frame: zdp::Frame<T>) -> Self {
         #[expect(unsafe_code)]
         // SAFETY: We ensure that the ApsMetadata contains the correct cluster ID, profile ID and endpoint.
         unsafe {
             Self::new(
-                Metadata::new(
-                    frame.cluster_id(),
-                    Some(Profile::Network),
-                    Some(Endpoint::Data),
-                ),
+                Metadata::new(T::ID, Some(Profile::Network), Some(Endpoint::Data)),
                 frame.to_le_stream().collect(),
             )
         }

@@ -1,9 +1,7 @@
 pub use cluster_id::ClusterId;
-pub use cluster_id_aware::ClusterIdAware;
 pub use cluster_specific::ClusterSpecific;
 
 mod cluster_id;
-mod cluster_id_aware;
 mod cluster_specific;
 
 /// Trait to identify Zigbee zcl.
