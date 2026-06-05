@@ -1,6 +1,4 @@
-use std::sync::mpsc::Sender;
-
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::Event;
 
