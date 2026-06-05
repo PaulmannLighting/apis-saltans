@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::ClusterId;
+use zigbee::ClusterIdAware;
 
 use crate::Command;
 
@@ -66,9 +66,9 @@ where
     }
 }
 
-impl<T> ClusterId for Frame<T>
+impl<T> ClusterIdAware for Frame<T>
 where
-    T: ClusterId,
+    T: ClusterIdAware,
 {
     fn cluster_id(&self) -> u16 {
         self.data.cluster_id()

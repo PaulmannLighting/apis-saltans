@@ -1,7 +1,7 @@
 //! ZCL frame representation.
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::ClusterId;
+use zigbee::ClusterIdAware;
 
 pub use self::header::{Control, Direction, Header, Scope};
 pub use self::header_factory::HeaderFactory;
@@ -80,9 +80,9 @@ impl Frame<Cluster> {
     }
 }
 
-impl<T> ClusterId for Frame<T>
+impl<T> ClusterIdAware for Frame<T>
 where
-    T: ClusterId,
+    T: ClusterIdAware,
 {
     fn cluster_id(&self) -> u16 {
         self.payload.cluster_id()

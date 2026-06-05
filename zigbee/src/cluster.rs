@@ -9,13 +9,13 @@ pub trait Cluster {
 }
 
 /// Trait to get the cluster ID of an object.
-pub trait ClusterId {
+pub trait ClusterIdAware {
     /// Return the cluster ID.
     #[must_use]
     fn cluster_id(&self) -> u16;
 }
 
-impl<T> ClusterId for T
+impl<T> ClusterIdAware for T
 where
     T: Cluster,
 {
