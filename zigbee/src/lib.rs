@@ -2,7 +2,7 @@
 
 pub use direction::Direction;
 
-pub use self::cluster::{Cluster, ClusterIdAware};
+pub use self::cluster::{Cluster, ClusterIdAware, Id as ClusterId};
 pub use self::endpoint::{Application, Endpoint, Reserved};
 pub use self::profile::Profile;
 pub use self::util::{FromDeciSeconds, IntoDeciSeconds, Parsable};
