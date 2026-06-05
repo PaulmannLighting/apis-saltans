@@ -2,9 +2,8 @@ use core::str::Utf8Error;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String, Uint16};
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use crate::clusters::general::groups::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Command to add a group to the device's group table.
@@ -49,7 +48,7 @@ impl AddGroup {
 }
 
 impl Cluster for AddGroup {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Groups.as_u16();
 }
 
 impl Command for AddGroup {

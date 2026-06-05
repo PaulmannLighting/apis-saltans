@@ -1,7 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use crate::clusters::general::identify::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Request the target to respond if they are currently identifying themselves.
@@ -13,7 +12,7 @@ use crate::{Command, Native};
 pub struct IdentifyQuery;
 
 impl Cluster for IdentifyQuery {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Identify.as_u16();
 }
 
 impl Command for IdentifyQuery {

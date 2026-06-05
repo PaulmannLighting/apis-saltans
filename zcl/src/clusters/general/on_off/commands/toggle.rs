@@ -1,7 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use crate::clusters::general::on_off::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Toggle a device on/off state.
@@ -10,7 +9,7 @@ use crate::{Command, Native};
 pub struct Toggle;
 
 impl Cluster for Toggle {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::OnOff.as_u16();
 }
 
 impl Command for Toggle {

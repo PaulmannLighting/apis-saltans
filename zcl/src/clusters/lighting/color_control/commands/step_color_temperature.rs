@@ -2,9 +2,8 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, Direction, FromDeciSeconds};
+use zigbee::{Cluster, ClusterId, Direction, FromDeciSeconds};
 
-use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::step_hue::Mode;
 use crate::{Command, Native, Options};
 
@@ -81,7 +80,7 @@ impl StepColorTemperature {
 }
 
 impl Cluster for StepColorTemperature {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::ColorControl.as_u16();
 }
 
 impl Command for StepColorTemperature {

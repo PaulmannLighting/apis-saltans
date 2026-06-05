@@ -1,7 +1,7 @@
 //! Commands for the On/Off cluster.
 
 use le_stream::ToLeStream;
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::off::Off;
@@ -38,7 +38,7 @@ pub enum Command {
 }
 
 impl Cluster for Command {
-    const ID: u16 = super::CLUSTER_ID;
+    const ID: u16 = ClusterId::OnOff.as_u16();
 }
 
 impl From<Command> for crate::Cluster {

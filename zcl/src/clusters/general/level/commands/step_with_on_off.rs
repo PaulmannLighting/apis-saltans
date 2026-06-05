@@ -2,9 +2,8 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, Direction, FromDeciSeconds};
+use zigbee::{Cluster, ClusterId, Direction, FromDeciSeconds};
 
-use super::CLUSTER_ID;
 use crate::general::level::Mode;
 use crate::options::Options;
 use crate::{Command, Native};
@@ -60,7 +59,7 @@ impl StepWithOnOff {
 }
 
 impl Cluster for StepWithOnOff {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Level.as_u16();
 }
 
 impl Command for StepWithOnOff {

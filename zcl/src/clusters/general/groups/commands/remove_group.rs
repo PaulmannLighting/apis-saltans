@@ -1,8 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use crate::clusters::general::groups::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Command to remove a group from the device's group table.
@@ -27,7 +26,7 @@ impl RemoveGroup {
 }
 
 impl Cluster for RemoveGroup {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Groups.as_u16();
 }
 
 impl Command for RemoveGroup {

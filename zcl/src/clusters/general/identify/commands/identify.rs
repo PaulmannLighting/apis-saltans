@@ -2,9 +2,8 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use crate::clusters::general::identify::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Toggle the identify state of a device.
@@ -37,7 +36,7 @@ impl Identify {
 }
 
 impl Cluster for Identify {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Identify.as_u16();
 }
 
 impl Command for Identify {

@@ -1,7 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use super::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Reset all alarms.
@@ -12,7 +11,7 @@ use crate::{Command, Native};
 pub struct ResetAllAlarms;
 
 impl Cluster for ResetAllAlarms {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Alarms.as_u16();
 }
 
 impl Command for ResetAllAlarms {

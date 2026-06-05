@@ -1,7 +1,7 @@
 //! Commands of the Alarms cluster.
 
 use le_stream::ToLeStream;
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::alarm::Alarm;
@@ -10,7 +10,6 @@ pub use self::get_alarm_response::GetAlarmResponse;
 pub use self::reset_alarm::ResetAlarm;
 pub use self::reset_alarm_log::ResetAlarmLog;
 pub use self::reset_all_alarms::ResetAllAlarms;
-use super::CLUSTER_ID;
 use crate::{CommandDispatch, Scope};
 
 mod alarm;
@@ -38,7 +37,7 @@ pub enum Command {
 }
 
 impl Cluster for Command {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Alarms.as_u16();
 }
 
 impl CommandDispatch for Command {

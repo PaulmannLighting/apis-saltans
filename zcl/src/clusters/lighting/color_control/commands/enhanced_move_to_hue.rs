@@ -3,9 +3,8 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{Cluster, ClusterId, FromDeciSeconds, IntoDeciSeconds};
 
-use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::move_to_hue::Direction;
 use crate::{Command, Native, Options};
 
@@ -81,7 +80,7 @@ impl EnhancedMoveToHue {
 }
 
 impl Cluster for EnhancedMoveToHue {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::ColorControl.as_u16();
 }
 
 impl Command for EnhancedMoveToHue {

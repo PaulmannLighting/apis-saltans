@@ -10,5 +10,3 @@ pub use self::mode::Mode;
 mod attribute;
 mod commands;
 mod mode;
-
-const CLUSTER_ID: u16 = 0x0008;

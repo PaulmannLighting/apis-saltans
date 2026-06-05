@@ -1,7 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use super::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Move to the closest frequency command.
@@ -26,7 +25,7 @@ impl MoveToClosestFrequency {
 }
 
 impl Cluster for MoveToClosestFrequency {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Level.as_u16();
 }
 
 impl Command for MoveToClosestFrequency {

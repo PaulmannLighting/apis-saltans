@@ -5,10 +5,9 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{Cluster, ClusterId, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::mode::Mode;
-use crate::lighting::color_control::CLUSTER_ID;
 use crate::{Command, Native, Options};
 
 mod mode;
@@ -80,7 +79,7 @@ impl StepSaturation {
 }
 
 impl Cluster for StepSaturation {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::ColorControl.as_u16();
 }
 
 impl Command for StepSaturation {

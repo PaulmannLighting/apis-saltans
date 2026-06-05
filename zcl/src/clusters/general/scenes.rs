@@ -7,5 +7,3 @@ pub use self::types::CurrentGroup;
 mod attribute;
 mod scene_table;
 mod types;
-
-const CLUSTER_ID: u16 = 0x0005;

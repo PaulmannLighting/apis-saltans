@@ -1,7 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use crate::clusters::general::basic::CLUSTER_ID;
 use crate::{Command, Native};
 
 /// Reset a device to factory defaults.
@@ -11,7 +10,7 @@ use crate::{Command, Native};
 pub struct ResetToFactoryDefaults;
 
 impl Cluster for ResetToFactoryDefaults {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Basic.as_u16();
 }
 
 impl Command for ResetToFactoryDefaults {

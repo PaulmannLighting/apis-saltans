@@ -1,8 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::clusters::lighting::color_control::move_hue::Mode;
 use crate::{Command, Native, Options};
 
@@ -70,7 +69,7 @@ impl MoveColorTemperature {
 }
 
 impl Cluster for MoveColorTemperature {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::ColorControl.as_u16();
 }
 
 impl Command for MoveColorTemperature {

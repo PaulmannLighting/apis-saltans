@@ -7,5 +7,3 @@ pub use self::table::Entry;
 mod attribute;
 mod commands;
 mod table;
-
-const CLUSTER_ID: u16 = 0x0009;

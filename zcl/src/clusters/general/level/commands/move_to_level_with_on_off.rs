@@ -2,9 +2,8 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Direction, FromDeciSeconds};
+use zigbee::{Cluster, ClusterId, Direction, FromDeciSeconds};
 
-use super::CLUSTER_ID;
 use crate::options::Options;
 use crate::{Command, Native};
 
@@ -48,7 +47,7 @@ impl MoveToLevelWithOnOff {
 }
 
 impl Cluster for MoveToLevelWithOnOff {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Level.as_u16();
 }
 
 impl Command for MoveToLevelWithOnOff {

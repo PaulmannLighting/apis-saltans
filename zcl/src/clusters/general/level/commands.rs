@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::r#move::Move;
@@ -11,7 +11,6 @@ pub use self::step::Step;
 pub use self::step_with_on_off::StepWithOnOff;
 pub use self::stop::Stop;
 pub use self::stop_with_on_off::StopWithOnOff;
-use super::CLUSTER_ID;
 use crate::{CommandDispatch, Scope};
 
 mod r#move;
@@ -48,7 +47,7 @@ pub enum Command {
 }
 
 impl Cluster for Command {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Level.as_u16();
 }
 
 impl From<Command> for crate::Cluster {

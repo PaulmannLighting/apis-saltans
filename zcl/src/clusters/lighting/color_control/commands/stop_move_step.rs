@@ -1,7 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use crate::clusters::lighting::color_control::CLUSTER_ID;
 use crate::{Command, Native, Options};
 
 /// Command to stop a move step in a lighting device.
@@ -25,7 +24,7 @@ impl StopMoveStep {
 }
 
 impl Cluster for StopMoveStep {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::ColorControl.as_u16();
 }
 
 impl Command for StopMoveStep {

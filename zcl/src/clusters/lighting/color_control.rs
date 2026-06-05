@@ -18,5 +18,3 @@ pub use self::commands::{
 
 mod color_information_attribute;
 mod commands;
-
-const CLUSTER_ID: u16 = 0x0300;

@@ -1,8 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, Direction};
+use zigbee::{Cluster, ClusterId, Direction};
 
-use super::CLUSTER_ID;
 use crate::general::level::Mode;
 use crate::options::Options;
 use crate::{Command, Native};
@@ -50,7 +49,7 @@ impl MoveWithOnOff {
 }
 
 impl Cluster for MoveWithOnOff {
-    const ID: u16 = CLUSTER_ID;
+    const ID: u16 = ClusterId::Level.as_u16();
 }
 
 impl Command for MoveWithOnOff {
