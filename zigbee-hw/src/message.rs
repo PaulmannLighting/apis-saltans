@@ -2,13 +2,12 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot::Sender;
 use zigbee::Endpoint;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
-use crate::{Error, Event, Frame};
+use crate::{Error, Frame};
 
 mod found_network;
 mod scanned_channel;

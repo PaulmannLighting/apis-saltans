@@ -33,7 +33,7 @@ pub trait Handle {
             Metadata::for_cluster::<T>(None, None),
             Payload::Zcl {
                 manufacturer_code: None,
-                payload: command.into(),
+                payload: Box::new(command.into()),
             },
         )
         .await

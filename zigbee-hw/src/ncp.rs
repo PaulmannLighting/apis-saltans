@@ -2,12 +2,12 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zigbee::Endpoint;
 
 use crate::message::Message;
-use crate::{Error, Event, FoundNetwork, Frame, ScannedChannel};
+use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
 /// Proxy trait to communicate with Zigbee NCPs which implement [`NcpDriver`](crate::NcpDriver).
 ///

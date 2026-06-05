@@ -10,7 +10,7 @@ use zigbee::Endpoint;
 
 use self::sealed_driver::SealedDriver;
 use crate::message::Message;
-use crate::{Error, Event, FoundNetwork, Frame, Ncp, NcpHandle, ScannedChannel};
+use crate::{Error, FoundNetwork, Frame, NcpHandle, ScannedChannel};
 
 mod sealed_driver;
 

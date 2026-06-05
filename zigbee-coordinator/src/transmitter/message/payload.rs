@@ -9,8 +9,8 @@ pub enum Payload {
         /// An optional manufacturer code.
         manufacturer_code: Option<u16>,
         /// ZCL payload.
-        payload: Cluster,
+        payload: Box<Cluster>,
     },
     /// ZDP payload.
-    Zdp(Command),
+    Zdp(Box<Command>),
 }
