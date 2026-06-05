@@ -4,7 +4,7 @@ use crate::Event;
 
 /// Trait to implement to translate hardware events into Zigbee events.
 pub trait EventTranslator {
-    /// The input event type to be translated.
+    /// The input message type to be translated into an [`Event`].
     type Input;
 
     /// Create a new event translator.
