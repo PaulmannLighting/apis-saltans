@@ -3,6 +3,7 @@
 //! This library provides a unified interface to implement Zigbee coordinator functionality for
 //! Zigbee hardware (NCP) drivers.
 
+pub use event_translator::EventTranslator;
 use tokio::sync::mpsc::Sender;
 
 pub use self::await_event::AwaitEvent;
@@ -23,6 +24,7 @@ mod await_event;
 mod bridge;
 mod error;
 mod event;
+mod event_translator;
 mod frame;
 mod message;
 mod ncp;
