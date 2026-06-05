@@ -30,3 +30,11 @@ pub enum Id {
     /// Illuminance level sensing cluster.
     IlluminanceLevelSensing = 0x0401,
 }
+
+impl Id {
+    /// Returns the cluster ID as a `u16`.
+    #[must_use]
+    pub const fn as_u16(self) -> u16 {
+        self as u16
+    }
+}
