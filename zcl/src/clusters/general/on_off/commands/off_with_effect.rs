@@ -1,9 +1,9 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint8;
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::effect::{DelayedAllOff, DyingLight, Effect};
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 mod effect;
 
@@ -38,8 +38,8 @@ impl OffWithEffect {
     }
 }
 
-impl Cluster for OffWithEffect {
-    const ID: u16 = ClusterId::OnOff.as_u16();
+impl ClusterSpecific for OffWithEffect {
+    const CLUSTER: ClusterId = ClusterId::OnOff;
 }
 
 impl Command for OffWithEffect {

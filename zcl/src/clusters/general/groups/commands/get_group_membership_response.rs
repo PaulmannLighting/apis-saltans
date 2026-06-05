@@ -2,10 +2,10 @@ use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{Uint8, Uint16};
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::clusters::general::groups::types::GroupList;
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Represents a response to an `GetGroupMembership` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -62,8 +62,8 @@ impl IntoIterator for GetGroupMembershipResponse {
     }
 }
 
-impl Cluster for GetGroupMembershipResponse {
-    const ID: u16 = ClusterId::Groups.as_u16();
+impl ClusterSpecific for GetGroupMembershipResponse {
+    const CLUSTER: ClusterId = ClusterId::Groups;
 }
 
 impl Command for GetGroupMembershipResponse {

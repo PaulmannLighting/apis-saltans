@@ -4,12 +4,12 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::Cluster;
+use zigbee::{ClusterId, ClusterSpecific};
 
 pub use self::action::{Action, Source};
 pub use self::direction::Direction;
 pub use self::update::Update;
-use crate::{ClusterId, Command, Native, Options};
+use crate::{Command, Native, Options};
 
 mod action;
 mod direction;
@@ -90,8 +90,8 @@ impl ColorLoopSet {
     }
 }
 
-impl Cluster for ColorLoopSet {
-    const ID: u16 = ClusterId::ColorControl.as_u16();
+impl ClusterSpecific for ColorLoopSet {
+    const CLUSTER: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for ColorLoopSet {

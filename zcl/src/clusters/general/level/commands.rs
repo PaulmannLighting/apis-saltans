@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::r#move::Move;
@@ -11,7 +11,7 @@ pub use self::step::Step;
 pub use self::step_with_on_off::StepWithOnOff;
 pub use self::stop::Stop;
 pub use self::stop_with_on_off::StopWithOnOff;
-use crate::{ClusterId, CommandDispatch, Scope};
+use crate::{CommandDispatch, Scope};
 
 mod r#move;
 mod move_to_closest_frequency;
@@ -46,8 +46,8 @@ pub enum Command {
     MoveToClosestFrequency(MoveToClosestFrequency),
 }
 
-impl Cluster for Command {
-    const ID: u16 = ClusterId::Level.as_u16();
+impl ClusterSpecific for Command {
+    const CLUSTER: ClusterId = ClusterId::Level;
 }
 
 impl From<Command> for crate::Cluster {

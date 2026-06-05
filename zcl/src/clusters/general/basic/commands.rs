@@ -1,11 +1,11 @@
 //! Commands for the Basic cluster.
 
 use le_stream::ToLeStream;
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::reset_to_factory_defaults::ResetToFactoryDefaults;
-use crate::{ClusterId, CommandDispatch, Scope};
+use crate::{CommandDispatch, Scope};
 
 mod reset_to_factory_defaults;
 
@@ -16,8 +16,8 @@ pub enum Command {
     ResetToFactoryDefaults(ResetToFactoryDefaults),
 }
 
-impl Cluster for Command {
-    const ID: u16 = ClusterId::Basic.as_u16();
+impl ClusterSpecific for Command {
+    const CLUSTER: ClusterId = ClusterId::Basic;
 }
 
 impl From<Command> for crate::Cluster {

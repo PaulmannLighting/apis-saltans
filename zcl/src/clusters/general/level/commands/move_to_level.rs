@@ -2,10 +2,10 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Direction, FromDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
 
 use crate::options::Options;
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Move to level command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -46,8 +46,8 @@ impl MoveToLevel {
     }
 }
 
-impl Cluster for MoveToLevel {
-    const ID: u16 = ClusterId::Level.as_u16();
+impl ClusterSpecific for MoveToLevel {
+    const CLUSTER: ClusterId = ClusterId::Level;
 }
 
 impl Command for MoveToLevel {

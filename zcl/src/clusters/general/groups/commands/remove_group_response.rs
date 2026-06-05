@@ -1,8 +1,8 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{ClusterId, Command, Native, Status};
+use crate::{Command, Native, Status};
 
 /// Represents a response to an `RemoveGroup` command.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
@@ -37,8 +37,8 @@ impl RemoveGroupResponse {
     }
 }
 
-impl Cluster for RemoveGroupResponse {
-    const ID: u16 = ClusterId::Groups.as_u16();
+impl ClusterSpecific for RemoveGroupResponse {
+    const CLUSTER: ClusterId = ClusterId::Groups;
 }
 
 impl Command for RemoveGroupResponse {

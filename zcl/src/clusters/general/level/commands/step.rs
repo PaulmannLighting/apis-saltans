@@ -2,11 +2,11 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, Direction, FromDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
 
 use crate::general::level::Mode;
 use crate::options::Options;
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Step command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -58,8 +58,8 @@ impl Step {
     }
 }
 
-impl Cluster for Step {
-    const ID: u16 = ClusterId::Level.as_u16();
+impl ClusterSpecific for Step {
+    const CLUSTER: ClusterId = ClusterId::Level;
 }
 
 impl Command for Step {

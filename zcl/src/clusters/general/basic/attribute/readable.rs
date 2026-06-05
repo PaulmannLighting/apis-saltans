@@ -3,7 +3,7 @@
 use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{OctStr, String, Uint8};
-use zigbee::{Cluster, Parsable};
+use zigbee::{ClusterId, ClusterSpecific, Parsable};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;
@@ -14,7 +14,7 @@ use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
 use super::writable;
-use crate::{ClusterId, ReadableAttribute};
+use crate::ReadableAttribute;
 
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -133,8 +133,8 @@ impl From<AttributeId> for u16 {
     }
 }
 
-impl Cluster for AttributeId {
-    const ID: u16 = ClusterId::Basic.as_u16();
+impl ClusterSpecific for AttributeId {
+    const CLUSTER: ClusterId = ClusterId::Basic;
 }
 
 impl ReadableAttribute for AttributeId {

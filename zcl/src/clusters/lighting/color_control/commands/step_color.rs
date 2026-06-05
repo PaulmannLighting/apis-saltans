@@ -2,9 +2,9 @@ use core::num::TryFromIntError;
 use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
 
-use crate::{ClusterId, Command, Native, Options};
+use crate::{Command, Native, Options};
 
 /// Command to step a light's color.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -69,8 +69,8 @@ impl StepColor {
     }
 }
 
-impl Cluster for StepColor {
-    const ID: u16 = ClusterId::ColorControl.as_u16();
+impl ClusterSpecific for StepColor {
+    const CLUSTER: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for StepColor {

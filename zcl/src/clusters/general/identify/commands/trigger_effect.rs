@@ -1,9 +1,9 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 mod effect_identifier;
 mod effect_variant;
@@ -45,8 +45,8 @@ impl TriggerEffect {
     }
 }
 
-impl Cluster for TriggerEffect {
-    const ID: u16 = ClusterId::Identify.as_u16();
+impl ClusterSpecific for TriggerEffect {
+    const CLUSTER: ClusterId = ClusterId::Identify;
 }
 
 impl Command for TriggerEffect {

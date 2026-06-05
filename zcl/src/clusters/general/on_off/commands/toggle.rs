@@ -1,15 +1,15 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Toggle a device on/off state.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct Toggle;
 
-impl Cluster for Toggle {
-    const ID: u16 = ClusterId::OnOff.as_u16();
+impl ClusterSpecific for Toggle {
+    const CLUSTER: ClusterId = ClusterId::OnOff;
 }
 
 impl Command for Toggle {

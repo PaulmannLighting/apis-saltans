@@ -2,9 +2,9 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Response to the [`IdentifyQuery`](crate::clusters::general::identify::IdentifyQuery) command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -33,8 +33,8 @@ impl IdentifyQueryResponse {
     }
 }
 
-impl Cluster for IdentifyQueryResponse {
-    const ID: u16 = ClusterId::Identify.as_u16();
+impl ClusterSpecific for IdentifyQueryResponse {
+    const CLUSTER: ClusterId = ClusterId::Identify;
 }
 
 impl Command for IdentifyQueryResponse {

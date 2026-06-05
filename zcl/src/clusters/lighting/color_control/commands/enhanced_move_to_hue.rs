@@ -3,10 +3,10 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::move_to_hue::Direction;
-use crate::{ClusterId, Command, Native, Options};
+use crate::{Command, Native, Options};
 
 /// Command to move a light to a specific extended hue with a direction and transition time.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -79,8 +79,8 @@ impl EnhancedMoveToHue {
     }
 }
 
-impl Cluster for EnhancedMoveToHue {
-    const ID: u16 = ClusterId::ColorControl.as_u16();
+impl ClusterSpecific for EnhancedMoveToHue {
+    const CLUSTER: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for EnhancedMoveToHue {

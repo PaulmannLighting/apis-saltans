@@ -1,10 +1,10 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::general::level::Mode;
 use crate::options::Options;
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Move with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -48,8 +48,8 @@ impl MoveWithOnOff {
     }
 }
 
-impl Cluster for MoveWithOnOff {
-    const ID: u16 = ClusterId::Level.as_u16();
+impl ClusterSpecific for MoveWithOnOff {
+    const CLUSTER: ClusterId = ClusterId::Level;
 }
 
 impl Command for MoveWithOnOff {

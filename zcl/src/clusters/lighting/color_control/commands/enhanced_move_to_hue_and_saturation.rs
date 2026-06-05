@@ -2,9 +2,9 @@ use core::num::TryFromIntError;
 use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
 
-use crate::{ClusterId, Command, Native, Options};
+use crate::{Command, Native, Options};
 
 /// Command to move a light to a specific hue and saturation with enhanced precision.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -74,8 +74,8 @@ impl EnhancedMoveToHueAndSaturation {
     }
 }
 
-impl Cluster for EnhancedMoveToHueAndSaturation {
-    const ID: u16 = ClusterId::ColorControl.as_u16();
+impl ClusterSpecific for EnhancedMoveToHueAndSaturation {
+    const CLUSTER: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for EnhancedMoveToHueAndSaturation {

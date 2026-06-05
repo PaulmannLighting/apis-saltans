@@ -2,10 +2,10 @@
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::mode::Mode;
-use crate::{ClusterId, Command, Native, Options};
+use crate::{Command, Native, Options};
 
 mod mode;
 
@@ -50,8 +50,8 @@ impl MoveHue {
     }
 }
 
-impl Cluster for MoveHue {
-    const ID: u16 = ClusterId::ColorControl.as_u16();
+impl ClusterSpecific for MoveHue {
+    const CLUSTER: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for MoveHue {

@@ -2,10 +2,10 @@ use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{Uint8, Uint16};
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::clusters::general::groups::types::GroupList;
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Command to request the membership of a device in multiple groups.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -55,8 +55,8 @@ impl IntoIterator for GetGroupMembership {
     }
 }
 
-impl Cluster for GetGroupMembership {
-    const ID: u16 = ClusterId::Groups.as_u16();
+impl ClusterSpecific for GetGroupMembership {
+    const CLUSTER: ClusterId = ClusterId::Groups;
 }
 
 impl Command for GetGroupMembership {

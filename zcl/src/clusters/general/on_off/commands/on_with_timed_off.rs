@@ -2,10 +2,10 @@ use core::num::TryFromIntError;
 use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::on_off_control::OnOffControl;
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 mod on_off_control;
 
@@ -66,8 +66,8 @@ impl OnWithTimedOff {
     }
 }
 
-impl Cluster for OnWithTimedOff {
-    const ID: u16 = ClusterId::OnOff.as_u16();
+impl ClusterSpecific for OnWithTimedOff {
+    const CLUSTER: ClusterId = ClusterId::OnOff;
 }
 
 impl Command for OnWithTimedOff {

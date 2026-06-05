@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Clear the alarm table.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -10,8 +10,8 @@ use crate::{ClusterId, Command, Native};
 )]
 pub struct ResetAlarmLog;
 
-impl Cluster for ResetAlarmLog {
-    const ID: u16 = ClusterId::Alarms.as_u16();
+impl ClusterSpecific for ResetAlarmLog {
+    const CLUSTER: ClusterId = ClusterId::Alarms;
 }
 
 impl Command for ResetAlarmLog {

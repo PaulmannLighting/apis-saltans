@@ -1,8 +1,8 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String, Uint16};
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Command to add a group to the device's group table if the device is currently identifying.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
@@ -34,8 +34,8 @@ impl AddGroupIfIdentifying {
     }
 }
 
-impl Cluster for AddGroupIfIdentifying {
-    const ID: u16 = ClusterId::Groups.as_u16();
+impl ClusterSpecific for AddGroupIfIdentifying {
+    const CLUSTER: ClusterId = ClusterId::Groups;
 }
 
 impl Command for AddGroupIfIdentifying {

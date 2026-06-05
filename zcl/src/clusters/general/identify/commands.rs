@@ -1,12 +1,12 @@
 use le_stream::ToLeStream;
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::identify::Identify;
 pub use self::identify_query::IdentifyQuery;
 pub use self::identify_query_response::IdentifyQueryResponse;
 pub use self::trigger_effect::{EffectIdentifier, EffectVariant, TriggerEffect};
-use crate::{ClusterId, CommandDispatch, Scope};
+use crate::{CommandDispatch, Scope};
 
 mod identify;
 mod identify_query;
@@ -26,8 +26,8 @@ pub enum Command {
     IdentifyQueryResponse(IdentifyQueryResponse),
 }
 
-impl Cluster for Command {
-    const ID: u16 = ClusterId::Identify.as_u16();
+impl ClusterSpecific for Command {
+    const CLUSTER: ClusterId = ClusterId::Identify;
 }
 
 impl From<Command> for crate::Cluster {

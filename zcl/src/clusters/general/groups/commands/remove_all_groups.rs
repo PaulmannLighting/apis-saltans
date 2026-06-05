@@ -1,14 +1,14 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// Command to remove all groups from the device's group table.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct RemoveAllGroups;
 
-impl Cluster for RemoveAllGroups {
-    const ID: u16 = ClusterId::Groups.as_u16();
+impl ClusterSpecific for RemoveAllGroups {
+    const CLUSTER: ClusterId = ClusterId::Groups;
 }
 
 impl Command for RemoveAllGroups {

@@ -5,10 +5,10 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::direction::Direction;
-use crate::{ClusterId, Command, Native, Options};
+use crate::{Command, Native, Options};
 
 mod direction;
 
@@ -83,8 +83,8 @@ impl MoveToHue {
     }
 }
 
-impl Cluster for MoveToHue {
-    const ID: u16 = ClusterId::ColorControl.as_u16();
+impl ClusterSpecific for MoveToHue {
+    const CLUSTER: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for MoveToHue {

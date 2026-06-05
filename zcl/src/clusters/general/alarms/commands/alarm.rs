@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, Direction};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{ClusterId, Command, Native};
+use crate::{Command, Native};
 
 /// An issued alarm.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -31,8 +31,8 @@ impl Alarm {
     }
 }
 
-impl Cluster for Alarm {
-    const ID: u16 = ClusterId::Alarms.as_u16();
+impl ClusterSpecific for Alarm {
+    const CLUSTER: ClusterId = ClusterId::Alarms;
 }
 
 impl Command for Alarm {
