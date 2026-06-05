@@ -13,5 +13,5 @@ pub trait EventTranslator {
     fn new(output: Sender<Event>) -> Self;
 
     /// Run the event translator.
-    fn run(input: Receiver<Self::HardwareEvent>) -> impl Future<Output = ()> + Send;
+    fn run(self, input: Receiver<Self::HardwareEvent>) -> impl Future<Output = ()> + Send;
 }
