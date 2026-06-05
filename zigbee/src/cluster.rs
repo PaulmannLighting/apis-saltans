@@ -1,3 +1,7 @@
+pub use self::id::Id;
+
+mod id;
+
 /// Trait to identify Zigbee zcl.
 pub trait Cluster {
     /// The cluster identifier.
