@@ -2,7 +2,7 @@
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
-pub enum Id {
+pub enum ClusterId {
     /// Basic cluster.
     Basic = 0x0000,
     /// Power configuration cluster.
@@ -31,7 +31,7 @@ pub enum Id {
     IlluminanceLevelSensing = 0x0401,
 }
 
-impl Id {
+impl ClusterId {
     /// Returns the cluster ID as a `u16`.
     #[must_use]
     pub const fn as_u16(self) -> u16 {

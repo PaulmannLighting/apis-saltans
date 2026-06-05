@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::add_group::AddGroup;
@@ -12,7 +12,7 @@ pub use self::remove_group::RemoveGroup;
 pub use self::remove_group_response::RemoveGroupResponse;
 pub use self::view_group::ViewGroup;
 pub use self::view_group_response::ViewGroupResponse;
-use crate::{CommandDispatch, Scope};
+use crate::{ClusterId, CommandDispatch, Scope};
 
 mod add_group;
 mod add_group_if_identifying;

@@ -2,10 +2,10 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ClusterId, Direction, FromDeciSeconds};
+use zigbee::{Cluster, Direction, FromDeciSeconds};
 
 use crate::clusters::lighting::color_control::step_hue::Mode;
-use crate::{Command, Native, Options};
+use crate::{ClusterId, Command, Native, Options};
 
 /// Command to step a light's color temperature in a specified range.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]

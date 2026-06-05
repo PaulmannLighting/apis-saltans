@@ -1,9 +1,9 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint8;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 
 pub use self::effect::{DelayedAllOff, DyingLight, Effect};
-use crate::{Command, Native};
+use crate::{ClusterId, Command, Native};
 
 mod effect;
 

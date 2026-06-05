@@ -4,12 +4,12 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ClusterId};
+use zigbee::Cluster;
 
 pub use self::action::{Action, Source};
 pub use self::direction::Direction;
 pub use self::update::Update;
-use crate::{Command, Native, Options};
+use crate::{ClusterId, Command, Native, Options};
 
 mod action;
 mod direction;

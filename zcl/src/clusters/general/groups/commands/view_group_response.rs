@@ -1,8 +1,8 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String, Uint16};
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 
-use crate::{Command, Native, Status};
+use crate::{ClusterId, Command, Native, Status};
 
 /// Represents a response to an `ViewGroup` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]

@@ -1,10 +1,10 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 
 use crate::general::level::Mode;
 use crate::options::Options;
-use crate::{Command, Native};
+use crate::{ClusterId, Command, Native};
 
 /// Move command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

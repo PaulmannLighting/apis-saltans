@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::color_loop_set::ColorLoopSet;
@@ -21,7 +21,7 @@ pub use self::step_color_temperature::StepColorTemperature;
 pub use self::step_hue::StepHue;
 pub use self::step_saturation::StepSaturation;
 pub use self::stop_move_step::StopMoveStep;
-use crate::{CommandDispatch, Scope};
+use crate::{ClusterId, CommandDispatch, Scope};
 
 pub mod color_loop_set;
 mod enhanced_move_hue;

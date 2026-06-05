@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 
-use crate::{Command, Native, Options};
+use crate::{ClusterId, Command, Native, Options};
 
 /// Command to stop a move step in a lighting device.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]

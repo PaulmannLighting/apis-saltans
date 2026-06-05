@@ -1,10 +1,10 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 
 use crate::clusters::lighting::color_control::move_hue::Mode;
 use crate::command::Command;
-use crate::{Native, Options};
+use crate::{ClusterId, Native, Options};
 
 /// Command to move a light's hue in an enhanced way, allowing for more control over the rate.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]

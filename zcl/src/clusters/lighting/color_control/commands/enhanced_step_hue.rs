@@ -3,10 +3,10 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ClusterId, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::step_hue::Mode;
-use crate::{Command, Native, Options};
+use crate::{ClusterId, Command, Native, Options};
 
 /// Command to step a light's hue in an enhanced way, allowing for more control over the size.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]

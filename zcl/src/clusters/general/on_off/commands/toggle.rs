@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 
-use crate::{Command, Native};
+use crate::{ClusterId, Command, Native};
 
 /// Toggle a device on/off state.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

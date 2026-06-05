@@ -2,10 +2,10 @@ use core::num::TryFromIntError;
 use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, ClusterId, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::options::Options;
-use crate::{Command, Native};
+use crate::{ClusterId, Command, Native};
 
 /// Command to move a light to a specific color.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]

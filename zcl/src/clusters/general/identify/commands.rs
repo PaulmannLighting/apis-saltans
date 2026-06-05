@@ -1,12 +1,12 @@
 use le_stream::ToLeStream;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::identify::Identify;
 pub use self::identify_query::IdentifyQuery;
 pub use self::identify_query_response::IdentifyQueryResponse;
 pub use self::trigger_effect::{EffectIdentifier, EffectVariant, TriggerEffect};
-use crate::{CommandDispatch, Scope};
+use crate::{ClusterId, CommandDispatch, Scope};
 
 mod identify;
 mod identify_query;

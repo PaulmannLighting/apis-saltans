@@ -1,11 +1,11 @@
 //! Commands for the Basic cluster.
 
 use le_stream::ToLeStream;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::reset_to_factory_defaults::ResetToFactoryDefaults;
-use crate::{CommandDispatch, Scope};
+use crate::{ClusterId, CommandDispatch, Scope};
 
 mod reset_to_factory_defaults;
 

@@ -1,7 +1,7 @@
 //! Commands of the Alarms cluster.
 
 use le_stream::ToLeStream;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::alarm::Alarm;
@@ -10,7 +10,7 @@ pub use self::get_alarm_response::GetAlarmResponse;
 pub use self::reset_alarm::ResetAlarm;
 pub use self::reset_alarm_log::ResetAlarmLog;
 pub use self::reset_all_alarms::ResetAllAlarms;
-use crate::{CommandDispatch, Scope};
+use crate::{ClusterId, CommandDispatch, Scope};
 
 mod alarm;
 mod get_alarm;

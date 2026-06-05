@@ -5,10 +5,10 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ClusterId, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{Cluster, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::direction::Direction;
-use crate::{Command, Native, Options};
+use crate::{ClusterId, Command, Native, Options};
 
 mod direction;
 

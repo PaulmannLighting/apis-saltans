@@ -2,10 +2,10 @@
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 
 pub use self::mode::Mode;
-use crate::{Command, Native, Options};
+use crate::{ClusterId, Command, Native, Options};
 
 mod mode;
 

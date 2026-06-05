@@ -1,7 +1,7 @@
 //! Commands for the On/Off cluster.
 
 use le_stream::ToLeStream;
-use zigbee::{Cluster, ClusterId, Direction};
+use zigbee::{Cluster, Direction};
 use zigbee_macros::ParseZclFrame;
 
 pub use self::off::Off;
@@ -10,7 +10,7 @@ pub use self::on::On;
 pub use self::on_with_recall_global_scene::OnWithRecallGlobalScene;
 pub use self::on_with_timed_off::{OnOffControl, OnWithTimedOff};
 pub use self::toggle::Toggle;
-use crate::{CommandDispatch, Scope};
+use crate::{ClusterId, CommandDispatch, Scope};
 
 mod off;
 mod off_with_effect;

@@ -3,10 +3,10 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ClusterId, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{Cluster, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::move_to_hue::Direction;
-use crate::{Command, Native, Options};
+use crate::{ClusterId, Command, Native, Options};
 
 /// Command to move a light to a specific extended hue with a direction and transition time.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]

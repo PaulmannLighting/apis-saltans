@@ -2,10 +2,10 @@ use core::num::TryFromIntError;
 use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, ClusterId, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{Cluster, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::on_off_control::OnOffControl;
-use crate::{Command, Native};
+use crate::{ClusterId, Command, Native};
 
 mod on_off_control;
 
