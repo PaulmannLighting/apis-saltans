@@ -1,21 +1,20 @@
+pub use cluster_id::ClusterId;
+pub use cluster_id_aware::ClusterIdAware;
+pub use cluster_specific::ClusterSpecific;
+
+mod cluster_id;
+mod cluster_id_aware;
+mod cluster_specific;
+
 /// Trait to identify Zigbee zcl.
 pub trait Cluster {
     /// The cluster identifier.
     const ID: u16;
 }
 
-/// Trait to get the cluster ID of an object.
-pub trait ClusterIdAware {
-    /// Return the cluster ID.
-    #[must_use]
-    fn cluster_id(&self) -> u16;
-}
-
-impl<T> ClusterIdAware for T
+impl<T> Cluster for T
 where
-    T: Cluster,
+    T: ClusterSpecific,
 {
-    fn cluster_id(&self) -> u16 {
-        T::ID
-    }
+    const ID: u16 = T::CLUSTER.as_u16();
 }
