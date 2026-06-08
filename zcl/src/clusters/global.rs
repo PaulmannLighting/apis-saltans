@@ -75,12 +75,12 @@ impl From<configure_reporting::Response> for Command {
 impl CommandDispatch for Command {
     fn command_id(&self) -> u8 {
         match self {
-            Self::ReadAttributes(_) => 0x00,
-            Self::ReadAttributesResponse(_) => 0x01,
-            Self::ReportAttributes(_) => 0x0A,
-            Self::DefaultResponse(_) => 0x0B,
-            Self::ConfigureReporting(_) => 0x06,
-            Self::ConfigureReportingResponse(_) => 0x07,
+            Self::ReadAttributes(cmd) => cmd.command_id(),
+            Self::ReadAttributesResponse(cmd) => cmd.command_id(),
+            Self::ReportAttributes(cmd) => cmd.command_id(),
+            Self::DefaultResponse(cmd) => cmd.command_id(),
+            Self::ConfigureReporting(cmd) => cmd.command_id(),
+            Self::ConfigureReportingResponse(cmd) => cmd.command_id(),
         }
     }
 
@@ -90,23 +90,23 @@ impl CommandDispatch for Command {
 
     fn direction(&self) -> Direction {
         match self {
-            Self::ReadAttributes(_) => Direction::ClientToServer,
-            Self::ReadAttributesResponse(_) => Direction::ServerToClient,
-            Self::ReportAttributes(_) => Direction::ServerToClient,
-            Self::DefaultResponse(_) => Direction::ClientToServer,
-            Self::ConfigureReporting(_) => Direction::ClientToServer,
-            Self::ConfigureReportingResponse(_) => Direction::ServerToClient,
+            Self::ReadAttributes(cmd) => cmd.direction(),
+            Self::ReadAttributesResponse(cmd) => cmd.direction(),
+            Self::ReportAttributes(cmd) => cmd.direction(),
+            Self::DefaultResponse(cmd) => cmd.direction(),
+            Self::ConfigureReporting(cmd) => cmd.direction(),
+            Self::ConfigureReportingResponse(cmd) => cmd.direction(),
         }
     }
 
     fn disable_default_response(&self) -> bool {
         match self {
-            Self::DefaultResponse(_) => true,
-            Self::ReadAttributes(_)
-            | Self::ReadAttributesResponse(_)
-            | Self::ReportAttributes(_)
-            | Self::ConfigureReporting(_)
-            | Self::ConfigureReportingResponse(_) => false,
+            Self::DefaultResponse(cmd) => cmd.disable_default_response(),
+            Self::ReadAttributes(cmd) => cmd.disable_default_response(),
+            Self::ReadAttributesResponse(cmd) => cmd.disable_default_response(),
+            Self::ReportAttributes(cmd) => cmd.disable_default_response(),
+            Self::ConfigureReporting(cmd) => cmd.disable_default_response(),
+            Self::ConfigureReportingResponse(cmd) => cmd.disable_default_response(),
         }
     }
 }
