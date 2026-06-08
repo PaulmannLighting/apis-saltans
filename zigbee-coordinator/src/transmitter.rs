@@ -46,9 +46,7 @@ where
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::AllowJoins { duration } => {
-                    todo!("Allow joins")
-                }
+                Message::Event(event) => self.handle_event(event),
                 Message::Unicast {
                     address,
                     endpoint,
@@ -56,30 +54,12 @@ where
                     payload,
                     response,
                 } => {
-                    let result = self.unicast(address, endpoint, metadata, *payload).await;
-                    response.send(result.map(drop)).unwrap_or_else(|error| {
-                        error!("Failed to send unicast response: {error:?}");
-                    });
+                    self.unicast(address, endpoint, metadata, *payload, response)
+                        .await;
                 }
                 Message::Subscribe { seq, response } => {
                     self.zcl_responses.insert(seq, response);
                 }
-                Message::Event(event) => match event {
-                    Event::MessageReceived { aps_frame, .. } => {
-                        let (_aps_header, payload) = aps_frame.into_parts();
-
-                        if let Command::Zcl(frame) = payload {
-                            let (header, payload) = frame.into_parts();
-
-                            if let Some(sender) = self.zcl_responses.remove(&header.seq()) {
-                                sender.send(payload).unwrap_or_else(|error| {
-                                    error!("Failed to send ZCL response: {error:?}");
-                                });
-                            }
-                        }
-                    }
-                    other => warn!("Unhandled ZCL event: {other:?}"),
-                },
             }
         }
     }
@@ -98,6 +78,25 @@ where
         zdp_seq
     }
 
+    fn handle_event(&mut self, event: Event) {
+        match event {
+            Event::MessageReceived { aps_frame, .. } => {
+                let (_aps_header, payload) = aps_frame.into_parts();
+
+                if let Command::Zcl(frame) = payload {
+                    let (header, payload) = frame.into_parts();
+
+                    if let Some(sender) = self.zcl_responses.remove(&header.seq()) {
+                        sender.send(payload).unwrap_or_else(|error| {
+                            error!("Failed to send ZCL response: {error:?}");
+                        });
+                    }
+                }
+            }
+            other => warn!("Unhandled ZCL event: {other:?}"),
+        }
+    }
+
     /// Send a unicast message.
     async fn unicast(
         &mut self,
@@ -105,9 +104,13 @@ where
         endpoint: Endpoint,
         metadata: Metadata,
         payload: Payload,
-    ) -> Result<u8, zigbee_hw::Error> {
+        response: Sender<Result<(), zigbee_hw::Error>>,
+    ) {
         let aps_frame = self.make_aps_frame(metadata, payload);
-        self.ncp.unicast(address, endpoint, aps_frame).await
+        let result = self.ncp.unicast(address, endpoint, aps_frame).await;
+        response.send(result.map(drop)).unwrap_or_else(|error| {
+            error!("Failed to send unicast response: {error:?}");
+        });
     }
 
     /// Create a new APS frame.

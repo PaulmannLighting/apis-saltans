@@ -14,11 +14,7 @@ mod payload;
 pub enum Message {
     /// A hardware-level event.
     Event(Event),
-    /// Allow new devices to join the network.
-    AllowJoins {
-        /// The duration for which to allow joins.
-        duration: Duration,
-    },
+    /// Unicast a message.
     Unicast {
         /// The destination address.
         address: Address,
