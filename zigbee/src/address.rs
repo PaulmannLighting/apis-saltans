@@ -3,11 +3,31 @@
 use macaddr::MacAddr8;
 
 /// Zigbee device addressing modes.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum Address {
-    /// IEEE address.
-    IeeeAddress(MacAddr8),
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Address {
+    ieee_address: MacAddr8,
+    short_id: u16,
+}
 
-    /// Short address.
-    ShortAddress(u16),
+impl Address {
+    /// Create a new address.
+    #[must_use]
+    pub const fn new(ieee_address: MacAddr8, short_id: u16) -> Self {
+        Self {
+            ieee_address,
+            short_id,
+        }
+    }
+
+    /// Return the IEEE address.
+    #[must_use]
+    pub const fn ieee_address(&self) -> MacAddr8 {
+        self.ieee_address
+    }
+
+    /// Return the short ID.
+    #[must_use]
+    pub const fn short_id(&self) -> u16 {
+        self.short_id
+    }
 }

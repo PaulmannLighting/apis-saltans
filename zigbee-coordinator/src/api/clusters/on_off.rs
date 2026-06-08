@@ -1,5 +1,5 @@
 use zcl::general::on_off::{Off, On, Toggle};
-use zigbee::Endpoint;
+use zigbee::{Address, Endpoint};
 use zigbee_hw::Error;
 
 use crate::Coordinator;
@@ -14,7 +14,7 @@ pub trait OnOff {
     /// Returns an [`Error`] if execution of the command failed.
     fn on(
         &self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -25,7 +25,7 @@ pub trait OnOff {
     /// Returns an [`Error`] if execution of the command failed.
     fn off(
         &self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -36,27 +36,27 @@ pub trait OnOff {
     /// Returns an [`Error`] if execution of the command failed.
     fn toggle(
         &self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl OnOff for Coordinator {
-    async fn on(&self, short_id: u16, endpoint: Endpoint) -> Result<(), Error> {
+    async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.transmitter
-            .unicast_zcl_native(short_id, endpoint, On)
+            .unicast_zcl_native(address, endpoint, On)
             .await
     }
 
-    async fn off(&self, short_id: u16, endpoint: Endpoint) -> Result<(), Error> {
+    async fn off(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.transmitter
-            .unicast_zcl_native(short_id, endpoint, Off)
+            .unicast_zcl_native(address, endpoint, Off)
             .await
     }
 
-    async fn toggle(&self, short_id: u16, endpoint: Endpoint) -> Result<(), Error> {
+    async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.transmitter
-            .unicast_zcl_native(short_id, endpoint, Toggle)
+            .unicast_zcl_native(address, endpoint, Toggle)
             .await
     }
 }

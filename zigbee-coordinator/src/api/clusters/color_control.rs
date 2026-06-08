@@ -1,6 +1,6 @@
 use zcl::Options;
 use zcl::lighting::color_control::MoveToColor;
-use zigbee::Endpoint;
+use zigbee::{Address, Endpoint};
 use zigbee_hw::Error;
 
 use crate::Coordinator;
@@ -15,7 +15,7 @@ pub trait ColorControl {
     /// Returns an [`Error`] if execution of the command failed.
     fn move_to_xy(
         &self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
         color_x: u16,
         color_y: u16,
@@ -27,7 +27,7 @@ pub trait ColorControl {
 impl ColorControl for Coordinator {
     async fn move_to_xy(
         &self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
         color_x: u16,
         color_y: u16,
@@ -36,7 +36,7 @@ impl ColorControl for Coordinator {
     ) -> Result<(), Error> {
         self.transmitter
             .unicast_zcl_native(
-                short_id,
+                address,
                 endpoint,
                 MoveToColor::new(color_x, color_y, transition_time, options),
             )

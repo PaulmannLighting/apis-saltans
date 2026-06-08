@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
-use zigbee::{Cluster, Endpoint};
+use zigbee::{Address, Cluster, Endpoint};
 use zigbee_hw::{Error, Metadata};
 
 use crate::transmitter::{Message, Payload};
@@ -11,7 +11,7 @@ pub trait Handle {
     // TODO: Maybe mark this `unsafe` and document invariants?
     fn unicast(
         &self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
         metadata: Metadata,
         payload: Payload,
@@ -20,7 +20,7 @@ pub trait Handle {
     /// Send a unicast of a native ZCL command belonging to a static cluster.
     async fn unicast_zcl_native<T>(
         &self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
         command: T,
     ) -> Result<(), Error>
@@ -28,7 +28,7 @@ pub trait Handle {
         T: Cluster + Into<zcl::Cluster>,
     {
         self.unicast(
-            short_id,
+            address,
             endpoint,
             Metadata::for_cluster::<T>(None, None),
             Payload::Zcl {
@@ -43,14 +43,14 @@ pub trait Handle {
 impl Handle for Sender<Message> {
     async fn unicast(
         &self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
         metadata: Metadata,
         payload: Payload,
     ) -> Result<(), Error> {
         let (response, result) = channel();
         self.send(Message::Unicast {
-            short_id,
+            address,
             endpoint,
             metadata,
             payload: Box::new(payload),

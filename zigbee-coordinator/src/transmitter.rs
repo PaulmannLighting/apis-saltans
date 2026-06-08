@@ -7,7 +7,7 @@ use log::{error, warn};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot::Sender;
 use zcl::{Cluster, CommandDispatch};
-use zigbee::Endpoint;
+use zigbee::{Address, Endpoint};
 use zigbee_hw::{Command, Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
@@ -50,13 +50,13 @@ where
                     todo!("Allow joins")
                 }
                 Message::Unicast {
-                    short_id,
+                    address,
                     endpoint,
                     metadata,
                     payload,
                     response,
                 } => {
-                    let result = self.unicast(short_id, endpoint, metadata, *payload).await;
+                    let result = self.unicast(address, endpoint, metadata, *payload).await;
                     response.send(result.map(drop)).unwrap_or_else(|error| {
                         error!("Failed to send unicast response: {error:?}");
                     });
@@ -101,13 +101,13 @@ where
     /// Send a unicast message.
     async fn unicast(
         &mut self,
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
         metadata: Metadata,
         payload: Payload,
     ) -> Result<u8, zigbee_hw::Error> {
         let aps_frame = self.make_aps_frame(metadata, payload);
-        self.ncp.unicast(short_id, endpoint, aps_frame).await
+        self.ncp.unicast(address, endpoint, aps_frame).await
     }
 
     /// Create a new APS frame.

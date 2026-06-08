@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use tokio::sync::oneshot::Sender;
 use zcl::Cluster;
-use zigbee::Endpoint;
+use zigbee::{Address, Endpoint};
 use zigbee_hw::{Error, Event, Metadata};
 
 pub use self::payload::Payload;
@@ -21,7 +21,7 @@ pub enum Message {
     },
     Unicast {
         /// The destination address.
-        short_id: u16,
+        address: Address,
         /// The destination endpoint.
         endpoint: Endpoint,
         /// APS metadata for transmission.
