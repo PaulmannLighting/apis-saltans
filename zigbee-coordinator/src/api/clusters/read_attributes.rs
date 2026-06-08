@@ -1,10 +1,10 @@
 use zcl::global::read_attributes::{Command, Response};
 use zcl::{Cluster, global};
 use zigbee::{Address, Endpoint};
-use zigbee_hw::{Error, Metadata};
+use zigbee_hw::Metadata;
 
-use crate::Coordinator;
 use crate::transceiver::zcl::{Handle, Payload};
+use crate::{Coordinator, Error};
 
 /// Trait for reading attributes.
 pub trait ReadAttributes {
@@ -79,7 +79,7 @@ impl ReadAttributes for Coordinator {
         if let Cluster::Global(global::Command::ReadAttributesResponse(response)) = cluster {
             Ok(response)
         } else {
-            todo!()
+            Err(Error::InvalidResponseType)
         }
     }
 }

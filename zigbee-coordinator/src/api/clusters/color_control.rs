@@ -1,10 +1,9 @@
 use zcl::Options;
 use zcl::lighting::color_control::MoveToColor;
 use zigbee::{Address, Endpoint};
-use zigbee_hw::Error;
 
-use crate::Coordinator;
 use crate::transceiver::zcl::Handle;
+use crate::{Coordinator, Error};
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {
@@ -41,5 +40,6 @@ impl ColorControl for Coordinator {
                 MoveToColor::new(color_x, color_y, transition_time, options),
             )
             .await
+            .map_err(Into::into)
     }
 }
