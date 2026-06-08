@@ -7,11 +7,13 @@
 
 pub use self::api::{ColorControl, OnOff, ReadAttributes};
 pub use self::coordinator::Coordinator;
+pub use self::error::Error;
 
 mod api;
 mod binding;
 mod coordinator;
 mod discovery;
+mod error;
 mod mux;
 mod network_manager;
 mod transceiver;
