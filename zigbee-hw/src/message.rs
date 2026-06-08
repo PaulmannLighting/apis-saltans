@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use macaddr::MacAddr8;
 use tokio::sync::oneshot::Sender;
-use zigbee::Endpoint;
+use zigbee::{Address, Endpoint};
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
@@ -58,7 +58,7 @@ pub enum Message {
     },
     /// Send a unicast request.
     Unicast {
-        short_id: u16,
+        address: Address,
         endpoint: Endpoint,
         frame: Frame,
         response: Sender<Result<u8, Error>>,
@@ -73,7 +73,7 @@ pub enum Message {
     },
     /// Send a broadcast request.
     Broadcast {
-        short_id: u16,
+        short_id: u16, // TODO: This must be a Zigbee broadcast address. Maybe introduce a new type?
         radius: u8,
         frame: Frame,
         response: Sender<Result<u8, Error>>,
