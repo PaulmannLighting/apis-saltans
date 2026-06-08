@@ -8,7 +8,9 @@ use tokio::time::error::Elapsed;
 const ZCL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Extension trait to add a timeout while waiting for a future.
-pub trait Timeout: Future {
+pub trait Timeout {
+    type Output;
+
     /// Wait for the future to complete, or timeout.
     fn timeout(self, timeout: Duration) -> impl Future<Output = Result<Self::Output, Elapsed>>;
 
@@ -25,6 +27,8 @@ impl<T> Timeout for T
 where
     T: Future,
 {
+    type Output = <Self as Future>::Output;
+
     async fn timeout(self, timeout: Duration) -> Result<Self::Output, Elapsed> {
         tokio::time::timeout(timeout, self).await
     }
