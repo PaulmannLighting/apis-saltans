@@ -1,7 +1,11 @@
 use le_stream::{FromLeStream, ToLeStream};
 
 /// Represents a color temperature in mireds (micro reciprocal degrees).
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
