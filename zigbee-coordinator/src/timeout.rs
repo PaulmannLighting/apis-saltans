@@ -1,0 +1,31 @@
+//! Response timeout handling.
+
+use std::time::Duration;
+
+use tokio::time::error::Elapsed;
+
+/// Timeout for ZCL responses.
+const ZCL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Extension trait to add a timeout while waiting for a future.
+pub trait Timeout: Future {
+    /// Wait for the future to complete, or timeout.
+    fn timeout(self, timeout: Duration) -> impl Future<Output = Result<Self::Output, Elapsed>>;
+
+    /// Wait for a ZCL response, or timeout.
+    fn zcl_response_timeout(self) -> impl Future<Output = Result<Self::Output, Elapsed>>
+    where
+        Self: Sized,
+    {
+        self.timeout(ZCL_RESPONSE_TIMEOUT)
+    }
+}
+
+impl<T> Timeout for T
+where
+    T: Future,
+{
+    async fn timeout(self, timeout: Duration) -> Result<Self::Output, Elapsed> {
+        tokio::time::timeout(timeout, self).await
+    }
+}

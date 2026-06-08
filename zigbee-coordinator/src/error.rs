@@ -4,7 +4,9 @@ use std::fmt::Display;
 
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
+use tokio::time::error::Elapsed;
 
+/// Errors that can occur in the coordinator-API.
 #[derive(Debug)]
 pub enum Error {
     /// Hardware error.
@@ -16,6 +18,9 @@ pub enum Error {
     /// Receiving of response failed.
     ReceiveError(RecvError),
 
+    /// Timeout while waiting for a response.
+    Timeout(Elapsed),
+
     /// Invalid response type.
     InvalidResponseType,
 }
@@ -26,6 +31,7 @@ impl Display for Error {
             Self::Hardware(error) => write!(f, "Hardware error: {error}"),
             Self::SendError => write!(f, "Sending failed"),
             Self::ReceiveError(error) => write!(f, "Receiving failed: {error}"),
+            Self::Timeout(error) => write!(f, "Timeout: {error}"),
             Self::InvalidResponseType => write!(f, "Invalid response type"),
         }
     }
@@ -36,6 +42,7 @@ impl std::error::Error for Error {
         match self {
             Self::Hardware(error) => Some(error),
             Self::ReceiveError(error) => Some(error),
+            Self::Timeout(error) => Some(error),
             Self::SendError | Self::InvalidResponseType => None,
         }
     }
@@ -56,5 +63,11 @@ impl<T> From<SendError<T>> for Error {
 impl From<RecvError> for Error {
     fn from(error: RecvError) -> Self {
         Self::ReceiveError(error)
+    }
+}
+
+impl From<Elapsed> for Error {
+    fn from(error: Elapsed) -> Self {
+        Self::Timeout(error)
     }
 }

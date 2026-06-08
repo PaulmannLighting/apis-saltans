@@ -6,6 +6,7 @@ use zigbee_hw::Metadata;
 use super::{Message, Payload};
 use crate::Error;
 use crate::expect::ZclCommand;
+use crate::timeout::Timeout;
 
 /// Handle trait on the ZCL transceiver.
 pub trait Handle {
@@ -84,7 +85,8 @@ impl Handle for Sender<Message> {
         .await?;
         result
             .await??
-            .await?
+            .zcl_response_timeout()
+            .await??
             .expect()
             .ok_or(Error::InvalidResponseType)
     }

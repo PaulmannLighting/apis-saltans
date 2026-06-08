@@ -17,4 +17,5 @@ mod error;
 mod expect;
 mod mux;
 mod network_manager;
+mod timeout;
 mod transceiver;
