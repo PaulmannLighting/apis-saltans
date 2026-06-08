@@ -39,7 +39,7 @@ impl ColorControl for Coordinator {
                 endpoint,
                 MoveToColor::new(color_x, color_y, transition_time, options),
             )
-            .await
-            .map_err(Into::into)
+            .await?;
+        Ok(())
     }
 }

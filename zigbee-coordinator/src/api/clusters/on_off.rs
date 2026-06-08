@@ -44,21 +44,21 @@ impl OnOff for Coordinator {
     async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.zcl_transceiver
             .unicast_zcl_native(address, endpoint, On)
-            .await
-            .map_err(Into::into)
+            .await?;
+        Ok(())
     }
 
     async fn off(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.zcl_transceiver
             .unicast_zcl_native(address, endpoint, Off)
-            .await
-            .map_err(Into::into)
+            .await?;
+        Ok(())
     }
 
     async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.zcl_transceiver
             .unicast_zcl_native(address, endpoint, Toggle)
-            .await
-            .map_err(Into::into)
+            .await?;
+        Ok(())
     }
 }
