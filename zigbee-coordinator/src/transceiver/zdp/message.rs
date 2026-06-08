@@ -21,13 +21,6 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
-    /// Subscribe to the response multiplexer.
-    Subscribe {
-        /// ZDP sequence number.
-        seq: u8,
-        /// ZDP response channel.
-        response: Sender<Command>,
-    },
 }
 
 impl From<Event> for Message {

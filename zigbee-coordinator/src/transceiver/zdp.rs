@@ -55,9 +55,6 @@ where
                     self.unicast(address, endpoint, metadata, *command, response)
                         .await;
                 }
-                Message::Subscribe { seq, response } => {
-                    self.responses.insert(seq, response);
-                }
             }
         }
     }
