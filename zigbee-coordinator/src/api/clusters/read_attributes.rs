@@ -1,5 +1,4 @@
 use zcl::global::read_attributes::{Command, Response};
-use zcl::{Cluster, global};
 use zigbee::{Address, Endpoint};
 use zigbee_hw::Metadata;
 
@@ -63,8 +62,7 @@ impl ReadAttributes for Coordinator {
         manufacturer_code: Option<u16>,
         ids: &[u16],
     ) -> Result<Response, Error> {
-        let cluster = self
-            .zcl_transceiver
+        self.zcl_transceiver
             .communicate(
                 address,
                 endpoint,
@@ -74,12 +72,6 @@ impl ReadAttributes for Coordinator {
                     Command::new(ids.into()).into(),
                 ),
             )
-            .await?;
-
-        if let Cluster::Global(global::Command::ReadAttributesResponse(response)) = cluster {
-            Ok(response)
-        } else {
-            Err(Error::InvalidResponseType)
-        }
+            .await
     }
 }
