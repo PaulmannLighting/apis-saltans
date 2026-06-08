@@ -5,7 +5,7 @@
 //!
 //! TODO: This shall replace `zigbee-nwk`.
 
-pub use self::api::{ColorControl, OnOff};
+pub use self::api::{ColorControl, OnOff, ReadAttributes};
 pub use self::coordinator::Coordinator;
 
 mod api;

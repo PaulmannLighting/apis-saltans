@@ -11,7 +11,7 @@ pub struct Metadata {
 impl Metadata {
     /// Create new APS metadata.
     #[must_use]
-    pub(crate) const fn new(
+    pub const fn new(
         cluster_id: u16,
         profile: Option<Profile>,
         source_endpoint: Option<Endpoint>,
