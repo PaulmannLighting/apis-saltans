@@ -113,7 +113,7 @@ where
     }
 
     /// Create a new ZDP frame.
-    fn make_zdp_frame(&mut self, command: Command) -> zdp::Frame<Command> {
+    const fn make_zdp_frame(&mut self, command: Command) -> zdp::Frame<Command> {
         zdp::Frame::new(self.next_seq(), command)
     }
 }
