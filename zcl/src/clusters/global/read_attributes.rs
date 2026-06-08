@@ -48,7 +48,7 @@ impl Scoped for Command {
 /// Read Attributes Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Response {
-    attribute_values: BTreeMap<u16, Result<Type, u8>>,
+    attribute_values: BTreeMap<u16, Type>,
 }
 
 impl crate::Command for Response {
@@ -67,7 +67,7 @@ impl From<Response> for crate::Cluster {
 }
 
 impl Deref for Response {
-    type Target = BTreeMap<u16, Result<Type, u8>>;
+    type Target = BTreeMap<u16, Type>;
 
     fn deref(&self) -> &Self::Target {
         &self.attribute_values
@@ -75,8 +75,8 @@ impl Deref for Response {
 }
 
 impl IntoIterator for Response {
-    type Item = (u16, Result<Type, u8>);
-    type IntoIter = IntoIter<u16, Result<Type, u8>>;
+    type Item = (u16, Type);
+    type IntoIter = IntoIter<u16, Type>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.attribute_values.into_iter()
@@ -92,6 +92,7 @@ impl FromLeStream for Response {
             attribute_values: items
                 .into_iter()
                 .map(ReadAttributesStatus::into_parts)
+                .filter_map(|(attribute_id, result)| result.ok().map(|value| (attribute_id, value)))
                 .collect(),
         })
     }
