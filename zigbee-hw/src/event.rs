@@ -29,7 +29,7 @@ pub enum Event {
         ieee_address: MacAddr8,
         /// The short ID of the joined device.
         short_id: u16,
-        /// Whether the rejoin was secured.
+        /// Whether the rejoining was secured.
         secured: bool,
     },
     /// A device has left the network.
