@@ -3,7 +3,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::Error;
 
 use crate::Coordinator;
-use crate::transmitter::Handle;
+use crate::transceiver::Handle;
 
 /// Trait for On/Off cluster operations.
 pub trait OnOff {

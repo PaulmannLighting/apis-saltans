@@ -1,14 +1,14 @@
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub use self::message::Message;
-use crate::{network_manager, transmitter};
+use crate::{network_manager, transceiver};
 
 mod message;
 
 /// The binding management actor.
 #[derive(Debug)]
 pub struct Actor {
-    transmitter: Sender<transmitter::Message>,
+    transmitter: Sender<transceiver::Message>,
     network_manager: Sender<network_manager::Message>,
 }
 
@@ -16,7 +16,7 @@ impl Actor {
     /// Create a new binding management actor.
     #[must_use]
     pub const fn new(
-        transmitter: Sender<transmitter::Message>,
+        transmitter: Sender<transceiver::Message>,
         network_manager: Sender<network_manager::Message>,
     ) -> Self {
         Self {

@@ -1,7 +1,7 @@
-//! Zigbee transmitter API.
+//! Zigbee transceiver API.
 //!
 //! This library provides a fully abstracted interface to expose an interface to communicate with
-//! a Zigbee transmitter regardless of the underlying hardware.
+//! a Zigbee transceiver regardless of the underlying hardware.
 //!
 //! TODO: This shall replace `zigbee-nwk`.
 
@@ -14,4 +14,4 @@ mod coordinator;
 mod discovery;
 mod mux;
 mod network_manager;
-mod transmitter;
+mod transceiver;

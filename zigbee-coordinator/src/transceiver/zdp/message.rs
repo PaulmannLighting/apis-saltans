@@ -1,15 +1,9 @@
-use std::time::Duration;
-
 use tokio::sync::oneshot::Sender;
-use zcl::Cluster;
+use zdp::Command;
 use zigbee::{Address, Endpoint};
 use zigbee_hw::{Error, Event, Metadata};
 
-pub use self::payload::Payload;
-
-mod payload;
-
-/// Messages exchanged with the transmitter actor.
+/// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
 pub enum Message {
     /// A hardware-level event.
@@ -22,17 +16,17 @@ pub enum Message {
         endpoint: Endpoint,
         /// APS metadata for transmission.
         metadata: Metadata,
-        /// The payload.
-        payload: Box<Payload>,
+        /// ZDP command.
+        command: Box<Command>,
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
     /// Subscribe to the response multiplexer.
     Subscribe {
-        /// ZCL sequence number.
+        /// ZDP sequence number.
         seq: u8,
-        /// ZCL response channel.
-        response: Sender<Cluster>,
+        /// ZDP response channel.
+        response: Sender<Command>,
     },
 }
 

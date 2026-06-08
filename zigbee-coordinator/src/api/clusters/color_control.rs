@@ -4,7 +4,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::Error;
 
 use crate::Coordinator;
-use crate::transmitter::Handle;
+use crate::transceiver::Handle;
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {

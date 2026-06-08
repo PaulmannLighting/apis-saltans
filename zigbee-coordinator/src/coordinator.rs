@@ -3,13 +3,13 @@ use tokio::sync::mpsc::{Receiver, Sender, channel};
 use zigbee_hw::{Error, Event, NcpHandle, Start, bridge};
 
 use crate::mux::{Handle as MuxHandle, Mux};
-use crate::transmitter::Transmitter;
-use crate::{binding, discovery, mux, network_manager, transmitter};
+use crate::transceiver::Transmitter;
+use crate::{binding, discovery, mux, network_manager, transceiver};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
 pub struct Coordinator {
-    pub(crate) transmitter: Sender<transmitter::Message>,
+    pub(crate) transmitter: Sender<transceiver::Message>,
     pub(crate) network_manager: Sender<network_manager::Message>,
     pub(crate) binding_manager: Sender<binding::Message>,
     pub(crate) mux: Sender<mux::Message>,
@@ -54,11 +54,11 @@ impl Coordinator {
         mux_tx
     }
 
-    /// Start the transmitter
+    /// Start the transceiver
     async fn start_transmitter(
         ncp: NcpHandle,
         mux: &Sender<mux::Message>,
-    ) -> Result<Sender<transmitter::Message>, Error> {
+    ) -> Result<Sender<transceiver::Message>, Error> {
         let transmitter = Transmitter::new(ncp);
         let (transmitter_tx, transmitter_rx) = channel(100);
         let (events_tx, events_rx) = channel(100);
@@ -84,7 +84,7 @@ impl Coordinator {
     /// Start the binding manager.
     async fn start_binding_manager(
         mux: &Sender<mux::Message>,
-        transmitter: Sender<transmitter::Message>,
+        transmitter: Sender<transceiver::Message>,
         network_manager: Sender<network_manager::Message>,
     ) -> Result<Sender<binding::Message>, Error> {
         let binding_manager = binding::Actor::new(transmitter, network_manager);
@@ -99,7 +99,7 @@ impl Coordinator {
     /// Start the discovery manager.
     async fn start_discovery_manager(
         mux: &Sender<mux::Message>,
-        transmitter: Sender<transmitter::Message>,
+        transmitter: Sender<transceiver::Message>,
         binding_manager: Sender<binding::Message>,
     ) -> Result<(), Error> {
         let discovery_manager = discovery::Actor::new(transmitter, binding_manager);

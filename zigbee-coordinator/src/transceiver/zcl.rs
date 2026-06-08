@@ -1,4 +1,4 @@
-//! The transmitter represents the main external Zigbee transmitter API.
+//! Transceiver to send and receive ZCL messages.
 
 use std::collections::BTreeMap;
 
@@ -11,38 +11,36 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::{Command, Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
-pub use self::message::{Message, Payload};
+pub use self::message::Message;
 
 mod handle;
 mod message;
 
-/// Zigbee transmitter actor.
+/// Zigbee transceiver actor.
 #[derive(Debug)]
-pub struct Transmitter<T> {
+pub struct Transceiver<T> {
     ncp: T,
-    zcl_responses: BTreeMap<u8, Sender<Cluster>>,
-    zcl_seq: u8,
-    zdp_seq: u8,
+    responses: BTreeMap<u8, Sender<Cluster>>,
+    seq: u8,
 }
 
-impl<T> Transmitter<T> {
-    /// Crate a new transmitter.
+impl<T> Transceiver<T> {
+    /// Crate a new transceiver.
     #[must_use]
     pub const fn new(ncp: T) -> Self {
         Self {
             ncp,
-            zcl_responses: BTreeMap::new(),
-            zcl_seq: 0,
-            zdp_seq: 0,
+            responses: BTreeMap::new(),
+            seq: 0,
         }
     }
 }
 
-impl<T> Transmitter<T>
+impl<T> Transceiver<T>
 where
     T: Ncp,
 {
-    /// Run the transmitter.
+    /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
@@ -51,31 +49,32 @@ where
                     address,
                     endpoint,
                     metadata,
+                    manufacturer_code,
                     payload,
                     response,
                 } => {
-                    self.unicast(address, endpoint, metadata, *payload, response)
-                        .await;
+                    self.unicast(
+                        address,
+                        endpoint,
+                        metadata,
+                        manufacturer_code,
+                        *payload,
+                        response,
+                    )
+                    .await;
                 }
                 Message::Subscribe { seq, response } => {
-                    self.zcl_responses.insert(seq, response);
+                    self.responses.insert(seq, response);
                 }
             }
         }
     }
 
     /// Return and increment the ZCL sequence number.
-    const fn next_zcl_seq(&mut self) -> u8 {
-        let zcl_seq = self.zcl_seq;
-        self.zcl_seq = self.zcl_seq.wrapping_add(1);
-        zcl_seq
-    }
-
-    /// Return and increment the ZDP sequence number.
-    const fn next_zdp_seq(&mut self) -> u8 {
-        let zdp_seq = self.zdp_seq;
-        self.zdp_seq = self.zdp_seq.wrapping_add(1);
-        zdp_seq
+    const fn next_seq(&mut self) -> u8 {
+        let seq = self.seq;
+        self.seq = self.seq.wrapping_add(1);
+        seq
     }
 
     fn handle_event(&mut self, event: Event) {
@@ -86,7 +85,7 @@ where
                 if let Command::Zcl(frame) = payload {
                     let (header, payload) = frame.into_parts();
 
-                    if let Some(sender) = self.zcl_responses.remove(&header.seq()) {
+                    if let Some(sender) = self.responses.remove(&header.seq()) {
                         sender.send(payload).unwrap_or_else(|error| {
                             error!("Failed to send ZCL response: {error:?}");
                         });
@@ -103,10 +102,11 @@ where
         address: Address,
         endpoint: Endpoint,
         metadata: Metadata,
-        payload: Payload,
+        manufacturer_code: Option<u16>,
+        payload: Cluster,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
-        let aps_frame = self.make_aps_frame(metadata, payload);
+        let aps_frame = self.make_aps_frame(metadata, manufacturer_code, payload);
         let result = self.ncp.unicast(address, endpoint, aps_frame).await;
         response.send(result.map(drop)).unwrap_or_else(|error| {
             error!("Failed to send unicast response: {error:?}");
@@ -114,17 +114,16 @@ where
     }
 
     /// Create a new APS frame.
-    fn make_aps_frame(&mut self, metadata: Metadata, payload: Payload) -> zigbee_hw::Frame {
-        let payload = match payload {
-            Payload::Zcl {
-                manufacturer_code,
-                payload,
-            } => self
-                .make_zcl_frame(manufacturer_code, *payload)
-                .to_le_stream()
-                .collect(),
-            Payload::Zdp(command) => self.make_zdp_frame(*command).to_le_stream().collect(),
-        };
+    fn make_aps_frame(
+        &mut self,
+        metadata: Metadata,
+        manufacturer_code: Option<u16>,
+        payload: Cluster,
+    ) -> zigbee_hw::Frame {
+        let payload = self
+            .make_zcl_frame(manufacturer_code, payload)
+            .to_le_stream()
+            .collect();
 
         #[expect(unsafe_code)]
         // SAFETY: We trust the caller that the given metadata and payload match.
@@ -144,7 +143,7 @@ where
             payload.direction(),
             payload.disable_default_response(),
             manufacturer_code,
-            self.next_zcl_seq(),
+            self.next_seq(),
             payload.command_id(),
         );
 
@@ -154,10 +153,5 @@ where
         unsafe {
             zcl::Frame::new_unchecked(header, payload)
         }
-    }
-
-    /// Create a new ZDP frame.
-    const fn make_zdp_frame(&mut self, command: zdp::Command) -> zdp::Frame<zdp::Command> {
-        zdp::Frame::new(self.next_zdp_seq(), command)
     }
 }
