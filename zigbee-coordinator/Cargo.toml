@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 aps = { path = "../aps", version = "0.1" }
+const_env = "0.1"
 le-stream = { version = "8.0.0", features = ["derive"] }
 log = "0.4.30"
 macaddr = "1.0.1"

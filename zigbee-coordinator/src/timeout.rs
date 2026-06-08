@@ -2,9 +2,11 @@
 
 use std::time::Duration;
 
+use const_env::env_item;
 use tokio::time::error::Elapsed;
 
 /// Timeout for ZCL responses.
+#[env_item("ZIGBEE_COORDINATOR_ZCL_RESPONSE_TIMEOUT")]
 const ZCL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Extension trait to add a timeout while waiting for a future.
