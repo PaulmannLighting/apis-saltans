@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 use le_stream::ToLeStream;
 use log::{error, warn};
 use tokio::sync::mpsc::Receiver;
-use tokio::sync::oneshot::Sender;
+use tokio::sync::oneshot;
+use tokio::sync::oneshot::{Sender, channel};
 use zcl::{Cluster, CommandDispatch};
 use zigbee::{Address, Endpoint};
 use zigbee_hw::{Command, Event, Metadata, Ncp};
@@ -63,8 +64,23 @@ where
                     )
                     .await;
                 }
-                Message::Subscribe { seq, response } => {
-                    self.responses.insert(seq, response);
+                Message::Communicate {
+                    address,
+                    endpoint,
+                    metadata,
+                    manufacturer_code,
+                    payload,
+                    response,
+                } => {
+                    self.communicate(
+                        address,
+                        endpoint,
+                        metadata,
+                        manufacturer_code,
+                        *payload,
+                        response,
+                    )
+                    .await;
                 }
             }
         }
@@ -106,24 +122,44 @@ where
         payload: Cluster,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
-        let aps_frame = self.make_aps_frame(metadata, manufacturer_code, payload);
+        let zcl_frame = self.make_zcl_frame(manufacturer_code, payload);
+        let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
         let result = self.ncp.unicast(address, endpoint, aps_frame).await;
         response.send(result.map(drop)).unwrap_or_else(|error| {
             error!("Failed to send unicast response: {error:?}");
         });
     }
 
-    /// Create a new APS frame.
-    fn make_aps_frame(
+    /// Send a unicast message with back-channel communication.
+    async fn communicate(
         &mut self,
+        address: Address,
+        endpoint: Endpoint,
         metadata: Metadata,
         manufacturer_code: Option<u16>,
         payload: Cluster,
-    ) -> zigbee_hw::Frame {
-        let payload = self
-            .make_zcl_frame(manufacturer_code, payload)
-            .to_le_stream()
-            .collect();
+        response: Sender<Result<oneshot::Receiver<Cluster>, zigbee_hw::Error>>,
+    ) {
+        let zcl_frame = self.make_zcl_frame(manufacturer_code, payload);
+        let seq = zcl_frame.header().seq();
+        let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
+
+        match self.ncp.unicast(address, endpoint, aps_frame).await {
+            Ok(_) => {
+                let (tx, rx) = channel();
+                self.responses.insert(seq, tx);
+                response.send(Ok(rx))
+            }
+            Err(error) => response.send(Err(error)),
+        }
+        .unwrap_or_else(|error| {
+            error!("Failed to send unicast response: {error:?}");
+        });
+    }
+
+    /// Create a new APS frame.
+    fn make_aps_frame(metadata: Metadata, frame: zcl::Frame<Cluster>) -> zigbee_hw::Frame {
+        let payload = frame.to_le_stream().collect();
 
         #[expect(unsafe_code)]
         // SAFETY: We trust the caller that the given metadata and payload match.

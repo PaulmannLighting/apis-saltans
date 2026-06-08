@@ -1,4 +1,4 @@
-use tokio::sync::oneshot::Sender;
+use tokio::sync::oneshot::{Receiver, Sender};
 use zcl::Cluster;
 use zigbee::{Address, Endpoint};
 use zigbee_hw::{Error, Event, Metadata};
@@ -23,12 +23,20 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
-    /// Subscribe to the response multiplexer.
-    Subscribe {
-        /// ZCL sequence number.
-        seq: u8,
-        /// ZCL response channel.
-        response: Sender<Cluster>,
+    /// Communicate a unicast with an expected response.
+    Communicate {
+        /// The destination address.
+        address: Address,
+        /// The destination endpoint.
+        endpoint: Endpoint,
+        /// APS metadata for transmission.
+        metadata: Metadata,
+        /// An optional manufacturer code.
+        manufacturer_code: Option<u16>,
+        /// ZCL payload.
+        payload: Box<Cluster>,
+        /// The response channel.
+        response: Sender<Result<Receiver<Cluster>, Error>>,
     },
 }
 
