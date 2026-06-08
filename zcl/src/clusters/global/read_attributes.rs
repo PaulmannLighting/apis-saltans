@@ -45,6 +45,12 @@ impl Scoped for Command {
     const SCOPE: Scope = Scope::Global;
 }
 
+impl From<Command> for crate::Cluster {
+    fn from(command: Command) -> Self {
+        Self::Global(command.into())
+    }
+}
+
 /// Read Attributes Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Response {
