@@ -8,7 +8,7 @@ mod message;
 /// The device discovery actor.
 #[derive(Debug)]
 pub struct Actor {
-    transmitter: Sender<transceiver::Message>,
+    zcl_transceiver: Sender<transceiver::zcl::Message>,
     binding_manager: Sender<binding::Message>,
 }
 
@@ -16,11 +16,11 @@ impl Actor {
     /// Create a new discovery actor.
     #[must_use]
     pub const fn new(
-        transmitter: Sender<transceiver::Message>,
+        zcl_transceiver: Sender<transceiver::zcl::Message>,
         binding_manager: Sender<binding::Message>,
     ) -> Self {
         Self {
-            transmitter,
+            zcl_transceiver,
             binding_manager,
         }
     }

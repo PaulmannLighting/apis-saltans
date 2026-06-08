@@ -4,7 +4,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::Error;
 
 use crate::Coordinator;
-use crate::transceiver::Handle;
+use crate::transceiver::zcl::Handle;
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {
@@ -34,7 +34,7 @@ impl ColorControl for Coordinator {
         transition_time: u16,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmitter
+        self.zcl_transceiver
             .unicast_zcl_native(
                 address,
                 endpoint,

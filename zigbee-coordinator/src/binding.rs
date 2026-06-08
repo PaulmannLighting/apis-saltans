@@ -8,7 +8,7 @@ mod message;
 /// The binding management actor.
 #[derive(Debug)]
 pub struct Actor {
-    transmitter: Sender<transceiver::Message>,
+    zdp_transceiver: Sender<transceiver::zdp::Message>,
     network_manager: Sender<network_manager::Message>,
 }
 
@@ -16,11 +16,11 @@ impl Actor {
     /// Create a new binding management actor.
     #[must_use]
     pub const fn new(
-        transmitter: Sender<transceiver::Message>,
+        zdp_transceiver: Sender<transceiver::zdp::Message>,
         network_manager: Sender<network_manager::Message>,
     ) -> Self {
         Self {
-            transmitter,
+            zdp_transceiver,
             network_manager,
         }
     }

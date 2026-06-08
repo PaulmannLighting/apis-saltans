@@ -3,7 +3,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::Error;
 
 use crate::Coordinator;
-use crate::transceiver::Handle;
+use crate::transceiver::zcl::Handle;
 
 /// Trait for On/Off cluster operations.
 pub trait OnOff {
@@ -43,19 +43,19 @@ pub trait OnOff {
 
 impl OnOff for Coordinator {
     async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.transmitter
+        self.zcl_transceiver
             .unicast_zcl_native(address, endpoint, On)
             .await
     }
 
     async fn off(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.transmitter
+        self.zcl_transceiver
             .unicast_zcl_native(address, endpoint, Off)
             .await
     }
 
     async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.transmitter
+        self.zcl_transceiver
             .unicast_zcl_native(address, endpoint, Toggle)
             .await
     }
