@@ -1,7 +1,11 @@
 use tokio::sync::oneshot::{Receiver, Sender};
 use zcl::Cluster;
 use zigbee::{Address, Endpoint};
-use zigbee_hw::{Error, Event, Metadata};
+use zigbee_hw::{Error, Event};
+
+pub use self::payload::Payload;
+
+mod payload;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -14,12 +18,8 @@ pub enum Message {
         address: Address,
         /// The destination endpoint.
         endpoint: Endpoint,
-        /// APS metadata for transmission.
-        metadata: Metadata,
-        /// An optional manufacturer code.
-        manufacturer_code: Option<u16>,
-        /// ZCL payload.
-        payload: Box<Cluster>,
+        /// The payload
+        payload: Box<Payload>,
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
@@ -29,12 +29,8 @@ pub enum Message {
         address: Address,
         /// The destination endpoint.
         endpoint: Endpoint,
-        /// APS metadata for transmission.
-        metadata: Metadata,
-        /// An optional manufacturer code.
-        manufacturer_code: Option<u16>,
-        /// ZCL payload.
-        payload: Box<Cluster>,
+        /// The payload
+        payload: Box<Payload>,
         /// The response channel.
         response: Sender<Result<Receiver<Cluster>, Error>>,
     },

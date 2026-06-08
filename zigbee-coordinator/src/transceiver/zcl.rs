@@ -12,7 +12,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::{Command, Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
-pub use self::message::Message;
+pub use self::message::{Message, Payload};
 
 mod handle;
 mod message;
@@ -49,38 +49,19 @@ where
                 Message::Unicast {
                     address,
                     endpoint,
-                    metadata,
-                    manufacturer_code,
                     payload,
                     response,
                 } => {
-                    self.unicast(
-                        address,
-                        endpoint,
-                        metadata,
-                        manufacturer_code,
-                        *payload,
-                        response,
-                    )
-                    .await;
+                    self.unicast(address, endpoint, *payload, response).await;
                 }
                 Message::Communicate {
                     address,
                     endpoint,
-                    metadata,
-                    manufacturer_code,
                     payload,
                     response,
                 } => {
-                    self.communicate(
-                        address,
-                        endpoint,
-                        metadata,
-                        manufacturer_code,
-                        *payload,
-                        response,
-                    )
-                    .await;
+                    self.communicate(address, endpoint, *payload, response)
+                        .await;
                 }
             }
         }
@@ -117,12 +98,11 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        metadata: Metadata,
-        manufacturer_code: Option<u16>,
-        payload: Cluster,
+        payload: Payload,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
-        let zcl_frame = self.make_zcl_frame(manufacturer_code, payload);
+        let (metadata, manufacturer_code, command) = payload.into_parts();
+        let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
         let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
         let result = self.ncp.unicast(address, endpoint, aps_frame).await;
         response.send(result.map(drop)).unwrap_or_else(|error| {
@@ -135,12 +115,11 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        metadata: Metadata,
-        manufacturer_code: Option<u16>,
-        payload: Cluster,
+        payload: Payload,
         response: Sender<Result<oneshot::Receiver<Cluster>, zigbee_hw::Error>>,
     ) {
-        let zcl_frame = self.make_zcl_frame(manufacturer_code, payload);
+        let (metadata, manufacturer_code, command) = payload.into_parts();
+        let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
         let seq = zcl_frame.header().seq();
         let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
 
@@ -172,22 +151,22 @@ where
     fn make_zcl_frame(
         &mut self,
         manufacturer_code: Option<u16>,
-        payload: Cluster,
+        command: Cluster,
     ) -> zcl::Frame<Cluster> {
         let header = zcl::Header::new(
-            payload.scope(),
-            payload.direction(),
-            payload.disable_default_response(),
+            command.scope(),
+            command.direction(),
+            command.disable_default_response(),
             manufacturer_code,
             self.next_seq(),
-            payload.command_id(),
+            command.command_id(),
         );
 
         #[expect(unsafe_code)]
         // SAFETY: We created a valid header above.
         // We trust that the caller has passed in a valid `manufacturer_code`.
         unsafe {
-            zcl::Frame::new_unchecked(header, payload)
+            zcl::Frame::new_unchecked(header, command)
         }
     }
 }

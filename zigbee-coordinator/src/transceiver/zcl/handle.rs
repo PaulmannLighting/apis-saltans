@@ -3,7 +3,7 @@ use tokio::sync::oneshot::channel;
 use zigbee::{Address, Cluster, Endpoint};
 use zigbee_hw::{Error, Metadata};
 
-use super::Message;
+use super::{Message, Payload};
 
 /// Handle trait on the ZCL transceiver.
 pub trait Handle {
@@ -13,9 +13,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        metadata: Metadata,
-        manufacturer_code: Option<u16>,
-        payload: zcl::Cluster,
+        payload: Payload,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Send a unicast of a native ZCL command belonging to a static cluster.
@@ -31,9 +29,7 @@ pub trait Handle {
         self.unicast(
             address,
             endpoint,
-            Metadata::for_cluster::<T>(None, None),
-            None,
-            command.into(),
+            Payload::new_native(Metadata::for_cluster::<T>(None, None), command.into()),
         )
         .await
     }
@@ -44,16 +40,12 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        metadata: Metadata,
-        manufacturer_code: Option<u16>,
-        payload: zcl::Cluster,
+        payload: Payload,
     ) -> Result<(), Error> {
         let (response, result) = channel();
         self.send(Message::Unicast {
             address,
             endpoint,
-            metadata,
-            manufacturer_code,
             payload: payload.into(),
             response,
         })
