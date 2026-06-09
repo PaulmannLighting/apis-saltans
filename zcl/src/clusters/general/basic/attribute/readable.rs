@@ -1,5 +1,6 @@
 //! Readable attributes in the Basic cluster
 
+use either::{Either, Left, Right};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
@@ -81,55 +82,74 @@ impl From<writable::Attribute> for Attribute {
 }
 
 impl TryFrom<(u16, Type)> for Attribute {
-    type Error = u16;
+    type Error = Either<u16, Type>;
 
     #[expect(clippy::too_many_lines)]
     fn try_from((id, typ): (u16, Type)) -> Result<Self, Self::Error> {
         let Some(attribute_id) = AttributeId::from_u16(id) else {
-            return Err(id);
+            return Err(Left(id));
         };
 
         match attribute_id {
             AttributeId::ZclVersion => {
                 if let Type::Uint8(value) = typ {
-                    return Ok(Self::ZclVersion(value));
+                    Ok(Self::ZclVersion(value))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::ApplicationVersion => {
                 if let Type::Uint8(value) = typ {
-                    return Ok(Self::ApplicationVersion(value));
+                    Ok(Self::ApplicationVersion(value))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::StackVersion => {
                 if let Type::Uint8(value) = typ {
-                    return Ok(Self::StackVersion(value));
+                    Ok(Self::StackVersion(value))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::HwVersion => {
                 if let Type::Uint8(value) = typ {
-                    return Ok(Self::HwVersion(value));
+                    Ok(Self::HwVersion(value))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::ManufacturerName => {
-                if let Type::String(value) = typ
-                    && let Ok(string) = value.truncate()
-                {
-                    return Ok(Self::ManufacturerName(string));
+                if let Type::String(value) = typ {
+                    match value.truncate() {
+                        Ok(string) => Ok(Self::ManufacturerName(string)),
+                        Err(value) => Err(Right(Type::String(value))),
+                    }
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::ModelIdentifier => {
-                if let Type::String(value) = typ
-                    && let Ok(string) = value.truncate()
-                {
-                    return Ok(Self::ModelIdentifier(string));
+                if let Type::String(value) = typ {
+                    match value.truncate() {
+                        Ok(string) => Ok(Self::ModelIdentifier(string)),
+                        Err(value) => Err(Right(Type::String(value))),
+                    }
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::DateCode => {
-                if let Type::String(value) = typ
-                    && let Ok(string) = value.try_as_str()
-                    && let Ok(date_code) = string.parse()
-                {
-                    return Ok(Self::DateCode(date_code));
+                if let Type::String(value) = typ {
+                    if let Ok(string) = value.try_as_str()
+                        && let Ok(date_code) = string.parse()
+                    {
+                        Ok(Self::DateCode(date_code))
+                    } else {
+                        Err(Right(Type::String(value)))
+                    }
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::PowerSource => {
@@ -137,7 +157,9 @@ impl TryFrom<(u16, Type)> for Attribute {
                     && let Ok(value) = value.try_into()
                     && let Some(power_source) = PowerSource::from_u8(value)
                 {
-                    return Ok(Self::PowerSource(power_source));
+                    Ok(Self::PowerSource(power_source))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::GenericDeviceClass => {
@@ -145,7 +167,9 @@ impl TryFrom<(u16, Type)> for Attribute {
                     && let Ok(value) = value.try_into()
                     && let Some(generic_device_class) = GenericDeviceClass::from_u8(value)
                 {
-                    return Ok(Self::GenericDeviceClass(generic_device_class));
+                    Ok(Self::GenericDeviceClass(generic_device_class))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::GenericDeviceType => {
@@ -153,41 +177,57 @@ impl TryFrom<(u16, Type)> for Attribute {
                     && let Ok(value) = value.try_into()
                     && let Some(generic_device_type) = GenericDeviceType::from_u8(value)
                 {
-                    return Ok(Self::GenericDeviceType(generic_device_type));
+                    Ok(Self::GenericDeviceType(generic_device_type))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::ProductCode => {
-                if let Type::OctetString(value) = typ
-                    && let Ok(value) = value.truncate()
-                {
-                    return Ok(Self::ProductCode(value));
+                if let Type::OctetString(value) = typ {
+                    match value.truncate() {
+                        Ok(value) => Ok(Self::ProductCode(value)),
+                        Err(value) => Err(Right(Type::OctetString(value))),
+                    }
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::ProductUrl => {
                 if let Type::String(value) = typ {
-                    return Ok(Self::ProductUrl(value));
+                    Ok(Self::ProductUrl(value))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::ManufacturerVersionDetails => {
                 if let Type::String(value) = typ {
-                    return Ok(Self::ManufacturerVersionDetails(value));
+                    Ok(Self::ManufacturerVersionDetails(value))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::SerialNumber => {
                 if let Type::String(value) = typ {
-                    return Ok(Self::SerialNumber(value));
+                    Ok(Self::SerialNumber(value))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::ProductLabel => {
                 if let Type::String(value) = typ {
-                    return Ok(Self::ProductLabel(value));
+                    Ok(Self::ProductLabel(value))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::LocationDescription => {
-                if let Type::String(value) = typ
-                    && let Ok(value) = value.truncate()
-                {
-                    return Ok(Self::LocationDescription(value));
+                if let Type::String(value) = typ {
+                    match value.truncate() {
+                        Ok(string) => Ok(Self::LocationDescription(string)),
+                        Err(value) => Err(Right(Type::String(value))),
+                    }
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::PhysicalEnvironment => {
@@ -195,7 +235,9 @@ impl TryFrom<(u16, Type)> for Attribute {
                     && let Ok(value) = value.try_into()
                     && let Some(physical_environment) = PhysicalEnvironment::from_u8(value)
                 {
-                    return Ok(Self::PhysicalEnvironment(physical_environment));
+                    Ok(Self::PhysicalEnvironment(physical_environment))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::DeviceEnabled => {
@@ -203,35 +245,42 @@ impl TryFrom<(u16, Type)> for Attribute {
                     && let Ok(value) = value.try_into()
                     && let Some(device_enabled) = DeviceEnabled::from_u8(value)
                 {
-                    return Ok(Self::DeviceEnabled(device_enabled));
+                    Ok(Self::DeviceEnabled(device_enabled))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::AlarmMask => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                 {
-                    return Ok(Self::AlarmMask(AlarmMask::from_bits_retain(value)));
+                    Ok(Self::AlarmMask(AlarmMask::from_bits_retain(value)))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::DisableLocalConfig => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                 {
-                    return Ok(Self::DisableLocalConfig(
+                    Ok(Self::DisableLocalConfig(
                         DisableLocalConfig::from_bits_retain(value),
-                    ));
+                    ))
+                } else {
+                    Err(Right(typ))
                 }
             }
             AttributeId::SwBuildId => {
-                if let Type::String(value) = typ
-                    && let Ok(value) = value.truncate()
-                {
-                    return Ok(Self::SwBuildId(value));
+                if let Type::String(value) = typ {
+                    match value.truncate() {
+                        Ok(string) => Ok(Self::SwBuildId(string)),
+                        Err(value) => Err(Right(Type::String(value))),
+                    }
+                } else {
+                    Err(Right(typ))
                 }
             }
         }
-
-        Err(id)
     }
 }
 
