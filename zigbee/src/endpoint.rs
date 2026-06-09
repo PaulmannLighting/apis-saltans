@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use le_stream::FromLeStream;
+
 pub use self::application::Application;
 pub use self::reserved::Reserved;
 
@@ -69,5 +71,14 @@ impl From<Endpoint> for u8 {
             Endpoint::Reserved(reserved) => reserved.into(),
             Endpoint::Broadcast => 255,
         }
+    }
+}
+
+impl FromLeStream for Endpoint {
+    fn from_le_stream<T>(bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        u8::from_le_stream(bytes).map(Into::into)
     }
 }
