@@ -5,6 +5,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{OctStr, String, Type, Uint8};
+use zigbee::{ClusterId, ClusterSpecific};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;
@@ -15,6 +16,7 @@ use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
 use super::writable;
+use crate::ReadableAttribute;
 
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -373,4 +375,18 @@ pub enum Id {
     DisableLocalConfig = 0x0014,
     /// The cluster revision.
     SwBuildId = 0x4000,
+}
+
+impl ClusterSpecific for Id {
+    const CLUSTER: ClusterId = ClusterId::Basic;
+}
+
+impl From<Id> for u16 {
+    fn from(id: Id) -> Self {
+        id as Self
+    }
+}
+
+impl ReadableAttribute for Id {
+    type Attribute = Attribute;
 }
