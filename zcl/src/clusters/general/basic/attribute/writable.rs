@@ -40,14 +40,12 @@ impl TryFrom<readable::Attribute> for Attribute {
             readable::Attribute::LocationDescription(string) => {
                 Ok(Self::LocationDescription(string))
             }
-            readable::Attribute::PhysicalEnvironment(parsable) => parsable.parse().map_or_else(
-                |_| Err(readable::Attribute::PhysicalEnvironment(parsable)),
-                |physical_environment| Ok(Self::PhysicalEnvironment(physical_environment)),
-            ),
-            readable::Attribute::DeviceEnabled(parsable) => parsable.parse().map_or_else(
-                |_| Err(readable::Attribute::DeviceEnabled(parsable)),
-                |device_enabled| Ok(Self::DeviceEnabled(device_enabled)),
-            ),
+            readable::Attribute::PhysicalEnvironment(physical_environment) => {
+                Ok(Self::PhysicalEnvironment(physical_environment))
+            }
+            readable::Attribute::DeviceEnabled(device_enabled) => {
+                Ok(Self::DeviceEnabled(device_enabled))
+            }
             readable::Attribute::AlarmMask(mask) => Ok(Self::AlarmMask(mask)),
             readable::Attribute::DisableLocalConfig(value) => Ok(Self::DisableLocalConfig(value)),
             other => Err(other),

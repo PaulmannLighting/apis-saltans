@@ -1,9 +1,10 @@
 //! Readable attributes in the Basic cluster
 
-use le_stream::FromLeStreamTagged;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
-use zigbee::types::{OctStr, String, Uint8};
-use zigbee::{ClusterId, ClusterSpecific, Parsable};
+use zigbee::types::{OctStr, String, Type, Uint8};
+use zigbee::{ClusterId, ClusterSpecific};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;
@@ -19,7 +20,7 @@ use crate::ReadableAttribute;
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
-#[derive(ReprDiscriminant, FromLeStreamTagged)]
+#[derive(ReprDiscriminant)]
 pub enum Attribute {
     /// The ZCL version.
     ZclVersion(Uint8) = 0x0000,
@@ -34,13 +35,13 @@ pub enum Attribute {
     /// The model identifier.
     ModelIdentifier(String<32>) = 0x0005,
     /// The date code.
-    DateCode(Parsable<String<16>, DateCode>) = 0x0006,
+    DateCode(DateCode) = 0x0006,
     /// The power source.
-    PowerSource(Parsable<u8, PowerSource>) = 0x0007,
+    PowerSource(PowerSource) = 0x0007,
     /// The generic device class.
-    GenericDeviceClass(Parsable<u8, GenericDeviceClass>) = 0x0008,
+    GenericDeviceClass(GenericDeviceClass) = 0x0008,
     /// The generic device type.
-    GenericDeviceType(Parsable<u8, GenericDeviceType>) = 0x0009,
+    GenericDeviceType(GenericDeviceType) = 0x0009,
     /// The product code.
     ProductCode(OctStr) = 0x000a,
     /// The product URL.
@@ -54,9 +55,9 @@ pub enum Attribute {
     /// The generic device class.
     LocationDescription(String<16>) = 0x0010,
     /// The physical environment.
-    PhysicalEnvironment(Parsable<u8, PhysicalEnvironment>) = 0x0011,
+    PhysicalEnvironment(PhysicalEnvironment) = 0x0011,
     /// The device enabled state.
-    DeviceEnabled(Parsable<u8, DeviceEnabled>) = 0x0012,
+    DeviceEnabled(DeviceEnabled) = 0x0012,
     /// The alarm mask.
     AlarmMask(AlarmMask) = 0x0013,
     /// The disable local configuration attribute.
@@ -70,17 +71,172 @@ impl From<writable::Attribute> for Attribute {
         match value {
             writable::Attribute::LocationDescription(string) => Self::LocationDescription(string),
             writable::Attribute::PhysicalEnvironment(environment) => {
-                Self::PhysicalEnvironment(environment.into())
+                Self::PhysicalEnvironment(environment)
             }
-            writable::Attribute::DeviceEnabled(enabled) => Self::DeviceEnabled(enabled.into()),
+            writable::Attribute::DeviceEnabled(enabled) => Self::DeviceEnabled(enabled),
             writable::Attribute::AlarmMask(mask) => Self::AlarmMask(mask),
             writable::Attribute::DisableLocalConfig(value) => Self::DisableLocalConfig(value),
         }
     }
 }
 
+impl TryFrom<(u16, Type)> for Attribute {
+    type Error = u16;
+
+    #[expect(clippy::too_many_lines)]
+    fn try_from((id, typ): (u16, Type)) -> Result<Self, Self::Error> {
+        let Some(attribute_id) = AttributeId::from_u16(id) else {
+            return Err(id);
+        };
+
+        match attribute_id {
+            AttributeId::ZclVersion => {
+                if let Type::Uint8(value) = typ {
+                    return Ok(Self::ZclVersion(value));
+                }
+            }
+            AttributeId::ApplicationVersion => {
+                if let Type::Uint8(value) = typ {
+                    return Ok(Self::ApplicationVersion(value));
+                }
+            }
+            AttributeId::StackVersion => {
+                if let Type::Uint8(value) = typ {
+                    return Ok(Self::StackVersion(value));
+                }
+            }
+            AttributeId::HwVersion => {
+                if let Type::Uint8(value) = typ {
+                    return Ok(Self::HwVersion(value));
+                }
+            }
+            AttributeId::ManufacturerName => {
+                if let Type::String(value) = typ
+                    && let Ok(string) = value.truncate()
+                {
+                    return Ok(Self::ManufacturerName(string));
+                }
+            }
+            AttributeId::ModelIdentifier => {
+                if let Type::String(value) = typ
+                    && let Ok(string) = value.truncate()
+                {
+                    return Ok(Self::ModelIdentifier(string));
+                }
+            }
+            AttributeId::DateCode => {
+                if let Type::String(value) = typ
+                    && let Ok(string) = value.try_as_str()
+                    && let Ok(date_code) = string.parse()
+                {
+                    return Ok(Self::DateCode(date_code));
+                }
+            }
+            AttributeId::PowerSource => {
+                if let Type::Uint8(value) = typ
+                    && let Ok(value) = value.try_into()
+                    && let Some(power_source) = PowerSource::from_u8(value)
+                {
+                    return Ok(Self::PowerSource(power_source));
+                }
+            }
+            AttributeId::GenericDeviceClass => {
+                if let Type::Uint8(value) = typ
+                    && let Ok(value) = value.try_into()
+                    && let Some(generic_device_class) = GenericDeviceClass::from_u8(value)
+                {
+                    return Ok(Self::GenericDeviceClass(generic_device_class));
+                }
+            }
+            AttributeId::GenericDeviceType => {
+                if let Type::Uint8(value) = typ
+                    && let Ok(value) = value.try_into()
+                    && let Some(generic_device_type) = GenericDeviceType::from_u8(value)
+                {
+                    return Ok(Self::GenericDeviceType(generic_device_type));
+                }
+            }
+            AttributeId::ProductCode => {
+                if let Type::OctetString(value) = typ
+                    && let Ok(value) = value.truncate()
+                {
+                    return Ok(Self::ProductCode(value));
+                }
+            }
+            AttributeId::ProductUrl => {
+                if let Type::String(value) = typ {
+                    return Ok(Self::ProductUrl(value));
+                }
+            }
+            AttributeId::ManufacturerVersionDetails => {
+                if let Type::String(value) = typ {
+                    return Ok(Self::ManufacturerVersionDetails(value));
+                }
+            }
+            AttributeId::SerialNumber => {
+                if let Type::String(value) = typ {
+                    return Ok(Self::SerialNumber(value));
+                }
+            }
+            AttributeId::ProductLabel => {
+                if let Type::String(value) = typ {
+                    return Ok(Self::ProductLabel(value));
+                }
+            }
+            AttributeId::LocationDescription => {
+                if let Type::String(value) = typ
+                    && let Ok(value) = value.truncate()
+                {
+                    return Ok(Self::LocationDescription(value));
+                }
+            }
+            AttributeId::PhysicalEnvironment => {
+                if let Type::Uint8(value) = typ
+                    && let Ok(value) = value.try_into()
+                    && let Some(physical_environment) = PhysicalEnvironment::from_u8(value)
+                {
+                    return Ok(Self::PhysicalEnvironment(physical_environment));
+                }
+            }
+            AttributeId::DeviceEnabled => {
+                if let Type::Uint8(value) = typ
+                    && let Ok(value) = value.try_into()
+                    && let Some(device_enabled) = DeviceEnabled::from_u8(value)
+                {
+                    return Ok(Self::DeviceEnabled(device_enabled));
+                }
+            }
+            AttributeId::AlarmMask => {
+                if let Type::Uint8(value) = typ
+                    && let Ok(value) = value.try_into()
+                {
+                    return Ok(Self::AlarmMask(AlarmMask::from_bits_retain(value)));
+                }
+            }
+            AttributeId::DisableLocalConfig => {
+                if let Type::Uint8(value) = typ
+                    && let Ok(value) = value.try_into()
+                {
+                    return Ok(Self::DisableLocalConfig(
+                        DisableLocalConfig::from_bits_retain(value),
+                    ));
+                }
+            }
+            AttributeId::SwBuildId => {
+                if let Type::String(value) = typ
+                    && let Ok(value) = value.truncate()
+                {
+                    return Ok(Self::SwBuildId(value));
+                }
+            }
+        }
+
+        Err(id)
+    }
+}
+
 /// Readable attributes in the Basic cluster.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u16)]
 pub enum AttributeId {
     /// The ZCL version.
