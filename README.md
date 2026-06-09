@@ -16,10 +16,11 @@ This library is a work in progress and is not yet ready for production use.
 This workspace contains multiple crates pertaining to the Zigbee protocol stack:
 
 - [`aps`](./aps): The Zigbee APS layer implementation.
-- [`zigbee-nwk`](./nwk): A Zigbee coordinator API using the actor model.
 - [`zcl`](./zcl): The Zigbee Cluster Library implementation.
 - [`zdp`](./zdp): The Zigbee Device Profile implementation.
 - [`zigbee`](./zigbee): The Zigbee core protocol stack implementation.
+- [`zigbee-coordinator`](./zigbee-coordinator): A Zigbee coordinator API using the actor model.
+- [`zigbee-hw`](./zigbee-hw): A Zigbee hardware abstraction layer.
 
 ## Legal
 
