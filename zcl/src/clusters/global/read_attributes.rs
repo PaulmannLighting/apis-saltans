@@ -63,6 +63,14 @@ impl Response {
     pub const fn new(attribute_values: BTreeMap<u16, Type>) -> Self {
         Self { attribute_values }
     }
+
+    /// Returns an iterator over the parsed attribute values in the response.
+    pub fn parse<T>(self) -> impl Iterator<Item = Result<T, T::Error>>
+    where
+        T: TryFrom<(u16, Type)>,
+    {
+        self.attribute_values.into_iter().map(T::try_from)
+    }
 }
 
 impl crate::Command for Response {
