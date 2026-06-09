@@ -14,6 +14,20 @@ pub struct ActiveEpRsp {
 }
 
 impl ActiveEpRsp {
+    /// Creates a new Active Endpoint Response.
+    #[must_use]
+    pub fn new(
+        status: Status,
+        nwk_addr_of_interest: u16,
+        active_eps: Prefixed<u8, Box<[Endpoint]>>,
+    ) -> Self {
+        Self {
+            status: status.into(),
+            nwk_addr_of_interest,
+            active_eps,
+        }
+    }
+
     /// Attempt to create a new Active Endpoint Response.
     ///
     /// # Errors
@@ -26,11 +40,7 @@ impl ActiveEpRsp {
     ) -> Result<Self, Box<[Endpoint]>> {
         Box::<[Endpoint]>::from(active_eps)
             .try_into()
-            .map(|active_eps| Self {
-                status: status.into(),
-                nwk_addr_of_interest,
-                active_eps,
-            })
+            .map(|active_eps| Self::new(status, nwk_addr_of_interest, active_eps))
     }
 
     /// Return the status of the response.
