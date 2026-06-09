@@ -4,4 +4,7 @@ pub mod readable;
 pub trait ReadableAttribute {
     /// The type of attribute, usually an enum, which is returned from the readable.
     type Attribute;
+
+    /// The manufacturer code of the attribute, if any.
+    const MANUFACTURER_CODE: Option<u16> = None;
 }
