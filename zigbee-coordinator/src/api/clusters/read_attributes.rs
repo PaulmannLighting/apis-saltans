@@ -1,4 +1,5 @@
 use zcl::global::read_attributes::{Command, Response};
+use zcl::{ParseResult, ReadableAttribute};
 use zigbee::{Address, Endpoint};
 use zigbee_hw::Metadata;
 
@@ -12,13 +13,13 @@ pub trait ReadAttributes {
     /// # Errors
     ///
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes(
+    fn read_attributes_raw(
         &self,
         address: Address,
         endpoint: Endpoint,
         cluster: u16,
         manufacturer_code: Option<u16>,
-        ids: &[u16],
+        ids: Box<[u16]>,
     ) -> impl Future<Output = Result<Response, Error>>;
 
     /// Read native attributes from a device.
@@ -26,41 +27,37 @@ pub trait ReadAttributes {
     /// # Errors
     ///
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes_native(
+    fn read_attributes<T>(
         &self,
         address: Address,
         endpoint: Endpoint,
-        cluster: u16,
-        ids: &[u16],
-    ) -> impl Future<Output = Result<Response, Error>> {
-        self.read_attributes(address, endpoint, cluster, None, ids)
-    }
-
-    /// Read attributes from a device for a specific manufacturer code.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes_manufacturer(
-        &self,
-        address: Address,
-        endpoint: Endpoint,
-        cluster: u16,
-        manufacturer_code: u16,
-        ids: &[u16],
-    ) -> impl Future<Output = Result<Response, Error>> {
-        self.read_attributes(address, endpoint, cluster, Some(manufacturer_code), ids)
+        attributes: &[T],
+    ) -> impl Future<Output = Result<Box<[ParseResult<T>]>, Error>>
+    where
+        T: ReadableAttribute,
+    {
+        async move {
+            self.read_attributes_raw(
+                address,
+                endpoint,
+                T::ID,
+                T::MANUFACTURER_CODE,
+                attributes.iter().copied().map(Into::into).collect(),
+            )
+            .await
+            .map(|response| response.parse::<T>().collect())
+        }
     }
 }
 
 impl ReadAttributes for Coordinator {
-    async fn read_attributes(
+    async fn read_attributes_raw(
         &self,
         address: Address,
         endpoint: Endpoint,
         cluster: u16,
         manufacturer_code: Option<u16>,
-        ids: &[u16],
+        ids: Box<[u16]>,
     ) -> Result<Response, Error> {
         self.zcl_transceiver
             .communicate(
@@ -69,7 +66,7 @@ impl ReadAttributes for Coordinator {
                 Payload::new(
                     Metadata::new(cluster, None, None),
                     manufacturer_code,
-                    Command::new(ids.into()).into(),
+                    Command::new(ids).into(),
                 ),
             )
             .await
