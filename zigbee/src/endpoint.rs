@@ -46,7 +46,7 @@ impl From<u8> for Endpoint {
             0 => Self::Data,
             Application::MIN..=Application::MAX => Self::Application(
                 #[expect(unsafe_code)]
-                // SAFETY: We just checked, that the alue is within `1..=240`.
+                // SAFETY: We just checked that the alue is within `1..=240`.
                 unsafe {
                     Application::new_unchecked(value)
                 },
