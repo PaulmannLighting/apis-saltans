@@ -7,20 +7,15 @@ use core::iter::Empty;
 use core::ops::Deref;
 
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Direction;
 use zigbee::types::Type;
-use zigbee::{Cluster, Direction};
 
 pub use self::read_attributes_status::ReadAttributesStatus;
+use crate::attributes::ParseResult;
 use crate::command::Scoped;
 use crate::{ReadableAttribute, Scope};
 
 mod read_attributes_status;
-
-/// The result of parsing an attribute value.
-pub type ParseResult<T> = Result<
-    <T as ReadableAttribute>::Attribute,
-    <<T as ReadableAttribute>::Attribute as TryFrom<(u16, Type)>>::Error,
->;
 
 /// Read Attributes Command.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -74,7 +69,6 @@ impl Response {
     pub fn parse<T>(self) -> impl Iterator<Item = ParseResult<T>>
     where
         T: ReadableAttribute,
-        T::Attribute: TryFrom<(u16, Type)>,
     {
         self.attribute_values
             .into_iter()
