@@ -20,7 +20,7 @@ pub trait ReadAttributes {
         cluster: u16,
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
-    ) -> impl Future<Output = Result<Response, Error>>;
+    ) -> impl Future<Output = Result<Response, Error>> + Send;
 
     /// Read native attributes from a device.
     ///
@@ -32,20 +32,17 @@ pub trait ReadAttributes {
         address: Address,
         endpoint: Endpoint,
         attributes: &[T],
-    ) -> impl Future<Output = Result<Box<[ParseResult<T>]>, Error>>
+    ) -> impl Future<Output = Result<Box<[ParseResult<T>]>, Error>> + Send
     where
+        Self: Sync,
         T: ReadableAttribute,
     {
+        let attributes = attributes.iter().copied().map(Into::into).collect();
+
         async move {
-            self.read_attributes_raw(
-                address,
-                endpoint,
-                T::ID,
-                T::MANUFACTURER_CODE,
-                attributes.iter().copied().map(Into::into).collect(),
-            )
-            .await
-            .map(|response| response.parse::<T>().collect())
+            self.read_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, attributes)
+                .await
+                .map(|response| response.parse::<T>().collect())
         }
     }
 }
