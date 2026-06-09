@@ -27,6 +27,19 @@ impl<const CAPACITY: usize> OctStr<CAPACITY> {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    /// Attempt to truncate the string to a new size.
+    ///
+    /// # Errors
+    ///
+    /// Returns the original string if the new capacity is smaller than the current size.
+    pub fn truncate<const NEW_CAPACITY: usize>(mut self) -> Result<OctStr<NEW_CAPACITY>, Self> {
+        if self.len() <= NEW_CAPACITY {
+            Ok(OctStr(self.0.drain(..NEW_CAPACITY).collect()))
+        } else {
+            Err(self)
+        }
+    }
 }
 
 impl<const CAPACITY: usize> AsRef<[u8]> for OctStr<CAPACITY> {

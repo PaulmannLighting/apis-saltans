@@ -33,6 +33,15 @@ impl<const CAPACITY: usize> String<CAPACITY> {
     pub fn try_as_str(&self) -> Result<&str, Utf8Error> {
         str::from_utf8(self.0.as_ref())
     }
+
+    /// Attempt to truncate the string to a new size.
+    ///
+    /// # Errors
+    ///
+    /// Returns the original string if the new capacity is smaller than the current size.
+    pub fn truncate<const NEW_CAPACITY: usize>(self) -> Result<String<NEW_CAPACITY>, Self> {
+        self.0.truncate().map_err(Self).map(String::<NEW_CAPACITY>)
+    }
 }
 
 impl<const CAPACITY: usize> AsRef<[u8]> for String<CAPACITY> {
