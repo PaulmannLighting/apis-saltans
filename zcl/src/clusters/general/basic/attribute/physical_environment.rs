@@ -1,6 +1,7 @@
 use le_stream::ToLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use zigbee::types::Uint8;
 
 /// The physical environment attribute.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -230,6 +231,12 @@ pub enum PhysicalEnvironment {
 impl From<PhysicalEnvironment> for u8 {
     fn from(value: PhysicalEnvironment) -> Self {
         value as Self
+    }
+}
+
+impl From<PhysicalEnvironment> for Uint8 {
+    fn from(value: PhysicalEnvironment) -> Self {
+        Uint8::new(value as u8)
     }
 }
 

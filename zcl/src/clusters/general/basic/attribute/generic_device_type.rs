@@ -1,6 +1,7 @@
 use le_stream::ToLeStream;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
+use zigbee::types::Uint8;
 
 /// The generic type of device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -60,6 +61,12 @@ pub enum GenericDeviceType {
 impl From<GenericDeviceType> for u8 {
     fn from(value: GenericDeviceType) -> Self {
         value as Self
+    }
+}
+
+impl From<GenericDeviceType> for Uint8 {
+    fn from(value: GenericDeviceType) -> Self {
+        Uint8::new(value as u8)
     }
 }
 
