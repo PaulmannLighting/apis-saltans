@@ -81,3 +81,12 @@ impl Display for ActiveEpRsp {
         )
     }
 }
+
+impl IntoIterator for ActiveEpRsp {
+    type Item = <Prefixed<u8, Box<[Endpoint]>> as IntoIterator>::Item;
+    type IntoIter = <Prefixed<u8, Box<[Endpoint]>> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.active_eps.into_iter()
+    }
+}
