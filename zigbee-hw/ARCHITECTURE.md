@@ -154,22 +154,22 @@ classDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Caller
-    participant Handle as NcpHandle
-    participant Actor as Driver actor
-    participant Driver as NcpDriver
+    participant C as Caller;
+    participant H as NcpHandle;
+    participant A as Driver actor;
+    participant D as NcpDriver;
 
-    Caller->>Handle: scan networks request
-    Handle->>Actor: scan networks command
-    Actor->>Driver: call scan networks
-    Driver-->>Actor: scan result
-    Actor-->>Caller: oneshot response
+    C->>H: scan networks request;
+    H->>A: scan networks command;
+    A->>D: call scan networks;
+    D-->>A: scan result;
+    A-->>C: oneshot response;
 
-    Caller->>Handle: unicast request
-    Handle->>Actor: unicast command
-    Actor->>Driver: call unicast
-    Driver-->>Actor: transmit result
-    Actor-->>Caller: oneshot response
+    C->>H: unicast request;
+    H->>A: unicast command;
+    A->>D: call unicast;
+    D-->>A: transmit result;
+    A-->>C: oneshot response;
 ```
 
 ## Module Inventory
