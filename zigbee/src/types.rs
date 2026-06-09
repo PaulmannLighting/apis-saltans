@@ -101,6 +101,10 @@ pub enum Type {
     Int56(Int56) = 0x2e,
     /// 64-bit signed integer.
     Int64(Int64) = 0x2f,
+    ///8-bit enumerated type.
+    Enum8(Uint8) = 0x30,
+    /// 16-bit enumerated type.
+    Enum16(Uint16) = 0x31,
     /// Octet string.
     OctetString(OctStr) = 0x41,
     /// String type.
@@ -162,6 +166,8 @@ impl FromLeStreamTagged for Type {
             0x2d => Ok(Int48::from_le_stream(bytes).map(Self::Int48)),
             0x2e => Ok(Int56::from_le_stream(bytes).map(Self::Int56)),
             0x2f => Ok(Int64::from_le_stream(bytes).map(Self::Int64)),
+            0x30 => Ok(Uint8::from_le_stream(bytes).map(Self::Enum8)),
+            0x31 => Ok(Uint16::from_le_stream(bytes).map(Self::Enum16)),
             0x41 => Ok(OctStr::from_le_stream(bytes).map(Self::OctetString)),
             0x42 => Ok(String::from_le_stream(bytes).map(Self::String)),
             0xe0 => Ok(TimeOfDay::from_le_stream(bytes).map(Self::TimeOfDay)),
@@ -217,6 +223,8 @@ impl ToLeStream for Type {
             Self::Int48(value) => bytes.extend(value.to_le_stream()),
             Self::Int56(value) => bytes.extend(value.to_le_stream()),
             Self::Int64(value) => bytes.extend(value.to_le_stream()),
+            Self::Enum8(value) => bytes.extend(value.to_le_stream()),
+            Self::Enum16(value) => bytes.extend(value.to_le_stream()),
             Self::OctetString(value) => bytes.extend(value.to_le_stream()),
             Self::String(value) => bytes.extend(value.to_le_stream()),
             Self::TimeOfDay(value) => bytes.extend(value.to_le_stream()),
