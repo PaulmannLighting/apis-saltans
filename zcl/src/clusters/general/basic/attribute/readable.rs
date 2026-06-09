@@ -62,7 +62,7 @@ pub enum Attribute {
     DeviceEnabled(DeviceEnabled) = 0x0012,
     /// The alarm mask.
     AlarmMask(AlarmMask) = 0x0013,
-    /// The disable local configuration attribute.
+    /// Flags to disable local configuration.
     DisableLocalConfig(DisableLocalConfig) = 0x0014,
     /// The cluster revision.
     SwBuildId(String<16>) = 0x4000,
