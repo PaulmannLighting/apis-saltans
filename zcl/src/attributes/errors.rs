@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use core::error::Error;
 use core::fmt::{Debug, Display};
 
@@ -5,12 +6,13 @@ use zigbee::types::Type;
 
 /// An error that occurs when parsing an attribute fails.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]
 pub enum ParseAttributeError<T> {
     /// The attribute ID is invalid.
     InvalidId(u16),
 
     /// The attribute type is invalid for this ID.
-    InvalidType(InvalidType<T>),
+    InvalidType(Box<InvalidType<T>>),
 }
 
 impl<T> Display for ParseAttributeError<T>
@@ -39,7 +41,7 @@ where
 
 impl<T> From<InvalidType<T>> for ParseAttributeError<T> {
     fn from(error: InvalidType<T>) -> Self {
-        Self::InvalidType(error)
+        Self::InvalidType(error.into())
     }
 }
 
