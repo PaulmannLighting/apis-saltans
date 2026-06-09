@@ -1,6 +1,7 @@
 //! Readable attributes in the Basic cluster
 
 use either::{Either, Left, Right};
+use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{OctStr, String, Type, Uint8};
@@ -128,36 +129,40 @@ impl TryFrom<(u16, Type)> for Attribute {
 
     #[expect(clippy::too_many_lines)]
     fn try_from((id, typ): (u16, Type)) -> Result<Self, Self::Error> {
+        let Some(id) = Id::from_u16(id) else {
+            return Err(Left(id));
+        };
+
         match id {
-            0x0000 => {
+            Id::ZclVersion => {
                 if let Type::Uint8(value) = typ {
                     Ok(Self::ZclVersion(value))
                 } else {
                     Err(Right(typ))
                 }
             }
-            0x0001 => {
+            Id::ApplicationVersion => {
                 if let Type::Uint8(value) = typ {
                     Ok(Self::ApplicationVersion(value))
                 } else {
                     Err(Right(typ))
                 }
             }
-            0x0002 => {
+            Id::StackVersion => {
                 if let Type::Uint8(value) = typ {
                     Ok(Self::StackVersion(value))
                 } else {
                     Err(Right(typ))
                 }
             }
-            0x0003 => {
+            Id::HwVersion => {
                 if let Type::Uint8(value) = typ {
                     Ok(Self::HwVersion(value))
                 } else {
                     Err(Right(typ))
                 }
             }
-            0x0004 => {
+            Id::ManufacturerName => {
                 if let Type::String(value) = typ {
                     match value.truncate() {
                         Ok(string) => Ok(Self::ManufacturerName(string)),
@@ -167,7 +172,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0005 => {
+            Id::ModelIdentifier => {
                 if let Type::String(value) = typ {
                     match value.truncate() {
                         Ok(string) => Ok(Self::ModelIdentifier(string)),
@@ -177,7 +182,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0006 => {
+            Id::DateCode => {
                 if let Type::String(value) = typ {
                     if let Ok(string) = value.try_as_str()
                         && let Ok(date_code) = string.parse()
@@ -190,7 +195,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0007 => {
+            Id::PowerSource => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                     && let Some(power_source) = PowerSource::from_u8(value)
@@ -200,7 +205,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0008 => {
+            Id::GenericDeviceClass => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                     && let Some(generic_device_class) = GenericDeviceClass::from_u8(value)
@@ -210,7 +215,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0009 => {
+            Id::GenericDeviceType => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                     && let Some(generic_device_type) = GenericDeviceType::from_u8(value)
@@ -220,7 +225,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x000a => {
+            Id::ProductCode => {
                 if let Type::OctetString(value) = typ {
                     match value.truncate() {
                         Ok(value) => Ok(Self::ProductCode(value)),
@@ -230,35 +235,35 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x000b => {
+            Id::ProductUrl => {
                 if let Type::String(value) = typ {
                     Ok(Self::ProductUrl(value))
                 } else {
                     Err(Right(typ))
                 }
             }
-            0x000c => {
+            Id::ManufacturerVersionDetails => {
                 if let Type::String(value) = typ {
                     Ok(Self::ManufacturerVersionDetails(value))
                 } else {
                     Err(Right(typ))
                 }
             }
-            0x000d => {
+            Id::SerialNumber => {
                 if let Type::String(value) = typ {
                     Ok(Self::SerialNumber(value))
                 } else {
                     Err(Right(typ))
                 }
             }
-            0x000e => {
+            Id::ProductLabel => {
                 if let Type::String(value) = typ {
                     Ok(Self::ProductLabel(value))
                 } else {
                     Err(Right(typ))
                 }
             }
-            0x0010 => {
+            Id::LocationDescription => {
                 if let Type::String(value) = typ {
                     match value.truncate() {
                         Ok(string) => Ok(Self::LocationDescription(string)),
@@ -268,7 +273,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0011 => {
+            Id::PhysicalEnvironment => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                     && let Some(physical_environment) = PhysicalEnvironment::from_u8(value)
@@ -278,7 +283,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0012 => {
+            Id::DeviceEnabled => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                     && let Some(device_enabled) = DeviceEnabled::from_u8(value)
@@ -288,7 +293,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0013 => {
+            Id::AlarmMask => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                 {
@@ -297,7 +302,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x0014 => {
+            Id::DisableLocalConfig => {
                 if let Type::Uint8(value) = typ
                     && let Ok(value) = value.try_into()
                 {
@@ -308,7 +313,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            0x4000 => {
+            Id::SwBuildId => {
                 if let Type::String(value) = typ {
                     match value.truncate() {
                         Ok(string) => Ok(Self::SwBuildId(string)),
@@ -318,7 +323,54 @@ impl TryFrom<(u16, Type)> for Attribute {
                     Err(Right(typ))
                 }
             }
-            other => Err(Left(other)),
         }
     }
+}
+
+/// IDs of readable attributes in the Basic cluster.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[repr(u16)]
+pub enum Id {
+    /// The ZCL version.
+    ZclVersion = 0x0000,
+    /// The application version.
+    ApplicationVersion = 0x0001,
+    /// The stack version.
+    StackVersion = 0x0002,
+    /// The hardware version.
+    HwVersion = 0x0003,
+    /// The manufacturer's name.
+    ManufacturerName = 0x0004,
+    /// The model identifier.
+    ModelIdentifier = 0x0005,
+    /// The date code.
+    DateCode = 0x0006,
+    /// The power source.
+    PowerSource = 0x0007,
+    /// The generic device class.
+    GenericDeviceClass = 0x0008,
+    /// The generic device type.
+    GenericDeviceType = 0x0009,
+    /// The product code.
+    ProductCode = 0x000a,
+    /// The product URL.
+    ProductUrl = 0x000b,
+    /// The manufacturer version details.
+    ManufacturerVersionDetails = 0x000c,
+    /// The serial number.
+    SerialNumber = 0x000d,
+    /// The product label.
+    ProductLabel = 0x000e,
+    /// The generic device class.
+    LocationDescription = 0x0010,
+    /// The physical environment.
+    PhysicalEnvironment = 0x0011,
+    /// The device enabled state.
+    DeviceEnabled = 0x0012,
+    /// The alarm mask.
+    AlarmMask = 0x0013,
+    /// Flags to disable local configuration.
+    DisableLocalConfig = 0x0014,
+    /// The cluster revision.
+    SwBuildId = 0x4000,
 }
