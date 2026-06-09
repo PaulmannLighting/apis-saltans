@@ -1,6 +1,6 @@
 //! Common constants.
 
-/// Amount of deci-seconds per millisecond.
+/// Number of deciseconds per millisecond.
 pub const DECI_SECONDS_PER_MILLISECOND: u64 = 100;
 
 /// Maximum size of a byte-sized array.
