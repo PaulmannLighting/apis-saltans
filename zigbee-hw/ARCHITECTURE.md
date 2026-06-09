@@ -155,20 +155,20 @@ classDiagram
 ```mermaid
 sequenceDiagram
     participant Caller
-    participant Handle as NcpHandle / Sender<Message>
-    participant Actor as SealedDriver::run
-    participant Driver as NcpDriver implementation
+    participant Handle as NcpHandle
+    participant Actor as Driver actor
+    participant Driver as NcpDriver
 
     Caller->>Handle: Ncp::scan_networks(channel_mask, duration)
-    Handle->>Actor: Message::ScanNetworks { channel_mask, duration, response }
+    Handle->>Actor: Message::ScanNetworks
     Actor->>Driver: scan_networks(channel_mask, duration).await
-    Driver-->>Actor: Result<Vec<FoundNetwork>, Error>
+    Driver-->>Actor: scan result
     Actor-->>Caller: oneshot response
 
     Caller->>Handle: Ncp::unicast(address, endpoint, frame)
-    Handle->>Actor: Message::Unicast { address, endpoint, frame, response }
+    Handle->>Actor: Message::Unicast
     Actor->>Driver: unicast(address, endpoint, frame).await
-    Driver-->>Actor: Result<u8, Error>
+    Driver-->>Actor: transmit result
     Actor-->>Caller: oneshot response
 ```
 
