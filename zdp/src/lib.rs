@@ -14,9 +14,11 @@ pub use self::services::{
     MgmtNwkBeaconSurveyReq, MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq, MgmtNwkUpdateReq,
     MgmtPermitJoiningReq, MgmtPermitJoiningRsp, MgmtRtgReq, NetworkManagement, NodeDescReq,
     NodeDescRsp, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, ScanDuration, Service,
-    SimpleDescReq, SystemServerDiscoveryReq, UnbindReq,
+    SimpleDescReq, SimpleDescRsp, SystemServerDiscoveryReq, UnbindReq,
 };
+pub use self::simple_descriptor::SimpleDescriptor;
 
 mod frame;
 mod services;
+mod simple_descriptor;
 mod status;

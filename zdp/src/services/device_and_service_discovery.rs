@@ -14,6 +14,7 @@ pub use self::nwk_addr_req::{NwkAddrReq, RequestType};
 pub use self::parent_annce::ParentAnnce;
 pub use self::power_desc_req::PowerDescReq;
 pub use self::simple_desc_req::SimpleDescReq;
+pub use self::simple_desc_rsp::SimpleDescRsp;
 pub use self::system_server_discovery_req::SystemServerDiscoveryReq;
 
 mod active_ep_req;
@@ -28,6 +29,7 @@ mod nwk_addr_req;
 mod parent_annce;
 mod power_desc_req;
 mod simple_desc_req;
+mod simple_desc_rsp;
 mod system_server_discovery_req;
 
 /// Device and Service Discovery Commands.
@@ -45,6 +47,8 @@ pub enum DeviceAndServiceDiscovery {
     PowerDescReq(PowerDescReq),
     /// Simple Descriptor Request
     SimpleDescReq(SimpleDescReq),
+    /// Simple Descriptor Response
+    SimpleDescRsp(SimpleDescRsp),
     /// Active Endpoint Request
     ActiveEpReq(ActiveEpReq),
     /// Active Endpoint Request
@@ -70,6 +74,7 @@ impl Display for DeviceAndServiceDiscovery {
             Self::NodeDescRsp(cmd) => cmd.fmt(f),
             Self::PowerDescReq(cmd) => cmd.fmt(f),
             Self::SimpleDescReq(cmd) => cmd.fmt(f),
+            Self::SimpleDescRsp(cmd) => cmd.fmt(f),
             Self::ActiveEpReq(cmd) => cmd.fmt(f),
             Self::ActiveEpRsp(cmd) => cmd.fmt(f),
             Self::MatchDescReq(cmd) => cmd.fmt(f),

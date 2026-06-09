@@ -11,7 +11,7 @@ pub use self::bind_management::{
 pub use self::device_and_service_discovery::{
     ActiveEpReq, ActiveEpRsp, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq,
     MatchDescRsp, NodeDescReq, NodeDescRsp, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType,
-    SimpleDescReq, SystemServerDiscoveryReq,
+    SimpleDescReq, SimpleDescRsp, SystemServerDiscoveryReq,
 };
 pub use self::network_management::{
     EnhancedNwkUpdateParameters, LeaveReqFlags, MgmtBindReq, MgmtLeaveReq, MgmtLqiReq,
@@ -66,6 +66,9 @@ impl Command {
                 .map(Self::DeviceAndServiceDiscovery)),
             SimpleDescReq::ID => Ok(SimpleDescReq::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::SimpleDescReq)
+                .map(Self::DeviceAndServiceDiscovery)),
+            SimpleDescRsp::ID => Ok(SimpleDescRsp::from_le_stream(bytes)
+                .map(DeviceAndServiceDiscovery::SimpleDescRsp)
                 .map(Self::DeviceAndServiceDiscovery)),
             ActiveEpReq::ID => Ok(ActiveEpReq::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::ActiveEpReq)
@@ -169,6 +172,9 @@ impl ToLeStream for Command {
                 DeviceAndServiceDiscovery::SimpleDescReq(cmd) => {
                     Iter::SimpleDescReq(cmd.to_le_stream())
                 }
+                DeviceAndServiceDiscovery::SimpleDescRsp(cmd) => {
+                    Iter::SimpleDescRsp(cmd.to_le_stream().into())
+                }
                 DeviceAndServiceDiscovery::ActiveEpReq(cmd) => {
                     Iter::ActiveEpReq(cmd.to_le_stream())
                 }
@@ -235,6 +241,7 @@ pub enum Iter {
     NodeDescRsp(Box<<NodeDescRsp as ToLeStream>::Iter>),
     PowerDescReq(<PowerDescReq as ToLeStream>::Iter),
     SimpleDescReq(<SimpleDescReq as ToLeStream>::Iter),
+    SimpleDescRsp(Box<<SimpleDescRsp as ToLeStream>::Iter>),
     ActiveEpReq(<ActiveEpReq as ToLeStream>::Iter),
     ActiveEpRsp(<ActiveEpRsp as ToLeStream>::Iter),
     MatchDescReq(<MatchDescReq as ToLeStream>::Iter),
@@ -270,6 +277,7 @@ impl Iterator for Iter {
             Self::NodeDescRsp(iter) => iter.next(),
             Self::PowerDescReq(iter) => iter.next(),
             Self::SimpleDescReq(iter) => iter.next(),
+            Self::SimpleDescRsp(iter) => iter.next(),
             Self::ActiveEpReq(iter) => iter.next(),
             Self::ActiveEpRsp(iter) => iter.next(),
             Self::MatchDescReq(iter) => iter.next(),
