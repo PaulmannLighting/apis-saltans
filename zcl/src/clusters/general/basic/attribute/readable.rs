@@ -14,7 +14,6 @@ use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
 use super::writable;
-use crate::attributes::RawAttribute;
 
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -79,7 +78,7 @@ impl From<writable::Attribute> for Attribute {
     }
 }
 
-impl From<Attribute> for RawAttribute {
+impl From<Attribute> for (u16, Type) {
     fn from(value: Attribute) -> Self {
         let id = value.discriminant();
         let typ = match value {
@@ -120,16 +119,15 @@ impl From<Attribute> for RawAttribute {
             ),
         };
 
-        Self::new(id, typ)
+        (id, typ)
     }
 }
 
-impl TryFrom<RawAttribute> for Attribute {
+impl TryFrom<(u16, Type)> for Attribute {
     type Error = Either<u16, Type>;
 
     #[expect(clippy::too_many_lines)]
-    fn try_from(raw_attribute: RawAttribute) -> Result<Self, Self::Error> {
-        let (id, typ) = raw_attribute.into();
+    fn try_from((id, typ): (u16, Type)) -> Result<Self, Self::Error> {
         match id {
             0x0000 => {
                 if let Type::Uint8(value) = typ {
