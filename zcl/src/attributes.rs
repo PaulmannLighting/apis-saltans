@@ -1,5 +1,8 @@
 use zigbee::Cluster;
 
+pub use self::raw_attribute::RawAttribute;
+
+mod raw_attribute;
 pub mod readable;
 
 /// A trait to allow the reading of attributes by their respective IDs in a type-safe manner.

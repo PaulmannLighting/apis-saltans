@@ -17,6 +17,7 @@ use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
 use super::writable;
 use crate::ReadableAttribute;
+use crate::attributes::RawAttribute;
 
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -81,11 +82,12 @@ impl From<writable::Attribute> for Attribute {
     }
 }
 
-impl TryFrom<(u16, Type)> for Attribute {
+impl TryFrom<RawAttribute> for Attribute {
     type Error = Either<u16, Type>;
 
     #[expect(clippy::too_many_lines)]
-    fn try_from((id, typ): (u16, Type)) -> Result<Self, Self::Error> {
+    fn try_from(raw_attribute: RawAttribute) -> Result<Self, Self::Error> {
+        let (id, typ) = raw_attribute.into();
         let Some(attribute_id) = AttributeId::from_u16(id) else {
             return Err(Left(id));
         };
