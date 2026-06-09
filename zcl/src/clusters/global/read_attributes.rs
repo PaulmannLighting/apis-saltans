@@ -57,6 +57,14 @@ pub struct Response {
     attribute_values: BTreeMap<u16, Type>,
 }
 
+impl Response {
+    /// Creates a new instance of [`Response`].
+    #[must_use]
+    pub const fn new(attribute_values: BTreeMap<u16, Type>) -> Self {
+        Self { attribute_values }
+    }
+}
+
 impl crate::Command for Response {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ServerToClient;
