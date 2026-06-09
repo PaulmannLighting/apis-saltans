@@ -29,7 +29,7 @@ pub enum Attribute {
     StackVersion(Uint8) = 0x0002,
     /// The hardware version.
     HwVersion(Uint8) = 0x0003,
-    /// The manufacturer name.
+    /// The manufacturer's name.
     ManufacturerName(String<32>) = 0x0004,
     /// The model identifier.
     ModelIdentifier(String<32>) = 0x0005,
