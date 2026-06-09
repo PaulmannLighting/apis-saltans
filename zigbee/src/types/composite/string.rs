@@ -50,8 +50,8 @@ impl<const CAPACITY: usize> AsRef<[u8]> for String<CAPACITY> {
     }
 }
 
-impl<const CAPACITY: usize> From<heapless::String<CAPACITY>> for String<CAPACITY> {
-    fn from(value: heapless::String<CAPACITY>) -> Self {
+impl<const CAPACITY: usize> From<heapless::String<CAPACITY, u8>> for String<CAPACITY> {
+    fn from(value: heapless::String<CAPACITY, u8>) -> Self {
         Self(OctStr::from(value.into_bytes()))
     }
 }
