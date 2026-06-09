@@ -7,13 +7,13 @@ use core::iter::Empty;
 use core::ops::Deref;
 
 use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 use zigbee::Direction;
 use zigbee::types::Type;
 
 pub use self::read_attributes_status::ReadAttributesStatus;
-use crate::attributes::ParseResult;
 use crate::command::Scoped;
-use crate::{ReadableAttribute, Scope};
+use crate::{ParseAttributeError, ReadableAttribute, Scope};
 
 mod read_attributes_status;
 
@@ -66,13 +66,16 @@ impl Response {
     }
 
     /// Returns an iterator over the parsed attribute values in the response.
-    pub fn parse<T>(self) -> impl Iterator<Item = ParseResult<T>>
+    pub fn parse<T>(self) -> impl Iterator<Item = Result<T::Attribute, ParseAttributeError<T>>>
     where
+        T: FromPrimitive,
         T: ReadableAttribute,
     {
-        self.attribute_values
-            .into_iter()
-            .map(T::Attribute::try_from)
+        self.attribute_values.into_iter().map(|(id, typ)| {
+            T::from_u16(id)
+                .ok_or(ParseAttributeError::InvalidId(id))
+                .and_then(|id| T::Attribute::try_from((id, typ)).map_err(Into::into))
+        })
     }
 }
 

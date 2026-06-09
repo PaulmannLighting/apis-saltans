@@ -1,6 +1,5 @@
 //! Readable attributes in the Basic cluster
 
-use either::{Either, Left, Right};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
@@ -16,7 +15,7 @@ use super::generic_device_type::GenericDeviceType;
 use super::physical_environment::PhysicalEnvironment;
 use super::power_source::PowerSource;
 use super::writable;
-use crate::ReadableAttribute;
+use crate::{InvalidType, ReadableAttribute};
 
 /// Readable attributes in the Basic cluster.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -126,62 +125,58 @@ impl From<Attribute> for (u16, Type) {
     }
 }
 
-impl TryFrom<(u16, Type)> for Attribute {
-    type Error = Either<u16, Type>;
+impl TryFrom<(Id, Type)> for Attribute {
+    type Error = InvalidType<Id>;
 
     #[expect(clippy::too_many_lines)]
-    fn try_from((id, typ): (u16, Type)) -> Result<Self, Self::Error> {
-        let Some(id) = Id::from_u16(id) else {
-            return Err(Left(id));
-        };
-
+    fn try_from((id, typ): (Id, Type)) -> Result<Self, Self::Error> {
         match id {
             Id::ZclVersion => {
                 if let Type::Uint8(value) = typ {
                     Ok(Self::ZclVersion(value))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::ApplicationVersion => {
                 if let Type::Uint8(value) = typ {
                     Ok(Self::ApplicationVersion(value))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::StackVersion => {
                 if let Type::Uint8(value) = typ {
                     Ok(Self::StackVersion(value))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::HwVersion => {
                 if let Type::Uint8(value) = typ {
                     Ok(Self::HwVersion(value))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::ManufacturerName => {
                 if let Type::String(value) = typ {
                     match value.truncate() {
                         Ok(string) => Ok(Self::ManufacturerName(string)),
-                        Err(value) => Err(Right(Type::String(value))),
+                        Err(value) => Err(InvalidType::new(id, Type::String(value))),
                     }
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::ModelIdentifier => {
                 if let Type::String(value) = typ {
                     match value.truncate() {
                         Ok(string) => Ok(Self::ModelIdentifier(string)),
-                        Err(value) => Err(Right(Type::String(value))),
+                        Err(value) => Err(InvalidType::new(id, Type::String(value))),
                     }
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::DateCode => {
@@ -191,10 +186,10 @@ impl TryFrom<(u16, Type)> for Attribute {
                     {
                         Ok(Self::DateCode(date_code))
                     } else {
-                        Err(Right(Type::String(value)))
+                        Err(InvalidType::new(id, Type::String(value)))
                     }
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::PowerSource => {
@@ -204,7 +199,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                 {
                     Ok(Self::PowerSource(power_source))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::GenericDeviceClass => {
@@ -214,7 +209,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                 {
                     Ok(Self::GenericDeviceClass(generic_device_class))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::GenericDeviceType => {
@@ -224,55 +219,55 @@ impl TryFrom<(u16, Type)> for Attribute {
                 {
                     Ok(Self::GenericDeviceType(generic_device_type))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::ProductCode => {
                 if let Type::OctetString(value) = typ {
                     match value.truncate() {
                         Ok(value) => Ok(Self::ProductCode(value)),
-                        Err(value) => Err(Right(Type::OctetString(value))),
+                        Err(value) => Err(InvalidType::new(id, Type::OctetString(value))),
                     }
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::ProductUrl => {
                 if let Type::String(value) = typ {
                     Ok(Self::ProductUrl(value))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::ManufacturerVersionDetails => {
                 if let Type::String(value) = typ {
                     Ok(Self::ManufacturerVersionDetails(value))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::SerialNumber => {
                 if let Type::String(value) = typ {
                     Ok(Self::SerialNumber(value))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::ProductLabel => {
                 if let Type::String(value) = typ {
                     Ok(Self::ProductLabel(value))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::LocationDescription => {
                 if let Type::String(value) = typ {
                     match value.truncate() {
                         Ok(string) => Ok(Self::LocationDescription(string)),
-                        Err(value) => Err(Right(Type::String(value))),
+                        Err(value) => Err(InvalidType::new(id, Type::String(value))),
                     }
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::PhysicalEnvironment => {
@@ -282,7 +277,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                 {
                     Ok(Self::PhysicalEnvironment(physical_environment))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::DeviceEnabled => {
@@ -292,7 +287,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                 {
                     Ok(Self::DeviceEnabled(device_enabled))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::AlarmMask => {
@@ -301,7 +296,7 @@ impl TryFrom<(u16, Type)> for Attribute {
                 {
                     Ok(Self::AlarmMask(AlarmMask::from_bits_retain(value)))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::DisableLocalConfig => {
@@ -312,17 +307,17 @@ impl TryFrom<(u16, Type)> for Attribute {
                         DisableLocalConfig::from_bits_retain(value),
                     ))
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
             Id::SwBuildId => {
                 if let Type::String(value) = typ {
                     match value.truncate() {
                         Ok(string) => Ok(Self::SwBuildId(string)),
-                        Err(value) => Err(Right(Type::String(value))),
+                        Err(value) => Err(InvalidType::new(id, Type::String(value))),
                     }
                 } else {
-                    Err(Right(typ))
+                    Err(InvalidType::new(id, typ))
                 }
             }
         }
