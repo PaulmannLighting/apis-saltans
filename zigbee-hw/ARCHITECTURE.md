@@ -159,15 +159,15 @@ sequenceDiagram
     participant Actor as Driver actor
     participant Driver as NcpDriver
 
-    Caller->>Handle: Ncp::scan_networks(channel_mask, duration)
-    Handle->>Actor: Message::ScanNetworks
-    Actor->>Driver: scan_networks(channel_mask, duration).await
+    Caller->>Handle: scan networks request
+    Handle->>Actor: scan networks command
+    Actor->>Driver: call scan networks
     Driver-->>Actor: scan result
     Actor-->>Caller: oneshot response
 
-    Caller->>Handle: Ncp::unicast(address, endpoint, frame)
-    Handle->>Actor: Message::Unicast
-    Actor->>Driver: unicast(address, endpoint, frame).await
+    Caller->>Handle: unicast request
+    Handle->>Actor: unicast command
+    Actor->>Driver: call unicast
     Driver-->>Actor: transmit result
     Actor-->>Caller: oneshot response
 ```
