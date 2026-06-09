@@ -30,7 +30,7 @@ impl GetGroupMembership {
     ///
     /// # Panics
     ///
-    /// This function will panic if the amount of groups exceeds [`Uint8::MAX`], which should never happen.
+    /// This function will panic if the number of groups exceeds [`Uint8::MAX`], which should never happen.
     #[must_use]
     pub fn group_count(&self) -> Uint8 {
         self.groups
