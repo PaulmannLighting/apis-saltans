@@ -16,7 +16,8 @@ use crate::{ReadableAttribute, Scope};
 
 mod read_attributes_status;
 
-type ParseResult<T> = Result<
+/// The result of parsing an attribute value.
+pub type ParseResult<T> = Result<
     <T as ReadableAttribute>::Attribute,
     <<T as ReadableAttribute>::Attribute as TryFrom<(u16, Type)>>::Error,
 >;
