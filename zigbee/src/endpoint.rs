@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use le_stream::FromLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::application::Application;
 pub use self::reserved::Reserved;
@@ -80,5 +80,13 @@ impl FromLeStream for Endpoint {
         T: Iterator<Item = u8>,
     {
         u8::from_le_stream(bytes).map(Into::into)
+    }
+}
+
+impl ToLeStream for Endpoint {
+    type Iter = <u8 as ToLeStream>::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        u8::from(self).to_le_stream()
     }
 }
