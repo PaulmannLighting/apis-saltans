@@ -29,7 +29,7 @@ zigbee-macros = { path = "../macros" }
 
 [features]
 std = []
-serde = ["serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
+serde = ["serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde", "zigbee/serde"]
 smarthomelib = ["dep:smarthomelib"]
 
 [lints]
