@@ -3,6 +3,7 @@
 use std::fmt::Display;
 
 pub use self::active_ep_req::ActiveEpReq;
+pub use self::active_ep_rsp::ActiveEpRsp;
 pub use self::device_annce::DeviceAnnce;
 pub use self::ieee_addr_req::IeeeAddrReq;
 pub use self::match_desc_req::MatchDescReq;
@@ -16,6 +17,7 @@ pub use self::simple_desc_req::SimpleDescReq;
 pub use self::system_server_discovery_req::SystemServerDiscoveryReq;
 
 mod active_ep_req;
+mod active_ep_rsp;
 mod device_annce;
 mod ieee_addr_req;
 mod match_desc_req;
@@ -45,6 +47,8 @@ pub enum DeviceAndServiceDiscovery {
     SimpleDescReq(SimpleDescReq),
     /// Active Endpoint Request
     ActiveEpReq(ActiveEpReq),
+    /// Active Endpoint Request
+    ActiveEpRsp(ActiveEpRsp),
     /// Match Descriptor Request
     MatchDescReq(MatchDescReq),
     /// Match Descriptor Response.
@@ -67,6 +71,7 @@ impl Display for DeviceAndServiceDiscovery {
             Self::PowerDescReq(cmd) => cmd.fmt(f),
             Self::SimpleDescReq(cmd) => cmd.fmt(f),
             Self::ActiveEpReq(cmd) => cmd.fmt(f),
+            Self::ActiveEpRsp(cmd) => cmd.fmt(f),
             Self::MatchDescReq(cmd) => cmd.fmt(f),
             Self::MatchDescRsp(cmd) => cmd.fmt(f),
             Self::DeviceAnnce(cmd) => cmd.fmt(f),

@@ -9,9 +9,9 @@ pub use self::bind_management::{
     BindManagement, BindReq, BindRsp, ClearAllBindingsReq, Destination, UnbindReq,
 };
 pub use self::device_and_service_discovery::{
-    ActiveEpReq, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq, MatchDescRsp,
-    NodeDescReq, NodeDescRsp, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, SimpleDescReq,
-    SystemServerDiscoveryReq,
+    ActiveEpReq, ActiveEpRsp, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq,
+    MatchDescRsp, NodeDescReq, NodeDescRsp, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType,
+    SimpleDescReq, SystemServerDiscoveryReq,
 };
 pub use self::network_management::{
     EnhancedNwkUpdateParameters, LeaveReqFlags, MgmtBindReq, MgmtLeaveReq, MgmtLqiReq,
@@ -69,6 +69,9 @@ impl Command {
                 .map(Self::DeviceAndServiceDiscovery)),
             ActiveEpReq::ID => Ok(ActiveEpReq::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::ActiveEpReq)
+                .map(Self::DeviceAndServiceDiscovery)),
+            ActiveEpRsp::ID => Ok(ActiveEpRsp::from_le_stream(bytes)
+                .map(DeviceAndServiceDiscovery::ActiveEpRsp)
                 .map(Self::DeviceAndServiceDiscovery)),
             MatchDescReq::ID => Ok(MatchDescReq::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::MatchDescReq)
@@ -169,6 +172,9 @@ impl ToLeStream for Command {
                 DeviceAndServiceDiscovery::ActiveEpReq(cmd) => {
                     Iter::ActiveEpReq(cmd.to_le_stream())
                 }
+                DeviceAndServiceDiscovery::ActiveEpRsp(cmd) => {
+                    Iter::ActiveEpRsp(cmd.to_le_stream())
+                }
                 DeviceAndServiceDiscovery::MatchDescReq(cmd) => {
                     Iter::MatchDescReq(cmd.to_le_stream())
                 }
@@ -230,6 +236,7 @@ pub enum Iter {
     PowerDescReq(<PowerDescReq as ToLeStream>::Iter),
     SimpleDescReq(<SimpleDescReq as ToLeStream>::Iter),
     ActiveEpReq(<ActiveEpReq as ToLeStream>::Iter),
+    ActiveEpRsp(<ActiveEpRsp as ToLeStream>::Iter),
     MatchDescReq(<MatchDescReq as ToLeStream>::Iter),
     MatchDescRsp(<MatchDescRsp as ToLeStream>::Iter),
     DeviceAnnce(<DeviceAnnce as ToLeStream>::Iter),
@@ -264,6 +271,7 @@ impl Iterator for Iter {
             Self::PowerDescReq(iter) => iter.next(),
             Self::SimpleDescReq(iter) => iter.next(),
             Self::ActiveEpReq(iter) => iter.next(),
+            Self::ActiveEpRsp(iter) => iter.next(),
             Self::MatchDescReq(iter) => iter.next(),
             Self::MatchDescRsp(iter) => iter.next(),
             Self::DeviceAnnce(iter) => iter.next(),
