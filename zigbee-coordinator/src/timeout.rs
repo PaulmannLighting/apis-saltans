@@ -28,9 +28,9 @@ pub trait Timeout {
 
 impl<T> Timeout for T
 where
-    T: Future,
+    T: IntoFuture,
 {
-    type Output = <Self as Future>::Output;
+    type Output = <Self as IntoFuture>::Output;
 
     async fn timeout(self, timeout: Duration) -> Result<Self::Output, Elapsed> {
         tokio::time::timeout(timeout, self).await
