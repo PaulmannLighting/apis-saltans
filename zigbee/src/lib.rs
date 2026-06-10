@@ -6,7 +6,7 @@ pub use self::direction::Direction;
 pub use self::endpoint::{Application, Endpoint, Reserved};
 pub use self::expect_response::ExpectResponse;
 pub use self::profile::Profile;
-pub use self::util::{FromDeciSeconds, IntoDeciSeconds, Parsable};
+pub use self::util::{FromDeciSeconds, IntoDeciSeconds};
 
 mod address;
 mod cluster;
