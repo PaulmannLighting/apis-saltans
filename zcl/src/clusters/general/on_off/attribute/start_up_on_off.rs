@@ -17,6 +17,12 @@ pub enum StartUpOnOff {
     Previous = 0xff,
 }
 
+impl From<StartUpOnOff> for u8 {
+    fn from(start_up_on_off: StartUpOnOff) -> Self {
+        start_up_on_off as Self
+    }
+}
+
 impl TryFrom<u8> for StartUpOnOff {
     type Error = u8;
 
