@@ -25,7 +25,7 @@ pub struct Transceiver<T> {
 }
 
 impl<T> Transceiver<T> {
-    /// Crate a new transceiver.
+    /// Create a new transceiver.
     #[must_use]
     pub const fn new(ncp: T) -> Self {
         Self {
