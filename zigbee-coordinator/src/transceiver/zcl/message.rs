@@ -19,7 +19,7 @@ pub enum Message {
         /// The destination endpoint.
         endpoint: Endpoint,
         /// The payload
-        payload: Box<Payload>,
+        payload: Box<Payload<Cluster>>,
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
@@ -30,7 +30,7 @@ pub enum Message {
         /// The destination endpoint.
         endpoint: Endpoint,
         /// The payload
-        payload: Box<Payload>,
+        payload: Box<Payload<Cluster>>,
         /// The response channel.
         response: Sender<Result<Receiver<Cluster>, Error>>,
     },

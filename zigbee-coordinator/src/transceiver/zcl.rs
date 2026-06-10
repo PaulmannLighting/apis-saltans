@@ -98,7 +98,7 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload,
+        payload: Payload<Cluster>,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
         let (metadata, manufacturer_code, command) = payload.into_parts();
@@ -115,7 +115,7 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload,
+        payload: Payload<Cluster>,
         response: Sender<Result<oneshot::Receiver<Cluster>, zigbee_hw::Error>>,
     ) {
         let (metadata, manufacturer_code, command) = payload.into_parts();

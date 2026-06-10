@@ -15,7 +15,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload,
+        payload: Payload<zcl::Cluster>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Communicate a unicast with an expected response.
@@ -23,9 +23,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        metadata: Metadata,
-        manufacturer_code: Option<u16>,
-        payload: T,
+        payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
         T: ExpectResponse<zcl::Cluster>;
@@ -54,7 +52,7 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload,
+        payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
         self.send(Message::Unicast {
@@ -71,15 +69,13 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        metadata: Metadata,
-        manufacturer_code: Option<u16>,
-        payload: T,
+        payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
         T: ExpectResponse<zcl::Cluster>,
     {
         let (response, result) = channel();
-        let payload = Payload::new(metadata, manufacturer_code, payload.into()).into();
+        let payload = payload.into_cluster().into();
 
         async move {
             self.send(Message::Communicate {
