@@ -6,7 +6,7 @@ use zigbee_hw::Metadata;
 use crate::transceiver::zcl::{Handle, Payload};
 use crate::{Coordinator, Error};
 
-type ReadAttributesResult<T> = Result<<T as ReadableAttribute>::Attribute, ParseAttributeError<T>>;
+type ReadAttributeResult<T> = Result<<T as ReadableAttribute>::Attribute, ParseAttributeError<T>>;
 
 /// Trait for reading attributes.
 pub trait ReadAttributes {
@@ -34,7 +34,7 @@ pub trait ReadAttributes {
         address: Address,
         endpoint: Endpoint,
         attributes: &[T],
-    ) -> impl Future<Output = Result<Box<[ReadAttributesResult<T>]>, Error>> + Send
+    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
         T: ReadableAttribute,
