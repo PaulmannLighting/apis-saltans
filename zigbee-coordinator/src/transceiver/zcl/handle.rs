@@ -1,11 +1,10 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
-use zigbee::{Address, Cluster, Endpoint};
+use zigbee::{Address, Cluster, Endpoint, RespondsWith};
 use zigbee_hw::Metadata;
 
 use super::{Message, Payload};
 use crate::Error;
-use crate::expect::ZclCommand;
 use crate::timeout::Timeout;
 
 /// Handle trait on the ZCL transceiver.
@@ -24,10 +23,12 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload,
-    ) -> impl Future<Output = Result<T, Error>> + Send
+        metadata: Metadata,
+        manufacturer_code: Option<u16>,
+        payload: T,
+    ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
-        zcl::Cluster: ZclCommand<T>;
+        T: Into<zcl::Cluster> + RespondsWith<Response: TryFrom<zcl::Cluster>>;
 
     /// Send a unicast of a native ZCL command belonging to a static cluster.
     async fn unicast_zcl_native<T>(
@@ -66,28 +67,34 @@ impl Handle for Sender<Message> {
         Ok(result.await??)
     }
 
-    async fn communicate<T>(
+    fn communicate<T>(
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload,
-    ) -> Result<T, Error>
+        metadata: Metadata,
+        manufacturer_code: Option<u16>,
+        payload: T,
+    ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
-        zcl::Cluster: ZclCommand<T>,
+        T: Into<zcl::Cluster> + RespondsWith<Response: TryFrom<zcl::Cluster>>,
     {
         let (response, result) = channel();
-        self.send(Message::Communicate {
-            address,
-            endpoint,
-            payload: payload.into(),
-            response,
-        })
-        .await?;
-        result
-            .await??
-            .zcl_response_timeout()
-            .await??
-            .expect()
-            .ok_or(Error::InvalidResponseType)
+        let payload = Payload::new(metadata, manufacturer_code, payload.into()).into();
+
+        async move {
+            self.send(Message::Communicate {
+                address,
+                endpoint,
+                payload,
+                response,
+            })
+            .await?;
+            result
+                .await??
+                .zcl_response_timeout()
+                .await??
+                .try_into()
+                .map_err(|_| Error::InvalidResponseType)
+        }
     }
 }

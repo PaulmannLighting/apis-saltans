@@ -7,12 +7,12 @@ use core::iter::Empty;
 use core::ops::Deref;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Direction;
 use zigbee::types::Type;
+use zigbee::{Direction, RespondsWith};
 
 pub use self::read_attributes_status::ReadAttributesStatus;
 use crate::command::Scoped;
-use crate::{ParseAttributeError, ReadableAttribute, Scope};
+use crate::{ParseAttributeError, ReadableAttribute, Scope, global};
 
 mod read_attributes_status;
 
@@ -43,6 +43,10 @@ impl crate::Command for Command {
 
 impl Scoped for Command {
     const SCOPE: Scope = Scope::Global;
+}
+
+impl RespondsWith for Command {
+    type Response = Response;
 }
 
 impl From<Command> for crate::Cluster {
@@ -98,6 +102,18 @@ where
 {
     fn from(response: Response) -> Self {
         response.parse::<T>().collect()
+    }
+}
+
+impl TryFrom<crate::Cluster> for Response {
+    type Error = crate::Cluster;
+
+    fn try_from(cluster: crate::Cluster) -> Result<Self, Self::Error> {
+        if let crate::Cluster::Global(global::Command::ReadAttributesResponse(response)) = cluster {
+            Ok(response)
+        } else {
+            Err(cluster)
+        }
     }
 }
 
