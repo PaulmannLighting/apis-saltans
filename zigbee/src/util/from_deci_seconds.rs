@@ -2,9 +2,9 @@ use core::time::Duration;
 
 use crate::constants::DECI_SECONDS_PER_MILLISECOND;
 
-/// Trait to create a Duration from deciseconds.
+/// Trait to create a `Duration` from deciseconds.
 pub trait FromDeciSeconds {
-    /// Returns a Duration from deciseconds.
+    /// Returns a `Duration` from deciseconds.
     fn from_deci_seconds(deci_seconds: u16) -> Self;
 }
 
