@@ -1,5 +1,4 @@
 use le_stream::ToLeStream;
-use zigbee::Parsable;
 use zigbee::types::String;
 
 use crate::clusters::general::basic::{
@@ -10,7 +9,7 @@ use crate::clusters::general::basic::{
 pub enum Attribute {
     String16(<String<16> as ToLeStream>::Iter),
     PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
-    DeviceEnabled(<Parsable<u8, DeviceEnabled> as ToLeStream>::Iter),
+    DeviceEnabled(<DeviceEnabled as ToLeStream>::Iter),
     AlarmMask(<AlarmMask as ToLeStream>::Iter),
     DisableLocalConfig(<DisableLocalConfig as ToLeStream>::Iter),
 }
