@@ -1,10 +1,8 @@
 pub mod readable {
     //! Readable attributes for the Scenes cluster.
 
-    use le_stream::FromLeStreamTagged;
     use macaddr::MacAddr8;
     use repr_discriminant::ReprDiscriminant;
-    use zigbee::Parsable;
     use zigbee::types::{Bool, Uint8};
 
     use super::super::types::CurrentGroup;
@@ -13,7 +11,7 @@ pub mod readable {
     /// Attributes for the Scenes cluster.
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
     #[repr(u16)]
-    #[derive(ReprDiscriminant, FromLeStreamTagged)]
+    #[derive(ReprDiscriminant)]
     #[expect(variant_size_differences)]
     pub enum Attribute {
         /// Number of scenes currently stored in the device.
@@ -25,7 +23,7 @@ pub mod readable {
         /// Flag indicating whether the scene is valid.
         SceneValid(Bool) = 0x0003,
         /// Flag indicating whether the device supports scene names.
-        NameSupport(Parsable<u8, NameSupport>) = 0x0004,
+        NameSupport(NameSupport) = 0x0004,
         /// IEEE address of the device that last configured the scene.
         LastConfiguredBy(MacAddr8) = 0x0005,
     }

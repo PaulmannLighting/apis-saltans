@@ -1,6 +1,5 @@
 use le_stream::{FromLeStream, FromLeStreamTagged};
 use repr_discriminant::ReprDiscriminant;
-use zigbee::Parsable;
 use zigbee::types::{String, Uint8, Uint16};
 
 use super::super::{BatteryAlarmMask, BatterySize};
@@ -13,12 +12,11 @@ const SETTINGS: u16 = 0x0010;
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
-#[expect(variant_size_differences)]
 pub enum Settings {
     /// Name of the battery manufacturer.
     Manufacturer(String<16>) = 0x0000,
     /// The battery size.
-    Size(Parsable<u8, BatterySize>) = 0x0001,
+    Size(BatterySize) = 0x0001,
     /// The battery ampere-hour rating in 10mAHr.
     AHrRating(Uint16) = 0x0002,
     /// Amount of battery cells.
@@ -62,7 +60,7 @@ impl FromLeStreamTagged for Settings {
     {
         match tag & MASK {
             0x0000 => Ok(String::<16>::from_le_stream(bytes).map(Self::Manufacturer)),
-            0x0001 => Ok(Parsable::from_le_stream(bytes).map(Self::Size)),
+            0x0001 => Ok(BatterySize::from_le_stream(bytes).map(Self::Size)),
             0x0002 => Ok(Uint16::from_le_stream(bytes).map(Self::AHrRating)),
             0x0003 => Ok(Uint8::from_le_stream(bytes).map(Self::Quantity)),
             0x0004 => Ok(Uint8::from_le_stream(bytes).map(Self::RatedVoltage)),

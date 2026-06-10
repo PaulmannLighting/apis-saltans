@@ -1,6 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use zigbee::types::Uint8;
 
 /// Available battery sizes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -34,6 +35,14 @@ impl TryFrom<u8> for BatterySize {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::from_u8(value).ok_or(value)
+    }
+}
+
+impl TryFrom<Uint8> for BatterySize {
+    type Error = Uint8;
+
+    fn try_from(value: Uint8) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_u8()).map_err(|_| value)
     }
 }
 

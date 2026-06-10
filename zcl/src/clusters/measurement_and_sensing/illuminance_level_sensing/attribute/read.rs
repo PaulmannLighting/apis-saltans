@@ -1,7 +1,6 @@
 //! Readable attributes.
 
 use repr_discriminant::ReprDiscriminant;
-use zigbee::Parsable;
 
 use super::level_status::LevelStatus;
 use super::light_sensor_type::LightSensorType;
@@ -12,7 +11,7 @@ use super::light_sensor_type::LightSensorType;
 #[derive(ReprDiscriminant)]
 pub enum Attribute {
     /// The level status.
-    LevelStatus(Parsable<u8, LevelStatus>) = 0x0000,
+    LevelStatus(LevelStatus) = 0x0000,
     /// The light sensor type.
-    LightSensorType(Parsable<u8, LightSensorType>) = 0x0001,
+    LightSensorType(LightSensorType) = 0x0001,
 }
