@@ -3,7 +3,7 @@ use tokio::sync::oneshot::channel;
 use zigbee::{Address, Cluster, Endpoint, ExpectResponse};
 use zigbee_hw::Metadata;
 
-use super::{Frame, Message};
+use super::{Message, Payload};
 use crate::Error;
 use crate::timeout::Timeout;
 
@@ -15,7 +15,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Frame<zcl::Cluster>,
+        payload: Payload<zcl::Cluster>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Communicate a unicast with an expected response.
@@ -23,7 +23,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Frame<T>,
+        payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
         T: ExpectResponse<zcl::Cluster>;
@@ -41,7 +41,7 @@ pub trait Handle {
         self.unicast(
             address,
             endpoint,
-            Frame::new_native(Metadata::for_cluster::<T>(None, None), command.into()),
+            Payload::new_native(Metadata::for_cluster::<T>(None, None), command.into()),
         )
         .await
     }
@@ -52,13 +52,13 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Frame<zcl::Cluster>,
+        payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
         self.send(Message::Unicast {
             address,
             endpoint,
-            frame: payload.into(),
+            payload: payload.into(),
             response,
         })
         .await?;
@@ -69,7 +69,7 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Frame<T>,
+        payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
         T: ExpectResponse<zcl::Cluster>,
@@ -81,7 +81,7 @@ impl Handle for Sender<Message> {
             self.send(Message::Communicate {
                 address,
                 endpoint,
-                frame: payload,
+                payload,
                 response,
             })
             .await?;

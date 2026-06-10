@@ -12,8 +12,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::{Command, Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
-pub use self::message::Message;
-use crate::transceiver::aps::Frame;
+pub use self::message::{Message, Payload};
 
 mod handle;
 mod message;
@@ -50,18 +49,19 @@ where
                 Message::Unicast {
                     address,
                     endpoint,
-                    frame,
+                    payload,
                     response,
                 } => {
-                    self.unicast(address, endpoint, *frame, response).await;
+                    self.unicast(address, endpoint, *payload, response).await;
                 }
                 Message::Communicate {
                     address,
                     endpoint,
-                    frame,
+                    payload,
                     response,
                 } => {
-                    self.communicate(address, endpoint, *frame, response).await;
+                    self.communicate(address, endpoint, *payload, response)
+                        .await;
                 }
             }
         }
@@ -98,7 +98,7 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        frame: Frame<Cluster>,
+        frame: Payload<Cluster>,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
         let (metadata, manufacturer_code, command) = frame.into_parts();
@@ -115,7 +115,7 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        frame: Frame<Cluster>,
+        frame: Payload<Cluster>,
         response: Sender<Result<oneshot::Receiver<Cluster>, zigbee_hw::Error>>,
     ) {
         let (metadata, manufacturer_code, command) = frame.into_parts();

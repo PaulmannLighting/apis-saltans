@@ -3,8 +3,7 @@ use zcl::{ParseAttributeError, ReadableAttribute};
 use zigbee::{Address, Endpoint};
 use zigbee_hw::Metadata;
 
-use crate::transceiver::aps::Frame;
-use crate::transceiver::zcl::Handle;
+use crate::transceiver::zcl::{Handle, Payload};
 use crate::{Coordinator, Error};
 
 type ReadAttributeResult<T> = Result<<T as ReadableAttribute>::Attribute, ParseAttributeError<T>>;
@@ -63,7 +62,7 @@ impl ReadAttributes for Coordinator {
             .communicate(
                 address,
                 endpoint,
-                Frame::new(
+                Payload::new(
                     Metadata::new(cluster, None, None),
                     manufacturer_code,
                     Command::new(ids),

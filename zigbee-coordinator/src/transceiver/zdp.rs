@@ -12,8 +12,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::{Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
-pub use self::message::Message;
-use crate::transceiver::aps::Frame;
+pub use self::message::{Message, Payload};
 
 mod handle;
 mod message;
@@ -50,18 +49,18 @@ where
                 Message::Unicast {
                     address,
                     endpoint,
-                    frame: command,
+                    payload,
                     response,
                 } => {
-                    self.unicast(address, endpoint, *command, response).await;
+                    self.unicast(address, endpoint, *payload, response).await;
                 }
                 Message::Communicate {
                     address,
                     endpoint,
-                    frame: command,
+                    payload,
                     response,
                 } => {
-                    self.communicate(address, endpoint, *command, response)
+                    self.communicate(address, endpoint, *payload, response)
                         .await;
                 }
             }
@@ -99,10 +98,10 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        frame: Frame<Command>,
+        payload: Payload<Command>,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
-        let (metadata, _, command) = frame.into_parts();
+        let (metadata, command) = payload.into_parts();
         let zdp_frame = self.make_zdp_frame(command);
         let aps_frame = Self::make_aps_frame(metadata, zdp_frame);
         let result = self.ncp.unicast(address, endpoint, aps_frame).await;
@@ -116,10 +115,10 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        frame: Frame<Command>,
+        payload: Payload<Command>,
         response: Sender<Result<oneshot::Receiver<Command>, zigbee_hw::Error>>,
     ) {
-        let (metadata, _, command) = frame.into_parts();
+        let (metadata, command) = payload.into_parts();
         let zdp_frame = self.make_zdp_frame(command);
         let seq = zdp_frame.seq();
         let aps_frame = Self::make_aps_frame(metadata, zdp_frame);

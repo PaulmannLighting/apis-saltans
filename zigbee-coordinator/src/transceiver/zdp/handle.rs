@@ -4,9 +4,8 @@ use zdp::Command;
 use zigbee::{Address, Endpoint, ExpectResponse};
 use zigbee_hw::Error;
 
-use super::Message;
+use super::{Message, Payload};
 use crate::timeout::Timeout;
-use crate::transceiver::aps::Frame;
 
 /// Handle trait on the ZDP transceiver.
 pub trait Handle {
@@ -16,7 +15,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        frame: Frame<Command>,
+        frame: Payload<Command>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Communicate a unicast with an expected response.
@@ -24,7 +23,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        frame: Frame<T>,
+        frame: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, crate::Error>> + Send
     where
         T: ExpectResponse<Command>;
@@ -35,13 +34,13 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        frame: Frame<Command>,
+        frame: Payload<Command>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
         self.send(Message::Unicast {
             address,
             endpoint,
-            frame: frame.into(),
+            payload: frame.into(),
             response,
         })
         .await?;
@@ -52,7 +51,7 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Frame<T>,
+        payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, crate::Error>> + Send
     where
         T: ExpectResponse<Command>,
@@ -64,7 +63,7 @@ impl Handle for Sender<Message> {
             self.send(Message::Communicate {
                 address,
                 endpoint,
-                frame: payload,
+                payload,
                 response,
             })
             .await?;

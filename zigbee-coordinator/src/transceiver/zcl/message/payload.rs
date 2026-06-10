@@ -1,12 +1,11 @@
 //! General-purpose APS frame.
 
 use zcl::Cluster;
-use zdp::Command;
 use zigbee_hw::Metadata;
 
 /// A simplified APS frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct Frame<T> {
+pub struct Payload<T> {
     /// APS metadata for transmission.
     metadata: Metadata,
     /// An optional manufacturer code.
@@ -15,7 +14,7 @@ pub struct Frame<T> {
     command: T,
 }
 
-impl<T> Frame<T> {
+impl<T> Payload<T> {
     /// Create a new frame.
     #[must_use]
     pub const fn new(metadata: Metadata, manufacturer_code: Option<u16>, command: T) -> Self {
@@ -61,24 +60,13 @@ impl<T> Frame<T> {
     }
 }
 
-impl<T> Frame<T>
+impl<T> Payload<T>
 where
     T: Into<Cluster>,
 {
     /// Convert the frame into a ZCL cluster frame.
     #[must_use]
-    pub fn into_cluster(self) -> Frame<Cluster> {
-        Frame::new(self.metadata, self.manufacturer_code, self.command.into())
-    }
-}
-
-impl<T> Frame<T>
-where
-    T: Into<Command>,
-{
-    /// Convert the frame into a ZDP command frame.
-    #[must_use]
-    pub fn into_command(self) -> Frame<Command> {
-        Frame::new(self.metadata, self.manufacturer_code, self.command.into())
+    pub fn into_cluster(self) -> Payload<Cluster> {
+        Payload::new(self.metadata, self.manufacturer_code, self.command.into())
     }
 }
