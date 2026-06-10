@@ -5,13 +5,15 @@ use std::collections::BTreeMap;
 use le_stream::ToLeStream;
 use log::{error, warn};
 use tokio::sync::mpsc::Receiver;
-use tokio::sync::oneshot::Sender;
+use tokio::sync::oneshot;
+use tokio::sync::oneshot::{Sender, channel};
 use zdp::Command;
 use zigbee::{Address, Endpoint};
 use zigbee_hw::{Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
 pub use self::message::Message;
+use crate::transceiver::aps::Frame;
 
 mod handle;
 mod message;
@@ -48,11 +50,18 @@ where
                 Message::Unicast {
                     address,
                     endpoint,
-                    metadata,
-                    command,
+                    frame: command,
                     response,
                 } => {
-                    self.unicast(address, endpoint, metadata, *command, response)
+                    self.unicast(address, endpoint, *command, response).await;
+                }
+                Message::Communicate {
+                    address,
+                    endpoint,
+                    frame: command,
+                    response,
+                } => {
+                    self.communicate(address, endpoint, *command, response)
                         .await;
                 }
             }
@@ -90,20 +99,47 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        metadata: Metadata,
-        command: Command,
+        frame: Frame<Command>,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
-        let aps_frame = self.make_aps_frame(metadata, command);
+        let (metadata, _, command) = frame.into_parts();
+        let zdp_frame = self.make_zdp_frame(command);
+        let aps_frame = Self::make_aps_frame(metadata, zdp_frame);
         let result = self.ncp.unicast(address, endpoint, aps_frame).await;
         response.send(result.map(drop)).unwrap_or_else(|error| {
             error!("Failed to send unicast response: {error:?}");
         });
     }
 
+    /// Send a unicast message with back-channel communication.
+    async fn communicate(
+        &mut self,
+        address: Address,
+        endpoint: Endpoint,
+        frame: Frame<Command>,
+        response: Sender<Result<oneshot::Receiver<Command>, zigbee_hw::Error>>,
+    ) {
+        let (metadata, _, command) = frame.into_parts();
+        let zdp_frame = self.make_zdp_frame(command);
+        let seq = zdp_frame.seq();
+        let aps_frame = Self::make_aps_frame(metadata, zdp_frame);
+
+        match self.ncp.unicast(address, endpoint, aps_frame).await {
+            Ok(_) => {
+                let (tx, rx) = channel();
+                self.responses.insert(seq, tx);
+                response.send(Ok(rx))
+            }
+            Err(error) => response.send(Err(error)),
+        }
+        .unwrap_or_else(|error| {
+            error!("Failed to send unicast response: {error:?}");
+        });
+    }
+
     /// Create a new APS frame.
-    fn make_aps_frame(&mut self, metadata: Metadata, command: Command) -> zigbee_hw::Frame {
-        let payload = self.make_zdp_frame(command).to_le_stream().collect();
+    fn make_aps_frame(metadata: Metadata, frame: zdp::Frame<Command>) -> zigbee_hw::Frame {
+        let payload = frame.to_le_stream().collect();
 
         #[expect(unsafe_code)]
         // SAFETY: We trust the caller that the given metadata and payload match.

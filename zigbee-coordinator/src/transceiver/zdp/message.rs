@@ -1,7 +1,9 @@
-use tokio::sync::oneshot::Sender;
+use tokio::sync::oneshot::{Receiver, Sender};
 use zdp::Command;
 use zigbee::{Address, Endpoint};
-use zigbee_hw::{Error, Event, Metadata};
+use zigbee_hw::{Error, Event};
+
+use crate::transceiver::aps::Frame;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -14,12 +16,21 @@ pub enum Message {
         address: Address,
         /// The destination endpoint.
         endpoint: Endpoint,
-        /// APS metadata for transmission.
-        metadata: Metadata,
         /// ZDP command.
-        command: Box<Command>,
+        frame: Box<Frame<Command>>,
         /// The response channel.
         response: Sender<Result<(), Error>>,
+    },
+    /// Communicate a unicast with an expected response.
+    Communicate {
+        /// The destination address.
+        address: Address,
+        /// The destination endpoint.
+        endpoint: Endpoint,
+        /// The payload
+        frame: Box<Frame<Command>>,
+        /// The response channel.
+        response: Sender<Result<Receiver<Command>, Error>>,
     },
 }
 

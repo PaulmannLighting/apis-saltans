@@ -7,8 +7,13 @@ use tokio::time::error::Elapsed;
 
 /// Timeout for ZCL responses.
 #[env_item("ZIGBEE_COORDINATOR_ZCL_RESPONSE_TIMEOUT_SECS")]
-const ZCL_RESPONSE_TIMEOUT_SECS: u64 = 3;
+const ZCL_RESPONSE_TIMEOUT_SECS: u64 = 5;
 const ZCL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(ZCL_RESPONSE_TIMEOUT_SECS);
+
+/// Timeout for ZDP responses.
+#[env_item("ZIGBEE_COORDINATOR_ZDP_RESPONSE_TIMEOUT_SECS")]
+const ZDP_RESPONSE_TIMEOUT_SECS: u64 = 3;
+const ZDP_RESPONSE_TIMEOUT: Duration = Duration::from_secs(ZDP_RESPONSE_TIMEOUT_SECS);
 
 /// Extension trait to add a timeout while waiting for a future.
 pub trait Timeout {
@@ -23,6 +28,14 @@ pub trait Timeout {
         Self: Sized,
     {
         self.timeout(ZCL_RESPONSE_TIMEOUT)
+    }
+
+    /// Wait for a ZDP response, or timeout.
+    fn zdp_response_timeout(self) -> impl Future<Output = Result<Self::Output, Elapsed>>
+    where
+        Self: Sized,
+    {
+        self.timeout(ZDP_RESPONSE_TIMEOUT)
     }
 }
 

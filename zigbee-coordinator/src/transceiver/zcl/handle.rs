@@ -58,7 +58,7 @@ impl Handle for Sender<Message> {
         self.send(Message::Unicast {
             address,
             endpoint,
-            payload: payload.into(),
+            frame: payload.into(),
             response,
         })
         .await?;
@@ -81,7 +81,7 @@ impl Handle for Sender<Message> {
             self.send(Message::Communicate {
                 address,
                 endpoint,
-                payload,
+                frame: payload,
                 response,
             })
             .await?;

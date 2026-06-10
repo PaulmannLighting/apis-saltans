@@ -1,4 +1,7 @@
+//! General-purpose APS frame.
+
 use zcl::Cluster;
+use zdp::Command;
 use zigbee_hw::Metadata;
 
 /// A simplified APS frame.
@@ -65,6 +68,17 @@ where
     /// Convert the frame into a ZCL cluster frame.
     #[must_use]
     pub fn into_cluster(self) -> Frame<Cluster> {
+        Frame::new(self.metadata, self.manufacturer_code, self.command.into())
+    }
+}
+
+impl<T> Frame<T>
+where
+    T: Into<Command>,
+{
+    /// Convert the frame into a ZDP command frame.
+    #[must_use]
+    pub fn into_command(self) -> Frame<Command> {
         Frame::new(self.metadata, self.manufacturer_code, self.command.into())
     }
 }

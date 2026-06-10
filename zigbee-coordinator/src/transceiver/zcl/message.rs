@@ -3,7 +3,7 @@ use zcl::Cluster;
 use zigbee::{Address, Endpoint};
 use zigbee_hw::{Error, Event};
 
-pub use crate::transceiver::aps::Frame;
+use crate::transceiver::aps::Frame;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub enum Message {
         /// The destination endpoint.
         endpoint: Endpoint,
         /// The payload
-        payload: Box<Frame<Cluster>>,
+        frame: Box<Frame<Cluster>>,
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
@@ -28,7 +28,7 @@ pub enum Message {
         /// The destination endpoint.
         endpoint: Endpoint,
         /// The payload
-        payload: Box<Frame<Cluster>>,
+        frame: Box<Frame<Cluster>>,
         /// The response channel.
         response: Sender<Result<Receiver<Cluster>, Error>>,
     },

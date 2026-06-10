@@ -12,7 +12,8 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::{Command, Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
-pub use self::message::{Frame, Message};
+pub use self::message::Message;
+use crate::transceiver::aps::Frame;
 
 mod handle;
 mod message;
@@ -49,19 +50,18 @@ where
                 Message::Unicast {
                     address,
                     endpoint,
-                    payload,
+                    frame,
                     response,
                 } => {
-                    self.unicast(address, endpoint, *payload, response).await;
+                    self.unicast(address, endpoint, *frame, response).await;
                 }
                 Message::Communicate {
                     address,
                     endpoint,
-                    payload,
+                    frame,
                     response,
                 } => {
-                    self.communicate(address, endpoint, *payload, response)
-                        .await;
+                    self.communicate(address, endpoint, *frame, response).await;
                 }
             }
         }
@@ -98,10 +98,10 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        payload: Frame<Cluster>,
+        frame: Frame<Cluster>,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
-        let (metadata, manufacturer_code, command) = payload.into_parts();
+        let (metadata, manufacturer_code, command) = frame.into_parts();
         let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
         let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
         let result = self.ncp.unicast(address, endpoint, aps_frame).await;
@@ -115,10 +115,10 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        payload: Frame<Cluster>,
+        frame: Frame<Cluster>,
         response: Sender<Result<oneshot::Receiver<Cluster>, zigbee_hw::Error>>,
     ) {
-        let (metadata, manufacturer_code, command) = payload.into_parts();
+        let (metadata, manufacturer_code, command) = frame.into_parts();
         let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
         let seq = zcl_frame.header().seq();
         let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
