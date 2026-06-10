@@ -33,13 +33,13 @@ pub trait ReadAttributes {
         &self,
         address: Address,
         endpoint: Endpoint,
-        attributes: &[T],
+        attributes: Box<[T]>,
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
-        T: Copy + ReadableAttribute,
+        T: ReadableAttribute,
     {
-        let attributes = attributes.iter().copied().map(Into::into).collect();
+        let attributes = attributes.into_iter().map(Into::into).collect();
 
         async move {
             self.read_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, attributes)
