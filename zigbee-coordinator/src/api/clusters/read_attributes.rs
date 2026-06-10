@@ -37,7 +37,7 @@ pub trait ReadAttributes {
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
-        T: ReadableAttribute,
+        T: Copy + ReadableAttribute,
     {
         let attributes = attributes.iter().copied().map(Into::into).collect();
 

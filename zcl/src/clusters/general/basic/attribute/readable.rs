@@ -382,6 +382,14 @@ impl From<Id> for u16 {
     }
 }
 
+impl TryFrom<u16> for Id {
+    type Error = u16;
+
+    fn try_from(id: u16) -> Result<Self, Self::Error> {
+        Self::from_u16(id).ok_or(id)
+    }
+}
+
 impl ReadableAttribute for Id {
     type Attribute = Attribute;
 }

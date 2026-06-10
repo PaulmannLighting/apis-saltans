@@ -68,12 +68,11 @@ impl Response {
     /// Returns an iterator over the parsed attribute values in the response.
     pub fn parse<T>(self) -> impl Iterator<Item = Result<T::Attribute, ParseAttributeError<T>>>
     where
-        T: FromPrimitive,
         T: ReadableAttribute,
     {
         self.attribute_values.into_iter().map(|(id, typ)| {
-            T::from_u16(id)
-                .ok_or(ParseAttributeError::InvalidId(id))
+            T::try_from(id)
+                .map_err(ParseAttributeError::InvalidId)
                 .and_then(|id| T::Attribute::try_from((id, typ)).map_err(Into::into))
         })
     }
