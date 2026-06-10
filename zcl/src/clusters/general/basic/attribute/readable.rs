@@ -376,6 +376,10 @@ impl ClusterSpecific for Id {
     const CLUSTER: ClusterId = ClusterId::Basic;
 }
 
+impl ReadableAttribute for Id {
+    type Attribute = Attribute;
+}
+
 impl From<Id> for u16 {
     fn from(id: Id) -> Self {
         id as Self
@@ -388,8 +392,4 @@ impl TryFrom<u16> for Id {
     fn try_from(id: u16) -> Result<Self, Self::Error> {
         Self::from_u16(id).ok_or(id)
     }
-}
-
-impl ReadableAttribute for Id {
-    type Attribute = Attribute;
 }
