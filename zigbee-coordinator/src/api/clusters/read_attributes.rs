@@ -10,7 +10,7 @@ type ReadAttributeResult<T> = Result<<T as ReadableAttribute>::Attribute, ParseA
 
 /// Trait for reading attributes.
 pub trait ReadAttributes {
-    /// Read attributes from a device.
+    /// Read raw attributes from a device.
     ///
     /// # Errors
     ///
@@ -24,7 +24,7 @@ pub trait ReadAttributes {
         ids: Box<[u16]>,
     ) -> impl Future<Output = Result<Response, Error>> + Send;
 
-    /// Read native attributes from a device.
+    /// Read attributes from a device.
     ///
     /// # Errors
     ///
