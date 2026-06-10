@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
-use zigbee::{Address, Cluster, Endpoint, RespondsWith};
+use zigbee::{Address, Cluster, Endpoint, ExpectResponse};
 use zigbee_hw::Metadata;
 
 use super::{Message, Payload};
@@ -28,7 +28,7 @@ pub trait Handle {
         payload: T,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
-        T: Into<zcl::Cluster> + RespondsWith<Response: TryFrom<zcl::Cluster>>;
+        T: ExpectResponse<zcl::Cluster>;
 
     /// Send a unicast of a native ZCL command belonging to a static cluster.
     async fn unicast_zcl_native<T>(
@@ -76,7 +76,7 @@ impl Handle for Sender<Message> {
         payload: T,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
-        T: Into<zcl::Cluster> + RespondsWith<Response: TryFrom<zcl::Cluster>>,
+        T: ExpectResponse<zcl::Cluster>,
     {
         let (response, result) = channel();
         let payload = Payload::new(metadata, manufacturer_code, payload.into()).into();

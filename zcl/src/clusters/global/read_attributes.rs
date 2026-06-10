@@ -8,7 +8,7 @@ use core::ops::Deref;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Type;
-use zigbee::{Direction, RespondsWith};
+use zigbee::{Direction, ExpectResponse};
 
 pub use self::read_attributes_status::ReadAttributesStatus;
 use crate::command::Scoped;
@@ -45,7 +45,7 @@ impl Scoped for Command {
     const SCOPE: Scope = Scope::Global;
 }
 
-impl RespondsWith for Command {
+impl ExpectResponse<crate::Cluster> for Command {
     type Response = Response;
 }
 
