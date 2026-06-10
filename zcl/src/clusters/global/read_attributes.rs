@@ -7,7 +7,6 @@ use core::iter::Empty;
 use core::ops::Deref;
 
 use le_stream::{FromLeStream, ToLeStream};
-use num_traits::FromPrimitive;
 use zigbee::Direction;
 use zigbee::types::Type;
 
@@ -90,6 +89,15 @@ impl Scoped for Response {
 impl From<Response> for crate::Cluster {
     fn from(command: Response) -> Self {
         Self::Global(command.into())
+    }
+}
+
+impl<T> From<Response> for Box<[Result<T::Attribute, ParseAttributeError<T>>]>
+where
+    T: ReadableAttribute,
+{
+    fn from(response: Response) -> Self {
+        response.parse::<T>().collect()
     }
 }
 

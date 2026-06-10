@@ -44,7 +44,7 @@ pub trait ReadAttributes {
         async move {
             self.read_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, ids)
                 .await
-                .map(|response| response.parse::<T>().collect())
+                .map(Into::into)
         }
     }
 }
