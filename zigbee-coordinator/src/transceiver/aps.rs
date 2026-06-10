@@ -1,19 +1,19 @@
 use zcl::Cluster;
 use zigbee_hw::Metadata;
 
-/// A ZCL over ZDP frame payload.
+/// A simplified APS frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct Payload<T> {
+pub struct Frame<T> {
     /// APS metadata for transmission.
     metadata: Metadata,
     /// An optional manufacturer code.
     manufacturer_code: Option<u16>,
-    /// ZCL payload.
+    /// Command payload.
     command: T,
 }
 
-impl<T> Payload<T> {
-    /// Create a new payload.
+impl<T> Frame<T> {
+    /// Create a new frame.
     #[must_use]
     pub const fn new(metadata: Metadata, manufacturer_code: Option<u16>, command: T) -> Self {
         Self {
@@ -23,7 +23,7 @@ impl<T> Payload<T> {
         }
     }
 
-    /// Create a new payload with no manufacturer code.
+    /// Create a new frame with no manufacturer code.
     #[must_use]
     pub const fn new_native(metadata: Metadata, command: T) -> Self {
         Self {
@@ -45,26 +45,26 @@ impl<T> Payload<T> {
         self.manufacturer_code
     }
 
-    /// Retrieve the ZCL command.
+    /// Retrieve the command payload.
     #[must_use]
     pub const fn command(&self) -> &T {
         &self.command
     }
 
-    /// Consume the payload into its parts.
+    /// Consume the frame into its parts.
     #[must_use]
     pub fn into_parts(self) -> (Metadata, Option<u16>, T) {
         (self.metadata, self.manufacturer_code, self.command)
     }
 }
 
-impl<T> Payload<T>
+impl<T> Frame<T>
 where
     T: Into<Cluster>,
 {
-    /// Consume the payload into a ZCL cluster payload.
+    /// Convert the frame into a ZCL cluster frame.
     #[must_use]
-    pub fn into_cluster(self) -> Payload<Cluster> {
-        Payload::new(self.metadata, self.manufacturer_code, self.command.into())
+    pub fn into_cluster(self) -> Frame<Cluster> {
+        Frame::new(self.metadata, self.manufacturer_code, self.command.into())
     }
 }

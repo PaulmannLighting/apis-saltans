@@ -12,7 +12,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::{Command, Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
-pub use self::message::{Message, Payload};
+pub use self::message::{Frame, Message};
 
 mod handle;
 mod message;
@@ -98,7 +98,7 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload<Cluster>,
+        payload: Frame<Cluster>,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
         let (metadata, manufacturer_code, command) = payload.into_parts();
@@ -115,7 +115,7 @@ where
         &mut self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload<Cluster>,
+        payload: Frame<Cluster>,
         response: Sender<Result<oneshot::Receiver<Cluster>, zigbee_hw::Error>>,
     ) {
         let (metadata, manufacturer_code, command) = payload.into_parts();

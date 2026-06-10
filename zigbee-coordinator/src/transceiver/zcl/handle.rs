@@ -3,7 +3,7 @@ use tokio::sync::oneshot::channel;
 use zigbee::{Address, Cluster, Endpoint, ExpectResponse};
 use zigbee_hw::Metadata;
 
-use super::{Message, Payload};
+use super::{Frame, Message};
 use crate::Error;
 use crate::timeout::Timeout;
 
@@ -15,7 +15,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload<zcl::Cluster>,
+        payload: Frame<zcl::Cluster>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Communicate a unicast with an expected response.
@@ -23,7 +23,7 @@ pub trait Handle {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload<T>,
+        payload: Frame<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
         T: ExpectResponse<zcl::Cluster>;
@@ -41,7 +41,7 @@ pub trait Handle {
         self.unicast(
             address,
             endpoint,
-            Payload::new_native(Metadata::for_cluster::<T>(None, None), command.into()),
+            Frame::new_native(Metadata::for_cluster::<T>(None, None), command.into()),
         )
         .await
     }
@@ -52,7 +52,7 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload<zcl::Cluster>,
+        payload: Frame<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
         self.send(Message::Unicast {
@@ -69,7 +69,7 @@ impl Handle for Sender<Message> {
         &self,
         address: Address,
         endpoint: Endpoint,
-        payload: Payload<T>,
+        payload: Frame<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
         T: ExpectResponse<zcl::Cluster>,
