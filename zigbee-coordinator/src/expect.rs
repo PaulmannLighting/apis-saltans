@@ -1,9 +1,9 @@
 use zcl::global::read_attributes;
 use zcl::{Cluster, global};
 
-/// Trait for expecting a specific ZCL command in a message.
+/// Trait for expecting a specific ZCL command in a cluster.
 pub trait ZclCommand<T> {
-    /// Expect a specific ZCL command in a message.
+    /// Expect a specific ZCL command in a cluster.
     ///
     /// Returns `Some(command)` if the expected command is found, otherwise `None`.
     fn expect(self) -> Option<T>;
