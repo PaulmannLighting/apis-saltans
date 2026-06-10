@@ -10,6 +10,6 @@
 # Design
 
 - [x] Define a strategy for handling reporting of attributes from different clusters.
-- [ ] Implement serialization of `read_attributes::Response`.
-- [ ] Revisit Power Configuration attributes.
-- [ ] Remove `MANUFACTURER_CODE` from `Command` trait and make it runtime-changeable.
+- [ ] <s>Implement serialization of `read_attributes::Response`.</s>
+- [x] <s>Revisit Power Configuration attributes.</s>
+- [x] Remove `MANUFACTURER_CODE` from `Command` trait and make it runtime-changeable.
