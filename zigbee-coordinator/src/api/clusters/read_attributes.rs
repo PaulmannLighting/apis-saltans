@@ -39,10 +39,10 @@ pub trait ReadAttributes {
         Self: Sync,
         T: ReadableAttribute,
     {
-        let attributes = attributes.into_iter().map(Into::into).collect();
+        let ids = attributes.into_iter().map(Into::into).collect();
 
         async move {
-            self.read_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, attributes)
+            self.read_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, ids)
                 .await
                 .map(|response| response.parse::<T>().collect())
         }
