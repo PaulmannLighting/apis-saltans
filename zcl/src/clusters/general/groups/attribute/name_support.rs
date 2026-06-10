@@ -7,9 +7,9 @@ use num_traits::FromPrimitive;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum NameSupport {
-    /// Group names are not supported by the device.
+    /// The device does not support group names.
     Unsupported = 0x00,
-    /// Group names are supported by the device.
+    /// The device supports group names.
     Supported = 0x01,
 }
 
