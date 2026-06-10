@@ -10,6 +10,14 @@ const NON_VALUE: u32 = 0xffff;
 #[repr(transparent)]
 pub struct Uint32(u32);
 
+impl Uint32 {
+    /// Return the inner raw value.
+    #[must_use]
+    pub const fn as_u32(self) -> u32 {
+        self.0
+    }
+}
+
 impl From<Uint32> for Option<u32> {
     fn from(value: Uint32) -> Self {
         value.try_into().ok()
