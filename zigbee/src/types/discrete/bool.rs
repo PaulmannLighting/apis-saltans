@@ -32,11 +32,11 @@ impl From<bool> for Bool {
     }
 }
 
-impl TryInto<bool> for Bool {
+impl TryFrom<Bool> for bool {
     type Error = u8;
 
-    fn try_into(self) -> Result<bool, Self::Error> {
-        match self.0 {
+    fn try_from(value: Bool) -> Result<Self, Self::Error> {
+        match value.0 {
             TRUE => Ok(true),
             FALSE => Ok(false),
             other => Err(other),
@@ -50,11 +50,11 @@ impl From<Bool> for Type {
     }
 }
 
-impl TryInto<Option<bool>> for Bool {
+impl TryFrom<Bool> for Option<bool> {
     type Error = u8;
 
-    fn try_into(self) -> Result<Option<bool>, Self::Error> {
-        match self.0 {
+    fn try_from(value: Bool) -> Result<Self, Self::Error> {
+        match value.0 {
             TRUE => Ok(Some(true)),
             FALSE => Ok(Some(false)),
             NON_VALUE => Ok(None),
