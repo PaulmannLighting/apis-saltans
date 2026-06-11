@@ -1,5 +1,5 @@
 use aps::Data;
-use macaddr::MacAddr8;
+use zigbee::Address;
 
 pub use self::command::Command;
 
@@ -17,28 +17,16 @@ pub enum Event {
     /// The network has been closed for new joins.
     NetworkClosed,
     /// A new device has joined the network.
-    DeviceJoined {
-        /// The IEEE address of the joined device.
-        ieee_address: MacAddr8,
-        /// The short ID of the joined device.
-        short_id: u16,
-    },
+    DeviceJoined(Address),
     /// A device has rejoined the network.
     DeviceRejoined {
-        /// The IEEE address of the joined device.
-        ieee_address: MacAddr8,
-        /// The short ID of the joined device.
-        short_id: u16,
+        /// The address of the joined device.
+        address: Address,
         /// Whether the rejoining was secured.
         secured: bool,
     },
     /// A device has left the network.
-    DeviceLeft {
-        /// The IEEE address of the left device.
-        ieee_address: MacAddr8,
-        /// The short ID of the left device.
-        short_id: u16,
-    },
+    DeviceLeft(Address),
     /// Message received from a device.
     MessageReceived {
         /// The PAN ID of the sender.
