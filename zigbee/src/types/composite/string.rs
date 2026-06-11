@@ -4,7 +4,7 @@ use core::str::Utf8Error;
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::constants::U8_CAPACITY;
-use crate::types::OctStr;
+use crate::types::{OctStr, Type};
 
 /// A string type, which can be up to [`OctStr::MAX_SIZE`] bytes long.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -59,6 +59,12 @@ impl<const CAPACITY: usize> AsRef<[u8]> for String<CAPACITY> {
 impl<const CAPACITY: usize> From<heapless::String<CAPACITY, u8>> for String<CAPACITY> {
     fn from(value: heapless::String<CAPACITY, u8>) -> Self {
         Self(OctStr::from(value.into_bytes()))
+    }
+}
+
+impl<const CAPACITY: usize> From<String<CAPACITY>> for Type {
+    fn from(value: String<CAPACITY>) -> Self {
+        Self::String(value.widen())
     }
 }
 

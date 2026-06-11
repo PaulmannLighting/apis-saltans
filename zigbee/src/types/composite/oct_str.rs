@@ -4,7 +4,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use log::{error, warn};
 
 use crate::constants::U8_CAPACITY;
-use crate::types::Uint8;
+use crate::types::{Type, Uint8};
 
 /// An octet string with a maximum size of [`OctStr::CAPACITY`] bytes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -72,6 +72,12 @@ impl<const CAPACITY: usize> From<heapless::Vec<u8, CAPACITY, u8>> for OctStr<CAP
 impl<const CAPACITY: usize> From<heapless::String<CAPACITY, u8>> for OctStr<CAPACITY> {
     fn from(string: heapless::String<CAPACITY, u8>) -> Self {
         Self::from(string.into_bytes())
+    }
+}
+
+impl<const CAPACITY: usize> From<OctStr<CAPACITY>> for Type {
+    fn from(value: OctStr<CAPACITY>) -> Self {
+        Self::OctetString(value.widen())
     }
 }
 
