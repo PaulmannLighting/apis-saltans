@@ -8,8 +8,8 @@ pub use status::{Displayable, Status};
 
 pub use self::frame::Frame;
 pub use self::services::{
-    ActiveEpReq, BindManagement, BindReq, BindRsp, ClearAllBindingsReq, Command, Destination,
-    DeviceAndServiceDiscovery, DeviceAnnce, EnhancedNwkUpdateParameters, IeeeAddrReq,
+    ActiveEpReq, ActiveEpRsp, BindManagement, BindReq, BindRsp, ClearAllBindingsReq, Command,
+    Destination, DeviceAndServiceDiscovery, DeviceAnnce, EnhancedNwkUpdateParameters, IeeeAddrReq,
     LeaveReqFlags, MatchDescReq, MatchDescRsp, MgmtBindReq, MgmtLeaveReq, MgmtLqiReq,
     MgmtNwkBeaconSurveyReq, MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq, MgmtNwkUpdateReq,
     MgmtPermitJoiningReq, MgmtPermitJoiningRsp, MgmtRtgReq, NetworkManagement, NodeDescReq,
