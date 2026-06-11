@@ -42,6 +42,12 @@ impl<const CAPACITY: usize> String<CAPACITY> {
     pub fn truncate<const NEW_CAPACITY: usize>(self) -> Result<String<NEW_CAPACITY>, Self> {
         self.0.truncate().map_err(Self).map(String::<NEW_CAPACITY>)
     }
+
+    /// Attempt to widen a string to a new, larger capacity.
+    #[must_use]
+    pub fn widen<const NEW_CAPACITY: usize>(self) -> String<NEW_CAPACITY> {
+        String(self.0.widen())
+    }
 }
 
 impl<const CAPACITY: usize> AsRef<[u8]> for String<CAPACITY> {

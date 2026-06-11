@@ -40,6 +40,15 @@ impl<const CAPACITY: usize> OctStr<CAPACITY> {
             Err(self)
         }
     }
+
+    /// Attempt to widen a string to a new, larger capacity.
+    #[must_use]
+    pub fn widen<const NEW_CAPACITY: usize>(mut self) -> OctStr<NEW_CAPACITY> {
+        const {
+            assert!(CAPACITY <= NEW_CAPACITY);
+        }
+        OctStr(self.0.drain(..).collect())
+    }
 }
 
 impl<const CAPACITY: usize> AsRef<[u8]> for OctStr<CAPACITY> {
