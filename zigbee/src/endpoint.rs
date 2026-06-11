@@ -44,20 +44,8 @@ impl From<u8> for Endpoint {
     fn from(value: u8) -> Self {
         match value {
             0 => Self::Data,
-            Application::MIN..=Application::MAX => Self::Application(
-                #[expect(unsafe_code)]
-                // SAFETY: We just checked that the alue is within `1..=240`.
-                unsafe {
-                    Application::new_unchecked(value)
-                },
-            ),
-            Reserved::MIN..=Reserved::MAX => Self::Reserved(
-                #[expect(unsafe_code)]
-                // SAFETY: We just checked, that the alue is within `241..=254`.
-                unsafe {
-                    Reserved::new_unchecked(value)
-                },
-            ),
+            Application::MIN..=Application::MAX => Self::Application(Application(value)),
+            Reserved::MIN..=Reserved::MAX => Self::Reserved(Reserved(value)),
             255 => Self::Broadcast,
         }
     }

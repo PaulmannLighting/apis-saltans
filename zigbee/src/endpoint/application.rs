@@ -3,7 +3,7 @@ use std::ops::RangeInclusive;
 /// A Zigbee application endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 #[repr(transparent)]
-pub struct Application(u8);
+pub struct Application(pub(crate) u8);
 
 impl Application {
     /// The minimum valid application endpoint ID.

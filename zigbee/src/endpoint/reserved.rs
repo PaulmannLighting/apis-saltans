@@ -3,7 +3,7 @@ use std::ops::RangeInclusive;
 /// A Zigbee reserved endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 #[repr(transparent)]
-pub struct Reserved(u8);
+pub struct Reserved(pub(crate) u8);
 
 impl Reserved {
     /// The minimum valid reserved endpoint ID.
