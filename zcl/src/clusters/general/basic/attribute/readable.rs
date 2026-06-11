@@ -85,22 +85,22 @@ impl From<Attribute> for Type {
             Attribute::ZclVersion(value)
             | Attribute::ApplicationVersion(value)
             | Attribute::StackVersion(value)
-            | Attribute::HwVersion(value) => Self::Uint8(value),
+            | Attribute::HwVersion(value) => value.into(),
             Attribute::ManufacturerName(name) | Attribute::ModelIdentifier(name) => name.into(),
             Attribute::DateCode(date_code) => date_code.into(),
-            Attribute::PowerSource(source) => Self::Enum8(source.into()),
-            Attribute::GenericDeviceClass(device_class) => Self::Enum8(device_class.into()),
-            Attribute::GenericDeviceType(device_type) => Self::Enum8(device_type.into()),
+            Attribute::PowerSource(power_source) => power_source.into(),
+            Attribute::GenericDeviceClass(device_class) => device_class.into(),
+            Attribute::GenericDeviceType(device_type) => device_type.into(),
             Attribute::ProductCode(code) => code.into(),
             Attribute::ProductUrl(url) => url.into(),
             Attribute::ManufacturerVersionDetails(details) => details.into(),
             Attribute::SerialNumber(serial_number) => serial_number.into(),
             Attribute::ProductLabel(label) => label.into(),
             Attribute::LocationDescription(string) => string.into(),
-            Attribute::PhysicalEnvironment(environment) => Self::Enum8(environment.into()),
-            Attribute::DeviceEnabled(enabled) => Self::Boolean(enabled),
-            Attribute::AlarmMask(mask) => Self::Map8(mask.bits()),
-            Attribute::DisableLocalConfig(value) => Self::Map8(value.bits()),
+            Attribute::PhysicalEnvironment(environment) => environment.into(),
+            Attribute::DeviceEnabled(enabled) => enabled.into(),
+            Attribute::AlarmMask(mask) => mask.into(),
+            Attribute::DisableLocalConfig(value) => value.into(),
             Attribute::SwBuildId(build_id) => build_id.into(),
         }
     }
