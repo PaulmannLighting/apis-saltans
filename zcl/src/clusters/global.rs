@@ -12,6 +12,9 @@ pub mod configure_reporting;
 pub mod default_response;
 pub mod read_attributes;
 pub mod report_attributes;
+pub mod write_attributes;
+pub mod write_attributes_no_response;
+pub mod write_attributes_undivided;
 
 /// Available global commands.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclFrame)]
