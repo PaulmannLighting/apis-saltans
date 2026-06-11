@@ -12,7 +12,7 @@ mod parse_error;
 const DATE_FORMAT: &str = "%Y%m%d";
 const MAX_CUSTOM_SIZE: usize = 8;
 
-/// A custom string type for the custom part of the date code, which can be up to `MAX_CUSTOM_SIZE` bytes long.
+/// A string type for the custom part of the date code, which can be up to `MAX_CUSTOM_SIZE` bytes long.
 pub type CustomString = heapless::String<MAX_CUSTOM_SIZE>;
 
 /// Zigbee Date Code attribute.
