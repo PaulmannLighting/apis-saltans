@@ -150,6 +150,24 @@ impl Display for Command {
     }
 }
 
+impl From<DeviceAndServiceDiscovery> for Command {
+    fn from(cmd: DeviceAndServiceDiscovery) -> Self {
+        Self::DeviceAndServiceDiscovery(cmd)
+    }
+}
+
+impl From<BindManagement> for Command {
+    fn from(cmd: BindManagement) -> Self {
+        Self::BindManagement(cmd)
+    }
+}
+
+impl From<NetworkManagement> for Command {
+    fn from(cmd: NetworkManagement) -> Self {
+        Self::NetworkManagement(cmd)
+    }
+}
+
 impl ToLeStream for Command {
     type Iter = Iter;
 

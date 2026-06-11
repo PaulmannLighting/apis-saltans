@@ -3,7 +3,8 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use zigbee::{Cluster, Endpoint};
 
-use crate::{Service, Status};
+use crate::services::DeviceAndServiceDiscovery;
+use crate::{Command, Service, Status};
 
 /// Active Endpoint Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -44,6 +45,10 @@ impl ActiveEpRsp {
     }
 
     /// Return the status of the response.
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw status code if the conversion to a [`Status`] fails.
     pub fn status(&self) -> Result<Status, u8> {
         self.status.try_into()
     }
@@ -88,5 +93,20 @@ impl IntoIterator for ActiveEpRsp {
 
     fn into_iter(self) -> Self::IntoIter {
         self.active_eps.into_iter()
+    }
+}
+
+impl TryFrom<Command> for ActiveEpRsp {
+    type Error = Command;
+
+    fn try_from(cmd: Command) -> Result<Self, Self::Error> {
+        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::ActiveEpRsp(
+            active_eps,
+        )) = cmd
+        {
+            Ok(active_eps)
+        } else {
+            Err(cmd)
+        }
     }
 }

@@ -1,9 +1,10 @@
 use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Cluster;
+use zigbee::{Cluster, ExpectResponse};
 
-use crate::Service;
+use crate::services::DeviceAndServiceDiscovery;
+use crate::{ActiveEpRsp, Command, Service};
 
 /// Active Endpoint Request
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, ToLeStream, FromLeStream)]
@@ -35,6 +36,10 @@ impl Service for ActiveEpReq {
     const NAME: &'static str = "Active_EP_req";
 }
 
+impl ExpectResponse<Command> for ActiveEpReq {
+    type Response = ActiveEpRsp;
+}
+
 impl Display for ActiveEpReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -43,5 +48,11 @@ impl Display for ActiveEpReq {
             Self::NAME,
             self.nwk_addr_of_interest
         )
+    }
+}
+
+impl From<ActiveEpReq> for Command {
+    fn from(active_ep_req: ActiveEpReq) -> Self {
+        Self::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::ActiveEpReq(active_ep_req))
     }
 }

@@ -85,3 +85,87 @@ impl Display for DeviceAndServiceDiscovery {
         }
     }
 }
+
+impl From<NwkAddrReq> for DeviceAndServiceDiscovery {
+    fn from(cmd: NwkAddrReq) -> Self {
+        Self::NwkAddrReq(cmd)
+    }
+}
+
+impl From<IeeeAddrReq> for DeviceAndServiceDiscovery {
+    fn from(cmd: IeeeAddrReq) -> Self {
+        Self::IeeeAddrReq(cmd)
+    }
+}
+
+impl From<NodeDescReq> for DeviceAndServiceDiscovery {
+    fn from(cmd: NodeDescReq) -> Self {
+        Self::NodeDescReq(cmd)
+    }
+}
+
+impl From<NodeDescRsp> for DeviceAndServiceDiscovery {
+    fn from(cmd: NodeDescRsp) -> Self {
+        Self::NodeDescRsp(cmd)
+    }
+}
+
+impl From<PowerDescReq> for DeviceAndServiceDiscovery {
+    fn from(cmd: PowerDescReq) -> Self {
+        Self::PowerDescReq(cmd)
+    }
+}
+
+impl From<SimpleDescReq> for DeviceAndServiceDiscovery {
+    fn from(cmd: SimpleDescReq) -> Self {
+        Self::SimpleDescReq(cmd)
+    }
+}
+
+impl From<SimpleDescRsp> for DeviceAndServiceDiscovery {
+    fn from(cmd: SimpleDescRsp) -> Self {
+        Self::SimpleDescRsp(cmd)
+    }
+}
+
+impl From<ActiveEpReq> for DeviceAndServiceDiscovery {
+    fn from(cmd: ActiveEpReq) -> Self {
+        Self::ActiveEpReq(cmd)
+    }
+}
+
+impl From<ActiveEpRsp> for DeviceAndServiceDiscovery {
+    fn from(cmd: ActiveEpRsp) -> Self {
+        Self::ActiveEpRsp(cmd)
+    }
+}
+
+impl From<MatchDescReq> for DeviceAndServiceDiscovery {
+    fn from(cmd: MatchDescReq) -> Self {
+        Self::MatchDescReq(cmd)
+    }
+}
+
+impl From<MatchDescRsp> for DeviceAndServiceDiscovery {
+    fn from(cmd: MatchDescRsp) -> Self {
+        Self::MatchDescRsp(cmd)
+    }
+}
+
+impl From<DeviceAnnce> for DeviceAndServiceDiscovery {
+    fn from(cmd: DeviceAnnce) -> Self {
+        Self::DeviceAnnce(cmd)
+    }
+}
+
+impl From<ParentAnnce> for DeviceAndServiceDiscovery {
+    fn from(cmd: ParentAnnce) -> Self {
+        Self::ParentAnnce(cmd)
+    }
+}
+
+impl From<SystemServerDiscoveryReq> for DeviceAndServiceDiscovery {
+    fn from(cmd: SystemServerDiscoveryReq) -> Self {
+        Self::SystemServerDiscoveryReq(cmd)
+    }
+}
