@@ -22,12 +22,18 @@ pub trait WriteAttributes {
         records: Box<[Record]>,
     ) -> impl Future<Output = Result<Response, Error>> + Send;
 
-    /// Write raw attributes to a device.
+    /// Write attributes to a device.
+    ///
+    /// # Returns
+    ///
+    /// Returns a [`Vec`] of [`Result`]s, where each [`Result`] contains the status of the write operation for each attribute.
+    ///
+    /// - `Ok(id)`: The attribute was successfully written.
+    /// - `Err(id)`: The attribute could not be written.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the communication fails or if the response is not a valid [`Response`]
-    /// or an [`WriteAttributesError`] if the writing of the attributes failed.
+    /// Returns an [`Error`] if the communication fails or if the response is not a valid [`Response`].
     fn write_attributes<T>(
         &self,
         address: Address,
