@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::types::Type;
 
 /// Flags for local device configuration functions to be disabled.
 #[cfg_attr(
@@ -19,5 +20,11 @@ bitflags! {
         const RESET = 0b0000_0001;
         /// Device configuration is enabled.
         const DEVICE_CONFIGURATION = 0b0000_0010;
+    }
+}
+
+impl From<DisableLocalConfig> for Type {
+    fn from(value: DisableLocalConfig) -> Self {
+        Self::Map8(value.bits())
     }
 }

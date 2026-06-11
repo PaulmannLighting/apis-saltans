@@ -4,13 +4,16 @@ use core::iter::Chain;
 
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
-use zigbee::types::String;
+use zigbee::types::{String, Type};
+use zigbee::{ClusterId, ClusterSpecific};
 
 use super::alarm_mask::AlarmMask;
 use super::device_enabled::DeviceEnabled;
 use super::disable_local_config::DisableLocalConfig;
 use super::physical_environment::PhysicalEnvironment;
 use super::readable;
+use crate::WritableAttribute;
+use crate::global::write_attributes::Record;
 
 mod iterator;
 
@@ -30,6 +33,34 @@ pub enum Attribute {
     AlarmMask(AlarmMask) = 0x0013,
     /// Flags to disable local configuration.
     DisableLocalConfig(DisableLocalConfig) = 0x0014,
+}
+
+impl ClusterSpecific for Attribute {
+    const CLUSTER: ClusterId = ClusterId::Basic;
+}
+
+impl WritableAttribute for Attribute {
+    fn id(&self) -> u16 {
+        self.discriminant()
+    }
+}
+
+impl From<Attribute> for Record {
+    fn from(attribute: Attribute) -> Self {
+        let id = attribute.discriminant();
+
+        match attribute {
+            Attribute::LocationDescription(string) => Self::new(id, Type::String(string.widen())),
+            Attribute::PhysicalEnvironment(physical_environment) => {
+                Self::new(id, physical_environment.into())
+            }
+            Attribute::DeviceEnabled(device_enabled) => Self::new(id, device_enabled.into()),
+            Attribute::AlarmMask(alarm_mask) => Self::new(id, alarm_mask.into()),
+            Attribute::DisableLocalConfig(disable_local_config) => {
+                Self::new(id, disable_local_config.into())
+            }
+        }
+    }
 }
 
 impl TryFrom<readable::Attribute> for Attribute {

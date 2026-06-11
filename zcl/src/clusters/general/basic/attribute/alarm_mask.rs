@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::types::Type;
 
 /// Alarm mask.
 #[cfg_attr(
@@ -39,5 +40,11 @@ impl AlarmMask {
     #[must_use]
     pub const fn is_general_software_fault(self) -> bool {
         self.contains(Self::GENERAL_SOFTWARE_FAULT)
+    }
+}
+
+impl From<AlarmMask> for Type {
+    fn from(value: AlarmMask) -> Self {
+        Self::Map8(value.bits())
     }
 }

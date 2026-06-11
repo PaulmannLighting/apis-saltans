@@ -1,16 +1,18 @@
 use le_stream::ToLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use zigbee::types::Bool;
+use zigbee::types::{Bool, Type};
 
 /// Device Enabled Attribute.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum DeviceEnabled {
     /// Device is disabled.
     Disabled = 0x00,
+
     /// Device is enabled.
+    #[default]
     Enabled = 0x01,
 }
 
@@ -22,11 +24,7 @@ impl From<DeviceEnabled> for u8 {
 
 impl From<bool> for DeviceEnabled {
     fn from(value: bool) -> Self {
-        if value {
-            DeviceEnabled::Enabled
-        } else {
-            DeviceEnabled::Disabled
-        }
+        if value { Self::Enabled } else { Self::Disabled }
     }
 }
 
@@ -45,6 +43,12 @@ impl From<DeviceEnabled> for Bool {
             DeviceEnabled::Disabled => Bool::FALSE,
             DeviceEnabled::Enabled => Bool::TRUE,
         }
+    }
+}
+
+impl From<DeviceEnabled> for Type {
+    fn from(value: DeviceEnabled) -> Self {
+        Self::Boolean(value.into())
     }
 }
 
