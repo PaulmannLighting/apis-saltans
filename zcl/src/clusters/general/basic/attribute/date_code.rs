@@ -3,7 +3,7 @@ use core::str::{FromStr, Utf8Error};
 
 use chrono::NaiveDate;
 use either::{Either, Left, Right};
-use zigbee::types::String;
+use zigbee::types::{String, Type};
 
 pub use self::parse_error::ParseError;
 
@@ -70,6 +70,12 @@ impl From<&DateCode> for String<16> {
     }
 }
 
+impl From<DateCode> for Type {
+    fn from(date_code: DateCode) -> Self {
+        String::<16>::from(date_code).into()
+    }
+}
+
 impl FromStr for DateCode {
     type Err = ParseError;
 
@@ -86,6 +92,22 @@ impl<const CAPACITY: usize> TryFrom<String<CAPACITY>> for DateCode {
 
     fn try_from(value: String<CAPACITY>) -> Result<Self, Self::Error> {
         Self::from_str(value.try_as_str().map_err(Left)?).map_err(Right)
+    }
+}
+
+impl TryFrom<Type> for DateCode {
+    type Error = Type;
+
+    fn try_from(typ: Type) -> Result<Self, Self::Error> {
+        if let Type::String(value) = typ {
+            value
+                .try_as_str()
+                .ok()
+                .and_then(|value| value.parse().ok())
+                .ok_or(Type::String(value))
+        } else {
+            Err(typ)
+        }
     }
 }
 

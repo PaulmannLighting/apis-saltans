@@ -1,7 +1,7 @@
 use le_stream::ToLeStream;
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
-use zigbee::types::Uint8;
+use zigbee::types::{Type, Uint8};
 
 /// The generic type of device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -66,7 +66,13 @@ impl From<GenericDeviceType> for u8 {
 
 impl From<GenericDeviceType> for Uint8 {
     fn from(value: GenericDeviceType) -> Self {
-        Uint8::new(value as u8)
+        Self::new(value.into())
+    }
+}
+
+impl From<GenericDeviceType> for Type {
+    fn from(value: GenericDeviceType) -> Self {
+        Self::Enum8(value.into())
     }
 }
 
@@ -75,6 +81,26 @@ impl TryFrom<u8> for GenericDeviceType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::from_u8(value).ok_or(value)
+    }
+}
+
+impl TryFrom<Uint8> for GenericDeviceType {
+    type Error = Uint8;
+
+    fn try_from(value: Uint8) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_u8()).map_err(|_| value)
+    }
+}
+
+impl TryFrom<Type> for GenericDeviceType {
+    type Error = Type;
+
+    fn try_from(typ: Type) -> Result<Self, Self::Error> {
+        if let Type::Enum8(value) = typ {
+            Self::try_from(value).map_err(Type::Enum8)
+        } else {
+            Err(typ)
+        }
     }
 }
 

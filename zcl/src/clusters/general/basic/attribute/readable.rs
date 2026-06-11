@@ -3,12 +3,11 @@
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
-use zigbee::types::{OctStr, String, Type, Uint8};
+use zigbee::types::{Bool, OctStr, String, Type, Uint8};
 use zigbee::{ClusterId, ClusterSpecific};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;
-use super::device_enabled::DeviceEnabled;
 use super::disable_local_config::DisableLocalConfig;
 use super::generic_device_class::GenericDeviceClass;
 use super::generic_device_type::GenericDeviceType;
@@ -57,7 +56,7 @@ pub enum Attribute {
     /// The physical environment.
     PhysicalEnvironment(PhysicalEnvironment) = 0x0011,
     /// The device enabled state.
-    DeviceEnabled(DeviceEnabled) = 0x0012,
+    DeviceEnabled(Bool) = 0x0012,
     /// The alarm mask.
     AlarmMask(AlarmMask) = 0x0013,
     /// Flags to disable local configuration.
@@ -88,24 +87,22 @@ impl From<Attribute> for (u16, Type) {
             | Attribute::ApplicationVersion(value)
             | Attribute::StackVersion(value)
             | Attribute::HwVersion(value) => Type::Uint8(value),
-            Attribute::ManufacturerName(name) | Attribute::ModelIdentifier(name) => {
-                Type::String(name.widen())
-            }
-            Attribute::DateCode(date_code) => Type::String(String::<16>::from(date_code).widen()),
+            Attribute::ManufacturerName(name) | Attribute::ModelIdentifier(name) => name.into(),
+            Attribute::DateCode(date_code) => date_code.into(),
             Attribute::PowerSource(source) => Type::Enum8(source.into()),
             Attribute::GenericDeviceClass(device_class) => Type::Enum8(device_class.into()),
             Attribute::GenericDeviceType(device_type) => Type::Enum8(device_type.into()),
-            Attribute::ProductCode(code) => Type::OctetString(code),
-            Attribute::ProductUrl(url) => Type::String(url),
-            Attribute::ManufacturerVersionDetails(details) => Type::String(details),
-            Attribute::SerialNumber(serial_number) => Type::String(serial_number),
-            Attribute::ProductLabel(label) => Type::String(label),
-            Attribute::LocationDescription(string) => Type::String(string.widen()),
+            Attribute::ProductCode(code) => code.into(),
+            Attribute::ProductUrl(url) => url.into(),
+            Attribute::ManufacturerVersionDetails(details) => details.into(),
+            Attribute::SerialNumber(serial_number) => serial_number.into(),
+            Attribute::ProductLabel(label) => label.into(),
+            Attribute::LocationDescription(string) => string.into(),
             Attribute::PhysicalEnvironment(environment) => Type::Enum8(environment.into()),
-            Attribute::DeviceEnabled(enabled) => Type::Boolean(enabled.into()),
+            Attribute::DeviceEnabled(enabled) => Type::Boolean(enabled),
             Attribute::AlarmMask(mask) => Type::Map8(mask.bits()),
             Attribute::DisableLocalConfig(value) => Type::Map8(value.bits()),
-            Attribute::SwBuildId(build_id) => Type::String(build_id.widen()),
+            Attribute::SwBuildId(build_id) => build_id.into(),
         };
 
         (id, typ)
@@ -115,199 +112,31 @@ impl From<Attribute> for (u16, Type) {
 impl TryFrom<(Id, Type)> for Attribute {
     type Error = InvalidType<Id>;
 
-    #[expect(clippy::too_many_lines)]
     fn try_from((id, typ): (Id, Type)) -> Result<Self, Self::Error> {
         match id {
-            Id::ZclVersion => {
-                if let Type::Uint8(value) = typ {
-                    Ok(Self::ZclVersion(value))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::ApplicationVersion => {
-                if let Type::Uint8(value) = typ {
-                    Ok(Self::ApplicationVersion(value))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::StackVersion => {
-                if let Type::Uint8(value) = typ {
-                    Ok(Self::StackVersion(value))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::HwVersion => {
-                if let Type::Uint8(value) = typ {
-                    Ok(Self::HwVersion(value))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::ManufacturerName => {
-                if let Type::String(value) = typ {
-                    match value.truncate() {
-                        Ok(string) => Ok(Self::ManufacturerName(string)),
-                        Err(value) => Err(InvalidType::new(id, Type::String(value))),
-                    }
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::ModelIdentifier => {
-                if let Type::String(value) = typ {
-                    match value.truncate() {
-                        Ok(string) => Ok(Self::ModelIdentifier(string)),
-                        Err(value) => Err(InvalidType::new(id, Type::String(value))),
-                    }
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::DateCode => {
-                if let Type::String(value) = typ {
-                    if let Ok(string) = value.try_as_str()
-                        && let Ok(date_code) = string.parse()
-                    {
-                        Ok(Self::DateCode(date_code))
-                    } else {
-                        Err(InvalidType::new(id, Type::String(value)))
-                    }
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::PowerSource => {
-                if let Type::Uint8(value) = typ
-                    && let Ok(value) = value.try_into()
-                    && let Some(power_source) = PowerSource::from_u8(value)
-                {
-                    Ok(Self::PowerSource(power_source))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::GenericDeviceClass => {
-                if let Type::Uint8(value) = typ
-                    && let Ok(value) = value.try_into()
-                    && let Some(generic_device_class) = GenericDeviceClass::from_u8(value)
-                {
-                    Ok(Self::GenericDeviceClass(generic_device_class))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::GenericDeviceType => {
-                if let Type::Uint8(value) = typ
-                    && let Ok(value) = value.try_into()
-                    && let Some(generic_device_type) = GenericDeviceType::from_u8(value)
-                {
-                    Ok(Self::GenericDeviceType(generic_device_type))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::ProductCode => {
-                if let Type::OctetString(value) = typ {
-                    match value.truncate() {
-                        Ok(value) => Ok(Self::ProductCode(value)),
-                        Err(value) => Err(InvalidType::new(id, Type::OctetString(value))),
-                    }
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::ProductUrl => {
-                if let Type::String(value) = typ {
-                    Ok(Self::ProductUrl(value))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::ManufacturerVersionDetails => {
-                if let Type::String(value) = typ {
-                    Ok(Self::ManufacturerVersionDetails(value))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::SerialNumber => {
-                if let Type::String(value) = typ {
-                    Ok(Self::SerialNumber(value))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::ProductLabel => {
-                if let Type::String(value) = typ {
-                    Ok(Self::ProductLabel(value))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::LocationDescription => {
-                if let Type::String(value) = typ {
-                    match value.truncate() {
-                        Ok(string) => Ok(Self::LocationDescription(string)),
-                        Err(value) => Err(InvalidType::new(id, Type::String(value))),
-                    }
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::PhysicalEnvironment => {
-                if let Type::Uint8(value) = typ
-                    && let Ok(value) = value.try_into()
-                    && let Some(physical_environment) = PhysicalEnvironment::from_u8(value)
-                {
-                    Ok(Self::PhysicalEnvironment(physical_environment))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::DeviceEnabled => {
-                if let Type::Uint8(value) = typ
-                    && let Ok(value) = value.try_into()
-                    && let Some(device_enabled) = DeviceEnabled::from_u8(value)
-                {
-                    Ok(Self::DeviceEnabled(device_enabled))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::AlarmMask => {
-                if let Type::Uint8(value) = typ
-                    && let Ok(value) = value.try_into()
-                {
-                    Ok(Self::AlarmMask(AlarmMask::from_bits_retain(value)))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::DisableLocalConfig => {
-                if let Type::Uint8(value) = typ
-                    && let Ok(value) = value.try_into()
-                {
-                    Ok(Self::DisableLocalConfig(
-                        DisableLocalConfig::from_bits_retain(value),
-                    ))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
-            Id::SwBuildId => {
-                if let Type::String(value) = typ {
-                    match value.truncate() {
-                        Ok(string) => Ok(Self::SwBuildId(string)),
-                        Err(value) => Err(InvalidType::new(id, Type::String(value))),
-                    }
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
+            Id::ZclVersion => typ.try_into().map(Self::ZclVersion),
+            Id::ApplicationVersion => typ.try_into().map(Self::ApplicationVersion),
+            Id::StackVersion => typ.try_into().map(Self::StackVersion),
+            Id::HwVersion => typ.try_into().map(Self::HwVersion),
+            Id::ManufacturerName => typ.try_into().map(Self::ManufacturerName),
+            Id::ModelIdentifier => typ.try_into().map(Self::ModelIdentifier),
+            Id::DateCode => typ.try_into().map(Self::DateCode),
+            Id::PowerSource => typ.try_into().map(Self::PowerSource),
+            Id::GenericDeviceClass => typ.try_into().map(Self::GenericDeviceClass),
+            Id::GenericDeviceType => typ.try_into().map(Self::GenericDeviceType),
+            Id::ProductCode => typ.try_into().map(Self::ProductCode),
+            Id::ProductUrl => typ.try_into().map(Self::ProductUrl),
+            Id::ManufacturerVersionDetails => typ.try_into().map(Self::ManufacturerVersionDetails),
+            Id::SerialNumber => typ.try_into().map(Self::SerialNumber),
+            Id::ProductLabel => typ.try_into().map(Self::ProductLabel),
+            Id::LocationDescription => typ.try_into().map(Self::LocationDescription),
+            Id::PhysicalEnvironment => typ.try_into().map(Self::PhysicalEnvironment),
+            Id::DeviceEnabled => typ.try_into().map(Self::DeviceEnabled),
+            Id::AlarmMask => typ.try_into().map(Self::AlarmMask),
+            Id::DisableLocalConfig => typ.try_into().map(Self::DisableLocalConfig),
+            Id::SwBuildId => typ.try_into().map(Self::SwBuildId),
         }
+        .map_err(|typ| InvalidType::new(id, typ))
     }
 }
 

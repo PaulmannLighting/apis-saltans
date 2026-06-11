@@ -4,11 +4,10 @@ use core::iter::Chain;
 
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
-use zigbee::types::{String, Type};
+use zigbee::types::{Bool, String};
 use zigbee::{ClusterId, ClusterSpecific};
 
 use super::alarm_mask::AlarmMask;
-use super::device_enabled::DeviceEnabled;
 use super::disable_local_config::DisableLocalConfig;
 use super::physical_environment::PhysicalEnvironment;
 use super::readable;
@@ -28,7 +27,7 @@ pub enum Attribute {
     /// The physical environment.
     PhysicalEnvironment(PhysicalEnvironment) = 0x0011,
     /// The device enabled state.
-    DeviceEnabled(DeviceEnabled) = 0x0012,
+    DeviceEnabled(Bool) = 0x0012,
     /// The alarm mask.
     AlarmMask(AlarmMask) = 0x0013,
     /// Flags to disable local configuration.
@@ -50,7 +49,7 @@ impl From<Attribute> for Record {
         let id = attribute.discriminant();
 
         match attribute {
-            Attribute::LocationDescription(string) => Self::new(id, Type::String(string.widen())),
+            Attribute::LocationDescription(string) => Self::new(id, string.into()),
             Attribute::PhysicalEnvironment(physical_environment) => {
                 Self::new(id, physical_environment.into())
             }

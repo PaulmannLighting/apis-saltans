@@ -1,15 +1,13 @@
 use le_stream::ToLeStream;
-use zigbee::types::String;
+use zigbee::types::{Bool, String};
 
-use crate::clusters::general::basic::{
-    AlarmMask, DeviceEnabled, DisableLocalConfig, PhysicalEnvironment,
-};
+use crate::clusters::general::basic::{AlarmMask, DisableLocalConfig, PhysicalEnvironment};
 
 /// Little endian stream iterator for the payload of an attribute in the Basic cluster.
 pub enum Attribute {
     String16(<String<16> as ToLeStream>::Iter),
     PhysicalEnvironment(<PhysicalEnvironment as ToLeStream>::Iter),
-    DeviceEnabled(<DeviceEnabled as ToLeStream>::Iter),
+    DeviceEnabled(<Bool as ToLeStream>::Iter),
     AlarmMask(<AlarmMask as ToLeStream>::Iter),
     DisableLocalConfig(<DisableLocalConfig as ToLeStream>::Iter),
 }
@@ -40,8 +38,8 @@ impl From<PhysicalEnvironment> for Attribute {
     }
 }
 
-impl From<DeviceEnabled> for Attribute {
-    fn from(value: DeviceEnabled) -> Self {
+impl From<Bool> for Attribute {
+    fn from(value: Bool) -> Self {
         Self::DeviceEnabled(value.to_le_stream())
     }
 }

@@ -58,11 +58,6 @@ impl<T> InvalidType<T> {
     pub const fn new(id: T, typ: Type) -> Self {
         Self { id, typ }
     }
-
-    /// Return a closure that creates a new invalid type error with the given ID from a `Type`.
-    pub const fn with_id(id: T) -> impl FnOnce(Type) -> Self {
-        |typ| Self::new(id, typ)
-    }
 }
 
 impl<T> Display for InvalidType<T>

@@ -1,7 +1,7 @@
 use le_stream::ToLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use zigbee::types::Uint8;
+use zigbee::types::{Type, Uint8};
 
 /// Device power source attribute.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -32,7 +32,13 @@ impl From<PowerSource> for u8 {
 
 impl From<PowerSource> for Uint8 {
     fn from(value: PowerSource) -> Self {
-        Uint8::new(value as u8)
+        Self::new(value.into())
+    }
+}
+
+impl From<PowerSource> for Type {
+    fn from(value: PowerSource) -> Self {
+        Self::Enum8(value.into())
     }
 }
 
@@ -41,6 +47,26 @@ impl TryFrom<u8> for PowerSource {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::from_u8(value).ok_or(value)
+    }
+}
+
+impl TryFrom<Uint8> for PowerSource {
+    type Error = Uint8;
+
+    fn try_from(value: Uint8) -> Result<Self, Self::Error> {
+        value.as_u8().try_into().map_err(|_| value)
+    }
+}
+
+impl TryFrom<Type> for PowerSource {
+    type Error = Type;
+
+    fn try_from(typ: Type) -> Result<Self, Self::Error> {
+        if let Type::Enum8(value) = typ {
+            value.try_into().map_err(|_| typ)
+        } else {
+            Err(typ)
+        }
     }
 }
 

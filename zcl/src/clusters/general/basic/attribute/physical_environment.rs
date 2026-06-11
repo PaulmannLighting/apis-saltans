@@ -236,7 +236,7 @@ impl From<PhysicalEnvironment> for u8 {
 
 impl From<PhysicalEnvironment> for Uint8 {
     fn from(value: PhysicalEnvironment) -> Self {
-        Self::new(value as u8)
+        Self::new(value.into())
     }
 }
 
@@ -251,6 +251,26 @@ impl TryFrom<u8> for PhysicalEnvironment {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::from_u8(value).ok_or(value)
+    }
+}
+
+impl TryFrom<Uint8> for PhysicalEnvironment {
+    type Error = Uint8;
+
+    fn try_from(value: Uint8) -> Result<Self, Self::Error> {
+        value.as_u8().try_into().map_err(Uint8::new)
+    }
+}
+
+impl TryFrom<Type> for PhysicalEnvironment {
+    type Error = Type;
+
+    fn try_from(value: Type) -> Result<Self, Self::Error> {
+        if let Type::Enum8(value) = value {
+            Self::try_from(value).map_err(Type::Enum8)
+        } else {
+            Err(value)
+        }
     }
 }
 

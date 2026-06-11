@@ -28,3 +28,15 @@ impl From<DisableLocalConfig> for Type {
         Self::Map8(value.bits())
     }
 }
+
+impl TryFrom<Type> for DisableLocalConfig {
+    type Error = Type;
+
+    fn try_from(typ: Type) -> Result<Self, Self::Error> {
+        if let Type::Map8(value) = typ {
+            Ok(Self::from_bits_retain(value))
+        } else {
+            Err(typ)
+        }
+    }
+}
