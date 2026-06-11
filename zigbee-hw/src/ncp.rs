@@ -4,7 +4,7 @@ use std::time::Duration;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
-use zigbee::{Address, Endpoint};
+use zigbee::Endpoint;
 
 use crate::message::Message;
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};
@@ -97,7 +97,7 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn unicast(
         &self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
@@ -183,15 +183,10 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn unicast(
-        &self,
-        address: Address,
-        endpoint: Endpoint,
-        frame: Frame,
-    ) -> Result<u8, Error> {
+    async fn unicast(&self, short_id: u16, endpoint: Endpoint, frame: Frame) -> Result<u8, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::Unicast {
-            address,
+            short_id,
             endpoint,
             frame,
             response,

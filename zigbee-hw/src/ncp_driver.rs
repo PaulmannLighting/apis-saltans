@@ -6,7 +6,7 @@ use std::time::Duration;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
-use zigbee::{Address, Endpoint};
+use zigbee::Endpoint;
 
 use self::sealed_driver::SealedDriver;
 use crate::message::Message;
@@ -109,7 +109,7 @@ pub trait NcpDriver {
     /// Returns an error if the operation fails.
     fn unicast(
         &mut self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;

@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use macaddr::MacAddr8;
 use tokio::sync::oneshot::Sender;
-use zigbee::{Address, Endpoint};
+use zigbee::Endpoint;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
@@ -58,7 +58,7 @@ pub enum Message {
     },
     /// Send a unicast request.
     Unicast {
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         frame: Frame,
         response: Sender<Result<u8, Error>>,

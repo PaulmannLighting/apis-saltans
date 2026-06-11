@@ -107,13 +107,13 @@ where
                         });
                 }
                 Message::Unicast {
-                    address,
+                    short_id,
                     endpoint,
                     frame,
                     response,
                 } => {
                     response
-                        .send(self.unicast(address, endpoint, frame).await)
+                        .send(self.unicast(short_id, endpoint, frame).await)
                         .unwrap_or_else(|error| {
                             error!("Failed to send ZCL command response: {error:?}");
                         });
