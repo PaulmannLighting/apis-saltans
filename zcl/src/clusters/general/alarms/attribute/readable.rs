@@ -6,6 +6,7 @@ use repr_discriminant::ReprDiscriminant;
 use zigbee::types::Type;
 use zigbee::{ClusterId, ClusterSpecific};
 
+use super::AlarmCount;
 use crate::{InvalidType, ReadableAttribute};
 
 impl ClusterSpecific for Id {
@@ -18,7 +19,22 @@ impl ClusterSpecific for Id {
 #[derive(ReprDiscriminant)]
 pub enum Attribute {
     /// Number of alarms currently present in the alarm table.
-    AlarmCount(u16) = 0x0000, // Valid range `0x00` to `0xff`.
+    AlarmCount(AlarmCount) = 0x0000, // Valid range `0x00` to `0xff`.
+}
+
+impl From<Attribute> for Type {
+    fn from(attribute: Attribute) -> Self {
+        match attribute {
+            Attribute::AlarmCount(count) => count.into(),
+        }
+    }
+}
+
+impl From<Attribute> for (u16, Type) {
+    fn from(attribute: Attribute) -> Self {
+        let id = attribute.discriminant();
+        (id, attribute.into())
+    }
 }
 
 impl TryFrom<(Id, Type)> for Attribute {
@@ -26,14 +42,9 @@ impl TryFrom<(Id, Type)> for Attribute {
 
     fn try_from((id, typ): (Id, Type)) -> Result<Self, Self::Error> {
         match id {
-            Id::AlarmCount => {
-                if let Type::Uint16(value) = typ {
-                    Ok(Self::AlarmCount(value.as_u16()))
-                } else {
-                    Err(InvalidType::new(id, typ))
-                }
-            }
+            Id::AlarmCount => typ.try_into().map(Self::AlarmCount),
         }
+        .map_err(|typ| InvalidType::new(id, typ))
     }
 }
 
