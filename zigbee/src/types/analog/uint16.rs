@@ -21,6 +21,9 @@ impl Uint16 {
     /// The maximum valid value.
     pub const MAX: Self = Self(NON_VALUE.checked_sub(1).expect("NON_VALUE is not zero"));
 
+    /// The non-value.
+    pub const NONE: Self = Self(NON_VALUE);
+
     /// Crate a new `Uint16` from a raw `u16` value.
     #[must_use]
     pub const fn new(raw: u16) -> Self {
