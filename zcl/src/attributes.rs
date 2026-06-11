@@ -2,6 +2,7 @@ use zigbee::Cluster;
 use zigbee::types::Type;
 
 pub use self::errors::{InvalidType, ParseAttributeError};
+use crate::global::write_attributes::Record;
 
 mod errors;
 
@@ -12,4 +13,13 @@ pub trait ReadableAttribute: Cluster + TryFrom<u16, Error = u16> + Into<u16> {
 
     /// The manufacturer code of the attribute, if any.
     const MANUFACTURER_CODE: Option<u16> = None;
+}
+
+/// A trait to allow the writing of attribute values in a type-safe manner.
+pub trait WritableAttribute: Cluster + Into<Record> {
+    /// The manufacturer code of the attribute, if any.
+    const MANUFACTURER_CODE: Option<u16> = None;
+
+    /// The ID of the attribute.
+    fn id(&self) -> u16;
 }
