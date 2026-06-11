@@ -1,8 +1,8 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zdp::Command;
-use zigbee::{Address, Endpoint, ExpectResponse};
-use zigbee_hw::Error;
+use zigbee::{Address, Cluster, ExpectResponse};
+use zigbee_hw::{Error, Metadata};
 
 use super::{Message, Payload};
 use crate::timeout::Timeout;
@@ -13,33 +13,25 @@ pub trait Handle {
     // TODO: Maybe mark this `unsafe` and document invariants?
     fn unicast(
         &self,
-        address: Address,
-        endpoint: Endpoint,
+        short_id: u16,
         frame: Payload<Command>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Communicate a unicast with an expected response.
     fn communicate<T>(
         &self,
-        address: Address,
-        endpoint: Endpoint,
-        frame: Payload<T>,
+        short_id: u16,
+        request: T,
     ) -> impl Future<Output = Result<T::Response, crate::Error>> + Send
     where
-        T: ExpectResponse<Command>;
+        T: Cluster + ExpectResponse<Command>;
 }
 
 impl Handle for Sender<Message> {
-    async fn unicast(
-        &self,
-        address: Address,
-        endpoint: Endpoint,
-        frame: Payload<Command>,
-    ) -> Result<(), Error> {
+    async fn unicast(&self, short_id: u16, frame: Payload<Command>) -> Result<(), Error> {
         let (response, result) = channel();
         self.send(Message::Unicast {
-            address,
-            endpoint,
+            short_id,
             payload: frame.into(),
             response,
         })
@@ -49,20 +41,20 @@ impl Handle for Sender<Message> {
 
     fn communicate<T>(
         &self,
-        address: Address,
-        endpoint: Endpoint,
-        payload: Payload<T>,
+        short_id: u16,
+        request: T,
     ) -> impl Future<Output = Result<T::Response, crate::Error>> + Send
     where
-        T: ExpectResponse<Command>,
+        T: Cluster + ExpectResponse<Command>,
     {
         let (response, result) = channel();
-        let payload = payload.into_command().into();
+        let payload = Payload::new(Metadata::new(T::ID, None, None), request)
+            .into_command()
+            .into();
 
         async move {
             self.send(Message::Communicate {
-                address,
-                endpoint,
+                short_id,
                 payload,
                 response,
             })

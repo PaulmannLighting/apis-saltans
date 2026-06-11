@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
-use zigbee::{Address, Cluster, Endpoint, ExpectResponse};
+use zigbee::{Cluster, Endpoint, ExpectResponse};
 use zigbee_hw::Metadata;
 
 use super::{Message, Payload};
@@ -13,7 +13,7 @@ pub trait Handle {
     // TODO: Maybe mark this `unsafe` and document invariants?
     fn unicast(
         &self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         payload: Payload<zcl::Cluster>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -21,7 +21,7 @@ pub trait Handle {
     /// Communicate a unicast with an expected response.
     fn communicate<T>(
         &self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
@@ -31,7 +31,7 @@ pub trait Handle {
     /// Send a unicast of a native ZCL command belonging to a static cluster.
     async fn unicast_zcl_native<T>(
         &self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         command: T,
     ) -> Result<(), Error>
@@ -39,7 +39,7 @@ pub trait Handle {
         T: Cluster + Into<zcl::Cluster>,
     {
         self.unicast(
-            address,
+            short_id,
             endpoint,
             Payload::new_native(Metadata::for_cluster::<T>(None, None), command.into()),
         )
@@ -50,13 +50,13 @@ pub trait Handle {
 impl Handle for Sender<Message> {
     async fn unicast(
         &self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
         self.send(Message::Unicast {
-            address,
+            short_id,
             endpoint,
             payload: payload.into(),
             response,
@@ -67,7 +67,7 @@ impl Handle for Sender<Message> {
 
     fn communicate<T>(
         &self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
@@ -79,7 +79,7 @@ impl Handle for Sender<Message> {
 
         async move {
             self.send(Message::Communicate {
-                address,
+                short_id,
                 endpoint,
                 payload,
                 response,

@@ -47,20 +47,20 @@ where
             match message {
                 Message::Event(event) => self.handle_event(event),
                 Message::Unicast {
-                    address,
+                    short_id,
                     endpoint,
                     payload,
                     response,
                 } => {
-                    self.unicast(address, endpoint, *payload, response).await;
+                    self.unicast(short_id, endpoint, *payload, response).await;
                 }
                 Message::Communicate {
-                    address,
+                    short_id,
                     endpoint,
                     payload,
                     response,
                 } => {
-                    self.communicate(address, endpoint, *payload, response)
+                    self.communicate(short_id, endpoint, *payload, response)
                         .await;
                 }
             }
@@ -96,7 +96,7 @@ where
     /// Send a unicast message.
     async fn unicast(
         &mut self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         frame: Payload<Cluster>,
         response: Sender<Result<(), zigbee_hw::Error>>,
@@ -104,7 +104,7 @@ where
         let (metadata, manufacturer_code, command) = frame.into_parts();
         let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
         let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
-        let result = self.ncp.unicast(address, endpoint, aps_frame).await;
+        let result = self.ncp.unicast(short_id, endpoint, aps_frame).await;
         response.send(result.map(drop)).unwrap_or_else(|error| {
             error!("Failed to send unicast response: {error:?}");
         });
@@ -113,7 +113,7 @@ where
     /// Send a unicast message with back-channel communication.
     async fn communicate(
         &mut self,
-        address: Address,
+        short_id: u16,
         endpoint: Endpoint,
         frame: Payload<Cluster>,
         response: Sender<Result<oneshot::Receiver<Cluster>, zigbee_hw::Error>>,
@@ -123,7 +123,7 @@ where
         let seq = zcl_frame.header().seq();
         let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
 
-        match self.ncp.unicast(address, endpoint, aps_frame).await {
+        match self.ncp.unicast(short_id, endpoint, aps_frame).await {
             Ok(_) => {
                 let (tx, rx) = channel();
                 self.responses.insert(seq, tx);

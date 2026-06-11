@@ -1,6 +1,6 @@
 use tokio::sync::oneshot::{Receiver, Sender};
 use zdp::Command;
-use zigbee::{Address, Endpoint};
+use zigbee::Address;
 use zigbee_hw::{Error, Event};
 
 pub use self::payload::Payload;
@@ -15,9 +15,7 @@ pub enum Message {
     /// Unicast a message.
     Unicast {
         /// The destination address.
-        address: Address,
-        /// The destination endpoint.
-        endpoint: Endpoint,
+        short_id: u16,
         /// The payload.
         payload: Box<Payload<Command>>,
         /// The response channel.
@@ -26,9 +24,7 @@ pub enum Message {
     /// Communicate a unicast with an expected response.
     Communicate {
         /// The destination address.
-        address: Address,
-        /// The destination endpoint.
-        endpoint: Endpoint,
+        short_id: u16,
         /// The payload.
         payload: Box<Payload<Command>>,
         /// The response channel.

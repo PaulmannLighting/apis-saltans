@@ -47,21 +47,18 @@ where
             match message {
                 Message::Event(event) => self.handle_event(event),
                 Message::Unicast {
-                    address,
-                    endpoint,
+                    short_id,
                     payload,
                     response,
                 } => {
-                    self.unicast(address, endpoint, *payload, response).await;
+                    self.unicast(short_id, *payload, response).await;
                 }
                 Message::Communicate {
-                    address,
-                    endpoint,
+                    short_id,
                     payload,
                     response,
                 } => {
-                    self.communicate(address, endpoint, *payload, response)
-                        .await;
+                    self.communicate(short_id, *payload, response).await;
                 }
             }
         }
@@ -96,15 +93,14 @@ where
     /// Send a unicast message.
     async fn unicast(
         &mut self,
-        address: Address,
-        endpoint: Endpoint,
+        short_id: u16,
         payload: Payload<Command>,
         response: Sender<Result<(), zigbee_hw::Error>>,
     ) {
         let (metadata, command) = payload.into_parts();
         let zdp_frame = self.make_zdp_frame(command);
         let aps_frame = Self::make_aps_frame(metadata, zdp_frame);
-        let result = self.ncp.unicast(address, endpoint, aps_frame).await;
+        let result = self.ncp.unicast(short_id, Endpoint::Data, aps_frame).await;
         response.send(result.map(drop)).unwrap_or_else(|error| {
             error!("Failed to send unicast response: {error:?}");
         });
@@ -113,8 +109,7 @@ where
     /// Send a unicast message with back-channel communication.
     async fn communicate(
         &mut self,
-        address: Address,
-        endpoint: Endpoint,
+        short_id: u16,
         payload: Payload<Command>,
         response: Sender<Result<oneshot::Receiver<Command>, zigbee_hw::Error>>,
     ) {
@@ -123,7 +118,7 @@ where
         let seq = zdp_frame.seq();
         let aps_frame = Self::make_aps_frame(metadata, zdp_frame);
 
-        match self.ncp.unicast(address, endpoint, aps_frame).await {
+        match self.ncp.unicast(short_id, Endpoint::Data, aps_frame).await {
             Ok(_) => {
                 let (tx, rx) = channel();
                 self.responses.insert(seq, tx);
