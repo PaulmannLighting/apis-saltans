@@ -7,6 +7,7 @@ use zigbee::{Address, Endpoint};
 use zigbee_hw::Metadata;
 
 pub use self::error::Error as WriteAttributesError;
+use crate::api::clusters::write_attributes::error::Evaluate;
 use crate::transceiver::zcl::{Handle, Payload};
 use crate::{Coordinator, Error};
 
@@ -54,38 +55,11 @@ pub trait WriteAttributes {
             .collect();
 
         async move {
-            let mut errors = vec![];
-
-            for status in self
-                .write_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, records)
+            self.write_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, records)
                 .await
                 .map_err(Left)?
-            {
-                match status.try_into() {
-                    Ok(id) => {
-                        if !ids.remove(&id) {
-                            errors.push(WriteAttributesError::NotRequested(id));
-                        }
-                    }
-                    Err(id) => {
-                        if ids.remove(&id) {
-                            errors.push(WriteAttributesError::WriteFailed(id));
-                        } else {
-                            errors.push(WriteAttributesError::NotRequested(id));
-                        }
-                    }
-                }
-            }
-
-            for id in ids {
-                errors.push(WriteAttributesError::NoResponse(id));
-            }
-
-            if errors.is_empty() {
-                Ok(())
-            } else {
-                Err(Right(errors))
-            }
+                .evaluate(ids)
+                .map_err(Right)
         }
     }
 }

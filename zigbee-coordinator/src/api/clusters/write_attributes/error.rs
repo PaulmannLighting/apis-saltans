@@ -1,4 +1,7 @@
+use std::collections::BTreeSet;
 use std::fmt::Display;
+
+use zcl::global::write_attributes::Response;
 
 /// Errors that can occur when writing attributes.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -24,3 +27,42 @@ impl Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+/// Extension trait to evaluate a [`Response`].
+pub trait Evaluate {
+    /// Evaluate a [`Response`] and return an error if any occurred.
+    fn evaluate(self, ids: BTreeSet<u16>) -> Result<(), Vec<Error>>;
+}
+
+impl Evaluate for Response {
+    fn evaluate(self, mut ids: BTreeSet<u16>) -> Result<(), Vec<Error>> {
+        let mut errors = vec![];
+
+        for status in self {
+            match status.try_into() {
+                Ok(id) => {
+                    if !ids.remove(&id) {
+                        errors.push(Error::NotRequested(id));
+                    }
+                }
+                Err(id) => {
+                    if ids.remove(&id) {
+                        errors.push(Error::WriteFailed(id));
+                    } else {
+                        errors.push(Error::NotRequested(id));
+                    }
+                }
+            }
+        }
+
+        for id in ids {
+            errors.push(Error::NoResponse(id));
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
+    }
+}
