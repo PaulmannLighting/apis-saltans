@@ -92,7 +92,9 @@ impl<const CAPACITY: usize> TryFrom<&[u8]> for OctStr<CAPACITY> {
 }
 
 impl<const CAPACITY: usize> FromLeStream for OctStr<CAPACITY> {
-    // TODO: For the sake of robustness, reconsider handling of the case `size > CAPACITY`.
+    /// Read an `OctStr` from a little-endian byte stream.
+    ///
+    /// This will truncate the string if the read size exceeds its capacity.
     fn from_le_stream<T>(mut stream: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
@@ -108,7 +110,7 @@ impl<const CAPACITY: usize> FromLeStream for OctStr<CAPACITY> {
         for _ in 0..size {
             bytes
                 .push(u8::from_le_stream(&mut stream)?)
-                .unwrap_or_else(|byte| error!("Buffer is full. Discarding byte: {byte:#04X}"));
+                .unwrap_or_else(|byte| error!("OctStr is full. Discarding byte: {byte:#04X}"));
         }
 
         Some(Self(bytes))
