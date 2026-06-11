@@ -1,5 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 
+use crate::types::Type;
+
 /// `FALSE` value, see 2.6.2.5.
 const FALSE: u8 = 0x00;
 /// `TRUE` value, see 2.6.2.5.
@@ -39,6 +41,12 @@ impl TryInto<bool> for Bool {
             FALSE => Ok(false),
             other => Err(other),
         }
+    }
+}
+
+impl From<Bool> for Type {
+    fn from(value: Bool) -> Self {
+        Self::Boolean(value)
     }
 }
 
