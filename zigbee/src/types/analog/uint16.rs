@@ -2,6 +2,8 @@ use std::num::TryFromIntError;
 
 use le_stream::{FromLeStream, ToLeStream};
 
+use crate::types::Type;
+
 const NON_VALUE: u16 = 0xffff;
 
 /// The `16-bit unsigned integer` type, short `uint16`.
@@ -83,6 +85,17 @@ impl TryFrom<usize> for Uint16 {
         match u16::try_from(value) {
             Ok(value) => Self::try_from(value).map_err(|()| None),
             Err(error) => Err(Some(error)),
+        }
+    }
+}
+
+impl TryFrom<Type> for Uint16 {
+    type Error = Type;
+
+    fn try_from(typ: Type) -> Result<Self, Self::Error> {
+        match typ {
+            Type::Uint16(value) | Type::Enum16(value) => Ok(value),
+            other => Err(other),
         }
     }
 }
