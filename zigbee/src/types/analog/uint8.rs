@@ -46,6 +46,12 @@ impl From<Uint8> for Option<u8> {
     }
 }
 
+impl From<Uint8> for Type {
+    fn from(value: Uint8) -> Self {
+        Self::Uint8(value)
+    }
+}
+
 impl TryFrom<Uint8> for u8 {
     type Error = ();
 
