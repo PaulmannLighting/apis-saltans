@@ -23,6 +23,14 @@ pub enum Command {
     ReadAttributes(read_attributes::Command),
     /// Read Attributes Response command.
     ReadAttributesResponse(read_attributes::Response),
+    /// Write Attributes command.
+    WriteAttributes(write_attributes::Command),
+    /// Write Attributes Undivided command.
+    WriteAttributesUndivided(write_attributes_undivided::Command),
+    /// Write Attributes Response command.
+    WriteAttributesResponse(write_attributes::Response),
+    /// Write Attributes No Response command.
+    WriteAttributesNoResponse(write_attributes_no_response::Command),
     /// Report Attributes command.
     ReportAttributes(report_attributes::Command),
     /// Default Response command.
@@ -48,6 +56,30 @@ impl From<read_attributes::Command> for Command {
 impl From<read_attributes::Response> for Command {
     fn from(response: read_attributes::Response) -> Self {
         Self::ReadAttributesResponse(response)
+    }
+}
+
+impl From<write_attributes::Command> for Command {
+    fn from(command: write_attributes::Command) -> Self {
+        Self::WriteAttributes(command)
+    }
+}
+
+impl From<write_attributes_undivided::Command> for Command {
+    fn from(command: write_attributes_undivided::Command) -> Self {
+        Self::WriteAttributesUndivided(command)
+    }
+}
+
+impl From<write_attributes::Response> for Command {
+    fn from(response: write_attributes::Response) -> Self {
+        Self::WriteAttributesResponse(response)
+    }
+}
+
+impl From<write_attributes_no_response::Command> for Command {
+    fn from(command: write_attributes_no_response::Command) -> Self {
+        Self::WriteAttributesNoResponse(command)
     }
 }
 
@@ -80,6 +112,10 @@ impl CommandDispatch for Command {
         match self {
             Self::ReadAttributes(cmd) => cmd.command_id(),
             Self::ReadAttributesResponse(cmd) => cmd.command_id(),
+            Self::WriteAttributes(cmd) => cmd.command_id(),
+            Self::WriteAttributesUndivided(cmd) => cmd.command_id(),
+            Self::WriteAttributesResponse(cmd) => cmd.command_id(),
+            Self::WriteAttributesNoResponse(cmd) => cmd.command_id(),
             Self::ReportAttributes(cmd) => cmd.command_id(),
             Self::DefaultResponse(cmd) => cmd.command_id(),
             Self::ConfigureReporting(cmd) => cmd.command_id(),
@@ -95,6 +131,10 @@ impl CommandDispatch for Command {
         match self {
             Self::ReadAttributes(cmd) => cmd.direction(),
             Self::ReadAttributesResponse(cmd) => cmd.direction(),
+            Self::WriteAttributes(cmd) => cmd.direction(),
+            Self::WriteAttributesUndivided(cmd) => cmd.direction(),
+            Self::WriteAttributesResponse(cmd) => cmd.direction(),
+            Self::WriteAttributesNoResponse(cmd) => cmd.direction(),
             Self::ReportAttributes(cmd) => cmd.direction(),
             Self::DefaultResponse(cmd) => cmd.direction(),
             Self::ConfigureReporting(cmd) => cmd.direction(),
@@ -107,6 +147,10 @@ impl CommandDispatch for Command {
             Self::DefaultResponse(cmd) => cmd.disable_default_response(),
             Self::ReadAttributes(cmd) => cmd.disable_default_response(),
             Self::ReadAttributesResponse(cmd) => cmd.disable_default_response(),
+            Self::WriteAttributes(cmd) => cmd.disable_default_response(),
+            Self::WriteAttributesUndivided(cmd) => cmd.disable_default_response(),
+            Self::WriteAttributesResponse(cmd) => cmd.disable_default_response(),
+            Self::WriteAttributesNoResponse(cmd) => cmd.disable_default_response(),
             Self::ReportAttributes(cmd) => cmd.disable_default_response(),
             Self::ConfigureReporting(cmd) => cmd.disable_default_response(),
             Self::ConfigureReportingResponse(cmd) => cmd.disable_default_response(),
@@ -121,6 +165,14 @@ impl ToLeStream for Command {
         match self {
             Self::ReadAttributes(cmd) => Iter::ReadAttributes(cmd.to_le_stream()),
             Self::ReadAttributesResponse(cmd) => Iter::ReadAttributesResponse(cmd.to_le_stream()),
+            Self::WriteAttributes(cmd) => Iter::WriteAttributes(cmd.to_le_stream()),
+            Self::WriteAttributesUndivided(cmd) => {
+                Iter::WriteAttributesUndivided(cmd.to_le_stream())
+            }
+            Self::WriteAttributesResponse(cmd) => Iter::WriteAttributesResponse(cmd.to_le_stream()),
+            Self::WriteAttributesNoResponse(cmd) => {
+                Iter::WriteAttributesNoResponse(cmd.to_le_stream())
+            }
             Self::ReportAttributes(cmd) => Iter::ReportAttributes(cmd.to_le_stream()),
             Self::DefaultResponse(cmd) => Iter::DefaultResponse(cmd.to_le_stream()),
             Self::ConfigureReporting(cmd) => Iter::ConfigureReporting(cmd.to_le_stream().into()),
@@ -136,6 +188,10 @@ impl ToLeStream for Command {
 pub enum Iter {
     ReadAttributes(<read_attributes::Command as ToLeStream>::Iter),
     ReadAttributesResponse(<read_attributes::Response as ToLeStream>::Iter),
+    WriteAttributes(<write_attributes::Command as ToLeStream>::Iter),
+    WriteAttributesUndivided(<write_attributes_undivided::Command as ToLeStream>::Iter),
+    WriteAttributesResponse(<write_attributes::Response as ToLeStream>::Iter),
+    WriteAttributesNoResponse(<write_attributes_no_response::Command as ToLeStream>::Iter),
     ReportAttributes(<report_attributes::Command as ToLeStream>::Iter),
     DefaultResponse(<default_response::DefaultResponse as ToLeStream>::Iter),
     ConfigureReporting(Box<<configure_reporting::Command as ToLeStream>::Iter>),
@@ -149,6 +205,10 @@ impl Iterator for Iter {
         match self {
             Iter::ReadAttributes(iter) => iter.next(),
             Iter::ReadAttributesResponse(iter) => iter.next(),
+            Iter::WriteAttributes(iter) => iter.next(),
+            Iter::WriteAttributesUndivided(iter) => iter.next(),
+            Iter::WriteAttributesResponse(iter) => iter.next(),
+            Iter::WriteAttributesNoResponse(iter) => iter.next(),
             Iter::ReportAttributes(iter) => iter.next(),
             Iter::DefaultResponse(iter) => iter.next(),
             Iter::ConfigureReporting(iter) => iter.next(),

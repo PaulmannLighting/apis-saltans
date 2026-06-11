@@ -3,16 +3,19 @@
 use alloc::boxed::Box;
 use core::ops::Deref;
 
-use zigbee::Direction;
+use le_stream::{FromLeStream, ToLeStream};
+use zigbee::{Direction, ExpectResponse};
 
 pub use self::record::Record;
 pub use self::status::Status;
+use crate::command::Scoped;
+use crate::{Cluster, Scope, global};
 
 mod record;
 mod status;
 
 /// Write Attributes Command.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Command {
     records: Box<[Record]>,
 }
@@ -38,8 +41,22 @@ impl crate::Command for Command {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
+impl Scoped for Command {
+    const SCOPE: Scope = Scope::Global;
+}
+
+impl ExpectResponse<Cluster> for Command {
+    type Response = Response;
+}
+
+impl From<Command> for Cluster {
+    fn from(cmd: Command) -> Self {
+        Self::Global(cmd.into())
+    }
+}
+
 /// Write Attributes Command Response.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Response {
     records: Box<[Status]>,
 }
@@ -72,4 +89,20 @@ impl IntoIterator for Response {
 impl crate::Command for Response {
     const ID: u8 = 0x04;
     const DIRECTION: Direction = Direction::ServerToClient;
+}
+
+impl Scoped for Response {
+    const SCOPE: Scope = Scope::Global;
+}
+
+impl TryFrom<Cluster> for Response {
+    type Error = Cluster;
+
+    fn try_from(value: Cluster) -> Result<Self, Self::Error> {
+        if let Cluster::Global(global::Command::WriteAttributesResponse(cmd)) = value {
+            Ok(cmd)
+        } else {
+            Err(value)
+        }
+    }
 }
