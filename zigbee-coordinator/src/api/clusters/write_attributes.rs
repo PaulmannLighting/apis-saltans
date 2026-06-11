@@ -3,11 +3,8 @@ use zcl::global::write_attributes::{Command, Record, Response};
 use zigbee::{Address, Endpoint};
 use zigbee_hw::Metadata;
 
-use crate::api::clusters::write_attributes::evaluate::Evaluate;
 use crate::transceiver::zcl::{Handle, Payload};
 use crate::{Coordinator, Error};
-
-mod evaluate;
 
 /// Trait to write attributes to a device.
 pub trait WriteAttributes {
@@ -46,7 +43,7 @@ pub trait WriteAttributes {
         async move {
             self.write_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, records)
                 .await
-                .map(Evaluate::evaluate)
+                .map(|response| response.into_iter().map(TryInto::try_into).collect())
         }
     }
 }
