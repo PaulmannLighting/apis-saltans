@@ -1,17 +1,13 @@
-use std::collections::BTreeSet;
-
-use either::{Either, Left, Right};
 use zcl::WritableAttribute;
 use zcl::global::write_attributes::{Command, Record, Response};
 use zigbee::{Address, Endpoint};
 use zigbee_hw::Metadata;
 
-pub use self::error::Error as WriteAttributesError;
-use crate::api::clusters::write_attributes::error::Evaluate;
+use crate::api::clusters::write_attributes::evaluate::Evaluate;
 use crate::transceiver::zcl::{Handle, Payload};
 use crate::{Coordinator, Error};
 
-mod error;
+mod evaluate;
 
 /// Trait to write attributes to a device.
 pub trait WriteAttributes {
@@ -39,27 +35,18 @@ pub trait WriteAttributes {
         &self,
         address: Address,
         endpoint: Endpoint,
-        records: Box<[T]>,
-    ) -> impl Future<Output = Result<(), Either<Error, Vec<WriteAttributesError>>>> + Send
+        attributes: Box<[T]>,
+    ) -> impl Future<Output = Result<Vec<Result<u16, u16>>, Error>> + Send
     where
         Self: Sync,
         T: WritableAttribute,
     {
-        let mut ids = BTreeSet::new();
-        let records = records
-            .into_iter()
-            .map(|record| {
-                ids.insert(record.id());
-                record.into()
-            })
-            .collect();
+        let records = attributes.into_iter().map(Into::into).collect();
 
         async move {
             self.write_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, records)
                 .await
-                .map_err(Left)?
-                .evaluate(ids)
-                .map_err(Right)
+                .map(Evaluate::evaluate)
         }
     }
 }
