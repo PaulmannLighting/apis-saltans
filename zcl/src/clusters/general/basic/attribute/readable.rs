@@ -79,33 +79,37 @@ impl From<writable::Attribute> for Attribute {
     }
 }
 
-impl From<Attribute> for (u16, Type) {
-    fn from(value: Attribute) -> Self {
-        let id = value.discriminant();
-        let typ = match value {
+impl From<Attribute> for Type {
+    fn from(attribute: Attribute) -> Self {
+        match attribute {
             Attribute::ZclVersion(value)
             | Attribute::ApplicationVersion(value)
             | Attribute::StackVersion(value)
-            | Attribute::HwVersion(value) => Type::Uint8(value),
+            | Attribute::HwVersion(value) => Self::Uint8(value),
             Attribute::ManufacturerName(name) | Attribute::ModelIdentifier(name) => name.into(),
             Attribute::DateCode(date_code) => date_code.into(),
-            Attribute::PowerSource(source) => Type::Enum8(source.into()),
-            Attribute::GenericDeviceClass(device_class) => Type::Enum8(device_class.into()),
-            Attribute::GenericDeviceType(device_type) => Type::Enum8(device_type.into()),
+            Attribute::PowerSource(source) => Self::Enum8(source.into()),
+            Attribute::GenericDeviceClass(device_class) => Self::Enum8(device_class.into()),
+            Attribute::GenericDeviceType(device_type) => Self::Enum8(device_type.into()),
             Attribute::ProductCode(code) => code.into(),
             Attribute::ProductUrl(url) => url.into(),
             Attribute::ManufacturerVersionDetails(details) => details.into(),
             Attribute::SerialNumber(serial_number) => serial_number.into(),
             Attribute::ProductLabel(label) => label.into(),
             Attribute::LocationDescription(string) => string.into(),
-            Attribute::PhysicalEnvironment(environment) => Type::Enum8(environment.into()),
-            Attribute::DeviceEnabled(enabled) => Type::Boolean(enabled),
-            Attribute::AlarmMask(mask) => Type::Map8(mask.bits()),
-            Attribute::DisableLocalConfig(value) => Type::Map8(value.bits()),
+            Attribute::PhysicalEnvironment(environment) => Self::Enum8(environment.into()),
+            Attribute::DeviceEnabled(enabled) => Self::Boolean(enabled),
+            Attribute::AlarmMask(mask) => Self::Map8(mask.bits()),
+            Attribute::DisableLocalConfig(value) => Self::Map8(value.bits()),
             Attribute::SwBuildId(build_id) => build_id.into(),
-        };
+        }
+    }
+}
 
-        (id, typ)
+impl From<Attribute> for (u16, Type) {
+    fn from(attribute: Attribute) -> Self {
+        let id = attribute.discriminant();
+        (id, attribute.into())
     }
 }
 
