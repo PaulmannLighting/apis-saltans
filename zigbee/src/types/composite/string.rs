@@ -75,3 +75,15 @@ impl<const CAPACITY: usize> TryFrom<&str> for String<CAPACITY> {
         OctStr::try_from(value.as_bytes()).map(Self)
     }
 }
+
+impl<const CAPACITY: usize> TryFrom<Type> for String<CAPACITY> {
+    type Error = Type;
+
+    fn try_from(typ: Type) -> Result<Self, Self::Error> {
+        if let Type::String(string) = typ {
+            string.truncate().map_err(Type::String)
+        } else {
+            Err(typ)
+        }
+    }
+}

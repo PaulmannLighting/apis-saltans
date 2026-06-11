@@ -97,6 +97,18 @@ impl<const CAPACITY: usize> TryFrom<&[u8]> for OctStr<CAPACITY> {
     }
 }
 
+impl<const CAPACITY: usize> TryFrom<Type> for OctStr<CAPACITY> {
+    type Error = Type;
+
+    fn try_from(typ: Type) -> Result<Self, Self::Error> {
+        if let Type::OctetString(string) = typ {
+            string.truncate().map_err(Type::OctetString)
+        } else {
+            Err(typ)
+        }
+    }
+}
+
 impl<const CAPACITY: usize> FromLeStream for OctStr<CAPACITY> {
     /// Read an `OctStr` from a little-endian byte stream.
     ///

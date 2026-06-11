@@ -63,6 +63,18 @@ impl TryFrom<Bool> for Option<bool> {
     }
 }
 
+impl TryFrom<Type> for Bool {
+    type Error = Type;
+
+    fn try_from(typ: Type) -> Result<Self, Self::Error> {
+        if let Type::Boolean(value) = typ {
+            Ok(value)
+        } else {
+            Err(typ)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

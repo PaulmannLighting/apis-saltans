@@ -2,6 +2,8 @@ use std::num::TryFromIntError;
 
 use le_stream::{FromLeStream, ToLeStream};
 
+use crate::types::Type;
+
 const NON_VALUE: u8 = 0xff;
 
 /// The `8-bit unsigned integer` type, short `uint8`.
@@ -83,6 +85,17 @@ impl TryFrom<usize> for Uint8 {
         match u8::try_from(value) {
             Ok(value) => Self::try_from(value).map_err(|()| None),
             Err(error) => Err(Some(error)),
+        }
+    }
+}
+
+impl TryFrom<Type> for Uint8 {
+    type Error = Type;
+
+    fn try_from(value: Type) -> Result<Self, Self::Error> {
+        match value {
+            Type::Uint8(value) | Type::Enum8(value) => Ok(value),
+            other => Err(other),
         }
     }
 }
