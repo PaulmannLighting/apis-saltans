@@ -62,10 +62,10 @@ impl From<&DateCode> for String<16> {
             .date
             .format(DATE_FORMAT)
             .write_to(&mut buffer)
-            .expect("Date should be writable to buffer.");
+            .expect("Date fits into buffer.");
         buffer
             .push_str(&date_code.custom)
-            .expect("Custom string should fit into buffer.");
+            .expect("Custom string fits into buffer.");
         Self::from(buffer)
     }
 }
