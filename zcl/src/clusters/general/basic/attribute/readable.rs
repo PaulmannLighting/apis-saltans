@@ -88,15 +88,10 @@ impl From<Attribute> for (u16, Type) {
             | Attribute::ApplicationVersion(value)
             | Attribute::StackVersion(value)
             | Attribute::HwVersion(value) => Type::Uint8(value),
-            Attribute::ManufacturerName(name) | Attribute::ModelIdentifier(name) => Type::String(
-                name.truncate()
-                    .expect("Smaller string always fits into bigger string."),
-            ),
-            Attribute::DateCode(date_code) => Type::String(
-                String::<16>::from(date_code)
-                    .truncate()
-                    .expect("Smaller string always fits into bigger string."),
-            ),
+            Attribute::ManufacturerName(name) | Attribute::ModelIdentifier(name) => {
+                Type::String(name.widen())
+            }
+            Attribute::DateCode(date_code) => Type::String(String::<16>::from(date_code).widen()),
             Attribute::PowerSource(source) => Type::Enum8(source.into()),
             Attribute::GenericDeviceClass(device_class) => Type::Enum8(device_class.into()),
             Attribute::GenericDeviceType(device_type) => Type::Enum8(device_type.into()),
@@ -105,20 +100,12 @@ impl From<Attribute> for (u16, Type) {
             Attribute::ManufacturerVersionDetails(details) => Type::String(details),
             Attribute::SerialNumber(serial_number) => Type::String(serial_number),
             Attribute::ProductLabel(label) => Type::String(label),
-            Attribute::LocationDescription(string) => Type::String(
-                string
-                    .truncate()
-                    .expect("Smaller string always fits into bigger string."),
-            ),
+            Attribute::LocationDescription(string) => Type::String(string.widen()),
             Attribute::PhysicalEnvironment(environment) => Type::Enum8(environment.into()),
             Attribute::DeviceEnabled(enabled) => Type::Boolean(enabled.into()),
             Attribute::AlarmMask(mask) => Type::Map8(mask.bits()),
             Attribute::DisableLocalConfig(value) => Type::Map8(value.bits()),
-            Attribute::SwBuildId(build_id) => Type::String(
-                build_id
-                    .truncate()
-                    .expect("Smaller string always fits into bigger string."),
-            ),
+            Attribute::SwBuildId(build_id) => Type::String(build_id.widen()),
         };
 
         (id, typ)
