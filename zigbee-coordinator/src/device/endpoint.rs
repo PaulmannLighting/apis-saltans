@@ -1,7 +1,5 @@
 use std::collections::BTreeMap;
 
-use zigbee::Application;
-
 pub use self::cluster::Cluster;
 
 mod cluster;
