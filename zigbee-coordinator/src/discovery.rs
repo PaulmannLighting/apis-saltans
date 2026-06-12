@@ -6,7 +6,7 @@ use macaddr::MacAddr8;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use tokio::time::sleep;
-use zdp::{ActiveEpReq, ActiveEpRsp, SimpleDescRsp, Status};
+use zdp::{ActiveEpReq, ActiveEpRsp, SimpleDescReq, SimpleDescRsp, Status};
 use zigbee::{Address, Application};
 use zigbee_hw::Event;
 
@@ -168,7 +168,7 @@ impl Actor {
         }
 
         for endpoint in endpoints {
-            self.schedule_descriptor_discovery(address.clone(), endpoint);
+            self.schedule_descriptor_discovery(address.clone(), endpoint, None);
         }
     }
 
@@ -197,10 +197,34 @@ impl Actor {
         });
     }
 
-    fn schedule_descriptor_discovery(&self, address: Address, endpoint: Application) {
+    fn schedule_descriptor_discovery(
+        &self,
+        address: Address,
+        endpoint: Application,
+        delay: Option<Duration>,
+    ) {
         let zdp = self.zdp_transceiver.clone();
         let loopback = self.loopback.clone();
-        todo!("Schedule descriptor discovery for {address:?}, {endpoint:?}.");
+
+        spawn(async move {
+            if let Some(delay) = delay {
+                sleep(delay).await;
+            }
+
+            let short_id = address.short_id();
+            let result = zdp
+                .communicate(short_id, SimpleDescReq::new(short_id, endpoint.into()))
+                .await;
+
+            loopback
+                .send(Message::SimpleDescRsp {
+                    address,
+                    endpoint,
+                    result,
+                })
+                .await
+                .unwrap_or_else(|error| error!("Failed to send SimpleDescRsp: {error:?}"));
+        });
     }
 
     fn handle_leave(&mut self, address: &Address) {
