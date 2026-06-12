@@ -9,14 +9,19 @@ mod cluster;
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Endpoint {
     id: Application,
-    clusters: BTreeMap<u16, Cluster>,
+    input_clusters: BTreeMap<u16, Cluster>,
+    output_clusters: BTreeMap<u16, Cluster>,
 }
 
 impl Endpoint {
     /// Create a new endpoint.
     #[must_use]
-    pub const fn new(id: Application, clusters: BTreeMap<u16, Cluster>) -> Self {
-        Self { id, clusters }
+    pub const fn new(id: Application) -> Self {
+        Self {
+            id,
+            input_clusters: BTreeMap::new(),
+            output_clusters: BTreeMap::new(),
+        }
     }
 
     #[must_use]
@@ -25,11 +30,20 @@ impl Endpoint {
     }
 
     #[must_use]
-    pub const fn clusters(&self) -> &BTreeMap<u16, Cluster> {
-        &self.clusters
+    pub const fn input_clusters(&self) -> &BTreeMap<u16, Cluster> {
+        &self.input_clusters
     }
 
-    pub const fn clusters_mut(&mut self) -> &mut BTreeMap<u16, Cluster> {
-        &mut self.clusters
+    pub const fn input_clusters_mut(&mut self) -> &mut BTreeMap<u16, Cluster> {
+        &mut self.input_clusters
+    }
+
+    #[must_use]
+    pub const fn output_clusters(&self) -> &BTreeMap<u16, Cluster> {
+        &self.output_clusters
+    }
+
+    pub const fn output_clusters_mut(&mut self) -> &mut BTreeMap<u16, Cluster> {
+        &mut self.output_clusters
     }
 }

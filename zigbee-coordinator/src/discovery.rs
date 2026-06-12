@@ -11,7 +11,7 @@ use zigbee::{Address, Application};
 use zigbee_hw::Event;
 
 pub use self::message::Message;
-use crate::device::{Device, Endpoint};
+use crate::device::{Cluster, Device, Endpoint};
 use crate::transceiver::zdp::Handle;
 use crate::{Error, binding, transceiver};
 
@@ -59,13 +59,13 @@ impl Actor {
             match message {
                 Message::Event(event) => self.handle_event(event),
                 Message::ActiveEpRsp { address, result } => {
-                    self.handle_active_ep_rsp(address, result)
+                    self.handle_active_ep_rsp(address, result);
                 }
                 Message::SimpleDescRsp {
                     address,
                     endpoint,
                     result,
-                } => self.handle_simple_desc_rsp(address, endpoint, result),
+                } => self.handle_simple_desc_rsp(&address, endpoint, result),
             }
         }
     }
@@ -73,7 +73,7 @@ impl Actor {
     fn handle_event(&mut self, event: Event) {
         match event {
             Event::DeviceJoined(address) => self.handle_join(address),
-            Event::DeviceLeft(address) => self.handle_leave(address),
+            Event::DeviceLeft(address) => self.handle_leave(&address),
             _ => trace!("Unhandled event: {event:?}"),
         }
     }
@@ -82,7 +82,7 @@ impl Actor {
         match result {
             Ok(active_ep_rsp) => match active_ep_rsp.status() {
                 Ok(Status::Success) => {
-                    self.update_endpoints(address, active_ep_rsp);
+                    self.update_endpoints(&address, active_ep_rsp);
                     return;
                 }
                 Ok(error) => {
@@ -102,14 +102,50 @@ impl Actor {
 
     fn handle_simple_desc_rsp(
         &mut self,
-        address: Address,
+        address: &Address,
         endpoint: Application,
         result: Result<SimpleDescRsp, Error>,
     ) {
-        todo!("Handle simple descriptor response.");
+        let Ok(simple_desc_rsp) =
+            result.inspect_err(|error| error!("Failed to get simple descriptor: {error:?}"))
+        else {
+            return;
+        };
+
+        let Ok(Status::Success) = simple_desc_rsp.status() else {
+            error!(
+                "Failed to get simple descriptor: {:?}",
+                simple_desc_rsp.status()
+            );
+            return;
+        };
+
+        let Some(device) = self.devices.get_mut(&address.ieee_address()) else {
+            error!("Failed to get simple descriptor: {address:?}");
+            return;
+        };
+
+        let Some(endpoint) = device.endpoints_mut().get_mut(&endpoint) else {
+            error!("Failed to get endpoint: {address:?}:{endpoint:?}");
+            return;
+        };
+
+        for descriptor in simple_desc_rsp.descriptors() {
+            for input_cluster in descriptor.input_clusters() {
+                endpoint
+                    .input_clusters_mut()
+                    .insert(*input_cluster, Cluster::new(*input_cluster));
+            }
+
+            for output_cluster in descriptor.output_clusters() {
+                endpoint
+                    .output_clusters_mut()
+                    .insert(*output_cluster, Cluster::new(*output_cluster));
+            }
+        }
     }
 
-    fn update_endpoints(&mut self, address: Address, active_ep_rsp: ActiveEpRsp) {
+    fn update_endpoints(&mut self, address: &Address, active_ep_rsp: ActiveEpRsp) {
         let Some(device) = self.devices.get_mut(&address.ieee_address()) else {
             return;
         };
@@ -128,7 +164,7 @@ impl Actor {
         for endpoint in &endpoints {
             device
                 .endpoints_mut()
-                .insert(*endpoint, Endpoint::new(*endpoint, BTreeMap::default()));
+                .insert(*endpoint, Endpoint::new(*endpoint));
         }
 
         for endpoint in endpoints {
@@ -167,7 +203,7 @@ impl Actor {
         todo!("Schedule descriptor discovery for {address:?}, {endpoint:?}.");
     }
 
-    fn handle_leave(&mut self, address: Address) {
+    fn handle_leave(&mut self, address: &Address) {
         if let Some(device) = self.devices.remove(&address.ieee_address()) {
             todo!("Notify network manager.")
         }

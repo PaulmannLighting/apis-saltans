@@ -13,11 +13,11 @@ pub struct Cluster {
 impl Cluster {
     /// Create a new cluster.
     #[must_use]
-    pub const fn new(id: u16, bound: bool, attributes: BTreeMap<u16, Type>) -> Self {
+    pub const fn new(id: u16) -> Self {
         Self {
             id,
-            bound,
-            attributes,
+            bound: false,
+            attributes: BTreeMap::new(),
         }
     }
 
