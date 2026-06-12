@@ -30,9 +30,15 @@ impl Coordinator {
         let zdp_transceiver = Self::start_zdp_transceiver(ncp.clone(), &mux).await?;
         let network_manager = Self::start_network_manager(&mux).await?;
         let binding_manager =
-            Self::start_binding_manager(&mux, zdp_transceiver, network_manager.clone()).await?;
-        Self::start_discovery_manager(&mux, zcl_transceiver.clone(), binding_manager.clone())
-            .await?;
+            Self::start_binding_manager(&mux, zdp_transceiver.clone(), network_manager.clone())
+                .await?;
+        Self::start_discovery_manager(
+            &mux,
+            zcl_transceiver.clone(),
+            zdp_transceiver,
+            binding_manager.clone(),
+        )
+        .await?;
 
         Ok(Self {
             zcl_transceiver,
@@ -109,15 +115,16 @@ impl Coordinator {
     /// Start the discovery manager.
     async fn start_discovery_manager(
         mux: &Sender<mux::Message>,
-        transmitter: Sender<transceiver::zcl::Message>,
+        zcl_transmitter: Sender<transceiver::zcl::Message>,
+        zdp_transmitter: Sender<transceiver::zdp::Message>,
         binding_manager: Sender<binding::Message>,
     ) -> Result<(), Error> {
-        let discovery_manager = discovery::Actor::new(transmitter, binding_manager);
-        let (discovery_manager_tx, discovery_manager_rx) = channel(100);
+        let (discovery_manager, discovery_manager_tx) =
+            discovery::Actor::new(100, zcl_transmitter, zdp_transmitter, binding_manager);
         let (events_tx, events_rx) = channel(100);
         mux.subscribe(events_tx).await?;
         spawn(bridge(events_rx, discovery_manager_tx.clone()));
-        spawn(discovery_manager.run(discovery_manager_rx));
+        spawn(discovery_manager.run());
         Ok(())
     }
 }

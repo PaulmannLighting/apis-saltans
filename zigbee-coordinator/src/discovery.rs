@@ -4,7 +4,7 @@ use std::time::Duration;
 use log::{error, trace, warn};
 use macaddr::MacAddr8;
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender, channel};
 use tokio::time::sleep;
 use zdp::{ActiveEpReq, ActiveEpRsp, SimpleDescRsp, Status};
 use zigbee::{Address, Application};
@@ -22,6 +22,7 @@ const RESCHEDULE_DELAY: Duration = Duration::from_secs(30);
 /// The device discovery actor.
 #[derive(Debug)]
 pub struct Actor {
+    inbox: Receiver<Message>,
     loopback: Sender<Message>,
     zcl_transceiver: Sender<transceiver::zcl::Message>,
     zdp_transceiver: Sender<transceiver::zdp::Message>,
@@ -32,24 +33,29 @@ pub struct Actor {
 impl Actor {
     /// Create a new discovery actor.
     #[must_use]
-    pub const fn new(
-        loopback: Sender<Message>,
+    pub fn new(
+        channel_size: usize,
         zcl_transceiver: Sender<transceiver::zcl::Message>,
         zdp_transceiver: Sender<transceiver::zdp::Message>,
         binding_manager: Sender<binding::Message>,
-    ) -> Self {
-        Self {
-            loopback,
+    ) -> (Self, Sender<Message>) {
+        let (tx, rx) = channel(channel_size);
+
+        let instance = Self {
+            inbox: rx,
+            loopback: tx.clone(),
             zcl_transceiver,
             zdp_transceiver,
             binding_manager,
             devices: BTreeMap::new(),
-        }
+        };
+
+        (instance, tx)
     }
 
     /// Run the discovery actor.
-    pub async fn run(mut self, mut messages: Receiver<Message>) {
-        while let Some(message) = messages.recv().await {
+    pub async fn run(mut self) {
+        while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::Event(event) => self.handle_event(event),
                 Message::ActiveEpRsp { address, result } => {
