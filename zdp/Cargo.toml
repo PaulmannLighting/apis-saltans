@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bitflags = "2.11"
-le-stream = { version = "8", features = ["derive", "macaddr"] }
+bitflags = "2"
+le-stream = { version = "9", features = ["derive", "macaddr"] }
 macaddr = "1.0"
 num-derive = "0.4"
 num-traits = "0.2"

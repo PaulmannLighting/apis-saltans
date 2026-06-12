@@ -6,10 +6,10 @@ edition = "2024"
 [dependencies]
 chrono = "0.4"
 const_env = "0.1"
-le-stream = { version = "8.0", features = ["derive"] }
+le-stream = { version = "9", features = ["derive"] }
 log = "0.4"
-macaddr = "1.0"
-tokio = { version = "1.52", features = ["sync", "rt", "rt-multi-thread", "time"] }
+macaddr = "1"
+tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
 zcl = { path = "../zcl", version = "0.1" }
 zdp = { path = "../zdp", version = "0.1" }
 zigbee = { path = "../zigbee", version = "0.1" }
