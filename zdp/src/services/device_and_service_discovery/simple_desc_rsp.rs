@@ -3,7 +3,7 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use zigbee::Cluster;
 
-use crate::{Service, SimpleDescriptor, Status};
+use crate::{Command, DeviceAndServiceDiscovery, Service, SimpleDescriptor, Status};
 
 /// Simple Descriptor Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -83,5 +83,20 @@ impl Display for SimpleDescRsp {
             self.nwk_addr_of_interest,
             self.descriptors
         )
+    }
+}
+
+impl TryFrom<Command> for SimpleDescRsp {
+    type Error = Command;
+
+    fn try_from(cmd: Command) -> Result<Self, Self::Error> {
+        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::SimpleDescRsp(
+            descriptors,
+        )) = cmd
+        {
+            Ok(descriptors)
+        } else {
+            Err(cmd)
+        }
     }
 }

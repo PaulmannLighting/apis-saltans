@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Cluster;
+use zigbee::{Cluster, ExpectResponse};
 
-use crate::Service;
+use crate::{Command, Service, SimpleDescRsp};
 
 /// Simple Descriptor Request structure.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -43,6 +43,10 @@ impl Service for SimpleDescReq {
     const NAME: &'static str = "Simple_Desc_req";
 }
 
+impl ExpectResponse<Command> for SimpleDescReq {
+    type Response = SimpleDescRsp;
+}
+
 impl Display for SimpleDescReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -52,5 +56,11 @@ impl Display for SimpleDescReq {
             self.nwk_address_of_interest,
             self.endpoint
         )
+    }
+}
+
+impl From<SimpleDescReq> for Command {
+    fn from(simple_desc_req: SimpleDescReq) -> Self {
+        Self::DeviceAndServiceDiscovery(simple_desc_req.into())
     }
 }
