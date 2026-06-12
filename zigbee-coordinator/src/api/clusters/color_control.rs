@@ -35,7 +35,7 @@ impl ColorControl for Coordinator {
     ) -> Result<(), Error> {
         self.zcl_transceiver
             .unicast_zcl_native(
-                address,
+                address.short_id(),
                 endpoint,
                 MoveToColor::new(color_x, color_y, transition_time, options),
             )

@@ -65,7 +65,7 @@ impl WriteAttributes for Coordinator {
     ) -> Result<Response, Error> {
         self.zcl_transceiver
             .communicate(
-                address,
+                address.short_id(),
                 endpoint,
                 Payload::new(
                     Metadata::new(cluster, None, None),

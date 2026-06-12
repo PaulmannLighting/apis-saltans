@@ -43,21 +43,21 @@ pub trait OnOff {
 impl OnOff for Coordinator {
     async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.zcl_transceiver
-            .unicast_zcl_native(address, endpoint, On)
+            .unicast_zcl_native(address.short_id(), endpoint, On)
             .await?;
         Ok(())
     }
 
     async fn off(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.zcl_transceiver
-            .unicast_zcl_native(address, endpoint, Off)
+            .unicast_zcl_native(address.short_id(), endpoint, Off)
             .await?;
         Ok(())
     }
 
     async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.zcl_transceiver
-            .unicast_zcl_native(address, endpoint, Toggle)
+            .unicast_zcl_native(address.short_id(), endpoint, Toggle)
             .await?;
         Ok(())
     }
