@@ -1,0 +1,13 @@
+[package]
+name = "zigbee-runtime"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+log = "0.4"
+smarthomelib = { version = "0.1.0", path = "../../smarthomelib" }
+tokio = { version = "1.52", features = ["macros", "rt", "sync", "time"] }
+
+[lints]
+workspace = true
