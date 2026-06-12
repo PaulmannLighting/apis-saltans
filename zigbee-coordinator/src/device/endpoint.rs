@@ -6,9 +6,8 @@ pub use self::cluster::Cluster;
 
 mod cluster;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Endpoint {
-    id: Application,
     input_clusters: BTreeMap<u16, Cluster>,
     output_clusters: BTreeMap<u16, Cluster>,
 }
@@ -16,17 +15,14 @@ pub struct Endpoint {
 impl Endpoint {
     /// Create a new endpoint.
     #[must_use]
-    pub const fn new(id: Application) -> Self {
+    pub const fn new(
+        input_clusters: BTreeMap<u16, Cluster>,
+        output_clusters: BTreeMap<u16, Cluster>,
+    ) -> Self {
         Self {
-            id,
-            input_clusters: BTreeMap::new(),
-            output_clusters: BTreeMap::new(),
+            input_clusters,
+            output_clusters,
         }
-    }
-
-    #[must_use]
-    pub const fn id(&self) -> Application {
-        self.id
     }
 
     #[must_use]

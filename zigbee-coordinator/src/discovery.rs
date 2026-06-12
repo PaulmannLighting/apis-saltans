@@ -134,13 +134,13 @@ impl Actor {
             for input_cluster in descriptor.input_clusters() {
                 endpoint
                     .input_clusters_mut()
-                    .insert(*input_cluster, Cluster::new(*input_cluster));
+                    .insert(*input_cluster, Cluster::default());
             }
 
             for output_cluster in descriptor.output_clusters() {
                 endpoint
                     .output_clusters_mut()
-                    .insert(*output_cluster, Cluster::new(*output_cluster));
+                    .insert(*output_cluster, Cluster::default());
             }
         }
     }
@@ -164,7 +164,7 @@ impl Actor {
         for endpoint in &endpoints {
             device
                 .endpoints_mut()
-                .insert(*endpoint, Endpoint::new(*endpoint));
+                .insert(*endpoint, Endpoint::default());
         }
 
         for endpoint in endpoints {

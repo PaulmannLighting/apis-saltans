@@ -3,9 +3,8 @@ use std::collections::BTreeMap;
 use zigbee::types::Type;
 
 /// State of a cluster.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Cluster {
-    id: u16,
     bound: bool,
     attributes: BTreeMap<u16, Type>,
 }
@@ -13,17 +12,8 @@ pub struct Cluster {
 impl Cluster {
     /// Create a new cluster.
     #[must_use]
-    pub const fn new(id: u16) -> Self {
-        Self {
-            id,
-            bound: false,
-            attributes: BTreeMap::new(),
-        }
-    }
-
-    #[must_use]
-    pub const fn id(&self) -> u16 {
-        self.id
+    pub const fn new(bound: bool, attributes: BTreeMap<u16, Type>) -> Self {
+        Self { bound, attributes }
     }
 
     #[must_use]
