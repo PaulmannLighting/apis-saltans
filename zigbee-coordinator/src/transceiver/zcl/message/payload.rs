@@ -49,24 +49,6 @@ impl<T> Payload<T> {
         }
     }
 
-    /// Retrieve the APS metadata.
-    #[must_use]
-    pub const fn metadata(&self) -> &Metadata {
-        &self.metadata
-    }
-
-    /// Retrieve the manufacturer code.
-    #[must_use]
-    pub const fn manufacturer_code(&self) -> Option<u16> {
-        self.manufacturer_code
-    }
-
-    /// Retrieve the command payload.
-    #[must_use]
-    pub const fn command(&self) -> &T {
-        &self.command
-    }
-
     /// Consume the frame into its parts.
     #[must_use]
     pub fn into_parts(self) -> (Metadata, Option<u16>, T) {
