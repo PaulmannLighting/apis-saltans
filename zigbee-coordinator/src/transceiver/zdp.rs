@@ -8,7 +8,7 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
 use zdp::Command;
-use zigbee::{Address, Endpoint};
+use zigbee::Endpoint;
 use zigbee_hw::{Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
@@ -99,7 +99,13 @@ where
     ) {
         let (metadata, command) = payload.into_parts();
         let zdp_frame = self.make_zdp_frame(command);
-        let aps_frame = Self::make_aps_frame(metadata, zdp_frame);
+
+        #[expect(unsafe_code)]
+        // SAFETY: We extracted the metadata and command from the payload above
+        // and created a valid ZDP frame from that command.
+        // Hence, the resulting metadata and payload match.
+        let aps_frame = unsafe { Self::make_aps_frame(metadata, zdp_frame) };
+
         let result = self.ncp.unicast(short_id, Endpoint::Data, aps_frame).await;
         response.send(result.map(drop)).unwrap_or_else(|error| {
             error!("Failed to send unicast response: {error:?}");
@@ -116,7 +122,12 @@ where
         let (metadata, command) = payload.into_parts();
         let zdp_frame = self.make_zdp_frame(command);
         let seq = zdp_frame.seq();
-        let aps_frame = Self::make_aps_frame(metadata, zdp_frame);
+
+        #[expect(unsafe_code)]
+        // SAFETY: We extracted the metadata and command from the payload above
+        // and created a valid ZDP frame from that command.
+        // Hence, the resulting metadata and payload match.
+        let aps_frame = unsafe { Self::make_aps_frame(metadata, zdp_frame) };
 
         match self.ncp.unicast(short_id, Endpoint::Data, aps_frame).await {
             Ok(_) => {
@@ -132,11 +143,16 @@ where
     }
 
     /// Create a new APS frame.
-    fn make_aps_frame(metadata: Metadata, frame: zdp::Frame<Command>) -> zigbee_hw::Frame {
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the given metadata and payload match.
+    #[expect(unsafe_code)]
+    unsafe fn make_aps_frame(metadata: Metadata, frame: zdp::Frame<Command>) -> zigbee_hw::Frame {
         let payload = frame.to_le_stream().collect();
 
         #[expect(unsafe_code)]
-        // SAFETY: We trust the caller that the given metadata and payload match.
+        // SAFETY: We trust that the caller upholds the safety invariants mentioned above.
         unsafe {
             zigbee_hw::Frame::new(metadata, payload)
         }

@@ -8,7 +8,7 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
 use zcl::{Cluster, CommandDispatch};
-use zigbee::{Address, Endpoint};
+use zigbee::Endpoint;
 use zigbee_hw::{Command, Event, Metadata, Ncp};
 
 pub use self::handle::Handle;
@@ -103,7 +103,13 @@ where
     ) {
         let (metadata, manufacturer_code, command) = frame.into_parts();
         let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
-        let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
+
+        #[expect(unsafe_code)]
+        // SAFETY: We extracted the metadata and command from the payload above
+        // and created a valid ZCL frame from that command.
+        // Hence, the resulting metadata and payload match.
+        let aps_frame = unsafe { Self::make_aps_frame(metadata, zcl_frame) };
+
         let result = self.ncp.unicast(short_id, endpoint, aps_frame).await;
         response.send(result.map(drop)).unwrap_or_else(|error| {
             error!("Failed to send unicast response: {error:?}");
@@ -121,7 +127,12 @@ where
         let (metadata, manufacturer_code, command) = frame.into_parts();
         let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
         let seq = zcl_frame.header().seq();
-        let aps_frame = Self::make_aps_frame(metadata, zcl_frame);
+
+        #[expect(unsafe_code)]
+        // SAFETY: We extracted the metadata and command from the payload above
+        // and created a valid ZCL frame from that command.
+        // Hence, the resulting metadata and payload match.
+        let aps_frame = unsafe { Self::make_aps_frame(metadata, zcl_frame) };
 
         match self.ncp.unicast(short_id, endpoint, aps_frame).await {
             Ok(_) => {
@@ -137,7 +148,12 @@ where
     }
 
     /// Create a new APS frame.
-    fn make_aps_frame(metadata: Metadata, frame: zcl::Frame<Cluster>) -> zigbee_hw::Frame {
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the given metadata and payload match.
+    #[expect(unsafe_code)]
+    unsafe fn make_aps_frame(metadata: Metadata, frame: zcl::Frame<Cluster>) -> zigbee_hw::Frame {
         let payload = frame.to_le_stream().collect();
 
         #[expect(unsafe_code)]
