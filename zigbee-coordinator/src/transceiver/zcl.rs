@@ -179,8 +179,8 @@ where
         );
 
         #[expect(unsafe_code)]
-        // SAFETY: We created a valid header above.
-        // We trust that the caller has passed in a valid `manufacturer_code`.
+        // SAFETY: We constructed the ZCL header from the associated data of the frame above,
+        // and hence the resulting frame is valid.
         unsafe {
             zcl::Frame::new_unchecked(header, command)
         }
