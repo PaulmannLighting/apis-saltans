@@ -157,7 +157,7 @@ where
         let payload = frame.to_le_stream().collect();
 
         #[expect(unsafe_code)]
-        // SAFETY: We trust the caller that the given metadata and payload match.
+        // SAFETY: We trust that the caller upholds the safety invariants mentioned above.
         unsafe {
             zigbee_hw::Frame::new(metadata, payload)
         }
