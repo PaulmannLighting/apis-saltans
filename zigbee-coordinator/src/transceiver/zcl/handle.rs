@@ -9,8 +9,7 @@ use crate::timeout::Timeout;
 
 /// Handle trait on the ZCL transceiver.
 pub trait Handle {
-    /// Send a unicast.
-    // TODO: Maybe mark this `unsafe` and document invariants?
+    /// Send a ZCL command to one specific device and endpoint.
     fn unicast(
         &self,
         short_id: u16,
@@ -18,7 +17,7 @@ pub trait Handle {
         payload: Payload<zcl::Cluster>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
-    /// Communicate a unicast with an expected response.
+    /// Communicate with a ZCL device's endpoint.
     fn communicate<T>(
         &self,
         short_id: u16,
@@ -28,7 +27,8 @@ pub trait Handle {
     where
         T: ExpectResponse<zcl::Cluster>;
 
-    /// Send a unicast of a native ZCL command belonging to a static cluster.
+    /// Send a ZCL command to one specific device and endpoint,
+    /// where the command is a native ZCL command belonging to a static cluster.
     async fn unicast_zcl_native<T>(
         &self,
         short_id: u16,
