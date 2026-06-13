@@ -1,22 +1,23 @@
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{Uint8, Uint16};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::clusters::general::groups::types::GroupList;
 use crate::{Command, Native};
 
 /// Command to request the membership of a device in multiple groups.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct GetGroupMembership {
-    groups: GroupList,
+    groups: Box<[Uint16]>,
 }
 
 impl GetGroupMembership {
     /// Creates a new `GetGroupMembership` command with the specified group count and list.
     #[must_use]
-    pub const fn new(groups: GroupList) -> Self {
+    pub const fn new(groups: Box<[Uint16]>) -> Self {
         Self { groups }
     }
 
@@ -48,7 +49,7 @@ impl AsRef<[Uint16]> for GetGroupMembership {
 
 impl IntoIterator for GetGroupMembership {
     type Item = Uint16;
-    type IntoIter = <GroupList as IntoIterator>::IntoIter;
+    type IntoIter = <Box<[Uint16]> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.groups.into_iter()
@@ -78,22 +79,25 @@ impl FromLeStream for GetGroupMembership {
         I: Iterator<Item = u8>,
     {
         let group_count = Uint8::from_le_stream(&mut bytes)?;
-        let mut groups = GroupList::new();
 
         let Ok(size) = u8::try_from(group_count) else {
             return None;
         };
 
+        let mut groups = Vec::with_capacity(size.into());
+
         for _ in 0..size {
-            groups.push(Uint16::from_le_stream(&mut bytes)?).ok()?;
+            groups.push(Uint16::from_le_stream(&mut bytes)?);
         }
 
-        Some(Self { groups })
+        Some(Self {
+            groups: groups.into_boxed_slice(),
+        })
     }
 }
 
 impl ToLeStream for GetGroupMembership {
-    type Iter = Chain<<Uint8 as ToLeStream>::Iter, <GroupList as ToLeStream>::Iter>;
+    type Iter = Chain<<Uint8 as ToLeStream>::Iter, <Box<[Uint16]> as ToLeStream>::Iter>;
 
     fn to_le_stream(self) -> Self::Iter {
         self.group_count()
