@@ -1,40 +1,20 @@
-use std::collections::BTreeMap;
+pub use self::attributes::Attributes;
 
-use zigbee::types::Type;
+mod attributes;
 
 /// State of a cluster.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Debug, Default)]
 pub struct Cluster {
-    bound: bool,
-    attributes: BTreeMap<u16, Type>,
+    attributes: Option<Attributes>,
 }
 
 impl Cluster {
-    /// Create a new cluster.
     #[must_use]
-    pub const fn new(bound: bool, attributes: BTreeMap<u16, Type>) -> Self {
-        Self { bound, attributes }
+    pub fn attributes(&self) -> Option<&Attributes> {
+        self.attributes.as_ref()
     }
 
-    #[must_use]
-    pub const fn bound(&self) -> bool {
-        self.bound
-    }
-
-    #[must_use]
-    pub const fn attributes(&self) -> &BTreeMap<u16, Type> {
-        &self.attributes
-    }
-
-    pub const fn attributes_mut(&mut self) -> &mut BTreeMap<u16, Type> {
-        &mut self.attributes
-    }
-
-    pub const fn bind(&mut self) {
-        self.bound = true;
-    }
-
-    pub const fn unbind(&mut self) {
-        self.bound = false;
+    pub fn set_attributes(&mut self, attributes: Attributes) {
+        self.attributes.replace(attributes);
     }
 }

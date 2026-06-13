@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 
 use zdp::SimpleDescriptor;
 
-pub use self::cluster::Cluster;
+pub use self::cluster::{Attributes, Cluster};
 
 mod cluster;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Debug)]
 pub struct Endpoint {
     profile_id: u16,
     device_id: u16,

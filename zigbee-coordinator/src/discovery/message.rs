@@ -3,6 +3,7 @@ use zigbee::{Address, Application};
 use zigbee_hw::Event;
 
 use crate::Error;
+use crate::discovery::endpoint::Attributes;
 
 /// A message received by the discovery actor.
 #[derive(Debug)]
@@ -24,6 +25,18 @@ pub enum Message {
         address: Address,
         /// The result of the request.
         result: Result<SimpleDescRsp, Error>,
+    },
+
+    /// Cluster attribute report.
+    Attributes {
+        /// The full address of the device.
+        address: Address,
+        /// The application endpoint.
+        endpoint: Application,
+        /// The cluster ID.
+        cluster_id: u16,
+        /// The attributes.
+        attributes: Attributes,
     },
 }
 

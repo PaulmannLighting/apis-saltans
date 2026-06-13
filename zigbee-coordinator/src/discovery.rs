@@ -11,9 +11,11 @@ use zigbee_hw::Event;
 
 use self::endpoint::Endpoint;
 pub use self::message::Message;
+use crate::discovery::endpoint::Attributes;
 use crate::transceiver::zdp::Handle;
 use crate::{Error, binding, transceiver};
 
+mod device_discovery;
 mod endpoint;
 mod message;
 
@@ -68,6 +70,14 @@ impl Actor {
                 }
                 Message::SimpleDescRsp { address, result } => {
                     self.handle_simple_desc_rsp(address, result);
+                }
+                Message::Attributes {
+                    address,
+                    endpoint,
+                    cluster_id,
+                    attributes,
+                } => {
+                    self.update_attributes(address, endpoint, cluster_id, attributes);
                 }
             }
         }
@@ -218,5 +228,32 @@ impl Actor {
                 .await
                 .unwrap_or_else(|error| error!("Failed to send SimpleDescRsp: {error:?}"));
         });
+    }
+}
+
+/// Stage 4: Attribute discovery.
+impl Actor {
+    fn update_attributes(
+        &mut self,
+        address: Address,
+        endpoint: Application,
+        cluster_id: u16,
+        attributes: Attributes,
+    ) {
+        let Some(mut device) = self.discovered_endpoints.remove(&address) else {
+            return;
+        };
+
+        let Some(endpoint) = device.get_mut(&endpoint) else {
+            return;
+        };
+
+        if let Some(cluster) = endpoint.input_clusters_mut().get_mut(&cluster_id) {
+            cluster.set_attributes(attributes);
+        }
+
+        // TODO: Check if the device has been fully discovered.
+        // If this is the case, send a message to the binding manager.
+        // Else, put the device back in the queue.
     }
 }
