@@ -38,12 +38,11 @@ pub trait Handle {
     where
         T: Cluster + Into<zcl::Cluster>,
     {
-        self.unicast(
-            short_id,
-            endpoint,
-            Payload::new_native(Metadata::for_cluster::<T>(None, None), command.into()),
-        )
-        .await
+        #[expect(unsafe_code)]
+        // SAFETY: We construct matching metadata from the payload type.
+        let payload =
+            unsafe { Payload::new_native(Metadata::for_cluster::<T>(None, None), command.into()) };
+        self.unicast(short_id, endpoint, payload).await
     }
 }
 

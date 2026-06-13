@@ -58,16 +58,20 @@ impl ReadAttributes for Coordinator {
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
     ) -> Result<Response, Error> {
-        self.zcl_transceiver
-            .communicate(
-                address.short_id(),
-                endpoint,
-                Payload::new(
-                    Metadata::new(cluster, None, None),
-                    manufacturer_code,
-                    Command::new(ids),
-                ),
+        #[expect(unsafe_code)]
+        // SAFETY: We construct matching metadata from the given cluster ID.
+        // Since reading attributes is a global command, we don't need to validate the cluster ID.
+        // Hence, the resulting metadata and command are guaranteed to match.
+        let payload = unsafe {
+            Payload::new(
+                Metadata::new(cluster, None, None),
+                manufacturer_code,
+                Command::new(ids),
             )
+        };
+
+        self.zcl_transceiver
+            .communicate(address.short_id(), endpoint, payload)
             .await
     }
 }

@@ -16,8 +16,17 @@ pub struct Payload<T> {
 
 impl<T> Payload<T> {
     /// Create a new frame.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the metadata and command match.
+    #[expect(unsafe_code)]
     #[must_use]
-    pub const fn new(metadata: Metadata, manufacturer_code: Option<u16>, command: T) -> Self {
+    pub const unsafe fn new(
+        metadata: Metadata,
+        manufacturer_code: Option<u16>,
+        command: T,
+    ) -> Self {
         Self {
             metadata,
             manufacturer_code,
@@ -26,8 +35,13 @@ impl<T> Payload<T> {
     }
 
     /// Create a new frame with no manufacturer code.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the metadata and command match.
+    #[expect(unsafe_code)]
     #[must_use]
-    pub const fn new_native(metadata: Metadata, command: T) -> Self {
+    pub const unsafe fn new_native(metadata: Metadata, command: T) -> Self {
         Self {
             metadata,
             manufacturer_code: None,
@@ -67,6 +81,10 @@ where
     /// Convert the frame into a ZCL cluster frame.
     #[must_use]
     pub fn into_cluster(self) -> Payload<Cluster> {
-        Payload::new(self.metadata, self.manufacturer_code, self.command.into())
+        Payload {
+            metadata: self.metadata,
+            manufacturer_code: self.manufacturer_code,
+            command: self.command.into(),
+        }
     }
 }
