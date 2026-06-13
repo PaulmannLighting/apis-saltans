@@ -64,6 +64,12 @@ impl ActiveEpRsp {
     pub fn active_eps(&self) -> &[Endpoint] {
         &self.active_eps
     }
+
+    /// Return the active endpoints, consuming the [`ActiveEpRsp`].
+    #[must_use]
+    pub fn into_active_eps(self) -> Box<[Endpoint]> {
+        self.active_eps.into_data()
+    }
 }
 
 impl Cluster for ActiveEpRsp {
