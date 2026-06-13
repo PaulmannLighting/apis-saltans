@@ -10,7 +10,6 @@ pub use self::error::Error;
 mod api;
 mod binding;
 mod coordinator;
-mod device;
 mod discovery;
 mod error;
 mod expect;

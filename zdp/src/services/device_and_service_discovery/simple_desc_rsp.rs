@@ -63,6 +63,12 @@ impl SimpleDescRsp {
     pub fn descriptors(&self) -> &[SimpleDescriptor] {
         &self.descriptors
     }
+
+    /// Return the descriptors, consuming the descriptor.
+    #[must_use]
+    pub fn into_descriptors(self) -> Box<[SimpleDescriptor]> {
+        self.descriptors.into_data()
+    }
 }
 
 impl Cluster for SimpleDescRsp {

@@ -1,8 +1,7 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
 
 use log::{error, trace, warn};
-use macaddr::MacAddr8;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use tokio::time::sleep;
@@ -10,11 +9,12 @@ use zdp::{ActiveEpReq, ActiveEpRsp, SimpleDescReq, SimpleDescRsp, Status};
 use zigbee::{Address, Application};
 use zigbee_hw::Event;
 
+use self::endpoint::Endpoint;
 pub use self::message::Message;
-use crate::device::{Cluster, Device, Endpoint};
 use crate::transceiver::zdp::Handle;
 use crate::{Error, binding, transceiver};
 
+mod endpoint;
 mod message;
 
 const RESCHEDULE_DELAY: Duration = Duration::from_secs(30);
@@ -27,7 +27,10 @@ pub struct Actor {
     zcl_transceiver: Sender<transceiver::zcl::Message>,
     zdp_transceiver: Sender<transceiver::zdp::Message>,
     binding_manager: Sender<binding::Message>,
-    devices: BTreeMap<MacAddr8, Device>,
+    // Discovery stages:
+    discovered_devices: BTreeSet<Address>,
+    device_endpoints: BTreeMap<Address, BTreeSet<Application>>,
+    discovered_endpoints: BTreeMap<Address, BTreeMap<Application, Endpoint>>,
 }
 
 impl Actor {
@@ -47,7 +50,9 @@ impl Actor {
             zcl_transceiver,
             zdp_transceiver,
             binding_manager,
-            devices: BTreeMap::new(),
+            discovered_devices: BTreeSet::new(),
+            device_endpoints: BTreeMap::new(),
+            discovered_endpoints: BTreeMap::new(),
         };
 
         (instance, tx)
@@ -61,11 +66,9 @@ impl Actor {
                 Message::ActiveEpRsp { address, result } => {
                     self.handle_active_ep_rsp(address, result);
                 }
-                Message::SimpleDescRsp {
-                    address,
-                    endpoint,
-                    result,
-                } => self.handle_simple_desc_rsp(&address, endpoint, result),
+                Message::SimpleDescRsp { address, result } => {
+                    self.handle_simple_desc_rsp(address, result);
+                }
             }
         }
     }
@@ -100,12 +103,7 @@ impl Actor {
         self.schedule_endpoint_discovery(address, Some(RESCHEDULE_DELAY));
     }
 
-    fn handle_simple_desc_rsp(
-        &mut self,
-        address: &Address,
-        endpoint: Application,
-        result: Result<SimpleDescRsp, Error>,
-    ) {
+    fn handle_simple_desc_rsp(&mut self, address: Address, result: Result<SimpleDescRsp, Error>) {
         let Ok(simple_desc_rsp) =
             result.inspect_err(|error| error!("Failed to get simple descriptor: {error:?}"))
         else {
@@ -120,37 +118,25 @@ impl Actor {
             return;
         };
 
-        let Some(device) = self.devices.get_mut(&address.ieee_address()) else {
-            error!("Failed to get simple descriptor: {address:?}");
-            return;
-        };
+        let mut old_devices = self.device_endpoints.get_mut(&address);
+        let device = self.discovered_endpoints.entry(address).or_default();
 
-        let Some(endpoint) = device.endpoints_mut().get_mut(&endpoint) else {
-            error!("Failed to get endpoint: {address:?}:{endpoint:?}");
-            return;
-        };
+        for descriptor in simple_desc_rsp.into_descriptors() {
+            let zigbee::Endpoint::Application(application) = descriptor.endpoint() else {
+                //error!("Failed to parse endpoint: {:#06X}", descriptor.endpoint());
+                continue;
+            };
 
-        for descriptor in simple_desc_rsp.descriptors() {
-            for input_cluster in descriptor.input_clusters() {
-                endpoint
-                    .input_clusters_mut()
-                    .insert(*input_cluster, Cluster::default());
+            if let Some(old_device) = old_devices.as_mut() {
+                old_device.remove(&application);
             }
 
-            for output_cluster in descriptor.output_clusters() {
-                endpoint
-                    .output_clusters_mut()
-                    .insert(*output_cluster, Cluster::default());
-            }
+            device.insert(application, descriptor.into());
         }
     }
 
     fn update_endpoints(&mut self, address: &Address, active_ep_rsp: ActiveEpRsp) {
-        let Some(device) = self.devices.get_mut(&address.ieee_address()) else {
-            return;
-        };
-
-        let endpoints: Box<[Application]> = active_ep_rsp
+        let endpoints: BTreeSet<_> = active_ep_rsp
             .into_iter()
             .filter_map(|endpoint| {
                 if let zigbee::Endpoint::Application(endpoint) = endpoint {
@@ -161,20 +147,19 @@ impl Actor {
             })
             .collect();
 
-        for endpoint in &endpoints {
-            device
-                .endpoints_mut()
-                .insert(*endpoint, Endpoint::default());
-        }
+        self.device_endpoints
+            .entry(address.clone())
+            .or_default()
+            .extend(endpoints.clone());
 
-        for endpoint in endpoints {
-            self.schedule_descriptor_discovery(address.clone(), endpoint, None);
+        for endpoint in &endpoints {
+            self.discovered_devices.remove(&address);
+            self.schedule_descriptor_discovery(address.clone(), *endpoint, None);
         }
     }
 
     fn handle_join(&mut self, address: Address) {
-        self.devices
-            .insert(address.ieee_address(), Device::from(address.clone()));
+        self.discovered_devices.insert(address.clone());
         self.schedule_endpoint_discovery(address, None);
     }
 
@@ -217,19 +202,13 @@ impl Actor {
                 .await;
 
             loopback
-                .send(Message::SimpleDescRsp {
-                    address,
-                    endpoint,
-                    result,
-                })
+                .send(Message::SimpleDescRsp { address, result })
                 .await
                 .unwrap_or_else(|error| error!("Failed to send SimpleDescRsp: {error:?}"));
         });
     }
 
     fn handle_leave(&mut self, address: &Address) {
-        if let Some(device) = self.devices.remove(&address.ieee_address()) {
-            todo!("Notify network manager.")
-        }
+        todo!("Handle device leave");
     }
 }

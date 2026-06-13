@@ -22,8 +22,6 @@ pub enum Message {
     SimpleDescRsp {
         /// The full address of the device.
         address: Address,
-        /// The application endpoint.
-        endpoint: Application,
         /// The result of the request.
         result: Result<SimpleDescRsp, Error>,
     },
