@@ -100,4 +100,17 @@ impl SimpleDescriptor {
     pub fn output_clusters(&self) -> &[u16] {
         &self.output_clusters
     }
+
+    /// Return the constituent parts of the descriptor.
+    #[must_use]
+    pub fn into_parts(self) -> (Endpoint, u16, u16, u8, Box<[u16]>, Box<[u16]>) {
+        (
+            self.endpoint,
+            self.profile_id,
+            self.device_id,
+            self.nibbles.version(),
+            self.input_clusters.into_data(),
+            self.output_clusters.into_data(),
+        )
+    }
 }
