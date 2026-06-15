@@ -1,5 +1,7 @@
 //! Zigbee address types.
 
+use std::fmt::Display;
+
 use macaddr::MacAddr8;
 
 /// Zigbee device addressing modes.
@@ -29,5 +31,11 @@ impl Address {
     #[must_use]
     pub const fn short_id(&self) -> u16 {
         self.short_id
+    }
+}
+
+impl Display for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ({:#06X})", self.ieee_address, self.short_id)
     }
 }
