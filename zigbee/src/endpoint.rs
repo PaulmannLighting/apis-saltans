@@ -51,6 +51,12 @@ impl From<u8> for Endpoint {
     }
 }
 
+impl From<Application> for Endpoint {
+    fn from(application: Application) -> Self {
+        Self::Application(application)
+    }
+}
+
 impl From<Endpoint> for u8 {
     fn from(endpoint: Endpoint) -> Self {
         match endpoint {
