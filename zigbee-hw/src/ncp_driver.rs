@@ -26,6 +26,13 @@ pub trait NcpDriver {
     /// Returns an error if the operation fails.
     fn get_pan_id(&mut self) -> impl Future<Output = Result<u16, Error>> + Send;
 
+    /// Get the IEEE address of the coordinator.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_ieee_address(&mut self) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
+
     /// Scan for available networks.
     ///
     /// # Parameters
@@ -87,7 +94,7 @@ pub trait NcpDriver {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_ieee_address(
+    fn short_id_to_ieee_address(
         &mut self,
         short_id: u16,
     ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
@@ -97,7 +104,7 @@ pub trait NcpDriver {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_short_id(
+    fn ieee_address_to_short_id(
         &mut self,
         ieee_address: MacAddr8,
     ) -> impl Future<Output = Result<u16, Error>> + Send;

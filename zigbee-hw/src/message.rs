@@ -20,6 +20,10 @@ pub enum Message {
     GetPanId {
         response: Sender<Result<u16, Error>>,
     },
+    /// Return the IEEE address of the coordinator.
+    GetIeeeAddress {
+        response: Sender<Result<MacAddr8, Error>>,
+    },
     /// Scan for networks.
     ScanNetworks {
         channel_mask: u32,
@@ -47,12 +51,12 @@ pub enum Message {
         response: Sender<Result<(), Error>>,
     },
     /// Return the IEEE address corresponding to a short ID.
-    GetIeeeAddress {
+    TranslateIeeeAddress {
         short_id: u16,
         response: Sender<Result<MacAddr8, Error>>,
     },
     /// Return the short ID corresponding to an IEEE address.
-    GetShortId {
+    TranslateShortId {
         ieee_address: MacAddr8,
         response: Sender<Result<u16, Error>>,
     },

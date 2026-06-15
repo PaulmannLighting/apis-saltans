@@ -27,6 +27,13 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn get_pan_id(&self) -> impl Future<Output = Result<u16, Error>> + Send;
 
+    /// Get the IEEE address of the network manager.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_ieee_address(&self) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
+
     /// Scan for available networks.
     ///
     /// # Errors
@@ -75,7 +82,7 @@ pub trait Ncp {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_ieee_address(
+    fn short_id_to_ieee_address(
         &self,
         short_id: u16,
     ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
@@ -85,7 +92,7 @@ pub trait Ncp {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_short_id(
+    fn ieee_address_to_short_id(
         &self,
         ieee_address: MacAddr8,
     ) -> impl Future<Output = Result<u16, Error>> + Send;
@@ -113,6 +120,12 @@ impl Ncp for Sender<Message> {
     async fn get_pan_id(&self) -> Result<u16, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::GetPanId { response }).await?;
+        rx.await?
+    }
+
+    async fn get_ieee_address(&self) -> Result<MacAddr8, Error> {
+        let (response, rx) = oneshot::channel();
+        self.send(Message::GetIeeeAddress { response }).await?;
         rx.await?
     }
 
@@ -166,16 +179,16 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn get_ieee_address(&self, short_id: u16) -> Result<MacAddr8, Error> {
+    async fn short_id_to_ieee_address(&self, short_id: u16) -> Result<MacAddr8, Error> {
         let (response, rx) = oneshot::channel();
-        self.send(Message::GetIeeeAddress { short_id, response })
+        self.send(Message::TranslateIeeeAddress { short_id, response })
             .await?;
         rx.await?
     }
 
-    async fn get_short_id(&self, ieee_address: MacAddr8) -> Result<u16, Error> {
+    async fn ieee_address_to_short_id(&self, ieee_address: MacAddr8) -> Result<u16, Error> {
         let (response, rx) = oneshot::channel();
-        self.send(Message::GetShortId {
+        self.send(Message::TranslateShortId {
             ieee_address,
             response,
         })

@@ -46,6 +46,13 @@ where
                             error!("Failed to send get PAN ID command response: {error:?}");
                         });
                 }
+                Message::GetIeeeAddress { response } => {
+                    response
+                        .send(self.get_ieee_address().await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send get IEEE address command response: {error:?}");
+                        });
+                }
                 Message::ScanNetworks {
                     channel_mask,
                     duration,
@@ -89,21 +96,21 @@ where
                             error!("Failed to send route request command response: {error:?}");
                         });
                 }
-                Message::GetIeeeAddress { short_id, response } => {
+                Message::TranslateIeeeAddress { short_id, response } => {
                     response
-                        .send(self.get_ieee_address(short_id).await)
+                        .send(self.short_id_to_ieee_address(short_id).await)
                         .unwrap_or_else(|error| {
-                            error!("Failed to send get IEEE address command response: {error:?}");
+                            error!("Failed to send short_id_to_ieee_address command response: {error:?}");
                         });
                 }
-                Message::GetShortId {
+                Message::TranslateShortId {
                     ieee_address,
                     response,
                 } => {
                     response
-                        .send(self.get_short_id(ieee_address).await)
+                        .send(self.ieee_address_to_short_id(ieee_address).await)
                         .unwrap_or_else(|error| {
-                            error!("Failed to send get IEEE address command response: {error:?}");
+                            error!("Failed to send ieee_address_to_short_id command response: {error:?}");
                         });
                 }
                 Message::Unicast {
