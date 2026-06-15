@@ -1,15 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use log::{error, trace, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
+use tokio_task_pool::Pool;
 use zdp::{SimpleDescReq, SimpleDescriptor, Status};
 use zigbee::{Address, Endpoint};
 
 pub use self::message::Message;
 use crate::discovery::attribute_discovery;
 use crate::transceiver::zdp::Handle;
-use crate::{RETRY, transceiver};
+use crate::{RETRY, TASK_POOL_SIZE, transceiver};
 
 mod message;
 
@@ -21,6 +21,7 @@ pub struct DescriptorDiscovery {
     zdp: WeakSender<transceiver::zdp::Message>,
     attribute_discovery: Sender<attribute_discovery::Message>,
     descriptors: BTreeMap<Address, BTreeMap<Endpoint, Option<SimpleDescriptor>>>,
+    tasks: Pool,
 }
 
 impl DescriptorDiscovery {
@@ -38,6 +39,7 @@ impl DescriptorDiscovery {
             zdp,
             attribute_discovery,
             descriptors: BTreeMap::new(),
+            tasks: Pool::bounded(TASK_POOL_SIZE),
         };
         (instance, tx)
     }
@@ -47,7 +49,7 @@ impl DescriptorDiscovery {
         while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::Discover { address, endpoints } => {
-                    self.discover(&address, endpoints);
+                    self.discover(&address, endpoints).await;
                 }
                 Message::DescriptorsDiscovered {
                     address,
@@ -60,19 +62,24 @@ impl DescriptorDiscovery {
     }
 
     /// Discover the descriptors for the given endpoints.
-    fn discover(&mut self, address: &Address, endpoints: BTreeSet<Endpoint>) {
+    async fn discover(&mut self, address: &Address, endpoints: BTreeSet<Endpoint>) {
         self.descriptors.insert(
             address.clone(),
             endpoints.iter().map(|endpoint| (*endpoint, None)).collect(),
         );
 
         for endpoint in endpoints {
-            spawn(get_descriptor(
-                address.clone(),
-                endpoint,
-                self.loopback.clone(),
-                self.zdp.clone(),
-            ));
+            self.tasks
+                .spawn(get_descriptor(
+                    address.clone(),
+                    endpoint,
+                    self.loopback.clone(),
+                    self.zdp.clone(),
+                ))
+                .await
+                .map_or_else(drop, |error| {
+                    error!("Failed to spawn task: {error:?}");
+                });
         }
     }
 

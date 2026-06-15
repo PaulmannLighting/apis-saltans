@@ -1,13 +1,13 @@
 use log::{error, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
+use tokio_task_pool::Pool;
 use zdp::{ActiveEpReq, Status};
 use zigbee::Address;
 
 pub use self::message::Message;
 use super::descriptor_discovery;
 use crate::transceiver::zdp::Handle;
-use crate::{RETRY, transceiver};
+use crate::{RETRY, TASK_POOL_SIZE, transceiver};
 
 mod message;
 
@@ -16,18 +16,20 @@ mod message;
 pub struct EndpointDiscovery {
     zdp: WeakSender<transceiver::zdp::Message>,
     descriptor_discovery: Sender<descriptor_discovery::Message>,
+    tasks: Pool,
 }
 
 impl EndpointDiscovery {
     /// Create a new instance of `EndpointDiscovery`.
     #[must_use]
-    pub const fn new(
+    pub fn new(
         zdp: WeakSender<transceiver::zdp::Message>,
         descriptor_discovery: Sender<descriptor_discovery::Message>,
     ) -> Self {
         Self {
             zdp,
             descriptor_discovery,
+            tasks: Pool::bounded(TASK_POOL_SIZE),
         }
     }
 
@@ -36,19 +38,24 @@ impl EndpointDiscovery {
         while let Some(message) = messages.recv().await {
             match message {
                 Message::Discover(address) => {
-                    self.discover_endpoints(address);
+                    self.discover_endpoints(address).await;
                 }
             }
         }
     }
 
     /// Discover endpoints on the given device in a separate task.
-    fn discover_endpoints(&self, address: Address) {
-        spawn(discover_endpoints(
-            address,
-            self.zdp.clone(),
-            self.descriptor_discovery.downgrade(),
-        ));
+    async fn discover_endpoints(&self, address: Address) {
+        self.tasks
+            .spawn(discover_endpoints(
+                address,
+                self.zdp.clone(),
+                self.descriptor_discovery.downgrade(),
+            ))
+            .await
+            .map_or_else(drop, |error| {
+                error!("Failed to spawn task: {error:?}");
+            });
     }
 }
 

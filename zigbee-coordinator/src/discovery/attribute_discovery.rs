@@ -1,19 +1,19 @@
 use std::collections::BTreeMap;
 
 use log::{error, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
+use tokio_task_pool::Pool;
 use zcl::general::basic::readable::Id;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
 
-use self::application_endpoints_with_basic_cluster::ApplicationEndpointsWithBasicCluster;
+use self::devices::ApplicationEndpointsWithBasicCluster;
 pub use self::endpoint_info::EndpointInfo;
 pub use self::message::Message;
-use crate::{RETRY, ReadAttributeResult, ReadAttributes, binding, transceiver};
+use crate::{RETRY, ReadAttributeResult, ReadAttributes, TASK_POOL_SIZE, binding, transceiver};
 
-mod application_endpoints_with_basic_cluster;
 mod attributes;
+mod devices;
 mod endpoint_info;
 mod message;
 
@@ -39,6 +39,7 @@ pub struct AttributeDiscovery {
     zcl: WeakSender<transceiver::zcl::Message>,
     binding_manager: WeakSender<binding::Message>,
     attributes: BTreeMap<Address, BTreeMap<Endpoint, EndpointInfo>>,
+    tasks: Pool,
 }
 
 impl AttributeDiscovery {
@@ -56,6 +57,7 @@ impl AttributeDiscovery {
             zcl,
             binding_manager,
             attributes: BTreeMap::new(),
+            tasks: Pool::bounded(TASK_POOL_SIZE),
         };
         (instance, tx)
     }
@@ -65,7 +67,7 @@ impl AttributeDiscovery {
         while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::GetAttributes { address, endpoints } => {
-                    self.get_attributes(&address, endpoints);
+                    self.get_attributes(&address, endpoints).await;
                 }
                 Message::AttributesDiscovered {
                     address,
@@ -78,7 +80,7 @@ impl AttributeDiscovery {
         }
     }
 
-    fn get_attributes(
+    async fn get_attributes(
         &mut self,
         address: &Address,
         endpoints: BTreeMap<Endpoint, SimpleDescriptor>,
@@ -95,12 +97,15 @@ impl AttributeDiscovery {
             .collect();
 
         for application in application_endpoints_with_basic_cluster {
-            spawn(discover_attributes(
-                address.clone(),
-                application,
-                self.loopback.clone(),
-                self.zcl.clone(),
-            ));
+            self.tasks
+                .spawn(discover_attributes(
+                    address.clone(),
+                    application,
+                    self.loopback.clone(),
+                    self.zcl.clone(),
+                ))
+                .await
+                .map_or_else(drop, |error| error!("Failed to spawn task: {error:?}"));
         }
     }
 

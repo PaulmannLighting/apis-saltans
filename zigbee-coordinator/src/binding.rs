@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use log::{error, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
+use tokio_task_pool::Pool;
 use zdp::{BindReq, Destination, Status};
 use zigbee::{Address, ClusterId, Endpoint};
 
@@ -10,7 +10,7 @@ use self::devices_ext::{Devices, DevicesExt};
 pub use self::message::Message;
 use crate::discovery::EndpointInfo;
 use crate::transceiver::zdp::Handle;
-use crate::{RETRY, network_manager, transceiver};
+use crate::{RETRY, TASK_POOL_SIZE, network_manager, transceiver};
 
 mod devices_ext;
 mod message;
@@ -27,6 +27,7 @@ pub struct Actor {
     network_manager: WeakSender<network_manager::Message>,
     coordinator_address: Address,
     devices: Devices,
+    tasks: Pool,
 }
 
 impl Actor {
@@ -47,6 +48,7 @@ impl Actor {
             network_manager,
             coordinator_address,
             devices: BTreeMap::new(),
+            tasks: Pool::bounded(TASK_POOL_SIZE),
         };
 
         (instance, tx)
@@ -57,7 +59,7 @@ impl Actor {
         while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::DeviceDiscovered { address, endpoints } => {
-                    self.bind_device_endpoints(&address, endpoints);
+                    self.bind_device_endpoints(&address, endpoints).await;
                 }
                 Message::EndpointBound {
                     address,
@@ -71,7 +73,7 @@ impl Actor {
         }
     }
 
-    fn bind_device_endpoints(
+    async fn bind_device_endpoints(
         &mut self,
         address: &Address,
         endpoints: BTreeMap<Endpoint, EndpointInfo>,
@@ -85,14 +87,19 @@ impl Actor {
                     .output_clusters()
                     .contains(&cluster.into())
                 {
-                    spawn(bind_endpoint(
-                        address.clone(),
-                        *endpoint,
-                        cluster,
-                        self.loopback.clone(),
-                        self.zdp.clone(),
-                        self.coordinator_address.clone(),
-                    ));
+                    self.tasks
+                        .spawn(bind_endpoint(
+                            address.clone(),
+                            *endpoint,
+                            cluster,
+                            self.loopback.clone(),
+                            self.zdp.clone(),
+                            self.coordinator_address.clone(),
+                        ))
+                        .await
+                        .map_or_else(drop, |error| {
+                            error!("Failed to spawn task: {error:?}");
+                        });
                 }
             }
         }
