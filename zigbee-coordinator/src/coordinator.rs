@@ -119,12 +119,11 @@ impl Coordinator {
         zdp_transmitter: Sender<transceiver::zdp::Message>,
         binding_manager: Sender<binding::Message>,
     ) -> Result<(), Error> {
-        let (discovery_manager, discovery_manager_tx) =
+        let discovery_manager =
             discovery::Actor::new(100, zcl_transmitter, zdp_transmitter, binding_manager);
         let (events_tx, events_rx) = channel(100);
         mux.subscribe(events_tx).await?;
-        spawn(bridge(events_rx, discovery_manager_tx.clone()));
-        spawn(discovery_manager.run());
+        spawn(discovery_manager.run(events_rx));
         Ok(())
     }
 }

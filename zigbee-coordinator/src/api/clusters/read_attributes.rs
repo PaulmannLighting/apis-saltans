@@ -7,7 +7,9 @@ use zigbee_hw::Metadata;
 use crate::transceiver::zcl::{Handle, Message, Payload};
 use crate::{Coordinator, Error};
 
-type ReadAttributeResult<T> = Result<<T as ReadableAttribute>::Attribute, ParseAttributeError<T>>;
+/// Result of reading an attribute.
+pub type ReadAttributeResult<T> =
+    Result<<T as ReadableAttribute>::Attribute, ParseAttributeError<T>>;
 
 /// Trait for reading attributes.
 pub trait ReadAttributes {

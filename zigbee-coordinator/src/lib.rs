@@ -3,7 +3,7 @@
 //! This library provides a fully abstracted interface to expose an interface to communicate with
 //! a Zigbee transceiver regardless of the underlying hardware.
 
-pub use self::api::{ColorControl, OnOff, ReadAttributes, WriteAttributes};
+pub use self::api::{ColorControl, OnOff, ReadAttributeResult, ReadAttributes, WriteAttributes};
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
 

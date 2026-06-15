@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 chrono = "0.4"
 const_env = "0.1"
+either = "1.16.0"
 le-stream = { version = "9", features = ["derive"] }
 log = "0.4"
 macaddr = "1"

@@ -1,8 +1,12 @@
+use std::collections::BTreeMap;
+
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
+use zigbee::{Address, Endpoint};
 use zigbee_hw::Event;
 
 use super::Device;
+use crate::discovery::EndpointInfo;
 
 /// Messages received by the network management actor.
 #[derive(Debug)]
@@ -18,11 +22,6 @@ pub enum Message {
     Subscribe {
         /// Response channel to send the updated device list to.
         response: Sender<Box<[Device]>>,
-    },
-    /// Information that a certain device has been updated.
-    DeviceUpdate {
-        /// The updated device.
-        device: Device,
     },
 }
 
