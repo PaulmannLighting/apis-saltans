@@ -27,7 +27,12 @@ impl Retry {
             sleep(self.delay).await;
         }
 
-        *retries += 1;
+        if let Some(next) = retries.checked_add(1) {
+            *retries = next;
+        } else {
+            return false;
+        }
+
         true
     }
 }
