@@ -26,7 +26,7 @@ mod transceiver;
 
 /// The maximum number of times to retry a Zigbee command.
 #[env_item("ZIGBEE_COORDINATOR_MAX_RETRIES")]
-pub const MAX_RETRIES: usize = 10;
+const MAX_RETRIES: usize = 10;
 
 /// The delay between retries, in seconds.
 #[env_item("ZIGBEE_COORDINATOR_RETRY_DELAY_SECS")]
