@@ -1,3 +1,5 @@
+use core::fmt;
+use std::fmt::{Display, LowerHex, UpperHex};
 use std::ops::RangeInclusive;
 
 /// A Zigbee application endpoint ID.
@@ -38,6 +40,24 @@ impl Application {
     #[must_use]
     pub const unsafe fn new_unchecked(id: u8) -> Self {
         Self(id)
+    }
+}
+
+impl Display for Application {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl UpperHex for Application {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        UpperHex::fmt(&self.0, f)
+    }
+}
+
+impl LowerHex for Application {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        LowerHex::fmt(&self.0, f)
     }
 }
 
