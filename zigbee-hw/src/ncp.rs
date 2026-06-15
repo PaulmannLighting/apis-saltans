@@ -4,7 +4,7 @@ use std::time::Duration;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
-use zigbee::Endpoint;
+use zigbee::{Address, Endpoint};
 
 use crate::message::Message;
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};
@@ -33,6 +33,23 @@ pub trait Ncp {
     ///
     /// Returns an error if the operation fails.
     fn get_ieee_address(&self) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
+
+    /// Return the full address of the coordinator.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn get_address(&self) -> impl Future<Output = Result<Address, Error>> + Send
+    where
+        Self: Sync,
+    {
+        async {
+            Ok(Address::new(
+                self.get_ieee_address().await?,
+                self.get_pan_id().await?,
+            ))
+        }
+    }
 
     /// Scan for available networks.
     ///
