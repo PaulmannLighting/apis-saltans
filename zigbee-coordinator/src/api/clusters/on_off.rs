@@ -1,7 +1,8 @@
+use tokio::sync::mpsc::Sender;
 use zcl::general::on_off::{Off, On, Toggle};
 use zigbee::{Address, Endpoint};
 
-use crate::transceiver::zcl::Handle;
+use crate::transceiver::zcl::{Handle, Message};
 use crate::{Coordinator, Error};
 
 /// Trait for On/Off cluster operations.
@@ -40,25 +41,33 @@ pub trait OnOff {
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
-impl OnOff for Coordinator {
+impl OnOff for Sender<Message> {
     async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl_transceiver
-            .unicast_zcl_native(address.short_id(), endpoint, On)
-            .await?;
-        Ok(())
+        self.unicast_zcl_native(address.short_id(), endpoint, On)
+            .await
     }
 
     async fn off(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl_transceiver
-            .unicast_zcl_native(address.short_id(), endpoint, Off)
-            .await?;
-        Ok(())
+        self.unicast_zcl_native(address.short_id(), endpoint, Off)
+            .await
     }
 
     async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl_transceiver
-            .unicast_zcl_native(address.short_id(), endpoint, Toggle)
-            .await?;
-        Ok(())
+        self.unicast_zcl_native(address.short_id(), endpoint, Toggle)
+            .await
+    }
+}
+
+impl OnOff for Coordinator {
+    async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
+        self.zcl_transceiver.on(address, endpoint).await
+    }
+
+    async fn off(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
+        self.zcl_transceiver.off(address, endpoint).await
+    }
+
+    async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
+        self.zcl_transceiver.toggle(address, endpoint).await
     }
 }
