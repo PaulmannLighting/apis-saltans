@@ -7,7 +7,7 @@ pub use self::attribute_discovery::EndpointInfo;
 use crate::discovery::attribute_discovery::AttributeDiscovery;
 use crate::discovery::descriptor_discovery::DescriptorDiscovery;
 use crate::discovery::endpoint_discovery::EndpointDiscovery;
-use crate::{binding, transceiver};
+use crate::{MPSC_CHANNEL_SIZE, binding, transceiver};
 
 mod attribute_discovery;
 mod descriptor_discovery;
@@ -27,17 +27,14 @@ impl Actor {
     /// Create a new discovery actor.
     #[must_use]
     pub fn new(
-        channel_size: usize,
         zcl: WeakSender<transceiver::zcl::Message>,
         zdp: WeakSender<transceiver::zdp::Message>,
         binding_manager: WeakSender<binding::Message>,
     ) -> Self {
-        let (attribute_discovery, ad_tx) =
-            AttributeDiscovery::new(channel_size, zcl, binding_manager);
-        let (descriptor_discovery, dd_tx) =
-            DescriptorDiscovery::new(channel_size, zdp.clone(), ad_tx);
+        let (attribute_discovery, ad_tx) = AttributeDiscovery::new(zcl, binding_manager);
+        let (descriptor_discovery, dd_tx) = DescriptorDiscovery::new(zdp.clone(), ad_tx);
         let endpoint_discovery = EndpointDiscovery::new(zdp, dd_tx);
-        let (ed_tx, ed_rx) = channel(channel_size);
+        let (ed_tx, ed_rx) = channel(MPSC_CHANNEL_SIZE);
 
         Self {
             ed_tx,

@@ -10,7 +10,7 @@ use self::devices_ext::{Devices, DevicesExt};
 pub use self::message::Message;
 use crate::discovery::EndpointInfo;
 use crate::transceiver::zdp::Handle;
-use crate::{RETRY, TASK_POOL_SIZE, network_manager, transceiver};
+use crate::{MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, network_manager, transceiver};
 
 mod devices_ext;
 mod message;
@@ -34,12 +34,11 @@ impl Actor {
     /// Create a new binding management actor.
     #[must_use]
     pub fn new(
-        buffer: usize,
         zdp: WeakSender<transceiver::zdp::Message>,
         network_manager: WeakSender<network_manager::Message>,
         coordinator_address: Address,
     ) -> (Self, Sender<Message>) {
-        let (tx, rx) = channel(buffer);
+        let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
 
         let instance = Self {
             inbox: rx,

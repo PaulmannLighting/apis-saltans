@@ -10,7 +10,7 @@ use self::devices::Devices;
 pub use self::message::Message;
 use crate::discovery::attribute_discovery;
 use crate::transceiver::zdp::Handle;
-use crate::{RETRY, TASK_POOL_SIZE, transceiver};
+use crate::{MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, transceiver};
 
 mod devices;
 mod message;
@@ -30,11 +30,10 @@ impl DescriptorDiscovery {
     /// Create a new instance of `DescriptorDiscovery`.
     #[must_use]
     pub fn new(
-        buffer: usize,
         zdp: WeakSender<transceiver::zdp::Message>,
         attribute_discovery: Sender<attribute_discovery::Message>,
     ) -> (Self, Sender<Message>) {
-        let (tx, rx) = channel(buffer);
+        let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
         let instance = Self {
             inbox: rx,
             loopback: tx.downgrade(),

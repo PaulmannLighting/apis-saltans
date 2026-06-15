@@ -36,3 +36,7 @@ const RETRY: Retry = Retry::new(MAX_RETRIES, Duration::from_secs(RETRY_DELAY_SEC
 /// The delay between retries, in seconds.
 #[env_item("ZIGBEE_COORDINATOR_TASK_POOL_SIZE")]
 const TASK_POOL_SIZE: usize = 16;
+
+/// The delay between retries, in seconds.
+#[env_item("ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE")]
+const MPSC_CHANNEL_SIZE: usize = 128;

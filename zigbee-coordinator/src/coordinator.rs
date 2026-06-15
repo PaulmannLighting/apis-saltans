@@ -4,7 +4,7 @@ use zigbee::Address;
 use zigbee_hw::{Error, Event, Ncp, NcpHandle, Start, bridge};
 
 use crate::mux::{Handle as MuxHandle, Mux};
-use crate::{binding, discovery, mux, network_manager, transceiver};
+use crate::{MPSC_CHANNEL_SIZE, binding, discovery, mux, network_manager, transceiver};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
@@ -56,7 +56,7 @@ impl Coordinator {
 
     /// Start the multiplexer.
     fn start_mux(events: Receiver<Event>) -> Sender<mux::Message> {
-        let (mux_tx, mux_rx) = channel(100);
+        let (mux_tx, mux_rx) = channel(MPSC_CHANNEL_SIZE);
         spawn(bridge(events, mux_tx.clone()));
         spawn(Mux::default().run(mux_rx));
         mux_tx
@@ -68,8 +68,8 @@ impl Coordinator {
         mux: &Sender<mux::Message>,
     ) -> Result<Sender<transceiver::zcl::Message>, Error> {
         let transceiver = transceiver::zcl::Transceiver::new(ncp);
-        let (transceiver_tx, transceiver_rx) = channel(100);
-        let (events_tx, events_rx) = channel(100);
+        let (transceiver_tx, transceiver_rx) = channel(MPSC_CHANNEL_SIZE);
+        let (events_tx, events_rx) = channel(MPSC_CHANNEL_SIZE);
         mux.subscribe(events_tx).await?;
         spawn(bridge(events_rx, transceiver_tx.clone()));
         spawn(transceiver.run(transceiver_rx));
@@ -82,8 +82,8 @@ impl Coordinator {
         mux: &Sender<mux::Message>,
     ) -> Result<Sender<transceiver::zdp::Message>, Error> {
         let transceiver = transceiver::zdp::Transceiver::new(ncp);
-        let (transceiver_tx, transceiver_rx) = channel(100);
-        let (events_tx, events_rx) = channel(100);
+        let (transceiver_tx, transceiver_rx) = channel(MPSC_CHANNEL_SIZE);
+        let (events_tx, events_rx) = channel(MPSC_CHANNEL_SIZE);
         mux.subscribe(events_tx).await?;
         spawn(bridge(events_rx, transceiver_tx.clone()));
         spawn(transceiver.run(transceiver_rx));
@@ -95,8 +95,8 @@ impl Coordinator {
         mux: &Sender<mux::Message>,
     ) -> Result<Sender<network_manager::Message>, Error> {
         let network_manager = network_manager::Actor {};
-        let (network_manager_tx, network_manager_rx) = channel(100);
-        let (events_tx, events_rx) = channel(100);
+        let (network_manager_tx, network_manager_rx) = channel(MPSC_CHANNEL_SIZE);
+        let (events_tx, events_rx) = channel(MPSC_CHANNEL_SIZE);
         mux.subscribe(events_tx).await?;
         spawn(bridge(events_rx, network_manager_tx.clone()));
         spawn(network_manager.run(network_manager_rx));
@@ -110,7 +110,7 @@ impl Coordinator {
         coordinator_address: Address,
     ) -> Sender<binding::Message> {
         let (binding_manager, binding_manager_tx) =
-            binding::Actor::new(100, zdp_transceiver, network_manager, coordinator_address);
+            binding::Actor::new(zdp_transceiver, network_manager, coordinator_address);
         spawn(binding_manager.run());
         binding_manager_tx
     }
@@ -123,8 +123,8 @@ impl Coordinator {
         binding_manager: WeakSender<binding::Message>,
     ) -> Result<(), Error> {
         let discovery_manager =
-            discovery::Actor::new(100, zcl_transmitter, zdp_transmitter, binding_manager);
-        let (events_tx, events_rx) = channel(100);
+            discovery::Actor::new(zcl_transmitter, zdp_transmitter, binding_manager);
+        let (events_tx, events_rx) = channel(MPSC_CHANNEL_SIZE);
         mux.subscribe(events_tx).await?;
         spawn(discovery_manager.run(events_rx));
         Ok(())

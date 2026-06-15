@@ -11,7 +11,10 @@ use self::devices::DevicesExt;
 pub use self::endpoint_info::EndpointInfo;
 pub use self::message::Message;
 use crate::discovery::attribute_discovery::devices::Devices;
-use crate::{RETRY, ReadAttributeResult, ReadAttributes, TASK_POOL_SIZE, binding, transceiver};
+use crate::{
+    MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributes, TASK_POOL_SIZE, binding,
+    transceiver,
+};
 
 mod attributes;
 mod devices;
@@ -47,11 +50,10 @@ impl AttributeDiscovery {
     /// Create a new instance of `AttributeDiscovery`.
     #[must_use]
     pub fn new(
-        buffer: usize,
         zcl: WeakSender<transceiver::zcl::Message>,
         binding_manager: WeakSender<binding::Message>,
     ) -> (Self, Sender<Message>) {
-        let (tx, rx) = channel(buffer);
+        let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
         let instance = Self {
             inbox: rx,
             loopback: tx.downgrade(),
