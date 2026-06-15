@@ -30,7 +30,7 @@ impl Coordinator {
         let coordinator_address = ncp.get_address().await?;
         let mux = Self::start_mux(events);
         let zcl_transceiver = Self::start_zcl_transceiver(ncp.clone(), &mux).await?;
-        let zdp_transceiver = Self::start_zdp_transceiver(ncp.clone(), &mux).await?;
+        let zdp_transceiver = Self::start_zdp_transceiver(ncp, &mux).await?;
         let network_manager = Self::start_network_manager(&mux).await?;
         let binding_manager = Self::start_binding_manager(
             zdp_transceiver.downgrade(),
