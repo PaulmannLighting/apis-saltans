@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{Cluster, ExpectResponse};
+use zigbee::{Cluster, Endpoint, ExpectResponse};
 
 use crate::{Command, Service, SimpleDescRsp};
 
@@ -15,10 +15,10 @@ pub struct SimpleDescReq {
 impl SimpleDescReq {
     /// Creates a new `SimpleDescReq`.
     #[must_use]
-    pub const fn new(nwk_address_of_interest: u16, endpoint: u8) -> Self {
+    pub fn new(nwk_address_of_interest: u16, endpoint: Endpoint) -> Self {
         Self {
             nwk_address_of_interest,
-            endpoint,
+            endpoint: endpoint.into(),
         }
     }
 
