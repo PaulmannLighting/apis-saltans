@@ -1,6 +1,6 @@
 use log::{error, info, trace};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zigbee_hw::Event;
 
 pub use self::attribute_discovery::EndpointInfo;
@@ -28,9 +28,9 @@ impl Actor {
     #[must_use]
     pub fn new(
         channel_size: usize,
-        zcl: Sender<transceiver::zcl::Message>,
-        zdp: Sender<transceiver::zdp::Message>,
-        binding_manager: Sender<binding::Message>,
+        zcl: WeakSender<transceiver::zcl::Message>,
+        zdp: WeakSender<transceiver::zdp::Message>,
+        binding_manager: WeakSender<binding::Message>,
     ) -> Self {
         let (attribute_discovery, ad_tx) =
             AttributeDiscovery::new(channel_size, zcl, binding_manager);

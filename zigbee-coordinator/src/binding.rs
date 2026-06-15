@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use log::{error, warn};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zdp::{BindReq, Destination, Status};
 use zigbee::{Address, ClusterId, Endpoint};
 
@@ -22,9 +22,9 @@ const BIND_OUTPUT_CLUSTERS: [ClusterId; 2] = [ClusterId::OnOff, ClusterId::Level
 #[derive(Debug)]
 pub struct Actor {
     inbox: Receiver<Message>,
-    loopback: Sender<Message>,
-    zdp: Sender<transceiver::zdp::Message>,
-    network_manager: Sender<network_manager::Message>,
+    loopback: WeakSender<Message>,
+    zdp: WeakSender<transceiver::zdp::Message>,
+    network_manager: WeakSender<network_manager::Message>,
     coordinator_address: Address,
     devices: Devices,
 }
@@ -34,15 +34,15 @@ impl Actor {
     #[must_use]
     pub fn new(
         buffer: usize,
-        zdp: Sender<transceiver::zdp::Message>,
-        network_manager: Sender<network_manager::Message>,
+        zdp: WeakSender<transceiver::zdp::Message>,
+        network_manager: WeakSender<network_manager::Message>,
         coordinator_address: Address,
     ) -> (Self, Sender<Message>) {
         let (tx, rx) = channel(buffer);
 
         let instance = Self {
             inbox: rx,
-            loopback: tx.clone(),
+            loopback: tx.downgrade(),
             zdp,
             network_manager,
             coordinator_address,
@@ -110,7 +110,11 @@ impl Actor {
 
     async fn forward_device_if_complete(&mut self, address: Address) {
         if let Some(endpoints) = self.devices.remove_if_binding_complete(&address) {
-            self.network_manager
+            let Some(network_manager) = self.network_manager.upgrade() else {
+                return;
+            };
+
+            network_manager
                 .send(network_manager::Message::NewDevice { address, endpoints })
                 .await
                 .unwrap_or_else(|error| {
@@ -125,14 +129,18 @@ async fn bind_endpoint(
     address: Address,
     endpoint: Endpoint,
     cluster: ClusterId,
-    loopback: Sender<Message>,
-    zdp: Sender<transceiver::zdp::Message>,
+    loopback: WeakSender<Message>,
+    zdp: WeakSender<transceiver::zdp::Message>,
     coordinator_address: Address,
 ) {
     let short_id = address.short_id();
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
+        let Some(zdp) = zdp.upgrade() else {
+            return;
+        };
+
         match zdp
             .communicate(
                 short_id,
@@ -150,6 +158,10 @@ async fn bind_endpoint(
         {
             Ok(response) => {
                 if response.status() == Ok(Status::Success) {
+                    let Some(loopback) = loopback.upgrade() else {
+                        return;
+                    };
+
                     loopback
                         .send(Message::EndpointBound {
                             address,

@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use log::{error, trace, warn};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zdp::{SimpleDescReq, SimpleDescriptor, Status};
 use zigbee::{Address, Endpoint};
 
@@ -17,8 +17,8 @@ mod message;
 #[derive(Debug)]
 pub struct DescriptorDiscovery {
     inbox: Receiver<Message>,
-    loopback: Sender<Message>,
-    zdp: Sender<transceiver::zdp::Message>,
+    loopback: WeakSender<Message>,
+    zdp: WeakSender<transceiver::zdp::Message>,
     attribute_discovery: Sender<attribute_discovery::Message>,
     descriptors: BTreeMap<Address, BTreeMap<Endpoint, Option<SimpleDescriptor>>>,
 }
@@ -28,13 +28,13 @@ impl DescriptorDiscovery {
     #[must_use]
     pub fn new(
         buffer: usize,
-        zdp: Sender<transceiver::zdp::Message>,
+        zdp: WeakSender<transceiver::zdp::Message>,
         attribute_discovery: Sender<attribute_discovery::Message>,
     ) -> (Self, Sender<Message>) {
         let (tx, rx) = channel(buffer);
         let instance = Self {
             inbox: rx,
-            loopback: tx.clone(),
+            loopback: tx.downgrade(),
             zdp,
             attribute_discovery,
             descriptors: BTreeMap::new(),
@@ -129,13 +129,17 @@ impl DescriptorDiscovery {
 async fn get_descriptor(
     address: Address,
     endpoint: Endpoint,
-    loopback: Sender<Message>,
-    zdp: Sender<transceiver::zdp::Message>,
+    loopback: WeakSender<Message>,
+    zdp: WeakSender<transceiver::zdp::Message>,
 ) {
     let short_id = address.short_id();
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
+        let Some(zdp) = zdp.upgrade() else {
+            return;
+        };
+
         match zdp
             .communicate(short_id, SimpleDescReq::new(short_id, endpoint))
             .await
@@ -143,6 +147,10 @@ async fn get_descriptor(
             Ok(response) => {
                 if response.status() == Ok(Status::Success) {
                     trace!("Got descriptor for {address:?} on endpoint {endpoint:?}");
+
+                    let Some(loopback) = loopback.upgrade() else {
+                        return;
+                    };
 
                     loopback
                         .send(Message::DescriptorsDiscovered {

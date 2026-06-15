@@ -1,6 +1,6 @@
 use log::{error, warn};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zdp::{ActiveEpReq, Status};
 use zigbee::Address;
 
@@ -14,7 +14,7 @@ mod message;
 /// Actor to discover endpoints on devices.
 #[derive(Debug)]
 pub struct EndpointDiscovery {
-    zdp: Sender<transceiver::zdp::Message>,
+    zdp: WeakSender<transceiver::zdp::Message>,
     descriptor_discovery: Sender<descriptor_discovery::Message>,
 }
 
@@ -22,7 +22,7 @@ impl EndpointDiscovery {
     /// Create a new instance of `EndpointDiscovery`.
     #[must_use]
     pub const fn new(
-        zdp: Sender<transceiver::zdp::Message>,
+        zdp: WeakSender<transceiver::zdp::Message>,
         descriptor_discovery: Sender<descriptor_discovery::Message>,
     ) -> Self {
         Self {
@@ -47,7 +47,7 @@ impl EndpointDiscovery {
         spawn(discover_endpoints(
             address,
             self.zdp.clone(),
-            self.descriptor_discovery.clone(),
+            self.descriptor_discovery.downgrade(),
         ));
     }
 }
@@ -55,16 +55,24 @@ impl EndpointDiscovery {
 /// Run the per-device endpoint discovery loop.
 async fn discover_endpoints(
     address: Address,
-    zdp: Sender<transceiver::zdp::Message>,
-    descriptor_discovery: Sender<descriptor_discovery::Message>,
+    zdp: WeakSender<transceiver::zdp::Message>,
+    descriptor_discovery: WeakSender<descriptor_discovery::Message>,
 ) {
     let short_id = address.short_id();
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
+        let Some(zdp) = zdp.upgrade() else {
+            return;
+        };
+
         match zdp.communicate(short_id, ActiveEpReq::new(short_id)).await {
             Ok(response) => {
                 if response.status() == Ok(Status::Success) {
+                    let Some(descriptor_discovery) = descriptor_discovery.upgrade() else {
+                        return;
+                    };
+
                     descriptor_discovery
                         .send(descriptor_discovery::Message::Discover {
                             address,

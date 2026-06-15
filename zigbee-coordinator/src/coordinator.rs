@@ -1,5 +1,5 @@
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zigbee::Address;
 use zigbee_hw::{Error, Event, Ncp, NcpHandle, Start, bridge};
 
@@ -10,6 +10,7 @@ use crate::{binding, discovery, mux, network_manager, transceiver};
 #[derive(Clone, Debug)]
 pub struct Coordinator {
     pub(crate) zcl_transceiver: Sender<transceiver::zcl::Message>,
+    pub(crate) zdp_transceiver: Sender<transceiver::zdp::Message>,
     pub(crate) network_manager: Sender<network_manager::Message>,
     pub(crate) binding_manager: Sender<binding::Message>,
     pub(crate) mux: Sender<mux::Message>,
@@ -32,20 +33,21 @@ impl Coordinator {
         let zdp_transceiver = Self::start_zdp_transceiver(ncp.clone(), &mux).await?;
         let network_manager = Self::start_network_manager(&mux).await?;
         let binding_manager = Self::start_binding_manager(
-            zdp_transceiver.clone(),
-            network_manager.clone(),
+            zdp_transceiver.downgrade(),
+            network_manager.downgrade(),
             coordinator_address,
         );
         Self::start_discovery_manager(
             &mux,
-            zcl_transceiver.clone(),
-            zdp_transceiver,
-            binding_manager.clone(),
+            zcl_transceiver.downgrade(),
+            zdp_transceiver.downgrade(),
+            binding_manager.downgrade(),
         )
         .await?;
 
         Ok(Self {
             zcl_transceiver,
+            zdp_transceiver,
             network_manager,
             binding_manager,
             mux,
@@ -103,8 +105,8 @@ impl Coordinator {
 
     /// Start the binding manager.
     fn start_binding_manager(
-        zdp_transceiver: Sender<transceiver::zdp::Message>,
-        network_manager: Sender<network_manager::Message>,
+        zdp_transceiver: WeakSender<transceiver::zdp::Message>,
+        network_manager: WeakSender<network_manager::Message>,
         coordinator_address: Address,
     ) -> Sender<binding::Message> {
         let (binding_manager, binding_manager_tx) =
@@ -116,9 +118,9 @@ impl Coordinator {
     /// Start the discovery manager.
     async fn start_discovery_manager(
         mux: &Sender<mux::Message>,
-        zcl_transmitter: Sender<transceiver::zcl::Message>,
-        zdp_transmitter: Sender<transceiver::zdp::Message>,
-        binding_manager: Sender<binding::Message>,
+        zcl_transmitter: WeakSender<transceiver::zcl::Message>,
+        zdp_transmitter: WeakSender<transceiver::zdp::Message>,
+        binding_manager: WeakSender<binding::Message>,
     ) -> Result<(), Error> {
         let discovery_manager =
             discovery::Actor::new(100, zcl_transmitter, zdp_transmitter, binding_manager);

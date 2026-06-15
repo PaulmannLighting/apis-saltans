@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use log::{error, warn};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zcl::general::basic::readable::Id;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
@@ -35,9 +35,9 @@ const ATTRIBUTES: [Id; 10] = [
 #[derive(Debug)]
 pub struct AttributeDiscovery {
     inbox: Receiver<Message>,
-    loopback: Sender<Message>,
-    zcl: Sender<transceiver::zcl::Message>,
-    binding_manager: Sender<binding::Message>,
+    loopback: WeakSender<Message>,
+    zcl: WeakSender<transceiver::zcl::Message>,
+    binding_manager: WeakSender<binding::Message>,
     attributes: BTreeMap<Address, BTreeMap<Endpoint, EndpointInfo>>,
 }
 
@@ -46,13 +46,13 @@ impl AttributeDiscovery {
     #[must_use]
     pub fn new(
         buffer: usize,
-        zcl: Sender<transceiver::zcl::Message>,
-        binding_manager: Sender<binding::Message>,
+        zcl: WeakSender<transceiver::zcl::Message>,
+        binding_manager: WeakSender<binding::Message>,
     ) -> (Self, Sender<Message>) {
         let (tx, rx) = channel(buffer);
         let instance = Self {
             inbox: rx,
-            loopback: tx.clone(),
+            loopback: tx.downgrade(),
             zcl,
             binding_manager,
             attributes: BTreeMap::new(),
@@ -134,7 +134,11 @@ impl AttributeDiscovery {
             .filter_map(ApplicationEndpointsWithBasicCluster::filter)
             .all(|(_, endpoint_info)| endpoint_info.attributes().is_some())
         {
-            self.binding_manager
+            let Some(binding_manager) = self.binding_manager.upgrade() else {
+                return;
+            };
+
+            binding_manager
                 .send(binding::Message::DeviceDiscovered { address, endpoints })
                 .await
                 .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
@@ -145,17 +149,25 @@ impl AttributeDiscovery {
 async fn discover_attributes(
     address: Address,
     application: Application,
-    loopback: Sender<Message>,
-    zcl: Sender<transceiver::zcl::Message>,
+    loopback: WeakSender<Message>,
+    zcl: WeakSender<transceiver::zcl::Message>,
 ) {
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
+        let Some(zcl) = zcl.upgrade() else {
+            return;
+        };
+
         match zcl
             .read_attributes(address.clone(), application.into(), ATTRIBUTES.into())
             .await
         {
             Ok(results) => {
+                let Some(loopback) = loopback.upgrade() else {
+                    return;
+                };
+
                 loopback
                     .send(Message::AttributesDiscovered {
                         address: address.clone(),
