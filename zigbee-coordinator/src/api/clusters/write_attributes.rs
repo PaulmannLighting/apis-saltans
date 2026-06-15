@@ -1,9 +1,10 @@
+use tokio::sync::mpsc::Sender;
 use zcl::WritableAttribute;
 use zcl::global::write_attributes::{Command, Record, Response};
 use zigbee::{Address, Endpoint};
 use zigbee_hw::Metadata;
 
-use crate::transceiver::zcl::{Handle, Payload};
+use crate::transceiver::zcl::{Handle, Message, Payload};
 use crate::{Coordinator, Error};
 
 /// Trait to write attributes to a device.
@@ -54,7 +55,7 @@ pub trait WriteAttributes {
     }
 }
 
-impl WriteAttributes for Coordinator {
+impl WriteAttributes for Sender<Message> {
     async fn write_attributes_raw(
         &self,
         address: Address,
@@ -75,8 +76,22 @@ impl WriteAttributes for Coordinator {
             )
         };
 
+        self.communicate(address.short_id(), endpoint, payload)
+            .await
+    }
+}
+
+impl WriteAttributes for Coordinator {
+    async fn write_attributes_raw(
+        &self,
+        address: Address,
+        endpoint: Endpoint,
+        cluster: u16,
+        manufacturer_code: Option<u16>,
+        records: Box<[Record]>,
+    ) -> Result<Response, Error> {
         self.zcl_transceiver
-            .communicate(address.short_id(), endpoint, payload)
+            .write_attributes_raw(address, endpoint, cluster, manufacturer_code, records)
             .await
     }
 }
