@@ -1,6 +1,7 @@
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
-use zigbee_hw::{Error, Event, NcpHandle, Start, bridge};
+use zigbee::Address;
+use zigbee_hw::{Error, Event, Ncp, NcpHandle, Start, bridge};
 
 use crate::mux::{Handle as MuxHandle, Mux};
 use crate::{binding, discovery, mux, network_manager, transceiver};
@@ -25,13 +26,16 @@ impl Coordinator {
         T: Start,
     {
         let (ncp, events) = hardware.start().await?;
+        let coordinator_address = ncp.get_address().await?;
         let mux = Self::start_mux(events);
         let zcl_transceiver = Self::start_zcl_transceiver(ncp.clone(), &mux).await?;
         let zdp_transceiver = Self::start_zdp_transceiver(ncp.clone(), &mux).await?;
         let network_manager = Self::start_network_manager(&mux).await?;
-        let binding_manager =
-            Self::start_binding_manager(&mux, zdp_transceiver.clone(), network_manager.clone())
-                .await?;
+        let binding_manager = Self::start_binding_manager(
+            zdp_transceiver.clone(),
+            network_manager.clone(),
+            coordinator_address,
+        );
         Self::start_discovery_manager(
             &mux,
             zcl_transceiver.clone(),
@@ -98,18 +102,15 @@ impl Coordinator {
     }
 
     /// Start the binding manager.
-    async fn start_binding_manager(
-        mux: &Sender<mux::Message>,
+    fn start_binding_manager(
         zdp_transceiver: Sender<transceiver::zdp::Message>,
         network_manager: Sender<network_manager::Message>,
-    ) -> Result<Sender<binding::Message>, Error> {
-        let binding_manager = binding::Actor::new(zdp_transceiver, network_manager);
-        let (binding_manager_tx, binding_manager_rx) = channel(100);
-        let (events_tx, events_rx) = channel(100);
-        mux.subscribe(events_tx).await?;
-        spawn(bridge(events_rx, binding_manager_tx.clone()));
-        spawn(binding_manager.run(binding_manager_rx));
-        Ok(binding_manager_tx)
+        coordinator_address: Address,
+    ) -> Sender<binding::Message> {
+        let (binding_manager, binding_manager_tx) =
+            binding::Actor::new(100, zdp_transceiver, network_manager, coordinator_address);
+        spawn(binding_manager.run());
+        binding_manager_tx
     }
 
     /// Start the discovery manager.

@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::time::Duration;
 
 use log::{error, warn};
 use tokio::spawn;
@@ -12,7 +11,7 @@ use zigbee::{Address, Application, Endpoint};
 use self::application_endpoints_with_basic_cluster::ApplicationEndpointsWithBasicCluster;
 pub use self::endpoint_info::EndpointInfo;
 pub use self::message::Message;
-use crate::{ReadAttributeResult, ReadAttributes, binding, network_manager, transceiver};
+use crate::{MAX_RETRIES, RETRY_DELAY, ReadAttributeResult, ReadAttributes, binding, transceiver};
 
 mod application_endpoints_with_basic_cluster;
 mod attributes;
@@ -40,8 +39,6 @@ pub struct AttributeDiscovery {
     loopback: Sender<Message>,
     zcl: Sender<transceiver::zcl::Message>,
     binding_manager: Sender<binding::Message>,
-    max_retries: usize,
-    retry_delay: Duration,
     attributes: BTreeMap<Address, BTreeMap<Endpoint, EndpointInfo>>,
 }
 
@@ -52,8 +49,6 @@ impl AttributeDiscovery {
         buffer: usize,
         zcl: Sender<transceiver::zcl::Message>,
         binding_manager: Sender<binding::Message>,
-        max_retries: usize,
-        retry_delay: Duration,
     ) -> (Self, Sender<Message>) {
         let (tx, rx) = channel(buffer);
         let instance = Self {
@@ -61,8 +56,6 @@ impl AttributeDiscovery {
             loopback: tx.clone(),
             zcl,
             binding_manager,
-            max_retries,
-            retry_delay,
             attributes: BTreeMap::new(),
         };
         (instance, tx)
@@ -73,7 +66,7 @@ impl AttributeDiscovery {
         while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::GetAttributes { address, endpoints } => {
-                    self.get_attributes(address, endpoints).await
+                    self.get_attributes(&address, endpoints);
                 }
                 Message::AttributesDiscovered {
                     address,
@@ -86,9 +79,9 @@ impl AttributeDiscovery {
         }
     }
 
-    async fn get_attributes(
+    fn get_attributes(
         &mut self,
-        address: Address,
+        address: &Address,
         endpoints: BTreeMap<Endpoint, SimpleDescriptor>,
     ) {
         let application_endpoints_with_basic_cluster: Vec<_> = endpoints
@@ -108,8 +101,6 @@ impl AttributeDiscovery {
                 application,
                 self.loopback.clone(),
                 self.zcl.clone(),
-                self.max_retries,
-                self.retry_delay,
             ));
         }
     }
@@ -147,7 +138,7 @@ impl AttributeDiscovery {
             self.binding_manager
                 .send(binding::Message::DeviceDiscovered { address, endpoints })
                 .await
-                .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"))
+                .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
         }
     }
 }
@@ -157,21 +148,19 @@ async fn discover_attributes(
     application: Application,
     loopback: Sender<Message>,
     zcl: Sender<transceiver::zcl::Message>,
-    max_retries: usize,
-    retry_delay: Duration,
 ) {
     let mut retries = 0;
 
     loop {
-        if retries > max_retries {
+        if retries > MAX_RETRIES {
             error!(
-                "Failed to discover basic attributes for {address}:{application:#04X} after {max_retries} retries. Giving up."
+                "Failed to discover basic attributes for {address}:{application:#04X} after {MAX_RETRIES} retries. Giving up."
             );
             return;
         }
 
         if retries > 0 {
-            sleep(retry_delay).await;
+            sleep(RETRY_DELAY).await;
         }
 
         retries += 1;

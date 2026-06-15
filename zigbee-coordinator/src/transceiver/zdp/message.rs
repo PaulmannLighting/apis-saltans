@@ -1,6 +1,5 @@
 use tokio::sync::oneshot::{Receiver, Sender};
 use zdp::Command;
-use zigbee::Address;
 use zigbee_hw::{Error, Event};
 
 pub use self::payload::Payload;

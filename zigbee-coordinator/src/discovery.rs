@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use log::{error, info, trace};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
@@ -13,13 +11,7 @@ use crate::{binding, transceiver};
 
 mod attribute_discovery;
 mod descriptor_discovery;
-mod device_discovery;
-mod endpoint;
 mod endpoint_discovery;
-mod message;
-
-const MAX_RETRIES: usize = 120;
-const RETRY_DELAY: Duration = Duration::from_secs(30);
 
 /// The device discovery actor.
 #[derive(Debug)]
@@ -41,10 +33,10 @@ impl Actor {
         binding_manager: Sender<binding::Message>,
     ) -> Self {
         let (attribute_discovery, ad_tx) =
-            AttributeDiscovery::new(channel_size, zcl, binding_manager, MAX_RETRIES, RETRY_DELAY);
+            AttributeDiscovery::new(channel_size, zcl, binding_manager);
         let (descriptor_discovery, dd_tx) =
-            DescriptorDiscovery::new(channel_size, zdp.clone(), ad_tx, MAX_RETRIES, RETRY_DELAY);
-        let endpoint_discovery = EndpointDiscovery::new(zdp, dd_tx, MAX_RETRIES, RETRY_DELAY);
+            DescriptorDiscovery::new(channel_size, zdp.clone(), ad_tx);
+        let endpoint_discovery = EndpointDiscovery::new(zdp, dd_tx);
         let (ed_tx, ed_rx) = channel(channel_size);
 
         Self {
@@ -81,7 +73,7 @@ impl Actor {
             self.ed_tx
                 .send(endpoint_discovery::Message::Discover(address))
                 .await
-                .unwrap_or_else(|error| error!("Failed to send discover message: {error:?}"))
+                .unwrap_or_else(|error| error!("Failed to send discover message: {error:?}"));
         }
     }
 }

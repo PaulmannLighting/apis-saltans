@@ -35,3 +35,27 @@ impl Display for BindManagement {
         }
     }
 }
+
+impl From<BindReq> for BindManagement {
+    fn from(cmd: BindReq) -> Self {
+        Self::BindReq(cmd)
+    }
+}
+
+impl From<BindRsp> for BindManagement {
+    fn from(cmd: BindRsp) -> Self {
+        Self::BindRsp(cmd)
+    }
+}
+
+impl From<UnbindReq> for BindManagement {
+    fn from(cmd: UnbindReq) -> Self {
+        Self::UnbindReq(cmd)
+    }
+}
+
+impl From<ClearAllBindingsReq> for BindManagement {
+    fn from(cmd: ClearAllBindingsReq) -> Self {
+        Self::ClearAllBindingsReq(cmd)
+    }
+}

@@ -23,6 +23,13 @@ pub enum Message {
         /// Response channel to send the updated device list to.
         response: Sender<Box<[Device]>>,
     },
+    /// A new device has been discovered.
+    NewDevice {
+        /// The address of the new device.
+        address: Address,
+        /// The new device endpoints, keyed by endpoint ID.
+        endpoints: BTreeMap<Endpoint, EndpointInfo>,
+    },
 }
 
 impl From<Event> for Message {

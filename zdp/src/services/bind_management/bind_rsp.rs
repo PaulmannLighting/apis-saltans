@@ -3,7 +3,7 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
-use crate::{Displayable, Service, Status};
+use crate::{BindManagement, Command, Displayable, Service, Status};
 
 /// Binding response.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -46,5 +46,17 @@ impl Display for BindRsp {
             Self::NAME,
             self.status().display()
         )
+    }
+}
+
+impl TryFrom<Command> for BindRsp {
+    type Error = Command;
+
+    fn try_from(command: Command) -> Result<Self, Self::Error> {
+        if let Command::BindManagement(BindManagement::BindRsp(bind_rsp)) = command {
+            Ok(bind_rsp)
+        } else {
+            Err(command)
+        }
     }
 }

@@ -3,12 +3,13 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
-use zigbee::Cluster;
+use zigbee::{Cluster, ExpectResponse};
 
 pub use self::address::Address;
 pub use self::address_mode::AddressMode;
 pub use self::destination::Destination;
-use crate::Service;
+use crate::Command::BindManagement;
+use crate::{BindRsp, Command, Service};
 
 mod address;
 mod address_mode;
@@ -93,6 +94,10 @@ impl Service for BindReq {
     const NAME: &'static str = "Bind_req";
 }
 
+impl ExpectResponse<Command> for BindReq {
+    type Response = BindRsp;
+}
+
 impl Display for BindReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -104,6 +109,12 @@ impl Display for BindReq {
             self.cluster_id,
             self.destination(),
         )
+    }
+}
+
+impl From<BindReq> for Command {
+    fn from(value: BindReq) -> Self {
+        BindManagement(value.into()).into()
     }
 }
 

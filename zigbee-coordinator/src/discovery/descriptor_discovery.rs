@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::time::Duration;
 
 use log::{error, trace, warn};
 use tokio::spawn;
@@ -10,8 +9,8 @@ use zigbee::{Address, Endpoint};
 
 pub use self::message::Message;
 use crate::discovery::attribute_discovery;
-use crate::transceiver;
 use crate::transceiver::zdp::Handle;
+use crate::{MAX_RETRIES, RETRY_DELAY, transceiver};
 
 mod message;
 
@@ -22,8 +21,6 @@ pub struct DescriptorDiscovery {
     loopback: Sender<Message>,
     zdp: Sender<transceiver::zdp::Message>,
     attribute_discovery: Sender<attribute_discovery::Message>,
-    max_retries: usize,
-    retry_delay: Duration,
     descriptors: BTreeMap<Address, BTreeMap<Endpoint, Option<SimpleDescriptor>>>,
 }
 
@@ -34,8 +31,6 @@ impl DescriptorDiscovery {
         buffer: usize,
         zdp: Sender<transceiver::zdp::Message>,
         attribute_discovery: Sender<attribute_discovery::Message>,
-        max_retries: usize,
-        retry_delay: Duration,
     ) -> (Self, Sender<Message>) {
         let (tx, rx) = channel(buffer);
         let instance = Self {
@@ -43,8 +38,6 @@ impl DescriptorDiscovery {
             loopback: tx.clone(),
             zdp,
             attribute_discovery,
-            max_retries,
-            retry_delay,
             descriptors: BTreeMap::new(),
         };
         (instance, tx)
@@ -55,7 +48,7 @@ impl DescriptorDiscovery {
         while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::Discover { address, endpoints } => {
-                    self.discover(address, endpoints).await;
+                    self.discover(&address, endpoints);
                 }
                 Message::DescriptorsDiscovered {
                     address,
@@ -68,7 +61,7 @@ impl DescriptorDiscovery {
     }
 
     /// Discover the descriptors for the given endpoints.
-    async fn discover(&mut self, address: Address, endpoints: BTreeSet<Endpoint>) {
+    fn discover(&mut self, address: &Address, endpoints: BTreeSet<Endpoint>) {
         self.descriptors.insert(
             address.clone(),
             endpoints.iter().map(|endpoint| (*endpoint, None)).collect(),
@@ -80,8 +73,6 @@ impl DescriptorDiscovery {
                 endpoint,
                 self.loopback.clone(),
                 self.zdp.clone(),
-                self.max_retries,
-                self.retry_delay,
             ));
         }
     }
@@ -108,7 +99,7 @@ impl DescriptorDiscovery {
             return;
         };
 
-        if descriptors.values().any(|descriptor| descriptor.is_none()) {
+        if descriptors.values().any(Option::is_none) {
             trace!("Not all descriptors for {address:?} discovered.");
             return;
         }
@@ -141,22 +132,20 @@ async fn get_descriptor(
     endpoint: Endpoint,
     loopback: Sender<Message>,
     zdp: Sender<transceiver::zdp::Message>,
-    max_retries: usize,
-    retry_delay: Duration,
 ) {
     let short_id = address.short_id();
     let mut retries = 0;
 
     loop {
-        if retries > max_retries {
+        if retries > MAX_RETRIES {
             error!(
-                "Failed to get descriptor for {address}:{endpoint} after {max_retries} retries. Giving up."
+                "Failed to get descriptor for {address}:{endpoint} after {MAX_RETRIES} retries. Giving up."
             );
             return;
         }
 
         if retries > 0 {
-            sleep(retry_delay).await;
+            sleep(RETRY_DELAY).await;
         }
 
         retries += 1;
@@ -166,7 +155,7 @@ async fn get_descriptor(
             .await
         {
             Ok(response) => {
-                if let Ok(Status::Success) = response.status() {
+                if response.status() == Ok(Status::Success) {
                     trace!("Got descriptor for {address:?} on endpoint {endpoint:?}");
 
                     loopback
@@ -176,7 +165,7 @@ async fn get_descriptor(
                         })
                         .await
                         .unwrap_or_else(|error| {
-                            error!("Failed to send DescriptorsDiscovered message: {error:?}")
+                            error!("Failed to send DescriptorsDiscovered message: {error:?}");
                         });
                     return;
                 }

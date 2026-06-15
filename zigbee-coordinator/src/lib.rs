@@ -3,6 +3,10 @@
 //! This library provides a fully abstracted interface to expose an interface to communicate with
 //! a Zigbee transceiver regardless of the underlying hardware.
 
+use core::time::Duration;
+
+use const_env::env_item;
+
 pub use self::api::{ColorControl, OnOff, ReadAttributeResult, ReadAttributes, WriteAttributes};
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
@@ -17,3 +21,14 @@ mod mux;
 mod network_manager;
 mod timeout;
 mod transceiver;
+
+/// The maximum number of times to retry a Zigbee command.
+#[env_item("ZIGBEE_COORDINATOR_MAX_RETRIES")]
+pub const MAX_RETRIES: usize = 10;
+
+/// The delay between retries, in seconds.
+#[env_item("ZIGBEE_COORDINATOR_RETRY_DELAY_SECS")]
+const RETRY_DELAY_SECS: u64 = 30;
+
+/// The delay between retries.
+pub const RETRY_DELAY: Duration = Duration::from_secs(RETRY_DELAY_SECS);

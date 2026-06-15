@@ -1,7 +1,7 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zdp::Command;
-use zigbee::{Address, Cluster, ExpectResponse};
+use zigbee::{Cluster, ExpectResponse};
 use zigbee_hw::{Error, Metadata};
 
 use super::{Message, Payload};

@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use log::{error, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -9,8 +7,8 @@ use zigbee::Address;
 
 pub use self::message::Message;
 use super::descriptor_discovery;
-use crate::transceiver;
 use crate::transceiver::zdp::Handle;
+use crate::{MAX_RETRIES, RETRY_DELAY, transceiver};
 
 mod message;
 
@@ -19,24 +17,18 @@ mod message;
 pub struct EndpointDiscovery {
     zdp: Sender<transceiver::zdp::Message>,
     descriptor_discovery: Sender<descriptor_discovery::Message>,
-    max_retries: usize,
-    retry_delay: Duration,
 }
 
 impl EndpointDiscovery {
     /// Create a new instance of `EndpointDiscovery`.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         zdp: Sender<transceiver::zdp::Message>,
         descriptor_discovery: Sender<descriptor_discovery::Message>,
-        max_retries: usize,
-        retry_delay: Duration,
     ) -> Self {
         Self {
             zdp,
             descriptor_discovery,
-            max_retries,
-            retry_delay,
         }
     }
 
@@ -45,20 +37,18 @@ impl EndpointDiscovery {
         while let Some(message) = messages.recv().await {
             match message {
                 Message::Discover(address) => {
-                    self.discover_endpoints(address).await;
+                    self.discover_endpoints(address);
                 }
             }
         }
     }
 
     /// Discover endpoints on the given device in a separate task.
-    async fn discover_endpoints(&self, address: Address) {
+    fn discover_endpoints(&self, address: Address) {
         spawn(discover_endpoints(
             address,
             self.zdp.clone(),
             self.descriptor_discovery.clone(),
-            self.max_retries,
-            self.retry_delay,
         ));
     }
 }
@@ -68,29 +58,27 @@ async fn discover_endpoints(
     address: Address,
     zdp: Sender<transceiver::zdp::Message>,
     descriptor_discovery: Sender<descriptor_discovery::Message>,
-    max_retries: usize,
-    retry_delay: Duration,
 ) {
     let short_id = address.short_id();
     let mut retries = 0;
 
     loop {
-        if retries > max_retries {
+        if retries > MAX_RETRIES {
             error!(
-                "Failed to discover endpoints of {address} after {max_retries} retries. Giving up."
+                "Failed to discover endpoints of {address} after {MAX_RETRIES} retries. Giving up."
             );
             return;
         }
 
         if retries > 0 {
-            sleep(retry_delay).await;
+            sleep(RETRY_DELAY).await;
         }
 
         retries += 1;
 
         match zdp.communicate(short_id, ActiveEpReq::new(short_id)).await {
             Ok(response) => {
-                if let Ok(Status::Success) = response.status() {
+                if response.status() == Ok(Status::Success) {
                     descriptor_discovery
                         .send(descriptor_discovery::Message::Discover {
                             address,
@@ -98,7 +86,7 @@ async fn discover_endpoints(
                         })
                         .await
                         .unwrap_or_else(|error| {
-                            error!("Failed to send Discover message: {error:?}")
+                            error!("Failed to send Discover message: {error:?}");
                         });
                     return;
                 }
