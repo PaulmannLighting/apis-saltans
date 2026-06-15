@@ -164,6 +164,7 @@ async fn discover_attributes(
                     })
                     .await
                     .unwrap();
+                return;
             }
             Err(error) => {
                 error!(
