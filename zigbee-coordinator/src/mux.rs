@@ -3,15 +3,13 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use zigbee_hw::Event;
 
 pub use self::message::Message;
-use self::subscribers::Subscribers;
 
 mod message;
-mod subscribers;
 
 /// Event multiplexer.
 #[derive(Debug, Default)]
 pub struct Mux {
-    subscribers: Subscribers,
+    subscribers: Vec<Sender<Event>>,
 }
 
 impl Mux {
@@ -19,8 +17,15 @@ impl Mux {
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Event(event) => self.subscribers.send(&event).await,
-                Message::Subscribe { sender } => self.subscribers.add(sender),
+                Message::Event(event) => {
+                    for subscriber in self.subscribers.drain(..) {
+                        let _ = subscriber.send(event.clone()).await;
+                    }
+
+                    self.subscribers
+                        .retain(|subscriber| !subscriber.is_closed());
+                }
+                Message::Subscribe { sender } => self.subscribers.push(sender),
             }
         }
     }
