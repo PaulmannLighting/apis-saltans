@@ -6,11 +6,13 @@ use tokio_task_pool::Pool;
 use zdp::{SimpleDescReq, SimpleDescriptor, Status};
 use zigbee::{Address, Endpoint};
 
+use self::devices::Devices;
 pub use self::message::Message;
 use crate::discovery::attribute_discovery;
 use crate::transceiver::zdp::Handle;
 use crate::{RETRY, TASK_POOL_SIZE, transceiver};
 
+mod devices;
 mod message;
 
 /// Actor to discover descriptors on devices.
@@ -20,7 +22,7 @@ pub struct DescriptorDiscovery {
     loopback: WeakSender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
     attribute_discovery: Sender<attribute_discovery::Message>,
-    descriptors: BTreeMap<Address, BTreeMap<Endpoint, Option<SimpleDescriptor>>>,
+    devices: Devices,
     tasks: Pool,
 }
 
@@ -38,7 +40,7 @@ impl DescriptorDiscovery {
             loopback: tx.downgrade(),
             zdp,
             attribute_discovery,
-            descriptors: BTreeMap::new(),
+            devices: BTreeMap::new(),
             tasks: Pool::bounded(TASK_POOL_SIZE),
         };
         (instance, tx)
@@ -63,7 +65,7 @@ impl DescriptorDiscovery {
 
     /// Discover the descriptors for the given endpoints.
     async fn discover(&mut self, address: &Address, endpoints: BTreeSet<Endpoint>) {
-        self.descriptors.insert(
+        self.devices.insert(
             address.clone(),
             endpoints.iter().map(|endpoint| (*endpoint, None)).collect(),
         );
@@ -89,7 +91,7 @@ impl DescriptorDiscovery {
         address: Address,
         descriptors: Box<[SimpleDescriptor]>,
     ) {
-        let device = self.descriptors.entry(address.clone()).or_default();
+        let device = self.devices.entry(address.clone()).or_default();
 
         for descriptor in descriptors {
             device.insert(descriptor.endpoint(), Some(descriptor));
@@ -100,7 +102,7 @@ impl DescriptorDiscovery {
 
     /// Forward the descriptors if all have been discovered.
     async fn forward_descriptors_if_complete(&mut self, address: Address) {
-        let Some(descriptors) = self.descriptors.get(&address) else {
+        let Some(descriptors) = self.devices.get(&address) else {
             error!("Got descriptors for {address:?} before we discovered them.");
             return;
         };
@@ -113,7 +115,7 @@ impl DescriptorDiscovery {
         trace!("All descriptors for {address:?} discovered.");
 
         let endpoints = self
-            .descriptors
+            .devices
             .remove(&address)
             .expect("We just ensured that this exists above.")
             .into_iter()

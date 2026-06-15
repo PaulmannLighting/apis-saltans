@@ -7,9 +7,10 @@ use zcl::general::basic::readable::Id;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
 
-use self::devices::ApplicationEndpointsWithBasicCluster;
+use self::devices::DevicesExt;
 pub use self::endpoint_info::EndpointInfo;
 pub use self::message::Message;
+use crate::discovery::attribute_discovery::devices::Devices;
 use crate::{RETRY, ReadAttributeResult, ReadAttributes, TASK_POOL_SIZE, binding, transceiver};
 
 mod attributes;
@@ -38,7 +39,7 @@ pub struct AttributeDiscovery {
     loopback: WeakSender<Message>,
     zcl: WeakSender<transceiver::zcl::Message>,
     binding_manager: WeakSender<binding::Message>,
-    attributes: BTreeMap<Address, BTreeMap<Endpoint, EndpointInfo>>,
+    devices: Devices,
     tasks: Pool,
 }
 
@@ -56,7 +57,7 @@ impl AttributeDiscovery {
             loopback: tx.downgrade(),
             zcl,
             binding_manager,
-            attributes: BTreeMap::new(),
+            devices: BTreeMap::new(),
             tasks: Pool::bounded(TASK_POOL_SIZE),
         };
         (instance, tx)
@@ -87,11 +88,11 @@ impl AttributeDiscovery {
     ) {
         let application_endpoints_with_basic_cluster: Vec<_> = endpoints
             .iter()
-            .filter_map(ApplicationEndpointsWithBasicCluster::filter)
+            .filter_map(DevicesExt::application_eps_with_basic_cluster)
             .map(|(application, _)| application)
             .collect();
 
-        *self.attributes.entry(address.clone()).or_default() = endpoints
+        *self.devices.entry(address.clone()).or_default() = endpoints
             .into_iter()
             .map(|(endpoint, descriptor)| (endpoint, descriptor.into()))
             .collect();
@@ -115,7 +116,7 @@ impl AttributeDiscovery {
         application: Application,
         results: Box<[ReadAttributeResult<Id>]>,
     ) {
-        let Some(endpoints) = self.attributes.get_mut(&address) else {
+        let Some(endpoints) = self.devices.get_mut(&address) else {
             warn!("Received attributes for unknown device: {address}");
             return;
         };
@@ -130,13 +131,13 @@ impl AttributeDiscovery {
     }
 
     async fn forward_device_if_complete(&mut self, address: Address) {
-        let Some(endpoints) = self.attributes.remove(&address) else {
+        let Some(endpoints) = self.devices.remove(&address) else {
             return;
         };
 
         if endpoints
             .iter()
-            .filter_map(ApplicationEndpointsWithBasicCluster::filter)
+            .filter_map(DevicesExt::application_eps_with_basic_cluster)
             .all(|(_, endpoint_info)| endpoint_info.attributes().is_some())
         {
             let Some(binding_manager) = self.binding_manager.upgrade() else {

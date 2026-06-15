@@ -1,20 +1,23 @@
+use std::collections::BTreeMap;
+
 use zdp::SimpleDescriptor;
-use zigbee::{Application, ClusterId, Endpoint};
+use zigbee::{Address, Application, ClusterId, Endpoint};
 
 use crate::discovery::EndpointInfo;
 
+/// Type alias for a map of devices to their endpoints.
+pub type Devices = BTreeMap<Address, BTreeMap<Endpoint, EndpointInfo>>;
+
 /// Helper trait to filter out application endpoints that have the Basic cluster.
-pub trait ApplicationEndpointsWithBasicCluster<T> {
+pub trait DevicesExt<T> {
     /// Filter out application endpoints that have the Basic cluster.
     ///
     /// This is intended to be used with the [`Iterator::filter_map`] method.
-    fn filter(self) -> Option<(Application, T)>;
+    fn application_eps_with_basic_cluster(self) -> Option<(Application, T)>;
 }
 
-impl<'a> ApplicationEndpointsWithBasicCluster<&'a SimpleDescriptor>
-    for (&'a Endpoint, &'a SimpleDescriptor)
-{
-    fn filter(self) -> Option<(Application, &'a SimpleDescriptor)> {
+impl<'a> DevicesExt<&'a SimpleDescriptor> for (&'a Endpoint, &'a SimpleDescriptor) {
+    fn application_eps_with_basic_cluster(self) -> Option<(Application, &'a SimpleDescriptor)> {
         if let Endpoint::Application(application) = self.0
             && self.1.input_clusters().contains(&ClusterId::Basic.into())
         {
@@ -25,10 +28,8 @@ impl<'a> ApplicationEndpointsWithBasicCluster<&'a SimpleDescriptor>
     }
 }
 
-impl<'a> ApplicationEndpointsWithBasicCluster<&'a EndpointInfo>
-    for (&'a Endpoint, &'a EndpointInfo)
-{
-    fn filter(self) -> Option<(Application, &'a EndpointInfo)> {
+impl<'a> DevicesExt<&'a EndpointInfo> for (&'a Endpoint, &'a EndpointInfo) {
+    fn application_eps_with_basic_cluster(self) -> Option<(Application, &'a EndpointInfo)> {
         if let Endpoint::Application(application) = self.0
             && self
                 .1
