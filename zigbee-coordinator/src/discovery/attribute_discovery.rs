@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use log::{error, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
-use tokio::time::sleep;
 use zcl::general::basic::readable::Id;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
@@ -11,7 +10,7 @@ use zigbee::{Address, Application, Endpoint};
 use self::application_endpoints_with_basic_cluster::ApplicationEndpointsWithBasicCluster;
 pub use self::endpoint_info::EndpointInfo;
 pub use self::message::Message;
-use crate::{MAX_RETRIES, RETRY_DELAY, ReadAttributeResult, ReadAttributes, binding, transceiver};
+use crate::{RETRY, ReadAttributeResult, ReadAttributes, binding, transceiver};
 
 mod application_endpoints_with_basic_cluster;
 mod attributes;
@@ -151,20 +150,7 @@ async fn discover_attributes(
 ) {
     let mut retries = 0;
 
-    loop {
-        if retries > MAX_RETRIES {
-            error!(
-                "Failed to discover basic attributes for {address}:{application:#04X} after {MAX_RETRIES} retries. Giving up."
-            );
-            return;
-        }
-
-        if retries > 0 {
-            sleep(RETRY_DELAY).await;
-        }
-
-        retries += 1;
-
+    while RETRY.retry(&mut retries).await {
         match zcl
             .read_attributes(address.clone(), application.into(), ATTRIBUTES.into())
             .await
@@ -186,4 +172,6 @@ async fn discover_attributes(
             }
         }
     }
+
+    error!("Failed to discover basic attributes for {address}:{application:#04X}.");
 }

@@ -3,14 +3,13 @@ use std::collections::{BTreeMap, BTreeSet};
 use log::{error, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
-use tokio::time::sleep;
 use zdp::{SimpleDescReq, SimpleDescriptor, Status};
 use zigbee::{Address, Endpoint};
 
 pub use self::message::Message;
 use crate::discovery::attribute_discovery;
 use crate::transceiver::zdp::Handle;
-use crate::{MAX_RETRIES, RETRY_DELAY, transceiver};
+use crate::{RETRY, transceiver};
 
 mod message;
 
@@ -136,20 +135,7 @@ async fn get_descriptor(
     let short_id = address.short_id();
     let mut retries = 0;
 
-    loop {
-        if retries > MAX_RETRIES {
-            error!(
-                "Failed to get descriptor for {address}:{endpoint} after {MAX_RETRIES} retries. Giving up."
-            );
-            return;
-        }
-
-        if retries > 0 {
-            sleep(RETRY_DELAY).await;
-        }
-
-        retries += 1;
-
+    while RETRY.retry(&mut retries).await {
         match zdp
             .communicate(short_id, SimpleDescReq::new(short_id, endpoint))
             .await
@@ -180,4 +166,6 @@ async fn get_descriptor(
             }
         }
     }
+
+    error!("Failed to get descriptor for {address}:{endpoint}.");
 }

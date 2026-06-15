@@ -1,14 +1,13 @@
 use log::{error, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::time::sleep;
 use zdp::{ActiveEpReq, Status};
 use zigbee::Address;
 
 pub use self::message::Message;
 use super::descriptor_discovery;
 use crate::transceiver::zdp::Handle;
-use crate::{MAX_RETRIES, RETRY_DELAY, transceiver};
+use crate::{RETRY, transceiver};
 
 mod message;
 
@@ -62,20 +61,7 @@ async fn discover_endpoints(
     let short_id = address.short_id();
     let mut retries = 0;
 
-    loop {
-        if retries > MAX_RETRIES {
-            error!(
-                "Failed to discover endpoints of {address} after {MAX_RETRIES} retries. Giving up."
-            );
-            return;
-        }
-
-        if retries > 0 {
-            sleep(RETRY_DELAY).await;
-        }
-
-        retries += 1;
-
+    while RETRY.retry(&mut retries).await {
         match zdp.communicate(short_id, ActiveEpReq::new(short_id)).await {
             Ok(response) => {
                 if response.status() == Ok(Status::Success) {
@@ -101,4 +87,6 @@ async fn discover_endpoints(
             }
         }
     }
+
+    error!("Failed to discover endpoints of {address}.");
 }

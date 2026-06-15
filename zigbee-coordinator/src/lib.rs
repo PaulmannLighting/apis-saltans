@@ -10,6 +10,7 @@ use const_env::env_item;
 pub use self::api::{ColorControl, OnOff, ReadAttributeResult, ReadAttributes, WriteAttributes};
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
+use crate::retry::Retry;
 
 mod api;
 mod binding;
@@ -19,6 +20,7 @@ mod error;
 mod expect;
 mod mux;
 mod network_manager;
+mod retry;
 mod timeout;
 mod transceiver;
 
@@ -30,5 +32,4 @@ pub const MAX_RETRIES: usize = 10;
 #[env_item("ZIGBEE_COORDINATOR_RETRY_DELAY_SECS")]
 const RETRY_DELAY_SECS: u64 = 30;
 
-/// The delay between retries.
-pub const RETRY_DELAY: Duration = Duration::from_secs(RETRY_DELAY_SECS);
+const RETRY: Retry = Retry::new(MAX_RETRIES, Duration::from_secs(RETRY_DELAY_SECS));

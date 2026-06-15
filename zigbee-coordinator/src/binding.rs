@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use log::{error, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
-use tokio::time::sleep;
 use zdp::{BindReq, Destination, Status};
 use zigbee::{Address, ClusterId, Endpoint};
 
@@ -11,7 +10,7 @@ use self::devices_ext::{Devices, DevicesExt};
 pub use self::message::Message;
 use crate::discovery::EndpointInfo;
 use crate::transceiver::zdp::Handle;
-use crate::{MAX_RETRIES, RETRY_DELAY, network_manager, transceiver};
+use crate::{RETRY, network_manager, transceiver};
 
 mod devices_ext;
 mod message;
@@ -122,7 +121,6 @@ impl Actor {
 }
 
 /// Run the binding loop.
-#[expect(clippy::too_many_arguments)]
 async fn bind_endpoint(
     address: Address,
     endpoint: Endpoint,
@@ -134,20 +132,7 @@ async fn bind_endpoint(
     let short_id = address.short_id();
     let mut retries = 0;
 
-    loop {
-        if retries > MAX_RETRIES {
-            error!(
-                "Failed to bind {address}:{endpoint} to cluster {cluster:?} after {MAX_RETRIES} retries. Giving up."
-            );
-            return;
-        }
-
-        if retries > 0 {
-            sleep(RETRY_DELAY).await;
-        }
-
-        retries += 1;
-
+    while RETRY.retry(&mut retries).await {
         match zdp
             .communicate(
                 short_id,
@@ -185,4 +170,6 @@ async fn bind_endpoint(
             }
         }
     }
+
+    error!("Failed to bind {address}:{endpoint} to cluster {cluster:?}.");
 }
