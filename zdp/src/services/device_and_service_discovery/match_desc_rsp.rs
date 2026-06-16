@@ -3,7 +3,7 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use zigbee::Cluster;
 
-use crate::{Displayable, Service, Status};
+use crate::{Command, Displayable, Service, Status};
 
 /// Match Descriptor Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -82,5 +82,11 @@ impl Display for MatchDescRsp {
         }
 
         write!(f, "] }}")
+    }
+}
+
+impl From<MatchDescRsp> for Command {
+    fn from(value: MatchDescRsp) -> Self {
+        Self::DeviceAndServiceDiscovery(value.into())
     }
 }

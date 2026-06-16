@@ -103,12 +103,12 @@ where
     /// Returns an error if the unicast message could not be sent.
     async fn unicast(
         &mut self,
+        seq: u8,
         short_id: u16,
         payload: Payload<Command>,
-    ) -> Result<u8, zigbee_hw::Error> {
+    ) -> Result<(), zigbee_hw::Error> {
         let (metadata, command) = payload.into_parts();
-        let zdp_frame = self.make_zdp_frame(command);
-        let seq = zdp_frame.seq();
+        let zdp_frame = Frame::new(seq, command);
 
         #[expect(unsafe_code)]
         // SAFETY: We extracted the metadata and command from the payload above
@@ -119,7 +119,7 @@ where
         self.ncp
             .unicast(short_id, Endpoint::Data, aps_frame)
             .await
-            .map(|_| seq)
+            .map(drop)
     }
 
     /// Send a ZDP unicast message with back-channel communication.
@@ -136,7 +136,8 @@ where
         short_id: u16,
         payload: Payload<Command>,
     ) -> Result<oneshot::Receiver<Command>, zigbee_hw::Error> {
-        let seq = self.unicast(short_id, payload).await?;
+        let seq = self.next_seq();
+        self.unicast(seq, short_id, payload).await?;
         let (tx, rx) = channel();
         self.responses.insert((seq, short_id), tx);
         Ok(rx)
@@ -158,18 +159,39 @@ where
         }
     }
 
-    /// Create a new ZDP frame.
-    const fn make_zdp_frame(&mut self, command: Command) -> Frame<Command> {
-        Frame::new(self.next_seq(), command)
-    }
+    async fn handle_match_desc_req(
+        &mut self,
+        src_address: u16,
+        seq: u8,
+        match_desc_req: MatchDescReq,
+    ) {
+        let Ok(payload) = MatchDescRsp::new(
+            Status::Success,
+            0x0000,
+            self.local_endpoints()
+                .filter_map(|endpoint| {
+                    if match_desc_req.matches(&endpoint) {
+                        Some(u8::from(endpoint.endpoint()))
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        ) else {
+            error!("Failed to create Match_Desc_rsp. Too many clusters.");
+            return;
+        };
 
-    fn handle_match_desc_req(&self, src_address: u16, seq: u8, match_desc_req: MatchDescReq) {
-        self.ncp
-            .unicast(MatchDescRsp::new(
-                Status::Success,
-                self.local_endpoints().filter(MatchDescReqExt::matches),
-            ))
+        if let Err(error) = self
+            .unicast(
+                seq,
+                src_address,
+                Payload::for_cluster(payload, None, None).into_command(),
+            )
             .await
+        {
+            error!("Failed to send Match_Desc_rsp: {error:?}");
+        }
     }
 
     fn local_endpoints(&self) -> impl Iterator<Item = SimpleDescriptor> {

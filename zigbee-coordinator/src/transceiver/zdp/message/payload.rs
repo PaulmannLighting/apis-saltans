@@ -1,6 +1,7 @@
 //! General-purpose APS frame.
 
 use zdp::Command;
+use zigbee::{Cluster, Endpoint, Profile};
 use zigbee_hw::Metadata;
 
 /// A simplified APS frame.
@@ -35,6 +36,24 @@ impl<T> Payload<T> {
     #[must_use]
     pub fn into_parts(self) -> (Metadata, T) {
         (self.metadata, self.command)
+    }
+}
+
+impl<T> Payload<T>
+where
+    T: Cluster,
+{
+    /// Create a new frame for the given cluster type.
+    #[must_use]
+    pub fn for_cluster(
+        cluster: T,
+        profile: Option<Profile>,
+        source_endpoint: Option<Endpoint>,
+    ) -> Self {
+        Self::new(
+            Metadata::for_cluster::<T>(profile, source_endpoint),
+            cluster,
+        )
     }
 }
 
