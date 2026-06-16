@@ -7,10 +7,10 @@ use zcl::general::basic::readable::Id;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
 
-use self::devices::DevicesExt;
+pub use self::attributes::Attributes;
+use self::devices::{Devices, DevicesExt};
 pub use self::endpoint_info::EndpointInfo;
 pub use self::message::Message;
-use crate::discovery::attribute_discovery::devices::Devices;
 use crate::{
     MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributes, TASK_POOL_SIZE, binding,
     transceiver,
