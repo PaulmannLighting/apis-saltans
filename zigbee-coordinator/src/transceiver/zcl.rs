@@ -54,7 +54,11 @@ where
                     payload,
                     response,
                 } => {
-                    self.unicast(short_id, endpoint, *payload, response).await;
+                    response
+                        .send(self.unicast(short_id, endpoint, *payload).await.map(drop))
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send unicast response: {error:?}");
+                        });
                 }
                 Message::Communicate {
                     short_id,
@@ -62,8 +66,11 @@ where
                     payload,
                     response,
                 } => {
-                    self.communicate(short_id, endpoint, *payload, response)
-                        .await;
+                    response
+                        .send(self.communicate(short_id, endpoint, *payload).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send unicast response: {error:?}");
+                        });
                 }
             }
         }
@@ -86,37 +93,21 @@ where
         }
     }
 
-    /// Send a unicast message.
+    /// Send a ZCL unicast message.
+    ///
+    /// # Returns
+    ///
+    /// Returns the ZCL sequence number.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the unicast message could not be sent.
     async fn unicast(
         &mut self,
         short_id: u16,
         endpoint: Endpoint,
         frame: Payload<Cluster>,
-        response: Sender<Result<(), zigbee_hw::Error>>,
-    ) {
-        let (metadata, manufacturer_code, command) = frame.into_parts();
-        let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
-
-        #[expect(unsafe_code)]
-        // SAFETY: We extracted the metadata and command from the payload above
-        // and created a valid ZCL frame from that command.
-        // Hence, the resulting metadata and payload match.
-        let aps_frame = unsafe { Self::make_aps_frame(metadata, zcl_frame) };
-
-        let result = self.ncp.unicast(short_id, endpoint, aps_frame).await;
-        response.send(result.map(drop)).unwrap_or_else(|error| {
-            error!("Failed to send unicast response: {error:?}");
-        });
-    }
-
-    /// Send a unicast message with back-channel communication.
-    async fn communicate(
-        &mut self,
-        short_id: u16,
-        endpoint: Endpoint,
-        frame: Payload<Cluster>,
-        response: Sender<Result<oneshot::Receiver<Cluster>, zigbee_hw::Error>>,
-    ) {
+    ) -> Result<u8, zigbee_hw::Error> {
         let (metadata, manufacturer_code, command) = frame.into_parts();
         let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
         let seq = zcl_frame.header().seq();
@@ -127,17 +118,31 @@ where
         // Hence, the resulting metadata and payload match.
         let aps_frame = unsafe { Self::make_aps_frame(metadata, zcl_frame) };
 
-        match self.ncp.unicast(short_id, endpoint, aps_frame).await {
-            Ok(_) => {
-                let (tx, rx) = channel();
-                self.responses.insert((seq, short_id), tx);
-                response.send(Ok(rx))
-            }
-            Err(error) => response.send(Err(error)),
-        }
-        .unwrap_or_else(|error| {
-            error!("Failed to send unicast response: {error:?}");
-        });
+        self.ncp
+            .unicast(short_id, endpoint, aps_frame)
+            .await
+            .map(|_| seq)
+    }
+
+    /// Send a ZCL unicast message with back-channel communication.
+    ///
+    /// # Returns
+    ///
+    /// Returns the response receiver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the unicast message could not be sent.
+    async fn communicate(
+        &mut self,
+        short_id: u16,
+        endpoint: Endpoint,
+        frame: Payload<Cluster>,
+    ) -> Result<oneshot::Receiver<Cluster>, zigbee_hw::Error> {
+        let seq = self.unicast(short_id, endpoint, frame).await?;
+        let (tx, rx) = channel();
+        self.responses.insert((seq, short_id), tx);
+        Ok(rx)
     }
 
     /// Create a new APS frame.
