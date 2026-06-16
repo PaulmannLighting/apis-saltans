@@ -6,7 +6,8 @@ use tokio_task_pool::Pool;
 use zdp::{BindReq, Destination, Status};
 use zigbee::{Address, ClusterId, Endpoint};
 
-use self::devices_ext::{Devices, DevicesExt};
+pub use self::devices_ext::Devices;
+use self::devices_ext::DevicesExt;
 pub use self::message::Message;
 use crate::discovery::EndpointInfo;
 use crate::transceiver::zdp::Handle;
@@ -121,7 +122,9 @@ impl Actor {
             };
 
             network_manager
-                .send(network_manager::Message::NewDevice { address, endpoints })
+                .send(network_manager::Message::NewDevice(
+                    (address, endpoints).into(),
+                ))
                 .await
                 .unwrap_or_else(|error| {
                     error!("Failed to send new device message: {error:?}");

@@ -94,7 +94,7 @@ impl Coordinator {
     async fn start_network_manager(
         mux: &Sender<mux::Message>,
     ) -> Result<Sender<network_manager::Message>, Error> {
-        let network_manager = network_manager::Actor {};
+        let network_manager = network_manager::Actor::new();
         let (network_manager_tx, network_manager_rx) = channel(MPSC_CHANNEL_SIZE);
         let (events_tx, events_rx) = channel(MPSC_CHANNEL_SIZE);
         mux.subscribe(events_tx).await?;

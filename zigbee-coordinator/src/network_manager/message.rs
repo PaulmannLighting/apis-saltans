@@ -1,12 +1,9 @@
-use std::collections::BTreeMap;
-
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
-use zigbee::{Address, Endpoint};
+use zigbee::Address;
 use zigbee_hw::Event;
 
 use super::Device;
-use crate::discovery::EndpointInfo;
 
 /// Messages received by the network management actor.
 #[derive(Debug)]
@@ -23,13 +20,10 @@ pub enum Message {
         /// Response channel to send the updated device list to.
         response: Sender<Box<[Device]>>,
     },
-    /// A new device has been discovered.
-    NewDevice {
-        /// The address of the new device.
-        address: Address,
-        /// The new device endpoints, keyed by endpoint ID.
-        endpoints: BTreeMap<Endpoint, EndpointInfo>,
-    },
+    /// Add a new device to the network.
+    NewDevice(Device),
+    /// Remove a device from the network.
+    RemoveDevice(Address),
 }
 
 impl From<Event> for Message {

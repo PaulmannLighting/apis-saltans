@@ -3,7 +3,7 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zigbee_hw::Event;
 
-pub use self::attribute_discovery::EndpointInfo;
+pub use self::attribute_discovery::{Attributes, EndpointInfo};
 use crate::discovery::attribute_discovery::AttributeDiscovery;
 use crate::discovery::descriptor_discovery::DescriptorDiscovery;
 use crate::discovery::endpoint_discovery::EndpointDiscovery;
