@@ -18,19 +18,21 @@ impl Mux {
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Event(event) => {
-                    for subscriber in &self.subscribers {
-                        if let Err(error) = subscriber.send(event.clone()).await {
-                            trace!("Subscriber went away: {error}");
-                        }
-                    }
-
-                    self.subscribers
-                        .retain(|subscriber| !subscriber.is_closed());
-                }
+                Message::Event(event) => self.multiplex(event).await,
                 Message::Subscribe { sender } => self.subscribers.push(sender),
             }
         }
+    }
+
+    async fn multiplex(&mut self, event: Event) {
+        for subscriber in &self.subscribers {
+            if let Err(error) = subscriber.send(event.clone()).await {
+                trace!("Subscriber went away: {error}");
+            }
+        }
+
+        self.subscribers
+            .retain(|subscriber| !subscriber.is_closed());
     }
 }
 
