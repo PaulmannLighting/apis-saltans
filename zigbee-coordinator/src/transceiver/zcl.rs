@@ -91,7 +91,6 @@ where
     /// Handle a received ZCL message.
     fn handle_message_received(&mut self, src_address: u16, frame: Frame<Cluster>) {
         let (header, payload) = frame.into_parts();
-        self.seq = header.seq().wrapping_add(1);
 
         if let Some(sender) = self.responses.remove(&header.seq()) {
             sender.send(payload).unwrap_or_else(|error| {

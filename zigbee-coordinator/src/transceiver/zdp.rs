@@ -77,7 +77,6 @@ where
     async fn handle_message_received(&mut self, src_address: u16, frame: Frame<Command>) {
         let (seq, command) = frame.into_parts();
         debug!("Received ZDP message: seq={seq}");
-        self.seq = seq.wrapping_add(1);
 
         if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
             match_desc_req,
