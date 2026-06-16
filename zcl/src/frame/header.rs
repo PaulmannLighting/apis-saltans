@@ -83,8 +83,8 @@ impl FromLeStream for Header {
             None
         };
 
-        let seq = bytes.next()?;
-        let command_id = bytes.next()?;
+        let seq = u8::from_le_stream(&mut bytes)?;
+        let command_id = u8::from_le_stream(&mut bytes)?;
 
         Some(Self {
             control,
