@@ -1,3 +1,4 @@
+use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zigbee::Address;
@@ -10,6 +11,22 @@ use super::Device;
 pub enum Message {
     /// A hardware-level event.
     Event(Event),
+
+    /// A request to resolve a short ID to an IEEE address.
+    GetIeeeAddressFromShortId {
+        /// The short ID to resolve.
+        short_id: u16,
+        /// Response channel to send the resolved IEEE address to.
+        response: oneshot::Sender<Option<MacAddr8>>,
+    },
+
+    /// A request to resolve an IEEE address to a short ID.
+    GetShortIdFromIeeeAddress {
+        /// The IEEE address to resolve.
+        ieee_address: MacAddr8,
+        /// Response channel to send the resolved IEEE address to.
+        response: oneshot::Sender<Option<u16>>,
+    },
 
     /// A request to send a list of the current devices.
     GetDevices {

@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use log::error;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use zigbee::Address;
@@ -33,6 +34,27 @@ impl Actor {
             match message {
                 Message::Event(event) => {
                     todo!()
+                }
+                Message::GetIeeeAddressFromShortId { short_id, response } => {
+                    response
+                        .send(self.short_ids.get(&short_id).copied())
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send response: {error:?}");
+                        });
+                }
+                Message::GetShortIdFromIeeeAddress {
+                    ieee_address,
+                    response,
+                } => {
+                    response
+                        .send(
+                            self.devices
+                                .get(&ieee_address)
+                                .map(|device| device.address().short_id()),
+                        )
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send response: {error:?}");
+                        });
                 }
                 Message::GetDevices { .. } => {
                     todo!()

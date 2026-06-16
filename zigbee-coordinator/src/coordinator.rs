@@ -137,3 +137,9 @@ impl Borrow<NcpHandle> for Coordinator {
         &self.ncp
     }
 }
+
+impl Borrow<Sender<network_manager::Message>> for Coordinator {
+    fn borrow(&self) -> &Sender<network_manager::Message> {
+        &self.network_manager
+    }
+}

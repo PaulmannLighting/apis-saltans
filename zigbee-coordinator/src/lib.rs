@@ -8,7 +8,8 @@ use core::time::Duration;
 use const_env::env_item;
 
 pub use self::api::{
-    ColorControl, Joining, OnOff, ReadAttributeResult, ReadAttributes, WriteAttributes,
+    ColorControl, Joining, NetworkManager, OnOff, ReadAttributeResult, ReadAttributes,
+    WriteAttributes,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
