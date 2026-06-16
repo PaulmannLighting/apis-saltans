@@ -10,7 +10,7 @@ use tokio::sync::oneshot::{Sender, channel};
 use zdp::{
     Command, DeviceAndServiceDiscovery, Frame, MatchDescReq, MatchDescRsp, SimpleDescriptor, Status,
 };
-use zigbee::Endpoint;
+use zigbee::{Endpoint, Profile};
 use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
@@ -195,6 +195,20 @@ where
     }
 
     fn local_endpoints(&self) -> impl Iterator<Item = SimpleDescriptor> {
-        todo!()
+        [SimpleDescriptor::new(
+            Endpoint::default(),
+            Profile::ZigbeeHomeAutomation.into(),
+            0x0050,
+            0x00,
+            vec![0x0000, 0x0006, 0x0008, 0x0300, 0x0403, 0x0201]
+                .into_boxed_slice()
+                .try_into()
+                .expect("Clusters fit."),
+            vec![0x0000, 0x0006, 0x0008, 0x0300, 0x0403]
+                .into_boxed_slice()
+                .try_into()
+                .expect("Clusters fit."),
+        )]
+        .into_iter()
     }
 }
