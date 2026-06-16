@@ -34,7 +34,13 @@ impl From<Box<[ReadAttributeResult<Id>]>> for Attributes {
             sw_build_id: None,
         };
 
-        for attribute in attributes.into_iter().filter_map(Result::ok) {
+        for attribute in attributes.into_iter().filter_map(|result| {
+            result
+                .inspect_err(|error| {
+                    warn!("Invalid attribute: {error}");
+                })
+                .ok()
+        }) {
             match attribute {
                 Attribute::ZclVersion(version) => instance.zcl_version = version.into(),
                 Attribute::ApplicationVersion(version) => {
