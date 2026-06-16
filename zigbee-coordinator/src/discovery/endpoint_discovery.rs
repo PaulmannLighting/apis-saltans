@@ -1,4 +1,4 @@
-use log::{error, warn};
+use log::{debug, error, info, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio_task_pool::Pool;
 use zdp::{ActiveEpReq, Status};
@@ -80,9 +80,15 @@ async fn discover_endpoints(
             Ok(response) => {
                 if response.status() == Ok(Status::Success) {
                     let Some(descriptor_discovery) = descriptor_discovery.upgrade() else {
+                        debug!(
+                            "Descriptor discovery channel closed. Aborting endpoint discovery of {address}."
+                        );
                         return;
                     };
 
+                    info!(
+                        "Discovered endpoints of {address}. Handing over to descriptor discovery."
+                    );
                     descriptor_discovery
                         .send(descriptor_discovery::Message::Discover {
                             address: address.clone(),
