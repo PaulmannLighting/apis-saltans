@@ -16,15 +16,6 @@ pub enum Message {
         /// The APS frame.
         frame: Box<Frame<Command>>,
     },
-    /// Unicast a message.
-    Unicast {
-        /// The destination address.
-        short_id: u16,
-        /// The payload.
-        payload: Box<Payload<Command>>,
-        /// The response channel.
-        response: Sender<Result<(), Error>>,
-    },
     /// Communicate a unicast with an expected response.
     Communicate {
         /// The destination address.

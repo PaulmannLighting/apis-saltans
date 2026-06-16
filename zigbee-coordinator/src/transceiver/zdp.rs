@@ -48,13 +48,6 @@ where
                 Message::Received { src_address, frame } => {
                     self.handle_message_received(src_address, *frame);
                 }
-                Message::Unicast {
-                    short_id,
-                    payload,
-                    response,
-                } => {
-                    self.unicast(short_id, *payload, response).await;
-                }
                 Message::Communicate {
                     short_id,
                     payload,
@@ -81,28 +74,6 @@ where
                 error!("Failed to send ZCL response: {error:?}");
             });
         }
-    }
-
-    /// Send a unicast message.
-    async fn unicast(
-        &mut self,
-        short_id: u16,
-        payload: Payload<Command>,
-        response: Sender<Result<(), zigbee_hw::Error>>,
-    ) {
-        let (metadata, command) = payload.into_parts();
-        let zdp_frame = self.make_zdp_frame(command);
-
-        #[expect(unsafe_code)]
-        // SAFETY: We extracted the metadata and command from the payload above
-        // and created a valid ZDP frame from that command.
-        // Hence, the resulting metadata and payload match.
-        let aps_frame = unsafe { Self::make_aps_frame(metadata, zdp_frame) };
-
-        let result = self.ncp.unicast(short_id, Endpoint::Data, aps_frame).await;
-        response.send(result.map(drop)).unwrap_or_else(|error| {
-            error!("Failed to send unicast response: {error:?}");
-        });
     }
 
     /// Send a unicast message with back-channel communication.
