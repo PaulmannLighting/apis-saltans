@@ -1,7 +1,6 @@
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
-use zigbee::Address;
-use zigbee_hw::{Error, Event, Ncp, NcpHandle, Start, bridge};
+use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle, bridge};
 
 use crate::mux::{Handle as MuxHandle, Mux};
 use crate::transceiver::{zcl, zdp};
@@ -28,15 +27,14 @@ impl Coordinator {
         T: Start,
     {
         let (ncp, events) = hardware.start().await?;
-        let coordinator_address = ncp.get_address().await?;
         let zcl_tx = Self::start_zcl_transceiver(ncp.clone());
-        let zdp_tx = Self::start_zdp_transceiver(ncp);
+        let zdp_tx = Self::start_zdp_transceiver(ncp.clone());
         let (mux, discovery_rx) = Self::start_mux(events, zcl_tx.clone(), zdp_tx.clone());
         let network_manager = Self::start_network_manager(&mux).await?;
         let binding_manager = Self::start_binding_manager(
             zdp_tx.downgrade(),
             network_manager.downgrade(),
-            coordinator_address,
+            ncp.downgrade(),
         );
         Self::start_discovery_manager(
             discovery_rx,
@@ -96,12 +94,12 @@ impl Coordinator {
 
     /// Start the binding manager.
     fn start_binding_manager(
-        zdp_transceiver: WeakSender<zdp::Message>,
+        zdp_tx: WeakSender<zdp::Message>,
         network_manager: WeakSender<network_manager::Message>,
-        coordinator_address: Address,
+        ncp: WeakNcpHandle,
     ) -> Sender<binding::Message> {
         let (binding_manager, binding_manager_tx) =
-            binding::Actor::new(zdp_transceiver, network_manager, coordinator_address);
+            binding::Actor::new(zdp_tx, network_manager, ncp);
         spawn(binding_manager.run());
         binding_manager_tx
     }
@@ -109,12 +107,11 @@ impl Coordinator {
     /// Start the discovery manager.
     fn start_discovery_manager(
         discovery_rx: Receiver<discovery::Message>,
-        zcl_transmitter: WeakSender<zcl::Message>,
-        zdp_transmitter: WeakSender<zdp::Message>,
-        binding_manager: WeakSender<binding::Message>,
+        zcl_tx: WeakSender<zcl::Message>,
+        zdp_tx: WeakSender<zdp::Message>,
+        binding_tx: WeakSender<binding::Message>,
     ) {
-        let discovery_manager =
-            discovery::Actor::new(zcl_transmitter, zdp_transmitter, binding_manager);
+        let discovery_manager = discovery::Actor::new(zcl_tx, zdp_tx, binding_tx);
         spawn(discovery_manager.run(discovery_rx));
     }
 }

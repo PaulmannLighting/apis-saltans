@@ -5,6 +5,7 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zdp::{BindReq, Destination, Status};
 use zigbee::{Address, ClusterId, Endpoint};
+use zigbee_hw::{Ncp, NcpHandle, WeakNcpHandle};
 
 pub use self::devices_ext::Devices;
 use self::devices_ext::DevicesExt;
@@ -26,7 +27,7 @@ pub struct Actor {
     loopback: WeakSender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
     network_manager: WeakSender<network_manager::Message>,
-    coordinator_address: Address,
+    ncp: WeakNcpHandle,
     devices: Devices,
     tasks: Pool,
 }
@@ -37,7 +38,7 @@ impl Actor {
     pub fn new(
         zdp: WeakSender<transceiver::zdp::Message>,
         network_manager: WeakSender<network_manager::Message>,
-        coordinator_address: Address,
+        ncp: WeakNcpHandle,
     ) -> (Self, Sender<Message>) {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
 
@@ -46,7 +47,7 @@ impl Actor {
             loopback: tx.downgrade(),
             zdp,
             network_manager,
-            coordinator_address,
+            ncp,
             devices: BTreeMap::new(),
             tasks: Pool::bounded(TASK_POOL_SIZE),
         };
@@ -94,7 +95,7 @@ impl Actor {
                             cluster,
                             self.loopback.clone(),
                             self.zdp.clone(),
-                            self.coordinator_address.clone(),
+                            self.ncp.clone(),
                         ))
                         .await
                         .map_or_else(drop, |error| {
@@ -140,13 +141,23 @@ async fn bind_endpoint(
     cluster: ClusterId,
     loopback: WeakSender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
-    coordinator_address: Address,
+    ncp: WeakNcpHandle,
 ) {
     let short_id = address.short_id();
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
         let Some(zdp) = zdp.upgrade() else {
+            return;
+        };
+
+        let Some(ncp_handle) = ncp.upgrade() else {
+            return;
+        };
+
+        let Ok(coordinator_address) = ncp_handle.get_ieee_address().await.map_err(|error| {
+            error!("Failed to get coordinator address: {error:?}");
+        }) else {
             return;
         };
 
@@ -158,7 +169,7 @@ async fn bind_endpoint(
                     endpoint.into(),
                     cluster.into(),
                     Destination::Extended {
-                        address: coordinator_address.ieee_address(),
+                        address: coordinator_address,
                         endpoint: Endpoint::default().into(),
                     },
                 ),
