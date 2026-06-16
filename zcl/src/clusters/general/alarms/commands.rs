@@ -116,11 +116,10 @@ impl Iterator for Iter {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Self::GetAlarm(iter) => iter.next(),
-            Self::ResetAlarm(iter) => iter.next(),
-            Self::ResetAllAlarms(iter) => iter.next(),
-            Self::ResetAlarmLog(iter) => iter.next(),
-            Self::Alarm(iter) => iter.next(),
+            Self::GetAlarm(iter) | Self::ResetAllAlarms(iter) | Self::ResetAlarmLog(iter) => {
+                iter.next()
+            }
+            Self::ResetAlarm(iter) | Self::Alarm(iter) => iter.next(),
             Self::GetAlarmResponse(iter) => iter.next(),
         }
     }

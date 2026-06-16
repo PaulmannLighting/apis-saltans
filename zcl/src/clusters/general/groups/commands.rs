@@ -204,6 +204,7 @@ impl ToLeStream for Command {
 }
 
 #[derive(Debug)]
+#[expect(clippy::large_enum_variant)]
 pub enum Iter {
     AddGroup(<AddGroup as ToLeStream>::Iter),
     ViewGroup(<ViewGroup as ToLeStream>::Iter),

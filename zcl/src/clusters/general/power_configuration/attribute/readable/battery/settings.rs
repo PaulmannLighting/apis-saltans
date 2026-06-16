@@ -81,6 +81,7 @@ impl FromLeStreamTagged for Settings {
 impl TryFrom<(Id, Type)> for Settings {
     type Error = InvalidType<Id>;
 
+    #[expect(clippy::too_many_lines)]
     fn try_from((id, typ): (Id, Type)) -> Result<Self, Self::Error> {
         match id {
             Id::Manufacturer => {

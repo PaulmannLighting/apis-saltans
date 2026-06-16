@@ -27,6 +27,7 @@ impl Status {
     }
 
     /// Return the attribute ID.
+    #[must_use]
     pub const fn id(self) -> u16 {
         self.id
     }

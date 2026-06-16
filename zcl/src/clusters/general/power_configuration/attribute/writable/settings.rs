@@ -12,6 +12,7 @@ const SETTINGS: u16 = 0x0010;
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
+#[expect(variant_size_differences)]
 pub enum Settings {
     /// Name of the battery manufacturer.
     Manufacturer(String<16>) = 0x0000,
