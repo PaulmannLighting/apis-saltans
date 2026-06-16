@@ -4,9 +4,8 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zdp::Command;
 use zigbee::{Cluster, ExpectResponse};
-use zigbee_hw::Metadata;
 
-use super::{Message, Payload};
+use super::Message;
 use crate::Error;
 use crate::timeout::Timeout;
 
@@ -29,21 +28,19 @@ where
     fn communicate<U>(
         &self,
         short_id: u16,
-        request: U,
+        command: U,
     ) -> impl Future<Output = Result<U::Response, Error>> + Send
     where
         U: Cluster + ExpectResponse<Command>,
     {
         let (response, result) = channel();
-        let payload = Payload::new(Metadata::new(U::ID, None, None), request)
-            .into_command()
-            .into();
+        let command = Box::new(command.into());
 
         async move {
             self.borrow()
                 .send(Message::Communicate {
                     short_id,
-                    payload,
+                    command,
                     response,
                 })
                 .await?;

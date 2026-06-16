@@ -21,7 +21,7 @@ pub enum Message {
         /// The destination address.
         short_id: u16,
         /// The payload.
-        payload: Box<Payload<Command>>,
+        command: Box<Command>,
         /// The response channel.
         response: Sender<Result<Receiver<Command>, Error>>,
     },

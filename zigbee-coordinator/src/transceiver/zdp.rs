@@ -56,7 +56,7 @@ where
                 }
                 Message::Communicate {
                     short_id,
-                    payload,
+                    command: payload,
                     response,
                 } => {
                     response
@@ -139,11 +139,11 @@ where
     async fn communicate(
         &mut self,
         short_id: u16,
-        payload: Payload<Command>,
+        command: Command,
     ) -> Result<oneshot::Receiver<Command>, zigbee_hw::Error> {
         let seq = self.next_seq();
-        let cluster_id = payload.command().cluster_id();
-        self.unicast(seq, short_id, payload).await?;
+        let cluster_id = command.cluster_id();
+        self.unicast(seq, short_id, command.into()).await?;
         let (tx, rx) = channel();
         self.responses
             .insert((seq, cluster_id | CLUSTER_ID_RESPONSE_MASK), tx);
@@ -185,11 +185,7 @@ where
         };
 
         if let Err(error) = self
-            .unicast(
-                seq,
-                src_address,
-                Payload::for_cluster(payload, None, None).into_command(),
-            )
+            .unicast(seq, src_address, Payload::zdp(payload).into_command())
             .await
         {
             error!("Failed to send Match_Desc_rsp: {error:?}");

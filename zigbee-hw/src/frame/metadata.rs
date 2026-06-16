@@ -36,6 +36,16 @@ impl Metadata {
         }
     }
 
+    /// Create new APS metadata for a ZDP command.
+    #[must_use]
+    pub const fn zdp(cluster_id: u16) -> Self {
+        Self {
+            cluster_id,
+            profile: Some(Profile::Network),
+            source_endpoint: Some(Endpoint::Data),
+        }
+    }
+
     /// Return the cluster ID.
     #[must_use]
     pub const fn cluster_id(&self) -> u16 {
