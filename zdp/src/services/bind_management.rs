@@ -1,6 +1,8 @@
-//! Bind, unbind and bind management related ZDP services.
+//! Bind, unbind, and bind management related ZDP services.
 
 use std::fmt::Display;
+
+use zigbee::Cluster;
 
 pub use self::bind_req::{Address, AddressMode, BindReq, Destination};
 pub use self::bind_rsp::BindRsp;
@@ -23,6 +25,19 @@ pub enum BindManagement {
     UnbindReq(UnbindReq),
     /// Clear All Bindings Request
     ClearAllBindingsReq(ClearAllBindingsReq),
+}
+
+impl BindManagement {
+    /// Returns the cluster ID of the command.
+    #[must_use]
+    pub const fn cluster_id(&self) -> u16 {
+        match self {
+            Self::BindReq(_) => <BindReq as Cluster>::ID,
+            Self::BindRsp(_) => <BindRsp as Cluster>::ID,
+            Self::UnbindReq(_) => <UnbindReq as Cluster>::ID,
+            Self::ClearAllBindingsReq(_) => <ClearAllBindingsReq as Cluster>::ID,
+        }
+    }
 }
 
 impl Display for BindManagement {

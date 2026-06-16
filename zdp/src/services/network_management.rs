@@ -2,6 +2,8 @@
 
 use std::fmt::Display;
 
+use zigbee::Cluster;
+
 pub use self::mgmt_bind_req::MgmtBindReq;
 pub use self::mgmt_leave_req::{LeaveReqFlags, MgmtLeaveReq};
 pub use self::mgmt_lqi_req::MgmtLqiReq;
@@ -52,6 +54,25 @@ pub enum NetworkManagement {
     // Responses
     /// Management Permit Joining Response.
     MgmtPermitJoiningRsp(MgmtPermitJoiningRsp),
+}
+
+impl NetworkManagement {
+    /// Returns the cluster ID of the command.
+    #[must_use]
+    pub const fn cluster_id(&self) -> u16 {
+        match self {
+            Self::MgmtLqiReq(_) => MgmtLqiReq::ID,
+            Self::MgmtRtgReq(_) => MgmtRtgReq::ID,
+            Self::MgmtBindReq(_) => MgmtBindReq::ID,
+            Self::MgmtLeaveReq(_) => MgmtLeaveReq::ID,
+            Self::MgmtPermitJoiningReq(_) => MgmtPermitJoiningReq::ID,
+            Self::MgmtNwkUpdateReq(_) => MgmtNwkUpdateReq::ID,
+            Self::MgmtNwkEnhancedUpdateReq(_) => MgmtNwkEnhancedUpdateReq::ID,
+            Self::MgmtNwkIeeeJoiningListReq(_) => MgmtNwkIeeeJoiningListReq::ID,
+            Self::MgmtNwkBeaconSurveyReq(_) => MgmtNwkBeaconSurveyReq::ID,
+            Self::MgmtPermitJoiningRsp(_) => MgmtPermitJoiningRsp::ID,
+        }
+    }
 }
 
 impl Display for NetworkManagement {

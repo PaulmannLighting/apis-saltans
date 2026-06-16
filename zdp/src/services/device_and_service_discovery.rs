@@ -2,6 +2,8 @@
 
 use std::fmt::Display;
 
+use zigbee::Cluster;
+
 pub use self::active_ep_req::ActiveEpReq;
 pub use self::active_ep_rsp::ActiveEpRsp;
 pub use self::device_annce::DeviceAnnce;
@@ -63,6 +65,29 @@ pub enum DeviceAndServiceDiscovery {
     ParentAnnce(ParentAnnce),
     /// System Server Discovery Request
     SystemServerDiscoveryReq(SystemServerDiscoveryReq),
+}
+
+impl DeviceAndServiceDiscovery {
+    /// Return the cluster ID of the command.
+    #[must_use]
+    pub const fn cluster_id(&self) -> u16 {
+        match self {
+            Self::MatchDescRsp(_) => <MatchDescRsp as Cluster>::ID,
+            Self::NwkAddrReq(_) => <NwkAddrReq as Cluster>::ID,
+            Self::IeeeAddrReq(_) => <IeeeAddrReq as Cluster>::ID,
+            Self::NodeDescReq(_) => <NodeDescReq as Cluster>::ID,
+            Self::NodeDescRsp(_) => <NodeDescRsp as Cluster>::ID,
+            Self::PowerDescReq(_) => <PowerDescReq as Cluster>::ID,
+            Self::SimpleDescReq(_) => <SimpleDescReq as Cluster>::ID,
+            Self::SimpleDescRsp(_) => <SimpleDescRsp as Cluster>::ID,
+            Self::ActiveEpReq(_) => <ActiveEpReq as Cluster>::ID,
+            Self::ActiveEpRsp(_) => <ActiveEpRsp as Cluster>::ID,
+            Self::MatchDescReq(_) => <MatchDescReq as Cluster>::ID,
+            Self::DeviceAnnce(_) => <DeviceAnnce as Cluster>::ID,
+            Self::ParentAnnce(_) => <ParentAnnce as Cluster>::ID,
+            Self::SystemServerDiscoveryReq(_) => <SystemServerDiscoveryReq as Cluster>::ID,
+        }
+    }
 }
 
 impl Display for DeviceAndServiceDiscovery {

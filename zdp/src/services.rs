@@ -139,6 +139,16 @@ impl Command {
             other => Err(other),
         }
     }
+
+    /// Return the cluster ID of the command.
+    #[must_use]
+    pub const fn cluster_id(&self) -> u16 {
+        match self {
+            Self::DeviceAndServiceDiscovery(cmd) => cmd.cluster_id(),
+            Self::BindManagement(cmd) => cmd.cluster_id(),
+            Self::NetworkManagement(cmd) => cmd.cluster_id(),
+        }
+    }
 }
 
 impl Display for Command {

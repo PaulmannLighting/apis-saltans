@@ -21,11 +21,13 @@ mod handle;
 mod match_desc_req_ext;
 mod message;
 
+const CLUSTER_ID_RESPONSE_MASK: u16 = 0x8000;
+
 /// Zigbee transceiver actor.
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
-    responses: BTreeMap<u8, Sender<Command>>,
+    responses: BTreeMap<(u8, u16), Sender<Command>>,
     seq: u8,
 }
 
@@ -87,7 +89,7 @@ where
             return;
         }
 
-        if let Some(sender) = self.responses.remove(&seq) {
+        if let Some(sender) = self.responses.remove(&(seq, command.cluster_id())) {
             sender.send(command).unwrap_or_else(|error| {
                 error!("Failed to send ZDP response: {error:?}");
             });
@@ -140,9 +142,11 @@ where
         payload: Payload<Command>,
     ) -> Result<oneshot::Receiver<Command>, zigbee_hw::Error> {
         let seq = self.next_seq();
+        let cluster_id = payload.command().cluster_id();
         self.unicast(seq, short_id, payload).await?;
         let (tx, rx) = channel();
-        self.responses.insert(seq, tx);
+        self.responses
+            .insert((seq, cluster_id | CLUSTER_ID_RESPONSE_MASK), tx);
         Ok(rx)
     }
 
