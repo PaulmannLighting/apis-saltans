@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use log::error;
+use log::{debug, error};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use zigbee::Address;
@@ -33,7 +33,7 @@ impl Actor {
         while let Some(message) = messages.recv().await {
             match message {
                 Message::Event(event) => {
-                    todo!()
+                    debug!("Received event: {event:?}");
                 }
                 Message::GetIeeeAddressFromShortId { short_id, response } => {
                     response
