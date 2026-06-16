@@ -12,18 +12,18 @@ pub struct EndpointInfo {
 impl EndpointInfo {
     /// Get the descriptor.
     #[must_use]
-    pub fn descriptor(&self) -> &SimpleDescriptor {
+    pub const fn descriptor(&self) -> &SimpleDescriptor {
         &self.descriptor
     }
 
     /// Get the attributes.
     #[must_use]
-    pub fn attributes(&self) -> Option<&Attributes> {
+    pub const fn attributes(&self) -> Option<&Attributes> {
         self.attributes.as_ref()
     }
 
     /// Set the attributes.
-    pub fn set_attributes(&mut self, attributes: Attributes) -> Option<Attributes> {
+    pub const fn set_attributes(&mut self, attributes: Attributes) -> Option<Attributes> {
         self.attributes.replace(attributes)
     }
 
