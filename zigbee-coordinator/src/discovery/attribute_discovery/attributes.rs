@@ -38,7 +38,7 @@ impl From<Box<[ReadAttributeResult<Id>]>> for Attributes {
             match attribute {
                 Attribute::ZclVersion(version) => instance.zcl_version = version.into(),
                 Attribute::ApplicationVersion(version) => {
-                    instance.application_version = version.into()
+                    instance.application_version = version.into();
                 }
                 Attribute::StackVersion(version) => instance.stack_version = version.into(),
                 Attribute::HwVersion(version) => instance.hw_version = version.into(),
@@ -55,7 +55,7 @@ impl From<Box<[ReadAttributeResult<Id>]>> for Attributes {
                 Attribute::LocationDescription(location_description) => {
                     match location_description.try_as_str() {
                         Ok(location_description) => {
-                            instance.location_description = Some(location_description.to_string())
+                            instance.location_description = Some(location_description.to_string());
                         }
                         Err(error) => warn!("Invalid location description: {error}"),
                     }
