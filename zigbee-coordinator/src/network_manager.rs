@@ -41,7 +41,7 @@ impl Actor {
                     todo!()
                 }
                 Message::NewDevice(device) => {
-                    self.add_new_device(device);
+                    self.add_device(device);
                 }
                 Message::RemoveDevice(address) => {
                     self.remove_device(&address);
@@ -50,7 +50,7 @@ impl Actor {
         }
     }
 
-    fn add_new_device(&mut self, device: Device) {
+    fn add_device(&mut self, device: Device) {
         let address = device.address();
         let ieee_address = address.ieee_address();
         let short_id = address.short_id();
