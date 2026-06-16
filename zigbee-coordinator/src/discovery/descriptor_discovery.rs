@@ -52,11 +52,11 @@ impl DescriptorDiscovery {
                 Message::Discover { address, endpoints } => {
                     self.discover(&address, endpoints).await;
                 }
-                Message::DescriptorsDiscovered {
+                Message::DescriptorDiscovered {
                     address,
-                    descriptors,
+                    descriptor,
                 } => {
-                    self.descriptors_discovered(address, descriptors).await;
+                    self.descriptor_discovered(address, descriptor).await;
                 }
             }
         }
@@ -88,17 +88,9 @@ impl DescriptorDiscovery {
     }
 
     /// Update the descriptor map with the newly discovered descriptors.
-    async fn descriptors_discovered(
-        &mut self,
-        address: Address,
-        descriptors: Box<[SimpleDescriptor]>,
-    ) {
+    async fn descriptor_discovered(&mut self, address: Address, descriptor: SimpleDescriptor) {
         let device = self.devices.entry(address.clone()).or_default();
-
-        for descriptor in descriptors {
-            device.insert(descriptor.endpoint(), Some(descriptor));
-        }
-
+        device.insert(descriptor.endpoint(), Some(descriptor));
         self.forward_descriptors_if_complete(address).await;
     }
 
@@ -164,9 +156,9 @@ async fn get_descriptor(
                     };
 
                     loopback
-                        .send(Message::DescriptorsDiscovered {
+                        .send(Message::DescriptorDiscovered {
                             address,
-                            descriptors: response.into_descriptors(),
+                            descriptor: response.into_descriptor(),
                         })
                         .await
                         .unwrap_or_else(|error| {

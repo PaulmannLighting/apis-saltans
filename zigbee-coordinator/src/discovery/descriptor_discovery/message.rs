@@ -15,10 +15,10 @@ pub enum Message {
     },
 
     /// Get the descriptor for the given endpoint.
-    DescriptorsDiscovered {
+    DescriptorDiscovered {
         /// The device to get the descriptor for.
         address: Address,
         /// The number of retries.
-        descriptors: Box<[SimpleDescriptor]>,
+        descriptor: SimpleDescriptor,
     },
 }
