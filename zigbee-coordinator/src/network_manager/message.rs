@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
@@ -31,7 +33,7 @@ pub enum Message {
     /// A request to send a list of the current devices.
     GetDevices {
         /// Response channel to send the current device list to.
-        response: oneshot::Sender<Box<[Device]>>,
+        response: oneshot::Sender<BTreeMap<MacAddr8, Device>>,
     },
 
     /// A request to subscribe for updates on devices.

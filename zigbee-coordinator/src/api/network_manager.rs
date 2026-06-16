@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::collections::BTreeMap;
 
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
@@ -6,7 +7,7 @@ use tokio::sync::oneshot::channel;
 use zigbee::Address;
 
 use crate::Error;
-use crate::network_manager::Message;
+use crate::network_manager::{Device, Message};
 
 /// Handle to the network manager actor.
 pub trait NetworkManager {
@@ -83,6 +84,13 @@ pub trait NetworkManager {
                 .map(|result| result.map(|short_id| Address::new(ieee_address, short_id)))
         }
     }
+
+    /// List known devices of the network manager.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the communication with the actor failed.
+    fn list_devices(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, Device>, Error>>;
 }
 
 impl<T> NetworkManager for T
@@ -111,6 +119,12 @@ where
                 response,
             })
             .await?;
+        Ok(result.await?)
+    }
+
+    async fn list_devices(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
+        let (response, result) = channel();
+        self.borrow().send(Message::GetDevices { response }).await?;
         Ok(result.await?)
     }
 }
