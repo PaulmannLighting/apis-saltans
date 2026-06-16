@@ -68,6 +68,12 @@ impl SimpleDescriptor {
         self.endpoint
     }
 
+    /// Return the profile ID.
+    #[must_use]
+    pub const fn profile_id(&self) -> u16 {
+        self.profile_id
+    }
+
     /// Return the profile.
     ///
     /// # Errors
