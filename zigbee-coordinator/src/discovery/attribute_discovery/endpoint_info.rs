@@ -3,7 +3,7 @@ use zdp::SimpleDescriptor;
 use super::Attributes;
 
 /// Information about an endpoint.
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EndpointInfo {
     descriptor: SimpleDescriptor,
     attributes: Option<Attributes>,

@@ -5,7 +5,7 @@ use zigbee::{Address, Endpoint};
 use crate::discovery::EndpointInfo;
 
 /// A Zigbee network device.
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Device {
     address: Address,
     endpoints: BTreeMap<Endpoint, EndpointInfo>,

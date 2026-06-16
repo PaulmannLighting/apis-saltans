@@ -2,7 +2,7 @@ use log::{error, info};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 
-pub use self::attribute_discovery::{Attributes, EndpointInfo};
+pub use self::attribute_discovery::EndpointInfo;
 pub use self::message::Message;
 use crate::discovery::attribute_discovery::AttributeDiscovery;
 use crate::discovery::descriptor_discovery::DescriptorDiscovery;

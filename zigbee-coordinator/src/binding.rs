@@ -5,7 +5,7 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zdp::{BindReq, Destination, Status};
 use zigbee::{Address, ClusterId, Endpoint};
-use zigbee_hw::{Ncp, NcpHandle, WeakNcpHandle};
+use zigbee_hw::{Ncp, WeakNcpHandle};
 
 pub use self::devices_ext::Devices;
 use self::devices_ext::DevicesExt;
