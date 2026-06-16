@@ -45,7 +45,7 @@ where
 {
     /// Create a new frame for the given cluster type.
     #[must_use]
-    pub fn for_cluster(
+    pub const fn for_cluster(
         cluster: T,
         profile: Option<Profile>,
         source_endpoint: Option<Endpoint>,
