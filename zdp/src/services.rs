@@ -1,5 +1,6 @@
 //! ZDP services.
 
+use std::error::Error;
 use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};

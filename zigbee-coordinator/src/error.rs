@@ -22,7 +22,7 @@ pub enum Error {
     Timeout(Elapsed),
 
     /// Invalid response type.
-    InvalidResponseType,
+    InvalidResponseType(String),
 }
 
 impl Display for Error {
@@ -32,7 +32,7 @@ impl Display for Error {
             Self::SendError => write!(f, "Sending failed"),
             Self::ReceiveError(error) => write!(f, "Receiving failed: {error}"),
             Self::Timeout(error) => write!(f, "Timeout: {error}"),
-            Self::InvalidResponseType => write!(f, "Invalid response type"),
+            Self::InvalidResponseType(error) => write!(f, "Invalid response type: {error}"),
         }
     }
 }
@@ -43,7 +43,7 @@ impl std::error::Error for Error {
             Self::Hardware(error) => Some(error),
             Self::ReceiveError(error) => Some(error),
             Self::Timeout(error) => Some(error),
-            Self::SendError | Self::InvalidResponseType => None,
+            Self::SendError | Self::InvalidResponseType(_) => None,
         }
     }
 }

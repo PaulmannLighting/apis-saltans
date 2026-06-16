@@ -96,7 +96,7 @@ where
                 .zcl_response_timeout()
                 .await??
                 .try_into()
-                .map_err(|_| Error::InvalidResponseType)
+                .map_err(|error| Error::InvalidResponseType(format!("{error:?}")))
         }
     }
 }

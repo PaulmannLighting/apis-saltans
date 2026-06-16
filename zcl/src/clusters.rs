@@ -1,6 +1,8 @@
 //! Cluster groups.
 
 use alloc::boxed::Box;
+use core::error::Error;
+use core::fmt::Display;
 
 use le_stream::ToLeStream;
 use zigbee::Direction;

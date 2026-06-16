@@ -7,6 +7,7 @@ use zigbee::{Cluster, ExpectResponse};
 use zigbee_hw::Metadata;
 
 use super::{Message, Payload};
+use crate::Error;
 use crate::timeout::Timeout;
 
 /// Handle trait on the ZDP transceiver.
@@ -16,7 +17,7 @@ pub trait Handle {
         &self,
         short_id: u16,
         request: T,
-    ) -> impl Future<Output = Result<T::Response, crate::Error>> + Send
+    ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
         T: Cluster + ExpectResponse<Command>;
 }
@@ -29,7 +30,7 @@ where
         &self,
         short_id: u16,
         request: U,
-    ) -> impl Future<Output = Result<U::Response, crate::Error>> + Send
+    ) -> impl Future<Output = Result<U::Response, Error>> + Send
     where
         U: Cluster + ExpectResponse<Command>,
     {
@@ -51,7 +52,7 @@ where
                 .zdp_response_timeout()
                 .await??
                 .try_into()
-                .map_err(|_| crate::Error::InvalidResponseType)
+                .map_err(|error| Error::InvalidResponseType(format!("{error:?}")))
         }
     }
 }
