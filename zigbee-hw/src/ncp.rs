@@ -75,10 +75,19 @@ pub trait Ncp {
 
     /// Allow devices to join the network for the specified duration.
     ///
+    /// # Returns
+    ///
+    /// Returns the actual duration for which joining is allowed.
+    /// This may be less than the requested duration if the requested
+    /// duration is longer than the maximum allowed duration.
+    ///
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn allow_joins(&self, duration: Duration) -> impl Future<Output = Result<(), Error>> + Send;
+    fn allow_joins(
+        &self,
+        duration: Duration,
+    ) -> impl Future<Output = Result<Duration, Error>> + Send;
 
     /// Get the list of neighbor devices.
     ///
@@ -176,7 +185,7 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn allow_joins(&self, duration: Duration) -> Result<(), Error> {
+    async fn allow_joins(&self, duration: Duration) -> Result<Duration, Error> {
         let (response, rx) = oneshot::channel();
         self.send(Message::AllowJoins { duration, response })
             .await?;

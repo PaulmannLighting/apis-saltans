@@ -39,7 +39,7 @@ pub enum Message {
     /// Allow devices to join the network.
     AllowJoins {
         duration: Duration,
-        response: Sender<Result<(), Error>>,
+        response: Sender<Result<Duration, Error>>,
     },
     /// Get the neighbor table entries.
     GetNeighbors {
