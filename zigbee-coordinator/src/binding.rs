@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use log::{error, warn};
+use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zdp::{BindReq, Destination, Status};
@@ -79,6 +79,7 @@ impl Actor {
         address: &Address,
         endpoints: BTreeMap<Endpoint, EndpointInfo>,
     ) {
+        trace!("Binding device {address} with endpoints: {endpoints:?}");
         let device = self.devices.update(address.clone(), endpoints);
 
         for (endpoint, (endpoint_info, _)) in device.get() {
@@ -121,10 +122,14 @@ impl Actor {
 
     async fn forward_device_if_complete(&mut self, address: Address) {
         if let Some(endpoints) = self.devices.remove_if_binding_complete(&address) {
+            trace!("Device {address} is now bound: {endpoints:?}");
+
             let Some(network_manager) = self.network_manager.upgrade() else {
+                trace!("Network manager channel closed. Aborting forwarding of device: {address}.");
                 return;
             };
 
+            trace!("Forwarding device {address} to network manager.");
             network_manager
                 .send(network_manager::Message::NewDevice(
                     (address, endpoints).into(),
@@ -133,6 +138,8 @@ impl Actor {
                 .unwrap_or_else(|error| {
                     error!("Failed to send new device message: {error:?}");
                 });
+        } else {
+            trace!("Not all endpoints bound for {address}.");
         }
     }
 }
@@ -146,15 +153,18 @@ async fn bind_endpoint(
     zdp: WeakSender<transceiver::zdp::Message>,
     ncp: WeakNcpHandle,
 ) {
+    trace!("Binding {address}:{endpoint} to cluster {cluster}.");
     let short_id = address.short_id();
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
         let Some(zdp) = zdp.upgrade() else {
+            trace!("Failed to upgrade ZDP sender.");
             return;
         };
 
         let Some(ncp_handle) = ncp.upgrade() else {
+            trace!("Failed to upgrade NCP handle.");
             return;
         };
 
@@ -182,9 +192,13 @@ async fn bind_endpoint(
             Ok(response) => {
                 if response.status() == Ok(Status::Success) {
                     let Some(loopback) = loopback.upgrade() else {
+                        trace!("Failed to upgrade loopback sender.");
                         return;
                     };
 
+                    trace!(
+                        "Bound {address}:{endpoint} to cluster {cluster}. Forwarding to loopback."
+                    );
                     loopback
                         .send(Message::EndpointBound {
                             address,
