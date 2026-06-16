@@ -4,7 +4,7 @@
 //! Zigbee hardware (NCP) drivers.
 
 pub use event_translator::EventTranslator;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Sender, WeakSender};
 
 pub use self::await_event::AwaitEvent;
 pub use self::bridge::bridge;
@@ -19,6 +19,9 @@ use crate::message::Message;
 
 /// A handle on the NCP.
 pub type NcpHandle = Sender<Message>;
+
+/// A weak handle on the NCP.
+pub type WeakNcpHandle = WeakSender<Message>;
 
 mod await_event;
 mod bridge;
