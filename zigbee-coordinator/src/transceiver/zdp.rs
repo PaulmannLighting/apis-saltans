@@ -93,6 +93,14 @@ where
     }
 
     /// Send a ZDP unicast message.
+    ///
+    /// # Returns
+    ///
+    /// Returns the ZDP sequence number.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the unicast message could not be sent.
     async fn unicast(
         &mut self,
         short_id: u16,
@@ -115,13 +123,21 @@ where
     }
 
     /// Send a ZDP unicast message with back-channel communication.
+    ///
+    /// # Returns
+    ///
+    /// Returns the response receiver.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the unicast message could not be sent.
     async fn communicate(
         &mut self,
         short_id: u16,
         payload: Payload<Command>,
     ) -> Result<oneshot::Receiver<Command>, zigbee_hw::Error> {
-        let (tx, rx) = channel();
         let seq = self.unicast(short_id, payload).await?;
+        let (tx, rx) = channel();
         self.responses.insert((seq, short_id), tx);
         Ok(rx)
     }
@@ -148,6 +164,15 @@ where
     }
 
     fn handle_match_desc_req(&self, src_address: u16, seq: u8, match_desc_req: MatchDescReq) {
+        self.ncp
+            .unicast(MatchDescRsp::new(
+                Status::Success,
+                self.local_endpoints().filter(MatchDescReqExt::matches),
+            ))
+            .await
+    }
+
+    fn local_endpoints(&self) -> impl Iterator<Item = SimpleDescriptor> {
         todo!()
     }
 }
