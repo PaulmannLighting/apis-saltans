@@ -17,7 +17,7 @@ pub struct Header {
 }
 
 impl Header {
-    /// Crate a new header.
+    /// Create a new header.
     #[must_use]
     pub fn new(
         typ: Scope,
