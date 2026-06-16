@@ -85,23 +85,25 @@ async fn discover_endpoints(
 
                     descriptor_discovery
                         .send(descriptor_discovery::Message::Discover {
-                            address,
+                            address: address.clone(),
                             endpoints: response.into_active_eps().into_iter().collect(),
                         })
                         .await
                         .unwrap_or_else(|error| {
-                            error!("Failed to send Discover message: {error:?}");
+                            error!("Failed to send Discover message of {address}: {error:?}");
                         });
                     return;
                 }
 
                 warn!(
-                    "Got non-success status: {:?}. Retrying endpoint discovery.",
+                    "Got non-success status of {address}: {:?}. Retrying endpoint discovery.",
                     response.status()
                 );
             }
             Err(error) => {
-                warn!("Failed to discover endpoints: {error:?}. Retrying endpoint discovery.");
+                warn!(
+                    "Failed to discover endpoints of {address}: {error:?}. Retrying endpoint discovery."
+                );
             }
         }
     }
