@@ -3,13 +3,13 @@
 use std::collections::BTreeMap;
 
 use le_stream::ToLeStream;
-use log::{error, warn};
+use log::error;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
-use zcl::{Cluster, CommandDispatch};
+use zcl::{Cluster, CommandDispatch, Frame, Header};
 use zigbee::Endpoint;
-use zigbee_hw::{Command, Event, Metadata, Ncp};
+use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
 pub use self::message::{Message, Payload};
@@ -21,7 +21,7 @@ mod message;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
-    responses: BTreeMap<u8, Sender<Cluster>>,
+    responses: BTreeMap<(u8, u16), Sender<Cluster>>,
     seq: u8,
 }
 
@@ -45,7 +45,9 @@ where
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Event(event) => self.handle_event(event),
+                Message::Received { src_address, frame } => {
+                    self.handle_message_received(src_address, *frame)
+                }
                 Message::Unicast {
                     short_id,
                     endpoint,
@@ -74,22 +76,13 @@ where
         seq
     }
 
-    fn handle_event(&mut self, event: Event) {
-        match event {
-            Event::MessageReceived { aps_frame, .. } => {
-                let (_aps_header, payload) = aps_frame.into_parts();
+    fn handle_message_received(&mut self, src_address: u16, frame: Frame<Cluster>) {
+        let (header, payload) = frame.into_parts();
 
-                if let Command::Zcl(frame) = payload {
-                    let (header, payload) = frame.into_parts();
-
-                    if let Some(sender) = self.responses.remove(&header.seq()) {
-                        sender.send(payload).unwrap_or_else(|error| {
-                            error!("Failed to send ZCL response: {error:?}");
-                        });
-                    }
-                }
-            }
-            other => warn!("Unhandled ZCL event: {other:?}"),
+        if let Some(sender) = self.responses.remove(&(header.seq(), src_address)) {
+            sender.send(payload).unwrap_or_else(|error| {
+                error!("Failed to send ZCL response: {error:?}");
+            });
         }
     }
 
@@ -137,7 +130,7 @@ where
         match self.ncp.unicast(short_id, endpoint, aps_frame).await {
             Ok(_) => {
                 let (tx, rx) = channel();
-                self.responses.insert(seq, tx);
+                self.responses.insert((seq, short_id), tx);
                 response.send(Ok(rx))
             }
             Err(error) => response.send(Err(error)),
@@ -153,7 +146,7 @@ where
     ///
     /// The caller must ensure that the given metadata and payload match.
     #[expect(unsafe_code)]
-    unsafe fn make_aps_frame(metadata: Metadata, frame: zcl::Frame<Cluster>) -> zigbee_hw::Frame {
+    unsafe fn make_aps_frame(metadata: Metadata, frame: Frame<Cluster>) -> zigbee_hw::Frame {
         let payload = frame.to_le_stream().collect();
 
         #[expect(unsafe_code)]
@@ -168,8 +161,8 @@ where
         &mut self,
         manufacturer_code: Option<u16>,
         command: Cluster,
-    ) -> zcl::Frame<Cluster> {
-        let header = zcl::Header::new(
+    ) -> Frame<Cluster> {
+        let header = Header::new(
             command.scope(),
             command.direction(),
             command.disable_default_response(),
@@ -182,7 +175,7 @@ where
         // SAFETY: We constructed the ZCL header from the associated data of the frame above,
         // and hence the resulting frame is valid.
         unsafe {
-            zcl::Frame::new_unchecked(header, command)
+            Frame::new_unchecked(header, command)
         }
     }
 }

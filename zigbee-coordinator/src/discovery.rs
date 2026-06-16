@@ -1,9 +1,9 @@
-use log::{error, info, trace};
+use log::{error, info};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
-use zigbee_hw::Event;
 
 pub use self::attribute_discovery::{Attributes, EndpointInfo};
+pub use self::message::Message;
 use crate::discovery::attribute_discovery::AttributeDiscovery;
 use crate::discovery::descriptor_discovery::DescriptorDiscovery;
 use crate::discovery::endpoint_discovery::EndpointDiscovery;
@@ -12,6 +12,7 @@ use crate::{MPSC_CHANNEL_SIZE, binding, transceiver};
 mod attribute_discovery;
 mod descriptor_discovery;
 mod endpoint_discovery;
+mod message;
 
 /// The device discovery actor.
 #[derive(Debug)]
@@ -46,24 +47,20 @@ impl Actor {
     }
 
     /// Run the discovery actor.
-    pub async fn run(self, mut messages: Receiver<Event>) {
+    pub async fn run(self, mut messages: Receiver<Message>) {
         spawn(self.attribute_discovery.run());
         spawn(self.descriptor_discovery.run());
         spawn(self.endpoint_discovery.run(self.ed_rx));
 
         while let Some(event) = messages.recv().await {
             let address = match event {
-                Event::DeviceJoined(address) => {
+                Message::DeviceJoined(address) => {
                     info!("Device joined: {address:?}");
                     address
                 }
-                Event::DeviceRejoined { address, secured } => {
+                Message::DeviceRejoined { address, secured } => {
                     info!("Device rejoined: {address:?}, secured: {secured}");
                     address
-                }
-                _ => {
-                    trace!("Unhandled event: {event:?}");
-                    continue;
                 }
             };
 

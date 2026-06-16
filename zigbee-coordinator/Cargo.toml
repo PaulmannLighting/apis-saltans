@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+aps = { path = "../aps", version = "0.1" }
 const_env = "0.1"
 le-stream = { version = "9", features = ["derive"] }
 log = "0.4"

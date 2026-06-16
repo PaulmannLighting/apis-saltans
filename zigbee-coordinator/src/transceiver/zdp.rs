@@ -3,13 +3,13 @@
 use std::collections::BTreeMap;
 
 use le_stream::ToLeStream;
-use log::{error, warn};
+use log::error;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
-use zdp::Command;
+use zdp::{Command, Frame};
 use zigbee::Endpoint;
-use zigbee_hw::{Event, Metadata, Ncp};
+use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
 pub use self::message::{Message, Payload};
@@ -21,7 +21,7 @@ mod message;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
-    responses: BTreeMap<u8, Sender<Command>>,
+    responses: BTreeMap<(u8, u16), Sender<Command>>,
     seq: u8,
 }
 
@@ -45,7 +45,9 @@ where
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Event(event) => self.handle_event(event),
+                Message::Received { src_address, frame } => {
+                    self.handle_message_received(src_address, *frame);
+                }
                 Message::Unicast {
                     short_id,
                     payload,
@@ -71,22 +73,13 @@ where
         seq
     }
 
-    fn handle_event(&mut self, event: Event) {
-        match event {
-            Event::MessageReceived { aps_frame, .. } => {
-                let (_aps_header, payload) = aps_frame.into_parts();
+    fn handle_message_received(&mut self, src_address: u16, frame: Frame<Command>) {
+        let (seq, command) = frame.into_parts();
 
-                if let zigbee_hw::Command::Zdp(frame) = payload {
-                    let (seq, command) = frame.into_parts();
-
-                    if let Some(sender) = self.responses.remove(&seq) {
-                        sender.send(command).unwrap_or_else(|error| {
-                            error!("Failed to send ZCL response: {error:?}");
-                        });
-                    }
-                }
-            }
-            other => warn!("Unhandled ZCL event: {other:?}"),
+        if let Some(sender) = self.responses.remove(&(seq, src_address)) {
+            sender.send(command).unwrap_or_else(|error| {
+                error!("Failed to send ZCL response: {error:?}");
+            });
         }
     }
 
@@ -132,7 +125,7 @@ where
         match self.ncp.unicast(short_id, Endpoint::Data, aps_frame).await {
             Ok(_) => {
                 let (tx, rx) = channel();
-                self.responses.insert(seq, tx);
+                self.responses.insert((seq, short_id), tx);
                 response.send(Ok(rx))
             }
             Err(error) => response.send(Err(error)),

@@ -1,6 +1,6 @@
 use tokio::sync::oneshot::{Receiver, Sender};
-use zdp::Command;
-use zigbee_hw::{Error, Event};
+use zdp::{Command, Frame};
+use zigbee_hw::Error;
 
 pub use self::payload::Payload;
 
@@ -10,7 +10,12 @@ mod payload;
 #[derive(Debug)]
 pub enum Message {
     /// A hardware-level event.
-    Event(Event),
+    Received {
+        /// The PAN ID of the sender.
+        src_address: u16,
+        /// The APS frame.
+        frame: Box<Frame<Command>>,
+    },
     /// Unicast a message.
     Unicast {
         /// The destination address.
@@ -29,10 +34,4 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<Receiver<Command>, Error>>,
     },
-}
-
-impl From<Event> for Message {
-    fn from(event: Event) -> Self {
-        Self::Event(event)
-    }
 }
