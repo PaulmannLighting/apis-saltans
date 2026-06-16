@@ -1,4 +1,4 @@
-use log::{debug, error, info, warn};
+use log::{debug, error, info, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio_task_pool::Pool;
 use zdp::{ActiveEpReq, Status};
@@ -68,11 +68,13 @@ async fn discover_endpoints(
     zdp: WeakSender<transceiver::zdp::Message>,
     descriptor_discovery: WeakSender<descriptor_discovery::Message>,
 ) {
+    trace!("Starting endpoint discovery of {address}.");
     let short_id = address.short_id();
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
         let Some(zdp) = zdp.upgrade() else {
+            trace!("Failed to upgrade ZDP sender.");
             return;
         };
 
@@ -80,13 +82,13 @@ async fn discover_endpoints(
             Ok(response) => {
                 if response.status() == Ok(Status::Success) {
                     let Some(descriptor_discovery) = descriptor_discovery.upgrade() else {
-                        debug!(
+                        trace!(
                             "Descriptor discovery channel closed. Aborting endpoint discovery of {address}."
                         );
                         return;
                     };
 
-                    info!(
+                    trace!(
                         "Discovered endpoints of {address}. Handing over to descriptor discovery."
                     );
                     descriptor_discovery

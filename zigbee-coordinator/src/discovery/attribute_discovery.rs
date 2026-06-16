@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use log::{error, warn};
+use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zcl::general::basic::readable::Id;
@@ -134,6 +134,7 @@ impl AttributeDiscovery {
 
     async fn forward_device_if_complete(&mut self, address: Address) {
         let Some(endpoints) = self.devices.remove(&address) else {
+            warn!("Received attributes for unknown device: {address}");
             return;
         };
 
@@ -143,13 +144,17 @@ impl AttributeDiscovery {
             .all(|(_, endpoint_info)| endpoint_info.attributes().is_some())
         {
             let Some(binding_manager) = self.binding_manager.upgrade() else {
+                trace!("Binding manager channel closed. Aborting forwarding of device: {address}.");
                 return;
             };
 
+            trace!("Forwarding device {address} to binding manager: {endpoints:?}.");
             binding_manager
                 .send(binding::Message::DeviceDiscovered { address, endpoints })
                 .await
                 .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
+        } else {
+            trace!("Not all attributes discovered for {address}.");
         }
     }
 }
@@ -160,10 +165,12 @@ async fn discover_attributes(
     loopback: WeakSender<Message>,
     zcl: WeakSender<transceiver::zcl::Message>,
 ) {
+    trace!("Starting discovery of basic attributes for {address}:{application}.");
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
         let Some(zcl) = zcl.upgrade() else {
+            trace!("Failed to upgrade ZCL sender.");
             return;
         };
 
@@ -173,9 +180,13 @@ async fn discover_attributes(
         {
             Ok(results) => {
                 let Some(loopback) = loopback.upgrade() else {
+                    trace!("Failed to upgrade loopback sender.");
                     return;
                 };
 
+                trace!(
+                    "Discovered basic attributes for {address}:{application}. Handing over to loopback."
+                );
                 loopback
                     .send(Message::AttributesDiscovered {
                         address: address.clone(),

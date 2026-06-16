@@ -55,11 +55,11 @@ impl Actor {
         while let Some(event) = messages.recv().await {
             let address = match event {
                 Message::DeviceJoined(address) => {
-                    info!("Device joined: {address:?}");
+                    info!("Device joined: {address}");
                     address
                 }
                 Message::DeviceRejoined { address, secured } => {
-                    info!("Device rejoined: {address:?}, secured: {secured}");
+                    info!("Device rejoined: {address}, secured: {secured}");
                     address
                 }
             };
