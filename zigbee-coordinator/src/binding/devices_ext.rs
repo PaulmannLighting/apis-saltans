@@ -7,7 +7,10 @@ use super::BIND_OUTPUT_CLUSTERS;
 use crate::discovery::EndpointInfo;
 
 /// Type alias for the device map.
-pub type Devices = BTreeMap<Address, BTreeMap<Endpoint, (EndpointInfo, BTreeSet<ClusterId>)>>;
+pub type Devices = BTreeMap<Address, Endpoints>;
+
+/// Type alias for endpoints that may be bound to a cluster.
+pub type Endpoints = BTreeMap<Endpoint, (EndpointInfo, BTreeSet<ClusterId>)>;
 
 /// Helper trait to operate on the device map.
 pub trait DevicesExt {
@@ -16,7 +19,7 @@ pub trait DevicesExt {
         &mut self,
         address: Address,
         endpoints: BTreeMap<Endpoint, EndpointInfo>,
-    ) -> OccupiedEntry<'_, Address, BTreeMap<Endpoint, (EndpointInfo, BTreeSet<ClusterId>)>>;
+    ) -> OccupiedEntry<'_, Address, Endpoints>;
 
     /// Set an endpoint as bound to a cluster.
     fn endpoint_bound(&mut self, address: &Address, endpoint: Endpoint, cluster: ClusterId);
@@ -33,7 +36,7 @@ impl DevicesExt for Devices {
         &mut self,
         address: Address,
         endpoints: BTreeMap<Endpoint, EndpointInfo>,
-    ) -> OccupiedEntry<'_, Address, BTreeMap<Endpoint, (EndpointInfo, BTreeSet<ClusterId>)>> {
+    ) -> OccupiedEntry<'_, Address, Endpoints> {
         self.entry(address).insert_entry(
             endpoints
                 .into_iter()
