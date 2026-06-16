@@ -1,5 +1,7 @@
 //! Readable attributes in the Basic cluster
 
+use core::fmt::{Display, LowerHex, UpperHex};
+
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
@@ -198,6 +200,24 @@ impl ClusterSpecific for Id {
 
 impl ReadableAttribute for Id {
     type Attribute = Attribute;
+}
+
+impl Display for Id {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl LowerHex for Id {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        LowerHex::fmt(&u16::from(*self), f)
+    }
+}
+
+impl UpperHex for Id {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        UpperHex::fmt(&u16::from(*self), f)
+    }
 }
 
 impl From<Id> for u16 {
