@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use le_stream::ToLeStream;
-use log::error;
+use log::{debug, error};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
@@ -76,6 +76,7 @@ where
 
     async fn handle_message_received(&mut self, src_address: u16, frame: Frame<Command>) {
         let (seq, command) = frame.into_parts();
+        debug!("Received ZDP message: seq={seq}");
         self.seq = seq.wrapping_add(1);
 
         if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
@@ -118,6 +119,7 @@ where
         // Hence, the resulting metadata and payload match.
         let aps_frame = unsafe { Self::make_aps_frame(metadata, zdp_frame) };
 
+        debug!("Sending ZDP message: seq={seq}");
         self.ncp
             .unicast(short_id, Endpoint::Data, aps_frame)
             .await
