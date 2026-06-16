@@ -10,7 +10,9 @@ const MASK: u16 = 0x000f;
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
 pub enum Information {
+    /// Battery voltage.
     Voltage(Uint8) = 0x0000,
+
     /// Battery percentage remaining.
     PercentageRemaining(Uint8) = 0x0001,
 }

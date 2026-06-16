@@ -68,7 +68,6 @@ impl ToLeStream for Command {
     }
 }
 
-#[expect(missing_docs)]
 #[derive(Debug)]
 pub enum Iter {
     ResetToFactoryDefaults(<ResetToFactoryDefaults as ToLeStream>::Iter),

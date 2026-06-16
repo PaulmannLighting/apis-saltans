@@ -203,16 +203,16 @@ impl Iterator for Iter {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Iter::ReadAttributes(iter) => iter.next(),
-            Iter::ReadAttributesResponse(iter) => iter.next(),
-            Iter::WriteAttributes(iter) => iter.next(),
-            Iter::WriteAttributesUndivided(iter) => iter.next(),
-            Iter::WriteAttributesResponse(iter) => iter.next(),
-            Iter::WriteAttributesNoResponse(iter) => iter.next(),
-            Iter::ReportAttributes(iter) => iter.next(),
-            Iter::DefaultResponse(iter) => iter.next(),
-            Iter::ConfigureReporting(iter) => iter.next(),
-            Iter::ConfigureReportingResponse(iter) => iter.next(),
+            Self::ReadAttributes(iter) => iter.next(),
+            Self::ReadAttributesResponse(iter) => iter.next(),
+            Self::WriteAttributes(iter) => iter.next(),
+            Self::WriteAttributesUndivided(iter) => iter.next(),
+            Self::WriteAttributesResponse(iter) => iter.next(),
+            Self::WriteAttributesNoResponse(iter) => iter.next(),
+            Self::ReportAttributes(iter) => iter.next(),
+            Self::DefaultResponse(iter) => iter.next(),
+            Self::ConfigureReporting(iter) => iter.next(),
+            Self::ConfigureReportingResponse(iter) => iter.next(),
         }
     }
 }
