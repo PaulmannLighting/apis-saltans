@@ -7,14 +7,18 @@ use log::error;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
-use zdp::{Command, Frame};
+use zdp::{
+    Command, DeviceAndServiceDiscovery, Frame, MatchDescReq, MatchDescRsp, SimpleDescriptor, Status,
+};
 use zigbee::Endpoint;
 use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
+use self::match_desc_req_ext::MatchDescReqExt;
 pub use self::message::{Message, Payload};
 
 mod handle;
+mod match_desc_req_ext;
 mod message;
 
 /// Zigbee transceiver actor.
@@ -53,7 +57,11 @@ where
                     payload,
                     response,
                 } => {
-                    self.communicate(short_id, *payload, response).await;
+                    response
+                        .send(self.communicate(short_id, *payload).await)
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send unicast response: {error:?}");
+                        });
                 }
             }
         }
@@ -69,6 +77,14 @@ where
     fn handle_message_received(&mut self, src_address: u16, frame: Frame<Command>) {
         let (seq, command) = frame.into_parts();
 
+        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
+            match_desc_req,
+        )) = command
+        {
+            self.handle_match_desc_req(src_address, seq, match_desc_req);
+            return;
+        }
+
         if let Some(sender) = self.responses.remove(&(seq, src_address)) {
             sender.send(command).unwrap_or_else(|error| {
                 error!("Failed to send ZDP response: {error:?}");
@@ -76,13 +92,12 @@ where
         }
     }
 
-    /// Send a unicast message with back-channel communication.
-    async fn communicate(
+    /// Send a ZDP unicast message.
+    async fn unicast(
         &mut self,
         short_id: u16,
         payload: Payload<Command>,
-        response: Sender<Result<oneshot::Receiver<Command>, zigbee_hw::Error>>,
-    ) {
+    ) -> Result<u8, zigbee_hw::Error> {
         let (metadata, command) = payload.into_parts();
         let zdp_frame = self.make_zdp_frame(command);
         let seq = zdp_frame.seq();
@@ -93,17 +108,22 @@ where
         // Hence, the resulting metadata and payload match.
         let aps_frame = unsafe { Self::make_aps_frame(metadata, zdp_frame) };
 
-        match self.ncp.unicast(short_id, Endpoint::Data, aps_frame).await {
-            Ok(_) => {
-                let (tx, rx) = channel();
-                self.responses.insert((seq, short_id), tx);
-                response.send(Ok(rx))
-            }
-            Err(error) => response.send(Err(error)),
-        }
-        .unwrap_or_else(|error| {
-            error!("Failed to send unicast response: {error:?}");
-        });
+        self.ncp
+            .unicast(short_id, Endpoint::Data, aps_frame)
+            .await
+            .map(|_| seq)
+    }
+
+    /// Send a ZDP unicast message with back-channel communication.
+    async fn communicate(
+        &mut self,
+        short_id: u16,
+        payload: Payload<Command>,
+    ) -> Result<oneshot::Receiver<Command>, zigbee_hw::Error> {
+        let (tx, rx) = channel();
+        let seq = self.unicast(short_id, payload).await?;
+        self.responses.insert((seq, short_id), tx);
+        Ok(rx)
     }
 
     /// Create a new APS frame.
@@ -125,5 +145,9 @@ where
     /// Create a new ZDP frame.
     const fn make_zdp_frame(&mut self, command: Command) -> Frame<Command> {
         Frame::new(self.next_seq(), command)
+    }
+
+    fn handle_match_desc_req(&self, src_address: u16, seq: u8, match_desc_req: MatchDescReq) {
+        todo!()
     }
 }
