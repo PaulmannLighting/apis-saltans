@@ -33,9 +33,9 @@ impl<const CAPACITY: usize> OctStr<CAPACITY> {
     /// # Errors
     ///
     /// Returns the original string if the new capacity is smaller than the current size.
-    pub fn truncate<const NEW_CAPACITY: usize>(mut self) -> Result<OctStr<NEW_CAPACITY>, Self> {
+    pub fn truncate<const NEW_CAPACITY: usize>(self) -> Result<OctStr<NEW_CAPACITY>, Self> {
         if self.len() <= NEW_CAPACITY {
-            Ok(OctStr(self.0.drain(..NEW_CAPACITY).collect()))
+            Ok(OctStr(self.0.into_iter().collect()))
         } else {
             Err(self)
         }
@@ -43,11 +43,11 @@ impl<const CAPACITY: usize> OctStr<CAPACITY> {
 
     /// Attempt to widen a string to a new, larger capacity.
     #[must_use]
-    pub fn widen<const NEW_CAPACITY: usize>(mut self) -> OctStr<NEW_CAPACITY> {
+    pub fn widen<const NEW_CAPACITY: usize>(self) -> OctStr<NEW_CAPACITY> {
         const {
             assert!(CAPACITY <= NEW_CAPACITY);
         }
-        OctStr(self.0.drain(..).collect())
+        OctStr(self.0.into_iter().collect())
     }
 }
 
