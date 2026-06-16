@@ -5,18 +5,80 @@ use zcl::general::basic::{DateCode, PowerSource};
 use crate::ReadAttributeResult;
 
 /// The attributes we want to discover.
-#[derive(Debug)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Attributes {
-    zcl_version: Option<u8>,
-    application_version: Option<u8>,
-    stack_version: Option<u8>,
-    hw_version: Option<u8>,
-    manufacturer_name: Option<String>,
-    model_identifier: Option<String>,
-    date_code: Option<DateCode>,
-    power_source: Option<PowerSource>,
-    location_description: Option<String>,
-    sw_build_id: Option<String>,
+    pub(crate) zcl_version: Option<u8>,
+    pub(crate) application_version: Option<u8>,
+    pub(crate) stack_version: Option<u8>,
+    pub(crate) hw_version: Option<u8>,
+    pub(crate) manufacturer_name: Option<String>,
+    pub(crate) model_identifier: Option<String>,
+    pub(crate) date_code: Option<DateCode>,
+    pub(crate) power_source: Option<PowerSource>,
+    pub(crate) location_description: Option<String>,
+    pub(crate) sw_build_id: Option<String>,
+}
+
+impl Attributes {
+    /// Get the ZCL version.
+    #[must_use]
+    pub const fn zcl_version(&self) -> Option<u8> {
+        self.zcl_version
+    }
+
+    /// Get the application version.
+    #[must_use]
+    pub const fn application_version(&self) -> Option<u8> {
+        self.application_version
+    }
+
+    /// Get the stack version.
+    #[must_use]
+    pub const fn stack_version(&self) -> Option<u8> {
+        self.stack_version
+    }
+
+    /// Get the hardware version.
+    #[must_use]
+    pub const fn hw_version(&self) -> Option<u8> {
+        self.hw_version
+    }
+
+    /// Get the manufacturer name.
+    #[must_use]
+    pub fn manufacturer_name(&self) -> Option<&str> {
+        self.manufacturer_name.as_deref()
+    }
+
+    /// Get the model identifier.
+    #[must_use]
+    pub fn model_identifier(&self) -> Option<&str> {
+        self.model_identifier.as_deref()
+    }
+
+    /// Get the date code.
+    #[must_use]
+    pub const fn date_code(&self) -> Option<&DateCode> {
+        self.date_code.as_ref()
+    }
+
+    /// Get the power source.
+    #[must_use]
+    pub const fn power_source(&self) -> Option<PowerSource> {
+        self.power_source
+    }
+
+    /// Get the location description.
+    #[must_use]
+    pub fn location_description(&self) -> Option<&str> {
+        self.location_description.as_deref()
+    }
+
+    /// Get the software build ID.
+    #[must_use]
+    pub fn sw_build_id(&self) -> Option<&str> {
+        self.sw_build_id.as_deref()
+    }
 }
 
 impl From<Box<[ReadAttributeResult<Id>]>> for Attributes {
