@@ -21,7 +21,7 @@ mod message;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
-    responses: BTreeMap<(u8, u16), Sender<Cluster>>,
+    responses: BTreeMap<u8, Sender<Cluster>>,
     seq: u8,
 }
 
@@ -54,8 +54,13 @@ where
                     payload,
                     response,
                 } => {
+                    let seq = self.next_seq();
                     response
-                        .send(self.unicast(short_id, endpoint, *payload).await.map(drop))
+                        .send(
+                            self.unicast(seq, short_id, endpoint, *payload)
+                                .await
+                                .map(drop),
+                        )
                         .unwrap_or_else(|error| {
                             error!("Failed to send unicast response: {error:?}");
                         });
@@ -83,10 +88,11 @@ where
         seq
     }
 
+    /// Handle a received ZCL message.
     fn handle_message_received(&mut self, src_address: u16, frame: Frame<Cluster>) {
         let (header, payload) = frame.into_parts();
 
-        if let Some(sender) = self.responses.remove(&(header.seq(), src_address)) {
+        if let Some(sender) = self.responses.remove(&header.seq()) {
             sender.send(payload).unwrap_or_else(|error| {
                 error!("Failed to send ZCL response: {error:?}");
             });
@@ -103,13 +109,15 @@ where
     ///
     /// Returns an error if the unicast message could not be sent.
     async fn unicast(
-        &mut self,
+        &self,
+        seq: u8,
         short_id: u16,
         endpoint: Endpoint,
         frame: Payload<Cluster>,
     ) -> Result<u8, zigbee_hw::Error> {
         let (metadata, manufacturer_code, command) = frame.into_parts();
-        let zcl_frame = self.make_zcl_frame(manufacturer_code, command);
+
+        let zcl_frame = self.make_zcl_frame(seq, manufacturer_code, command);
         let seq = zcl_frame.header().seq();
 
         #[expect(unsafe_code)]
@@ -139,9 +147,10 @@ where
         endpoint: Endpoint,
         frame: Payload<Cluster>,
     ) -> Result<oneshot::Receiver<Cluster>, zigbee_hw::Error> {
-        let seq = self.unicast(short_id, endpoint, frame).await?;
+        let seq = self.next_seq();
+        self.unicast(seq, short_id, endpoint, frame).await?;
         let (tx, rx) = channel();
-        self.responses.insert((seq, short_id), tx);
+        self.responses.insert(seq, tx);
         Ok(rx)
     }
 
@@ -163,7 +172,8 @@ where
 
     /// Create a new ZCL frame.
     fn make_zcl_frame(
-        &mut self,
+        &self,
+        seq: u8,
         manufacturer_code: Option<u16>,
         command: Cluster,
     ) -> Frame<Cluster> {
@@ -172,7 +182,7 @@ where
             command.direction(),
             command.disable_default_response(),
             manufacturer_code,
-            self.next_seq(),
+            seq,
             command.command_id(),
         );
 

@@ -25,7 +25,7 @@ mod message;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
-    responses: BTreeMap<(u8, u16), Sender<Command>>,
+    responses: BTreeMap<u8, Sender<Command>>,
     seq: u8,
 }
 
@@ -43,14 +43,14 @@ impl<T> Transceiver<T> {
 
 impl<T> Transceiver<T>
 where
-    T: Ncp,
+    T: Ncp + Sync,
 {
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
                 Message::Received { src_address, frame } => {
-                    self.handle_message_received(src_address, *frame);
+                    self.handle_message_received(src_address, *frame).await;
                 }
                 Message::Communicate {
                     short_id,
@@ -74,18 +74,19 @@ where
         seq
     }
 
-    fn handle_message_received(&mut self, src_address: u16, frame: Frame<Command>) {
+    async fn handle_message_received(&mut self, src_address: u16, frame: Frame<Command>) {
         let (seq, command) = frame.into_parts();
 
         if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
             match_desc_req,
         )) = command
         {
-            self.handle_match_desc_req(src_address, seq, match_desc_req);
+            self.handle_match_desc_req(src_address, seq, match_desc_req)
+                .await;
             return;
         }
 
-        if let Some(sender) = self.responses.remove(&(seq, src_address)) {
+        if let Some(sender) = self.responses.remove(&seq) {
             sender.send(command).unwrap_or_else(|error| {
                 error!("Failed to send ZDP response: {error:?}");
             });
@@ -102,7 +103,7 @@ where
     ///
     /// Returns an error if the unicast message could not be sent.
     async fn unicast(
-        &mut self,
+        &self,
         seq: u8,
         short_id: u16,
         payload: Payload<Command>,
@@ -139,7 +140,7 @@ where
         let seq = self.next_seq();
         self.unicast(seq, short_id, payload).await?;
         let (tx, rx) = channel();
-        self.responses.insert((seq, short_id), tx);
+        self.responses.insert(seq, tx);
         Ok(rx)
     }
 
@@ -159,12 +160,7 @@ where
         }
     }
 
-    async fn handle_match_desc_req(
-        &mut self,
-        src_address: u16,
-        seq: u8,
-        match_desc_req: MatchDescReq,
-    ) {
+    async fn handle_match_desc_req(&self, src_address: u16, seq: u8, match_desc_req: MatchDescReq) {
         let Ok(payload) = MatchDescRsp::new(
             Status::Success,
             0x0000,
