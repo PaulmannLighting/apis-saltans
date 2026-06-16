@@ -19,7 +19,7 @@ impl Mux {
         while let Some(message) = messages.recv().await {
             match message {
                 Message::Event(event) => {
-                    for subscriber in self.subscribers.drain(..) {
+                    for subscriber in &self.subscribers {
                         if let Err(error) = subscriber.send(event.clone()).await {
                             trace!("Subscriber went away: {error}");
                         }
