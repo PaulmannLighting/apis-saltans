@@ -1,6 +1,6 @@
 use zdp::SimpleDescriptor;
 
-use super::attributes::Attributes;
+use super::Attributes;
 
 /// Information about an endpoint.
 #[derive(Debug)]
