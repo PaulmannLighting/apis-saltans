@@ -85,7 +85,7 @@ impl Mux {
             .retain(|subscriber| !subscriber.is_closed());
     }
 
-    async fn forward_received_message(&mut self, src_address: u16, aps_frame: Frame<Command>) {
+    async fn forward_received_message(&self, src_address: u16, aps_frame: Frame<Command>) {
         let (_, payload) = aps_frame.into_parts();
 
         match payload {

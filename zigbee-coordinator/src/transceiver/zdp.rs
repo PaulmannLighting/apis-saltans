@@ -141,7 +141,7 @@ where
     ///
     /// The caller must ensure that the given metadata and payload match.
     #[expect(unsafe_code)]
-    unsafe fn make_aps_frame(metadata: Metadata, frame: zdp::Frame<Command>) -> zigbee_hw::Frame {
+    unsafe fn make_aps_frame(metadata: Metadata, frame: Frame<Command>) -> zigbee_hw::Frame {
         let payload = frame.to_le_stream().collect();
 
         #[expect(unsafe_code)]
@@ -152,7 +152,7 @@ where
     }
 
     /// Create a new ZDP frame.
-    const fn make_zdp_frame(&mut self, command: Command) -> zdp::Frame<Command> {
-        zdp::Frame::new(self.next_seq(), command)
+    const fn make_zdp_frame(&mut self, command: Command) -> Frame<Command> {
+        Frame::new(self.next_seq(), command)
     }
 }

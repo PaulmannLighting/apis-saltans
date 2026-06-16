@@ -46,7 +46,7 @@ where
         while let Some(message) = messages.recv().await {
             match message {
                 Message::Received { src_address, frame } => {
-                    self.handle_message_received(src_address, *frame)
+                    self.handle_message_received(src_address, *frame);
                 }
                 Message::Unicast {
                     short_id,
