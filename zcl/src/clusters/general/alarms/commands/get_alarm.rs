@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native};
+use crate::Command;
 
 /// Returns the alarm with the earliest generated entry.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -18,5 +18,3 @@ impl Command for GetAlarm {
     const ID: u8 = 0x02;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
-
-impl Native for GetAlarm {}

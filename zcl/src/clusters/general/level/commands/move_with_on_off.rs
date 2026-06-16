@@ -4,7 +4,7 @@ use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::general::level::Mode;
 use crate::options::Options;
-use crate::{Command, Native};
+use crate::Command;
 
 /// Move with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -57,7 +57,6 @@ impl Command for MoveWithOnOff {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for MoveWithOnOff {}
 
 impl From<MoveWithOnOff> for crate::Cluster {
     fn from(command: MoveWithOnOff) -> Self {

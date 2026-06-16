@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native};
+use crate::Command;
 
 /// Switch a device off.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -17,7 +17,6 @@ impl Command for Off {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for Off {}
 
 impl From<Off> for crate::Cluster {
     fn from(command: Off) -> Self {

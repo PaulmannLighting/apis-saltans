@@ -8,7 +8,7 @@ use num_traits::FromPrimitive;
 use zigbee::{ClusterId, ClusterSpecific, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::direction::Direction;
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 mod direction;
 
@@ -92,7 +92,6 @@ impl Command for MoveToHue {
     const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }
 
-impl Native for MoveToHue {}
 
 impl From<MoveToHue> for crate::Cluster {
     fn from(command: MoveToHue) -> Self {

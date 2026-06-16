@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native, Status};
+use crate::{Command, Status};
 
 /// Represents a response to an `AddGroups` command.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
@@ -47,7 +47,6 @@ impl Command for AddGroupResponse {
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
 
-impl Native for AddGroupResponse {}
 
 impl From<AddGroupResponse> for crate::Cluster {
     fn from(command: AddGroupResponse) -> Self {

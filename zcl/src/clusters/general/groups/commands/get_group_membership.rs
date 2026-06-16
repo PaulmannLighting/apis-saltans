@@ -6,7 +6,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{Uint8, Uint16};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native};
+use crate::Command;
 
 /// Command to request the membership of a device in multiple groups.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -65,7 +65,6 @@ impl Command for GetGroupMembership {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for GetGroupMembership {}
 
 impl From<GetGroupMembership> for crate::Cluster {
     fn from(command: GetGroupMembership) -> Self {

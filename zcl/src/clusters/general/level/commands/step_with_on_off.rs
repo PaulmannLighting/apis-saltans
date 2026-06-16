@@ -6,7 +6,7 @@ use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
 
 use crate::general::level::Mode;
 use crate::options::Options;
-use crate::{Command, Native};
+use crate::Command;
 
 /// Step with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -67,7 +67,6 @@ impl Command for StepWithOnOff {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for StepWithOnOff {}
 
 impl From<StepWithOnOff> for crate::Cluster {
     fn from(command: StepWithOnOff) -> Self {

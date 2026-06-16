@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native};
+use crate::Command;
 
 /// Request the target to respond if they are currently identifying themselves.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -20,7 +20,6 @@ impl Command for IdentifyQuery {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for IdentifyQuery {}
 
 impl From<IdentifyQuery> for crate::Cluster {
     fn from(command: IdentifyQuery) -> Self {

@@ -8,7 +8,7 @@ use num_traits::FromPrimitive;
 use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
 
 pub use self::mode::Mode;
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 mod mode;
 
@@ -87,7 +87,6 @@ impl Command for StepSaturation {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for StepSaturation {}
 
 impl From<StepSaturation> for crate::Cluster {
     fn from(command: StepSaturation) -> Self {

@@ -3,7 +3,7 @@ use num_traits::FromPrimitive;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::clusters::lighting::color_control::move_hue::Mode;
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 /// Command to move a light's color temperature.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -77,7 +77,6 @@ impl Command for MoveColorTemperature {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for MoveColorTemperature {}
 
 impl From<MoveColorTemperature> for crate::Cluster {
     fn from(command: MoveColorTemperature) -> Self {

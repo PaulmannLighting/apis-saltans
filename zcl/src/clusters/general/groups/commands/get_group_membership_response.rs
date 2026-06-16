@@ -5,7 +5,7 @@ use zigbee::types::{Uint8, Uint16};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::clusters::general::groups::types::GroupList;
-use crate::{Command, Native};
+use crate::Command;
 
 /// Represents a response to an `GetGroupMembership` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -72,7 +72,6 @@ impl Command for GetGroupMembershipResponse {
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
 
-impl Native for GetGroupMembershipResponse {}
 
 impl From<GetGroupMembershipResponse> for crate::Cluster {
     fn from(command: GetGroupMembershipResponse) -> Self {

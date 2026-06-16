@@ -3,7 +3,7 @@ use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
-use crate::{Command, Native};
+use crate::Command;
 
 mod effect_identifier;
 mod effect_variant;
@@ -54,7 +54,6 @@ impl Command for TriggerEffect {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for TriggerEffect {}
 
 impl From<TriggerEffect> for crate::Cluster {
     fn from(command: TriggerEffect) -> Self {

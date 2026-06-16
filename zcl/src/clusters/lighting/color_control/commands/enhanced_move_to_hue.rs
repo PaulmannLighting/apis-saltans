@@ -6,7 +6,7 @@ use num_traits::FromPrimitive;
 use zigbee::{ClusterId, ClusterSpecific, FromDeciSeconds, IntoDeciSeconds};
 
 use crate::clusters::lighting::color_control::move_to_hue::Direction;
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 /// Command to move a light to a specific extended hue with a direction and transition time.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -88,7 +88,6 @@ impl Command for EnhancedMoveToHue {
     const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }
 
-impl Native for EnhancedMoveToHue {}
 
 impl From<EnhancedMoveToHue> for crate::Cluster {
     fn from(command: EnhancedMoveToHue) -> Self {

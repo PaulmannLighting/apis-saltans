@@ -4,7 +4,7 @@ use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::clusters::lighting::color_control::move_hue::Mode;
 use crate::command::Command;
-use crate::{Native, Options};
+use crate::Options;
 
 /// Command to move a light's hue in an enhanced way, allowing for more control over the rate.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -56,7 +56,6 @@ impl Command for EnhancedMoveHue {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for EnhancedMoveHue {}
 
 impl From<EnhancedMoveHue> for crate::Cluster {
     fn from(command: EnhancedMoveHue) -> Self {

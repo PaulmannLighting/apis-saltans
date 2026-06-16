@@ -3,12 +3,10 @@
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::header::{Control, Direction, Header, Scope};
-pub use self::header_factory::HeaderFactory;
 pub use self::parse_frame_error::ParseFrameError;
 use crate::clusters::Cluster;
 
 mod header;
-mod header_factory;
 mod parse_frame_error;
 
 /// A ZCL frame.

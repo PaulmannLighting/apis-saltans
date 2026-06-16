@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{String, Uint16};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native, Status};
+use crate::{Command, Status};
 
 /// Represents a response to an `ViewGroup` command.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
@@ -55,7 +55,6 @@ impl Command for ViewGroupResponse {
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
 
-impl Native for ViewGroupResponse {}
 
 impl From<ViewGroupResponse> for crate::Cluster {
     fn from(command: ViewGroupResponse) -> Self {

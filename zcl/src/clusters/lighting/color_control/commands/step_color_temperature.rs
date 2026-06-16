@@ -5,7 +5,7 @@ use num_traits::FromPrimitive;
 use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
 
 use crate::clusters::lighting::color_control::step_hue::Mode;
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 /// Command to step a light's color temperature in a specified range.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -88,7 +88,6 @@ impl Command for StepColorTemperature {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for StepColorTemperature {}
 
 impl From<StepColorTemperature> for crate::Cluster {
     fn from(command: StepColorTemperature) -> Self {

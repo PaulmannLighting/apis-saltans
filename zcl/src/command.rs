@@ -1,11 +1,9 @@
 use zigbee::Direction;
 
 pub use self::command_dispatch::CommandDispatch;
-pub use self::native::Native;
 pub use self::scoped::Scoped;
 
 mod command_dispatch;
-mod native;
 mod scoped;
 
 /// Trait to identify a Zigbee command.

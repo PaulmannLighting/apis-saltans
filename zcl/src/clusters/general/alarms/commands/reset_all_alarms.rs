@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native};
+use crate::Command;
 
 /// Reset all alarms.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -19,4 +19,3 @@ impl Command for ResetAllAlarms {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for ResetAllAlarms {}

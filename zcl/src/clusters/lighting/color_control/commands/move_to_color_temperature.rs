@@ -4,7 +4,7 @@ use core::time::Duration;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
 
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 /// Command to move a light's color temperature to a specific value in mireds.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -69,7 +69,6 @@ impl Command for MoveToColorTemperature {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for MoveToColorTemperature {}
 
 impl From<MoveToColorTemperature> for crate::Cluster {
     fn from(command: MoveToColorTemperature) -> Self {

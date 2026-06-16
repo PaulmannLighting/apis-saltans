@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::options::Options;
-use crate::{Command, Native};
+use crate::Command;
 
 /// Stop command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -36,7 +36,6 @@ impl Command for StopWithOnOff {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for StopWithOnOff {}
 
 impl From<StopWithOnOff> for crate::Cluster {
     fn from(command: StopWithOnOff) -> Self {

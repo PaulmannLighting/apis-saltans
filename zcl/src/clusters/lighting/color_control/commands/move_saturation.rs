@@ -5,7 +5,7 @@ use num_traits::FromPrimitive;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::mode::Mode;
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 mod mode;
 
@@ -59,7 +59,6 @@ impl Command for MoveSaturation {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for MoveSaturation {}
 
 impl From<MoveSaturation> for crate::Cluster {
     fn from(command: MoveSaturation) -> Self {

@@ -5,7 +5,7 @@ use zigbee::types::Uint16;
 use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
 
 use crate::options::Options;
-use crate::{Command, Native};
+use crate::Command;
 
 /// Move to level command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -55,7 +55,6 @@ impl Command for MoveToLevel {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for MoveToLevel {}
 
 impl From<MoveToLevel> for crate::Cluster {
     fn from(command: MoveToLevel) -> Self {

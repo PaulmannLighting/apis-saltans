@@ -9,7 +9,7 @@ use zigbee::{ClusterId, ClusterSpecific};
 pub use self::action::{Action, Source};
 pub use self::direction::Direction;
 pub use self::update::Update;
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 mod action;
 mod direction;
@@ -99,7 +99,6 @@ impl Command for ColorLoopSet {
     const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }
 
-impl Native for ColorLoopSet {}
 
 impl From<ColorLoopSet> for crate::Cluster {
     fn from(command: ColorLoopSet) -> Self {

@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native};
+use crate::Command;
 
 /// Response to a [`GetAlarm`](super::GetAlarm) command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -60,5 +60,3 @@ impl Command for GetAlarmResponse {
     const DIRECTION: Direction = Direction::ServerToClient;
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
-
-impl Native for GetAlarmResponse {}

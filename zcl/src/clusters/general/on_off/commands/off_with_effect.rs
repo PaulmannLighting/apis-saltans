@@ -3,7 +3,7 @@ use zigbee::types::Uint8;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::effect::{DelayedAllOff, DyingLight, Effect};
-use crate::{Command, Native};
+use crate::Command;
 
 mod effect;
 
@@ -47,7 +47,6 @@ impl Command for OffWithEffect {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for OffWithEffect {}
 
 impl From<OffWithEffect> for crate::Cluster {
     fn from(command: OffWithEffect) -> Self {

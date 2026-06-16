@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native};
+use crate::Command;
 
 /// Reset a device to factory defaults.
 #[derive(
@@ -18,7 +18,6 @@ impl Command for ResetToFactoryDefaults {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for ResetToFactoryDefaults {}
 
 impl From<ResetToFactoryDefaults> for crate::Cluster {
     fn from(command: ResetToFactoryDefaults) -> Self {

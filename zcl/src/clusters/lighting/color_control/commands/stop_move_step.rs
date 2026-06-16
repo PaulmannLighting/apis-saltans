@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native, Options};
+use crate::{Command, Options};
 
 /// Command to stop a move step in a lighting device.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -32,7 +32,6 @@ impl Command for StopMoveStep {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for StopMoveStep {}
 
 impl From<StopMoveStep> for crate::Cluster {
     fn from(command: StopMoveStep) -> Self {

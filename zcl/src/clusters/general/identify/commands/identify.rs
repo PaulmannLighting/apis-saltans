@@ -4,7 +4,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
-use crate::{Command, Native};
+use crate::Command;
 
 /// Toggle the identify state of a device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -44,7 +44,6 @@ impl Command for Identify {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-impl Native for Identify {}
 
 impl From<Identify> for crate::Cluster {
     fn from(command: Identify) -> Self {
