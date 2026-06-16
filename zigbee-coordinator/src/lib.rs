@@ -20,7 +20,6 @@ mod binding;
 mod coordinator;
 mod discovery;
 mod error;
-mod expect;
 mod mux;
 mod network_manager;
 mod retry;

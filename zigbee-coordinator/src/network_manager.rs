@@ -59,7 +59,7 @@ impl Actor {
                 Message::GetDevices { response } => {
                     response.send(self.devices.clone()).unwrap_or_else(|error| {
                         error!("Failed to send response: {error:?}");
-                    })
+                    });
                 }
                 Message::Subscribe { .. } => {
                     todo!()
