@@ -71,7 +71,7 @@ where
 
         if let Some(sender) = self.responses.remove(&(seq, src_address)) {
             sender.send(command).unwrap_or_else(|error| {
-                error!("Failed to send ZCL response: {error:?}");
+                error!("Failed to send ZDP response: {error:?}");
             });
         }
     }
