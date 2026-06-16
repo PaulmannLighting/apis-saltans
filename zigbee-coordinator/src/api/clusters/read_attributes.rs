@@ -87,7 +87,7 @@ impl ReadAttributes for Coordinator {
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
     ) -> Result<Response, Error> {
-        self.zcl_transceiver
+        self.zcl
             .read_attributes_raw(address, endpoint, cluster, manufacturer_code, ids)
             .await
     }

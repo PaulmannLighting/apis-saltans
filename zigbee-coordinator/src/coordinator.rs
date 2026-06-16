@@ -9,8 +9,8 @@ use crate::{MPSC_CHANNEL_SIZE, binding, discovery, mux, network_manager};
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
 pub struct Coordinator {
-    pub(crate) zcl_transceiver: Sender<zcl::Message>,
-    pub(crate) zdp_transceiver: Sender<zdp::Message>,
+    pub(crate) zcl: Sender<zcl::Message>,
+    pub(crate) zdp: Sender<zdp::Message>,
     pub(crate) network_manager: Sender<network_manager::Message>,
     pub(crate) binding_manager: Sender<binding::Message>,
     pub(crate) mux: Sender<mux::Message>,
@@ -44,8 +44,8 @@ impl Coordinator {
         );
 
         Ok(Self {
-            zcl_transceiver: zcl_tx,
-            zdp_transceiver: zdp_tx,
+            zcl: zcl_tx,
+            zdp: zdp_tx,
             network_manager,
             binding_manager,
             mux,

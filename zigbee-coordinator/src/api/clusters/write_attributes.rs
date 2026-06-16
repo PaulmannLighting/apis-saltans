@@ -90,7 +90,7 @@ impl WriteAttributes for Coordinator {
         manufacturer_code: Option<u16>,
         records: Box<[Record]>,
     ) -> Result<Response, Error> {
-        self.zcl_transceiver
+        self.zcl
             .write_attributes_raw(address, endpoint, cluster, manufacturer_code, records)
             .await
     }

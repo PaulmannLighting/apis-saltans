@@ -60,14 +60,14 @@ impl OnOff for Sender<Message> {
 
 impl OnOff for Coordinator {
     async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl_transceiver.on(address, endpoint).await
+        self.zcl.on(address, endpoint).await
     }
 
     async fn off(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl_transceiver.off(address, endpoint).await
+        self.zcl.off(address, endpoint).await
     }
 
     async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl_transceiver.toggle(address, endpoint).await
+        self.zcl.toggle(address, endpoint).await
     }
 }

@@ -53,7 +53,7 @@ impl ColorControl for Coordinator {
         transition_time: u16,
         options: Options,
     ) -> Result<(), Error> {
-        self.zcl_transceiver
+        self.zcl
             .move_to_xy(
                 address,
                 endpoint,
