@@ -78,9 +78,12 @@ impl DescriptorDiscovery {
                     self.zdp.clone(),
                 ))
                 .await
-                .map_or_else(drop, |error| {
-                    error!("Failed to spawn task: {error:?}");
-                });
+                .map_or_else(
+                    |error| {
+                        error!("Failed to spawn task: {error:?}");
+                    },
+                    drop,
+                );
         }
     }
 
