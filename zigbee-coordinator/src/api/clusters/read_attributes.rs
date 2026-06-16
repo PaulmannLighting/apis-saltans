@@ -1,11 +1,13 @@
+use std::borrow::Borrow;
+
 use tokio::sync::mpsc::Sender;
 use zcl::global::read_attributes::{Command, Response};
 use zcl::{ParseAttributeError, ReadableAttribute};
 use zigbee::{Address, Endpoint};
 use zigbee_hw::Metadata;
 
+use crate::Error;
 use crate::transceiver::zcl::{Handle, Message, Payload};
-use crate::{Coordinator, Error};
 
 /// Result of reading an attribute.
 pub type ReadAttributeResult<T> =
@@ -52,7 +54,10 @@ pub trait ReadAttributes {
     }
 }
 
-impl ReadAttributes for Sender<Message> {
+impl<T> ReadAttributes for T
+where
+    T: Borrow<Sender<Message>> + Sync,
+{
     async fn read_attributes_raw(
         &self,
         address: Address,
@@ -74,21 +79,6 @@ impl ReadAttributes for Sender<Message> {
         };
 
         self.communicate(address.short_id(), endpoint, payload)
-            .await
-    }
-}
-
-impl ReadAttributes for Coordinator {
-    async fn read_attributes_raw(
-        &self,
-        address: Address,
-        endpoint: Endpoint,
-        cluster: u16,
-        manufacturer_code: Option<u16>,
-        ids: Box<[u16]>,
-    ) -> Result<Response, Error> {
-        self.zcl
-            .read_attributes_raw(address, endpoint, cluster, manufacturer_code, ids)
             .await
     }
 }

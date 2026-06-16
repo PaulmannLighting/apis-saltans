@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle, bridge};
@@ -113,5 +115,17 @@ impl Coordinator {
     ) {
         let discovery_manager = discovery::Actor::new(zcl_tx, zdp_tx, binding_tx);
         spawn(discovery_manager.run(discovery_rx));
+    }
+}
+
+impl Borrow<Sender<zcl::Message>> for Coordinator {
+    fn borrow(&self) -> &Sender<zcl::Message> {
+        &self.zcl
+    }
+}
+
+impl Borrow<Sender<zdp::Message>> for Coordinator {
+    fn borrow(&self) -> &Sender<zdp::Message> {
+        &self.zdp
     }
 }

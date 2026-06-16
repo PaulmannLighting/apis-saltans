@@ -1,9 +1,11 @@
+use std::borrow::Borrow;
+
 use tokio::sync::mpsc::Sender;
 use zcl::general::on_off::{Off, On, Toggle};
 use zigbee::{Address, Endpoint};
 
+use crate::Error;
 use crate::transceiver::zcl::{Handle, Message};
-use crate::{Coordinator, Error};
 
 /// Trait for On/Off cluster operations.
 pub trait OnOff {
@@ -41,7 +43,10 @@ pub trait OnOff {
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
-impl OnOff for Sender<Message> {
+impl<T> OnOff for T
+where
+    T: Borrow<Sender<Message>> + Sync,
+{
     async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.unicast_zcl_native(address.short_id(), endpoint, On)
             .await
@@ -55,19 +60,5 @@ impl OnOff for Sender<Message> {
     async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
         self.unicast_zcl_native(address.short_id(), endpoint, Toggle)
             .await
-    }
-}
-
-impl OnOff for Coordinator {
-    async fn on(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl.on(address, endpoint).await
-    }
-
-    async fn off(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl.off(address, endpoint).await
-    }
-
-    async fn toggle(&self, address: Address, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl.toggle(address, endpoint).await
     }
 }

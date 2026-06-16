@@ -1,10 +1,12 @@
+use std::borrow::Borrow;
+
 use tokio::sync::mpsc::Sender;
 use zcl::Options;
 use zcl::lighting::color_control::MoveToColor;
 use zigbee::{Address, Endpoint};
 
+use crate::Error;
 use crate::transceiver::zcl::{Handle, Message};
-use crate::{Coordinator, Error};
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {
@@ -24,7 +26,10 @@ pub trait ColorControl {
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
-impl ColorControl for Sender<Message> {
+impl<T> ColorControl for T
+where
+    T: Borrow<Sender<Message>> + Sync,
+{
     async fn move_to_xy(
         &self,
         address: Address,
@@ -40,28 +45,5 @@ impl ColorControl for Sender<Message> {
             MoveToColor::new(color_x, color_y, transition_time, options),
         )
         .await
-    }
-}
-
-impl ColorControl for Coordinator {
-    async fn move_to_xy(
-        &self,
-        address: Address,
-        endpoint: Endpoint,
-        color_x: u16,
-        color_y: u16,
-        transition_time: u16,
-        options: Options,
-    ) -> Result<(), Error> {
-        self.zcl
-            .move_to_xy(
-                address,
-                endpoint,
-                color_x,
-                color_y,
-                transition_time,
-                options,
-            )
-            .await
     }
 }

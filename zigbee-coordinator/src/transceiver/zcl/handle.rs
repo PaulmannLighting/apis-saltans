@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zigbee::{Cluster, Endpoint, ExpectResponse};
@@ -46,7 +48,10 @@ pub trait Handle {
     }
 }
 
-impl Handle for Sender<Message> {
+impl<T> Handle for T
+where
+    T: Borrow<Sender<Message>> + Sync,
+{
     async fn unicast(
         &self,
         short_id: u16,
@@ -54,36 +59,38 @@ impl Handle for Sender<Message> {
         payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
-        self.send(Message::Unicast {
-            short_id,
-            endpoint,
-            payload: payload.into(),
-            response,
-        })
-        .await?;
+        self.borrow()
+            .send(Message::Unicast {
+                short_id,
+                endpoint,
+                payload: payload.into(),
+                response,
+            })
+            .await?;
         Ok(result.await??)
     }
 
-    fn communicate<T>(
+    fn communicate<U>(
         &self,
         short_id: u16,
         endpoint: Endpoint,
-        payload: Payload<T>,
-    ) -> impl Future<Output = Result<T::Response, Error>> + Send
+        payload: Payload<U>,
+    ) -> impl Future<Output = Result<U::Response, Error>> + Send
     where
-        T: ExpectResponse<zcl::Cluster>,
+        U: ExpectResponse<zcl::Cluster>,
     {
         let (response, result) = channel();
         let payload = payload.into_cluster().into();
 
         async move {
-            self.send(Message::Communicate {
-                short_id,
-                endpoint,
-                payload,
-                response,
-            })
-            .await?;
+            self.borrow()
+                .send(Message::Communicate {
+                    short_id,
+                    endpoint,
+                    payload,
+                    response,
+                })
+                .await?;
             result
                 .await??
                 .zcl_response_timeout()
