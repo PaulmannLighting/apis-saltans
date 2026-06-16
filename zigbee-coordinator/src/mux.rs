@@ -1,3 +1,4 @@
+use log::trace;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zigbee_hw::Event;
@@ -19,7 +20,9 @@ impl Mux {
             match message {
                 Message::Event(event) => {
                     for subscriber in self.subscribers.drain(..) {
-                        let _ = subscriber.send(event.clone()).await;
+                        if let Err(error) = subscriber.send(event.clone()).await {
+                            trace!("Subscriber went away: {error}");
+                        }
                     }
 
                     self.subscribers
