@@ -27,7 +27,7 @@ impl SimpleDescriptor {
         endpoint: Endpoint,
         profile: Profile,
         device_id: u16,
-        nibbles: u8,
+        app_flags: AppFlags,
         input_clusters: ByteSizedVec<u16>,
         output_clusters: ByteSizedVec<u16>,
     ) -> Self {
@@ -35,7 +35,7 @@ impl SimpleDescriptor {
             endpoint,
             profile_id: profile as u16,
             device_id,
-            app_flags: AppFlags::from_bits_retain(nibbles),
+            app_flags,
             input_clusters,
             output_clusters,
         }
