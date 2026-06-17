@@ -1,31 +1,24 @@
-use std::iter::Chain;
-use std::num::TryFromIntError;
-use std::ops::Deref;
+use core::iter::Chain;
+use core::ops::Deref;
 
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
-use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv};
+use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv, TlvVec};
 
 /// Beacon Appendix Encapsulation TLV structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct BeaconAppendixEncapsulation {
-    inner: Vec<Tlv<Local, EncapsulatedGlobal>>,
+    inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>,
 }
 
 impl BeaconAppendixEncapsulation {
     /// Creates a new `BeaconAppendixEncapsulation`.
-    ///
-    /// # Errors
-    ///
-    /// If the length of `inner` minus one cannot be represented as a `u8`, an error is returned.
-    pub fn new(
-        inner: Vec<Tlv<Local, EncapsulatedGlobal>>,
-    ) -> Result<Self, Option<TryFromIntError>> {
-        let Some(size) = inner.len().checked_sub(1) else {
-            return Err(None);
+    pub fn new(inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>) -> Option<Self> {
+        if inner.is_empty() {
+            return None;
         };
 
-        u8::try_from(size).map(|_| Self { inner }).map_err(Some)
+        Some(Self { inner })
     }
 }
 
@@ -38,7 +31,7 @@ impl Tag for BeaconAppendixEncapsulation {
 }
 
 impl Deref for BeaconAppendixEncapsulation {
-    type Target = Vec<Tlv<Local, EncapsulatedGlobal>>;
+    type Target = TlvVec<Tlv<Local, EncapsulatedGlobal>>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -56,13 +49,16 @@ impl FromLeStreamTagged for BeaconAppendixEncapsulation {
             return Err(length);
         };
 
-        let mut inner = Vec::with_capacity(size);
+        let mut inner = TlvVec::new();
 
         for _ in 0..size {
             let Some(item) = Tlv::<Local, EncapsulatedGlobal>::from_le_stream(&mut bytes) else {
                 return Ok(None);
             };
-            inner.push(item);
+
+            if inner.push(item).is_err() {
+                return Ok(None);
+            }
         }
 
         Ok(Some(Self { inner }))
@@ -71,14 +67,11 @@ impl FromLeStreamTagged for BeaconAppendixEncapsulation {
 
 impl ToLeStream for BeaconAppendixEncapsulation {
     type Iter = Chain<
-        Chain<<u8 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>,
-        <Vec<Tlv<Local, EncapsulatedGlobal>> as ToLeStream>::Iter,
+        <u8 as ToLeStream>::Iter,
+        <TlvVec<Tlv<Local, EncapsulatedGlobal>> as ToLeStream>::Iter,
     >;
 
     fn to_le_stream(self) -> Self::Iter {
-        Self::TAG
-            .to_le_stream()
-            .chain(self.serialized_size().to_le_stream())
-            .chain(self.inner.to_le_stream())
+        Self::TAG.to_le_stream().chain(self.inner.to_le_stream())
     }
 }

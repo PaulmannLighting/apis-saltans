@@ -3,7 +3,6 @@
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 pub use self::encapsulated_global::EncapsulatedGlobal;
-pub use self::generic_tlv::GenericTlv;
 pub use self::global::{
     BeaconAppendixEncapsulation, DeviceCapabilityExtension, FragmentationOptions, Global,
     JoinerEncapsulation, KeyNegotiationProtocols, ManufacturerSpecific, NextChannelChange,
@@ -13,18 +12,20 @@ pub use self::global::{
 use self::iter::TlvLeStream;
 pub use self::local::{ClearAllBindingsReqEui64, Local};
 pub use self::tag::Tag;
+pub use self::tlv_vec::TlvVec;
 
 mod encapsulated_global;
-mod generic_tlv;
 mod global;
 mod local;
 mod tag;
+mod tlv_vec;
 
 /// A Type-Length-Value (TLV) encoded structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Tlv<L = Local, G = Global> {
     /// Local TLV tags.
     Local(L),
+
     /// Global TLV tags.
     Global(G),
 }

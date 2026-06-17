@@ -1,4 +1,4 @@
-use std::iter::Chain;
+use core::iter::Chain;
 
 use bitflags::bitflags;
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};

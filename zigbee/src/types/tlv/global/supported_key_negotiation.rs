@@ -1,4 +1,4 @@
-use std::iter::Chain;
+use core::iter::Chain;
 
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 use macaddr::MacAddr8;

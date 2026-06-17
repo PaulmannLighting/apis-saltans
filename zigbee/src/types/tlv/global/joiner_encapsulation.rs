@@ -1,14 +1,14 @@
-use std::iter::Chain;
-use std::ops::{Deref, DerefMut};
+use core::iter::Chain;
+use core::ops::{Deref, DerefMut};
 
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
-use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv};
+use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv, TlvVec};
 
 /// Joiner Encapsulation TLV structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct JoinerEncapsulation {
-    inner: Vec<Tlv<Local, EncapsulatedGlobal>>,
+    inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>,
 }
 
 impl JoinerEncapsulation {
@@ -18,8 +18,8 @@ impl JoinerEncapsulation {
     ///
     /// If the length of `inner` minus one cannot be represented as a `u8`, an error is returned.
     pub fn new(
-        inner: Vec<Tlv<Local, EncapsulatedGlobal>>,
-    ) -> Result<Self, Option<std::num::TryFromIntError>> {
+        inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>,
+    ) -> Result<Self, Option<core::num::TryFromIntError>> {
         let Some(size) = inner.len().checked_sub(1) else {
             return Err(None);
         };
@@ -37,7 +37,7 @@ impl Tag for JoinerEncapsulation {
 }
 
 impl Deref for JoinerEncapsulation {
-    type Target = Vec<Tlv<Local, EncapsulatedGlobal>>;
+    type Target = TlvVec<Tlv<Local, EncapsulatedGlobal>>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -61,13 +61,16 @@ impl FromLeStreamTagged for JoinerEncapsulation {
             return Err(length);
         };
 
-        let mut inner = Vec::with_capacity(size);
+        let mut inner = TlvVec::new();
 
         for _ in 0..size {
             let Some(item) = Tlv::<Local, EncapsulatedGlobal>::from_le_stream(&mut bytes) else {
                 return Ok(None);
             };
-            inner.push(item);
+
+            if inner.push(item).is_err() {
+                return Ok(None);
+            }
         }
 
         Ok(Some(Self { inner }))
@@ -76,14 +79,11 @@ impl FromLeStreamTagged for JoinerEncapsulation {
 
 impl ToLeStream for JoinerEncapsulation {
     type Iter = Chain<
-        Chain<<u8 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>,
-        <Vec<Tlv<Local, EncapsulatedGlobal>> as ToLeStream>::Iter,
+        <u8 as ToLeStream>::Iter,
+        <TlvVec<Tlv<Local, EncapsulatedGlobal>> as ToLeStream>::Iter,
     >;
 
     fn to_le_stream(self) -> Self::Iter {
-        Self::TAG
-            .to_le_stream()
-            .chain(self.serialized_size().to_le_stream())
-            .chain(self.inner.to_le_stream())
+        Self::TAG.to_le_stream().chain(self.inner.to_le_stream())
     }
 }
