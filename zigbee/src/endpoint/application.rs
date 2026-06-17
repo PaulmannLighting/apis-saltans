@@ -1,5 +1,5 @@
 use core::fmt;
-use std::fmt::{Display, LowerHex, UpperHex};
+use core::fmt::{Display, LowerHex, UpperHex};
 
 /// A Zigbee application endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
