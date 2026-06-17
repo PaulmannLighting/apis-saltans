@@ -29,15 +29,22 @@ impl Coordinator {
         T: Start,
     {
         let (ncp, events) = hardware.start(endpoints).await?;
+
+        let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
+
         let zcl_tx = Self::start_zcl_transceiver(ncp.clone());
-        let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), endpoints);
-        let (mux, discovery_rx) = Self::start_mux(events, zcl_tx.clone(), zdp_tx.clone());
+        let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), discovery_tx.downgrade(), endpoints);
+
+        let mux = Self::start_mux(events, zcl_tx.clone(), zdp_tx.clone(), discovery_tx);
+
         let network_manager = Self::start_network_manager(&mux).await?;
+
         let binding_manager = Self::start_binding_manager(
             zdp_tx.downgrade(),
             network_manager.downgrade(),
             ncp.downgrade(),
         );
+
         Self::start_discovery_manager(
             discovery_rx,
             zcl_tx.downgrade(),
@@ -60,12 +67,12 @@ impl Coordinator {
         events: Receiver<Event>,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
-    ) -> (Sender<mux::Message>, Receiver<discovery::Message>) {
+        discovery_tx: Sender<discovery::Message>,
+    ) -> Sender<mux::Message> {
         let (mux_tx, mux_rx) = channel(MPSC_CHANNEL_SIZE);
-        let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
         spawn(bridge(events, mux_tx.clone()));
         spawn(Mux::new(discovery_tx, zcl_tx, zdp_tx).run(mux_rx));
-        (mux_tx, discovery_rx)
+        mux_tx
     }
 
     /// Start the ZCL transceiver.
@@ -78,10 +85,11 @@ impl Coordinator {
     /// Start the ZDP transceiver.
     fn start_zdp_transceiver(
         ncp: NcpHandle,
+        discovery: WeakSender<discovery::Message>,
         endpoints: &[SimpleDescriptor],
     ) -> Sender<zdp::Message> {
         let (zdp_tx, zdp_rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(zdp::Transceiver::new(ncp, endpoints.into()).run(zdp_rx));
+        spawn(zdp::Transceiver::new(ncp, discovery, endpoints.into()).run(zdp_rx));
         zdp_tx
     }
 

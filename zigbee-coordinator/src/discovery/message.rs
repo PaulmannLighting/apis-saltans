@@ -1,4 +1,5 @@
 use zigbee::Address;
+use zigbee::node::MacCapabilityFlags;
 
 /// Message sent to the discovery actor.
 #[derive(Debug)]
@@ -12,5 +13,13 @@ pub enum Message {
         address: Address,
         /// Whether the join was secured.
         secured: bool,
+    },
+
+    /// A device has been announced.
+    DeviceAnnounced {
+        /// The address of the device.
+        address: Address,
+        /// The capabilities of the device.
+        capabilities: MacCapabilityFlags,
     },
 }

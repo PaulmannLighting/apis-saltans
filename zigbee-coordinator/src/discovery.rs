@@ -62,6 +62,13 @@ impl Actor {
                     info!("Device rejoined: {address}, secured: {secured}");
                     address
                 }
+                Message::DeviceAnnounced {
+                    address,
+                    capabilities,
+                } => {
+                    info!("Device announced: {address}, capabilities: {capabilities}");
+                    address
+                }
             };
 
             self.ed_tx

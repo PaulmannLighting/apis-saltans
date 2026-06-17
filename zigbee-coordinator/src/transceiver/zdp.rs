@@ -3,19 +3,21 @@
 use std::collections::BTreeMap;
 
 use le_stream::ToLeStream;
-use log::{debug, error};
-use tokio::sync::mpsc::Receiver;
+use log::{debug, error, trace};
+use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
 use zdp::{
-    Command, DeviceAndServiceDiscovery, Frame, MatchDescReq, MatchDescRsp, SimpleDescriptor, Status,
+    Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
+    SimpleDescriptor, Status,
 };
-use zigbee::Endpoint;
+use zigbee::{Address, Endpoint};
 use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
 use self::match_desc_req_ext::MatchDescReqExt;
 pub use self::message::{Message, Payload};
+use crate::discovery;
 
 mod handle;
 mod match_desc_req_ext;
@@ -27,6 +29,7 @@ const CLUSTER_ID_RESPONSE_MASK: u16 = 0x8000;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
+    discovery: WeakSender<discovery::Message>,
     endpoints: Box<[SimpleDescriptor]>,
     responses: BTreeMap<(u8, u16), Sender<Command>>,
     seq: u8,
@@ -35,9 +38,14 @@ pub struct Transceiver<T> {
 impl<T> Transceiver<T> {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T, endpoints: Box<[SimpleDescriptor]>) -> Self {
+    pub const fn new(
+        ncp: T,
+        discovery: WeakSender<discovery::Message>,
+        endpoints: Box<[SimpleDescriptor]>,
+    ) -> Self {
         Self {
             ncp,
+            discovery,
             endpoints,
             responses: BTreeMap::new(),
             seq: 0,
@@ -88,6 +96,14 @@ where
         {
             self.handle_match_desc_req(src_address, seq, match_desc_req)
                 .await;
+            return;
+        }
+
+        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::DeviceAnnce(
+            device_annce,
+        )) = command
+        {
+            self.handle_device_annce(device_annce).await;
             return;
         }
 
@@ -193,5 +209,22 @@ where
         {
             error!("Failed to send Match_Desc_rsp: {error:?}");
         }
+    }
+
+    async fn handle_device_annce(&self, device_annce: DeviceAnnce) {
+        let Some(discovery) = self.discovery.upgrade() else {
+            trace!("Discovery channel dropped");
+            return;
+        };
+
+        discovery
+            .send(discovery::Message::DeviceAnnounced {
+                address: Address::new(device_annce.ieee_addr(), device_annce.nwk_addr()),
+                capabilities: device_annce.capabilities(),
+            })
+            .await
+            .unwrap_or_else(|error| {
+                error!("Failed to send device announcement: {error:?}");
+            });
     }
 }
