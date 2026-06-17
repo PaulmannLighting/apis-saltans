@@ -41,6 +41,12 @@ impl Application {
     }
 }
 
+impl Default for Application {
+    fn default() -> Self {
+        Self(Self::MIN)
+    }
+}
+
 impl Display for Application {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Display::fmt(&self.0, f)
