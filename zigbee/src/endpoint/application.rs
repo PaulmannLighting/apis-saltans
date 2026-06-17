@@ -17,8 +17,8 @@ impl Application {
 
     /// Create a new `Application` endpoint ID if the given ID is valid.
     #[must_use]
-    pub fn new(id: u8) -> Option<Self> {
-        if Self::RANGE.contains(&id) {
+    pub const fn new(id: u8) -> Option<Self> {
+        if id >= Self::MIN && id <= Self::MAX {
             Some(Self(id))
         } else {
             None
