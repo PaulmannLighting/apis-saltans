@@ -18,52 +18,52 @@ At startup, `Coordinator::start(...)` wires the full graph and returns a lightwe
 ## Actor Topology
 
 ```mermaid
-graph TD
-    HW[zigbee-hw NCP + Event stream]
+flowchart TD
+    HW[zigbee hw NCP and event stream]
     C[Coordinator handle]
 
     M[Mux actor]
-    ZCL[ZCL Transceiver actor]
-    ZDP[ZDP Transceiver actor]
+    ZCL[ZCL transceiver actor]
+    ZDP[ZDP transceiver actor]
     D[Discovery supervisor actor]
-    ED[EndpointDiscovery actor]
-    DD[DescriptorDiscovery actor]
-    AD[AttributeDiscovery actor]
+    ED[Endpoint discovery actor]
+    DD[Descriptor discovery actor]
+    AD[Attribute discovery actor]
     B[Binding actor]
-    NM[NetworkManager actor]
+    NM[Network manager actor]
 
-    C -->|spawns| M
-    C -->|spawns| ZCL
-    C -->|spawns| ZDP
-    C -->|spawns| D
-    C -->|spawns| B
-    C -->|spawns| NM
+    C -->|start| M
+    C -->|start| ZCL
+    C -->|start| ZDP
+    C -->|start| D
+    C -->|start| B
+    C -->|start| NM
 
-    D -->|spawns| ED
-    D -->|spawns| DD
-    D -->|spawns| AD
+    D -->|start| ED
+    D -->|start| DD
+    D -->|start| AD
 
-    HW -->|Event stream| M
-    M -->|Message::Received(ZCL)| ZCL
-    M -->|Message::Received(ZDP)| ZDP
-    M -->|DeviceJoined/Rejoined/Announced| D
-    M -->|DeviceLeft| NM
+    HW -->|events| M
+    M -->|zcl frame| ZCL
+    M -->|zdp frame| ZDP
+    M -->|join rejoin announce| D
+    M -->|device left| NM
 
-    ED -->|ZDP ActiveEpReq| ZDP
-    ED -->|Discover descriptors| DD
-    DD -->|ZDP SimpleDescReq| ZDP
-    DD -->|GetAttributes| AD
-    AD -->|ZCL Read Attributes| ZCL
-    AD -->|DeviceDiscovered| B
-    B -->|ZDP BindReq| ZDP
-    B -->|NewDevice| NM
+    ED -->|active endpoint request| ZDP
+    ED -->|endpoint list| DD
+    DD -->|simple descriptor request| ZDP
+    DD -->|descriptor set| AD
+    AD -->|read attributes| ZCL
+    AD -->|device discovered| B
+    B -->|bind request| ZDP
+    B -->|new device| NM
 
-    ZDP -->|DeviceAnnce -> discovery message| D
+    ZDP -->|device announce event| D
 
-    C -->|API calls| ZCL
-    C -->|API calls| ZDP
-    C -->|state queries| NM
-    C -->|allow joins| HW
+    C -->|api call| ZCL
+    C -->|api call| ZDP
+    C -->|state query| NM
+    C -->|allow joining| HW
 ```
 
 ## Startup and Wiring
