@@ -27,7 +27,7 @@ num-derive = "0.4"
 repr-discriminant = { version = "3", features = ["derive"] }
 
 [features]
-serde = ["serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
+serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
 
 [lints]
 workspace = true
