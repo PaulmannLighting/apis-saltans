@@ -9,4 +9,4 @@ pub use self::network_manager::NetworkManager;
 
 mod clusters;
 mod joining;
-pub mod network_manager;
+mod network_manager;
