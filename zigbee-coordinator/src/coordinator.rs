@@ -27,12 +27,13 @@ impl Coordinator {
     pub async fn start<T>(
         hardware: T,
         endpoints: &[SimpleDescriptor],
-        state: State,
+        state: impl Into<State>,
     ) -> Result<Self, Error>
     where
         T: Start,
     {
         let (ncp, events) = hardware.start(endpoints).await?;
+        let state = state.into();
 
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
         let network_manager = Self::start_network_manager(state);
