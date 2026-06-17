@@ -13,6 +13,7 @@ pub struct TlvVec<T> {
 
 impl<T> TlvVec<T> {
     /// Creates a new TLV vector.
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             inner: Inner::new(),
@@ -20,6 +21,7 @@ impl<T> TlvVec<T> {
     }
 
     /// Returns the TLV size with is the actual length of the TLV data minus one.
+    #[expect(clippy::cast_possible_truncation)]
     pub fn tlv_size(&self) -> u8 {
         self.inner.len().saturating_sub(1) as u8
     }

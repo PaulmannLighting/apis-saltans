@@ -15,10 +15,11 @@ pub struct BeaconAppendixEncapsulation {
 
 impl BeaconAppendixEncapsulation {
     /// Creates a new `BeaconAppendixEncapsulation`.
+    #[must_use]
     pub fn new(inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>) -> Option<Self> {
         if inner.is_empty() {
             return None;
-        };
+        }
 
         Some(Self { inner })
     }

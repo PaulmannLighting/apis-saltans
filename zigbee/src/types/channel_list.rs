@@ -15,7 +15,8 @@ pub struct ChannelList {
 
 impl ChannelList {
     /// Creates a new `ChannelList`.
-    pub fn new(pages: Pages) -> Self {
+    #[must_use]
+    pub const fn new(pages: Pages) -> Self {
         Self { pages }
     }
 

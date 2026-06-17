@@ -9,25 +9,35 @@ use crate::types::tlv::global::{
 
 /// Encapsulated Global TLV types.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[expect(clippy::large_enum_variant, variant_size_differences)]
 pub enum EncapsulatedGlobal {
     /// Manufacturer Specific TLV.
     ManufacturerSpecific(ManufacturerSpecific),
+
     /// Supported Key Negotiation TLV.
     SupportedKeyNegotiationMethods(SupportedKeyNegotiation),
+
     /// Pan ID Conflict Report TLV.
     PanIdConflictReport(PanIdConflictReport),
+
     /// Next PAN ID Change TLV.
     NextPanIdChange(NextPanIdChange),
+
     /// Next Channel Change TLV.
     NextChannelChange(NextChannelChange),
+
     /// Symmetric Passphrase TLV.
     SymmetricPassphrase(SymmetricPassphrase),
+
     /// Router Information TLV.
     RouterInformation(RouterInformation),
+
     /// Fragmentation Parameters TLV.
     FragmentationParameters(FragmentationParameters),
+
     /// Configuration Parameters TLV.
     ConfigurationParameters(ConfigurationParameters),
+
     /// Device Capability Extension TLV.
     DeviceCapabilityExtension(DeviceCapabilityExtension),
 }

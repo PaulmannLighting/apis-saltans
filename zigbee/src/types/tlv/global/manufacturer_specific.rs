@@ -16,10 +16,11 @@ pub struct ManufacturerSpecific {
 
 impl ManufacturerSpecific {
     /// Create a new `ManufacturerSpecific`.
+    #[must_use]
     pub fn new(manufacturer_id: u16, data: Data) -> Option<Self> {
         if data.is_empty() {
             return None;
-        };
+        }
 
         Some(Self {
             manufacturer_id,

@@ -1,3 +1,5 @@
+#![expect(clippy::large_stack_frames)]
+
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 pub use self::beacon_appendix_encapsulation::BeaconAppendixEncapsulation;
