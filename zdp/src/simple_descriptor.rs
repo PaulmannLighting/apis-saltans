@@ -1,9 +1,9 @@
 use le_stream::{FromLeStream, Prefixed, ToLeStream};
 use zigbee::{Endpoint, Profile};
 
-use self::nibbles::Nibbles;
+use self::app_flags::AppFlags;
 
-mod nibbles;
+mod app_flags;
 
 /// Simple descriptor.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -11,7 +11,7 @@ pub struct SimpleDescriptor {
     endpoint: Endpoint,
     profile_id: u16,
     device_id: u16,
-    nibbles: Nibbles,
+    app_flags: AppFlags,
     input_clusters: Prefixed<u8, Box<[u16]>>,
     output_clusters: Prefixed<u8, Box<[u16]>>,
 }
@@ -31,7 +31,7 @@ impl SimpleDescriptor {
             endpoint,
             profile_id,
             device_id,
-            nibbles: Nibbles::from_bits_retain(nibbles),
+            app_flags: AppFlags::from_bits_retain(nibbles),
             input_clusters,
             output_clusters,
         }
@@ -89,10 +89,16 @@ impl SimpleDescriptor {
         self.device_id
     }
 
+    /// Return the application flags.
+    #[must_use]
+    pub const fn app_flags(&self) -> u8 {
+        self.app_flags.bits()
+    }
+
     /// Return the version.
     #[must_use]
     pub fn version(&self) -> u8 {
-        self.nibbles.version()
+        self.app_flags.version()
     }
 
     /// Return the input clusters.
@@ -114,7 +120,7 @@ impl SimpleDescriptor {
             self.endpoint,
             self.profile_id,
             self.device_id,
-            self.nibbles.version(),
+            self.app_flags.version(),
             self.input_clusters.into_data(),
             self.output_clusters.into_data(),
         )

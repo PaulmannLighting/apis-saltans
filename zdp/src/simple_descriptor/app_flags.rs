@@ -1,12 +1,12 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
-/// Nibbles for version and reserved bits.
+/// Application flags for the version and reserved bits.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
-pub struct Nibbles(u8);
+pub struct AppFlags(u8);
 
 bitflags! {
-    impl Nibbles: u8 {
+    impl AppFlags: u8 {
         /// Version nibble.
         const VERSION = 0b1111_0000;
 
@@ -15,7 +15,7 @@ bitflags! {
     }
 }
 
-impl Nibbles {
+impl AppFlags {
     /// Return the version number.
     #[must_use]
     pub fn version(self) -> u8 {
