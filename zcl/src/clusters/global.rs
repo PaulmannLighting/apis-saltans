@@ -205,10 +205,10 @@ impl Iterator for Iter {
         match self {
             Self::ReadAttributes(iter) => iter.next(),
             Self::ReadAttributesResponse(iter) => iter.next(),
-            Self::WriteAttributes(iter) => iter.next(),
-            Self::WriteAttributesUndivided(iter) => iter.next(),
+            Self::WriteAttributes(iter)
+            | Self::WriteAttributesUndivided(iter)
+            | Self::WriteAttributesNoResponse(iter) => iter.next(),
             Self::WriteAttributesResponse(iter) => iter.next(),
-            Self::WriteAttributesNoResponse(iter) => iter.next(),
             Self::ReportAttributes(iter) => iter.next(),
             Self::DefaultResponse(iter) => iter.next(),
             Self::ConfigureReporting(iter) => iter.next(),

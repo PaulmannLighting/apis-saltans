@@ -1,8 +1,6 @@
 //! Cluster groups.
 
 use alloc::boxed::Box;
-use core::error::Error;
-use core::fmt::Display;
 
 use le_stream::ToLeStream;
 use zigbee::Direction;
@@ -134,7 +132,7 @@ impl ToLeStream for Cluster {
 
     fn to_le_stream(self) -> Self::Iter {
         match self {
-            Self::Global(cmd) => Iter::Global(cmd.to_le_stream()),
+            Self::Global(cmd) => Iter::Global(cmd.to_le_stream().into()),
             Self::Basic(cmd) => Iter::Basic(cmd.to_le_stream()),
             Self::Groups(cmd) => Iter::Groups(cmd.to_le_stream().into()),
             Self::Identify(cmd) => Iter::Identify(cmd.to_le_stream()),
@@ -147,7 +145,7 @@ impl ToLeStream for Cluster {
 
 #[derive(Debug)]
 pub enum Iter {
-    Global(<global::Command as ToLeStream>::Iter),
+    Global(Box<<global::Command as ToLeStream>::Iter>),
     Basic(<basic::Command as ToLeStream>::Iter),
     Groups(Box<<groups::Command as ToLeStream>::Iter>),
     Identify(<identify::Command as ToLeStream>::Iter),

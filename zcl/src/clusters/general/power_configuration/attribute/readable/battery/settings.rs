@@ -249,7 +249,7 @@ impl ReadableAttribute for Id {
 
 impl From<Id> for u16 {
     fn from(id: Id) -> Self {
-        id as u16
+        id as Self
     }
 }
 

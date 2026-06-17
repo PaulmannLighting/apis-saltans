@@ -27,25 +27,35 @@ mod view_group_response;
 
 /// Available Groups cluster commands.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclFrame)]
+#[expect(clippy::large_enum_variant)]
 pub enum Command {
     /// Add Group command.
     AddGroup(AddGroup),
+
     /// View Group command.
     ViewGroup(ViewGroup),
+
     /// Get Group Membership command.
     GetGroupMembership(GetGroupMembership),
+
     /// Remove Group command.
     RemoveGroup(RemoveGroup),
+
     /// Remove All Groups command.
     RemoveAllGroups(RemoveAllGroups),
+
     /// Add Group If Identifying command.
     AddGroupIfIdentifying(AddGroupIfIdentifying),
+
     /// Add Group Response command.
     AddGroupResponse(AddGroupResponse),
+
     /// View Group Response command.
     ViewGroupResponse(ViewGroupResponse),
+
     /// Get Group Membership Response command.
     GetGroupMembershipResponse(GetGroupMembershipResponse),
+
     /// Remove Group Response command.
     RemoveGroupResponse(RemoveGroupResponse),
 }
