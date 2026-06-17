@@ -97,6 +97,6 @@ impl ToLeStream for ManufacturerSpecific {
             .to_le_stream()
             .chain(self.serialized_size().to_le_stream())
             .chain(self.manufacturer_id.to_le_stream())
-            .chain(self.data.into_iter())
+            .chain(self.data)
     }
 }

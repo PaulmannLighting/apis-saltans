@@ -6,6 +6,8 @@ use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv, TlvVec};
 
 /// Joiner Encapsulation TLV structure.
+///
+/// TODO: This TLV is very large. Refactor!
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct JoinerEncapsulation {
     inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>,
