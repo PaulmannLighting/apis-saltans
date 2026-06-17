@@ -20,7 +20,7 @@ pub enum PowerSource {
     DcSource = 0x04,
     /// The power source is an emergency mains supply that is constantly powered.
     EmergencyMainsConstantlyPowered = 0x05,
-    /// The power source is an emergency mains supply that is powered through a transfer switch.
+    /// The power source is an emergency mains supply powered through a transfer switch.
     EmergencyMainsAndTransferSwitch = 0x06,
 }
 
