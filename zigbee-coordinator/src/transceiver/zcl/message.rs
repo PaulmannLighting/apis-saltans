@@ -28,6 +28,19 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
+    /// Unicast a message.
+    Multicast {
+        /// The destination group ID.
+        group_id: u16,
+        /// The number of hops.
+        hops: u8,
+        /// The multicast radius.
+        radius: u8,
+        /// The payload.
+        payload: Box<Payload<Cluster>>,
+        /// The response channel.
+        response: Sender<Result<(), Error>>,
+    },
     /// Communicate a unicast with an expected response.
     Communicate {
         /// The destination address.

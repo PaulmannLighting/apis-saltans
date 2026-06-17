@@ -65,6 +65,23 @@ where
                             error!("Failed to send unicast response: {error:?}");
                         });
                 }
+                Message::Multicast {
+                    group_id,
+                    hops,
+                    radius,
+                    payload,
+                    response,
+                } => {
+                    response
+                        .send(
+                            self.multicast(group_id, hops, radius, *payload)
+                                .await
+                                .map(drop),
+                        )
+                        .unwrap_or_else(|error| {
+                            error!("Failed to send unicast response: {error:?}");
+                        });
+                }
                 Message::Communicate {
                     short_id,
                     endpoint,
@@ -128,6 +145,38 @@ where
 
         self.ncp
             .unicast(short_id, endpoint, aps_frame)
+            .await
+            .map(|_| seq)
+    }
+
+    /// Send a ZCL multicast message.
+    ///
+    /// # Returns
+    ///
+    /// Returns the ZCL sequence number.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the message could not be sent.
+    async fn multicast(
+        &mut self,
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        frame: Payload<Cluster>,
+    ) -> Result<u8, zigbee_hw::Error> {
+        let (metadata, manufacturer_code, command) = frame.into_parts();
+        let seq = self.next_seq();
+        let zcl_frame = self.make_zcl_frame(seq, manufacturer_code, command);
+
+        #[expect(unsafe_code)]
+        // SAFETY: We extracted the metadata and command from the payload above
+        // and created a valid ZCL frame from that command.
+        // Hence, the resulting metadata and payload match.
+        let aps_frame = unsafe { Self::make_aps_frame(metadata, zcl_frame) };
+
+        self.ncp
+            .multicast(group_id, hops, radius, aps_frame)
             .await
             .map(|_| seq)
     }
