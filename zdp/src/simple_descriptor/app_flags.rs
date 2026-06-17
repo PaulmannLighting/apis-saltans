@@ -16,6 +16,12 @@ bitflags! {
 }
 
 impl AppFlags {
+    /// Set the version number.
+    #[must_use]
+    pub const fn with_version(self, version: u8) -> Self {
+        Self(self.bits() | (version << Self::VERSION.bits().trailing_zeros()))
+    }
+
     /// Return the version number.
     #[must_use]
     pub fn version(self) -> u8 {

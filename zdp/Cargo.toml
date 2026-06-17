@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 bitflags = "2"
+heapless = "0.9.3"
 le-stream = { version = "9", features = ["derive", "macaddr"] }
 macaddr = "1.0"
 num-derive = "0.4"

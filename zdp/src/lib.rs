@@ -22,3 +22,6 @@ mod frame;
 mod services;
 mod simple_descriptor;
 mod status;
+
+/// Type alias for a byte-sized heapless vector.
+type ByteSizedVec<T> = heapless::Vec<T, { u8::MAX as usize }, u8>;

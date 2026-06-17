@@ -1,9 +1,13 @@
-use le_stream::{FromLeStream, Prefixed, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Endpoint, Profile};
 
 use self::app_flags::AppFlags;
+use crate::ByteSizedVec;
 
 mod app_flags;
+
+/// Type alias for the constituent parts of a simple descriptor.
+type Parts = (Endpoint, u16, u16, u8, Box<[u16]>, Box<[u16]>);
 
 /// Simple descriptor.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -12,8 +16,8 @@ pub struct SimpleDescriptor {
     profile_id: u16,
     device_id: u16,
     app_flags: AppFlags,
-    input_clusters: Prefixed<u8, Box<[u16]>>,
-    output_clusters: Prefixed<u8, Box<[u16]>>,
+    input_clusters: ByteSizedVec<u16>,
+    output_clusters: ByteSizedVec<u16>,
 }
 
 impl SimpleDescriptor {
@@ -21,45 +25,20 @@ impl SimpleDescriptor {
     #[must_use]
     pub const fn new(
         endpoint: Endpoint,
-        profile_id: u16,
+        profile: Profile,
         device_id: u16,
         nibbles: u8,
-        input_clusters: Prefixed<u8, Box<[u16]>>,
-        output_clusters: Prefixed<u8, Box<[u16]>>,
+        input_clusters: ByteSizedVec<u16>,
+        output_clusters: ByteSizedVec<u16>,
     ) -> Self {
         Self {
             endpoint,
-            profile_id,
+            profile_id: profile as u16,
             device_id,
             app_flags: AppFlags::from_bits_retain(nibbles),
             input_clusters,
             output_clusters,
         }
-    }
-
-    /// Try to create a new `SimpleDescriptor`.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the input or output clusters cannot be converted into a prefixed boxed slice.
-    pub fn try_new(
-        endpoint: Endpoint,
-        profile_id: u16,
-        device_id: u16,
-        nibbles: u8,
-        input_clusters: &[u16],
-        output_clusters: &[u16],
-    ) -> Result<Self, Box<[u16]>> {
-        let input_clusters = Box::<[u16]>::from(input_clusters).try_into()?;
-        let output_clusters = Box::<[u16]>::from(output_clusters).try_into()?;
-        Ok(Self::new(
-            endpoint,
-            profile_id,
-            device_id,
-            nibbles,
-            input_clusters,
-            output_clusters,
-        ))
     }
 
     /// Return the endpoint.
@@ -115,14 +94,14 @@ impl SimpleDescriptor {
 
     /// Return the constituent parts of the descriptor.
     #[must_use]
-    pub fn into_parts(self) -> (Endpoint, u16, u16, u8, Box<[u16]>, Box<[u16]>) {
+    pub fn into_parts(self) -> Parts {
         (
             self.endpoint,
             self.profile_id,
             self.device_id,
             self.app_flags.version(),
-            self.input_clusters.into_data(),
-            self.output_clusters.into_data(),
+            self.input_clusters.into_iter().collect(),
+            self.output_clusters.into_iter().collect(),
         )
     }
 }
