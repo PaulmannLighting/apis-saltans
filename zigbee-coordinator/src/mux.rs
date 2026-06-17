@@ -13,23 +13,23 @@ mod message;
 /// Event multiplexer.
 #[derive(Debug)]
 pub struct Mux {
-    discovery: Sender<discovery::Message>,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
+    discovery: Sender<discovery::Message>,
     subscribers: Vec<Sender<Event>>,
 }
 
 impl Mux {
     /// Create a new multiplexer.
     pub const fn new(
-        discovery: Sender<discovery::Message>,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
+        discovery: Sender<discovery::Message>,
     ) -> Self {
         Self {
-            discovery,
             zcl,
             zdp,
+            discovery,
             subscribers: Vec::new(),
         }
     }

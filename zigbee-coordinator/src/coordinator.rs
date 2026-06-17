@@ -71,7 +71,7 @@ impl Coordinator {
     ) -> Sender<mux::Message> {
         let (mux_tx, mux_rx) = channel(MPSC_CHANNEL_SIZE);
         spawn(bridge(events, mux_tx.clone()));
-        spawn(Mux::new(discovery_tx, zcl_tx, zdp_tx).run(mux_rx));
+        spawn(Mux::new(zcl_tx, zdp_tx, discovery_tx).run(mux_rx));
         mux_tx
     }
 
