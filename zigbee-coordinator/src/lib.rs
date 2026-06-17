@@ -23,6 +23,7 @@ mod discovery;
 mod error;
 mod mux;
 mod network_manager;
+mod persistence;
 mod retry;
 mod timeout;
 mod transceiver;
