@@ -16,7 +16,7 @@ pub use self::services::{
     NodeDescRsp, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType, ScanDuration, Service,
     SimpleDescReq, SimpleDescRsp, SystemServerDiscoveryReq, UnbindReq,
 };
-pub use self::simple_descriptor::SimpleDescriptor;
+pub use self::simple_descriptor::{AppFlags, SimpleDescriptor};
 
 mod frame;
 mod services;

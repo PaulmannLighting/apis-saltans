@@ -1,7 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Endpoint, Profile};
 
-use self::app_flags::AppFlags;
+pub use self::app_flags::AppFlags;
 use crate::ByteSizedVec;
 
 mod app_flags;
