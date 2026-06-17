@@ -54,9 +54,7 @@ impl MgmtNwkEnhancedUpdateReq {
                 channel,
                 energy_scan,
             } => Self {
-                #[expect(clippy::missing_panics_doc)]
-                scan_channels: ChannelList::new(once(channel).collect())
-                    .expect("One channel fits into ChannelList"),
+                scan_channels: ChannelList::new(once(channel).collect()),
                 scan_duration,
                 scan_count_or_nwk_update_id: u8::from(energy_scan),
                 nwk_manager_addr: None,
