@@ -1,6 +1,5 @@
 use core::fmt;
 use std::fmt::{Display, LowerHex, UpperHex};
-use std::ops::RangeInclusive;
 
 /// A Zigbee application endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
@@ -10,10 +9,9 @@ pub struct Application(pub(crate) u8);
 impl Application {
     /// The minimum valid application endpoint ID.
     pub const MIN: u8 = 1;
+
     /// The maximum valid application endpoint ID.
     pub const MAX: u8 = 240;
-    /// The valid range for Zigbee application endpoint IDs.
-    const RANGE: RangeInclusive<u8> = Self::MIN..=Self::MAX;
 
     /// Create a new `Application` endpoint ID if the given ID is valid.
     #[must_use]

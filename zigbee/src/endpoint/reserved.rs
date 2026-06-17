@@ -1,5 +1,3 @@
-use std::ops::RangeInclusive;
-
 /// A Zigbee reserved endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 #[repr(transparent)]
@@ -8,15 +6,14 @@ pub struct Reserved(pub(crate) u8);
 impl Reserved {
     /// The minimum valid reserved endpoint ID.
     pub const MIN: u8 = 241;
+
     /// The maximum valid reserved endpoint ID.
     pub const MAX: u8 = 254;
-    /// The valid range for Zigbee application endpoint IDs.
-    const RANGE: RangeInclusive<u8> = Self::MIN..=Self::MAX;
 
     /// Create a new `Reserved` endpoint ID if the given ID is valid.
     #[must_use]
-    pub fn new(id: u8) -> Option<Self> {
-        if Self::RANGE.contains(&id) {
+    pub const fn new(id: u8) -> Option<Self> {
+        if id >= Self::MIN && id <= Self::MAX {
             Some(Self(id))
         } else {
             None

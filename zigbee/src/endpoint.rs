@@ -15,12 +15,28 @@ const DEFAULT_ENDPOINT: u8 = 0x01;
 pub enum Endpoint {
     /// Data interface of the Zigbee Device Object (ZDO).
     Data,
+
     /// Application-specific endpoint.
     Application(Application),
+
     /// Reserved endpoint.
     Reserved(Reserved),
+
     /// Data interface broadcast endpoint.
     Broadcast,
+}
+
+impl Endpoint {
+    /// Create a new `Endpoint` from a raw value.
+    #[must_use]
+    pub const fn new(value: u8) -> Self {
+        match value {
+            0 => Self::Data,
+            Application::MIN..=Application::MAX => Self::Application(Application(value)),
+            Reserved::MIN..=Reserved::MAX => Self::Reserved(Reserved(value)),
+            255 => Self::Broadcast,
+        }
+    }
 }
 
 impl Default for Endpoint {
@@ -42,12 +58,7 @@ impl Display for Endpoint {
 
 impl From<u8> for Endpoint {
     fn from(value: u8) -> Self {
-        match value {
-            0 => Self::Data,
-            Application::MIN..=Application::MAX => Self::Application(Application(value)),
-            Reserved::MIN..=Reserved::MAX => Self::Reserved(Reserved(value)),
-            255 => Self::Broadcast,
-        }
+        Self::new(value)
     }
 }
 
