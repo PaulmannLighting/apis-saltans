@@ -135,7 +135,6 @@ where
         let (metadata, manufacturer_code, command) = frame.into_parts();
 
         let zcl_frame = self.make_zcl_frame(seq, manufacturer_code, command);
-        let seq = zcl_frame.header().seq();
 
         #[expect(unsafe_code)]
         // SAFETY: We extracted the metadata and command from the payload above
