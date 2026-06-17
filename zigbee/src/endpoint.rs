@@ -1,5 +1,5 @@
-use std::fmt::Display;
-use std::str::FromStr;
+use core::fmt::{self, Display};
+use core::str::FromStr;
 
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -50,7 +50,7 @@ impl Default for Endpoint {
 }
 
 impl Display for Endpoint {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Data => write!(f, "Data (0x00)"),
             Self::Application(app) => write!(f, "Application ({:#04X})", u8::from(*app)),

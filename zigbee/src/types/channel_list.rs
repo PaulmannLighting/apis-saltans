@@ -1,23 +1,22 @@
-use std::fmt::Display;
+use core::fmt::{self, Display};
 
-use le_stream::{FromLeStream, Prefixed, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::ChannelsField;
+
+/// Channel List pages.
+pub type Pages = heapless::Vec<ChannelsField, { u8::MAX as usize }, u8>;
 
 /// Channel List structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ChannelList {
-    pages: Prefixed<u8, Box<[ChannelsField]>>,
+    pages: heapless::Vec<ChannelsField, { u8::MAX as usize }, u8>,
 }
 
 impl ChannelList {
     /// Creates a new `ChannelList`.
-    ///
-    /// # Errors
-    ///
-    /// Returns the input `pages` if the length exceeds `u8::MAX`.
-    pub fn new(pages: Box<[ChannelsField]>) -> Result<Self, Box<[ChannelsField]>> {
-        pages.try_into().map(|pages| Self { pages })
+    pub fn new(pages: Pages) -> Self {
+        Self { pages }
     }
 
     /// Returns the pages.
@@ -28,7 +27,7 @@ impl ChannelList {
 }
 
 impl Display for ChannelList {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         let mut channels = self.pages.iter();
 
@@ -44,18 +43,8 @@ impl Display for ChannelList {
     }
 }
 
-impl TryFrom<Box<[ChannelsField]>> for ChannelList {
-    type Error = Box<[ChannelsField]>;
-
-    fn try_from(value: Box<[ChannelsField]>) -> Result<Self, Self::Error> {
-        Self::new(value)
-    }
-}
-
-impl TryFrom<Vec<ChannelsField>> for ChannelList {
-    type Error = Box<[ChannelsField]>;
-
-    fn try_from(value: Vec<ChannelsField>) -> Result<Self, Self::Error> {
-        Self::try_from(value.into_boxed_slice())
+impl From<Pages> for ChannelList {
+    fn from(pages: Pages) -> Self {
+        Self::new(pages)
     }
 }

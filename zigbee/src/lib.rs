@@ -1,5 +1,8 @@
 //! Zigbee library.
 
+#![no_std]
+extern crate alloc;
+
 pub use self::address::Address;
 pub use self::cluster::{Cluster, ClusterId, ClusterSpecific};
 pub use self::direction::Direction;

@@ -3,6 +3,7 @@
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 pub use self::encapsulated_global::EncapsulatedGlobal;
+pub use self::generic_tlv::GenericTlv;
 pub use self::global::{
     BeaconAppendixEncapsulation, DeviceCapabilityExtension, FragmentationOptions, Global,
     JoinerEncapsulation, KeyNegotiationProtocols, ManufacturerSpecific, NextChannelChange,
@@ -14,6 +15,7 @@ pub use self::local::{ClearAllBindingsReqEui64, Local};
 pub use self::tag::Tag;
 
 mod encapsulated_global;
+mod generic_tlv;
 mod global;
 mod local;
 mod tag;
@@ -83,6 +85,11 @@ mod iter {
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+
+    use alloc::vec;
+    use alloc::vec::Vec;
+
     use le_stream::ToLeStream;
     use macaddr::MacAddr8;
 

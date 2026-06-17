@@ -1,4 +1,4 @@
-use std::num::TryFromIntError;
+use core::num::TryFromIntError;
 
 use le_stream::{FromLeStream, ToLeStream};
 

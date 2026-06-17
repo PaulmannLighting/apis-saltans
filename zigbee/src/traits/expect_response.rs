@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 /// Trait for commands that are expected to respond with a specific response type.
 pub trait ExpectResponse<T>: Into<T> {

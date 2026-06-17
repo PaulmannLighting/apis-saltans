@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use core::fmt::{self, Display};
 
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
@@ -83,7 +83,7 @@ impl MacCapabilityFlags {
 }
 
 impl Display for MacCapabilityFlags {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
 
         let mut names = self.iter_names();

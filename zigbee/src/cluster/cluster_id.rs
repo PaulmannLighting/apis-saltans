@@ -1,4 +1,4 @@
-use std::fmt::{Display, LowerHex, UpperHex};
+use core::fmt::{self, Display, LowerHex, UpperHex};
 
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
@@ -45,19 +45,19 @@ impl ClusterId {
 }
 
 impl Display for ClusterId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?} ({:#06X})", self, self.as_u16())
     }
 }
 
 impl LowerHex for ClusterId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         LowerHex::fmt(&self.as_u16(), f)
     }
 }
 
 impl UpperHex for ClusterId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         UpperHex::fmt(&self.as_u16(), f)
     }
 }
