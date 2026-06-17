@@ -2,6 +2,7 @@
 
 use std::fmt::Display;
 
+use macaddr::MacAddr8;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use tokio::time::error::Elapsed;
@@ -23,6 +24,9 @@ pub enum Error {
 
     /// Invalid response type.
     InvalidResponseType(String),
+
+    /// Unknown device.
+    UnknownDevice(MacAddr8),
 }
 
 impl Display for Error {
@@ -33,6 +37,7 @@ impl Display for Error {
             Self::ReceiveError(error) => write!(f, "Receiving failed: {error}"),
             Self::Timeout(error) => write!(f, "Timeout: {error}"),
             Self::InvalidResponseType(error) => write!(f, "Invalid response type: {error}"),
+            Self::UnknownDevice(address) => write!(f, "Unknown device: {address}"),
         }
     }
 }
@@ -43,7 +48,7 @@ impl std::error::Error for Error {
             Self::Hardware(error) => Some(error),
             Self::ReceiveError(error) => Some(error),
             Self::Timeout(error) => Some(error),
-            Self::SendError | Self::InvalidResponseType(_) => None,
+            Self::SendError | Self::InvalidResponseType(_) | Self::UnknownDevice(_) => None,
         }
     }
 }

@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::collections::BTreeMap;
 
 use macaddr::MacAddr8;
@@ -6,8 +5,8 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zigbee::Address;
 
-use crate::Error;
 use crate::network_manager::{Device, Message};
+use crate::{Coordinator, Error};
 
 /// Handle to the network manager actor.
 pub trait NetworkManager {
@@ -93,17 +92,13 @@ pub trait NetworkManager {
     fn list_devices(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, Device>, Error>>;
 }
 
-impl<T> NetworkManager for T
-where
-    T: Borrow<Sender<Message>> + Sync,
-{
+impl NetworkManager for Sender<Message> {
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
     ) -> Result<Option<MacAddr8>, Error> {
         let (response, result) = channel();
-        self.borrow()
-            .send(Message::GetIeeeAddressFromShortId { short_id, response })
+        self.send(Message::GetIeeeAddressFromShortId { short_id, response })
             .await?;
         Ok(result.await?)
     }
@@ -113,18 +108,41 @@ where
         ieee_address: MacAddr8,
     ) -> Result<Option<u16>, Error> {
         let (response, result) = channel();
-        self.borrow()
-            .send(Message::GetShortIdFromIeeeAddress {
-                ieee_address,
-                response,
-            })
-            .await?;
+        self.send(Message::GetShortIdFromIeeeAddress {
+            ieee_address,
+            response,
+        })
+        .await?;
         Ok(result.await?)
     }
 
     async fn list_devices(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
         let (response, result) = channel();
-        self.borrow().send(Message::GetDevices { response }).await?;
+        self.send(Message::GetDevices { response }).await?;
         Ok(result.await?)
+    }
+}
+
+impl NetworkManager for Coordinator {
+    async fn get_ieee_address_from_short_id(
+        &self,
+        short_id: u16,
+    ) -> Result<Option<MacAddr8>, Error> {
+        self.network_manager
+            .get_ieee_address_from_short_id(short_id)
+            .await
+    }
+
+    async fn get_short_id_from_ieee_address(
+        &self,
+        ieee_address: MacAddr8,
+    ) -> Result<Option<u16>, Error> {
+        self.network_manager
+            .get_short_id_from_ieee_address(ieee_address)
+            .await
+    }
+
+    async fn list_devices(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
+        self.network_manager.list_devices().await
     }
 }

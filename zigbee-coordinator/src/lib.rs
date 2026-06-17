@@ -7,13 +7,14 @@ use core::time::Duration;
 
 use const_env::env_item;
 
+use self::api::ReadAttributesInternal;
 pub use self::api::{
     ColorControl, Joining, NetworkManager, OnOff, ReadAttributeResult, ReadAttributes,
     WriteAttributes,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
-use crate::retry::Retry;
+use self::retry::Retry;
 
 mod api;
 mod binding;

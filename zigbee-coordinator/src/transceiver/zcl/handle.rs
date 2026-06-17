@@ -31,7 +31,7 @@ pub trait Handle {
 
     /// Send a ZCL command to one specific device and endpoint,
     /// where the command is a native ZCL command belonging to a static cluster.
-    async fn unicast_zcl_native<T>(
+    async fn unicast_static_cluster<T>(
         &self,
         short_id: u16,
         endpoint: Endpoint,

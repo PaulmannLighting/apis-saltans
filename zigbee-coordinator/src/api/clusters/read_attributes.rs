@@ -1,13 +1,12 @@
-use std::borrow::Borrow;
-
+use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use zcl::global::read_attributes::{Command, Response};
 use zcl::{ParseAttributeError, ReadableAttribute};
-use zigbee::{Address, Endpoint};
+use zigbee::Endpoint;
 use zigbee_hw::Metadata;
 
-use crate::Error;
 use crate::transceiver::zcl::{Handle, Message, Payload};
+use crate::{Coordinator, Error, NetworkManager};
 
 /// Result of reading an attribute.
 pub type ReadAttributeResult<T> =
@@ -22,7 +21,7 @@ pub trait ReadAttributes {
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
     fn read_attributes_raw(
         &self,
-        address: Address,
+        ieee_address: MacAddr8,
         endpoint: Endpoint,
         cluster: u16,
         manufacturer_code: Option<u16>,
@@ -36,7 +35,7 @@ pub trait ReadAttributes {
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
     fn read_attributes<T>(
         &self,
-        address: Address,
+        ieee_address: MacAddr8,
         endpoint: Endpoint,
         attributes: Box<[T]>,
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
@@ -47,20 +46,82 @@ pub trait ReadAttributes {
         let ids = attributes.into_iter().map(Into::into).collect();
 
         async move {
-            self.read_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, ids)
+            self.read_attributes_raw(ieee_address, endpoint, T::ID, T::MANUFACTURER_CODE, ids)
                 .await
                 .map(Into::into)
         }
     }
 }
 
-impl<T> ReadAttributes for T
-where
-    T: Borrow<Sender<Message>> + Sync,
-{
+impl ReadAttributes for Coordinator {
     async fn read_attributes_raw(
         &self,
-        address: Address,
+        ieee_address: MacAddr8,
+        endpoint: Endpoint,
+        cluster: u16,
+        manufacturer_code: Option<u16>,
+        ids: Box<[u16]>,
+    ) -> Result<Response, Error> {
+        self.zcl
+            .read_attributes_raw(
+                self.network_manager
+                    .get_short_id_from_ieee_address(ieee_address)
+                    .await?
+                    .ok_or(Error::UnknownDevice(ieee_address))?,
+                endpoint,
+                cluster,
+                manufacturer_code,
+                ids,
+            )
+            .await
+    }
+}
+
+/// Internal trait for reading attributes using the short ID.
+pub trait ReadAttributesInternal {
+    /// Read raw attributes from a device.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
+    fn read_attributes_raw(
+        &self,
+        short_id: u16,
+        endpoint: Endpoint,
+        cluster: u16,
+        manufacturer_code: Option<u16>,
+        ids: Box<[u16]>,
+    ) -> impl Future<Output = Result<Response, Error>> + Send;
+
+    /// Read attributes from a device.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
+    fn read_attributes<T>(
+        &self,
+        short_id: u16,
+        endpoint: Endpoint,
+        attributes: Box<[T]>,
+    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
+    where
+        Self: Sync,
+        T: ReadableAttribute,
+    {
+        let ids = attributes.into_iter().map(Into::into).collect();
+
+        async move {
+            self.read_attributes_raw(short_id, endpoint, T::ID, T::MANUFACTURER_CODE, ids)
+                .await
+                .map(Into::into)
+        }
+    }
+}
+
+impl ReadAttributesInternal for Sender<Message> {
+    async fn read_attributes_raw(
+        &self,
+        short_id: u16,
         endpoint: Endpoint,
         cluster: u16,
         manufacturer_code: Option<u16>,
@@ -78,7 +139,6 @@ where
             )
         };
 
-        self.communicate(address.short_id(), endpoint, payload)
-            .await
+        self.communicate(short_id, endpoint, payload).await
     }
 }

@@ -1,9 +1,8 @@
-use std::borrow::Borrow;
 use std::time::Duration;
 
-use zigbee_hw::{Ncp, NcpHandle};
+use zigbee_hw::Ncp;
 
-use crate::Error;
+use crate::{Coordinator, Error};
 
 /// Trait to manage joining the network.
 pub trait Joining {
@@ -21,11 +20,8 @@ pub trait Joining {
     fn allow_joining(&self, duration: Duration) -> impl Future<Output = Result<Duration, Error>>;
 }
 
-impl<T> Joining for T
-where
-    T: Borrow<NcpHandle> + Sync,
-{
+impl Joining for Coordinator {
     async fn allow_joining(&self, duration: Duration) -> Result<Duration, Error> {
-        Ok(self.borrow().allow_joins(duration).await?)
+        Ok(self.ncp.allow_joins(duration).await?)
     }
 }

@@ -12,7 +12,7 @@ use self::devices::{Devices, DevicesExt};
 pub use self::endpoint_info::EndpointInfo;
 pub use self::message::Message;
 use crate::{
-    MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributes, TASK_POOL_SIZE, binding,
+    MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributesInternal, TASK_POOL_SIZE, binding,
     transceiver,
 };
 
@@ -175,7 +175,7 @@ async fn discover_attributes(
         };
 
         match zcl
-            .read_attributes(address.clone(), application.into(), ATTRIBUTES.into())
+            .read_attributes(address.short_id(), application.into(), ATTRIBUTES.into())
             .await
         {
             Ok(results) => {

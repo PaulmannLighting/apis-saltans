@@ -124,7 +124,7 @@ pub trait NcpDriver {
     /// Returns an error if the operation fails.
     fn unicast(
         &mut self,
-        short_id: u16,
+        address: u16,
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;

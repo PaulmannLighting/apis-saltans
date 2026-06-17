@@ -2,11 +2,11 @@ use log::{error, info};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 
+use self::attribute_discovery::AttributeDiscovery;
 pub use self::attribute_discovery::EndpointInfo;
+use self::descriptor_discovery::DescriptorDiscovery;
+use self::endpoint_discovery::EndpointDiscovery;
 pub use self::message::Message;
-use crate::discovery::attribute_discovery::AttributeDiscovery;
-use crate::discovery::descriptor_discovery::DescriptorDiscovery;
-use crate::discovery::endpoint_discovery::EndpointDiscovery;
 use crate::{MPSC_CHANNEL_SIZE, binding, transceiver};
 
 mod attribute_discovery;

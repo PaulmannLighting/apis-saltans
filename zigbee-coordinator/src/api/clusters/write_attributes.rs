@@ -1,13 +1,11 @@
-use std::borrow::Borrow;
-
-use tokio::sync::mpsc::Sender;
+use macaddr::MacAddr8;
 use zcl::WritableAttribute;
 use zcl::global::write_attributes::{Command, Record, Response};
-use zigbee::{Address, Endpoint};
+use zigbee::Endpoint;
 use zigbee_hw::Metadata;
 
-use crate::Error;
-use crate::transceiver::zcl::{Handle, Message, Payload};
+use crate::transceiver::zcl::{Handle, Payload};
+use crate::{Coordinator, Error, NetworkManager};
 
 /// Trait to write attributes to a device.
 pub trait WriteAttributes {
@@ -18,7 +16,7 @@ pub trait WriteAttributes {
     /// Returns an [`Error`] if the communication fails or if the response is not a valid [`Response`].
     fn write_attributes_raw(
         &self,
-        address: Address,
+        ieee_address: MacAddr8,
         endpoint: Endpoint,
         cluster: u16,
         manufacturer_code: Option<u16>,
@@ -39,7 +37,7 @@ pub trait WriteAttributes {
     /// Returns an [`Error`] if the communication fails or if the response is not a valid [`Response`].
     fn write_attributes<T>(
         &self,
-        address: Address,
+        ieee_address: MacAddr8,
         endpoint: Endpoint,
         attributes: Box<[T]>,
     ) -> impl Future<Output = Result<Vec<Result<u16, u16>>, Error>> + Send
@@ -50,20 +48,17 @@ pub trait WriteAttributes {
         let records = attributes.into_iter().map(Into::into).collect();
 
         async move {
-            self.write_attributes_raw(address, endpoint, T::ID, T::MANUFACTURER_CODE, records)
+            self.write_attributes_raw(ieee_address, endpoint, T::ID, T::MANUFACTURER_CODE, records)
                 .await
                 .map(|response| response.into_iter().map(TryInto::try_into).collect())
         }
     }
 }
 
-impl<T> WriteAttributes for T
-where
-    T: Borrow<Sender<Message>> + Sync,
-{
+impl WriteAttributes for Coordinator {
     async fn write_attributes_raw(
         &self,
-        address: Address,
+        ieee_address: MacAddr8,
         endpoint: Endpoint,
         cluster: u16,
         manufacturer_code: Option<u16>,
@@ -81,7 +76,15 @@ where
             )
         };
 
-        self.communicate(address.short_id(), endpoint, payload)
+        self.zcl
+            .communicate(
+                self.network_manager
+                    .get_short_id_from_ieee_address(ieee_address)
+                    .await?
+                    .ok_or(Error::UnknownDevice(ieee_address))?,
+                endpoint,
+                payload,
+            )
             .await
     }
 }
