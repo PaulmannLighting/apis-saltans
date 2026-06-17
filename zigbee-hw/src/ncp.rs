@@ -134,6 +134,19 @@ pub trait Ncp {
         endpoint: Endpoint,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
+
+    /// Send a multicast ZCL command.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn multicast(
+        &self,
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        frame: Frame,
+    ) -> impl Future<Output = Result<u8, Error>> + Send;
 }
 
 impl Ncp for Sender<Message> {
@@ -227,6 +240,25 @@ impl Ncp for Sender<Message> {
         self.send(Message::Unicast {
             short_id,
             endpoint,
+            frame,
+            response,
+        })
+        .await?;
+        rx.await?
+    }
+
+    async fn multicast(
+        &self,
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        frame: Frame,
+    ) -> Result<u8, Error> {
+        let (response, rx) = oneshot::channel();
+        self.send(Message::Multicast {
+            group_id,
+            hops,
+            radius,
             frame,
             response,
         })
