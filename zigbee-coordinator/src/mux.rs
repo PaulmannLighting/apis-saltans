@@ -32,13 +32,13 @@ impl Mux {
     }
 
     /// Run the multiplexer.
-    pub async fn run(mut self, mut messages: Receiver<Event>) {
+    pub async fn run(self, mut messages: Receiver<Event>) {
         while let Some(event) = messages.recv().await {
             self.multiplex(event).await;
         }
     }
 
-    async fn multiplex(&mut self, event: Event) {
+    async fn multiplex(&self, event: Event) {
         match event {
             Event::DeviceJoined(address) => {
                 self.discovery
