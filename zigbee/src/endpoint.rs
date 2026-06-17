@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::str::FromStr;
 
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -81,6 +82,14 @@ impl From<Endpoint> for u8 {
             Endpoint::Reserved(reserved) => reserved.into(),
             Endpoint::Broadcast => 255,
         }
+    }
+}
+
+impl FromStr for Endpoint {
+    type Err = <u8 as FromStr>::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        u8::from_str(s).map(Into::into)
     }
 }
 
