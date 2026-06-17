@@ -15,6 +15,7 @@ pub use self::api::{
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
 use self::retry::Retry;
+pub use crate::network_manager::{Attributes, Device, Endpoint, State};
 
 mod api;
 mod binding;

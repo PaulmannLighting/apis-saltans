@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::Device;
+pub use self::attributes::Attributes;
+pub use self::device::Device;
+pub use self::endpoint::Endpoint;
+
+mod attributes;
+mod device;
+mod endpoint;
 
 /// The persistent state.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize, Serialize)]

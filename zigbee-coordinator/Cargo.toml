@@ -9,13 +9,13 @@ const_env = "0.1"
 le-stream = { version = "9", features = ["derive"] }
 log = "0.4"
 macaddr = "1"
+serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
 tokio-task-pool = "0.1"
-zcl = { path = "../zcl", version = "0.1" }
-zdp = { path = "../zdp", version = "0.1" }
-zigbee = { path = "../zigbee", version = "0.1" }
+zcl = { path = "../zcl", version = "0.1", features = ["serde"] }
+zdp = { path = "../zdp", version = "0.1", features = ["serde"] }
+zigbee = { path = "../zigbee", version = "0.1", features = ["serde"] }
 zigbee-hw = { path = "../zigbee-hw", version = "0.1" }
-zigbee-persistence = { path = "../zigbee-persistence", version = "0.1" }
 
 [lints]
 workspace = true

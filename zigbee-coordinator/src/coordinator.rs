@@ -2,11 +2,10 @@ use ::zdp::SimpleDescriptor;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle};
-use zigbee_persistence::State;
 
 use crate::mux::Mux;
 use crate::transceiver::{zcl, zdp};
-use crate::{MPSC_CHANNEL_SIZE, binding, discovery, network_manager};
+use crate::{MPSC_CHANNEL_SIZE, State, binding, discovery, network_manager};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]

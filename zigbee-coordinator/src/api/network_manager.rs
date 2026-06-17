@@ -4,10 +4,9 @@ use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zigbee::Address;
-use zigbee_persistence::Device;
 
 use crate::network_manager::Message;
-use crate::{Coordinator, Error};
+use crate::{Coordinator, Device, Error};
 
 /// Handle to the network manager actor.
 pub trait NetworkManager {

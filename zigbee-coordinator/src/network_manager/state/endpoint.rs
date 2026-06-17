@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use zdp::SimpleDescriptor;
 
-use crate::Attributes;
+use super::Attributes;
 
 /// Information about an endpoint.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]

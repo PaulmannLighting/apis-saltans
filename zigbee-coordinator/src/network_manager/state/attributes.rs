@@ -1,15 +1,27 @@
 use log::{trace, warn};
+use serde::{Deserialize, Serialize};
 use zcl::general::basic::readable::{Attribute, Id};
-use zigbee_persistence::Attributes;
+use zcl::general::basic::{DateCode, PowerSource};
 
 use crate::ReadAttributeResult;
 
-pub trait UpdateFromAttributesResults {
-    fn from_attributes_results(attributes: Box<[ReadAttributeResult<Id>]>) -> Self;
+/// The attributes we want to discover.
+#[derive(Clone, Debug, Default, Eq, PartialEq, Hash, Deserialize, Serialize)]
+pub struct Attributes {
+    pub zcl_version: Option<u8>,
+    pub application_version: Option<u8>,
+    pub stack_version: Option<u8>,
+    pub hw_version: Option<u8>,
+    pub manufacturer_name: Option<String>,
+    pub model_identifier: Option<String>,
+    pub date_code: Option<DateCode>,
+    pub power_source: Option<PowerSource>,
+    pub location_description: Option<String>,
+    pub sw_build_id: Option<String>,
 }
 
-impl UpdateFromAttributesResults for Attributes {
-    fn from_attributes_results(attributes: Box<[ReadAttributeResult<Id>]>) -> Self {
+impl From<Box<[ReadAttributeResult<Id>]>> for Attributes {
+    fn from(attributes: Box<[ReadAttributeResult<Id>]>) -> Self {
         let mut instance = Self::default();
 
         for attribute in attributes.into_iter().filter_map(|result| {

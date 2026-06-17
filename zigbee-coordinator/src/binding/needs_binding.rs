@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
 use zigbee::{ClusterId, Endpoint};
-use zigbee_persistence::Endpoint as EndpointInfo;
+
+use crate::Endpoint as EndpointInfo;
 
 /// Helper trait to check if an endpoint needs binding.
 pub trait NeedsBinding {

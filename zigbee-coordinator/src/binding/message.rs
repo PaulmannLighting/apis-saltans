@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
 use zigbee::{Address, ClusterId, Endpoint};
-use zigbee_persistence::Endpoint as EndpointInfo;
+
+use crate::Endpoint as EndpointInfo;
 
 /// Messages received by the binding management actor.
 #[derive(Debug)]

@@ -2,9 +2,9 @@ use std::collections::btree_map::OccupiedEntry;
 use std::collections::{BTreeMap, BTreeSet};
 
 use zigbee::{Address, ClusterId, Endpoint};
-use zigbee_persistence::Endpoint as EndpointInfo;
 
 use super::BIND_OUTPUT_CLUSTERS;
+use crate::Endpoint as EndpointInfo;
 
 /// Type alias for the device map.
 pub type Devices = BTreeMap<Address, Endpoints>;

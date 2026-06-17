@@ -6,17 +6,14 @@ use tokio_task_pool::Pool;
 use zcl::general::basic::readable::Id;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
-pub use zigbee_persistence::Attributes;
 
-use self::attributes::UpdateFromAttributesResults;
 use self::devices::{Devices, DevicesExt};
 pub use self::message::Message;
 use crate::{
-    MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributesInternal, TASK_POOL_SIZE, binding,
-    transceiver,
+    Attributes, MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributesInternal,
+    TASK_POOL_SIZE, binding, transceiver,
 };
 
-mod attributes;
 mod devices;
 mod endpoint_info;
 mod message;
@@ -128,7 +125,7 @@ impl AttributeDiscovery {
             return;
         };
 
-        endpoint.set_attributes(Attributes::from_attributes_results(results));
+        endpoint.set_attributes(results.into());
         self.forward_device_if_complete(address).await;
     }
 

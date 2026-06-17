@@ -4,11 +4,12 @@ use log::{debug, error};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use zigbee::Address;
-use zigbee_persistence::{Device, State};
 
 pub use self::message::Message;
+pub use self::state::{Attributes, Device, Endpoint, State};
 
 mod message;
+mod state;
 
 /// The network management actor.
 #[derive(Debug, Default)]

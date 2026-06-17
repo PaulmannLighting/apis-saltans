@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use zigbee::{Address, Endpoint};
 
-use crate::Endpoint as EndpointInfo;
+use super::Endpoint as EndpointInfo;
 
 /// A Zigbee network device.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
