@@ -25,6 +25,7 @@ mod error;
 mod mux;
 mod network_manager;
 mod retry;
+mod smarthomelib;
 mod timeout;
 mod transceiver;
 
