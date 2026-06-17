@@ -1,3 +1,4 @@
+use ::zdp::SimpleDescriptor;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle, bridge};
@@ -11,10 +12,10 @@ use crate::{MPSC_CHANNEL_SIZE, binding, discovery, mux, network_manager};
 pub struct Coordinator {
     pub(crate) ncp: NcpHandle,
     pub(crate) zcl: Sender<zcl::Message>,
-    pub(crate) zdp: Sender<zdp::Message>,
+    pub(crate) _zdp: Sender<zdp::Message>,
     pub(crate) network_manager: Sender<network_manager::Message>,
-    pub(crate) binding_manager: Sender<binding::Message>,
-    pub(crate) mux: Sender<mux::Message>,
+    pub(crate) _binding_manager: Sender<binding::Message>,
+    pub(crate) _mux: Sender<mux::Message>,
 }
 
 impl Coordinator {
@@ -23,13 +24,13 @@ impl Coordinator {
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
-    pub async fn start<T>(hardware: T) -> Result<Self, Error>
+    pub async fn start<T>(hardware: T, endpoints: Box<[SimpleDescriptor]>) -> Result<Self, Error>
     where
         T: Start,
     {
-        let (ncp, events) = hardware.start().await?;
+        let (ncp, events) = hardware.start(&endpoints).await?;
         let zcl_tx = Self::start_zcl_transceiver(ncp.clone());
-        let zdp_tx = Self::start_zdp_transceiver(ncp.clone());
+        let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), endpoints);
         let (mux, discovery_rx) = Self::start_mux(events, zcl_tx.clone(), zdp_tx.clone());
         let network_manager = Self::start_network_manager(&mux).await?;
         let binding_manager = Self::start_binding_manager(
@@ -47,10 +48,10 @@ impl Coordinator {
         Ok(Self {
             ncp,
             zcl: zcl_tx,
-            zdp: zdp_tx,
+            _zdp: zdp_tx,
             network_manager,
-            binding_manager,
-            mux,
+            _binding_manager: binding_manager,
+            _mux: mux,
         })
     }
 
@@ -75,9 +76,12 @@ impl Coordinator {
     }
 
     /// Start the ZDP transceiver.
-    fn start_zdp_transceiver(ncp: NcpHandle) -> Sender<zdp::Message> {
+    fn start_zdp_transceiver(
+        ncp: NcpHandle,
+        endpoints: Box<[SimpleDescriptor]>,
+    ) -> Sender<zdp::Message> {
         let (zdp_tx, zdp_rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(zdp::Transceiver::new(ncp).run(zdp_rx));
+        spawn(zdp::Transceiver::new(ncp, endpoints).run(zdp_rx));
         zdp_tx
     }
 
