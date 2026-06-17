@@ -1,5 +1,6 @@
 # TODOs
 
+- [ ] Implement start/stop API to allow restarting the hardware during program's runtime.
 - [ ] <s>Incorporate message back-channel into `NcpDriver` trait, so that drivers can send messages back to the
   coordinator.</s>
 - [x] Add a method to `NcpDriver` to allow starting the actor and returning an `Ncp` proxy object.
