@@ -9,8 +9,6 @@ pub use self::reserved::Reserved;
 mod application;
 mod reserved;
 
-const DEFAULT_ENDPOINT: u8 = 0x01;
-
 /// A Zigbee endpoint ID.
 #[cfg_attr(
     feature = "serde",
@@ -47,7 +45,7 @@ impl Endpoint {
 
 impl Default for Endpoint {
     fn default() -> Self {
-        DEFAULT_ENDPOINT.into()
+        Application::default().into()
     }
 }
 
