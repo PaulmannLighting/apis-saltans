@@ -42,3 +42,12 @@ impl From<SimpleDescriptor> for EndpointInfo {
         }
     }
 }
+
+impl From<EndpointInfo> for zigbee_persistence::Endpoint {
+    fn from(endpoint_info: EndpointInfo) -> Self {
+        Self::new(
+            endpoint_info.descriptor,
+            endpoint_info.attributes.unwrap_or_default(),
+        )
+    }
+}

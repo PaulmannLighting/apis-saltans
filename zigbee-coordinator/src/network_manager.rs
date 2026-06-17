@@ -4,11 +4,10 @@ use log::{debug, error};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use zigbee::Address;
+use zigbee_persistence::{Device, State};
 
-pub use self::device::Device;
 pub use self::message::Message;
 
-mod device;
 mod message;
 
 /// The network management actor.
@@ -21,11 +20,20 @@ pub struct Actor {
 impl Actor {
     /// Create a new actor.
     #[must_use]
-    pub const fn new() -> Self {
-        Self {
-            devices: BTreeMap::new(),
-            short_ids: BTreeMap::new(),
-        }
+    pub fn new(state: State) -> Self {
+        let mut short_ids = BTreeMap::new();
+        let devices = state
+            .devices
+            .into_iter()
+            .map(|device| {
+                let short_id = device.address.short_id();
+                let ieee_address = device.address.ieee_address();
+                short_ids.insert(short_id, ieee_address);
+                (ieee_address, device)
+            })
+            .collect();
+
+        Self { devices, short_ids }
     }
 
     /// Run the actor.
@@ -50,7 +58,7 @@ impl Actor {
                         .send(
                             self.devices
                                 .get(&ieee_address)
-                                .map(|device| device.address().short_id()),
+                                .map(|device| device.address.short_id()),
                         )
                         .unwrap_or_else(|error| {
                             error!("Failed to send response: {error:?}");
@@ -75,9 +83,8 @@ impl Actor {
     }
 
     fn add_device(&mut self, device: Device) {
-        let address = device.address();
-        let ieee_address = address.ieee_address();
-        let short_id = address.short_id();
+        let ieee_address = device.address.ieee_address();
+        let short_id = device.address.short_id();
         self.devices.insert(ieee_address, device);
         self.short_ids.insert(short_id, ieee_address);
     }

@@ -13,6 +13,7 @@ pub type Clusters = ByteSizedVec<u16>;
 type Parts = (Endpoint, u16, u16, u8, Box<[u16]>, Box<[u16]>);
 
 /// Simple descriptor.
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct SimpleDescriptor {
     endpoint: Endpoint,

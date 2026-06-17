@@ -8,7 +8,10 @@ use crate::Endpoint as EndpointInfo;
 /// A Zigbee network device.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub struct Device {
+    /// The full address of the device.
     pub address: Address,
+
+    /// The endpoints of the device.
     pub endpoints: BTreeMap<Endpoint, EndpointInfo>,
 }
 

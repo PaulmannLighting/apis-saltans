@@ -6,13 +6,13 @@ use tokio_task_pool::Pool;
 use zdp::{BindReq, Destination, Status};
 use zigbee::{Address, ClusterId, Endpoint};
 use zigbee_hw::{Ncp, WeakNcpHandle};
+use zigbee_persistence::Endpoint as EndpointInfo;
 
 use self::clusters_to_bind::ClustersToBind;
 pub use self::devices_ext::Devices;
 use self::devices_ext::DevicesExt;
 pub use self::message::Message;
 use crate::binding::needs_binding::NeedsBinding;
-use crate::discovery::EndpointInfo;
 use crate::transceiver::zdp::Handle;
 use crate::{MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, network_manager, transceiver};
 

@@ -11,6 +11,15 @@ pub struct Endpoint {
 }
 
 impl Endpoint {
+    /// Create a new instance of `Endpoint`.
+    #[must_use]
+    pub const fn new(descriptor: SimpleDescriptor, attributes: Attributes) -> Self {
+        Self {
+            descriptor,
+            attributes,
+        }
+    }
+
     /// Get the descriptor.
     #[must_use]
     pub const fn descriptor(&self) -> &SimpleDescriptor {

@@ -11,6 +11,11 @@ mod reserved;
 const DEFAULT_ENDPOINT: u8 = 0x01;
 
 /// A Zigbee endpoint ID.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Deserialize, serde::Serialize),
+    serde(from = "u8", into = "u8")
+)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 pub enum Endpoint {
     /// Data interface of the Zigbee Device Object (ZDO).

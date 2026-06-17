@@ -6,10 +6,10 @@ use tokio_task_pool::Pool;
 use zcl::general::basic::readable::Id;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
+pub use zigbee_persistence::Attributes;
 
-pub use self::attributes::Attributes;
+use self::attributes::UpdateFromAttributesResults;
 use self::devices::{Devices, DevicesExt};
-pub use self::endpoint_info::EndpointInfo;
 pub use self::message::Message;
 use crate::{
     MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributesInternal, TASK_POOL_SIZE, binding,
@@ -128,7 +128,7 @@ impl AttributeDiscovery {
             return;
         };
 
-        endpoint.set_attributes(results.into());
+        endpoint.set_attributes(Attributes::from_attributes_results(results));
         self.forward_device_if_complete(address).await;
     }
 
@@ -150,7 +150,13 @@ impl AttributeDiscovery {
 
             trace!("Forwarding device {address} to binding manager: {endpoints:?}.");
             binding_manager
-                .send(binding::Message::DeviceDiscovered { address, endpoints })
+                .send(binding::Message::DeviceDiscovered {
+                    address,
+                    endpoints: endpoints
+                        .into_iter()
+                        .map(|(endpoint, info)| (endpoint, info.into()))
+                        .collect(),
+                })
                 .await
                 .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
         } else {

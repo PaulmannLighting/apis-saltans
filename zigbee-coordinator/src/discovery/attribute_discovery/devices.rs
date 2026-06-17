@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, ClusterId, Endpoint};
 
-use crate::discovery::EndpointInfo;
+use super::endpoint_info::EndpointInfo;
 
 /// Type alias for a map of devices to their endpoints.
 pub type Devices = BTreeMap<Address, BTreeMap<Endpoint, EndpointInfo>>;

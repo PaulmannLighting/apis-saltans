@@ -4,8 +4,9 @@ use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zigbee::Address;
+use zigbee_persistence::Device;
 
-use crate::network_manager::{Device, Message};
+use crate::network_manager::Message;
 use crate::{Coordinator, Error};
 
 /// Handle to the network manager actor.
@@ -89,7 +90,7 @@ pub trait NetworkManager {
     /// # Errors
     ///
     /// Returns an [`Error`] if the communication with the actor failed.
-    fn list_devices(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, Device>, Error>>;
+    fn state(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, Device>, Error>>;
 }
 
 impl NetworkManager for Sender<Message> {
@@ -116,7 +117,7 @@ impl NetworkManager for Sender<Message> {
         Ok(result.await?)
     }
 
-    async fn list_devices(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
+    async fn state(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
         let (response, result) = channel();
         self.send(Message::GetDevices { response }).await?;
         Ok(result.await?)
@@ -142,7 +143,7 @@ impl NetworkManager for Coordinator {
             .await
     }
 
-    async fn list_devices(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
-        self.network_manager.list_devices().await
+    async fn state(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
+        self.network_manager.state().await
     }
 }

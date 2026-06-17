@@ -5,13 +5,17 @@ edition = "2024"
 
 [dependencies]
 bitflags = "2"
-heapless = "0.9.3"
+heapless = "0.9"
 le-stream = { version = "9", features = ["derive", "macaddr"] }
 macaddr = "1.0"
 num-derive = "0.4"
 num-traits = "0.2"
 repr-discriminant = { version = "3", features = ["derive"] }
+serde = { version = "1", optional = true }
 zigbee = { version = "0.1", path = "../zigbee" }
+
+[features]
+serde = ["serde/derive", "heapless/serde", "macaddr/serde", "zigbee/serde"]
 
 [lints]
 workspace = true

@@ -1,100 +1,16 @@
 use log::{trace, warn};
 use zcl::general::basic::readable::{Attribute, Id};
-use zcl::general::basic::{DateCode, PowerSource};
+use zigbee_persistence::Attributes;
 
 use crate::ReadAttributeResult;
 
-/// The attributes we want to discover.
-#[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
-pub struct Attributes {
-    pub(crate) zcl_version: Option<u8>,
-    pub(crate) application_version: Option<u8>,
-    pub(crate) stack_version: Option<u8>,
-    pub(crate) hw_version: Option<u8>,
-    pub(crate) manufacturer_name: Option<String>,
-    pub(crate) model_identifier: Option<String>,
-    pub(crate) date_code: Option<DateCode>,
-    pub(crate) power_source: Option<PowerSource>,
-    pub(crate) location_description: Option<String>,
-    pub(crate) sw_build_id: Option<String>,
+pub trait UpdateFromAttributesResults {
+    fn from_attributes_results(attributes: Box<[ReadAttributeResult<Id>]>) -> Self;
 }
 
-impl Attributes {
-    /// Get the ZCL version.
-    #[must_use]
-    pub const fn zcl_version(&self) -> Option<u8> {
-        self.zcl_version
-    }
-
-    /// Get the application version.
-    #[must_use]
-    pub const fn application_version(&self) -> Option<u8> {
-        self.application_version
-    }
-
-    /// Get the stack version.
-    #[must_use]
-    pub const fn stack_version(&self) -> Option<u8> {
-        self.stack_version
-    }
-
-    /// Get the hardware version.
-    #[must_use]
-    pub const fn hw_version(&self) -> Option<u8> {
-        self.hw_version
-    }
-
-    /// Get the manufacturer name.
-    #[must_use]
-    pub fn manufacturer_name(&self) -> Option<&str> {
-        self.manufacturer_name.as_deref()
-    }
-
-    /// Get the model identifier.
-    #[must_use]
-    pub fn model_identifier(&self) -> Option<&str> {
-        self.model_identifier.as_deref()
-    }
-
-    /// Get the date code.
-    #[must_use]
-    pub const fn date_code(&self) -> Option<&DateCode> {
-        self.date_code.as_ref()
-    }
-
-    /// Get the power source.
-    #[must_use]
-    pub const fn power_source(&self) -> Option<PowerSource> {
-        self.power_source
-    }
-
-    /// Get the location description.
-    #[must_use]
-    pub fn location_description(&self) -> Option<&str> {
-        self.location_description.as_deref()
-    }
-
-    /// Get the software build ID.
-    #[must_use]
-    pub fn sw_build_id(&self) -> Option<&str> {
-        self.sw_build_id.as_deref()
-    }
-}
-
-impl From<Box<[ReadAttributeResult<Id>]>> for Attributes {
-    fn from(attributes: Box<[ReadAttributeResult<Id>]>) -> Self {
-        let mut instance = Self {
-            zcl_version: None,
-            application_version: None,
-            stack_version: None,
-            hw_version: None,
-            manufacturer_name: None,
-            model_identifier: None,
-            date_code: None,
-            power_source: None,
-            location_description: None,
-            sw_build_id: None,
-        };
+impl UpdateFromAttributesResults for Attributes {
+    fn from_attributes_results(attributes: Box<[ReadAttributeResult<Id>]>) -> Self {
+        let mut instance = Self::default();
 
         for attribute in attributes.into_iter().filter_map(|result| {
             result

@@ -15,6 +15,7 @@ zcl = { path = "../zcl", version = "0.1" }
 zdp = { path = "../zdp", version = "0.1" }
 zigbee = { path = "../zigbee", version = "0.1" }
 zigbee-hw = { path = "../zigbee-hw", version = "0.1" }
+zigbee-persistence = { path = "../zigbee-persistence", version = "0.1" }
 
 [lints]
 workspace = true

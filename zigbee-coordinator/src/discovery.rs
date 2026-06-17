@@ -3,7 +3,7 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 
 use self::attribute_discovery::AttributeDiscovery;
-pub use self::attribute_discovery::EndpointInfo;
+pub use self::attribute_discovery::Attributes;
 use self::descriptor_discovery::DescriptorDiscovery;
 use self::endpoint_discovery::EndpointDiscovery;
 pub use self::message::Message;

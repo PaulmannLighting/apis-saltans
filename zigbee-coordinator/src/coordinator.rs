@@ -2,6 +2,7 @@ use ::zdp::SimpleDescriptor;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle};
+use zigbee_persistence::State;
 
 use crate::mux::Mux;
 use crate::transceiver::{zcl, zdp};
@@ -23,14 +24,18 @@ impl Coordinator {
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
-    pub async fn start<T>(hardware: T, endpoints: &[SimpleDescriptor]) -> Result<Self, Error>
+    pub async fn start<T>(
+        hardware: T,
+        endpoints: &[SimpleDescriptor],
+        state: State,
+    ) -> Result<Self, Error>
     where
         T: Start,
     {
         let (ncp, events) = hardware.start(endpoints).await?;
 
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
-        let network_manager = Self::start_network_manager();
+        let network_manager = Self::start_network_manager(state);
 
         let zcl_tx = Self::start_zcl_transceiver(ncp.clone());
         let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), discovery_tx.downgrade(), endpoints);
@@ -95,9 +100,9 @@ impl Coordinator {
     }
 
     /// Start the network manager.
-    fn start_network_manager() -> Sender<network_manager::Message> {
+    fn start_network_manager(state: State) -> Sender<network_manager::Message> {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(network_manager::Actor::new().run(rx));
+        spawn(network_manager::Actor::new(state).run(rx));
         tx
     }
 

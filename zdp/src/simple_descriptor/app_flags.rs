@@ -2,6 +2,11 @@ use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
 /// Application flags for the version and reserved bits.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Deserialize, serde::Serialize),
+    serde(transparent)
+)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct AppFlags(u8);
 
