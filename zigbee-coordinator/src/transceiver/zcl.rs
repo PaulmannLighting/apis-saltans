@@ -39,7 +39,7 @@ impl<T> Transceiver<T> {
 
 impl<T> Transceiver<T>
 where
-    T: Ncp,
+    T: Ncp + Sync,
 {
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
@@ -133,7 +133,6 @@ where
         frame: Payload<Cluster>,
     ) -> Result<u8, zigbee_hw::Error> {
         let (metadata, manufacturer_code, command) = frame.into_parts();
-
         let zcl_frame = self.make_zcl_frame(seq, manufacturer_code, command);
 
         #[expect(unsafe_code)]
