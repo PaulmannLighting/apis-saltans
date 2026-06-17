@@ -1,11 +1,11 @@
 use ::zdp::SimpleDescriptor;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
-use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle, bridge};
+use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle};
 
-use crate::mux::{Handle as MuxHandle, Mux};
+use crate::mux::Mux;
 use crate::transceiver::{zcl, zdp};
-use crate::{MPSC_CHANNEL_SIZE, binding, discovery, mux, network_manager};
+use crate::{MPSC_CHANNEL_SIZE, binding, discovery, network_manager};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
@@ -15,7 +15,6 @@ pub struct Coordinator {
     pub(crate) _zdp: Sender<zdp::Message>,
     pub(crate) network_manager: Sender<network_manager::Message>,
     pub(crate) _binding_manager: Sender<binding::Message>,
-    pub(crate) _mux: Sender<mux::Message>,
 }
 
 impl Coordinator {
@@ -31,13 +30,18 @@ impl Coordinator {
         let (ncp, events) = hardware.start(endpoints).await?;
 
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
+        let network_manager = Self::start_network_manager();
 
         let zcl_tx = Self::start_zcl_transceiver(ncp.clone());
         let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), discovery_tx.downgrade(), endpoints);
 
-        let mux = Self::start_mux(events, zcl_tx.clone(), zdp_tx.clone(), discovery_tx);
-
-        let network_manager = Self::start_network_manager(&mux).await?;
+        Self::start_mux(
+            events,
+            zcl_tx.clone(),
+            zdp_tx.clone(),
+            discovery_tx,
+            network_manager.clone(),
+        );
 
         let binding_manager = Self::start_binding_manager(
             zdp_tx.downgrade(),
@@ -58,7 +62,6 @@ impl Coordinator {
             _zdp: zdp_tx,
             network_manager,
             _binding_manager: binding_manager,
-            _mux: mux,
         })
     }
 
@@ -68,11 +71,9 @@ impl Coordinator {
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
         discovery_tx: Sender<discovery::Message>,
-    ) -> Sender<mux::Message> {
-        let (mux_tx, mux_rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(bridge(events, mux_tx.clone()));
-        spawn(Mux::new(zcl_tx, zdp_tx, discovery_tx).run(mux_rx));
-        mux_tx
+        network_manager: Sender<network_manager::Message>,
+    ) {
+        spawn(Mux::new(zcl_tx, zdp_tx, discovery_tx, network_manager).run(events));
     }
 
     /// Start the ZCL transceiver.
@@ -94,16 +95,10 @@ impl Coordinator {
     }
 
     /// Start the network manager.
-    async fn start_network_manager(
-        mux: &Sender<mux::Message>,
-    ) -> Result<Sender<network_manager::Message>, Error> {
-        let network_manager = network_manager::Actor::new();
-        let (network_manager_tx, network_manager_rx) = channel(MPSC_CHANNEL_SIZE);
-        let (events_tx, events_rx) = channel(MPSC_CHANNEL_SIZE);
-        mux.subscribe(events_tx).await?;
-        spawn(bridge(events_rx, network_manager_tx.clone()));
-        spawn(network_manager.run(network_manager_rx));
-        Ok(network_manager_tx)
+    fn start_network_manager() -> Sender<network_manager::Message> {
+        let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
+        spawn(network_manager::Actor::new().run(rx));
+        tx
     }
 
     /// Start the binding manager.

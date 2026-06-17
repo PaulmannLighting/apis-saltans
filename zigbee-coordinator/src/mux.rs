@@ -1,14 +1,10 @@
 use aps::data::Frame;
 use log::trace;
-use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zigbee_hw::{Command, Event};
 
-pub use self::message::Message;
-use crate::discovery;
 use crate::transceiver::{zcl, zdp};
-
-mod message;
+use crate::{discovery, network_manager};
 
 /// Event multiplexer.
 #[derive(Debug)]
@@ -16,7 +12,7 @@ pub struct Mux {
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
     discovery: Sender<discovery::Message>,
-    subscribers: Vec<Sender<Event>>,
+    network_manager: Sender<network_manager::Message>,
 }
 
 impl Mux {
@@ -25,28 +21,24 @@ impl Mux {
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
         discovery: Sender<discovery::Message>,
+        network_manager: Sender<network_manager::Message>,
     ) -> Self {
         Self {
             zcl,
             zdp,
             discovery,
-            subscribers: Vec::new(),
+            network_manager,
         }
     }
 
     /// Run the multiplexer.
-    pub async fn run(mut self, mut messages: Receiver<Message>) {
-        while let Some(message) = messages.recv().await {
-            match message {
-                Message::Event(event) => self.multiplex(event).await,
-                Message::Subscribe { sender } => self.subscribers.push(sender),
-            }
+    pub async fn run(mut self, mut messages: Receiver<Event>) {
+        while let Some(event) = messages.recv().await {
+            self.multiplex(event).await;
         }
     }
 
     async fn multiplex(&mut self, event: Event) {
-        self.forward_to_subscribers(&event).await;
-
         match event {
             Event::DeviceJoined(address) => {
                 self.discovery
@@ -64,6 +56,13 @@ impl Mux {
                         trace!("Failed to send device rejoined message: {error}");
                     });
             }
+            Event::DeviceLeft(address) => self
+                .network_manager
+                .send(network_manager::Message::RemoveDevice(address))
+                .await
+                .unwrap_or_else(|error| {
+                    trace!("Failed to send device left message: {error}");
+                }),
             Event::MessageReceived {
                 src_address,
                 aps_frame,
@@ -72,17 +71,6 @@ impl Mux {
             }
             other => trace!("Received unknown event: {other:?}"),
         }
-    }
-
-    async fn forward_to_subscribers(&mut self, event: &Event) {
-        for subscriber in &self.subscribers {
-            if let Err(error) = subscriber.send(event.clone()).await {
-                trace!("Subscriber went away: {error}");
-            }
-        }
-
-        self.subscribers
-            .retain(|subscriber| !subscriber.is_closed());
     }
 
     async fn forward_received_message(&self, src_address: u16, aps_frame: Frame<Command>) {
@@ -112,24 +100,5 @@ impl Mux {
                     });
             }
         }
-    }
-}
-
-/// A handle on the multiplexer actor.
-pub trait Handle {
-    /// Subscribe to an event.
-    ///
-    /// # Errors
-    ///
-    /// Returns a [`SendError`] if the multiplexer is no longer running.
-    fn subscribe(
-        &self,
-        sender: Sender<Event>,
-    ) -> impl Future<Output = Result<(), SendError<Message>>>;
-}
-
-impl Handle for Sender<Message> {
-    async fn subscribe(&self, sender: Sender<Event>) -> Result<(), SendError<Message>> {
-        self.send(Message::Subscribe { sender }).await
     }
 }
