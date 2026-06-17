@@ -6,6 +6,9 @@ use crate::ByteSizedVec;
 
 mod app_flags;
 
+/// Type alias for a list of clusters.
+pub type Clusters = ByteSizedVec<u16>;
+
 /// Type alias for the constituent parts of a simple descriptor.
 type Parts = (Endpoint, u16, u16, u8, Box<[u16]>, Box<[u16]>);
 
@@ -16,8 +19,8 @@ pub struct SimpleDescriptor {
     profile_id: u16,
     device_id: u16,
     app_flags: AppFlags,
-    input_clusters: ByteSizedVec<u16>,
-    output_clusters: ByteSizedVec<u16>,
+    input_clusters: Clusters,
+    output_clusters: Clusters,
 }
 
 impl SimpleDescriptor {
@@ -28,8 +31,8 @@ impl SimpleDescriptor {
         profile: Profile,
         device_id: u16,
         app_flags: AppFlags,
-        input_clusters: ByteSizedVec<u16>,
-        output_clusters: ByteSizedVec<u16>,
+        input_clusters: Clusters,
+        output_clusters: Clusters,
     ) -> Self {
         Self {
             endpoint,
