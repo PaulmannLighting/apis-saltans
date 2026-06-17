@@ -50,8 +50,8 @@ mod iterator {
 
         fn next(&mut self) -> Option<Self::Item> {
             match self {
-                DestinationIterator::U8(iter) => iter.next(),
-                DestinationIterator::U16(iter) => iter.next(),
+                Self::U8(iter) => iter.next(),
+                Self::U16(iter) => iter.next(),
             }
         }
     }

@@ -1,4 +1,3 @@
-use le_stream::FromLeStream;
 
 pub use self::acknowledgement::AckFmt;
 pub use self::control::{Control, DeliveryMode, FrameType};
