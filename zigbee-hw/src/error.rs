@@ -9,12 +9,18 @@ use tokio::sync::oneshot::error::RecvError;
 pub enum Error {
     /// An implementation-specific error occurred.
     Implementation(Arc<dyn std::error::Error + Send + Sync>),
+
     /// An error occurred while sending a message to a driver actor.
     DriverSend,
+
     /// An error occurred while receiving a message from a driver actor.
     DriverRecv,
+
     /// An unimplemented feature was invoked.
     NotImplemented,
+
+    /// No endpoints were provided.
+    NoEndpoints,
 }
 
 impl Display for Error {
@@ -24,6 +30,7 @@ impl Display for Error {
             Self::DriverSend => write!(f, "Failed to send message to driver actor"),
             Self::DriverRecv => write!(f, "Failed to receive message from driver actor"),
             Self::NotImplemented => write!(f, "Feature not implemented"),
+            Self::NoEndpoints => write!(f, "No endpoints provided"),
         }
     }
 }
@@ -32,7 +39,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Implementation(error) => Some(&**error),
-            Self::DriverSend | Self::DriverRecv | Self::NotImplemented => None,
+            Self::DriverSend | Self::DriverRecv | Self::NotImplemented | Self::NoEndpoints => None,
         }
     }
 }
