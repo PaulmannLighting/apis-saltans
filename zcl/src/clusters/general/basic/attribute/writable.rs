@@ -1,9 +1,13 @@
 //! Writable attributes in the Basic cluster.
 
+use core::iter::Chain;
+
+use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Bool, String};
 use zigbee::{ClusterId, ClusterSpecific};
 
+use self::iterator::LeStreamIter;
 use super::alarm_mask::AlarmMask;
 use super::disable_local_config::DisableLocalConfig;
 use super::physical_environment::PhysicalEnvironment;
@@ -21,12 +25,16 @@ mod iterator;
 pub enum Attribute {
     /// The generic device class.
     LocationDescription(String<16>) = 0x0010,
+
     /// The physical environment.
     PhysicalEnvironment(PhysicalEnvironment) = 0x0011,
+
     /// The device enabled state.
     DeviceEnabled(Bool) = 0x0012,
+
     /// The alarm mask.
     AlarmMask(AlarmMask) = 0x0013,
+
     /// Flags to disable local configuration.
     DisableLocalConfig(DisableLocalConfig) = 0x0014,
 }
@@ -77,5 +85,15 @@ impl TryFrom<readable::Attribute> for Attribute {
             readable::Attribute::DisableLocalConfig(value) => Ok(Self::DisableLocalConfig(value)),
             other => Err(other),
         }
+    }
+}
+
+impl ToLeStream for Attribute {
+    type Iter = Chain<<u16 as ToLeStream>::Iter, LeStreamIter>;
+
+    fn to_le_stream(self) -> Self::Iter {
+        self.discriminant()
+            .to_le_stream()
+            .chain(LeStreamIter::from(self))
     }
 }
