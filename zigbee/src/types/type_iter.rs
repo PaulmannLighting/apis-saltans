@@ -1,0 +1,133 @@
+use intx::{I24, I40, I48, I56, U24, U40, U48, U56};
+use le_stream::ToLeStream;
+use macaddr::MacAddr8;
+
+use crate::types::{Bool, Date, OctStr, String, TimeOfDay, Type, UtcTime};
+
+#[derive(Debug)]
+pub enum TypeIter {
+    Empty,
+    Data8(<[u8; 1] as ToLeStream>::Iter),
+    Data16(<[u8; 2] as ToLeStream>::Iter),
+    Data24(<[u8; 3] as ToLeStream>::Iter),
+    Data32(<[u8; 4] as ToLeStream>::Iter),
+    Data40(<[u8; 5] as ToLeStream>::Iter),
+    Data48(<[u8; 6] as ToLeStream>::Iter),
+    Data56(<[u8; 7] as ToLeStream>::Iter),
+    Data64(<[u8; 8] as ToLeStream>::Iter),
+    Boolean(<Bool as ToLeStream>::Iter),
+    Uint8(<u8 as ToLeStream>::Iter),
+    Uint16(<u16 as ToLeStream>::Iter),
+    Uint24(<U24 as ToLeStream>::Iter),
+    Uint32(<u32 as ToLeStream>::Iter),
+    Uint40(<U40 as ToLeStream>::Iter),
+    Uint48(<U48 as ToLeStream>::Iter),
+    Uint56(<U56 as ToLeStream>::Iter),
+    Uint64(<u64 as ToLeStream>::Iter),
+    Int8(<i8 as ToLeStream>::Iter),
+    Int16(<i16 as ToLeStream>::Iter),
+    Int24(<I24 as ToLeStream>::Iter),
+    Int32(<i32 as ToLeStream>::Iter),
+    Int40(<I40 as ToLeStream>::Iter),
+    Int48(<I48 as ToLeStream>::Iter),
+    Int56(<I56 as ToLeStream>::Iter),
+    Int64(<i64 as ToLeStream>::Iter),
+    OctetString(<OctStr as ToLeStream>::Iter),
+    String(<String as ToLeStream>::Iter),
+    TimeOfDay(<TimeOfDay as ToLeStream>::Iter),
+    Date(<Date as ToLeStream>::Iter),
+    UtcTime(<UtcTime as ToLeStream>::Iter),
+    IeeeAddress(<MacAddr8 as ToLeStream>::Iter),
+    Key128(<[u8; 16] as ToLeStream>::Iter),
+}
+
+impl From<Type> for TypeIter {
+    fn from(t: Type) -> Self {
+        match t {
+            Type::NoData | Type::Unknown => TypeIter::Empty,
+            Type::Data8(v) => TypeIter::Data8(v.to_le_stream()),
+            Type::Data16(v) => TypeIter::Data16(v.to_le_stream()),
+            Type::Data24(v) => TypeIter::Data24(v.to_le_stream()),
+            Type::Data32(v) => TypeIter::Data32(v.to_le_stream()),
+            Type::Data40(v) => TypeIter::Data40(v.to_le_stream()),
+            Type::Data48(v) => TypeIter::Data48(v.to_le_stream()),
+            Type::Data56(v) => TypeIter::Data56(v.to_le_stream()),
+            Type::Data64(v) => TypeIter::Data64(v.to_le_stream()),
+            Type::Boolean(v) => TypeIter::Boolean(v.to_le_stream()),
+            Type::Map8(v) => TypeIter::Uint8(v.to_le_stream()),
+            Type::Map16(v) => TypeIter::Uint16(v.to_le_stream()),
+            Type::Map32(v) => TypeIter::Uint32(v.to_le_stream()),
+            Type::Map64(v) => TypeIter::Uint64(v.to_le_stream()),
+            Type::Uint8(v) => TypeIter::Uint8(v.to_le_stream()),
+            Type::Uint16(v) => TypeIter::Uint16(v.to_le_stream()),
+            Type::Uint24(v) => TypeIter::Uint24(v.to_le_stream()),
+            Type::Uint32(v) => TypeIter::Uint32(v.to_le_stream()),
+            Type::Uint40(v) => TypeIter::Uint40(v.to_le_stream()),
+            Type::Uint48(v) => TypeIter::Uint48(v.to_le_stream()),
+            Type::Uint56(v) => TypeIter::Uint56(v.to_le_stream()),
+            Type::Uint64(v) => TypeIter::Uint64(v.to_le_stream()),
+            Type::Int8(v) => TypeIter::Int8(v.to_le_stream()),
+            Type::Int16(v) => TypeIter::Int16(v.to_le_stream()),
+            Type::Int24(v) => TypeIter::Int24(v.to_le_stream()),
+            Type::Int32(v) => TypeIter::Int32(v.to_le_stream()),
+            Type::Int40(v) => TypeIter::Int40(v.to_le_stream()),
+            Type::Int48(v) => TypeIter::Int48(v.to_le_stream()),
+            Type::Int56(v) => TypeIter::Int56(v.to_le_stream()),
+            Type::Int64(v) => TypeIter::Int64(v.to_le_stream()),
+            Type::Enum8(v) => TypeIter::Uint8(v.to_le_stream()),
+            Type::Enum16(v) => TypeIter::Uint16(v.to_le_stream()),
+            Type::OctetString(v) => TypeIter::OctetString(v.to_le_stream()),
+            Type::String(v) => TypeIter::String(v.to_le_stream()),
+            Type::TimeOfDay(v) => TypeIter::TimeOfDay(v.to_le_stream()),
+            Type::Date(v) => TypeIter::Date(v.to_le_stream()),
+            Type::UtcTime(v) => TypeIter::UtcTime(v.to_le_stream()),
+            Type::ClusterId(v) => TypeIter::Uint16(v.to_le_stream()),
+            Type::AttributeId(v) => TypeIter::Uint16(v.to_le_stream()),
+            Type::BacnetObjectId(v) => TypeIter::Uint32(v.to_le_stream()),
+            Type::IeeeAddress(v) => TypeIter::IeeeAddress(v.to_le_stream()),
+            Type::Key128(v) => TypeIter::Key128(v.to_le_stream()),
+        }
+    }
+}
+
+impl Iterator for TypeIter {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            TypeIter::Empty => None,
+            TypeIter::Data8(iter) => iter.next(),
+            TypeIter::Data16(iter) => iter.next(),
+            TypeIter::Data24(iter) => iter.next(),
+            TypeIter::Data32(iter) => iter.next(),
+            TypeIter::Data40(iter) => iter.next(),
+            TypeIter::Data48(iter) => iter.next(),
+            TypeIter::Data56(iter) => iter.next(),
+            TypeIter::Data64(iter) => iter.next(),
+            TypeIter::Boolean(iter) => iter.next(),
+            TypeIter::Uint8(iter) => iter.next(),
+            TypeIter::Uint16(iter) => iter.next(),
+            TypeIter::Uint24(iter) => iter.next(),
+            TypeIter::Uint32(iter) => iter.next(),
+            TypeIter::Uint40(iter) => iter.next(),
+            TypeIter::Uint48(iter) => iter.next(),
+            TypeIter::Uint56(iter) => iter.next(),
+            TypeIter::Uint64(iter) => iter.next(),
+            TypeIter::Int8(iter) => iter.next(),
+            TypeIter::Int16(iter) => iter.next(),
+            TypeIter::Int24(iter) => iter.next(),
+            TypeIter::Int32(iter) => iter.next(),
+            TypeIter::Int40(iter) => iter.next(),
+            TypeIter::Int48(iter) => iter.next(),
+            TypeIter::Int56(iter) => iter.next(),
+            TypeIter::Int64(iter) => iter.next(),
+            TypeIter::OctetString(iter) => iter.next(),
+            TypeIter::String(iter) => iter.next(),
+            TypeIter::TimeOfDay(iter) => iter.next(),
+            TypeIter::Date(iter) => iter.next(),
+            TypeIter::UtcTime(iter) => iter.next(),
+            TypeIter::IeeeAddress(iter) => iter.next(),
+            TypeIter::Key128(iter) => iter.next(),
+        }
+    }
+}

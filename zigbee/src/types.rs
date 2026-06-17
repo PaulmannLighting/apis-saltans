@@ -1,7 +1,5 @@
 //! Common types used across the protocol.
 
-use std::vec::IntoIter;
-
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
@@ -20,6 +18,7 @@ pub use self::discrete::{
     UtcTime,
 };
 pub use self::null::{NoData, Unknown};
+use crate::types::type_iter::TypeIter;
 
 mod analog;
 mod channel_list;
@@ -29,6 +28,7 @@ mod configuration_bitmask;
 mod discrete;
 mod null;
 pub mod tlv;
+mod type_iter;
 
 /// Commonly used type identifiers.
 #[cfg_attr(
@@ -184,59 +184,9 @@ impl FromLeStreamTagged for Type {
 }
 
 impl ToLeStream for Type {
-    type Iter = IntoIter<u8>;
+    type Iter = TypeIter;
 
     fn to_le_stream(self) -> Self::Iter {
-        let mut bytes = Vec::new();
-        bytes.extend(self.discriminant().to_le_stream());
-
-        #[expect(clippy::match_same_arms)]
-        match self {
-            Self::Unknown => {}
-            Self::NoData => {}
-            Self::Data8(value) => bytes.extend(value.to_le_stream()),
-            Self::Data16(value) => bytes.extend(value.to_le_stream()),
-            Self::Data24(value) => bytes.extend(value.to_le_stream()),
-            Self::Data32(value) => bytes.extend(value.to_le_stream()),
-            Self::Data40(value) => bytes.extend(value.to_le_stream()),
-            Self::Data48(value) => bytes.extend(value.to_le_stream()),
-            Self::Data56(value) => bytes.extend(value.to_le_stream()),
-            Self::Data64(value) => bytes.extend(value.to_le_stream()),
-            Self::Boolean(value) => bytes.extend(value.to_le_stream()),
-            Self::Map8(value) => bytes.extend(value.to_le_stream()),
-            Self::Map16(value) => bytes.extend(value.to_le_stream()),
-            Self::Map32(value) => bytes.extend(value.to_le_stream()),
-            Self::Map64(value) => bytes.extend(value.to_le_stream()),
-            Self::Uint8(value) => bytes.extend(value.to_le_stream()),
-            Self::Uint16(value) => bytes.extend(value.to_le_stream()),
-            Self::Uint24(value) => bytes.extend(value.to_le_stream()),
-            Self::Uint32(value) => bytes.extend(value.to_le_stream()),
-            Self::Uint40(value) => bytes.extend(value.to_le_stream()),
-            Self::Uint48(value) => bytes.extend(value.to_le_stream()),
-            Self::Uint56(value) => bytes.extend(value.to_le_stream()),
-            Self::Uint64(value) => bytes.extend(value.to_le_stream()),
-            Self::Int8(value) => bytes.extend(value.to_le_stream()),
-            Self::Int16(value) => bytes.extend(value.to_le_stream()),
-            Self::Int24(value) => bytes.extend(value.to_le_stream()),
-            Self::Int32(value) => bytes.extend(value.to_le_stream()),
-            Self::Int40(value) => bytes.extend(value.to_le_stream()),
-            Self::Int48(value) => bytes.extend(value.to_le_stream()),
-            Self::Int56(value) => bytes.extend(value.to_le_stream()),
-            Self::Int64(value) => bytes.extend(value.to_le_stream()),
-            Self::Enum8(value) => bytes.extend(value.to_le_stream()),
-            Self::Enum16(value) => bytes.extend(value.to_le_stream()),
-            Self::OctetString(value) => bytes.extend(value.to_le_stream()),
-            Self::String(value) => bytes.extend(value.to_le_stream()),
-            Self::TimeOfDay(value) => bytes.extend(value.to_le_stream()),
-            Self::Date(value) => bytes.extend(value.to_le_stream()),
-            Self::UtcTime(value) => bytes.extend(value.to_le_stream()),
-            Self::ClusterId(value) => bytes.extend(value.to_le_stream()),
-            Self::AttributeId(value) => bytes.extend(value.to_le_stream()),
-            Self::BacnetObjectId(value) => bytes.extend(value.to_le_stream()),
-            Self::IeeeAddress(value) => bytes.extend(value.to_le_stream()),
-            Self::Key128(value) => bytes.extend(value.to_le_stream()),
-        }
-
-        bytes.into_iter()
+        self.into()
     }
 }
