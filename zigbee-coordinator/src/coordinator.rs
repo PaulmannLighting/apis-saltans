@@ -24,11 +24,11 @@ impl Coordinator {
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
-    pub async fn start<T>(hardware: T, endpoints: Box<[SimpleDescriptor]>) -> Result<Self, Error>
+    pub async fn start<T>(hardware: T, endpoints: &[SimpleDescriptor]) -> Result<Self, Error>
     where
         T: Start,
     {
-        let (ncp, events) = hardware.start(&endpoints).await?;
+        let (ncp, events) = hardware.start(endpoints).await?;
         let zcl_tx = Self::start_zcl_transceiver(ncp.clone());
         let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), endpoints);
         let (mux, discovery_rx) = Self::start_mux(events, zcl_tx.clone(), zdp_tx.clone());
@@ -78,10 +78,10 @@ impl Coordinator {
     /// Start the ZDP transceiver.
     fn start_zdp_transceiver(
         ncp: NcpHandle,
-        endpoints: Box<[SimpleDescriptor]>,
+        endpoints: &[SimpleDescriptor],
     ) -> Sender<zdp::Message> {
         let (zdp_tx, zdp_rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(zdp::Transceiver::new(ncp, endpoints).run(zdp_rx));
+        spawn(zdp::Transceiver::new(ncp, endpoints.into()).run(zdp_rx));
         zdp_tx
     }
 
