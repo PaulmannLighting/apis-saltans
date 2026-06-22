@@ -1,37 +1,34 @@
 use std::fmt::Display;
 
-use le_stream::{FromLeStream, Prefixed, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
-use crate::Service;
+use crate::{ByteSizedVec, Service};
 
 /// Match Descriptor Request.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct MatchDescReq {
     nwk_addr_of_interest: u16,
     profile_id: u16,
-    in_cluster_list: Prefixed<u8, Box<[u16]>>,
-    out_cluster_list: Prefixed<u8, Box<[u16]>>,
+    in_cluster_list: ByteSizedVec<u16>,
+    out_cluster_list: ByteSizedVec<u16>,
 }
 
 impl MatchDescReq {
     /// Creates a new `MatchDescReq` with the given parameters.
-    ///
-    /// # Errors
-    ///
-    /// Returns the cluster list whose size could not be represented as `u8`.
-    pub fn new(
+    #[must_use]
+    pub const fn new(
         nwk_addr_of_interest: u16,
         profile_id: u16,
-        in_cluster_list: &[u16],
-        out_cluster_list: &[u16],
-    ) -> Result<Self, Box<[u16]>> {
-        Ok(Self {
+        in_cluster_list: ByteSizedVec<u16>,
+        out_cluster_list: ByteSizedVec<u16>,
+    ) -> Self {
+        Self {
             nwk_addr_of_interest,
             profile_id,
-            in_cluster_list: Box::<[u16]>::from(in_cluster_list).try_into()?,
-            out_cluster_list: Box::<[u16]>::from(out_cluster_list).try_into()?,
-        })
+            in_cluster_list,
+            out_cluster_list,
+        }
     }
 
     /// Returns the network address of interest.
