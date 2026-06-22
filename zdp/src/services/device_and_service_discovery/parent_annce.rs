@@ -1,26 +1,24 @@
 use std::fmt::Display;
 use std::ops::Deref;
 
-use le_stream::{FromLeStream, Prefixed, ToLeStream};
+use heapless::CapacityError;
+use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use zigbee::Cluster;
 
-use crate::Service;
+use crate::{ByteSizedVec, Service};
 
 /// Parent Announcement Service.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ParentAnnce {
-    child_info: Prefixed<u8, Box<[MacAddr8]>>,
+    child_info: ByteSizedVec<MacAddr8>,
 }
 
 impl ParentAnnce {
     /// Creates a new `ParentAnnce`.
-    ///
-    /// # Errors
-    ///
-    /// Returns the child info whose size could not be represented as `u8`.
-    pub fn new(child_info: Box<[MacAddr8]>) -> Result<Self, Box<[MacAddr8]>> {
-        child_info.try_into().map(|child_info| Self { child_info })
+    #[must_use]
+    pub const fn new(child_info: ByteSizedVec<MacAddr8>) -> Self {
+        Self { child_info }
     }
 
     /// Returns a reference to the child info.
@@ -65,25 +63,25 @@ impl Display for ParentAnnce {
 }
 
 impl TryFrom<Box<[MacAddr8]>> for ParentAnnce {
-    type Error = Box<[MacAddr8]>;
+    type Error = CapacityError;
 
     fn try_from(value: Box<[MacAddr8]>) -> Result<Self, Self::Error> {
-        Self::new(value)
+        Self::try_from(&*value)
     }
 }
 
 impl TryFrom<Vec<MacAddr8>> for ParentAnnce {
-    type Error = Box<[MacAddr8]>;
+    type Error = CapacityError;
 
     fn try_from(value: Vec<MacAddr8>) -> Result<Self, Self::Error> {
-        Self::new(value.into_boxed_slice())
+        Self::try_from(value.into_boxed_slice())
     }
 }
 
 impl TryFrom<&[MacAddr8]> for ParentAnnce {
-    type Error = Box<[MacAddr8]>;
+    type Error = CapacityError;
 
     fn try_from(value: &[MacAddr8]) -> Result<Self, Self::Error> {
-        Self::new(value.into())
+        value.try_into().map(Self::new)
     }
 }
