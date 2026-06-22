@@ -57,6 +57,7 @@ flowchart TD
     AD -->|binding::DeviceDiscovered| B
     B -->|bind request| ZDP
     B -->|new device| NM
+    NM -->|rediscovery DeviceJoined| D
 
     ZDP -->|device announce event| D
 
@@ -182,6 +183,7 @@ Handles:
 - add/remove device updates
 - short<->IEEE resolution
 - full state snapshots
+- rediscovery trigger: if an incoming command arrives from an unknown short ID, it resolves IEEE via NCP and sends `discovery::Message::DeviceJoined` to `Discovery`
 
 `Subscribe` exists in message API but is currently `todo!()` in actor logic.
 
@@ -293,6 +295,23 @@ sequenceDiagram
     HW->>M: Event::MessageReceived(ZDP response)
     M->>ZDP: Message::Received
     ZDP-->>API: oneshot response
+```
+
+## 5) Rediscovery back-channel (unknown command source)
+
+```mermaid
+sequenceDiagram
+    participant ZCL as ZCL Actor
+    participant NM as NetworkManager
+    participant HW as NCP
+    participant D as Discovery
+
+    ZCL->>NM: Command{src_address, payload}
+    alt src_address unknown in NM short-id map
+        NM->>HW: short_id_to_ieee_address(src_address)
+        HW-->>NM: ieee_address
+        NM->>D: DeviceJoined(Address{ieee, short})
+    end
 ```
 
 ## Concurrency Model
