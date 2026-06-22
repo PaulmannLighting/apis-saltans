@@ -100,6 +100,7 @@ pub trait NetworkManager {
     fn subscribe_to_incoming_commands(
         &self,
         device: MacAddr8,
+        channel_size: usize,
     ) -> impl Future<Output = Result<Receiver<Cluster>, Error>>;
 }
 
@@ -136,8 +137,9 @@ impl NetworkManager for Sender<Message> {
     async fn subscribe_to_incoming_commands(
         &self,
         device: MacAddr8,
+        channel_size: usize,
     ) -> Result<Receiver<Cluster>, Error> {
-        let (sender, receiver) = tokio::sync::mpsc::channel(1);
+        let (sender, receiver) = tokio::sync::mpsc::channel(channel_size);
         self.send(Message::SubscribeToIncomingCommands { device, sender })
             .await?;
         Ok(receiver)
@@ -170,9 +172,10 @@ impl NetworkManager for Coordinator {
     async fn subscribe_to_incoming_commands(
         &self,
         device: MacAddr8,
+        channel_size: usize,
     ) -> Result<Receiver<Cluster>, Error> {
         self.network_manager
-            .subscribe_to_incoming_commands(device)
+            .subscribe_to_incoming_commands(device, channel_size)
             .await
     }
 }
