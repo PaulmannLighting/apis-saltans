@@ -2,9 +2,9 @@ use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
+use crate::Command;
 use crate::general::level::Mode;
 use crate::options::Options;
-use crate::Command;
 
 /// Move with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -57,28 +57,8 @@ impl Command for MoveWithOnOff {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<MoveWithOnOff> for crate::Cluster {
     fn from(command: MoveWithOnOff) -> Self {
         Self::Level(command.into())
-    }
-}
-
-#[cfg(feature = "smarthomelib")]
-mod smarthomelib {
-    use smarthomelib::Dimming;
-
-    use super::MoveWithOnOff;
-    use crate::general::level::Mode;
-
-    impl TryFrom<MoveWithOnOff> for Dimming {
-        type Error = u8;
-
-        fn try_from(value: MoveWithOnOff) -> Result<Self, Self::Error> {
-            match value.mode()? {
-                Mode::Up => Ok(Self::Up { rate: value.rate() }),
-                Mode::Down => Ok(Self::Down { rate: value.rate() }),
-            }
-        }
     }
 }
