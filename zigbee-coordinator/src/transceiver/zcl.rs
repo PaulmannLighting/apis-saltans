@@ -127,7 +127,7 @@ where
         sender
             .send(network_manager::Message::Command {
                 src_address,
-                payload,
+                payload: payload.into(),
             })
             .await
             .unwrap_or_else(|error| {

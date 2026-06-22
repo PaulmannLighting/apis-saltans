@@ -14,7 +14,7 @@ pub use self::message::Message;
 use crate::binding::needs_binding::NeedsBinding;
 use crate::transceiver::zdp::Handle;
 use crate::{
-    Endpoint as EndpointInfo, MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, network_manager,
+    Device, Endpoint as EndpointInfo, MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, network_manager,
     transceiver,
 };
 
@@ -143,7 +143,7 @@ impl Actor {
         };
         network_manager
             .send(network_manager::Message::NewDevice(
-                (address, endpoints).into(),
+                Device::from((address, endpoints)).into(),
             ))
             .await
             .unwrap_or_else(|error| {

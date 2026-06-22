@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
@@ -13,10 +13,12 @@ use super::Device;
 pub enum Message {
     /// Subscribe to incoming ZCL commands.
     SubscribeToIncomingCommands {
-        /// The source address of the device.
-        device: MacAddr8,
+        /// The source addresses of the devices to listen to.
+        ///
+        /// An empty set means that all devices will be listened to.
+        devices: BTreeSet<MacAddr8>,
         /// The sender to send the incoming commands to.
-        sender: Sender<Cluster>,
+        sender: Sender<Box<Cluster>>,
     },
 
     /// An incoming ZCL command.
@@ -24,7 +26,7 @@ pub enum Message {
         /// The source address of the command.
         src_address: u16,
         /// The payload of the command.
-        payload: Cluster,
+        payload: Box<Cluster>,
     },
 
     /// A request to resolve a short ID to an IEEE address.

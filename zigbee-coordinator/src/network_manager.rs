@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use log::{debug, error, warn};
 use macaddr::MacAddr8;
@@ -17,7 +17,7 @@ mod state;
 pub struct Actor {
     devices: BTreeMap<MacAddr8, Device>,
     short_ids: BTreeMap<u16, MacAddr8>,
-    subscribers: Vec<(MacAddr8, Sender<Cluster>)>,
+    subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Box<Cluster>>)>,
 }
 
 impl Actor {
@@ -47,14 +47,14 @@ impl Actor {
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::SubscribeToIncomingCommands { device, sender } => {
-                    self.subscribers.push((device, sender));
+                Message::SubscribeToIncomingCommands { devices, sender } => {
+                    self.subscribers.push((devices, sender));
                 }
                 Message::Command {
                     src_address,
                     payload,
                 } => {
-                    self.handle_incoming_command(src_address, payload).await;
+                    self.handle_incoming_command(src_address, *payload).await;
                 }
                 Message::GetIeeeAddressFromShortId { short_id, response } => {
                     response
@@ -101,15 +101,15 @@ impl Actor {
             return;
         };
 
-        for subscriber in self.subscribers.iter().filter_map(|(address, sender)| {
-            if address == src_address {
+        for subscriber in self.subscribers.iter().filter_map(|(devices, sender)| {
+            if devices.is_empty() || devices.contains(src_address) {
                 Some(sender)
             } else {
                 None
             }
         }) {
             subscriber
-                .send(payload.clone())
+                .send(payload.clone().into())
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to send command to subscriber: {error:?}");

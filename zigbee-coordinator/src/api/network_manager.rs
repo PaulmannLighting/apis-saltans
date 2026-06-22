@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -99,9 +99,9 @@ pub trait NetworkManager {
     /// Returns an [`Error`] if the communication with the actor failed.
     fn subscribe_to_incoming_commands(
         &self,
-        device: MacAddr8,
+        device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> impl Future<Output = Result<Receiver<Cluster>, Error>>;
+    ) -> impl Future<Output = Result<Receiver<Box<Cluster>>, Error>>;
 }
 
 impl NetworkManager for Sender<Message> {
@@ -136,12 +136,15 @@ impl NetworkManager for Sender<Message> {
 
     async fn subscribe_to_incoming_commands(
         &self,
-        device: MacAddr8,
+        device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> Result<Receiver<Cluster>, Error> {
+    ) -> Result<Receiver<Box<Cluster>>, Error> {
         let (sender, receiver) = tokio::sync::mpsc::channel(channel_size);
-        self.send(Message::SubscribeToIncomingCommands { device, sender })
-            .await?;
+        self.send(Message::SubscribeToIncomingCommands {
+            devices: device,
+            sender,
+        })
+        .await?;
         Ok(receiver)
     }
 }
@@ -171,9 +174,9 @@ impl NetworkManager for Coordinator {
 
     async fn subscribe_to_incoming_commands(
         &self,
-        device: MacAddr8,
+        device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> Result<Receiver<Cluster>, Error> {
+    ) -> Result<Receiver<Box<Cluster>>, Error> {
         self.network_manager
             .subscribe_to_incoming_commands(device, channel_size)
             .await
