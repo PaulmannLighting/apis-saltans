@@ -8,15 +8,34 @@ use crate::ReadAttributeResult;
 /// The attributes we want to discover.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub struct Attributes {
+    /// The ZCL version of the device.
     pub zcl_version: Option<u8>,
+
+    /// The application version of the device.
     pub application_version: Option<u8>,
+
+    /// The stack version of the device.
     pub stack_version: Option<u8>,
+
+    /// The hardware version of the device.
     pub hw_version: Option<u8>,
+
+    /// The manufacturer name of the device.
     pub manufacturer_name: Option<String>,
+
+    /// The model identifier of the device.
     pub model_identifier: Option<String>,
+
+    /// The date code of the device.
     pub date_code: Option<DateCode>,
+
+    /// The power source of the device.
     pub power_source: Option<PowerSource>,
+
+    /// The location description of the device.
     pub location_description: Option<String>,
+
+    /// The software build ID of the device.
     pub sw_build_id: Option<String>,
 }
 
