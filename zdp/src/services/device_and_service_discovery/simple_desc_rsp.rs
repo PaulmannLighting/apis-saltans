@@ -1,17 +1,16 @@
 use std::fmt::Display;
-use std::iter::Chain;
 
-use le_stream::{FromLeStream, Prefixed, ToLeStream};
+use le_stream::{Consume, FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
-use crate::{Command, DeviceAndServiceDiscovery, Service, SimpleDescriptor, Status};
+use crate::{ByteSizedVec, Command, DeviceAndServiceDiscovery, Service, SimpleDescriptor, Status};
 
 /// Simple Descriptor Response.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct SimpleDescRsp {
     status: u8,
     nwk_addr_of_interest: u16,
-    descriptor: SimpleDescriptor,
+    descriptor: ByteSizedVec<u8>,
 }
 
 impl SimpleDescRsp {
@@ -21,7 +20,7 @@ impl SimpleDescRsp {
         Self {
             status: status.into(),
             nwk_addr_of_interest,
-            descriptor,
+            descriptor: descriptor.to_le_stream().collect(),
         }
     }
 
@@ -42,14 +41,15 @@ impl SimpleDescRsp {
 
     /// Return the descriptors.
     #[must_use]
-    pub const fn descriptor(&self) -> &SimpleDescriptor {
+    pub fn descriptor(&self) -> &[u8] {
         &self.descriptor
     }
 
-    /// Return the descriptors, consuming the descriptor.
-    #[must_use]
-    pub fn into_descriptor(self) -> SimpleDescriptor {
-        self.descriptor
+    /// Return the descriptor object, consuming the `SimpleDescRsp`.
+    ///
+    /// Returns `None` if the descriptor bytes cannot be parsed into a `SimpleDescriptor`.
+    pub fn into_descriptor(self) -> Option<SimpleDescriptor> {
+        self.descriptor.into_iter().consume().map_err(drop).ok()
     }
 }
 
@@ -86,39 +86,5 @@ impl TryFrom<Command> for SimpleDescRsp {
         } else {
             Err(cmd)
         }
-    }
-}
-
-impl FromLeStream for SimpleDescRsp {
-    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        let status = u8::from_le_stream(&mut bytes)?;
-        let nwk_addr_of_interest = u16::from_le_stream(&mut bytes)?;
-        let descriptor_bytes = Prefixed::<u8, Box<[u8]>>::from_le_stream(&mut bytes)?;
-        let descriptor = SimpleDescriptor::from_le_stream(descriptor_bytes.into_iter())?;
-        Some(Self {
-            status,
-            nwk_addr_of_interest,
-            descriptor,
-        })
-    }
-}
-
-impl ToLeStream for SimpleDescRsp {
-    type Iter = Chain<
-        Chain<Chain<<u8 as ToLeStream>::Iter, <u16 as ToLeStream>::Iter>, <u8 as ToLeStream>::Iter>,
-        <Box<[u8]> as ToLeStream>::Iter,
-    >;
-
-    fn to_le_stream(self) -> Self::Iter {
-        let descriptor_bytes: Box<[u8]> = self.descriptor.to_le_stream().collect();
-        #[expect(clippy::cast_possible_truncation)]
-        self.status
-            .to_le_stream()
-            .chain(self.nwk_addr_of_interest.to_le_stream())
-            .chain((descriptor_bytes.len() as u8).to_le_stream())
-            .chain(descriptor_bytes.to_le_stream())
     }
 }

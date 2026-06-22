@@ -158,11 +158,16 @@ async fn get_descriptor(
                         return;
                     };
 
+                    let Some(descriptor) = response.into_descriptor() else {
+                        error!("Got descriptor for {address}:{endpoint} but it was invalid.");
+                        continue;
+                    };
+
                     trace!("Sending descriptor for {address}:{endpoint} to loopback.");
                     loopback
                         .send(Message::DescriptorDiscovered {
                             address,
-                            descriptor: response.into_descriptor(),
+                            descriptor,
                         })
                         .await
                         .unwrap_or_else(|error| {
