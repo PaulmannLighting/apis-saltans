@@ -1,34 +1,27 @@
 use std::fmt::Display;
 
-use le_stream::{FromLeStream, Prefixed, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 
-use crate::{Command, Displayable, Service, Status};
+use crate::{ByteSizedVec, Command, Displayable, Service, Status};
 
 /// Match Descriptor Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct MatchDescRsp {
     status: u8,
     nwk_addr_of_interest: u16,
-    matches: Prefixed<u8, Box<[u8]>>,
+    matches: ByteSizedVec<u8>,
 }
 
 impl MatchDescRsp {
     /// Creates a new `MatchDescRsp`.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the length of `matches` exceeds `u8::MAX`.
-    pub fn new(
-        status: Status,
-        nwk_addr_of_interest: u16,
-        matches: Box<[u8]>,
-    ) -> Result<Self, Box<[u8]>> {
-        Ok(Self {
-            status: status.into(),
+    #[must_use]
+    pub const fn new(status: Status, nwk_addr_of_interest: u16, matches: ByteSizedVec<u8>) -> Self {
+        Self {
+            status: status as u8,
             nwk_addr_of_interest,
-            matches: matches.try_into()?,
-        })
+            matches,
+        }
     }
 
     /// Returns the status.
