@@ -158,6 +158,7 @@ impl AttributeDiscovery {
                 .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
         } else {
             trace!("Not all attributes discovered for {address}.");
+            self.devices.insert(address, endpoints);
         }
     }
 }
