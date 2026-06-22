@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
+use zcl::Cluster;
 use zigbee::Address;
 
 use crate::network_manager::Message;
@@ -90,6 +91,16 @@ pub trait NetworkManager {
     ///
     /// Returns an [`Error`] if the communication with the actor failed.
     fn state(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, Device>, Error>>;
+
+    /// Subscribes to a stream of incoming commands.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the communication with the actor failed.
+    fn subscribe_to_incoming_commands(
+        &self,
+        device: MacAddr8,
+    ) -> impl Future<Output = Result<Receiver<Cluster>, Error>>;
 }
 
 impl NetworkManager for Sender<Message> {
@@ -121,6 +132,16 @@ impl NetworkManager for Sender<Message> {
         self.send(Message::GetDevices { response }).await?;
         Ok(result.await?)
     }
+
+    async fn subscribe_to_incoming_commands(
+        &self,
+        device: MacAddr8,
+    ) -> Result<Receiver<Cluster>, Error> {
+        let (sender, receiver) = tokio::sync::mpsc::channel(1);
+        self.send(Message::SubscribeToIncomingCommands { device, sender })
+            .await?;
+        Ok(receiver)
+    }
 }
 
 impl NetworkManager for Coordinator {
@@ -144,5 +165,14 @@ impl NetworkManager for Coordinator {
 
     async fn state(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
         self.network_manager.state().await
+    }
+
+    async fn subscribe_to_incoming_commands(
+        &self,
+        device: MacAddr8,
+    ) -> Result<Receiver<Cluster>, Error> {
+        self.network_manager
+            .subscribe_to_incoming_commands(device)
+            .await
     }
 }

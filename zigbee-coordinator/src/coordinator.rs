@@ -37,7 +37,7 @@ impl Coordinator {
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
         let network_manager = Self::start_network_manager(state);
 
-        let zcl_tx = Self::start_zcl_transceiver(ncp.clone());
+        let zcl_tx = Self::start_zcl_transceiver(ncp.clone(), network_manager.downgrade());
         let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), discovery_tx.downgrade(), endpoints);
 
         Self::start_mux(
@@ -82,9 +82,12 @@ impl Coordinator {
     }
 
     /// Start the ZCL transceiver.
-    fn start_zcl_transceiver(ncp: NcpHandle) -> Sender<zcl::Message> {
+    fn start_zcl_transceiver(
+        ncp: NcpHandle,
+        network_manager: WeakSender<network_manager::Message>,
+    ) -> Sender<zcl::Message> {
         let (zcl_tx, zcl_rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(zcl::Transceiver::new(ncp).run(zcl_rx));
+        spawn(zcl::Transceiver::new(ncp, network_manager).run(zcl_rx));
         zcl_tx
     }
 

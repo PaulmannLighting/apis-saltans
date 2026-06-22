@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
-use log::{debug, error};
+use log::{debug, error, warn};
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
+use zcl::Cluster;
 use zigbee::Address;
 
 pub use self::message::Message;
@@ -16,6 +17,7 @@ mod state;
 pub struct Actor {
     devices: BTreeMap<MacAddr8, Device>,
     short_ids: BTreeMap<u16, MacAddr8>,
+    subscribers: Vec<(MacAddr8, Sender<Cluster>)>,
 }
 
 impl Actor {
@@ -34,15 +36,25 @@ impl Actor {
             })
             .collect();
 
-        Self { devices, short_ids }
+        Self {
+            devices,
+            short_ids,
+            subscribers: Vec::new(),
+        }
     }
 
     /// Run the actor.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Event(event) => {
-                    debug!("Received event: {event:?}");
+                Message::SubscribeToIncomingCommands { device, sender } => {
+                    self.subscribers.push((device, sender));
+                }
+                Message::Command {
+                    src_address,
+                    payload,
+                } => {
+                    self.handle_incoming_command(src_address, payload).await;
                 }
                 Message::GetIeeeAddressFromShortId { short_id, response } => {
                     response
@@ -70,7 +82,7 @@ impl Actor {
                         error!("Failed to send response: {error:?}");
                     });
                 }
-                Message::Subscribe { .. } => {
+                Message::SubscribeToDevice { .. } => {
                     todo!()
                 }
                 Message::NewDevice(device) => {
@@ -81,6 +93,30 @@ impl Actor {
                 }
             }
         }
+    }
+
+    async fn handle_incoming_command(&mut self, src_address: u16, payload: Cluster) {
+        let Some(src_address) = self.short_ids.get(&src_address) else {
+            warn!("Received command from unknown short ID: {src_address:04X}");
+            return;
+        };
+
+        for subscriber in self.subscribers.iter().filter_map(|(address, sender)| {
+            if address == src_address {
+                Some(sender)
+            } else {
+                None
+            }
+        }) {
+            subscriber
+                .send(payload.clone())
+                .await
+                .unwrap_or_else(|error| {
+                    debug!("Failed to send command to subscriber: {error:?}");
+                });
+        }
+
+        self.subscribers.retain(|(_, sender)| !sender.is_closed());
     }
 
     fn add_device(&mut self, device: Device) {

@@ -3,16 +3,16 @@
 use std::collections::BTreeMap;
 
 use le_stream::ToLeStream;
-use log::error;
-use tokio::sync::mpsc::Receiver;
-use tokio::sync::oneshot;
-use tokio::sync::oneshot::{Sender, channel};
+use log::{error, warn};
+use tokio::sync::mpsc::{Receiver, WeakSender};
+use tokio::sync::oneshot::{self, Sender, channel};
 use zcl::{Cluster, CommandDispatch, Frame, Header};
 use zigbee::Endpoint;
 use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
 pub use self::message::{Message, Payload};
+use crate::network_manager;
 
 mod handle;
 mod message;
@@ -21,6 +21,7 @@ mod message;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
+    network_manager: WeakSender<network_manager::Message>,
     responses: BTreeMap<u8, Sender<Cluster>>,
     seq: u8,
 }
@@ -28,9 +29,10 @@ pub struct Transceiver<T> {
 impl<T> Transceiver<T> {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T) -> Self {
+    pub const fn new(ncp: T, network_manager: WeakSender<network_manager::Message>) -> Self {
         Self {
             ncp,
+            network_manager,
             responses: BTreeMap::new(),
             seq: 0,
         }
@@ -46,7 +48,7 @@ where
         while let Some(message) = messages.recv().await {
             match message {
                 Message::Received { src_address, frame } => {
-                    self.handle_message_received(src_address, *frame);
+                    self.handle_message_received(src_address, *frame).await;
                 }
                 Message::Unicast {
                     short_id,
@@ -106,14 +108,31 @@ where
     }
 
     /// Handle a received ZCL message.
-    fn handle_message_received(&mut self, src_address: u16, frame: Frame<Cluster>) {
+    async fn handle_message_received(&mut self, src_address: u16, frame: Frame<Cluster>) {
         let (header, payload) = frame.into_parts();
 
         if let Some(sender) = self.responses.remove(&header.seq()) {
             sender.send(payload).unwrap_or_else(|error| {
                 error!("Failed to send ZCL response: {error:?}");
             });
+
+            return;
         }
+
+        let Some(sender) = self.network_manager.upgrade() else {
+            warn!("Network manager actor has been dropped");
+            return;
+        };
+
+        sender
+            .send(network_manager::Message::Command {
+                src_address,
+                payload,
+            })
+            .await
+            .unwrap_or_else(|error| {
+                error!("Failed to send command: {error:?}");
+            });
     }
 
     /// Send a ZCL unicast message.

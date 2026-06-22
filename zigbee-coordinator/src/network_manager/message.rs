@@ -3,16 +3,29 @@ use std::collections::BTreeMap;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
+use zcl::Cluster;
 use zigbee::Address;
-use zigbee_hw::Event;
 
 use super::Device;
 
 /// Messages received by the network management actor.
 #[derive(Debug)]
 pub enum Message {
-    /// A hardware-level event.
-    Event(Event),
+    /// Subscribe to incoming ZCL commands.
+    SubscribeToIncomingCommands {
+        /// The source address of the device.
+        device: MacAddr8,
+        /// The sender to send the incoming commands to.
+        sender: Sender<Cluster>,
+    },
+
+    /// An incoming ZCL command.
+    Command {
+        /// The source address of the command.
+        src_address: u16,
+        /// The payload of the command.
+        payload: Cluster,
+    },
 
     /// A request to resolve a short ID to an IEEE address.
     GetIeeeAddressFromShortId {
@@ -37,7 +50,7 @@ pub enum Message {
     },
 
     /// A request to subscribe for updates on devices.
-    Subscribe {
+    SubscribeToDevice {
         /// Response channel to send the updated device list to.
         response: Sender<Box<[Device]>>,
     },
@@ -47,10 +60,4 @@ pub enum Message {
 
     /// Remove a device from the network.
     RemoveDevice(Address),
-}
-
-impl From<Event> for Message {
-    fn from(event: Event) -> Self {
-        Self::Event(event)
-    }
 }
