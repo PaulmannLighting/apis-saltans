@@ -39,30 +39,43 @@ mod system_server_discovery_req;
 pub enum DeviceAndServiceDiscovery {
     /// Network Address Request
     NwkAddrReq(NwkAddrReq),
+
     /// IEEE Address Request
     IeeeAddrReq(IeeeAddrReq),
+
     /// Node Descriptor Request
     NodeDescReq(NodeDescReq),
+
     /// Node Descriptor Response
     NodeDescRsp(NodeDescRsp),
+
     /// Power Descriptor Request
     PowerDescReq(PowerDescReq),
+
     /// Simple Descriptor Request
     SimpleDescReq(SimpleDescReq),
+
     /// Simple Descriptor Response
     SimpleDescRsp(SimpleDescRsp),
+
     /// Active Endpoint Request
     ActiveEpReq(ActiveEpReq),
+
     /// Active Endpoint Request
     ActiveEpRsp(ActiveEpRsp),
+
     /// Match Descriptor Request
     MatchDescReq(MatchDescReq),
+
     /// Match Descriptor Response.
     MatchDescRsp(MatchDescRsp),
+
     /// Device Announcement
     DeviceAnnce(DeviceAnnce),
+
     /// Parent Announcement
     ParentAnnce(ParentAnnce),
+
     /// System Server Discovery Request
     SystemServerDiscoveryReq(SystemServerDiscoveryReq),
 }
