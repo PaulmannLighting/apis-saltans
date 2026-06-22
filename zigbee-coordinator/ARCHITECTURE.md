@@ -54,7 +54,7 @@ flowchart TD
     DD -->|simple descriptor request| ZDP
     DD -->|descriptor set| AD
     AD -->|read attributes| ZCL
-    AD -->|device discovered| B
+    AD -->|binding::DeviceDiscovered| B
     B -->|bind request| ZDP
     B -->|new device| NM
 
@@ -73,8 +73,9 @@ flowchart TD
 2. Starts `NetworkManager` with initial persistent `State`.
 3. Starts `ZCL` and `ZDP` transceivers.
 4. Starts `Mux`, which fans out inbound hardware events.
-5. Starts `Binding` actor.
-6. Starts `Discovery` supervisor; it starts three discovery workers (`ED`, `DD`, `AD`).
+5. Starts `Binding` actor and keeps its sender for downstream discovery handoff.
+6. Starts `Discovery` supervisor with weak links to `ZCL`, `ZDP`, and `Binding`.
+7. Inside discovery startup, workers are wired as `ED -> DD -> AD`, and `AD` forwards completed devices directly to `Binding`.
 
 All major actor inboxes are bounded MPSC channels (size configurable by `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`).
 
@@ -138,6 +139,11 @@ Internally owns and starts:
 - `DescriptorDiscovery` (`DD`)
 - `AttributeDiscovery` (`AD`)
 
+Wiring detail:
+- supervisor emits discovery work only to `ED`
+- `ED` forwards to `DD`, `DD` forwards to `AD`
+- `AD` does not route back through the supervisor; it forwards directly to `Binding`
+
 ### EndpointDiscovery (ED)
 
 For each target device:
@@ -157,7 +163,7 @@ For each discovered endpoint:
 For each application endpoint containing the Basic cluster:
 - reads a fixed attribute set from `zcl::general::basic`
 - converts read results into coordinator `Attributes`
-- when complete, forwards enriched endpoint map to `Binding`
+- when complete, sends `binding::Message::DeviceDiscovered` directly to `Binding`
 
 ### Binding
 
@@ -238,7 +244,7 @@ sequenceDiagram
         ZCL-->>AD: ReadAttributes response
     end
 
-    AD->>B: DeviceDiscovered{address, enriched endpoints}
+    AD->>B: binding::DeviceDiscovered{address, enriched endpoints}
 
     alt binding needed
         loop each bindable endpoint/cluster
