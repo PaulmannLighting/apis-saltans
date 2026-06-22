@@ -1,7 +1,7 @@
 use zcl::Cluster;
 use zigbee::{Address, Endpoint};
 
-/// A ZigBee event.
+/// A generic Zigbee event.
 #[derive(Clone, Debug)]
 pub struct Event {
     src_address: Address,

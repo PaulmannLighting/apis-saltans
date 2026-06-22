@@ -1,5 +1,5 @@
 #![cfg(feature = "smarthomelib")]
-//! SmartHomeLib integration.
+//! Smart Home library integration.
 //!
 //! The implementations are in the respective submodules.
 
