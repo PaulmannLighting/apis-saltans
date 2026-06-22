@@ -101,7 +101,7 @@ pub trait NetworkManager {
         &self,
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> impl Future<Output = Result<Receiver<Box<Cluster>>, Error>>;
+    ) -> impl Future<Output = Result<Receiver<Cluster>, Error>>;
 }
 
 impl NetworkManager for Sender<Message> {
@@ -138,7 +138,7 @@ impl NetworkManager for Sender<Message> {
         &self,
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> Result<Receiver<Box<Cluster>>, Error> {
+    ) -> Result<Receiver<Cluster>, Error> {
         let (sender, receiver) = tokio::sync::mpsc::channel(channel_size);
         self.send(Message::SubscribeToIncomingCommands {
             devices: device,
@@ -176,7 +176,7 @@ impl NetworkManager for Coordinator {
         &self,
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> Result<Receiver<Box<Cluster>>, Error> {
+    ) -> Result<Receiver<Cluster>, Error> {
         self.network_manager
             .subscribe_to_incoming_commands(device, channel_size)
             .await

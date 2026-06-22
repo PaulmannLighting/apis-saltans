@@ -17,7 +17,7 @@ mod state;
 pub struct Actor {
     devices: BTreeMap<MacAddr8, Device>,
     short_ids: BTreeMap<u16, MacAddr8>,
-    subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Box<Cluster>>)>,
+    subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Cluster>)>,
 }
 
 impl Actor {

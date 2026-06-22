@@ -18,7 +18,7 @@ pub enum Message {
         /// An empty set means that all devices will be listened to.
         devices: BTreeSet<MacAddr8>,
         /// The sender to send the incoming commands to.
-        sender: Sender<Box<Cluster>>,
+        sender: Sender<Cluster>,
     },
 
     /// An incoming ZCL command.
