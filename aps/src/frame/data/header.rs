@@ -1,6 +1,7 @@
 //! Header definitions for a generic APS Data frame.
 
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Endpoint;
 
 use crate::frame::data::unicast;
 use crate::{Control, DeliveryMode, Destination, Extended, FrameType};
@@ -12,7 +13,7 @@ pub struct Header {
     destination: Destination,
     cluster_id: u16,
     profile_id: u16,
-    source_endpoint: u8,
+    source_endpoint: Endpoint,
     counter: u8,
     extended: Option<Extended>,
 }
@@ -24,7 +25,7 @@ impl Header {
         destination: Destination,
         cluster_id: u16,
         profile_id: u16,
-        source_endpoint: u8,
+        source_endpoint: Endpoint,
         counter: u8,
         extended: Option<Extended>,
     ) -> Self {
@@ -73,7 +74,7 @@ impl Header {
 
     /// Return the source endpoint.
     #[must_use]
-    pub const fn source_endpoint(&self) -> u8 {
+    pub const fn source_endpoint(&self) -> Endpoint {
         self.source_endpoint
     }
 
@@ -113,7 +114,9 @@ impl FromLeStream for Header {
 
         let destination = match control.delivery_mode() {
             Some(delivery_mode) => match delivery_mode {
-                DeliveryMode::Unicast => Destination::Unicast(u8::from_le_stream(&mut bytes)?),
+                DeliveryMode::Unicast => {
+                    Destination::Unicast(Endpoint::from_le_stream(&mut bytes)?)
+                }
                 DeliveryMode::Broadcast => Destination::Broadcast(u8::from_le_stream(&mut bytes)?),
                 DeliveryMode::Group => Destination::Group(u16::from_le_stream(&mut bytes)?),
             },
@@ -122,7 +125,7 @@ impl FromLeStream for Header {
 
         let cluster_id = u16::from_le_stream(&mut bytes)?;
         let profile_id = u16::from_le_stream(&mut bytes)?;
-        let source_endpoint = u8::from_le_stream(&mut bytes)?;
+        let source_endpoint = Endpoint::from_le_stream(&mut bytes)?;
         let counter = u8::from_le_stream(&mut bytes)?;
 
         let extended = if control.contains(Control::EXTENDED_HEADER) {

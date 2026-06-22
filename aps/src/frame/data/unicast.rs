@@ -1,6 +1,7 @@
 //! Distinct type for a unicast frame.
 
 use le_stream::ToLeStream;
+use zigbee::Endpoint;
 
 pub use self::header::Header;
 use crate::Extended;
@@ -21,10 +22,10 @@ impl<T> Unicast<T> {
     pub fn new(
         security: bool,
         ack_request: bool,
-        dst_endpoint: u8,
+        dst_endpoint: Endpoint,
         cluster_id: u16,
         profile_id: u16,
-        source_endpoint: u8,
+        source_endpoint: Endpoint,
         counter: u8,
         extended: Option<Extended>,
         payload: T,

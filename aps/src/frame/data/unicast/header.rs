@@ -1,6 +1,7 @@
 //! Header definitions for an APS data unicast frame.
 
 use le_stream::ToLeStream;
+use zigbee::Endpoint;
 
 use crate::{Control, DeliveryMode, Extended, FrameType};
 
@@ -8,10 +9,10 @@ use crate::{Control, DeliveryMode, Extended, FrameType};
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Header {
     control: Control,
-    dst_endpoint: u8,
+    dst_endpoint: Endpoint,
     cluster_id: u16,
     profile_id: u16,
-    source_endpoint: u8,
+    source_endpoint: Endpoint,
     counter: u8,
     extended: Option<Extended>,
 }
@@ -23,10 +24,10 @@ impl Header {
     pub fn new(
         security: bool,
         ack_request: bool,
-        dst_endpoint: u8,
+        dst_endpoint: Endpoint,
         cluster_id: u16,
         profile_id: u16,
-        source_endpoint: u8,
+        source_endpoint: Endpoint,
         counter: u8,
         extended: Option<Extended>,
     ) -> Self {
@@ -62,7 +63,7 @@ impl Header {
 
     /// Return the destination endpoint ID.
     #[must_use]
-    pub const fn dst_endpoint(&self) -> u8 {
+    pub const fn dst_endpoint(&self) -> Endpoint {
         self.dst_endpoint
     }
 
@@ -80,7 +81,7 @@ impl Header {
 
     /// Return the source endpoint ID.
     #[must_use]
-    pub const fn source_endpoint(&self) -> u8 {
+    pub const fn source_endpoint(&self) -> Endpoint {
         self.source_endpoint
     }
 

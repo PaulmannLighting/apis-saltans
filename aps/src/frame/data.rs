@@ -1,5 +1,7 @@
 //! APS Data frame definitions.
 
+use zigbee::Endpoint;
+
 pub use self::header::Header;
 pub use self::unicast::Unicast;
 use crate::Extended;
@@ -33,7 +35,7 @@ impl<T> Frame<T> {
         destination: Destination,
         cluster_id: u16,
         profile_id: u16,
-        source_endpoint: u8,
+        source_endpoint: Endpoint,
         counter: u8,
         extended: Option<Extended>,
         payload: T,
