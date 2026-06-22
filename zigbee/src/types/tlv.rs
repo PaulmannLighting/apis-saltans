@@ -1,5 +1,6 @@
 //! Type-Length-Value (TLV) encoded structures for Zigbee.
 
+use const_env::env_item;
 use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
 
 pub use self::encapsulated_global::EncapsulatedGlobal;
@@ -19,6 +20,9 @@ mod global;
 mod local;
 mod tag;
 mod tlv_vec;
+
+#[env_item("ZIGBEE_MAX_NESTED_TLV_LEN")]
+const MAX_NESTED_TLV_LEN: u8 = 255;
 
 /// A Type-Length-Value (TLV) encoded structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

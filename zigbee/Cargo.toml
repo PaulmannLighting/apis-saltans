@@ -16,6 +16,7 @@ publish = false
 [dependencies]
 bitflags = "2"
 chrono = "0.4"
+const_env = "0.1"
 heapless = "0.9"
 intx = "0.1"
 le-stream = { version = "9", features = ["alloc", "derive", "heapless", "intx", "macaddr"] }

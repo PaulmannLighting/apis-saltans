@@ -3,7 +3,9 @@ use core::ops::{Deref, DerefMut};
 
 use le_stream::{FromLeStream, ToLeStream};
 
-type Inner<T> = heapless::Vec<T, { u8::MAX as usize }, u8>;
+use super::MAX_NESTED_TLV_LEN;
+
+type Inner<T> = heapless::Vec<T, { MAX_NESTED_TLV_LEN as usize }, u8>;
 
 /// A vector of TLVs.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
