@@ -12,9 +12,10 @@ use crate::{Coordinator, Error};
 mod color_control;
 mod on_off;
 mod translate_device_id;
+mod translate_endpoint_id;
 
 impl Protocol for Coordinator {
     type DeviceId = MacAddr8;
-    type EndpointId = Endpoint;
+    type EndpointId = (MacAddr8, Endpoint);
     type Error = Error;
 }
