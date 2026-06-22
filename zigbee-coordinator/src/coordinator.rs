@@ -35,7 +35,8 @@ impl Coordinator {
         let state = state.into();
 
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
-        let network_manager = Self::start_network_manager(state);
+        let network_manager =
+            Self::start_network_manager(ncp.clone(), discovery_tx.downgrade(), state);
 
         let zcl_tx = Self::start_zcl_transceiver(ncp.clone(), network_manager.downgrade());
         let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), discovery_tx.downgrade(), endpoints);
@@ -103,9 +104,13 @@ impl Coordinator {
     }
 
     /// Start the network manager.
-    fn start_network_manager(state: State) -> Sender<network_manager::Message> {
+    fn start_network_manager(
+        ncp: NcpHandle,
+        discovery: WeakSender<discovery::Message>,
+        state: State,
+    ) -> Sender<network_manager::Message> {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(network_manager::Actor::new(state).run(rx));
+        spawn(network_manager::Actor::new(ncp, discovery, state).run(rx));
         tx
     }
 

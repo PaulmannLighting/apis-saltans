@@ -1,30 +1,34 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::mpsc::SendError;
 
 use aps::Data;
 use log::{debug, error, warn};
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zcl::{Cluster, Frame};
 use zigbee::Address;
 
 pub use self::message::Message;
 pub use self::state::{Attributes, Device, Endpoint, State};
+use crate::discovery;
 
 mod message;
 mod state;
 
 /// The network management actor.
-#[derive(Debug, Default)]
-pub struct Actor {
+#[derive(Debug)]
+pub struct Actor<T> {
+    ncp: T,
+    discovery_manager: WeakSender<discovery::Message>,
     devices: BTreeMap<MacAddr8, Device>,
     short_ids: BTreeMap<u16, MacAddr8>,
     subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Data<Frame<Cluster>>>)>,
 }
 
-impl Actor {
+impl<T: zigbee_hw::Ncp> Actor<T> {
     /// Create a new actor.
     #[must_use]
-    pub fn new(state: State) -> Self {
+    pub fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>, state: State) -> Self {
         let mut short_ids = BTreeMap::new();
         let devices = state
             .devices
@@ -38,6 +42,8 @@ impl Actor {
             .collect();
 
         Self {
+            ncp,
+            discovery_manager,
             devices,
             short_ids,
             subscribers: Vec::new(),
@@ -99,6 +105,7 @@ impl Actor {
     async fn handle_incoming_command(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
         let Some(src_address) = self.short_ids.get(&src_address) else {
             warn!("Received command from unknown short ID: {src_address:04X}");
+            self.try_rediscover(src_address).await;
             return;
         };
 
@@ -130,5 +137,33 @@ impl Actor {
     fn remove_device(&mut self, address: &Address) {
         self.devices.remove(&address.ieee_address());
         self.short_ids.remove(&address.short_id());
+    }
+
+    async fn try_rediscover(&self, src_address: u16) {
+        let Ok(ieee_address) = self
+            .ncp
+            .short_id_to_ieee_address(src_address)
+            .await
+            .inspect_err(|error| {
+                error!("Failed to get IEEE address for short ID {src_address:04X}: {error:?}");
+            })
+        else {
+            return;
+        };
+
+        let Some(sender) = self.discovery_manager.upgrade() else {
+            warn!("Failed to send discovery message: discovery manager is gone");
+            return;
+        };
+
+        sender
+            .send(discovery::Message::DeviceJoined(Address::new(
+                ieee_address,
+                src_address,
+            )))
+            .await
+            .unwrap_or_else(|error| {
+                error!("Failed to send discovery message: {error:?}");
+            });
     }
 }
