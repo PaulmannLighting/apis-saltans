@@ -74,10 +74,14 @@ impl Mux {
     }
 
     async fn forward_received_message(&self, src_address: u16, aps_frame: Frame<Command>) {
-        let (_, payload) = aps_frame.into_parts();
+        let (header, payload) = aps_frame.into_parts();
 
         match payload {
             Command::Zcl(frame) => {
+                #[expect(unsafe_code)]
+                // SAFETY: We reconstructed the frame from its original parts above.
+                let frame = unsafe { Frame::new_unchecked(header, frame) };
+
                 self.zcl
                     .send(zcl::Message::Received {
                         src_address,

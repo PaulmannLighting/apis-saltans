@@ -1,9 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use aps::Data;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
-use zcl::Cluster;
+use zcl::{Cluster, Frame};
 use zigbee::Address;
 
 use super::Device;
@@ -18,7 +19,7 @@ pub enum Message {
         /// An empty set means that all devices will be listened to.
         devices: BTreeSet<MacAddr8>,
         /// The sender to send the incoming commands to.
-        sender: Sender<Cluster>,
+        sender: Sender<Data<Frame<Cluster>>>,
     },
 
     /// An incoming ZCL command.
@@ -26,7 +27,7 @@ pub enum Message {
         /// The source address of the command.
         src_address: u16,
         /// The payload of the command.
-        payload: Box<Cluster>,
+        payload: Box<Data<Frame<Cluster>>>,
     },
 
     /// A request to resolve a short ID to an IEEE address.

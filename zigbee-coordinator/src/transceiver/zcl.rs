@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 
+use aps::Data;
 use le_stream::ToLeStream;
 use log::{error, warn};
 use tokio::sync::mpsc::{Receiver, WeakSender};
@@ -108,7 +109,8 @@ where
     }
 
     /// Handle a received ZCL message.
-    async fn handle_message_received(&mut self, src_address: u16, frame: Frame<Cluster>) {
+    async fn handle_message_received(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
+        let (aps_header, frame) = frame.into_parts();
         let (header, payload) = frame.into_parts();
 
         if let Some(sender) = self.responses.remove(&header.seq()) {
@@ -124,10 +126,16 @@ where
             return;
         };
 
+        #[expect(unsafe_code)]
+        // SAFETY: We reconstruct the frame, which we just deconstructed above
+        // without modification of its constituent parts.
+        let frame =
+            unsafe { Data::new_unchecked(aps_header, Frame::new_unchecked(header, payload)) };
+
         sender
             .send(network_manager::Message::Command {
                 src_address,
-                payload: payload.into(),
+                payload: frame.into(),
             })
             .await
             .unwrap_or_else(|error| {

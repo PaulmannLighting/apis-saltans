@@ -1,9 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use aps::Data;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
-use zcl::Cluster;
+use zcl::{Cluster, Frame};
 use zigbee::Address;
 
 use crate::network_manager::Message;
@@ -101,7 +102,7 @@ pub trait NetworkManager {
         &self,
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> impl Future<Output = Result<Receiver<Cluster>, Error>>;
+    ) -> impl Future<Output = Result<Receiver<Data<Frame<Cluster>>>, Error>>;
 }
 
 impl NetworkManager for Sender<Message> {
@@ -138,7 +139,7 @@ impl NetworkManager for Sender<Message> {
         &self,
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> Result<Receiver<Cluster>, Error> {
+    ) -> Result<Receiver<Data<Frame<Cluster>>>, Error> {
         let (sender, receiver) = tokio::sync::mpsc::channel(channel_size);
         self.send(Message::SubscribeToIncomingCommands {
             devices: device,
@@ -176,7 +177,7 @@ impl NetworkManager for Coordinator {
         &self,
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> Result<Receiver<Cluster>, Error> {
+    ) -> Result<Receiver<Data<Frame<Cluster>>>, Error> {
         self.network_manager
             .subscribe_to_incoming_commands(device, channel_size)
             .await

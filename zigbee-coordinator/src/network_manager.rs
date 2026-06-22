@@ -1,9 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use aps::Data;
 use log::{debug, error, warn};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender};
-use zcl::Cluster;
+use zcl::{Cluster, Frame};
 use zigbee::Address;
 
 pub use self::message::Message;
@@ -17,7 +18,7 @@ mod state;
 pub struct Actor {
     devices: BTreeMap<MacAddr8, Device>,
     short_ids: BTreeMap<u16, MacAddr8>,
-    subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Cluster>)>,
+    subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Data<Frame<Cluster>>>)>,
 }
 
 impl Actor {
@@ -95,7 +96,7 @@ impl Actor {
         }
     }
 
-    async fn handle_incoming_command(&mut self, src_address: u16, payload: Cluster) {
+    async fn handle_incoming_command(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
         let Some(src_address) = self.short_ids.get(&src_address) else {
             warn!("Received command from unknown short ID: {src_address:04X}");
             return;
@@ -109,7 +110,7 @@ impl Actor {
             }
         }) {
             subscriber
-                .send(payload.clone().into())
+                .send(frame.clone().into())
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to send command to subscriber: {error:?}");

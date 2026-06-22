@@ -1,3 +1,4 @@
+use aps::Data;
 use tokio::sync::oneshot::{Receiver, Sender};
 use zcl::{Cluster, Frame};
 use zigbee::Endpoint;
@@ -15,7 +16,7 @@ pub enum Message {
         /// The PAN ID of the sender.
         src_address: u16,
         /// The APS frame.
-        frame: Box<Frame<Cluster>>,
+        frame: Box<Data<Frame<Cluster>>>,
     },
     /// Unicast a message.
     Unicast {
