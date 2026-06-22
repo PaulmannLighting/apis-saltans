@@ -15,6 +15,7 @@ pub use self::api::{
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
 pub use self::event::Event;
+pub use self::event_receiver::EventReceiver;
 pub use self::network_manager::{Attributes, Device, Endpoint, State};
 use self::retry::Retry;
 
@@ -24,6 +25,7 @@ mod coordinator;
 mod discovery;
 mod error;
 mod event;
+mod event_receiver;
 mod mux;
 mod network_manager;
 mod retry;
@@ -47,3 +49,7 @@ const TASK_POOL_SIZE: usize = 16;
 /// The delay between retries, in seconds.
 #[env_item("ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE")]
 const MPSC_CHANNEL_SIZE: usize = 128;
+
+/// Size of the event channel.
+#[env_item("ZIGBEE_COORDINATOR_EVENT_CHANNEL_SIZE")]
+const EVENT_CHANNEL_SIZE: usize = 32;

@@ -8,6 +8,7 @@ use zcl::{Cluster, Frame};
 use zigbee::Address;
 
 use super::Device;
+use crate::Event;
 
 /// Messages received by the network management actor.
 #[derive(Debug)]
@@ -19,7 +20,7 @@ pub enum Message {
         /// An empty set means that all devices will be listened to.
         devices: BTreeSet<MacAddr8>,
         /// The sender to send the incoming commands to.
-        sender: Sender<Data<Frame<Cluster>>>,
+        sender: Sender<Event>,
     },
 
     /// An incoming ZCL command.

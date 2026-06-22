@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::mpsc::SendError;
 
 use aps::Data;
 use log::{debug, error, warn};
@@ -10,7 +9,7 @@ use zigbee::Address;
 
 pub use self::message::Message;
 pub use self::state::{Attributes, Device, Endpoint, State};
-use crate::discovery;
+use crate::{Event, discovery};
 
 mod message;
 mod state;
@@ -103,21 +102,28 @@ impl<T: zigbee_hw::Ncp> Actor<T> {
     }
 
     async fn handle_incoming_command(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
-        let Some(src_address) = self.short_ids.get(&src_address) else {
+        let Some(ieee_address) = self.short_ids.get(&src_address) else {
             warn!("Received command from unknown short ID: {src_address:04X}");
             self.try_rediscover(src_address).await;
             return;
         };
 
+        let (aps_header, zcl_frame) = frame.into_parts();
+        let (_zcl_header, cluster) = zcl_frame.into_parts();
+
         for subscriber in self.subscribers.iter().filter_map(|(devices, sender)| {
-            if devices.is_empty() || devices.contains(src_address) {
+            if devices.is_empty() || devices.contains(ieee_address) {
                 Some(sender)
             } else {
                 None
             }
         }) {
             subscriber
-                .send(frame.clone().into())
+                .send(Event::new(
+                    Address::new(*ieee_address, src_address),
+                    aps_header.source_endpoint(),
+                    cluster.clone(),
+                ))
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to send command to subscriber: {error:?}");
