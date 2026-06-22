@@ -8,35 +8,131 @@ use crate::ReadAttributeResult;
 /// The attributes we want to discover.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub struct Attributes {
-    /// The ZCL version of the device.
-    pub zcl_version: Option<u8>,
+    zcl_version: Option<u8>,
+    application_version: Option<u8>,
+    stack_version: Option<u8>,
+    hw_version: Option<u8>,
+    manufacturer_name: Option<String>,
+    model_identifier: Option<String>,
+    date_code: Option<DateCode>,
+    power_source: Option<PowerSource>,
+    location_description: Option<String>,
+    sw_build_id: Option<String>,
+}
 
-    /// The application version of the device.
-    pub application_version: Option<u8>,
+impl Attributes {
+    /// Return the ZCL version of the device.
+    #[must_use]
+    pub const fn zcl_version(&self) -> Option<u8> {
+        self.zcl_version
+    }
 
-    /// The stack version of the device.
-    pub stack_version: Option<u8>,
+    /// Replace the ZCL version of the device.
+    pub const fn set_zcl_version(&mut self, zcl_version: u8) -> Option<u8> {
+        self.zcl_version.replace(zcl_version)
+    }
 
-    /// The hardware version of the device.
-    pub hw_version: Option<u8>,
+    /// Return the application version of the device.
+    #[must_use]
+    pub const fn application_version(&self) -> Option<u8> {
+        self.application_version
+    }
 
-    /// The manufacturer name of the device.
-    pub manufacturer_name: Option<String>,
+    /// Replace the application version of the device.
+    pub const fn set_application_version(&mut self, application_version: u8) -> Option<u8> {
+        self.application_version.replace(application_version)
+    }
 
-    /// The model identifier of the device.
-    pub model_identifier: Option<String>,
+    /// Return the stack version of the device.
+    #[must_use]
+    pub const fn stack_version(&self) -> Option<u8> {
+        self.stack_version
+    }
 
-    /// The date code of the device.
-    pub date_code: Option<DateCode>,
+    /// Replace the stack version of the device.
+    pub const fn set_stack_version(&mut self, stack_version: u8) -> Option<u8> {
+        self.stack_version.replace(stack_version)
+    }
 
-    /// The power source of the device.
-    pub power_source: Option<PowerSource>,
+    /// Return the hardware version of the device.
+    #[must_use]
+    pub const fn hw_version(&self) -> Option<u8> {
+        self.hw_version
+    }
 
-    /// The location description of the device.
-    pub location_description: Option<String>,
+    /// Replace the hardware version of the device.
+    pub const fn set_hw_version(&mut self, hw_version: u8) -> Option<u8> {
+        self.hw_version.replace(hw_version)
+    }
 
-    /// The software build ID of the device.
-    pub sw_build_id: Option<String>,
+    /// Return the manufacturer name of the device.
+    #[must_use]
+    pub fn manufacturer_name(&self) -> Option<&str> {
+        self.manufacturer_name.as_deref()
+    }
+
+    /// Replace the manufacturer name of the device.
+    pub const fn set_manufacturer_name(&mut self, manufacturer_name: String) -> Option<String> {
+        self.manufacturer_name.replace(manufacturer_name)
+    }
+
+    /// Return the model identifier of the device.
+    #[must_use]
+    pub fn model_identifier(&self) -> Option<&str> {
+        self.model_identifier.as_deref()
+    }
+
+    /// Replace the model identifier of the device.
+    pub const fn set_model_identifier(&mut self, model_identifier: String) -> Option<String> {
+        self.model_identifier.replace(model_identifier)
+    }
+
+    /// Return the date code of the device.
+    #[must_use]
+    pub const fn date_code(&self) -> Option<&DateCode> {
+        self.date_code.as_ref()
+    }
+
+    /// Replace the date code of the device.
+    pub const fn set_date_code(&mut self, date_code: DateCode) -> Option<DateCode> {
+        self.date_code.replace(date_code)
+    }
+
+    /// Return the power source of the device.
+    #[must_use]
+    pub const fn power_source(&self) -> Option<&PowerSource> {
+        self.power_source.as_ref()
+    }
+
+    /// Replace the power source of the device.
+    pub const fn set_power_source(&mut self, power_source: PowerSource) -> Option<PowerSource> {
+        self.power_source.replace(power_source)
+    }
+
+    /// Return the location description of the device.
+    #[must_use]
+    pub fn location_description(&self) -> Option<&str> {
+        self.location_description.as_deref()
+    }
+
+    /// Replace the location description of the device.
+    pub const fn set_location_description(
+        &mut self,
+        location_description: String,
+    ) -> Option<String> {
+        self.location_description.replace(location_description)
+    }
+
+    /// Return the software build ID of the device.
+    #[must_use]
+    pub fn sw_build_id(&self) -> Option<&str> {
+        self.sw_build_id.as_deref()
+    }
+
+    /// Replace the software build ID of the device.
+    pub const fn set_sw_build_id(&mut self, sw_build_id: String) -> Option<String> {
+        self.sw_build_id.replace(sw_build_id)
+    }
 }
 
 impl From<Box<[ReadAttributeResult<Id>]>> for Attributes {
