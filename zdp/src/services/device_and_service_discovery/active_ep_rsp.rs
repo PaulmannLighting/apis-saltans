@@ -1,17 +1,17 @@
 use std::fmt::Display;
 
-use le_stream::{FromLeStream, Prefixed, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, Endpoint};
 
 use crate::services::DeviceAndServiceDiscovery;
-use crate::{Command, Service, Status};
+use crate::{ByteSizedVec, Command, Service, Status};
 
 /// Active Endpoint Response.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ActiveEpRsp {
     status: u8,
     nwk_addr_of_interest: u16,
-    active_eps: Prefixed<u8, Box<[Endpoint]>>,
+    active_eps: ByteSizedVec<Endpoint>,
 }
 
 impl ActiveEpRsp {
@@ -20,28 +20,13 @@ impl ActiveEpRsp {
     pub fn new(
         status: Status,
         nwk_addr_of_interest: u16,
-        active_eps: Prefixed<u8, Box<[Endpoint]>>,
+        active_eps: ByteSizedVec<Endpoint>,
     ) -> Self {
         Self {
             status: status.into(),
             nwk_addr_of_interest,
             active_eps,
         }
-    }
-
-    /// Attempt to create a new Active Endpoint Response.
-    ///
-    /// # Errors
-    ///
-    /// Returns the boxed slice of endpoints if the conversion to a prefixed boxed slice fails.
-    pub fn try_new(
-        status: Status,
-        nwk_addr_of_interest: u16,
-        active_eps: &[Endpoint],
-    ) -> Result<Self, Box<[Endpoint]>> {
-        Box::<[Endpoint]>::from(active_eps)
-            .try_into()
-            .map(|active_eps| Self::new(status, nwk_addr_of_interest, active_eps))
     }
 
     /// Return the status of the response.
@@ -67,8 +52,8 @@ impl ActiveEpRsp {
 
     /// Return the active endpoints, consuming the [`ActiveEpRsp`].
     #[must_use]
-    pub fn into_active_eps(self) -> Box<[Endpoint]> {
-        self.active_eps.into_data()
+    pub fn into_active_eps(self) -> ByteSizedVec<Endpoint> {
+        self.active_eps
     }
 }
 
@@ -94,8 +79,8 @@ impl Display for ActiveEpRsp {
 }
 
 impl IntoIterator for ActiveEpRsp {
-    type Item = <Prefixed<u8, Box<[Endpoint]>> as IntoIterator>::Item;
-    type IntoIter = <Prefixed<u8, Box<[Endpoint]>> as IntoIterator>::IntoIter;
+    type Item = <ByteSizedVec<Endpoint> as IntoIterator>::Item;
+    type IntoIter = <ByteSizedVec<Endpoint> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.active_eps.into_iter()
