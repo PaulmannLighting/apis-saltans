@@ -16,7 +16,7 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
 
         match cluster {
             Cluster::OnOff(on_off) => match on_off {
-                on_off::Command::On(_) => Ok(Event::new(
+                on_off::Command::On(_) => Ok(Self::new(
                     address.ieee_address(),
                     endpoint,
                     Command::OnOff(OnOff::On {
@@ -24,18 +24,18 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                         timing: None,
                     }),
                 )),
-                on_off::Command::Off(_) => Ok(Event::new(
+                on_off::Command::Off(_) => Ok(Self::new(
                     address.ieee_address(),
                     endpoint,
                     Command::OnOff(OnOff::Off { effect: None }),
                 )),
-                on_off::Command::OffWithEffect(_params) => Ok(Event::new(
+                on_off::Command::OffWithEffect(_params) => Ok(Self::new(
                     address.ieee_address(),
                     endpoint,
                     // TODO: Handle effects
                     Command::OnOff(OnOff::Off { effect: None }),
                 )),
-                on_off::Command::OnWithTimedOff(params) => Ok(Event::new(
+                on_off::Command::OnWithTimedOff(params) => Ok(Self::new(
                     address.ieee_address(),
                     endpoint,
                     Command::OnOff(OnOff::On {
@@ -49,7 +49,7 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                         )),
                     }),
                 )),
-                on_off::Command::OnWithRecallGlobalScene(_) => Ok(Event::new(
+                on_off::Command::OnWithRecallGlobalScene(_) => Ok(Self::new(
                     address.ieee_address(),
                     endpoint,
                     Command::OnOff(OnOff::On {
@@ -57,7 +57,7 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                         timing: None,
                     }),
                 )),
-                on_off::Command::Toggle(_) => Ok(Event::new(
+                on_off::Command::Toggle(_) => Ok(Self::new(
                     address.ieee_address(),
                     endpoint,
                     Command::OnOff(OnOff::Toggle),
@@ -77,7 +77,7 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                         }
                     };
 
-                    Ok(Event::new(address.ieee_address(), endpoint, command))
+                    Ok(Self::new(address.ieee_address(), endpoint, command))
                 }
                 level::Command::MoveWithOnOff(mv) => {
                     let command = match mv.mode() {
@@ -92,7 +92,7 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                         }
                     };
 
-                    Ok(Event::new(address.ieee_address(), endpoint, command))
+                    Ok(Self::new(address.ieee_address(), endpoint, command))
                 }
                 other => {
                     warn!("Unhandled level command: {other:?}");
