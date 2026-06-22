@@ -16,6 +16,6 @@ mod translate_endpoint_id;
 
 impl Protocol for Coordinator {
     type DeviceId = MacAddr8;
-    type EndpointId = (MacAddr8, Endpoint);
+    type EndpointId = Endpoint;
     type Error = Error;
 }

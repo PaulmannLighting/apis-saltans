@@ -10,6 +10,7 @@ use crate::Coordinator;
 impl ColorControl for Coordinator {
     async fn move_to_color(
         &self,
+        device: Self::DeviceId,
         endpoint: Self::EndpointId,
         color: Rgb,
         transition_time: Duration,
@@ -21,8 +22,8 @@ impl ColorControl for Coordinator {
             .unwrap_or(u16::MAX);
         crate::ColorControl::move_to_xy(
             self,
-            endpoint.0,
-            endpoint.1,
+            device,
+            endpoint,
             xy.x(),
             xy.y(),
             deci_seconds,
