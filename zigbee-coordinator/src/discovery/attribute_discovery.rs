@@ -9,6 +9,7 @@ use zigbee::{Address, Application, Endpoint};
 
 use self::devices::{Devices, DevicesExt};
 pub use self::message::Message;
+use crate::discovery::attribute_discovery::endpoint_info::EndpointInfo;
 use crate::{
     Attributes, MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributesInternal,
     TASK_POOL_SIZE, binding, transceiver,
@@ -140,26 +141,31 @@ impl AttributeDiscovery {
             .filter_map(DevicesExt::application_eps_with_basic_cluster)
             .all(|(_, endpoint_info)| endpoint_info.attributes().is_some())
         {
-            let Some(binding_manager) = self.binding_manager.upgrade() else {
-                trace!("Binding manager channel closed. Aborting forwarding of device: {address}.");
-                return;
-            };
-
-            trace!("Forwarding device {address} to binding manager: {endpoints:?}.");
-            binding_manager
-                .send(binding::Message::DeviceDiscovered {
-                    address,
-                    endpoints: endpoints
-                        .into_iter()
-                        .map(|(endpoint, info)| (endpoint, info.into()))
-                        .collect(),
-                })
-                .await
-                .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
+            trace!("All attributes discovered for {address}: {endpoints:?}.");
+            self.forward_device(address, endpoints).await;
         } else {
             trace!("Not all attributes discovered for {address}.");
             self.devices.insert(address, endpoints);
         }
+    }
+
+    async fn forward_device(&self, address: Address, endpoints: BTreeMap<Endpoint, EndpointInfo>) {
+        let Some(binding_manager) = self.binding_manager.upgrade() else {
+            trace!("Binding manager channel closed. Aborting forwarding of device: {address}.");
+            return;
+        };
+
+        trace!("Forwarding device {address} to binding manager.");
+        binding_manager
+            .send(binding::Message::DeviceDiscovered {
+                address,
+                endpoints: endpoints
+                    .into_iter()
+                    .map(|(endpoint, info)| (endpoint, info.into()))
+                    .collect(),
+            })
+            .await
+            .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
     }
 }
 
