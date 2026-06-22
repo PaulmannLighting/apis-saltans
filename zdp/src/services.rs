@@ -1,6 +1,5 @@
 //! ZDP services.
 
-use std::error::Error;
 use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
@@ -87,6 +86,7 @@ impl Command {
                 .map(DeviceAndServiceDiscovery::DeviceAnnce)
                 .map(Self::DeviceAndServiceDiscovery)),
             ParentAnnce::ID => Ok(ParentAnnce::from_le_stream(bytes)
+                .map(Box::new)
                 .map(DeviceAndServiceDiscovery::ParentAnnce)
                 .map(Self::DeviceAndServiceDiscovery)),
             SystemServerDiscoveryReq::ID => Ok(SystemServerDiscoveryReq::from_le_stream(bytes)

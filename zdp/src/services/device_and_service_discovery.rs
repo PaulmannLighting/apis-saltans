@@ -74,7 +74,7 @@ pub enum DeviceAndServiceDiscovery {
     DeviceAnnce(DeviceAnnce),
 
     /// Parent Announcement
-    ParentAnnce(ParentAnnce),
+    ParentAnnce(Box<ParentAnnce>),
 
     /// System Server Discovery Request
     SystemServerDiscoveryReq(SystemServerDiscoveryReq),
@@ -198,7 +198,7 @@ impl From<DeviceAnnce> for DeviceAndServiceDiscovery {
 
 impl From<ParentAnnce> for DeviceAndServiceDiscovery {
     fn from(cmd: ParentAnnce) -> Self {
-        Self::ParentAnnce(cmd)
+        Self::ParentAnnce(cmd.into())
     }
 }
 

@@ -185,7 +185,7 @@ where
     }
 
     async fn handle_match_desc_req(&self, src_address: u16, seq: u8, match_desc_req: MatchDescReq) {
-        let Ok(payload) = MatchDescRsp::new(
+        let payload = MatchDescRsp::new(
             Status::Success,
             0x0000,
             self.endpoints
@@ -198,10 +198,7 @@ where
                     }
                 })
                 .collect(),
-        ) else {
-            error!("Failed to create Match_Desc_rsp. Too many clusters.");
-            return;
-        };
+        );
 
         if let Err(error) = self
             .unicast(seq, src_address, Payload::zdp(payload).into_command())
