@@ -10,7 +10,7 @@ pub enum Destination {
     Unicast(Endpoint),
 
     /// A broadcast endpoint ID.
-    Broadcast(u8),
+    Broadcast(Endpoint),
 
     /// A group address.
     Group(u16),
@@ -21,8 +21,7 @@ impl ToLeStream for Destination {
 
     fn to_le_stream(self) -> Self::Iter {
         match self {
-            Self::Unicast(value) => value.into(),
-            Self::Broadcast(value) => value.into(),
+            Self::Unicast(value) | Self::Broadcast(value) => value.into(),
             Self::Group(value) => value.into(),
         }
     }
@@ -35,19 +34,12 @@ mod iterator {
     /// Le-stream iterator
     pub enum DestinationIterator {
         Endpoint(<Endpoint as ToLeStream>::Iter),
-        U8(<u8 as ToLeStream>::Iter),
         U16(<u16 as ToLeStream>::Iter),
     }
 
     impl From<Endpoint> for DestinationIterator {
         fn from(value: Endpoint) -> Self {
             Self::Endpoint(value.to_le_stream())
-        }
-    }
-
-    impl From<u8> for DestinationIterator {
-        fn from(value: u8) -> Self {
-            Self::U8(value.to_le_stream())
         }
     }
 
@@ -63,7 +55,6 @@ mod iterator {
         fn next(&mut self) -> Option<Self::Item> {
             match self {
                 Self::Endpoint(iter) => iter.next(),
-                Self::U8(iter) => iter.next(),
                 Self::U16(iter) => iter.next(),
             }
         }

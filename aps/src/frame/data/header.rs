@@ -117,7 +117,9 @@ impl FromLeStream for Header {
                 DeliveryMode::Unicast => {
                     Destination::Unicast(Endpoint::from_le_stream(&mut bytes)?)
                 }
-                DeliveryMode::Broadcast => Destination::Broadcast(u8::from_le_stream(&mut bytes)?),
+                DeliveryMode::Broadcast => {
+                    Destination::Broadcast(Endpoint::from_le_stream(&mut bytes)?)
+                }
                 DeliveryMode::Group => Destination::Group(u16::from_le_stream(&mut bytes)?),
             },
             None => return None, // TODO: Do we have a better option to handle the error case here?
