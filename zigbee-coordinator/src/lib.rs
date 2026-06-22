@@ -14,6 +14,7 @@ pub use self::api::{
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
+pub use self::event::Event;
 use self::retry::Retry;
 pub use crate::network_manager::{Attributes, Device, Endpoint, State};
 
@@ -22,6 +23,7 @@ mod binding;
 mod coordinator;
 mod discovery;
 mod error;
+mod event;
 mod mux;
 mod network_manager;
 mod retry;

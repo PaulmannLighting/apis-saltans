@@ -22,7 +22,7 @@ pub struct Actor<T> {
     discovery_manager: WeakSender<discovery::Message>,
     devices: BTreeMap<MacAddr8, Device>,
     short_ids: BTreeMap<u16, MacAddr8>,
-    subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Data<Frame<Cluster>>>)>,
+    subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Event>)>,
 }
 
 impl<T: zigbee_hw::Ncp> Actor<T> {
