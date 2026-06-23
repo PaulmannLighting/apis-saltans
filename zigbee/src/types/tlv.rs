@@ -1,28 +1,23 @@
 //! Type-Length-Value (TLV) encoded structures for Zigbee.
 
-use const_env::env_item;
-use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::encapsulated_global::EncapsulatedGlobal;
+pub use self::general::{General, Payload};
 pub use self::global::{
     BeaconAppendixEncapsulation, DeviceCapabilityExtension, FragmentationOptions, Global,
     JoinerEncapsulation, KeyNegotiationProtocols, ManufacturerSpecific, NextChannelChange,
     NextPanIdChange, PanIdConflictReport, PreSharedSecrets, RouterInformation,
     SupportedKeyNegotiation, SymmetricPassphrase,
 };
-use self::iter::TlvLeStream;
 pub use self::local::{ClearAllBindingsReqEui64, Local};
 pub use self::tag::Tag;
-pub use self::tlv_vec::TlvVec;
 
 mod encapsulated_global;
+mod general;
 mod global;
 mod local;
 mod tag;
-mod tlv_vec;
-
-#[env_item("ZIGBEE_MAX_NESTED_TLV_LEN")]
-const MAX_NESTED_TLV_LEN: u8 = 255;
 
 /// A Type-Length-Value (TLV) encoded structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -34,57 +29,56 @@ pub enum Tlv<L = Local, G = Global> {
     Global(G),
 }
 
+impl<L, G> From<Tlv<L, G>> for General
+where
+    L: Into<General>,
+    G: Into<General>,
+{
+    fn from(tlv: Tlv<L, G>) -> General {
+        match tlv {
+            Tlv::Local(local) => local.into(),
+            Tlv::Global(global) => global.into(),
+        }
+    }
+}
+
+impl<L, G> TryFrom<General> for Tlv<L, G>
+where
+    L: TryFrom<General, Error = u8>,
+    G: TryFrom<General, Error = u8>,
+{
+    type Error = u8;
+
+    fn try_from(general: General) -> Result<Self, Self::Error> {
+        match general.typ() {
+            0..=63 => L::try_from(general).map(Self::Local),
+            64..=255 => G::try_from(general).map(Self::Global),
+        }
+    }
+}
+
 impl<L, G> FromLeStream for Tlv<L, G>
 where
-    L: FromLeStreamTagged<Tag = u8>,
-    G: FromLeStreamTagged<Tag = u8>,
+    L: TryFrom<General, Error = u8>,
+    G: TryFrom<General, Error = u8>,
 {
-    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+    fn from_le_stream<T>(bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
-        match u8::from_le_stream(&mut bytes)? {
-            tag @ 0..=63 => L::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Local),
-            tag @ 64..=255 => G::from_le_stream_tagged(tag, bytes).ok()?.map(Self::Global),
-        }
+        General::from_le_stream(bytes)?.try_into().ok()
     }
 }
 
 impl<L, G> ToLeStream for Tlv<L, G>
 where
-    L: ToLeStream,
-    G: ToLeStream,
+    L: Into<General>,
+    G: Into<General>,
 {
-    type Iter = TlvLeStream<L::Iter, G::Iter>;
+    type Iter = <General as ToLeStream>::Iter;
 
     fn to_le_stream(self) -> Self::Iter {
-        match self {
-            Self::Local(local) => TlvLeStream::Local(local.to_le_stream()),
-            Self::Global(global) => TlvLeStream::Global(global.to_le_stream()),
-        }
-    }
-}
-
-mod iter {
-    #[derive(Debug)]
-    pub enum TlvLeStream<L, G> {
-        Local(L),
-        Global(G),
-    }
-
-    impl<L, G> Iterator for TlvLeStream<L, G>
-    where
-        L: Iterator<Item = u8>,
-        G: Iterator<Item = u8>,
-    {
-        type Item = u8;
-
-        fn next(&mut self) -> Option<Self::Item> {
-            match self {
-                Self::Local(iter) => iter.next(),
-                Self::Global(iter) => iter.next(),
-            }
-        }
+        <Self as Into<General>>::into(self).to_le_stream()
     }
 }
 

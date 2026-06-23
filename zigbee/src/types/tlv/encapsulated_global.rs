@@ -1,15 +1,15 @@
-use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
-use crate::types::tlv::Tag;
 use crate::types::tlv::global::{
     ConfigurationParameters, DeviceCapabilityExtension, FragmentationParameters,
     ManufacturerSpecific, NextChannelChange, NextPanIdChange, PanIdConflictReport,
     RouterInformation, SupportedKeyNegotiation, SymmetricPassphrase,
 };
+use crate::types::tlv::{General, Tag};
 
 /// Encapsulated Global TLV types.
+#[expect(variant_size_differences, clippy::large_enum_variant)]
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-#[expect(clippy::large_enum_variant, variant_size_differences)]
 pub enum EncapsulatedGlobal {
     /// Manufacturer Specific TLV.
     ManufacturerSpecific(ManufacturerSpecific),
@@ -42,135 +42,79 @@ pub enum EncapsulatedGlobal {
     DeviceCapabilityExtension(DeviceCapabilityExtension),
 }
 
-impl FromLeStreamTagged for EncapsulatedGlobal {
-    type Tag = u8;
+impl From<EncapsulatedGlobal> for General {
+    fn from(value: EncapsulatedGlobal) -> Self {
+        match value {
+            EncapsulatedGlobal::ManufacturerSpecific(value) => Self::serialize(value),
+            EncapsulatedGlobal::SupportedKeyNegotiationMethods(value) => Self::serialize(value),
+            EncapsulatedGlobal::PanIdConflictReport(value) => Self::serialize(value),
+            EncapsulatedGlobal::NextPanIdChange(value) => Self::serialize(value),
+            EncapsulatedGlobal::NextChannelChange(value) => Self::serialize(value),
+            EncapsulatedGlobal::SymmetricPassphrase(value) => Self::serialize(value),
+            EncapsulatedGlobal::RouterInformation(value) => Self::serialize(value),
+            EncapsulatedGlobal::FragmentationParameters(value) => Self::serialize(value),
+            EncapsulatedGlobal::ConfigurationParameters(value) => Self::serialize(value),
+            EncapsulatedGlobal::DeviceCapabilityExtension(value) => Self::serialize(value),
+        }
+    }
+}
 
-    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
-    where
-        T: Iterator<Item = u8>,
-    {
-        match tag {
+impl TryFrom<General> for EncapsulatedGlobal {
+    type Error = u8;
+
+    fn try_from(general: General) -> Result<Self, Self::Error> {
+        let (typ, payload) = general.into_parts();
+
+        match typ {
             ManufacturerSpecific::TAG => {
-                Ok(ManufacturerSpecific::from_le_stream(bytes).map(Self::ManufacturerSpecific))
+                ManufacturerSpecific::from_le_stream(payload.to_le_stream())
+                    .map(Self::ManufacturerSpecific)
+                    .ok_or(typ)
             }
-            SupportedKeyNegotiation::TAG => Ok(SupportedKeyNegotiation::from_le_stream(bytes)
-                .map(Self::SupportedKeyNegotiationMethods)),
-            PanIdConflictReport::TAG => {
-                Ok(PanIdConflictReport::from_le_stream(bytes).map(Self::PanIdConflictReport))
+            SupportedKeyNegotiation::TAG => {
+                SupportedKeyNegotiation::from_le_stream(payload.to_le_stream())
+                    .map(Self::SupportedKeyNegotiationMethods)
+                    .ok_or(typ)
             }
-            NextPanIdChange::TAG => {
-                Ok(NextPanIdChange::from_le_stream(bytes).map(Self::NextPanIdChange))
-            }
-            NextChannelChange::TAG => {
-                Ok(NextChannelChange::from_le_stream(bytes).map(Self::NextChannelChange))
-            }
-            SymmetricPassphrase::TAG => {
-                Ok(SymmetricPassphrase::from_le_stream(bytes).map(Self::SymmetricPassphrase))
-            }
-            RouterInformation::TAG => {
-                Ok(RouterInformation::from_le_stream(bytes).map(Self::RouterInformation))
-            }
+            PanIdConflictReport::TAG => PanIdConflictReport::from_le_stream(payload.to_le_stream())
+                .map(Self::PanIdConflictReport)
+                .ok_or(typ),
+            NextPanIdChange::TAG => NextPanIdChange::from_le_stream(payload.to_le_stream())
+                .map(Self::NextPanIdChange)
+                .ok_or(typ),
+            NextChannelChange::TAG => NextChannelChange::from_le_stream(payload.to_le_stream())
+                .map(Self::NextChannelChange)
+                .ok_or(typ),
+            SymmetricPassphrase::TAG => SymmetricPassphrase::from_le_stream(payload.to_le_stream())
+                .map(Self::SymmetricPassphrase)
+                .ok_or(typ),
+            RouterInformation::TAG => RouterInformation::from_le_stream(payload.to_le_stream())
+                .map(Self::RouterInformation)
+                .ok_or(typ),
             FragmentationParameters::TAG => {
-                Ok(FragmentationParameters::from_le_stream(bytes)
-                    .map(Self::FragmentationParameters))
+                FragmentationParameters::from_le_stream(payload.to_le_stream())
+                    .map(Self::FragmentationParameters)
+                    .ok_or(typ)
             }
             ConfigurationParameters::TAG => {
-                Ok(ConfigurationParameters::from_le_stream(bytes)
-                    .map(Self::ConfigurationParameters))
+                ConfigurationParameters::from_le_stream(payload.to_le_stream())
+                    .map(Self::ConfigurationParameters)
+                    .ok_or(typ)
             }
-            DeviceCapabilityExtension::TAG => Ok(DeviceCapabilityExtension::from_le_stream(bytes)
-                .map(Self::DeviceCapabilityExtension)),
+            DeviceCapabilityExtension::TAG => {
+                DeviceCapabilityExtension::from_le_stream(payload.to_le_stream())
+                    .map(Self::DeviceCapabilityExtension)
+                    .ok_or(typ)
+            }
             unknown_tag => Err(unknown_tag),
         }
     }
 }
 
 impl ToLeStream for EncapsulatedGlobal {
-    type Iter = iter::EncapsulatedGlobalIter;
+    type Iter = <General as ToLeStream>::Iter;
 
     fn to_le_stream(self) -> Self::Iter {
-        iter::EncapsulatedGlobalIter::from(self)
-    }
-}
-
-mod iter {
-    use le_stream::ToLeStream;
-
-    use crate::types::tlv::global::{ConfigurationParameters, FragmentationParameters};
-    use crate::types::tlv::{
-        DeviceCapabilityExtension, EncapsulatedGlobal, ManufacturerSpecific, NextChannelChange,
-        NextPanIdChange, PanIdConflictReport, RouterInformation, SupportedKeyNegotiation,
-        SymmetricPassphrase,
-    };
-
-    #[derive(Debug)]
-    pub enum EncapsulatedGlobalIter {
-        ManufacturerSpecific(<ManufacturerSpecific as ToLeStream>::Iter),
-        SupportedKeyNegotiationMethods(<SupportedKeyNegotiation as ToLeStream>::Iter),
-        PanIdConflictReport(<PanIdConflictReport as ToLeStream>::Iter),
-        NextPanIdChange(<NextPanIdChange as ToLeStream>::Iter),
-        NextChannelChange(<NextChannelChange as ToLeStream>::Iter),
-        SymmetricPassphrase(<SymmetricPassphrase as ToLeStream>::Iter),
-        RouterInformation(<RouterInformation as ToLeStream>::Iter),
-        FragmentationParameters(<FragmentationParameters as ToLeStream>::Iter),
-        ConfigurationParameters(<ConfigurationParameters as ToLeStream>::Iter),
-        DeviceCapabilityExtension(<DeviceCapabilityExtension as ToLeStream>::Iter),
-    }
-
-    impl Iterator for EncapsulatedGlobalIter {
-        type Item = u8;
-
-        #[expect(clippy::match_same_arms)]
-        fn next(&mut self) -> Option<Self::Item> {
-            match self {
-                Self::ManufacturerSpecific(iter) => iter.next(),
-                Self::SupportedKeyNegotiationMethods(iter) => iter.next(),
-                Self::PanIdConflictReport(iter) => iter.next(),
-                Self::NextPanIdChange(iter) => iter.next(),
-                Self::NextChannelChange(iter) => iter.next(),
-                Self::SymmetricPassphrase(iter) => iter.next(),
-                Self::RouterInformation(iter) => iter.next(),
-                Self::FragmentationParameters(iter) => iter.next(),
-                Self::ConfigurationParameters(iter) => iter.next(),
-                Self::DeviceCapabilityExtension(iter) => iter.next(),
-            }
-        }
-    }
-
-    impl From<EncapsulatedGlobal> for EncapsulatedGlobalIter {
-        fn from(encapsulated_global: EncapsulatedGlobal) -> Self {
-            match encapsulated_global {
-                EncapsulatedGlobal::ManufacturerSpecific(value) => {
-                    Self::ManufacturerSpecific(value.to_le_stream())
-                }
-                EncapsulatedGlobal::SupportedKeyNegotiationMethods(value) => {
-                    Self::SupportedKeyNegotiationMethods(value.to_le_stream())
-                }
-                EncapsulatedGlobal::PanIdConflictReport(value) => {
-                    Self::PanIdConflictReport(value.to_le_stream())
-                }
-                EncapsulatedGlobal::NextPanIdChange(value) => {
-                    Self::NextPanIdChange(value.to_le_stream())
-                }
-                EncapsulatedGlobal::NextChannelChange(value) => {
-                    Self::NextChannelChange(value.to_le_stream())
-                }
-                EncapsulatedGlobal::SymmetricPassphrase(value) => {
-                    Self::SymmetricPassphrase(value.to_le_stream())
-                }
-                EncapsulatedGlobal::RouterInformation(value) => {
-                    Self::RouterInformation(value.to_le_stream())
-                }
-                EncapsulatedGlobal::FragmentationParameters(value) => {
-                    Self::FragmentationParameters(value.to_le_stream())
-                }
-                EncapsulatedGlobal::ConfigurationParameters(value) => {
-                    Self::ConfigurationParameters(value.to_le_stream())
-                }
-                EncapsulatedGlobal::DeviceCapabilityExtension(value) => {
-                    Self::DeviceCapabilityExtension(value.to_le_stream())
-                }
-            }
-        }
+        General::from(self).to_le_stream()
     }
 }

@@ -1,91 +1,55 @@
-use core::iter::Chain;
-use core::ops::{Deref, DerefMut};
+use le_stream::{LeStream, LeStreamIterator, ToLeStream};
 
-use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
-
-use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv, TlvVec};
+use crate::types::tlv::{EncapsulatedGlobal, General, Local, Payload, Tag, Tlv};
 
 /// Joiner Encapsulation TLV structure.
-///
-/// TODO: This TLV is very large. Refactor!
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct JoinerEncapsulation {
-    inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>,
+    bytes: Payload,
 }
 
 impl JoinerEncapsulation {
     /// Creates a new `JoinerEncapsulation`.
-    ///
-    /// # Errors
-    ///
-    /// If the length of `inner` minus one cannot be represented as a `u8`, an error is returned.
-    pub fn new(
-        inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>,
-    ) -> Result<Self, Option<core::num::TryFromIntError>> {
-        let Some(size) = inner.len().checked_sub(1) else {
-            return Err(None);
-        };
+    #[must_use]
+    pub fn new<T>(tlvs: T) -> Option<Self>
+    where
+        T: IntoIterator<Item = Tlv<Local, EncapsulatedGlobal>>,
+    {
+        let bytes: Payload = tlvs
+            .into_iter()
+            .flat_map(ToLeStream::to_le_stream)
+            .collect();
 
-        u8::try_from(size).map(|_| Self { inner }).map_err(Some)
+        if bytes.is_empty() {
+            return None;
+        }
+
+        Some(Self { bytes })
     }
 }
 
 impl Tag for JoinerEncapsulation {
     const TAG: u8 = 72;
+}
 
-    fn size(&self) -> usize {
-        self.inner.len()
+impl From<Payload> for JoinerEncapsulation {
+    fn from(bytes: Payload) -> Self {
+        Self { bytes }
     }
 }
 
-impl Deref for JoinerEncapsulation {
-    type Target = TlvVec<Tlv<Local, EncapsulatedGlobal>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
+impl From<JoinerEncapsulation> for General {
+    fn from(value: JoinerEncapsulation) -> Self {
+        General::new(JoinerEncapsulation::TAG, value.bytes)
     }
 }
 
-impl DerefMut for JoinerEncapsulation {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
+impl IntoIterator for JoinerEncapsulation {
+    type Item = Tlv<Local, EncapsulatedGlobal>;
 
-impl FromLeStreamTagged for JoinerEncapsulation {
-    type Tag = u8;
+    type IntoIter = LeStreamIterator<Self::Item, <Payload as IntoIterator>::IntoIter>;
 
-    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
-    where
-        T: Iterator<Item = u8>,
-    {
-        let Some(size) = usize::from(length).checked_add(1) else {
-            return Err(length);
-        };
-
-        let mut inner = TlvVec::new();
-
-        for _ in 0..size {
-            let Some(item) = Tlv::<Local, EncapsulatedGlobal>::from_le_stream(&mut bytes) else {
-                return Ok(None);
-            };
-
-            if inner.push(item).is_err() {
-                return Ok(None);
-            }
-        }
-
-        Ok(Some(Self { inner }))
-    }
-}
-
-impl ToLeStream for JoinerEncapsulation {
-    type Iter = Chain<
-        <u8 as ToLeStream>::Iter,
-        <TlvVec<Tlv<Local, EncapsulatedGlobal>> as ToLeStream>::Iter,
-    >;
-
-    fn to_le_stream(self) -> Self::Iter {
-        Self::TAG.to_le_stream().chain(self.inner.to_le_stream())
+    fn into_iter(self) -> Self::IntoIter {
+        self.bytes.into_iter().le_stream()
     }
 }

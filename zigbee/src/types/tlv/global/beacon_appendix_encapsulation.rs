@@ -1,80 +1,55 @@
-use core::iter::Chain;
-use core::ops::Deref;
+use le_stream::{LeStream, LeStreamIterator, ToLeStream};
 
-use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
-
-use crate::types::tlv::{EncapsulatedGlobal, Local, Tag, Tlv, TlvVec};
+use crate::types::tlv::{EncapsulatedGlobal, General, Local, Payload, Tag, Tlv};
 
 /// Beacon Appendix Encapsulation TLV structure.
-///
-/// TODO: This TLV is very large. Refactor!
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct BeaconAppendixEncapsulation {
-    inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>,
+    bytes: Payload,
 }
 
 impl BeaconAppendixEncapsulation {
     /// Creates a new `BeaconAppendixEncapsulation`.
     #[must_use]
-    pub fn new(inner: TlvVec<Tlv<Local, EncapsulatedGlobal>>) -> Option<Self> {
-        if inner.is_empty() {
+    pub fn new<T>(tlvs: T) -> Option<Self>
+    where
+        T: IntoIterator<Item = Tlv<Local, EncapsulatedGlobal>>,
+    {
+        let bytes: Payload = tlvs
+            .into_iter()
+            .flat_map(ToLeStream::to_le_stream)
+            .collect();
+
+        if bytes.is_empty() {
             return None;
         }
 
-        Some(Self { inner })
+        Some(Self { bytes })
     }
 }
 
 impl Tag for BeaconAppendixEncapsulation {
     const TAG: u8 = 73;
+}
 
-    fn size(&self) -> usize {
-        self.inner.len()
+impl From<Payload> for BeaconAppendixEncapsulation {
+    fn from(bytes: Payload) -> Self {
+        Self { bytes }
     }
 }
 
-impl Deref for BeaconAppendixEncapsulation {
-    type Target = TlvVec<Tlv<Local, EncapsulatedGlobal>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
+impl From<BeaconAppendixEncapsulation> for General {
+    fn from(value: BeaconAppendixEncapsulation) -> Self {
+        General::new(BeaconAppendixEncapsulation::TAG, value.bytes)
     }
 }
 
-impl FromLeStreamTagged for BeaconAppendixEncapsulation {
-    type Tag = u8;
+impl IntoIterator for BeaconAppendixEncapsulation {
+    type Item = Tlv<Local, EncapsulatedGlobal>;
 
-    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
-    where
-        T: Iterator<Item = u8>,
-    {
-        let Some(size) = usize::from(length).checked_add(1) else {
-            return Err(length);
-        };
+    type IntoIter = LeStreamIterator<Self::Item, <Payload as IntoIterator>::IntoIter>;
 
-        let mut inner = TlvVec::new();
-
-        for _ in 0..size {
-            let Some(item) = Tlv::<Local, EncapsulatedGlobal>::from_le_stream(&mut bytes) else {
-                return Ok(None);
-            };
-
-            if inner.push(item).is_err() {
-                return Ok(None);
-            }
-        }
-
-        Ok(Some(Self { inner }))
-    }
-}
-
-impl ToLeStream for BeaconAppendixEncapsulation {
-    type Iter = Chain<
-        <u8 as ToLeStream>::Iter,
-        <TlvVec<Tlv<Local, EncapsulatedGlobal>> as ToLeStream>::Iter,
-    >;
-
-    fn to_le_stream(self) -> Self::Iter {
-        Self::TAG.to_le_stream().chain(self.inner.to_le_stream())
+    fn into_iter(self) -> Self::IntoIter {
+        self.bytes.into_iter().le_stream()
     }
 }

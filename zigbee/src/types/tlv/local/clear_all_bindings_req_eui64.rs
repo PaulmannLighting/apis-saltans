@@ -1,21 +1,19 @@
-use core::iter::Chain;
-use core::ops::Deref;
-
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 
-use crate::types::tlv::{Tag, TlvVec};
+use crate::ByteSizedVec;
+use crate::types::tlv::Tag;
 
 /// Clear All Bindings Request EUI64 List.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ClearAllBindingsReqEui64 {
-    eui64s: TlvVec<MacAddr8>,
+    eui64s: ByteSizedVec<MacAddr8>,
 }
 
 impl ClearAllBindingsReqEui64 {
     /// Creates a new `ClearAllBindingsReqEui64`.
     #[must_use]
-    pub const fn new(eui64s: TlvVec<MacAddr8>) -> Self {
+    pub const fn new(eui64s: ByteSizedVec<MacAddr8>) -> Self {
         Self { eui64s }
     }
 
@@ -28,24 +26,4 @@ impl ClearAllBindingsReqEui64 {
 
 impl Tag for ClearAllBindingsReqEui64 {
     const TAG: u8 = 0x00;
-
-    fn size(&self) -> usize {
-        self.eui64s.len()
-    }
-}
-
-impl Deref for ClearAllBindingsReqEui64 {
-    type Target = [MacAddr8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.eui64s
-    }
-}
-
-impl ToLeStream for ClearAllBindingsReqEui64 {
-    type Iter = Chain<<u8 as ToLeStream>::Iter, <TlvVec<MacAddr8> as ToLeStream>::Iter>;
-
-    fn to_le_stream(self) -> Self::Iter {
-        Self::TAG.to_le_stream().chain(self.eui64s.to_le_stream())
-    }
 }

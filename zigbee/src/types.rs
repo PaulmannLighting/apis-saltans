@@ -1,6 +1,6 @@
 //! Common types used across the protocol.
 
-use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
 
@@ -18,7 +18,6 @@ pub use self::discrete::{
     UtcTime,
 };
 pub use self::null::{NoData, Unknown};
-use crate::types::type_iter::TypeIter;
 
 mod analog;
 mod channel_list;
@@ -28,7 +27,6 @@ mod configuration_bitmask;
 mod discrete;
 mod null;
 pub mod tlv;
-mod type_iter;
 
 /// Commonly used type identifiers.
 #[cfg_attr(
@@ -36,7 +34,7 @@ mod type_iter;
     expect(clippy::unsafe_derive_deserialize),
     derive(serde::Serialize, serde::Deserialize)
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ReprDiscriminant)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ReprDiscriminant, FromLeStream, ToLeStream)]
 #[repr(u8)]
 pub enum Type {
     /// Unknown type.
@@ -125,68 +123,4 @@ pub enum Type {
     IeeeAddress(MacAddr8) = 0xf0,
     /// 128-bit Key.
     Key128([u8; 16]) = 0xf1,
-}
-
-impl FromLeStreamTagged for Type {
-    type Tag = u8;
-
-    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
-    where
-        T: Iterator<Item = u8>,
-    {
-        match tag {
-            0xff => Ok(Some(Self::Unknown)),
-            0x00 => Ok(Some(Self::NoData)),
-            0x08 => Ok(<[u8; 1]>::from_le_stream(bytes).map(Self::Data8)),
-            0x09 => Ok(<[u8; 2]>::from_le_stream(bytes).map(Self::Data16)),
-            0x0a => Ok(<[u8; 3]>::from_le_stream(bytes).map(Self::Data24)),
-            0x0b => Ok(<[u8; 4]>::from_le_stream(bytes).map(Self::Data32)),
-            0x0c => Ok(<[u8; 5]>::from_le_stream(bytes).map(Self::Data40)),
-            0x0d => Ok(<[u8; 6]>::from_le_stream(bytes).map(Self::Data48)),
-            0x0e => Ok(<[u8; 7]>::from_le_stream(bytes).map(Self::Data56)),
-            0x0f => Ok(<[u8; 8]>::from_le_stream(bytes).map(Self::Data64)),
-            0x10 => Ok(Bool::from_le_stream(bytes).map(Self::Boolean)),
-            0x18 => Ok(u8::from_le_stream(bytes).map(Self::Map8)),
-            0x19 => Ok(u16::from_le_stream(bytes).map(Self::Map16)),
-            0x1b => Ok(u32::from_le_stream(bytes).map(Self::Map32)),
-            0x1c => Ok(u64::from_le_stream(bytes).map(Self::Map64)),
-            0x20 => Ok(Uint8::from_le_stream(bytes).map(Self::Uint8)),
-            0x21 => Ok(Uint16::from_le_stream(bytes).map(Self::Uint16)),
-            0x22 => Ok(Uint24::from_le_stream(bytes).map(Self::Uint24)),
-            0x23 => Ok(Uint32::from_le_stream(bytes).map(Self::Uint32)),
-            0x24 => Ok(Uint40::from_le_stream(bytes).map(Self::Uint40)),
-            0x25 => Ok(Uint48::from_le_stream(bytes).map(Self::Uint48)),
-            0x26 => Ok(Uint56::from_le_stream(bytes).map(Self::Uint56)),
-            0x27 => Ok(Uint64::from_le_stream(bytes).map(Self::Uint64)),
-            0x28 => Ok(Int8::from_le_stream(bytes).map(Self::Int8)),
-            0x29 => Ok(Int16::from_le_stream(bytes).map(Self::Int16)),
-            0x2a => Ok(Int24::from_le_stream(bytes).map(Self::Int24)),
-            0x2b => Ok(Int32::from_le_stream(bytes).map(Self::Int32)),
-            0x2c => Ok(Int40::from_le_stream(bytes).map(Self::Int40)),
-            0x2d => Ok(Int48::from_le_stream(bytes).map(Self::Int48)),
-            0x2e => Ok(Int56::from_le_stream(bytes).map(Self::Int56)),
-            0x2f => Ok(Int64::from_le_stream(bytes).map(Self::Int64)),
-            0x30 => Ok(Uint8::from_le_stream(bytes).map(Self::Enum8)),
-            0x31 => Ok(Uint16::from_le_stream(bytes).map(Self::Enum16)),
-            0x41 => Ok(OctStr::from_le_stream(bytes).map(Self::OctetString)),
-            0x42 => Ok(String::from_le_stream(bytes).map(Self::String)),
-            0xe0 => Ok(TimeOfDay::from_le_stream(bytes).map(Self::TimeOfDay)),
-            0xe1 => Ok(Date::from_le_stream(bytes).map(Self::Date)),
-            0xe2 => Ok(UtcTime::from_le_stream(bytes).map(Self::UtcTime)),
-            0xe8 => Ok(u16::from_le_stream(bytes).map(Self::ClusterId)),
-            0xe9 => Ok(u16::from_le_stream(bytes).map(Self::AttributeId)),
-            0xea => Ok(u32::from_le_stream(bytes).map(Self::BacnetObjectId)),
-            0xf0 => Ok(MacAddr8::from_le_stream(bytes).map(Self::IeeeAddress)),
-            0xf1 => Ok(<[u8; 16]>::from_le_stream(bytes).map(Self::Key128)),
-            other => Err(other),
-        }
-    }
-}
-
-impl ToLeStream for Type {
-    type Iter = TypeIter;
-
-    fn to_le_stream(self) -> Self::Iter {
-        self.into()
-    }
 }

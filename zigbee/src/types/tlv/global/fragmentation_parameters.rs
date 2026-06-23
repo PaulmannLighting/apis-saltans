@@ -1,6 +1,4 @@
-use core::iter::Chain;
-
-use le_stream::{FromLeStream, FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::fragmentation_options::FragmentationOptions;
 use crate::types::tlv::Tag;
@@ -8,7 +6,7 @@ use crate::types::tlv::Tag;
 mod fragmentation_options;
 
 /// Fragmentation Parameters TLV structure.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct FragmentationParameters {
     node_id: u16,
     options: Option<FragmentationOptions>,
@@ -51,83 +49,4 @@ impl FragmentationParameters {
 
 impl Tag for FragmentationParameters {
     const TAG: u8 = 71;
-
-    fn size(&self) -> usize {
-        let mut size = 2; // node_id size
-
-        if self.options.is_some() {
-            size += 1;
-        }
-
-        if self.maximum_incoming_transfer_unit.is_some() {
-            size += 2;
-        }
-
-        size
-    }
-}
-
-impl FromLeStreamTagged for FragmentationParameters {
-    type Tag = u8;
-
-    fn from_le_stream_tagged<T>(length: Self::Tag, mut bytes: T) -> Result<Option<Self>, Self::Tag>
-    where
-        T: Iterator<Item = u8>,
-    {
-        let Some(size) = usize::from(length).checked_add(1) else {
-            return Err(length);
-        };
-
-        let Some(size) = size.checked_sub(2) else {
-            return Err(length);
-        };
-
-        let Some(node_id) = u16::from_le_stream(&mut bytes) else {
-            return Ok(None);
-        };
-
-        let Some(size) = size.checked_sub(1) else {
-            return Ok(Some(Self::new(node_id, None, None)));
-        };
-
-        let Some(options) = FragmentationOptions::from_le_stream(&mut bytes) else {
-            return Ok(None);
-        };
-
-        let Some(size) = size.checked_sub(1) else {
-            return Ok(Some(Self::new(node_id, Some(options), None)));
-        };
-
-        if size != 0 {
-            return Err(length);
-        }
-
-        Ok(
-            u16::from_le_stream(&mut bytes).map(|maximum_incoming_transfer_unit| {
-                Self::new(node_id, Some(options), Some(maximum_incoming_transfer_unit))
-            }),
-        )
-    }
-}
-
-impl ToLeStream for FragmentationParameters {
-    type Iter = Chain<
-        Chain<
-            Chain<
-                Chain<<u8 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>,
-                <u16 as ToLeStream>::Iter,
-            >,
-            <Option<FragmentationOptions> as ToLeStream>::Iter,
-        >,
-        <Option<u16> as ToLeStream>::Iter,
-    >;
-
-    fn to_le_stream(self) -> Self::Iter {
-        Self::TAG
-            .to_le_stream()
-            .chain(self.serialized_size().to_le_stream())
-            .chain(self.node_id.to_le_stream())
-            .chain(self.options.to_le_stream())
-            .chain(self.maximum_incoming_transfer_unit.to_le_stream())
-    }
 }
