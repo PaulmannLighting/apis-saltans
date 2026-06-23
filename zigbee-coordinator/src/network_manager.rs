@@ -7,10 +7,12 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zcl::{Cluster, Frame};
 use zigbee::Address;
 
-pub use self::message::Message;
+pub use self::handle::Handle;
+use self::message::Message;
 pub use self::state::{Attributes, Device, Endpoint, State};
 use crate::{Event, discovery};
 
+mod handle;
 mod message;
 mod state;
 
