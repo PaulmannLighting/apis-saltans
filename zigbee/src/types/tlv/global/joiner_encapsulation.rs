@@ -40,7 +40,7 @@ impl From<Payload> for JoinerEncapsulation {
 
 impl From<JoinerEncapsulation> for General {
     fn from(value: JoinerEncapsulation) -> Self {
-        General::new(JoinerEncapsulation::TAG, value.bytes)
+        Self::new(JoinerEncapsulation::TAG, value.bytes)
     }
 }
 

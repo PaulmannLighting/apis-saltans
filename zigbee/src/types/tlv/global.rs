@@ -73,21 +73,21 @@ pub enum Global {
 }
 
 impl From<Global> for General {
-    fn from(global: Global) -> General {
+    fn from(global: Global) -> Self {
         match global {
-            Global::ManufacturerSpecific(value) => General::serialize(value),
-            Global::SupportedKeyNegotiationMethods(value) => General::serialize(value),
-            Global::PanIdConflictReport(value) => General::serialize(value),
-            Global::NextPanIdChange(value) => General::serialize(value),
-            Global::NextChannelChange(value) => General::serialize(value),
-            Global::SymmetricPassphrase(value) => General::serialize(value),
-            Global::RouterInformation(value) => General::serialize(value),
-            Global::FragmentationParameters(value) => General::serialize(value),
-            Global::JoinerEncapsulation(value) => General::from(value),
-            Global::BeaconAppendixEncapsulation(value) => General::from(value),
-            Global::BdbEncapsulation => General::new(74, Payload::new()),
-            Global::ConfigurationParameters(value) => General::serialize(value),
-            Global::DeviceCapabilityExtension(value) => General::serialize(value),
+            Global::ManufacturerSpecific(value) => Self::serialize(value),
+            Global::SupportedKeyNegotiationMethods(value) => Self::serialize(value),
+            Global::PanIdConflictReport(value) => Self::serialize(value),
+            Global::NextPanIdChange(value) => Self::serialize(value),
+            Global::NextChannelChange(value) => Self::serialize(value),
+            Global::SymmetricPassphrase(value) => Self::serialize(value),
+            Global::RouterInformation(value) => Self::serialize(value),
+            Global::FragmentationParameters(value) => Self::serialize(value),
+            Global::JoinerEncapsulation(value) => Self::from(value),
+            Global::BeaconAppendixEncapsulation(value) => Self::from(value),
+            Global::BdbEncapsulation => Self::new(74, Payload::new()),
+            Global::ConfigurationParameters(value) => Self::serialize(value),
+            Global::DeviceCapabilityExtension(value) => Self::serialize(value),
         }
     }
 }

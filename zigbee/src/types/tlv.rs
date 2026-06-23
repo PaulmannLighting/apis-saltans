@@ -31,10 +31,10 @@ pub enum Tlv<L = Local, G = Global> {
 
 impl<L, G> From<Tlv<L, G>> for General
 where
-    L: Into<General>,
-    G: Into<General>,
+    L: Into<Self>,
+    G: Into<Self>,
 {
-    fn from(tlv: Tlv<L, G>) -> General {
+    fn from(tlv: Tlv<L, G>) -> Self {
         match tlv {
             Tlv::Local(local) => local.into(),
             Tlv::Global(global) => global.into(),

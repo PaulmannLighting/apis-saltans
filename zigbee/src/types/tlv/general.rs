@@ -86,6 +86,6 @@ impl ToLeStream for General {
         self.typ
             .to_le_stream()
             .chain(length.to_le_stream())
-            .chain(self.payload.into_iter())
+            .chain(self.payload)
     }
 }

@@ -13,9 +13,9 @@ pub enum Local {
 }
 
 impl From<Local> for General {
-    fn from(local: Local) -> General {
+    fn from(local: Local) -> Self {
         match local {
-            Local::ClearAllBindingsReqEui64(value) => General::serialize(value),
+            Local::ClearAllBindingsReqEui64(value) => Self::serialize(value),
         }
     }
 }

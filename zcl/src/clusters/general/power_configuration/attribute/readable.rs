@@ -57,11 +57,13 @@ impl Attribute {
     }
 }
 
-impl Attribute {
-    pub(crate) fn from_le_stream_tagged<T>(tag: u16, bytes: T) -> Option<Self>
+impl FromLeStream for Attribute {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
+        let tag = u16::from_le_stream(&mut bytes)?;
+
         match tag {
             0x0000 => Uint16::from_le_stream(bytes).map(Self::MainsVoltage),
             0x0001 => Uint8::from_le_stream(bytes).map(Self::MainsFrequency),

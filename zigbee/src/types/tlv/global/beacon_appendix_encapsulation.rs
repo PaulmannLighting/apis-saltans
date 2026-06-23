@@ -40,7 +40,7 @@ impl From<Payload> for BeaconAppendixEncapsulation {
 
 impl From<BeaconAppendixEncapsulation> for General {
     fn from(value: BeaconAppendixEncapsulation) -> Self {
-        General::new(BeaconAppendixEncapsulation::TAG, value.bytes)
+        Self::new(BeaconAppendixEncapsulation::TAG, value.bytes)
     }
 }
 

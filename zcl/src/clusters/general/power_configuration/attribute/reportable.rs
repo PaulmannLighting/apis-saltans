@@ -18,20 +18,28 @@ const MASK: u16 = 0xfff0;
 pub enum Attribute {
     /// Mains voltage in 100mV.
     MainsVoltage(Uint16) = 0x0000,
+
     /// Mains frequency in Hertz.
     MainsFrequency(Uint8) = 0x0001,
+
     /// Mains alarms.
     AlarmMask(MainsAlarmMask) = 0x0010,
+
     /// Mains voltage minimum threshold in 100mV.
     VoltageMinThreshold(Uint16) = 0x0011,
+
     /// Mains voltage maximum threshold in 100mV.
     VoltageMaxThreshold(Uint16) = 0x0012,
+
     /// Mains voltage dwell trip point in seconds.
     VoltageDwellTripPoint(Uint16) = 0x0013,
+
     /// Primary battery data.
     Battery(Battery) = 0x0020,
+
     /// Secondary battery data.
     Battery2(Battery) = 0x0040,
+
     /// Tertiary battery data.
     Battery3(Battery) = 0x0060,
 }
@@ -49,11 +57,13 @@ impl Attribute {
     }
 }
 
-impl Attribute {
-    pub(crate) fn from_le_stream_tagged<T>(tag: u16, bytes: T) -> Option<Self>
+impl FromLeStream for Attribute {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
+        let tag = u16::from_le_stream(&mut bytes)?;
+
         match tag {
             0x0000 => Uint16::from_le_stream(bytes).map(Self::MainsVoltage),
             0x0001 => Uint8::from_le_stream(bytes).map(Self::MainsFrequency),

@@ -199,7 +199,7 @@ impl ToLeStream for Command {
 }
 
 mod iterator {
-    use super::*;
+    use super::{ToLeStream, read_attributes, write_attributes, write_attributes_undivided, write_attributes_no_response, report_attributes, default_response, Box, configure_reporting};
 
     pub enum Iter {
         ReadAttributes(<read_attributes::Command as ToLeStream>::Iter),
