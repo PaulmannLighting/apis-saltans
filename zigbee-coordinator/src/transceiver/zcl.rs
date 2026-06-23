@@ -12,7 +12,8 @@ use zigbee::Endpoint;
 use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
-pub use self::message::{Message, Payload};
+use self::message::Message;
+pub use self::message::Payload;
 use crate::network_manager;
 
 mod handle;
