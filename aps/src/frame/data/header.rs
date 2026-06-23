@@ -1,7 +1,7 @@
 //! Header definitions for a generic APS Data frame.
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Endpoint;
+use zigbee::{Endpoint, Profile};
 
 use crate::frame::data::unicast;
 use crate::{Control, DeliveryMode, Destination, Extended, FrameType};
@@ -70,6 +70,15 @@ impl Header {
     #[must_use]
     pub const fn profile_id(&self) -> u16 {
         self.profile_id
+    }
+
+    /// Return the profile type.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the profile ID is invalid.
+    pub fn profile(&self) -> Result<Profile, u16> {
+        self.profile_id.try_into()
     }
 
     /// Return the source endpoint.
