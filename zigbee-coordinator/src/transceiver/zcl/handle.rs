@@ -19,6 +19,15 @@ pub trait Handle {
         payload: Payload<zcl::Cluster>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
+    /// Send a ZCL command to a group of devices.
+    fn multicast(
+        &self,
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        payload: Payload<zcl::Cluster>,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
     /// Communicate with a ZCL device's endpoint.
     fn communicate<T>(
         &self,
@@ -63,6 +72,26 @@ where
             .send(Message::Unicast {
                 short_id,
                 endpoint,
+                payload: payload.into(),
+                response,
+            })
+            .await?;
+        Ok(result.await??)
+    }
+
+    async fn multicast(
+        &self,
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        payload: Payload<zcl::Cluster>,
+    ) -> Result<(), Error> {
+        let (response, result) = channel();
+        self.borrow()
+            .send(Message::Multicast {
+                group_id,
+                hops,
+                radius,
                 payload: payload.into(),
                 response,
             })
