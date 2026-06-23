@@ -27,7 +27,7 @@ zigbee = { path = "../zigbee" }
 zigbee-macros = { path = "../macros" }
 
 [features]
-serde = ["serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde", "zigbee/serde"]
+serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde", "zigbee/serde"]
 
 [lints]
 workspace = true
