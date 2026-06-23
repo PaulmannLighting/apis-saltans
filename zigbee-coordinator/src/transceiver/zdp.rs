@@ -94,7 +94,7 @@ where
             match_desc_req,
         )) = command
         {
-            self.handle_match_desc_req(src_address, seq, match_desc_req)
+            self.handle_match_desc_req(src_address, seq, *match_desc_req)
                 .await;
             return;
         }

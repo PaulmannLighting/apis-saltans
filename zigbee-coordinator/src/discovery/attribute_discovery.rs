@@ -185,7 +185,7 @@ async fn discover_attributes(
         };
 
         match zcl
-            .read_attributes(address.short_id(), application.into(), ATTRIBUTES.into())
+            .read_attributes(address.short_id(), application, ATTRIBUTES.into())
             .await
         {
             Ok(results) => {

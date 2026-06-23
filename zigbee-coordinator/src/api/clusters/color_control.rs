@@ -2,7 +2,7 @@ use zcl::Options;
 use zcl::lighting::color_control::MoveToColor;
 
 use crate::transceiver::zcl::Handle;
-use crate::{Coordinator, Destination, Error, NetworkManager};
+use crate::{Coordinator, Destination, Error};
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {

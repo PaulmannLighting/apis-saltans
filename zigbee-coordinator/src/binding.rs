@@ -187,11 +187,11 @@ async fn bind_endpoint(
                 short_id,
                 BindReq::new(
                     address.ieee_address(),
-                    endpoint.into(),
+                    endpoint,
                     cluster.into(),
                     Destination::Extended {
                         address: coordinator_address,
-                        endpoint: Endpoint::default().into(),
+                        endpoint: Endpoint::default(),
                     },
                 ),
             )
