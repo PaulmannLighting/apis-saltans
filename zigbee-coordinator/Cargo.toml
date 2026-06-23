@@ -10,7 +10,7 @@ le-stream = { version = "9", features = ["derive"] }
 log = "0.4"
 macaddr = "1"
 serde = { version = "1", features = ["derive"] }
-smarthomelib = { version = "0.1", path = "../../smarthomelib", optional = true }
+smarthomelib = { package = "smarthomelib-contract", version = "0.1", path = "../../smarthomelib/crates/contract", optional = true }
 tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
 tokio-task-pool = "0.1"
 zcl = { path = "../zcl", version = "0.1", features = ["serde"] }

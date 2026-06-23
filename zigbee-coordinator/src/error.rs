@@ -27,6 +27,9 @@ pub enum Error {
 
     /// Unknown device.
     UnknownDevice(MacAddr8),
+
+    /// Capability is not supported by this coordinator implementation yet.
+    Unsupported(&'static str),
 }
 
 impl Display for Error {
@@ -38,6 +41,7 @@ impl Display for Error {
             Self::Timeout(error) => write!(f, "Timeout: {error}"),
             Self::InvalidResponseType(error) => write!(f, "Invalid response type: {error}"),
             Self::UnknownDevice(address) => write!(f, "Unknown device: {address}"),
+            Self::Unsupported(capability) => write!(f, "Unsupported capability: {capability}"),
         }
     }
 }
@@ -48,7 +52,10 @@ impl std::error::Error for Error {
             Self::Hardware(error) => Some(error),
             Self::ReceiveError(error) => Some(error),
             Self::Timeout(error) => Some(error),
-            Self::SendError | Self::InvalidResponseType(_) | Self::UnknownDevice(_) => None,
+            Self::SendError
+            | Self::InvalidResponseType(_)
+            | Self::UnknownDevice(_)
+            | Self::Unsupported(_) => None,
         }
     }
 }

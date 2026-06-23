@@ -1,4 +1,4 @@
-use smarthomelib::protocol::OnOff;
+use smarthomelib::OnOff;
 
 use crate::Coordinator;
 

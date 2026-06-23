@@ -1,7 +1,6 @@
 use std::time::Duration;
 
-use smarthomelib::protocol::ColorControl;
-use smarthomelib::{Rgb, Xy};
+use smarthomelib::{ColorControl, Rgb, Xy};
 use zcl::Options;
 use zigbee::{FromDeciSeconds, IntoDeciSeconds};
 
@@ -13,13 +12,17 @@ impl ColorControl for Coordinator {
         device: Self::DeviceId,
         endpoint: Self::EndpointId,
         color: Rgb,
-        transition_time: Duration,
-    ) -> Result<Duration, Self::Error> {
+        transition_time: Option<Duration>,
+    ) -> Result<Option<Duration>, Self::Error> {
         let xy: Xy = color.into();
         let deci_seconds: u16 = transition_time
-            .into_deci_seconds()
-            .try_into()
-            .unwrap_or(u16::MAX);
+            .map(|transition_time| {
+                transition_time
+                    .into_deci_seconds()
+                    .try_into()
+                    .unwrap_or(u16::MAX)
+            })
+            .unwrap_or_default();
         crate::ColorControl::move_to_xy(
             self,
             device,
@@ -30,6 +33,6 @@ impl ColorControl for Coordinator {
             Options::default(),
         )
         .await?;
-        Ok(Duration::from_deci_seconds(deci_seconds))
+        Ok(transition_time.map(|_transition_time| Duration::from_deci_seconds(deci_seconds)))
     }
 }

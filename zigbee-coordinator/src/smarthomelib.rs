@@ -14,14 +14,16 @@ use crate::{Coordinator, EVENT_CHANNEL_SIZE, Error, NetworkManager};
 mod color_control;
 mod event;
 mod event_receiver;
+mod groups;
+mod inventory;
+mod joining;
+mod level_control;
 mod on_off;
-mod translate_device_id;
-mod translate_endpoint_id;
+mod zigbee_id_codec;
 
 impl Protocol for Coordinator {
     type DeviceId = MacAddr8;
     type EndpointId = Endpoint;
-    type GroupId = u16;
     type Error = Error;
 }
 
