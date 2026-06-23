@@ -8,7 +8,11 @@ const MASK: u16 = 0x000f;
 const SETTINGS: u16 = 0x0010;
 
 /// Available battery settings.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    expect(clippy::unsafe_derive_deserialize)
+)]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
@@ -16,30 +20,43 @@ const SETTINGS: u16 = 0x0010;
 pub enum Settings {
     /// Name of the battery manufacturer.
     Manufacturer(String<16>) = 0x0000,
+
     /// The battery size.
     Size(BatterySize) = 0x0001,
+
     /// The battery ampere-hour rating in 10mAHr.
     AHrRating(Uint16) = 0x0002,
+
     /// Amount of battery cells.
     Quantity(Uint8) = 0x0003,
+
     /// The battery rated voltage in 100mV.
     RatedVoltage(Uint8) = 0x0004,
+
     /// The battery alarm mask.
     AlarmMask(BatteryAlarmMask) = 0x0005,
+
     /// The minimum battery voltage threshold in 100mV.
     VoltageMinThreshold(Uint8) = 0x0006,
+
     /// The first battery voltage threshold in 100mV.
     VoltageThreshold1(Uint8) = 0x0007,
+
     /// The second battery voltage threshold in 100mV.
     VoltageThreshold2(Uint8) = 0x0008,
+
     /// The third battery voltage threshold in 100mV.
     VoltageThreshold3(Uint8) = 0x0009,
+
     /// The minimum battery percentage threshold.
     PercentageMinThreshold(Uint8) = 0x000a,
+
     /// The first battery percentage threshold.
     PercentageThreshold1(Uint8) = 0x000b,
+
     /// The second battery percentage threshold.
     PercentageThreshold2(Uint8) = 0x000c,
+
     /// The third battery percentage threshold.
     PercentageThreshold3(Uint8) = 0x000d,
 }

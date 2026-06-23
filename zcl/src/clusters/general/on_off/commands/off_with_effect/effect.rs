@@ -8,13 +8,18 @@ mod delayed_all_off;
 mod dying_light;
 
 /// Effects.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    expect(clippy::unsafe_derive_deserialize)
+)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[repr(u8)]
 #[derive(ReprDiscriminant)]
 pub enum Effect {
     /// Delayed all off effect.
     DelayedAllOff(DelayedAllOff) = 0x00,
+
     /// Dying light effect.
     DyingLight(DyingLight) = 0x01,
 }

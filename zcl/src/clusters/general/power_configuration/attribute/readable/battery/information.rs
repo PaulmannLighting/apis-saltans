@@ -5,7 +5,11 @@ use zigbee::types::Uint8;
 const MASK: u16 = 0x000f;
 
 /// Information about the battery status of a device.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    expect(clippy::unsafe_derive_deserialize)
+)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]

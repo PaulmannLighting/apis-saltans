@@ -6,7 +6,11 @@ use crate::clusters::general::power_configuration::attribute::BatteryAlarmState;
 const MASK: u16 = 0x000f;
 
 /// Available battery settings.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    expect(clippy::unsafe_derive_deserialize)
+)]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
