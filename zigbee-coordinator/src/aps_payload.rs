@@ -6,7 +6,6 @@ pub use self::error::ParseApsFrameError;
 mod error;
 
 /// Commands received on the APS layer.
-#[expect(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum ApsPayload {
     /// A ZDP frame was received.
@@ -14,17 +13,6 @@ pub enum ApsPayload {
 
     /// A ZCL command was received.
     Zcl(zcl::Frame<zcl::Cluster>),
-}
-
-impl ApsPayload {
-    /// Return the sequence number.
-    #[must_use]
-    pub const fn seq(&self) -> u8 {
-        match self {
-            Self::Zdp(zdp) => zdp.seq(),
-            Self::Zcl(zcl) => zcl.header().seq(),
-        }
-    }
 }
 
 impl TryFrom<Frame<Vec<u8>>> for ApsPayload {

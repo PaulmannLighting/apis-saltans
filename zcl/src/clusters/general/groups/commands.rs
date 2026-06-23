@@ -43,14 +43,14 @@ pub enum Command {
     /// Remove All Groups command.
     RemoveAllGroups(RemoveAllGroups),
 
-    /// Add Group If Identifying command.
-    AddGroupIfIdentifying(AddGroupIfIdentifying),
+    /// Add a Group If Identifying command.
+    AddGroupIfIdentifying(Box<AddGroupIfIdentifying>),
 
     /// Add Group Response command.
     AddGroupResponse(AddGroupResponse),
 
     /// View Group Response command.
-    ViewGroupResponse(ViewGroupResponse),
+    ViewGroupResponse(Box<ViewGroupResponse>),
 
     /// Get Group Membership Response command.
     GetGroupMembershipResponse(Box<GetGroupMembershipResponse>),
@@ -101,7 +101,7 @@ impl From<RemoveAllGroups> for Command {
 
 impl From<AddGroupIfIdentifying> for Command {
     fn from(command: AddGroupIfIdentifying) -> Self {
-        Self::AddGroupIfIdentifying(command)
+        Self::AddGroupIfIdentifying(command.into())
     }
 }
 
@@ -113,7 +113,7 @@ impl From<AddGroupResponse> for Command {
 
 impl From<ViewGroupResponse> for Command {
     fn from(response: ViewGroupResponse) -> Self {
-        Self::ViewGroupResponse(response)
+        Self::ViewGroupResponse(response.into())
     }
 }
 

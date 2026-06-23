@@ -220,7 +220,7 @@ impl ToLeStream for Command {
                     Iter::ActiveEpRsp(cmd.to_le_stream())
                 }
                 DeviceAndServiceDiscovery::MatchDescReq(cmd) => {
-                    Iter::MatchDescReq(cmd.to_le_stream())
+                    Iter::MatchDescReq(cmd.to_le_stream().into())
                 }
                 DeviceAndServiceDiscovery::MatchDescRsp(cmd) => {
                     Iter::MatchDescRsp(cmd.to_le_stream())
@@ -229,7 +229,7 @@ impl ToLeStream for Command {
                     Iter::DeviceAnnce(cmd.to_le_stream())
                 }
                 DeviceAndServiceDiscovery::ParentAnnce(cmd) => {
-                    Iter::ParentAnnce(cmd.to_le_stream())
+                    Iter::ParentAnnce(cmd.to_le_stream().into())
                 }
                 DeviceAndServiceDiscovery::SystemServerDiscoveryReq(cmd) => {
                     Iter::SystemServerDiscoveryReq(cmd.to_le_stream())
@@ -255,7 +255,7 @@ impl ToLeStream for Command {
                     Iter::MgmtNwkUpdateReq(cmd.to_le_stream())
                 }
                 NetworkManagement::MgmtNwkEnhancedUpdateReq(cmd) => {
-                    Iter::MgmtNwkEnhancedUpdateReq(cmd.to_le_stream())
+                    Iter::MgmtNwkEnhancedUpdateReq(cmd.to_le_stream().into())
                 }
                 NetworkManagement::MgmtNwkIeeeJoiningListReq(cmd) => {
                     Iter::MgmtNwkIeeeJoiningListReq(cmd.to_le_stream())
@@ -282,10 +282,10 @@ pub enum Iter {
     SimpleDescRsp(Box<<SimpleDescRsp as ToLeStream>::Iter>),
     ActiveEpReq(<ActiveEpReq as ToLeStream>::Iter),
     ActiveEpRsp(<ActiveEpRsp as ToLeStream>::Iter),
-    MatchDescReq(<MatchDescReq as ToLeStream>::Iter),
+    MatchDescReq(Box<<MatchDescReq as ToLeStream>::Iter>),
     MatchDescRsp(<MatchDescRsp as ToLeStream>::Iter),
     DeviceAnnce(<DeviceAnnce as ToLeStream>::Iter),
-    ParentAnnce(<ParentAnnce as ToLeStream>::Iter),
+    ParentAnnce(Box<<ParentAnnce as ToLeStream>::Iter>),
     SystemServerDiscoveryReq(<SystemServerDiscoveryReq as ToLeStream>::Iter),
     BindReq(<BindReq as ToLeStream>::Iter),
     BindRsp(<BindRsp as ToLeStream>::Iter),
@@ -297,7 +297,7 @@ pub enum Iter {
     MgmtLeaveReq(<MgmtLeaveReq as ToLeStream>::Iter),
     MgmtPermitJoiningReq(<MgmtPermitJoiningReq as ToLeStream>::Iter),
     MgmtNwkUpdateReq(<MgmtNwkUpdateReq as ToLeStream>::Iter),
-    MgmtNwkEnhancedUpdateReq(<MgmtNwkEnhancedUpdateReq as ToLeStream>::Iter),
+    MgmtNwkEnhancedUpdateReq(Box<<MgmtNwkEnhancedUpdateReq as ToLeStream>::Iter>),
     MgmtNwkIeeeJoiningListReq(<MgmtNwkIeeeJoiningListReq as ToLeStream>::Iter),
     MgmtNwkBeaconSurveyReq(<MgmtNwkBeaconSurveyReq as ToLeStream>::Iter),
     MgmtPermitJoiningRsp(<MgmtPermitJoiningRsp as ToLeStream>::Iter),

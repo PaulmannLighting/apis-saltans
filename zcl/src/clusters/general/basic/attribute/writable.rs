@@ -18,12 +18,13 @@ use crate::global::write_attributes::Record;
 mod iterator;
 
 /// Writable attributes in the Basic cluster.
+#[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
 #[derive(ReprDiscriminant)]
 pub enum Attribute {
     /// The generic device class.
-    LocationDescription(String<16>) = 0x0010,
+    LocationDescription(Box<String<16>>) = 0x0010,
 
     /// The physical environment.
     PhysicalEnvironment(PhysicalEnvironment) = 0x0011,
@@ -53,7 +54,7 @@ impl From<Attribute> for Record {
         let id = attribute.discriminant();
 
         match attribute {
-            Attribute::LocationDescription(string) => Self::new(id, string.into()),
+            Attribute::LocationDescription(string) => Self::new(id, (*string).into()),
             Attribute::PhysicalEnvironment(physical_environment) => {
                 Self::new(id, physical_environment.into())
             }
@@ -72,7 +73,7 @@ impl TryFrom<readable::Attribute> for Attribute {
     fn try_from(value: readable::Attribute) -> Result<Self, Self::Error> {
         match value {
             readable::Attribute::LocationDescription(string) => {
-                Ok(Self::LocationDescription(string))
+                Ok(Self::LocationDescription(string.into()))
             }
             readable::Attribute::PhysicalEnvironment(physical_environment) => {
                 Ok(Self::PhysicalEnvironment(physical_environment))
