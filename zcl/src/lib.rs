@@ -1,8 +1,5 @@
 //! The Zigbee Cluster Library (ZCL).
 
-#![cfg_attr(not(feature = "std"), no_std)]
-extern crate alloc;
-
 pub use self::attributes::{
     InvalidType, ParseAttributeError, ReadableAttribute, WritableAttribute,
 };

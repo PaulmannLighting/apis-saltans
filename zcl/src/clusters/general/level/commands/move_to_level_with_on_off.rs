@@ -4,8 +4,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
 use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
 
-use crate::options::Options;
 use crate::Command;
+use crate::options::Options;
 
 /// Move to level with on/off command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -54,7 +54,6 @@ impl Command for MoveToLevelWithOnOff {
     const ID: u8 = 0x04;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
-
 
 impl From<MoveToLevelWithOnOff> for crate::Cluster {
     fn from(command: MoveToLevelWithOnOff) -> Self {

@@ -43,7 +43,6 @@ impl Command for IdentifyQueryResponse {
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
 
-
 impl From<IdentifyQueryResponse> for crate::Cluster {
     fn from(command: IdentifyQueryResponse) -> Self {
         Self::Identify(command.into())

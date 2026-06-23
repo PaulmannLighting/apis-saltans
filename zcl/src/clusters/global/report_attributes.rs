@@ -1,6 +1,6 @@
 //! Report Attributes Command.
 
-use alloc::boxed::Box;
+use std::boxed::Box;
 
 use le_stream::{FromLeStream, ToLeStream};
 

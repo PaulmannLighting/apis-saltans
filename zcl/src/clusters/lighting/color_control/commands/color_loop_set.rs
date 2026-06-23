@@ -99,7 +99,6 @@ impl Command for ColorLoopSet {
     const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }
 
-
 impl From<ColorLoopSet> for crate::Cluster {
     fn from(command: ColorLoopSet) -> Self {
         Self::ColorControl(command.into())

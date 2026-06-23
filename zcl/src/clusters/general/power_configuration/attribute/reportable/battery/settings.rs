@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, FromLeStreamTagged};
+use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 
 use crate::clusters::general::power_configuration::attribute::BatteryAlarmState;
@@ -19,16 +19,14 @@ pub enum Settings {
     AlarmState(BatteryAlarmState) = 0x000e,
 }
 
-impl FromLeStreamTagged for Settings {
-    type Tag = u16;
-
-    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
+impl Settings {
+    pub(crate) fn from_le_stream_tagged<T>(tag: u16, bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
         match tag & MASK {
-            0x000e => Ok(BatteryAlarmState::from_le_stream(bytes).map(Self::AlarmState)),
-            _ => Err(tag),
+            0x000e => BatteryAlarmState::from_le_stream(bytes).map(Self::AlarmState),
+            _ => None,
         }
     }
 }

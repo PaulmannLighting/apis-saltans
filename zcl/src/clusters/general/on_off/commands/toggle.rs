@@ -17,7 +17,6 @@ impl Command for Toggle {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<Toggle> for crate::Cluster {
     fn from(command: Toggle) -> Self {
         Self::OnOff(command.into())

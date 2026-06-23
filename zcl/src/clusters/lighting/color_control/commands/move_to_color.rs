@@ -4,8 +4,8 @@ use core::time::Duration;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
 
-use crate::options::Options;
 use crate::Command;
+use crate::options::Options;
 
 /// Command to move a light to a specific color.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -78,7 +78,6 @@ impl Command for MoveToColor {
     const ID: u8 = 0x07;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
-
 
 impl From<MoveToColor> for crate::Cluster {
     fn from(command: MoveToColor) -> Self {

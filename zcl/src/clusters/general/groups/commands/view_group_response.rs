@@ -55,7 +55,6 @@ impl Command for ViewGroupResponse {
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
 
-
 impl From<ViewGroupResponse> for crate::Cluster {
     fn from(command: ViewGroupResponse) -> Self {
         Self::Groups(command.into())

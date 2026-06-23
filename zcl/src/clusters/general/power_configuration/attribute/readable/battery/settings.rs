@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, FromLeStreamTagged};
+use le_stream::FromLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
@@ -68,30 +68,28 @@ pub enum Settings {
     AlarmState(BatteryAlarmState) = 0x000e,
 }
 
-impl FromLeStreamTagged for Settings {
-    type Tag = u16;
-
-    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
+impl Settings {
+    pub(crate) fn from_le_stream_tagged<T>(tag: u16, bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
         match tag & MASK {
-            0x0000 => Ok(String::<16>::from_le_stream(bytes).map(Self::Manufacturer)),
-            0x0001 => Ok(BatterySize::from_le_stream(bytes).map(Self::Size)),
-            0x0002 => Ok(Uint16::from_le_stream(bytes).map(Self::AHrRating)),
-            0x0003 => Ok(Uint8::from_le_stream(bytes).map(Self::Quantity)),
-            0x0004 => Ok(Uint8::from_le_stream(bytes).map(Self::RatedVoltage)),
-            0x0005 => Ok(BatteryAlarmMask::from_le_stream(bytes).map(Self::AlarmMask)),
-            0x0006 => Ok(Uint8::from_le_stream(bytes).map(Self::VoltageMinThreshold)),
-            0x0007 => Ok(Uint8::from_le_stream(bytes).map(Self::VoltageThreshold1)),
-            0x0008 => Ok(Uint8::from_le_stream(bytes).map(Self::VoltageThreshold2)),
-            0x0009 => Ok(Uint8::from_le_stream(bytes).map(Self::VoltageThreshold3)),
-            0x000a => Ok(Uint8::from_le_stream(bytes).map(Self::PercentageMinThreshold)),
-            0x000b => Ok(Uint8::from_le_stream(bytes).map(Self::PercentageThreshold1)),
-            0x000c => Ok(Uint8::from_le_stream(bytes).map(Self::PercentageThreshold2)),
-            0x000d => Ok(Uint8::from_le_stream(bytes).map(Self::PercentageThreshold3)),
-            0x000e => Ok(BatteryAlarmState::from_le_stream(bytes).map(Self::AlarmState)),
-            _ => Err(tag),
+            0x0000 => String::<16>::from_le_stream(bytes).map(Self::Manufacturer),
+            0x0001 => BatterySize::from_le_stream(bytes).map(Self::Size),
+            0x0002 => Uint16::from_le_stream(bytes).map(Self::AHrRating),
+            0x0003 => Uint8::from_le_stream(bytes).map(Self::Quantity),
+            0x0004 => Uint8::from_le_stream(bytes).map(Self::RatedVoltage),
+            0x0005 => BatteryAlarmMask::from_le_stream(bytes).map(Self::AlarmMask),
+            0x0006 => Uint8::from_le_stream(bytes).map(Self::VoltageMinThreshold),
+            0x0007 => Uint8::from_le_stream(bytes).map(Self::VoltageThreshold1),
+            0x0008 => Uint8::from_le_stream(bytes).map(Self::VoltageThreshold2),
+            0x0009 => Uint8::from_le_stream(bytes).map(Self::VoltageThreshold3),
+            0x000a => Uint8::from_le_stream(bytes).map(Self::PercentageMinThreshold),
+            0x000b => Uint8::from_le_stream(bytes).map(Self::PercentageThreshold1),
+            0x000c => Uint8::from_le_stream(bytes).map(Self::PercentageThreshold2),
+            0x000d => Uint8::from_le_stream(bytes).map(Self::PercentageThreshold3),
+            0x000e => BatteryAlarmState::from_le_stream(bytes).map(Self::AlarmState),
+            _ => None,
         }
     }
 }

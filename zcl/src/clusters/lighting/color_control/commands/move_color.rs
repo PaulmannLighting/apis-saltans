@@ -50,7 +50,6 @@ impl Command for MoveColor {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<MoveColor> for crate::Cluster {
     fn from(command: MoveColor) -> Self {
         Self::ColorControl(command.into())

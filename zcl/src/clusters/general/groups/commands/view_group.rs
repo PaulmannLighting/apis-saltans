@@ -34,7 +34,6 @@ impl Command for ViewGroup {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<ViewGroup> for crate::Cluster {
     fn from(command: ViewGroup) -> Self {
         Self::Groups(command.into())

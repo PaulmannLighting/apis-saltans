@@ -77,7 +77,6 @@ impl Command for MoveColorTemperature {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<MoveColorTemperature> for crate::Cluster {
     fn from(command: MoveColorTemperature) -> Self {
         Self::ColorControl(command.into())

@@ -33,7 +33,6 @@ impl Command for MoveToClosestFrequency {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<MoveToClosestFrequency> for crate::Cluster {
     fn from(command: MoveToClosestFrequency) -> Self {
         Self::Level(command.into())

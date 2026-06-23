@@ -47,7 +47,6 @@ impl Command for OffWithEffect {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<OffWithEffect> for crate::Cluster {
     fn from(command: OffWithEffect) -> Self {
         Self::OnOff(command.into())

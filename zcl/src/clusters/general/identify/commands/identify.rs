@@ -44,7 +44,6 @@ impl Command for Identify {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<Identify> for crate::Cluster {
     fn from(command: Identify) -> Self {
         Self::Identify(command.into())

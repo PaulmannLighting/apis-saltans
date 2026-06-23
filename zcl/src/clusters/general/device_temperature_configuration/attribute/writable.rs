@@ -2,7 +2,7 @@
 
 use core::iter::Chain;
 
-use le_stream::{FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::Uint24;
 
@@ -16,7 +16,7 @@ use crate::clusters::general::device_temperature_configuration::{
 /// Those are equivalent to the temperature settings.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
-#[derive(ReprDiscriminant, FromLeStreamTagged)]
+#[derive(ReprDiscriminant, FromLeStream)]
 pub enum Attribute {
     /// Alarms mask for device temperature.
     DeviceTempAlarmMask(DeviceTempAlarmMask) = 0x0010,

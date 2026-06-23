@@ -4,9 +4,9 @@ use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
 use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
 
+use crate::Command;
 use crate::general::level::Mode;
 use crate::options::Options;
-use crate::Command;
 
 /// Step command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -66,7 +66,6 @@ impl Command for Step {
     const ID: u8 = 0x02;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
-
 
 impl From<Step> for crate::Cluster {
     fn from(command: Step) -> Self {

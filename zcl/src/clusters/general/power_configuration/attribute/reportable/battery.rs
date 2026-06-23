@@ -1,4 +1,3 @@
-use le_stream::FromLeStreamTagged;
 use repr_discriminant::ReprDiscriminant;
 
 pub use self::information::Information;
@@ -19,6 +18,7 @@ const SETTINGS: u16 = 0x0010;
 pub enum Battery {
     /// Information about the battery status of a device.
     Information(Information) = INFORMATION,
+
     /// Settings related to the battery configuration.
     Settings(Settings) = SETTINGS,
 }
@@ -34,19 +34,15 @@ impl Battery {
     }
 }
 
-impl FromLeStreamTagged for Battery {
-    type Tag = u16;
-
-    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
+impl Battery {
+    pub(crate) fn from_le_stream_tagged<T>(tag: u16, bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
         match (tag & MASK) % MODULO {
-            INFORMATION => {
-                Ok(Information::from_le_stream_tagged(tag, bytes)?.map(Self::Information))
-            }
-            SETTINGS => Ok(Settings::from_le_stream_tagged(tag, bytes)?.map(Self::Settings)),
-            _ => Err(tag),
+            INFORMATION => Information::from_le_stream_tagged(tag, bytes).map(Self::Information),
+            SETTINGS => Settings::from_le_stream_tagged(tag, bytes).map(Self::Settings),
+            _ => None,
         }
     }
 }

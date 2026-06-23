@@ -1,6 +1,6 @@
 //! General commands that are not specific to any cluster.
 
-use alloc::boxed::Box;
+use std::boxed::Box;
 
 use le_stream::ToLeStream;
 use zigbee::Direction;
@@ -21,22 +21,31 @@ pub mod write_attributes_undivided;
 pub enum Command {
     /// Read Attributes command.
     ReadAttributes(read_attributes::Command),
+
     /// Read Attributes Response command.
     ReadAttributesResponse(read_attributes::Response),
+
     /// Write Attributes command.
     WriteAttributes(write_attributes::Command),
+
     /// Write Attributes Undivided command.
     WriteAttributesUndivided(write_attributes_undivided::Command),
+
     /// Write Attributes Response command.
     WriteAttributesResponse(write_attributes::Response),
+
     /// Write Attributes No Response command.
     WriteAttributesNoResponse(write_attributes_no_response::Command),
+
     /// Report Attributes command.
     ReportAttributes(report_attributes::Command),
+
     /// Default Response command.
     DefaultResponse(default_response::DefaultResponse),
+
     /// Configure Reporting command.
     ConfigureReporting(configure_reporting::Command),
+
     /// Configure Reporting Response command.
     ConfigureReportingResponse(configure_reporting::Response),
 }
@@ -159,60 +168,68 @@ impl CommandDispatch for Command {
 }
 
 impl ToLeStream for Command {
-    type Iter = Iter;
+    type Iter = iterator::Iter;
 
     fn to_le_stream(self) -> Self::Iter {
         match self {
-            Self::ReadAttributes(cmd) => Iter::ReadAttributes(cmd.to_le_stream()),
-            Self::ReadAttributesResponse(cmd) => Iter::ReadAttributesResponse(cmd.to_le_stream()),
-            Self::WriteAttributes(cmd) => Iter::WriteAttributes(cmd.to_le_stream()),
+            Self::ReadAttributes(cmd) => Self::Iter::ReadAttributes(cmd.to_le_stream()),
+            Self::ReadAttributesResponse(cmd) => {
+                Self::Iter::ReadAttributesResponse(cmd.to_le_stream())
+            }
+            Self::WriteAttributes(cmd) => Self::Iter::WriteAttributes(cmd.to_le_stream()),
             Self::WriteAttributesUndivided(cmd) => {
-                Iter::WriteAttributesUndivided(cmd.to_le_stream())
+                Self::Iter::WriteAttributesUndivided(cmd.to_le_stream())
             }
-            Self::WriteAttributesResponse(cmd) => Iter::WriteAttributesResponse(cmd.to_le_stream()),
+            Self::WriteAttributesResponse(cmd) => {
+                Self::Iter::WriteAttributesResponse(cmd.to_le_stream())
+            }
             Self::WriteAttributesNoResponse(cmd) => {
-                Iter::WriteAttributesNoResponse(cmd.to_le_stream())
+                Self::Iter::WriteAttributesNoResponse(cmd.to_le_stream())
             }
-            Self::ReportAttributes(cmd) => Iter::ReportAttributes(cmd.to_le_stream()),
-            Self::DefaultResponse(cmd) => Iter::DefaultResponse(cmd.to_le_stream()),
-            Self::ConfigureReporting(cmd) => Iter::ConfigureReporting(cmd.to_le_stream().into()),
+            Self::ReportAttributes(cmd) => Self::Iter::ReportAttributes(cmd.to_le_stream()),
+            Self::DefaultResponse(cmd) => Self::Iter::DefaultResponse(cmd.to_le_stream()),
+            Self::ConfigureReporting(cmd) => {
+                Self::Iter::ConfigureReporting(cmd.to_le_stream().into())
+            }
             Self::ConfigureReportingResponse(cmd) => {
-                Iter::ConfigureReportingResponse(cmd.to_le_stream())
+                Self::Iter::ConfigureReportingResponse(cmd.to_le_stream())
             }
         }
     }
 }
 
-#[expect(missing_docs)]
-#[derive(Debug)]
-pub enum Iter {
-    ReadAttributes(<read_attributes::Command as ToLeStream>::Iter),
-    ReadAttributesResponse(<read_attributes::Response as ToLeStream>::Iter),
-    WriteAttributes(<write_attributes::Command as ToLeStream>::Iter),
-    WriteAttributesUndivided(<write_attributes_undivided::Command as ToLeStream>::Iter),
-    WriteAttributesResponse(<write_attributes::Response as ToLeStream>::Iter),
-    WriteAttributesNoResponse(<write_attributes_no_response::Command as ToLeStream>::Iter),
-    ReportAttributes(<report_attributes::Command as ToLeStream>::Iter),
-    DefaultResponse(<default_response::DefaultResponse as ToLeStream>::Iter),
-    ConfigureReporting(Box<<configure_reporting::Command as ToLeStream>::Iter>),
-    ConfigureReportingResponse(<configure_reporting::Response as ToLeStream>::Iter),
-}
+mod iterator {
+    use super::*;
 
-impl Iterator for Iter {
-    type Item = u8;
+    pub enum Iter {
+        ReadAttributes(<read_attributes::Command as ToLeStream>::Iter),
+        ReadAttributesResponse(<read_attributes::Response as ToLeStream>::Iter),
+        WriteAttributes(<write_attributes::Command as ToLeStream>::Iter),
+        WriteAttributesUndivided(<write_attributes_undivided::Command as ToLeStream>::Iter),
+        WriteAttributesResponse(<write_attributes::Response as ToLeStream>::Iter),
+        WriteAttributesNoResponse(<write_attributes_no_response::Command as ToLeStream>::Iter),
+        ReportAttributes(<report_attributes::Command as ToLeStream>::Iter),
+        DefaultResponse(<default_response::DefaultResponse as ToLeStream>::Iter),
+        ConfigureReporting(Box<<configure_reporting::Command as ToLeStream>::Iter>),
+        ConfigureReportingResponse(<configure_reporting::Response as ToLeStream>::Iter),
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Self::ReadAttributes(iter) => iter.next(),
-            Self::ReadAttributesResponse(iter) => iter.next(),
-            Self::WriteAttributes(iter)
-            | Self::WriteAttributesUndivided(iter)
-            | Self::WriteAttributesNoResponse(iter) => iter.next(),
-            Self::WriteAttributesResponse(iter) => iter.next(),
-            Self::ReportAttributes(iter) => iter.next(),
-            Self::DefaultResponse(iter) => iter.next(),
-            Self::ConfigureReporting(iter) => iter.next(),
-            Self::ConfigureReportingResponse(iter) => iter.next(),
+    impl Iterator for Iter {
+        type Item = u8;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            match self {
+                Self::ReadAttributes(iter) => iter.next(),
+                Self::ReadAttributesResponse(iter) => iter.next(),
+                Self::WriteAttributes(iter)
+                | Self::WriteAttributesUndivided(iter)
+                | Self::WriteAttributesNoResponse(iter) => iter.next(),
+                Self::WriteAttributesResponse(iter) => iter.next(),
+                Self::ReportAttributes(iter) => iter.next(),
+                Self::DefaultResponse(iter) => iter.next(),
+                Self::ConfigureReporting(iter) => iter.next(),
+                Self::ConfigureReportingResponse(iter) => iter.next(),
+            }
         }
     }
 }

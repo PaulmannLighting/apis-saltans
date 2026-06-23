@@ -1,7 +1,7 @@
 //! Write Attributes No Response Command.
 
-use alloc::boxed::Box;
 use core::ops::Deref;
+use std::boxed::Box;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Direction, ExpectResponse};

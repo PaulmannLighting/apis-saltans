@@ -34,7 +34,6 @@ impl Command for RemoveGroup {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<RemoveGroup> for crate::Cluster {
     fn from(command: RemoveGroup) -> Self {
         Self::Groups(command.into())

@@ -27,10 +27,9 @@ mod view_group_response;
 
 /// Available Groups cluster commands.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclFrame)]
-#[expect(clippy::large_enum_variant)]
 pub enum Command {
     /// Add Group command.
-    AddGroup(AddGroup),
+    AddGroup(Box<AddGroup>),
 
     /// View Group command.
     ViewGroup(ViewGroup),
@@ -54,7 +53,7 @@ pub enum Command {
     ViewGroupResponse(ViewGroupResponse),
 
     /// Get Group Membership Response command.
-    GetGroupMembershipResponse(GetGroupMembershipResponse),
+    GetGroupMembershipResponse(Box<GetGroupMembershipResponse>),
 
     /// Remove Group Response command.
     RemoveGroupResponse(RemoveGroupResponse),
@@ -72,7 +71,7 @@ impl From<Command> for crate::Cluster {
 
 impl From<AddGroup> for Command {
     fn from(command: AddGroup) -> Self {
-        Self::AddGroup(command)
+        Self::AddGroup(command.into())
     }
 }
 
@@ -120,7 +119,7 @@ impl From<ViewGroupResponse> for Command {
 
 impl From<GetGroupMembershipResponse> for Command {
     fn from(response: GetGroupMembershipResponse) -> Self {
-        Self::GetGroupMembershipResponse(response)
+        Self::GetGroupMembershipResponse(response.into())
     }
 }
 
@@ -204,9 +203,9 @@ impl ToLeStream for Command {
             Self::RemoveAllGroups(cmd) => Iter::RemoveAllGroups(cmd.to_le_stream()),
             Self::AddGroupIfIdentifying(cmd) => Iter::AddGroupIfIdentifying(cmd.to_le_stream()),
             Self::AddGroupResponse(cmd) => Iter::AddGroupResponse(cmd.to_le_stream()),
-            Self::ViewGroupResponse(cmd) => Iter::ViewGroupResponse(cmd.to_le_stream()),
+            Self::ViewGroupResponse(cmd) => Iter::ViewGroupResponse(cmd.to_le_stream().into()),
             Self::GetGroupMembershipResponse(cmd) => {
-                Iter::GetGroupMembershipResponse(cmd.to_le_stream())
+                Iter::GetGroupMembershipResponse(cmd.to_le_stream().into())
             }
             Self::RemoveGroupResponse(cmd) => Iter::RemoveGroupResponse(cmd.to_le_stream()),
         }
@@ -214,7 +213,6 @@ impl ToLeStream for Command {
 }
 
 #[derive(Debug)]
-#[expect(clippy::large_enum_variant)]
 pub enum Iter {
     AddGroup(<AddGroup as ToLeStream>::Iter),
     ViewGroup(<ViewGroup as ToLeStream>::Iter),
@@ -223,8 +221,8 @@ pub enum Iter {
     RemoveAllGroups(<RemoveAllGroups as ToLeStream>::Iter),
     AddGroupIfIdentifying(<AddGroupIfIdentifying as ToLeStream>::Iter),
     AddGroupResponse(<AddGroupResponse as ToLeStream>::Iter),
-    ViewGroupResponse(<ViewGroupResponse as ToLeStream>::Iter),
-    GetGroupMembershipResponse(<GetGroupMembershipResponse as ToLeStream>::Iter),
+    ViewGroupResponse(Box<<ViewGroupResponse as ToLeStream>::Iter>),
+    GetGroupMembershipResponse(Box<<GetGroupMembershipResponse as ToLeStream>::Iter>),
     RemoveGroupResponse(<RemoveGroupResponse as ToLeStream>::Iter),
 }
 

@@ -1,13 +1,13 @@
 use core::iter::Chain;
 
-use le_stream::{FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Type, Uint16};
 
 /// Attributes for the Identify cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
-#[derive(ReprDiscriminant, FromLeStreamTagged)]
+#[derive(ReprDiscriminant, FromLeStream)]
 pub enum Attribute {
     /// Remaining length of time, in seconds, that the device will continue to identify itself.
     IdentifyTime(u16) = 0x0000,

@@ -32,7 +32,6 @@ impl Command for StopMoveStep {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<StopMoveStep> for crate::Cluster {
     fn from(command: StopMoveStep) -> Self {
         Self::ColorControl(command.into())

@@ -1,6 +1,5 @@
 mod scene_table_extension;
 
-use alloc::vec::Vec;
 use core::str::Utf8Error;
 
 use chrono::Duration;

@@ -17,7 +17,6 @@ impl Command for OnWithRecallGlobalScene {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<OnWithRecallGlobalScene> for crate::Cluster {
     fn from(command: OnWithRecallGlobalScene) -> Self {
         Self::OnOff(command.into())

@@ -18,4 +18,3 @@ impl Command for ResetAllAlarms {
     const ID: u8 = 0x01;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
-

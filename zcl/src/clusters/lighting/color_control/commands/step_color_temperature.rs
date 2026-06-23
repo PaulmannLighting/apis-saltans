@@ -88,7 +88,6 @@ impl Command for StepColorTemperature {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<StepColorTemperature> for crate::Cluster {
     fn from(command: StepColorTemperature) -> Self {
         Self::ColorControl(command.into())

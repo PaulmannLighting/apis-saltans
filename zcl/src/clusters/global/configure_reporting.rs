@@ -1,6 +1,6 @@
 //! Reporting configuration command for the Global cluster.
 
-use alloc::boxed::Box;
+use std::boxed::Box;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Direction;

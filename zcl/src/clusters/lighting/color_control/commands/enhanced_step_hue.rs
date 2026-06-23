@@ -83,7 +83,6 @@ impl Command for EnhancedStepHue {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<EnhancedStepHue> for crate::Cluster {
     fn from(command: EnhancedStepHue) -> Self {
         Self::ColorControl(command.into())

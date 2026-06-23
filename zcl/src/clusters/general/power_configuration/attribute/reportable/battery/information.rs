@@ -1,4 +1,4 @@
-use le_stream::{FromLeStream, FromLeStreamTagged};
+use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::Uint8;
 
@@ -18,16 +18,14 @@ pub enum Information {
     PercentageRemaining(Uint8) = 0x0001,
 }
 
-impl FromLeStreamTagged for Information {
-    type Tag = u16;
-
-    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
+impl Information {
+    pub(crate) fn from_le_stream_tagged<T>(tag: u16, bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
         match tag & MASK {
-            0x0001 => Ok(Uint8::from_le_stream(bytes).map(Self::PercentageRemaining)),
-            _ => Err(tag),
+            0x0001 => Uint8::from_le_stream(bytes).map(Self::PercentageRemaining),
+            _ => None,
         }
     }
 }

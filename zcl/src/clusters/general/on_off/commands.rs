@@ -20,19 +20,24 @@ mod on_with_timed_off;
 mod toggle;
 
 /// Available On/Off cluster commands.
-#[expect(variant_size_differences)]
+#[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ParseZclFrame)]
 pub enum Command {
     /// Off command.
     Off(Off),
+
     /// On command.
     On(On),
+
     /// Toggle command.
     Toggle(Toggle),
+
     /// Off with Effect command.
     OffWithEffect(OffWithEffect),
+
     /// On with Recall Global Scene command.
     OnWithRecallGlobalScene(OnWithRecallGlobalScene),
+
     /// On with Timed Off command.
     OnWithTimedOff(OnWithTimedOff),
 }

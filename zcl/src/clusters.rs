@@ -1,6 +1,6 @@
 //! Cluster groups.
 
-use alloc::boxed::Box;
+use std::boxed::Box;
 
 use le_stream::ToLeStream;
 use zigbee::Direction;
@@ -16,21 +16,26 @@ pub mod measurement_and_sensing;
 
 /// Available ZCL clusters.
 // TODO: Add all ZCL clusters.
-#[expect(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Cluster {
     /// General cluster commands.
     Global(global::Command),
+
     /// Basic cluster commands.
     Basic(basic::Command),
+
     /// Groups cluster commands.
     Groups(groups::Command),
+
     /// Identify cluster commands.
     Identify(identify::Command),
+
     /// On/Off cluster commands.
     OnOff(on_off::Command),
+
     /// Level commands.
     Level(level::Command),
+
     /// Color Control cluster commands.
     ColorControl(color_control::Command),
 }
@@ -143,7 +148,6 @@ impl ToLeStream for Cluster {
     }
 }
 
-#[derive(Debug)]
 pub enum Iter {
     Global(Box<<global::Command as ToLeStream>::Iter>),
     Basic(<basic::Command as ToLeStream>::Iter),

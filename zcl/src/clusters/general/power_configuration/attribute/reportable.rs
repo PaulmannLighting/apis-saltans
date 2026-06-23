@@ -1,6 +1,6 @@
 //! Reportable attributes of the Power Configuration cluster.
 
-use le_stream::{FromLeStream, FromLeStreamTagged};
+use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
@@ -49,30 +49,28 @@ impl Attribute {
     }
 }
 
-impl FromLeStreamTagged for Attribute {
-    type Tag = u16;
-
-    fn from_le_stream_tagged<T>(tag: Self::Tag, bytes: T) -> Result<Option<Self>, Self::Tag>
+impl Attribute {
+    pub(crate) fn from_le_stream_tagged<T>(tag: u16, bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
         match tag {
-            0x0000 => Ok(Uint16::from_le_stream(bytes).map(Self::MainsVoltage)),
-            0x0001 => Ok(Uint8::from_le_stream(bytes).map(Self::MainsFrequency)),
-            0x0010 => Ok(MainsAlarmMask::from_le_stream(bytes).map(Self::AlarmMask)),
-            0x0011 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageMinThreshold)),
-            0x0012 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageMaxThreshold)),
-            0x0013 => Ok(Uint16::from_le_stream(bytes).map(Self::VoltageDwellTripPoint)),
+            0x0000 => Uint16::from_le_stream(bytes).map(Self::MainsVoltage),
+            0x0001 => Uint8::from_le_stream(bytes).map(Self::MainsFrequency),
+            0x0010 => MainsAlarmMask::from_le_stream(bytes).map(Self::AlarmMask),
+            0x0011 => Uint16::from_le_stream(bytes).map(Self::VoltageMinThreshold),
+            0x0012 => Uint16::from_le_stream(bytes).map(Self::VoltageMaxThreshold),
+            0x0013 => Uint16::from_le_stream(bytes).map(Self::VoltageDwellTripPoint),
             tag if tag & MASK == 0x0020 || tag & MASK == 0x0030 => {
-                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery))
+                Battery::from_le_stream_tagged(tag, bytes).map(Self::Battery)
             }
             tag if tag & MASK == 0x0040 || tag & MASK == 0x0050 => {
-                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery2))
+                Battery::from_le_stream_tagged(tag, bytes).map(Self::Battery2)
             }
             tag if tag & MASK == 0x0060 || tag & MASK == 0x0070 => {
-                Ok(Battery::from_le_stream_tagged(tag, bytes)?.map(Self::Battery3))
+                Battery::from_le_stream_tagged(tag, bytes).map(Self::Battery3)
             }
-            unknown => Err(unknown),
+            _ => None,
         }
     }
 }

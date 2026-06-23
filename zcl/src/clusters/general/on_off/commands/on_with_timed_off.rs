@@ -75,7 +75,6 @@ impl Command for OnWithTimedOff {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<OnWithTimedOff> for crate::Cluster {
     fn from(command: OnWithTimedOff) -> Self {
         Self::OnOff(command.into())

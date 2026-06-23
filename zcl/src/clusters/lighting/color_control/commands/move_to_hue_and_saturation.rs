@@ -78,7 +78,6 @@ impl Command for MoveToHueAndSaturation {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<MoveToHueAndSaturation> for crate::Cluster {
     fn from(command: MoveToHueAndSaturation) -> Self {
         Self::ColorControl(command.into())

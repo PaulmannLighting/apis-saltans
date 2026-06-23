@@ -18,7 +18,6 @@ impl Command for ResetToFactoryDefaults {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<ResetToFactoryDefaults> for crate::Cluster {
     fn from(command: ResetToFactoryDefaults) -> Self {
         Self::Basic(command.into())

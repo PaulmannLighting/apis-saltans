@@ -54,7 +54,6 @@ impl Command for TriggerEffect {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<TriggerEffect> for crate::Cluster {
     fn from(command: TriggerEffect) -> Self {
         Self::Identify(command.into())

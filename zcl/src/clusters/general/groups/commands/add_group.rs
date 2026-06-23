@@ -56,7 +56,6 @@ impl Command for AddGroup {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<AddGroup> for crate::Cluster {
     fn from(command: AddGroup) -> Self {
         Self::Groups(command.into())

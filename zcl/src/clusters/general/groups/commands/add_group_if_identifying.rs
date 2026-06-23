@@ -43,7 +43,6 @@ impl Command for AddGroupIfIdentifying {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<AddGroupIfIdentifying> for crate::Cluster {
     fn from(command: AddGroupIfIdentifying) -> Self {
         Self::Groups(command.into())

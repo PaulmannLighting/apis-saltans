@@ -59,7 +59,6 @@ impl Command for MoveHue {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<MoveHue> for crate::Cluster {
     fn from(command: MoveHue) -> Self {
         Self::ColorControl(command.into())

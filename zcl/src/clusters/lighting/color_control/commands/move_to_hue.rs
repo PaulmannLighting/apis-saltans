@@ -92,7 +92,6 @@ impl Command for MoveToHue {
     const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }
 
-
 impl From<MoveToHue> for crate::Cluster {
     fn from(command: MoveToHue) -> Self {
         Self::ColorControl(command.into())

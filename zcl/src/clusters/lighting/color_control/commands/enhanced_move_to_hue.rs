@@ -88,7 +88,6 @@ impl Command for EnhancedMoveToHue {
     const DIRECTION: zigbee::Direction = zigbee::Direction::ClientToServer;
 }
 
-
 impl From<EnhancedMoveToHue> for crate::Cluster {
     fn from(command: EnhancedMoveToHue) -> Self {
         Self::ColorControl(command.into())

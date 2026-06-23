@@ -47,7 +47,6 @@ impl Command for AddGroupResponse {
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
 
-
 impl From<AddGroupResponse> for crate::Cluster {
     fn from(command: AddGroupResponse) -> Self {
         Self::Groups(command.into())

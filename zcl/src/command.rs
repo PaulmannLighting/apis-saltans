@@ -17,3 +17,13 @@ pub trait Command {
     /// Whether to disable the default response for this command.
     const DISABLE_DEFAULT_RESPONSE: bool = false;
 }
+
+/// Blanket implementation for boxed commands.
+impl<T> Command for Box<T>
+where
+    T: Command,
+{
+    const ID: u8 = T::ID;
+    const DIRECTION: Direction = T::DIRECTION;
+    const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
+}

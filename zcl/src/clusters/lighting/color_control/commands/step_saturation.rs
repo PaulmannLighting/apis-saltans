@@ -87,7 +87,6 @@ impl Command for StepSaturation {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<StepSaturation> for crate::Cluster {
     fn from(command: StepSaturation) -> Self {
         Self::ColorControl(command.into())

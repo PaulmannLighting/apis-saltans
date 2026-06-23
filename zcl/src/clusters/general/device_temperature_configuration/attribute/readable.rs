@@ -2,7 +2,7 @@
 
 use core::iter::Chain;
 
-use le_stream::{FromLeStreamTagged, ToLeStream};
+use le_stream::{FromLeStream, ToLeStream};
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint16, Uint24};
 
@@ -14,7 +14,7 @@ use crate::clusters::general::device_temperature_configuration::{
 /// Readable attributes for the Device Temperature Configuration cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[repr(u16)]
-#[derive(ReprDiscriminant, FromLeStreamTagged)]
+#[derive(ReprDiscriminant, FromLeStream)]
 pub enum Attribute {
     // Device Temperature Information.
     /// Current temperature in degrees Celsius.

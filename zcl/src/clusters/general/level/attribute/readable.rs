@@ -1,6 +1,6 @@
 //! Readable attributes for the Level cluster.
 
-use le_stream::FromLeStreamTagged;
+use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 use zigbee::types::{Uint8, Uint16};
 
@@ -9,7 +9,7 @@ use super::{Options, reportable, writable};
 /// Readable attributes for the Level cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[repr(u16)]
-#[derive(ReprDiscriminant, FromLeStreamTagged)]
+#[derive(ReprDiscriminant, FromLeStream)]
 pub enum Attribute {
     /// Current level of the device.
     CurrentLevel(Uint8) = 0x0000,

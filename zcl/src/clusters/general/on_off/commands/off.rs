@@ -17,7 +17,6 @@ impl Command for Off {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<Off> for crate::Cluster {
     fn from(command: Off) -> Self {
         Self::OnOff(command.into())

@@ -16,7 +16,6 @@ impl Command for RemoveAllGroups {
     const DIRECTION: Direction = Direction::ClientToServer;
 }
 
-
 impl From<RemoveAllGroups> for crate::Cluster {
     fn from(command: RemoveAllGroups) -> Self {
         Self::Groups(command.into())

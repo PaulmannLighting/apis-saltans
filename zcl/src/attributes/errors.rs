@@ -1,6 +1,6 @@
-use alloc::boxed::Box;
 use core::error::Error;
 use core::fmt::{Debug, Display};
+use std::boxed::Box;
 
 use zigbee::types::Type;
 

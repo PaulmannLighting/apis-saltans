@@ -1,6 +1,5 @@
-use alloc::boxed::Box;
-use alloc::vec::Vec;
 use core::iter::Chain;
+use std::boxed::Box;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::{Uint8, Uint16};
@@ -64,7 +63,6 @@ impl Command for GetGroupMembership {
     const ID: u8 = 0x02;
     const DIRECTION: Direction = Direction::ClientToServer;
 }
-
 
 impl From<GetGroupMembership> for crate::Cluster {
     fn from(command: GetGroupMembership) -> Self {

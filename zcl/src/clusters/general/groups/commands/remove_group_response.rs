@@ -47,7 +47,6 @@ impl Command for RemoveGroupResponse {
     const DISABLE_DEFAULT_RESPONSE: bool = true;
 }
 
-
 impl From<RemoveGroupResponse> for crate::Cluster {
     fn from(command: RemoveGroupResponse) -> Self {
         Self::Groups(command.into())
