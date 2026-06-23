@@ -35,22 +35,31 @@ pub enum NetworkManagement {
     // Requests
     /// Management LQI Request
     MgmtLqiReq(MgmtLqiReq),
+
     /// Management Routing Request
     MgmtRtgReq(MgmtRtgReq),
+
     /// Management Bind Request
     MgmtBindReq(MgmtBindReq),
+
     /// Management Leave Request
     MgmtLeaveReq(MgmtLeaveReq),
+
     /// Management Permit Joining Request
     MgmtPermitJoiningReq(MgmtPermitJoiningReq),
+
     /// Management Network Update Request
     MgmtNwkUpdateReq(MgmtNwkUpdateReq),
+
     /// Management Network Enhanced Update Request
     MgmtNwkEnhancedUpdateReq(MgmtNwkEnhancedUpdateReq),
+
     /// Management Network IEEE Joining List Request.
     MgmtNwkIeeeJoiningListReq(MgmtNwkIeeeJoiningListReq),
+
     /// Management Network Beacon Survey Request.
     MgmtNwkBeaconSurveyReq(MgmtNwkBeaconSurveyReq),
+
     // Responses
     /// Management Permit Joining Response.
     MgmtPermitJoiningRsp(MgmtPermitJoiningRsp),

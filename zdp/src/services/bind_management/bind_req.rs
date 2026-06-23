@@ -3,12 +3,11 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
-use zigbee::{Cluster, ExpectResponse};
+use zigbee::{Cluster, Endpoint, ExpectResponse};
 
 pub use self::address::Address;
 pub use self::address_mode::AddressMode;
 pub use self::destination::Destination;
-use crate::Command::BindManagement;
 use crate::{BindRsp, Command, Service};
 
 mod address;
@@ -19,11 +18,11 @@ mod destination;
 #[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct BindReq {
     src_address: MacAddr8,
-    src_endpoint: u8,
+    src_endpoint: Endpoint,
     cluster_id: u16,
     dst_addr_mode: u8,
     dst_address: Address,
-    dst_endpoint: Option<u8>,
+    dst_endpoint: Option<Endpoint>,
 }
 
 impl BindReq {
@@ -31,7 +30,7 @@ impl BindReq {
     #[must_use]
     pub const fn new(
         src_address: MacAddr8,
-        src_endpoint: u8,
+        src_endpoint: Endpoint,
         cluster_id: u16,
         destination: Destination,
     ) -> Self {
@@ -60,7 +59,7 @@ impl BindReq {
 
     /// Returns the source endpoint.
     #[must_use]
-    pub const fn src_endpoint(&self) -> u8 {
+    pub const fn src_endpoint(&self) -> Endpoint {
         self.src_endpoint
     }
 
@@ -102,7 +101,7 @@ impl Display for BindReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} {{ src_address: {}, src_endpoint: {:#04X}, cluster_id: {:#06X}, destination: {} }}",
+            "{} {{ src_address: {}, src_endpoint: {}, cluster_id: {:#06X}, destination: {} }}",
             Self::NAME,
             self.src_address,
             self.src_endpoint,
@@ -114,7 +113,7 @@ impl Display for BindReq {
 
 impl From<BindReq> for Command {
     fn from(value: BindReq) -> Self {
-        BindManagement(value.into()).into()
+        Command::BindManagement(value.into())
     }
 }
 
@@ -124,14 +123,14 @@ impl FromLeStream for BindReq {
         T: Iterator<Item = u8>,
     {
         let src_address = MacAddr8::from_le_stream(&mut bytes)?;
-        let src_endpoint = u8::from_le_stream(&mut bytes)?;
+        let src_endpoint = Endpoint::from_le_stream(&mut bytes)?;
         let cluster_id = u16::from_le_stream(&mut bytes)?;
         let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
         let (dst_address, dst_endpoint) = match AddressMode::from_u8(dst_addr_mode)? {
             AddressMode::Group => (u16::from_le_stream(&mut bytes).map(Address::Group)?, None),
             AddressMode::Extended => (
                 MacAddr8::from_le_stream(&mut bytes).map(Address::Extended)?,
-                Some(u8::from_le_stream(&mut bytes)?),
+                Some(Endpoint::from_le_stream(&mut bytes)?),
             ),
         };
         Some(Self {
