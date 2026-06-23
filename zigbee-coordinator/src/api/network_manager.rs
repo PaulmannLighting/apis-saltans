@@ -1,11 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::oneshot::channel;
+use tokio::sync::mpsc::Receiver;
 use zigbee::Address;
 
-use crate::network_manager::Message;
+use crate::network_manager::Handle;
 use crate::{Coordinator, Device, Error, Event};
 
 /// Handle to the network manager actor.
@@ -103,34 +102,26 @@ pub trait NetworkManager {
     ) -> impl Future<Output = Result<Receiver<Event>, Error>>;
 }
 
-impl NetworkManager for Sender<Message> {
+impl<T> NetworkManager for T
+where
+    T: Handle,
+{
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
     ) -> Result<Option<MacAddr8>, Error> {
-        let (response, result) = channel();
-        self.send(Message::GetIeeeAddressFromShortId { short_id, response })
-            .await?;
-        Ok(result.await?)
+        self.short_id_to_ieee_address(short_id).await
     }
 
     async fn get_short_id_from_ieee_address(
         &self,
         ieee_address: MacAddr8,
     ) -> Result<Option<u16>, Error> {
-        let (response, result) = channel();
-        self.send(Message::GetShortIdFromIeeeAddress {
-            ieee_address,
-            response,
-        })
-        .await?;
-        Ok(result.await?)
+        self.ieee_address_to_short_id(ieee_address).await
     }
 
     async fn state(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
-        let (response, result) = channel();
-        self.send(Message::GetDevices { response }).await?;
-        Ok(result.await?)
+        self.get_devices().await
     }
 
     async fn subscribe_to_incoming_commands(
@@ -138,13 +129,7 @@ impl NetworkManager for Sender<Message> {
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
     ) -> Result<Receiver<Event>, Error> {
-        let (sender, receiver) = tokio::sync::mpsc::channel(channel_size);
-        self.send(Message::SubscribeToIncomingCommands {
-            devices: device,
-            sender,
-        })
-        .await?;
-        Ok(receiver)
+        self.subscribe(device, channel_size).await
     }
 }
 
