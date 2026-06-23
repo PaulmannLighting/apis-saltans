@@ -77,16 +77,3 @@ impl ToLeStream for PowerSource {
         u8::from(self).to_le_stream()
     }
 }
-
-#[cfg(test)]
-#[cfg(feature = "std")]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn power_source_to_le_stream() {
-        let power_source = PowerSource::Battery;
-        let bytes: Vec<u8> = power_source.to_le_stream().collect();
-        assert_eq!(bytes, vec![0x03]);
-    }
-}

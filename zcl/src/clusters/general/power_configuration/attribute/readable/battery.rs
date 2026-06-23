@@ -1,4 +1,3 @@
-use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
 
 pub use self::information::Information;

@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 aps = { path = "../aps", version = "0.1" }
-le-stream = { version = "9", features = ["derive"] }
+le-stream = { version = "10", features = ["derive"] }
 log = "0.4"
 macaddr = "1"
 tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread"] }
