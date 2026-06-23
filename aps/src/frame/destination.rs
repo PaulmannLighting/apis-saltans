@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 use le_stream::ToLeStream;
 use zigbee::Endpoint;
 
@@ -14,6 +16,16 @@ pub enum Destination {
 
     /// A group address.
     Group(u16),
+}
+
+impl Display for Destination {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Unicast(value) => write!(f, "Unicast({value})"),
+            Self::Broadcast(value) => write!(f, "Broadcast({value})"),
+            Self::Group(value) => write!(f, "Group({value})"),
+        }
+    }
 }
 
 impl ToLeStream for Destination {

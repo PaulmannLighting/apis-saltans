@@ -84,6 +84,12 @@ impl<T> From<Unicast<T>> for Frame<T> {
 }
 
 impl Frame<Vec<u8>> {
+    /// Return a new frame with the given header and payload.
+    #[must_use]
+    pub const fn raw(header: Header, payload: Vec<u8>) -> Self {
+        Self { header, payload }
+    }
+
     /// Extend the payload with the given data.
     pub fn extend<T>(&mut self, data: T)
     where

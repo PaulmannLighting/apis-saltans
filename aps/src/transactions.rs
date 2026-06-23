@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 
 use crate::ExtendedControl;
-use crate::data::Frame;
+use crate::data::{Frame, Header};
 
 /// An APS data frame transaction.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Transactions {
-    frames: BTreeMap<u8, (u8, Frame<Vec<u8>>)>,
+    frames: BTreeMap<u8, (u8, Header, Vec<Vec<u8>>)>,
 }
 
 impl Transactions {
@@ -30,8 +30,12 @@ impl Transactions {
                 return Some(frame);
             };
 
+            let (header, payload) = frame.into_parts();
+            let mut chunks = Vec::with_capacity(blocks.into());
+            chunks[0] = payload;
+
             self.frames
-                .insert(frame.header().counter(), (blocks, frame));
+                .insert(header.counter(), (blocks, header, chunks));
             return None;
         }
 
@@ -47,15 +51,21 @@ impl Transactions {
         };
 
         let (header, payload) = frame.into_parts();
-        let (blocks, mut parent) = self.frames.remove(&header.counter())?;
-        parent.extend(payload);
+        let (blocks, mut header, mut chunks) = self.frames.remove(&header.counter())?;
 
-        if index == blocks.saturating_sub(1) {
-            parent.drop_extended();
-            return Some(parent);
+        if let Some(entry) = chunks.get_mut(usize::from(index)) {
+            entry.extend(payload);
+        } else {
+            return None;
         }
 
-        self.frames.insert(header.counter(), (blocks, parent));
+        if chunks.len() == blocks.saturating_sub(1).into() {
+            header.drop_extended();
+            return Some(Frame::raw(header, chunks.into_iter().flatten().collect()));
+        }
+
+        self.frames
+            .insert(header.counter(), (blocks, header, chunks));
         None
     }
 }
