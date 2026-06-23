@@ -35,8 +35,10 @@ pub trait Service {
 pub enum Command {
     /// Device and Service Discovery Commands
     DeviceAndServiceDiscovery(DeviceAndServiceDiscovery),
+
     /// Bind Management Commands
     BindManagement(BindManagement),
+
     /// Network Management Commands
     NetworkManagement(NetworkManagement),
 }
@@ -68,18 +70,23 @@ impl Command {
                 .map(DeviceAndServiceDiscovery::SimpleDescReq)
                 .map(Self::DeviceAndServiceDiscovery)),
             SimpleDescRsp::ID => Ok(SimpleDescRsp::from_le_stream(bytes)
+                .map(Box::new)
                 .map(DeviceAndServiceDiscovery::SimpleDescRsp)
                 .map(Self::DeviceAndServiceDiscovery)),
             ActiveEpReq::ID => Ok(ActiveEpReq::from_le_stream(bytes)
+                .map(Box::new)
                 .map(DeviceAndServiceDiscovery::ActiveEpReq)
                 .map(Self::DeviceAndServiceDiscovery)),
             ActiveEpRsp::ID => Ok(ActiveEpRsp::from_le_stream(bytes)
+                .map(Box::new)
                 .map(DeviceAndServiceDiscovery::ActiveEpRsp)
                 .map(Self::DeviceAndServiceDiscovery)),
             MatchDescReq::ID => Ok(MatchDescReq::from_le_stream(bytes)
+                .map(Box::new)
                 .map(DeviceAndServiceDiscovery::MatchDescReq)
                 .map(Self::DeviceAndServiceDiscovery)),
             MatchDescRsp::ID => Ok(MatchDescRsp::from_le_stream(bytes)
+                .map(Box::new)
                 .map(DeviceAndServiceDiscovery::MatchDescRsp)
                 .map(Self::DeviceAndServiceDiscovery)),
             DeviceAnnce::ID => Ok(DeviceAnnce::from_le_stream(bytes)
@@ -119,12 +126,14 @@ impl Command {
                 .map(NetworkManagement::MgmtLeaveReq)
                 .map(Self::NetworkManagement)),
             MgmtPermitJoiningReq::ID => Ok(MgmtPermitJoiningReq::from_le_stream(bytes)
+                .map(Box::new)
                 .map(NetworkManagement::MgmtPermitJoiningReq)
                 .map(Self::NetworkManagement)),
             MgmtNwkUpdateReq::ID => Ok(MgmtNwkUpdateReq::from_le_stream(bytes)
                 .map(NetworkManagement::MgmtNwkUpdateReq)
                 .map(Self::NetworkManagement)),
             MgmtNwkEnhancedUpdateReq::ID => Ok(MgmtNwkEnhancedUpdateReq::from_le_stream(bytes)
+                .map(Box::new)
                 .map(NetworkManagement::MgmtNwkEnhancedUpdateReq)
                 .map(Self::NetworkManagement)),
             MgmtNwkIeeeJoiningListReq::ID => Ok(MgmtNwkIeeeJoiningListReq::from_le_stream(bytes)

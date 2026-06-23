@@ -3,7 +3,6 @@ use std::fmt::Display;
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::{Cluster, ExpectResponse};
 
-use crate::services::DeviceAndServiceDiscovery;
 use crate::{ActiveEpRsp, Command, Service};
 
 /// Active Endpoint Request
@@ -53,6 +52,6 @@ impl Display for ActiveEpReq {
 
 impl From<ActiveEpReq> for Command {
     fn from(active_ep_req: ActiveEpReq) -> Self {
-        Self::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::ActiveEpReq(active_ep_req))
+        Self::DeviceAndServiceDiscovery(active_ep_req.into())
     }
 }

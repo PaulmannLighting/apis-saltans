@@ -82,7 +82,7 @@ impl TryFrom<Command> for SimpleDescRsp {
             descriptors,
         )) = cmd
         {
-            Ok(descriptors)
+            Ok(*descriptors)
         } else {
             Err(cmd)
         }

@@ -113,7 +113,7 @@ impl Display for BindReq {
 
 impl From<BindReq> for Command {
     fn from(value: BindReq) -> Self {
-        Command::BindManagement(value.into())
+        Self::BindManagement(value.into())
     }
 }
 

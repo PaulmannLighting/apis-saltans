@@ -95,7 +95,7 @@ impl TryFrom<Command> for ActiveEpRsp {
             active_eps,
         )) = cmd
         {
-            Ok(active_eps)
+            Ok(*active_eps)
         } else {
             Err(cmd)
         }

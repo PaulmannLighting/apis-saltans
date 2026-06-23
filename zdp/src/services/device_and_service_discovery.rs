@@ -56,19 +56,19 @@ pub enum DeviceAndServiceDiscovery {
     SimpleDescReq(SimpleDescReq),
 
     /// Simple Descriptor Response
-    SimpleDescRsp(SimpleDescRsp),
+    SimpleDescRsp(Box<SimpleDescRsp>),
 
     /// Active Endpoint Request
-    ActiveEpReq(ActiveEpReq),
+    ActiveEpReq(Box<ActiveEpReq>),
 
     /// Active Endpoint Request
-    ActiveEpRsp(ActiveEpRsp),
+    ActiveEpRsp(Box<ActiveEpRsp>),
 
     /// Match Descriptor Request
-    MatchDescReq(MatchDescReq),
+    MatchDescReq(Box<MatchDescReq>),
 
     /// Match Descriptor Response.
-    MatchDescRsp(MatchDescRsp),
+    MatchDescRsp(Box<MatchDescRsp>),
 
     /// Device Announcement
     DeviceAnnce(DeviceAnnce),
@@ -162,31 +162,31 @@ impl From<SimpleDescReq> for DeviceAndServiceDiscovery {
 
 impl From<SimpleDescRsp> for DeviceAndServiceDiscovery {
     fn from(cmd: SimpleDescRsp) -> Self {
-        Self::SimpleDescRsp(cmd)
+        Self::SimpleDescRsp(cmd.into())
     }
 }
 
 impl From<ActiveEpReq> for DeviceAndServiceDiscovery {
     fn from(cmd: ActiveEpReq) -> Self {
-        Self::ActiveEpReq(cmd)
+        Self::ActiveEpReq(cmd.into())
     }
 }
 
 impl From<ActiveEpRsp> for DeviceAndServiceDiscovery {
     fn from(cmd: ActiveEpRsp) -> Self {
-        Self::ActiveEpRsp(cmd)
+        Self::ActiveEpRsp(cmd.into())
     }
 }
 
 impl From<MatchDescReq> for DeviceAndServiceDiscovery {
     fn from(cmd: MatchDescReq) -> Self {
-        Self::MatchDescReq(cmd)
+        Self::MatchDescReq(cmd.into())
     }
 }
 
 impl From<MatchDescRsp> for DeviceAndServiceDiscovery {
     fn from(cmd: MatchDescRsp) -> Self {
-        Self::MatchDescRsp(cmd)
+        Self::MatchDescRsp(cmd.into())
     }
 }
 

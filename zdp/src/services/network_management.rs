@@ -46,13 +46,13 @@ pub enum NetworkManagement {
     MgmtLeaveReq(MgmtLeaveReq),
 
     /// Management Permit Joining Request
-    MgmtPermitJoiningReq(MgmtPermitJoiningReq),
+    MgmtPermitJoiningReq(Box<MgmtPermitJoiningReq>),
 
     /// Management Network Update Request
     MgmtNwkUpdateReq(MgmtNwkUpdateReq),
 
     /// Management Network Enhanced Update Request
-    MgmtNwkEnhancedUpdateReq(MgmtNwkEnhancedUpdateReq),
+    MgmtNwkEnhancedUpdateReq(Box<MgmtNwkEnhancedUpdateReq>),
 
     /// Management Network IEEE Joining List Request.
     MgmtNwkIeeeJoiningListReq(MgmtNwkIeeeJoiningListReq),

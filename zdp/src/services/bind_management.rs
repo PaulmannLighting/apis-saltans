@@ -19,10 +19,13 @@ mod unbind_req;
 pub enum BindManagement {
     /// Bind Request
     BindReq(BindReq),
+
     /// Bind Response
     BindRsp(BindRsp),
+
     /// Unbind Request
     UnbindReq(UnbindReq),
+
     /// Clear All Bindings Request
     ClearAllBindingsReq(ClearAllBindingsReq),
 }
