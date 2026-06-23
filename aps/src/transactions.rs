@@ -5,11 +5,11 @@ use crate::data::Frame;
 
 /// An APS data frame transaction.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
-pub struct Transaction {
+pub struct Transactions {
     frames: BTreeMap<u8, (u8, Frame<Vec<u8>>)>,
 }
 
-impl Transaction {
+impl Transactions {
     /// Create a new transaction.
     #[must_use]
     pub const fn new() -> Self {

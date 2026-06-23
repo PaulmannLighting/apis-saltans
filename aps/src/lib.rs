@@ -7,8 +7,8 @@ pub use self::frame::data::{self, Frame as Data, Unicast};
 pub use self::frame::{
     AckFmt, Control, DeliveryMode, Destination, Extended, ExtendedControl, Fragmentation, FrameType,
 };
-pub use self::transaction::Transaction;
+pub use self::transactions::Transactions;
 
 mod broadcast;
 mod frame;
-mod transaction;
+mod transactions;
