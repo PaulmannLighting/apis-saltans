@@ -56,7 +56,7 @@ impl DescriptorDiscovery {
                     address,
                     descriptor,
                 } => {
-                    self.descriptor_discovered(address, descriptor).await;
+                    self.descriptor_discovered(address, *descriptor).await;
                 }
             }
         }
@@ -167,7 +167,7 @@ async fn get_descriptor(
                     loopback
                         .send(Message::DescriptorDiscovered {
                             address,
-                            descriptor,
+                            descriptor: Box::new(descriptor),
                         })
                         .await
                         .unwrap_or_else(|error| {

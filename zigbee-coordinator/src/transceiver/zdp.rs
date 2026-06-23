@@ -16,8 +16,7 @@ use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
 use self::match_desc_req_ext::MatchDescReqExt;
-use self::message::Message;
-pub use self::message::Payload;
+pub use self::message::{Message, Payload};
 use crate::discovery;
 
 mod handle;

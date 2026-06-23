@@ -12,8 +12,7 @@ use zigbee::Endpoint;
 use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
-use self::message::Message;
-pub use self::message::Payload;
+pub use self::message::{Message, Payload};
 use crate::network_manager;
 
 mod handle;
@@ -161,7 +160,7 @@ where
         frame: Payload<Cluster>,
     ) -> Result<u8, zigbee_hw::Error> {
         let (metadata, manufacturer_code, command) = frame.into_parts();
-        let zcl_frame = self.make_zcl_frame(seq, manufacturer_code, command);
+        let zcl_frame = Self::make_zcl_frame(seq, manufacturer_code, command);
 
         #[expect(unsafe_code)]
         // SAFETY: We extracted the metadata and command from the payload above
@@ -193,7 +192,7 @@ where
     ) -> Result<u8, zigbee_hw::Error> {
         let (metadata, manufacturer_code, command) = frame.into_parts();
         let seq = self.next_seq();
-        let zcl_frame = self.make_zcl_frame(seq, manufacturer_code, command);
+        let zcl_frame = Self::make_zcl_frame(seq, manufacturer_code, command);
 
         #[expect(unsafe_code)]
         // SAFETY: We extracted the metadata and command from the payload above
@@ -246,12 +245,7 @@ where
     }
 
     /// Create a new ZCL frame.
-    fn make_zcl_frame(
-        &self,
-        seq: u8,
-        manufacturer_code: Option<u16>,
-        command: Cluster,
-    ) -> Frame<Cluster> {
+    fn make_zcl_frame(seq: u8, manufacturer_code: Option<u16>, command: Cluster) -> Frame<Cluster> {
         let header = Header::new(
             command.scope(),
             command.direction(),

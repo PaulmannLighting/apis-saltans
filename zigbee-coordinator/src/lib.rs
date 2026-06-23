@@ -13,6 +13,7 @@ pub use self::api::{
     WriteAttributes,
 };
 pub use self::coordinator::Coordinator;
+pub use self::destination::Destination;
 pub use self::error::Error;
 pub use self::event::Event;
 pub use self::event_receiver::EventReceiver;
@@ -22,6 +23,7 @@ use self::retry::Retry;
 mod api;
 mod binding;
 mod coordinator;
+mod destination;
 mod discovery;
 mod error;
 mod event;
@@ -51,5 +53,6 @@ const TASK_POOL_SIZE: usize = 16;
 const MPSC_CHANNEL_SIZE: usize = 128;
 
 /// Size of the event channel.
+#[cfg(feature = "smarthomelib")]
 #[env_item("ZIGBEE_COORDINATOR_EVENT_CHANNEL_SIZE")]
 const EVENT_CHANNEL_SIZE: usize = 32;

@@ -1,9 +1,7 @@
-use macaddr::MacAddr8;
 use zcl::general::on_off::{Off, On, Toggle};
-use zigbee::Endpoint;
 
 use crate::transceiver::zcl::Handle;
-use crate::{Coordinator, Error, NetworkManager};
+use crate::{Coordinator, Destination, Error};
 
 /// Trait for On/Off cluster operations.
 pub trait OnOff {
@@ -12,72 +10,33 @@ pub trait OnOff {
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn on(
-        &self,
-        ieee_address: MacAddr8,
-        endpoint: Endpoint,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
+    fn on(&self, destination: Destination) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Turns the device off.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn off(
-        &self,
-        ieee_address: MacAddr8,
-        endpoint: Endpoint,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
+    fn off(&self, destination: Destination) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Toggle the device state.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if execution of the command failed.
-    fn toggle(
-        &self,
-        ieee_address: MacAddr8,
-        endpoint: Endpoint,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
+    fn toggle(&self, destination: Destination) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl OnOff for Coordinator {
-    async fn on(&self, ieee_address: MacAddr8, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl
-            .unicast_static_cluster(
-                self.network_manager
-                    .get_short_id_from_ieee_address(ieee_address)
-                    .await?
-                    .ok_or(Error::UnknownDevice(ieee_address))?,
-                endpoint,
-                On,
-            )
-            .await
+    async fn on(&self, destination: Destination) -> Result<(), Error> {
+        self.send_static_cluster(destination, On).await
     }
 
-    async fn off(&self, ieee_address: MacAddr8, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl
-            .unicast_static_cluster(
-                self.network_manager
-                    .get_short_id_from_ieee_address(ieee_address)
-                    .await?
-                    .ok_or(Error::UnknownDevice(ieee_address))?,
-                endpoint,
-                Off,
-            )
-            .await
+    async fn off(&self, destination: Destination) -> Result<(), Error> {
+        self.send_static_cluster(destination, Off).await
     }
 
-    async fn toggle(&self, ieee_address: MacAddr8, endpoint: Endpoint) -> Result<(), Error> {
-        self.zcl
-            .unicast_static_cluster(
-                self.network_manager
-                    .get_short_id_from_ieee_address(ieee_address)
-                    .await?
-                    .ok_or(Error::UnknownDevice(ieee_address))?,
-                endpoint,
-                Toggle,
-            )
-            .await
+    async fn toggle(&self, destination: Destination) -> Result<(), Error> {
+        self.send_static_cluster(destination, Toggle).await
     }
 }

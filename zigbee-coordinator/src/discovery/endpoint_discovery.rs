@@ -1,4 +1,4 @@
-use log::{debug, error, info, trace, warn};
+use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio_task_pool::Pool;
 use zdp::{ActiveEpReq, Status};

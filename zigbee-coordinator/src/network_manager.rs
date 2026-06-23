@@ -6,13 +6,12 @@ use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zcl::{Cluster, Frame};
 use zigbee::Address;
+use zigbee_hw::Ncp;
 
-pub use self::handle::Handle;
-use self::message::Message;
+pub use self::message::Message;
 pub use self::state::{Attributes, Device, Endpoint, State};
 use crate::{Event, discovery};
 
-mod handle;
 mod message;
 mod state;
 
@@ -26,7 +25,10 @@ pub struct Actor<T> {
     subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Event>)>,
 }
 
-impl<T> Actor<T> {
+impl<T> Actor<T>
+where
+    T: Ncp + Sync,
+{
     /// Create a new actor.
     #[must_use]
     pub fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>, state: State) -> Self {

@@ -5,8 +5,10 @@ use zigbee::Endpoint;
 
 impl EventReceiver<MacAddr8, Endpoint> for crate::EventReceiver {
     async fn recv(&mut self) -> Option<Event<MacAddr8, Endpoint>> {
+        let receiver = &mut **self;
+
         loop {
-            if let Ok(event) = self.inner.recv().await?.try_into().inspect_err(|error| {
+            if let Ok(event) = receiver.recv().await?.try_into().inspect_err(|error| {
                 warn!("Failed to convert event: {error:?}");
             }) {
                 return Some(event);

@@ -19,6 +19,6 @@ pub enum Message {
         /// The device to get the descriptor for.
         address: Address,
         /// The number of retries.
-        descriptor: SimpleDescriptor,
+        descriptor: Box<SimpleDescriptor>,
     },
 }

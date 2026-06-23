@@ -1,9 +1,12 @@
+use ::zcl::Cluster;
 use ::zdp::SimpleDescriptor;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
+use zigbee::{Endpoint, ExpectResponse};
 use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle};
 
 use crate::mux::Mux;
+use crate::transceiver::zcl::Payload;
 use crate::transceiver::{zcl, zdp};
 use crate::{MPSC_CHANNEL_SIZE, State, binding, discovery, network_manager};
 
@@ -135,5 +138,38 @@ impl Coordinator {
     ) {
         let discovery_manager = discovery::Actor::new(zcl_tx, zdp_tx, binding_tx);
         spawn(discovery_manager.run(discovery_rx));
+    }
+}
+
+impl zcl::Handle for Coordinator {
+    async fn unicast(
+        &self,
+        short_id: u16,
+        endpoint: Endpoint,
+        payload: Payload<Cluster>,
+    ) -> Result<(), crate::Error> {
+        self.zcl.unicast(short_id, endpoint, payload).await
+    }
+
+    async fn multicast(
+        &self,
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        payload: Payload<Cluster>,
+    ) -> Result<(), crate::Error> {
+        self.zcl.multicast(group_id, hops, radius, payload).await
+    }
+
+    fn communicate<T>(
+        &self,
+        short_id: u16,
+        endpoint: Endpoint,
+        payload: Payload<T>,
+    ) -> impl Future<Output = Result<T::Response, crate::Error>> + Send
+    where
+        T: ExpectResponse<Cluster>,
+    {
+        self.zcl.communicate(short_id, endpoint, payload)
     }
 }

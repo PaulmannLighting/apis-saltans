@@ -3,6 +3,7 @@ use zigbee::node::MacCapabilityFlags;
 
 /// Message sent to the discovery actor.
 #[derive(Debug)]
+#[expect(clippy::enum_variant_names)]
 pub enum Message {
     /// A device has joined the network.
     DeviceJoined(Address),

@@ -142,9 +142,9 @@ impl Actor {
             return;
         };
         network_manager
-            .send(network_manager::Message::NewDevice(
-                Device::from((address, endpoints)).into(),
-            ))
+            .send(network_manager::Message::NewDevice(Device::from((
+                address, endpoints,
+            ))))
             .await
             .unwrap_or_else(|error| {
                 error!("Failed to send new device message: {error:?}");

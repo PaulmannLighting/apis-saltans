@@ -1,10 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::oneshot::channel;
 use zigbee::Address;
 
-use crate::network_manager::Handle;
+use crate::network_manager::Message;
 use crate::{Coordinator, Device, Error, Event};
 
 /// Handle to the network manager actor.
@@ -102,26 +103,34 @@ pub trait NetworkManager {
     ) -> impl Future<Output = Result<Receiver<Event>, Error>>;
 }
 
-impl<T> NetworkManager for T
-where
-    T: Handle,
-{
+impl NetworkManager for Sender<Message> {
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
     ) -> Result<Option<MacAddr8>, Error> {
-        self.short_id_to_ieee_address(short_id).await
+        let (response, result) = channel();
+        self.send(Message::GetIeeeAddressFromShortId { short_id, response })
+            .await?;
+        Ok(result.await?)
     }
 
     async fn get_short_id_from_ieee_address(
         &self,
         ieee_address: MacAddr8,
     ) -> Result<Option<u16>, Error> {
-        self.ieee_address_to_short_id(ieee_address).await
+        let (response, result) = channel();
+        self.send(Message::GetShortIdFromIeeeAddress {
+            ieee_address,
+            response,
+        })
+        .await?;
+        Ok(result.await?)
     }
 
     async fn state(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
-        self.get_devices().await
+        let (response, result) = channel();
+        self.send(Message::GetDevices { response }).await?;
+        Ok(result.await?)
     }
 
     async fn subscribe_to_incoming_commands(
@@ -129,7 +138,13 @@ where
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
     ) -> Result<Receiver<Event>, Error> {
-        self.subscribe(device, channel_size).await
+        let (sender, receiver) = tokio::sync::mpsc::channel(channel_size);
+        self.send(Message::SubscribeToIncomingCommands {
+            devices: device,
+            sender,
+        })
+        .await?;
+        Ok(receiver)
     }
 }
 

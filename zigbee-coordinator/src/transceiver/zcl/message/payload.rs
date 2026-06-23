@@ -34,21 +34,6 @@ impl<T> Payload<T> {
         }
     }
 
-    /// Create a new frame with no manufacturer code.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the metadata and command match.
-    #[expect(unsafe_code)]
-    #[must_use]
-    pub const unsafe fn new_native(metadata: Metadata, command: T) -> Self {
-        Self {
-            metadata,
-            manufacturer_code: None,
-            command,
-        }
-    }
-
     /// Consume the frame into its parts.
     #[must_use]
     pub fn into_parts(self) -> (Metadata, Option<u16>, T) {
@@ -67,6 +52,21 @@ where
             metadata: self.metadata,
             manufacturer_code: self.manufacturer_code,
             command: self.command.into(),
+        }
+    }
+}
+
+impl Payload<Cluster> {
+    /// Create a new frame with no manufacturer code.
+    #[must_use]
+    pub fn for_cluster<T>(command: T) -> Self
+    where
+        T: zigbee::Cluster + Into<Cluster>,
+    {
+        Self {
+            metadata: Metadata::for_cluster::<T>(None, None),
+            manufacturer_code: None,
+            command: command.into(),
         }
     }
 }

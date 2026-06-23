@@ -1,13 +1,10 @@
-use std::borrow::Borrow;
-
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zigbee::{Cluster, Endpoint, ExpectResponse};
-use zigbee_hw::Metadata;
 
 use super::{Message, Payload};
-use crate::Error;
 use crate::timeout::Timeout;
+use crate::{Destination, Error, NetworkManager};
 
 /// Handle trait on the ZCL transceiver.
 pub trait Handle {
@@ -49,18 +46,55 @@ pub trait Handle {
     where
         T: Cluster + Into<zcl::Cluster>,
     {
-        #[expect(unsafe_code)]
-        // SAFETY: We construct matching metadata from the payload type.
-        let payload =
-            unsafe { Payload::new_native(Metadata::for_cluster::<T>(None, None), command.into()) };
+        let payload = Payload::for_cluster(command);
         self.unicast(short_id, endpoint, payload).await
+    }
+
+    /// Send a ZCL command to a group of devices,
+    /// where the command is a native ZCL command belonging to a static cluster.
+    async fn multicast_static_cluster<T>(
+        &self,
+        group_id: u16,
+        hops: u8,
+        radius: u8,
+        command: T,
+    ) -> Result<(), Error>
+    where
+        T: Cluster + Into<zcl::Cluster>,
+    {
+        let payload = Payload::for_cluster(command);
+        self.multicast(group_id, hops, radius, payload).await
+    }
+
+    async fn send_static_cluster<T>(
+        &self,
+        destination: Destination,
+        command: T,
+    ) -> Result<(), Error>
+    where
+        Self: NetworkManager,
+        T: Cluster + Into<zcl::Cluster>,
+    {
+        match destination {
+            Destination::Endpoint {
+                ieee_address,
+                endpoint,
+            } => {
+                let short_id = self
+                    .get_short_id_from_ieee_address(ieee_address)
+                    .await?
+                    .ok_or(Error::UnknownDevice(ieee_address))?;
+                self.unicast_static_cluster(short_id, endpoint, command)
+                    .await
+            }
+            Destination::Group(group_id) => {
+                self.multicast_static_cluster(group_id, 0, 0, command).await
+            }
+        }
     }
 }
 
-impl<T> Handle for T
-where
-    T: Borrow<Sender<Message>> + Sync,
-{
+impl Handle for Sender<Message> {
     async fn unicast(
         &self,
         short_id: u16,
@@ -68,14 +102,13 @@ where
         payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
-        self.borrow()
-            .send(Message::Unicast {
-                short_id,
-                endpoint,
-                payload: payload.into(),
-                response,
-            })
-            .await?;
+        self.send(Message::Unicast {
+            short_id,
+            endpoint,
+            payload: payload.into(),
+            response,
+        })
+        .await?;
         Ok(result.await??)
     }
 
@@ -87,15 +120,14 @@ where
         payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
-        self.borrow()
-            .send(Message::Multicast {
-                group_id,
-                hops,
-                radius,
-                payload: payload.into(),
-                response,
-            })
-            .await?;
+        self.send(Message::Multicast {
+            group_id,
+            hops,
+            radius,
+            payload: payload.into(),
+            response,
+        })
+        .await?;
         Ok(result.await??)
     }
 
@@ -112,14 +144,13 @@ where
         let payload = payload.into_cluster().into();
 
         async move {
-            self.borrow()
-                .send(Message::Communicate {
-                    short_id,
-                    endpoint,
-                    payload,
-                    response,
-                })
-                .await?;
+            self.send(Message::Communicate {
+                short_id,
+                endpoint,
+                payload,
+                response,
+            })
+            .await?;
             result
                 .await??
                 .zcl_response_timeout()
