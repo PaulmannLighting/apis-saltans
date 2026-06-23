@@ -1,9 +1,5 @@
-use aps::Data;
+use aps::data::Frame;
 use zigbee::Address;
-
-pub use self::command::Command;
-
-mod command;
 
 /// Events that can occur on the hardware layer.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -39,6 +35,6 @@ pub enum Event {
         /// The PAN ID of the sender.
         src_address: u16,
         /// The APS frame.
-        aps_frame: Box<Data<Command>>,
+        aps_frame: Frame<Vec<u8>>,
     },
 }

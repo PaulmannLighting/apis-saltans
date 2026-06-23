@@ -1,8 +1,13 @@
 use std::fmt::Display;
 
+use aps::Destination;
 use le_stream::{FromLeStream, ToLeStream};
+use zigbee::Endpoint;
 
+pub use self::parse_frame_error::ParseFrameError;
 use crate::Command;
+
+mod parse_frame_error;
 
 /// A frame with a sequence number and associated data.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
@@ -62,5 +67,25 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Frame {{ seq: {:#04X}, data: {} }}", self.seq, self.data)
+    }
+}
+
+impl TryFrom<aps::data::Frame<Vec<u8>>> for Frame<Command> {
+    type Error = ParseFrameError;
+
+    fn try_from(frame: aps::data::Frame<Vec<u8>>) -> Result<Self, Self::Error> {
+        let (header, payload) = frame.into_parts();
+
+        if header.source_endpoint() != Endpoint::Data {
+            return Err(Self::Error::SourceEndpoint(header.source_endpoint()));
+        }
+
+        if !matches!(header.destination(), Destination::Unicast(Endpoint::Data)) {
+            return Err(Self::Error::Destination(header.destination()));
+        }
+
+        Self::parse_with_cluster_id(header.cluster_id(), payload.into_iter())
+            .map_err(Self::Error::ClusterId)?
+            .ok_or(Self::Error::Invalid)
     }
 }

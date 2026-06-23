@@ -6,7 +6,7 @@ extern crate core;
 
 pub use status::{Displayable, Status};
 
-pub use self::frame::Frame;
+pub use self::frame::{Frame, ParseFrameError};
 pub use self::services::{
     ActiveEpReq, ActiveEpRsp, BindManagement, BindReq, BindRsp, ClearAllBindingsReq, Command,
     Destination, DeviceAndServiceDiscovery, DeviceAnnce, EnhancedNwkUpdateParameters, IeeeAddrReq,

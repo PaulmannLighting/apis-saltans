@@ -18,6 +18,7 @@ pub enum Message {
         /// The APS frame.
         frame: Box<Data<Frame<Cluster>>>,
     },
+
     /// Unicast a message.
     Unicast {
         /// The destination address.
@@ -29,6 +30,7 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
+
     /// Unicast a message.
     Multicast {
         /// The destination group ID.
@@ -42,6 +44,7 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
+
     /// Communicate a unicast with an expected response.
     Communicate {
         /// The destination address.

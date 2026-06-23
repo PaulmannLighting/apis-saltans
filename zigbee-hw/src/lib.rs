@@ -9,7 +9,7 @@ use tokio::sync::mpsc::{Sender, WeakSender};
 pub use self::await_event::AwaitEvent;
 pub use self::bridge::bridge;
 pub use self::error::Error;
-pub use self::event::{Command, Event};
+pub use self::event::Event;
 pub use self::frame::{Frame, Metadata};
 pub use self::message::{FoundNetwork, Network, ScannedChannel};
 pub use self::ncp::Ncp;

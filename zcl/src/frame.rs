@@ -75,3 +75,13 @@ impl Frame<Cluster> {
         Ok(Self { header, payload })
     }
 }
+
+impl TryFrom<aps::data::Frame<Vec<u8>>> for Frame<Cluster> {
+    type Error = ParseFrameError;
+
+    fn try_from(frame: aps::data::Frame<Vec<u8>>) -> Result<Self, Self::Error> {
+        let (header, payload) = frame.into_parts();
+
+        Self::parse(header.cluster_id(), payload.into_iter())
+    }
+}

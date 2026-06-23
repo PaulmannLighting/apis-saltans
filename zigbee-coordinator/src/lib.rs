@@ -21,6 +21,7 @@ pub use self::network_manager::{Attributes, Device, Endpoint, State};
 use self::retry::Retry;
 
 mod api;
+pub mod aps_payload;
 mod binding;
 mod coordinator;
 mod destination;

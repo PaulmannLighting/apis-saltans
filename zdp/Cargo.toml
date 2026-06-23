@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+aps = { version = "0.1", path = "../aps" }
 bitflags = "2"
 heapless = "0.9"
 le-stream = { version = "10", features = ["derive", "macaddr"] }
