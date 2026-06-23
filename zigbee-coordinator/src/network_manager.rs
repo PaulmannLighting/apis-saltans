@@ -24,7 +24,7 @@ pub struct Actor<T> {
     subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Event>)>,
 }
 
-impl<T: zigbee_hw::Ncp> Actor<T> {
+impl<T> Actor<T> {
     /// Create a new actor.
     #[must_use]
     pub fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>, state: State) -> Self {
