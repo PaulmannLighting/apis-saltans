@@ -93,7 +93,20 @@ impl Frame<Vec<u8>> {
     }
 
     /// Drop the extended header.
-    pub fn drop_extended(&mut self) {
+    pub const fn drop_extended(&mut self) {
         self.header.drop_extended();
+    }
+
+    /// Parse the frame into a frame with typed payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the payload cannot be parsed into the given type.
+    pub fn parse<T>(self) -> Result<Frame<T>, T::Error>
+    where
+        T: TryFrom<Self>,
+    {
+        let header = self.header.clone();
+        T::try_from(self).map(|payload| Frame { header, payload })
     }
 }
