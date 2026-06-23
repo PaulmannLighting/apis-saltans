@@ -1,9 +1,25 @@
 use smarthomelib::TranslateEndpointId;
+use zigbee::Endpoint;
 
 use crate::Coordinator;
 
 impl TranslateEndpointId<u8> for Coordinator {
     async fn translate_endpoint_id(&self, endpoint: u8) -> Result<Self::EndpointId, Self::Error> {
-        Ok(endpoint.into())
+        endpoint
+            .try_into()
+            .map_err(Self::Error::InvalidApplicationEndpoint)
+    }
+}
+
+impl TranslateEndpointId<Endpoint> for Coordinator {
+    async fn translate_endpoint_id(
+        &self,
+        endpoint: Endpoint,
+    ) -> Result<Self::EndpointId, Self::Error> {
+        if let Endpoint::Application(application) = endpoint {
+            return Ok(application);
+        }
+
+        Err(Self::Error::InvalidApplicationEndpoint(endpoint.into()))
     }
 }

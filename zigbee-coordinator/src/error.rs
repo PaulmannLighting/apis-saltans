@@ -27,6 +27,9 @@ pub enum Error {
 
     /// Unknown device.
     UnknownDevice(MacAddr8),
+
+    /// Invalid application endpoint.
+    InvalidApplicationEndpoint(u8),
 }
 
 impl Display for Error {
@@ -38,6 +41,9 @@ impl Display for Error {
             Self::Timeout(error) => write!(f, "Timeout: {error}"),
             Self::InvalidResponseType(error) => write!(f, "Invalid response type: {error}"),
             Self::UnknownDevice(address) => write!(f, "Unknown device: {address}"),
+            Self::InvalidApplicationEndpoint(endpoint) => {
+                write!(f, "Invalid application endpoint: {endpoint:#04X}")
+            }
         }
     }
 }
@@ -48,7 +54,10 @@ impl std::error::Error for Error {
             Self::Hardware(error) => Some(error),
             Self::ReceiveError(error) => Some(error),
             Self::Timeout(error) => Some(error),
-            Self::SendError | Self::InvalidResponseType(_) | Self::UnknownDevice(_) => None,
+            Self::SendError
+            | Self::InvalidResponseType(_)
+            | Self::UnknownDevice(_)
+            | Self::InvalidApplicationEndpoint(_) => None,
         }
     }
 }

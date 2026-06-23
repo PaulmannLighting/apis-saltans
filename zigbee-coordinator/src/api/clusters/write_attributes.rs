@@ -1,7 +1,7 @@
 use macaddr::MacAddr8;
 use zcl::WritableAttribute;
 use zcl::global::write_attributes::{Command, Record, Response};
-use zigbee::Endpoint;
+use zigbee::Application;
 use zigbee_hw::Metadata;
 
 use crate::transceiver::zcl::{Handle, Payload};
@@ -17,7 +17,7 @@ pub trait WriteAttributes {
     fn write_attributes_raw(
         &self,
         ieee_address: MacAddr8,
-        endpoint: Endpoint,
+        endpoint: Application,
         cluster: u16,
         manufacturer_code: Option<u16>,
         records: Box<[Record]>,
@@ -38,7 +38,7 @@ pub trait WriteAttributes {
     fn write_attributes<T>(
         &self,
         ieee_address: MacAddr8,
-        endpoint: Endpoint,
+        endpoint: Application,
         attributes: Box<[T]>,
     ) -> impl Future<Output = Result<Vec<Result<u16, u16>>, Error>> + Send
     where
@@ -59,7 +59,7 @@ impl WriteAttributes for Coordinator {
     async fn write_attributes_raw(
         &self,
         ieee_address: MacAddr8,
-        endpoint: Endpoint,
+        endpoint: Application,
         cluster: u16,
         manufacturer_code: Option<u16>,
         records: Box<[Record]>,

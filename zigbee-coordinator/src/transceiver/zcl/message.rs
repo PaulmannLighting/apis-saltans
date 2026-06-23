@@ -1,7 +1,7 @@
 use aps::Data;
 use tokio::sync::oneshot::{Receiver, Sender};
 use zcl::{Cluster, Frame};
-use zigbee::Endpoint;
+use zigbee::Application;
 use zigbee_hw::Error;
 
 pub use self::payload::Payload;
@@ -23,7 +23,7 @@ pub enum Message {
         /// The destination address.
         short_id: u16,
         /// The destination endpoint.
-        endpoint: Endpoint,
+        endpoint: Application,
         /// The payload.
         payload: Box<Payload<Cluster>>,
         /// The response channel.
@@ -47,7 +47,7 @@ pub enum Message {
         /// The destination address.
         short_id: u16,
         /// The destination endpoint.
-        endpoint: Endpoint,
+        endpoint: Application,
         /// The payload.
         payload: Box<Payload<Cluster>>,
         /// The response channel.

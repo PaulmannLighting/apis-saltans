@@ -8,7 +8,7 @@ use log::{error, warn};
 use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot::{self, Sender, channel};
 use zcl::{Cluster, CommandDispatch, Frame, Header};
-use zigbee::Endpoint;
+use zigbee::Application;
 use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
@@ -156,7 +156,7 @@ where
         &self,
         seq: u8,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         frame: Payload<Cluster>,
     ) -> Result<u8, zigbee_hw::Error> {
         let (metadata, manufacturer_code, command) = frame.into_parts();
@@ -169,7 +169,7 @@ where
         let aps_frame = unsafe { Self::make_aps_frame(metadata, zcl_frame) };
 
         self.ncp
-            .unicast(short_id, endpoint, aps_frame)
+            .unicast(short_id, endpoint.into(), aps_frame)
             .await
             .map(|_| seq)
     }
@@ -218,7 +218,7 @@ where
     async fn communicate(
         &mut self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         frame: Payload<Cluster>,
     ) -> Result<oneshot::Receiver<Cluster>, zigbee_hw::Error> {
         let seq = self.next_seq();

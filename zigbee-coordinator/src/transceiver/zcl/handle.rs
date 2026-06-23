@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
-use zigbee::{Cluster, Endpoint, ExpectResponse};
+use zigbee::{Application, Cluster, ExpectResponse};
 
 use super::{Message, Payload};
 use crate::timeout::Timeout;
@@ -12,7 +12,7 @@ pub trait Handle {
     fn unicast(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         payload: Payload<zcl::Cluster>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -29,7 +29,7 @@ pub trait Handle {
     fn communicate<T>(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
@@ -40,7 +40,7 @@ pub trait Handle {
     async fn unicast_static_cluster<T>(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         command: T,
     ) -> Result<(), Error>
     where
@@ -98,7 +98,7 @@ impl Handle for Sender<Message> {
     async fn unicast(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
@@ -134,7 +134,7 @@ impl Handle for Sender<Message> {
     fn communicate<U>(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         payload: Payload<U>,
     ) -> impl Future<Output = Result<U::Response, Error>> + Send
     where

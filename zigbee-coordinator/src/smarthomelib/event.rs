@@ -6,19 +6,23 @@ use zcl::Cluster;
 use zcl::general::level::Mode;
 use zcl::general::on_off::OnOffControl;
 use zcl::general::{level, on_off};
-use zigbee::Endpoint;
+use zigbee::{Application, Endpoint};
 
-impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
+impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
     type Error = crate::Event;
 
     fn try_from(event: crate::Event) -> Result<Self, Self::Error> {
         let (address, endpoint, cluster) = event.into_parts();
 
+        let Endpoint::Application(application) = endpoint else {
+            return Err(crate::Event::new(address, endpoint, cluster));
+        };
+
         match cluster {
             Cluster::OnOff(on_off) => match on_off {
                 on_off::Command::On(_) => Ok(Self::new(
                     address.ieee_address(),
-                    endpoint,
+                    application,
                     Command::OnOff(OnOff::On {
                         recall_scene: false,
                         timing: None,
@@ -26,18 +30,18 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                 )),
                 on_off::Command::Off(_) => Ok(Self::new(
                     address.ieee_address(),
-                    endpoint,
+                    application,
                     Command::OnOff(OnOff::Off { effect: None }),
                 )),
                 on_off::Command::OffWithEffect(_params) => Ok(Self::new(
                     address.ieee_address(),
-                    endpoint,
+                    application,
                     // TODO: Handle effects
                     Command::OnOff(OnOff::Off { effect: None }),
                 )),
                 on_off::Command::OnWithTimedOff(params) => Ok(Self::new(
                     address.ieee_address(),
-                    endpoint,
+                    application,
                     Command::OnOff(OnOff::On {
                         recall_scene: false,
                         timing: Some(Timing::new(
@@ -51,7 +55,7 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                 )),
                 on_off::Command::OnWithRecallGlobalScene(_) => Ok(Self::new(
                     address.ieee_address(),
-                    endpoint,
+                    application,
                     Command::OnOff(OnOff::On {
                         recall_scene: true,
                         timing: None,
@@ -59,7 +63,7 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                 )),
                 on_off::Command::Toggle(_) => Ok(Self::new(
                     address.ieee_address(),
-                    endpoint,
+                    application,
                     Command::OnOff(OnOff::Toggle),
                 )),
             },
@@ -71,13 +75,13 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                         _ => {
                             return Err(crate::Event::new(
                                 address,
-                                endpoint,
+                                application.into(),
                                 Cluster::Level(level),
                             ));
                         }
                     };
 
-                    Ok(Self::new(address.ieee_address(), endpoint, command))
+                    Ok(Self::new(address.ieee_address(), application, command))
                 }
                 level::Command::MoveWithOnOff(mv) => {
                     let command = match mv.mode() {
@@ -86,22 +90,26 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Endpoint> {
                         _ => {
                             return Err(crate::Event::new(
                                 address,
-                                endpoint,
+                                application.into(),
                                 Cluster::Level(level),
                             ));
                         }
                     };
 
-                    Ok(Self::new(address.ieee_address(), endpoint, command))
+                    Ok(Self::new(address.ieee_address(), application, command))
                 }
                 other => {
                     warn!("Unhandled level command: {other:?}");
-                    Err(crate::Event::new(address, endpoint, Cluster::Level(other)))
+                    Err(crate::Event::new(
+                        address,
+                        application.into(),
+                        Cluster::Level(other),
+                    ))
                 }
             },
             other => {
                 warn!("Unhandled level cluster: {other:?}");
-                Err(crate::Event::new(address, endpoint, other))
+                Err(crate::Event::new(address, application.into(), other))
             }
         }
     }

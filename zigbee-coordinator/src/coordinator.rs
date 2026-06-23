@@ -2,7 +2,7 @@ use ::zcl::Cluster;
 use ::zdp::SimpleDescriptor;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
-use zigbee::{Endpoint, ExpectResponse};
+use zigbee::{Application, ExpectResponse};
 use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle};
 
 use crate::mux::Mux;
@@ -145,7 +145,7 @@ impl zcl::Handle for Coordinator {
     async fn unicast(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         payload: Payload<Cluster>,
     ) -> Result<(), crate::Error> {
         self.zcl.unicast(short_id, endpoint, payload).await
@@ -164,7 +164,7 @@ impl zcl::Handle for Coordinator {
     fn communicate<T>(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         payload: Payload<T>,
     ) -> impl Future<Output = Result<T::Response, crate::Error>> + Send
     where

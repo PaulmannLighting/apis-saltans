@@ -1,5 +1,5 @@
 use macaddr::MacAddr8;
-use zigbee::Endpoint;
+use zigbee::Application;
 
 /// Destination of a message.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -9,7 +9,7 @@ pub enum Destination {
         /// The IEEE address of the device.
         ieee_address: MacAddr8,
         /// The application endpoint on the device.
-        endpoint: Endpoint,
+        endpoint: Application,
     },
 
     /// Group cast.

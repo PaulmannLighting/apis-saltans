@@ -1,10 +1,10 @@
 use log::warn;
 use macaddr::MacAddr8;
 use smarthomelib::{Event, EventReceiver};
-use zigbee::Endpoint;
+use zigbee::Application;
 
-impl EventReceiver<MacAddr8, Endpoint> for crate::EventReceiver {
-    async fn recv(&mut self) -> Option<Event<MacAddr8, Endpoint>> {
+impl EventReceiver<MacAddr8, Application> for crate::EventReceiver {
+    async fn recv(&mut self) -> Option<Event<MacAddr8, Application>> {
         let receiver = &mut **self;
 
         loop {

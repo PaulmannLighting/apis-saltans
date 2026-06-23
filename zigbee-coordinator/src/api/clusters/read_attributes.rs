@@ -2,7 +2,7 @@ use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use zcl::global::read_attributes::{Command, Response};
 use zcl::{ParseAttributeError, ReadableAttribute};
-use zigbee::Endpoint;
+use zigbee::Application;
 use zigbee_hw::Metadata;
 
 use crate::transceiver::zcl::{Handle, Message, Payload};
@@ -22,7 +22,7 @@ pub trait ReadAttributes {
     fn read_attributes_raw(
         &self,
         ieee_address: MacAddr8,
-        endpoint: Endpoint,
+        endpoint: Application,
         cluster: u16,
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
@@ -36,7 +36,7 @@ pub trait ReadAttributes {
     fn read_attributes<T>(
         &self,
         ieee_address: MacAddr8,
-        endpoint: Endpoint,
+        endpoint: Application,
         attributes: Box<[T]>,
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
@@ -57,7 +57,7 @@ impl ReadAttributes for Coordinator {
     async fn read_attributes_raw(
         &self,
         ieee_address: MacAddr8,
-        endpoint: Endpoint,
+        endpoint: Application,
         cluster: u16,
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
@@ -87,7 +87,7 @@ pub trait ReadAttributesInternal {
     fn read_attributes_raw(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         cluster: u16,
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
@@ -101,7 +101,7 @@ pub trait ReadAttributesInternal {
     fn read_attributes<T>(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         attributes: Box<[T]>,
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
@@ -122,7 +122,7 @@ impl ReadAttributesInternal for Sender<Message> {
     async fn read_attributes_raw(
         &self,
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Application,
         cluster: u16,
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
