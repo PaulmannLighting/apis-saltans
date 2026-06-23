@@ -82,3 +82,18 @@ impl<T> From<Unicast<T>> for Frame<T> {
         }
     }
 }
+
+impl Frame<Vec<u8>> {
+    /// Extend the payload with the given data.
+    pub fn extend<T>(&mut self, data: T)
+    where
+        T: IntoIterator<Item = u8>,
+    {
+        self.payload.extend(data);
+    }
+
+    /// Drop the extended header.
+    pub fn drop_extended(&mut self) {
+        self.header.drop_extended();
+    }
+}

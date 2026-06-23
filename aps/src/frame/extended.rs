@@ -16,6 +16,26 @@ pub struct Extended {
 }
 
 impl Extended {
+    /// Return the control field.
+    #[must_use]
+    pub const fn control(&self) -> Control {
+        self.control
+    }
+
+    /// Return the block number.
+    #[must_use]
+    pub const fn block_number(&self) -> Option<u8> {
+        self.block_number
+    }
+
+    /// Return the bit field.
+    #[must_use]
+    pub const fn bit_field(&self) -> Option<u8> {
+        self.bit_field
+    }
+}
+
+impl Extended {
     pub(crate) fn from_le_stream<T>(is_ack: bool, mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,

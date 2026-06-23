@@ -89,6 +89,11 @@ impl Header {
     pub const fn extended(&self) -> Option<Extended> {
         self.extended
     }
+
+    /// Drop the extended header.
+    pub const fn drop_extended(&mut self) {
+        self.extended = None;
+    }
 }
 
 impl From<unicast::Header> for Header {
