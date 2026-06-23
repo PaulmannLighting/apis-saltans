@@ -93,6 +93,11 @@ Holds:
 
 Implements user-facing traits (`OnOff`, `ColorControl`, `ReadAttributes`, `WriteAttributes`, `Joining`, `NetworkManager`) by forwarding requests to actors and composing responses.
 
+For global attribute operations (`ReadAttributes` / `WriteAttributes`):
+- the coordinator forwards raw attribute IDs produced by the ZCL attribute type (`ReadableAttribute` / `WritableAttribute`)
+- no coordinator-side normalization of attribute IDs is performed
+- this is required for clusters that compose IDs from a base slot plus a tagged sub-field (for example, Power Configuration battery settings where primary/secondary/tertiary battery banks use different base IDs and the setting selector is encoded in the low bits)
+
 ### Mux
 
 Consumes raw hardware `Event`s and routes:

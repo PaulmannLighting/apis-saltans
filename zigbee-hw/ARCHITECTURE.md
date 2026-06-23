@@ -355,6 +355,11 @@ Trait implementations:
 | `From<zcl::Frame<T>> for Frame where T: zigbee::Cluster + ToLeStream` | Serializes the ZCL frame and uses `Metadata::new(T::ID, None, None)`. |
 | `From<zdp::Frame<T>> for Frame where T: zigbee::Cluster + ToLeStream` | Serializes the ZDP frame and uses `Metadata::new(T::ID, Some(Profile::Network), Some(Endpoint::Data))`. |
 
+Transport note:
+- `zigbee-hw` treats the serialized payload as opaque bytes after `ToLeStream` conversion
+- attribute IDs inside global ZCL read/write commands are not interpreted or rewritten in this crate
+- composed IDs (for example, Power Configuration battery setting attributes where bank and setting bits are combined into one ID) therefore pass through unchanged
+
 ### `Metadata`
 
 Defined in `src/frame/metadata.rs`. Carries APS metadata associated with a `Frame`.
