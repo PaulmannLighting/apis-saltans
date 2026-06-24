@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use smarthomelib::Percent;
 use smarthomelib::protocol::{Dimming, Types};
 use zcl::Options;
 use zigbee::types::Uint16;
@@ -11,7 +12,7 @@ impl Dimming for Coordinator {
     async fn dim(
         &self,
         destination: <Self as Types>::Destination,
-        level: u8,
+        percent: Percent,
         rate: Duration,
     ) -> Result<Duration, Self::Error> {
         let deci_seconds: u16 = rate.into_deci_seconds().try_into().unwrap_or(u16::MAX);
@@ -20,7 +21,7 @@ impl Dimming for Coordinator {
         crate::Level::move_to_level(
             self,
             destination.into(),
-            level,
+            percent.into(),
             deci_seconds,
             Options::default(),
         )
