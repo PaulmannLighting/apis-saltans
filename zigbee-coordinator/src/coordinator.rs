@@ -15,9 +15,7 @@ use crate::{MPSC_CHANNEL_SIZE, State, binding, discovery, network_manager};
 pub struct Coordinator {
     pub(crate) ncp: NcpHandle,
     pub(crate) zcl: Sender<zcl::Message>,
-    pub(crate) _zdp: Sender<zdp::Message>,
     pub(crate) network_manager: Sender<network_manager::Message>,
-    pub(crate) _binding_manager: Sender<binding::Message>,
 }
 
 impl Coordinator {
@@ -44,14 +42,6 @@ impl Coordinator {
         let zcl_tx = Self::start_zcl_transceiver(ncp.clone(), network_manager.downgrade());
         let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), discovery_tx.downgrade(), endpoints);
 
-        Self::start_mux(
-            events,
-            zcl_tx.clone(),
-            zdp_tx.clone(),
-            discovery_tx,
-            network_manager.clone(),
-        );
-
         let binding_manager = Self::start_binding_manager(
             zdp_tx.downgrade(),
             network_manager.downgrade(),
@@ -62,15 +52,21 @@ impl Coordinator {
             discovery_rx,
             zcl_tx.downgrade(),
             zdp_tx.downgrade(),
-            binding_manager.downgrade(),
+            binding_manager,
+        );
+
+        Self::start_mux(
+            events,
+            zcl_tx.clone(),
+            zdp_tx,
+            discovery_tx,
+            network_manager.clone(),
         );
 
         Ok(Self {
             ncp,
             zcl: zcl_tx,
-            _zdp: zdp_tx,
             network_manager,
-            _binding_manager: binding_manager,
         })
     }
 
@@ -134,7 +130,7 @@ impl Coordinator {
         discovery_rx: Receiver<discovery::Message>,
         zcl_tx: WeakSender<zcl::Message>,
         zdp_tx: WeakSender<zdp::Message>,
-        binding_tx: WeakSender<binding::Message>,
+        binding_tx: Sender<binding::Message>,
     ) {
         let discovery_manager = discovery::Actor::new(zcl_tx, zdp_tx, binding_tx);
         spawn(discovery_manager.run(discovery_rx));

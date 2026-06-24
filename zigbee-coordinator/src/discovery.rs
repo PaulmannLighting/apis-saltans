@@ -29,7 +29,7 @@ impl Actor {
     pub fn new(
         zcl: WeakSender<transceiver::zcl::Message>,
         zdp: WeakSender<transceiver::zdp::Message>,
-        binding_manager: WeakSender<binding::Message>,
+        binding_manager: Sender<binding::Message>,
     ) -> Self {
         let (attribute_discovery, ad_tx) = AttributeDiscovery::new(zcl, binding_manager);
         let (descriptor_discovery, dd_tx) = DescriptorDiscovery::new(zdp.clone(), ad_tx);

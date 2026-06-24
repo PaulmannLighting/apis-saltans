@@ -39,7 +39,7 @@ pub struct AttributeDiscovery {
     inbox: Receiver<Message>,
     loopback: WeakSender<Message>,
     zcl: WeakSender<transceiver::zcl::Message>,
-    binding_manager: WeakSender<binding::Message>,
+    binding_manager: Sender<binding::Message>,
     devices: Devices,
     tasks: Pool,
 }
@@ -49,7 +49,7 @@ impl AttributeDiscovery {
     #[must_use]
     pub fn new(
         zcl: WeakSender<transceiver::zcl::Message>,
-        binding_manager: WeakSender<binding::Message>,
+        binding_manager: Sender<binding::Message>,
     ) -> (Self, Sender<Message>) {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
         let instance = Self {
@@ -150,13 +150,8 @@ impl AttributeDiscovery {
     }
 
     async fn forward_device(&self, address: Address, endpoints: BTreeMap<Endpoint, EndpointInfo>) {
-        let Some(binding_manager) = self.binding_manager.upgrade() else {
-            trace!("Binding manager channel closed. Aborting forwarding of device: {address}.");
-            return;
-        };
-
         trace!("Forwarding device {address} to binding manager.");
-        binding_manager
+        self.binding_manager
             .send(binding::Message::DeviceDiscovered {
                 address,
                 endpoints: endpoints
