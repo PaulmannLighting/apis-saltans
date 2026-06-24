@@ -1,7 +1,9 @@
+use std::time::Duration;
+
 use log::warn;
 use macaddr::MacAddr8;
 use smarthomelib::command::{Dimming, OnOff, Timing};
-use smarthomelib::{Command, Event};
+use smarthomelib::{Command, Deciseconds, Event};
 use zcl::Cluster;
 use zcl::general::level::Mode;
 use zcl::general::on_off::OnOffControl;
@@ -48,8 +50,10 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
                             params
                                 .on_off_control()
                                 .contains(OnOffControl::ACCEPT_ONLY_WHEN_ON),
-                            params.on_time(),
-                            params.off_wait_time(),
+                            Duration::from_deci_secs(params.on_time().unwrap_or_default().into()),
+                            Duration::from_deci_secs(
+                                params.off_wait_time().unwrap_or_default().into(),
+                            ),
                         )),
                     }),
                 )),

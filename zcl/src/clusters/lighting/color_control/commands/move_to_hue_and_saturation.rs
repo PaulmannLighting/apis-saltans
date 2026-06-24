@@ -1,8 +1,6 @@
-use core::num::TryFromIntError;
-use core::time::Duration;
-
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::types::Uint16;
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::{Command, Options};
 
@@ -11,37 +9,20 @@ use crate::{Command, Options};
 pub struct MoveToHueAndSaturation {
     hue: u8,
     saturation: u8,
-    transition_time: u16,
+    transition_time: Uint16,
     options: Options,
 }
 
 impl MoveToHueAndSaturation {
     /// Create a new `MoveToHueAndSaturation` command.
     #[must_use]
-    pub const fn new(hue: u8, saturation: u8, transition_time: u16, options: Options) -> Self {
+    pub const fn new(hue: u8, saturation: u8, transition_time: Uint16, options: Options) -> Self {
         Self {
             hue,
             saturation,
             transition_time,
             options,
         }
-    }
-
-    /// Try to create a new `MoveToHueAndSaturation` command.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`TryFromIntError`] if the resulting deci-seconds value cannot fit in a `u16`.
-    pub fn try_new(
-        hue: u8,
-        saturation: u8,
-        transition_time: Duration,
-        options: Options,
-    ) -> Result<Self, TryFromIntError> {
-        transition_time
-            .into_deci_seconds()
-            .try_into()
-            .map(|transition_time| Self::new(hue, saturation, transition_time, options))
     }
 
     /// Return the hue value.
@@ -56,10 +37,10 @@ impl MoveToHueAndSaturation {
         self.saturation
     }
 
-    /// Return the transition time.
+    /// Return the transition time, if any, in deciseconds.
     #[must_use]
-    pub fn transition_time(&self) -> Duration {
-        Duration::from_deci_seconds(self.transition_time)
+    pub fn transition_time(&self) -> Option<u16> {
+        self.transition_time.into()
     }
 
     /// Return the options for this command.

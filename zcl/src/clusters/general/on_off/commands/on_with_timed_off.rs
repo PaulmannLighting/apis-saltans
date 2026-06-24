@@ -1,8 +1,6 @@
-use core::num::TryFromIntError;
-use core::time::Duration;
-
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::types::Uint16;
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::on_off_control::OnOffControl;
 use crate::Command;
@@ -14,37 +12,19 @@ mod on_off_control;
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct OnWithTimedOff {
     on_off_control: OnOffControl,
-    on_time: u16,
-    off_wait_time: u16,
+    on_time: Uint16,
+    off_wait_time: Uint16,
 }
 
 impl OnWithTimedOff {
     /// Create a new `OnWithTimedOff` command.
     #[must_use]
-    pub const fn new(on_off_control: OnOffControl, on_time: u16, off_wait_time: u16) -> Self {
+    pub const fn new(on_off_control: OnOffControl, on_time: Uint16, off_wait_time: Uint16) -> Self {
         Self {
             on_off_control,
             on_time,
             off_wait_time,
         }
-    }
-
-    /// Create a new `OnWithTimedOff` command with durations.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the on time or off wait time cannot be converted to deci-seconds
-    /// or if the resulting deci-seconds value cannot fit in a `u16`.
-    pub fn try_new(
-        on_off_control: OnOffControl,
-        on_time: Duration,
-        off_wait_time: Duration,
-    ) -> Result<Self, TryFromIntError> {
-        Ok(Self::new(
-            on_off_control,
-            on_time.into_deci_seconds().try_into()?,
-            off_wait_time.into_deci_seconds().try_into()?,
-        ))
     }
 
     /// Return the on/off control field.
@@ -53,16 +33,16 @@ impl OnWithTimedOff {
         self.on_off_control
     }
 
-    /// Return the on time in seconds.
+    /// Return the on time, if any, in deciseconds.
     #[must_use]
-    pub fn on_time(&self) -> Duration {
-        Duration::from_deci_seconds(self.on_time)
+    pub fn on_time(&self) -> Option<u16> {
+        self.on_time.into()
     }
 
-    /// Return the off wait time in seconds.
+    /// Return the off wait time, if any, in deciseconds.
     #[must_use]
-    pub fn off_wait_time(&self) -> Duration {
-        Duration::from_deci_seconds(self.off_wait_time)
+    pub fn off_wait_time(&self) -> Option<u16> {
+        self.off_wait_time.into()
     }
 }
 

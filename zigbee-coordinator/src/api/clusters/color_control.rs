@@ -1,5 +1,6 @@
 use zcl::Options;
 use zcl::lighting::color_control::MoveToColor;
+use zigbee::types::Uint16;
 
 use crate::transceiver::zcl::Handle;
 use crate::{Coordinator, Destination, Error};
@@ -16,7 +17,7 @@ pub trait ColorControl {
         destination: Destination,
         color_x: u16,
         color_y: u16,
-        transition_time: u16,
+        transition_time: Uint16,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
@@ -27,7 +28,7 @@ impl ColorControl for Coordinator {
         destination: Destination,
         color_x: u16,
         color_y: u16,
-        transition_time: u16,
+        transition_time: Uint16,
         options: Options,
     ) -> Result<(), Error> {
         self.send_static_cluster(

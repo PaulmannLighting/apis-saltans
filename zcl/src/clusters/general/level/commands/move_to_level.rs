@@ -1,8 +1,6 @@
-use core::time::Duration;
-
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
-use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
 use crate::options::Options;
@@ -33,10 +31,10 @@ impl MoveToLevel {
         self.level
     }
 
-    /// Get the transition time.
+    /// Return the transition time, if any, in deciseconds.
     #[must_use]
-    pub fn transition_time(self) -> Option<Duration> {
-        Option::<u16>::from(self.transition_time).map(Duration::from_deci_seconds)
+    pub fn transition_time(self) -> Option<u16> {
+        self.transition_time.into()
     }
 
     /// Get the options.

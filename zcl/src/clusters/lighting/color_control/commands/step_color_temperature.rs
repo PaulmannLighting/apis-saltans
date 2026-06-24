@@ -1,8 +1,7 @@
-use core::time::Duration;
-
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds};
+use zigbee::types::Uint16;
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::clusters::lighting::color_control::step_hue::Mode;
 use crate::{Command, Options};
@@ -12,7 +11,7 @@ use crate::{Command, Options};
 pub struct StepColorTemperature {
     mode: u8,
     size: u16,
-    transition_time: u16,
+    transition_time: Uint16,
     color_temp_min_mireds: u16,
     color_temp_max_mireds: u16,
     options: Options,
@@ -24,7 +23,7 @@ impl StepColorTemperature {
     pub const fn new(
         mode: Mode,
         size: u16,
-        transition_time: u16,
+        transition_time: Uint16,
         color_temp_min_mireds: u16,
         color_temp_max_mireds: u16,
         options: Options,
@@ -54,10 +53,10 @@ impl StepColorTemperature {
         self.size
     }
 
-    /// Return the transition time.
+    /// Return the transition time, if any, in deciseconds.
     #[must_use]
-    pub fn transition_time(&self) -> Duration {
-        Duration::from_deci_seconds(self.transition_time)
+    pub fn transition_time(&self) -> Option<u16> {
+        self.transition_time.into()
     }
 
     /// Return the minimum color temperature in mireds.

@@ -1,11 +1,8 @@
 //! Data structures for the `Step Hue` command in the `Lighting` cluster.
 
-use core::num::TryFromIntError;
-use core::time::Duration;
-
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::mode::Mode;
 use crate::{Command, Options};
@@ -33,23 +30,6 @@ impl StepHue {
         }
     }
 
-    /// Try to crate a new `StepHue` command.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`TryFromIntError`] if the resulting deci-seconds value cannot fit in a `u8`.
-    pub fn try_new(
-        mode: Mode,
-        size: u8,
-        transition_time: Duration,
-        options: Options,
-    ) -> Result<Self, TryFromIntError> {
-        transition_time
-            .into_deci_seconds()
-            .try_into()
-            .map(|transition_time| Self::new(mode, size, transition_time, options))
-    }
-
     /// Return the misc of hue step.
     ///
     /// # Errors
@@ -67,8 +47,8 @@ impl StepHue {
 
     /// Return the transition time in deci-seconds.
     #[must_use]
-    pub fn transition_time(&self) -> Duration {
-        Duration::from_deci_seconds(self.transition_time.into())
+    pub const fn transition_time(&self) -> u8 {
+        self.transition_time
     }
 
     /// Return the options for the command.

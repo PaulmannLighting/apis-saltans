@@ -1,11 +1,9 @@
 //! Data structures for the `Move To Hue` command in the `Lighting` cluster.
 
-use core::num::TryFromIntError;
-use core::time::Duration;
-
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use zigbee::{ClusterId, ClusterSpecific, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::types::Uint16;
+use zigbee::{ClusterId, ClusterSpecific};
 
 pub use self::direction::Direction;
 use crate::{Command, Options};
@@ -17,7 +15,7 @@ mod direction;
 pub struct MoveToHue {
     hue: u8,
     direction: u8,
-    transition_time: u16,
+    transition_time: Uint16,
     options: Options,
 }
 
@@ -27,7 +25,7 @@ impl MoveToHue {
     pub const fn new(
         hue: u8,
         direction: Direction,
-        transition_time: u16,
+        transition_time: Uint16,
         options: Options,
     ) -> Self {
         Self {
@@ -36,23 +34,6 @@ impl MoveToHue {
             transition_time,
             options,
         }
-    }
-
-    /// Try to create a new `MoveToHue` command.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`TryFromIntError`] if the resulting deci-seconds value cannot fit in a `u16`.
-    pub fn try_new(
-        hue: u8,
-        direction: Direction,
-        transition_time: Duration,
-        options: Options,
-    ) -> Result<Self, TryFromIntError> {
-        transition_time
-            .into_deci_seconds()
-            .try_into()
-            .map(|transition_time| Self::new(hue, direction, transition_time, options))
     }
 
     /// Return the hue value.
@@ -70,10 +51,10 @@ impl MoveToHue {
         Direction::from_u8(self.direction).ok_or(self.direction)
     }
 
-    /// Return the transition time in deci-seconds.
+    /// Return the transition time, if any, in deciseconds.
     #[must_use]
-    pub fn transition_time(&self) -> Duration {
-        Duration::from_deci_seconds(self.transition_time)
+    pub fn transition_time(&self) -> Option<u16> {
+        self.transition_time.into()
     }
 
     /// Return the options for the command.

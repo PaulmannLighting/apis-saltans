@@ -1,8 +1,6 @@
-use core::num::TryFromIntError;
-use core::time::Duration;
-
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::{ClusterId, ClusterSpecific, Direction, FromDeciSeconds, IntoDeciSeconds};
+use zigbee::types::Uint16;
+use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::{Command, Options};
 
@@ -11,37 +9,20 @@ use crate::{Command, Options};
 pub struct StepColor {
     step_x: i16,
     step_y: i16,
-    transition_time: u16,
+    transition_time: Uint16,
     options: Options,
 }
 
 impl StepColor {
     /// Create a new `StepColor` command.
     #[must_use]
-    pub const fn new(step_x: i16, step_y: i16, transition_time: u16, options: Options) -> Self {
+    pub const fn new(step_x: i16, step_y: i16, transition_time: Uint16, options: Options) -> Self {
         Self {
             step_x,
             step_y,
             transition_time,
             options,
         }
-    }
-
-    /// Try to create a new `StepColor` command.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`TryFromIntError`] if the resulting deci-seconds value cannot fit in a `u16`.
-    pub fn try_new(
-        step_x: i16,
-        step_y: i16,
-        transition_time: Duration,
-        options: Options,
-    ) -> Result<Self, TryFromIntError> {
-        transition_time
-            .into_deci_seconds()
-            .try_into()
-            .map(|transition_time| Self::new(step_x, step_y, transition_time, options))
     }
 
     /// Return the step in the X color component.
@@ -56,10 +37,10 @@ impl StepColor {
         self.step_y
     }
 
-    /// Return the transition time.
+    /// Return the transition time, if any, in deciseconds.
     #[must_use]
-    pub fn transition_time(&self) -> Duration {
-        Duration::from_deci_seconds(self.transition_time)
+    pub fn transition_time(&self) -> Option<u16> {
+        self.transition_time.into()
     }
 
     /// Return the options for this command.
