@@ -13,6 +13,7 @@ use crate::{Coordinator, EVENT_CHANNEL_SIZE, Error, NetworkManager};
 
 mod color_control;
 mod destination;
+mod dimming;
 mod event;
 mod event_receiver;
 mod on_off;
