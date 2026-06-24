@@ -2,8 +2,8 @@
 
 pub use self::attribute::{readable, reportable, writable};
 pub use self::commands::{
-    Command, Move, MoveToLevel, MoveToLevelWithOnOff, MoveWithOnOff, Step, StepWithOnOff, Stop,
-    StopWithOnOff,
+    Command, Move, MoveToClosestFrequency, MoveToLevel, MoveToLevelWithOnOff, MoveWithOnOff, Step,
+    StepWithOnOff, Stop, StopWithOnOff,
 };
 pub use self::mode::Mode;
 

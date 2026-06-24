@@ -9,7 +9,7 @@ use const_env::env_item;
 
 use self::api::ReadAttributesInternal;
 pub use self::api::{
-    ColorControl, Joining, NetworkManager, OnOff, ReadAttributeResult, ReadAttributes,
+    ColorControl, Joining, Level, NetworkManager, OnOff, ReadAttributeResult, ReadAttributes,
     WriteAttributes,
 };
 pub use self::coordinator::Coordinator;

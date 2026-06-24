@@ -28,20 +28,28 @@ mod stop_with_on_off;
 pub enum Command {
     /// Move to level command.
     MoveToLevel(MoveToLevel),
+
     /// Move command.
     Move(Move),
+
     /// Step command.
     Step(Step),
+
     /// Stop command.
     Stop(Stop),
+
     /// Move to level with on/off command.
     MoveToLevelWithOnOff(MoveToLevelWithOnOff),
+
     /// Move with on/off command.
     MoveWithOnOff(MoveWithOnOff),
+
     /// Step with on/off command.
     StepWithOnOff(StepWithOnOff),
+
     /// Stop with on/off command.
     StopWithOnOff(StopWithOnOff),
+
     /// Move to the closest frequency command.
     MoveToClosestFrequency(MoveToClosestFrequency),
 }
