@@ -16,11 +16,7 @@ mod message;
 /// The device discovery actor.
 #[derive(Debug)]
 pub struct Actor {
-    ed_tx: Sender<endpoint_discovery::Message>,
-    ed_rx: Receiver<endpoint_discovery::Message>,
-    endpoint_discovery: EndpointDiscovery,
-    descriptor_discovery: DescriptorDiscovery,
-    attribute_discovery: AttributeDiscovery,
+    endpoint_discovery: Sender<endpoint_discovery::Message>,
 }
 
 impl Actor {
@@ -32,25 +28,20 @@ impl Actor {
         binding_manager: Sender<binding::Message>,
     ) -> Self {
         let (attribute_discovery, ad_tx) = AttributeDiscovery::new(zcl, binding_manager);
+        spawn(attribute_discovery.run());
         let (descriptor_discovery, dd_tx) = DescriptorDiscovery::new(zdp.clone(), ad_tx);
-        let endpoint_discovery = EndpointDiscovery::new(zdp, dd_tx);
+        spawn(descriptor_discovery.run());
         let (ed_tx, ed_rx) = channel(MPSC_CHANNEL_SIZE);
+        let endpoint_discovery = EndpointDiscovery::new(zdp, dd_tx);
+        spawn(endpoint_discovery.run(ed_rx));
 
         Self {
-            ed_tx,
-            ed_rx,
-            endpoint_discovery,
-            descriptor_discovery,
-            attribute_discovery,
+            endpoint_discovery: ed_tx,
         }
     }
 
     /// Run the discovery actor.
     pub async fn run(self, mut messages: Receiver<Message>) {
-        spawn(self.attribute_discovery.run());
-        spawn(self.descriptor_discovery.run());
-        spawn(self.endpoint_discovery.run(self.ed_rx));
-
         while let Some(event) = messages.recv().await {
             let address = match event {
                 Message::DeviceJoined(address) => {
@@ -70,7 +61,7 @@ impl Actor {
                 }
             };
 
-            self.ed_tx
+            self.endpoint_discovery
                 .send(endpoint_discovery::Message::Discover(address))
                 .await
                 .unwrap_or_else(|error| error!("Failed to send discover message: {error:?}"));
