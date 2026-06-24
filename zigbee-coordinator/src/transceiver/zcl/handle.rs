@@ -1,3 +1,4 @@
+use log::trace;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zigbee::{Application, Cluster, ExpectResponse};
@@ -102,6 +103,7 @@ impl Handle for Sender<Message> {
         payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
+        trace!("Sending unicast message to {short_id:#06X}:{endpoint} with payload: {payload:?}");
         self.send(Message::Unicast {
             short_id,
             endpoint,
@@ -120,6 +122,9 @@ impl Handle for Sender<Message> {
         payload: Payload<zcl::Cluster>,
     ) -> Result<(), Error> {
         let (response, result) = channel();
+        trace!(
+            "Sending multicast message to {group_id:#06X} with {hops} hops and within radius {radius} with payload: {payload:?}"
+        );
         self.send(Message::Multicast {
             group_id,
             hops,
