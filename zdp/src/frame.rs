@@ -80,7 +80,10 @@ impl TryFrom<aps::data::Frame<Vec<u8>>> for Frame<Command> {
             return Err(Self::Error::SourceEndpoint(header.source_endpoint()));
         }
 
-        if !matches!(header.destination(), Destination::Unicast(Endpoint::Data)) {
+        if !matches!(
+            header.destination(),
+            Destination::Unicast(Endpoint::Data) | Destination::Broadcast(Endpoint::Data)
+        ) {
             return Err(Self::Error::Destination(header.destination()));
         }
 
