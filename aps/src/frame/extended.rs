@@ -7,8 +7,7 @@ mod control;
 mod fragmentation;
 
 /// Extended header.
-/// TODO: Implement fields.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, ToLeStream)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Extended {
     control: Control,
     block_number: Option<u8>,
@@ -16,6 +15,26 @@ pub struct Extended {
 }
 
 impl Extended {
+    /// Create a new `Extended` header for an initial fragment.
+    #[must_use]
+    pub const fn first_fragment(total_fragments: u8) -> Self {
+        Self {
+            control: Control::FIRST_FRAGMENT,
+            block_number: Some(total_fragments),
+            bit_field: None,
+        }
+    }
+
+    /// Create a new `Extended` header for a follow-up fragment.
+    #[must_use]
+    pub const fn followup_fragment(fragment_no: u8) -> Self {
+        Self {
+            control: Control::FOLLOWUP_FRAGMENT,
+            block_number: Some(fragment_no),
+            bit_field: None,
+        }
+    }
+
     /// Return the control field.
     #[must_use]
     pub const fn control(&self) -> Control {

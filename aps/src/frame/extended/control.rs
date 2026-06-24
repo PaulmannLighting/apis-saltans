@@ -5,7 +5,7 @@ use num_traits::FromPrimitive;
 use super::fragmentation::Fragmentation;
 
 /// Control field of the extended header.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 #[repr(transparent)]
 pub struct Control(u8);
 
