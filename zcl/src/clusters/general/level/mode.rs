@@ -6,6 +6,7 @@ use num_derive::FromPrimitive;
 pub enum Mode {
     /// Move up.
     Up = 0x00,
+
     /// Move down.
     Down = 0x01,
 }
