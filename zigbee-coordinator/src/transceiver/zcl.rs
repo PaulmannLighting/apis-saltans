@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use aps::Data;
 use le_stream::ToLeStream;
 use log::{error, warn};
+use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot::{self, Sender, channel};
 use zcl::{Cluster, CommandDispatch, Frame, Header};
@@ -13,7 +14,7 @@ use zigbee_hw::{Metadata, Ncp};
 
 pub use self::handle::Handle;
 pub use self::message::{Message, Payload};
-use crate::network_manager;
+use crate::{MPSC_CHANNEL_SIZE, network_manager};
 
 mod handle;
 mod message;
@@ -261,5 +262,20 @@ where
         unsafe {
             Frame::new_unchecked(header, command)
         }
+    }
+}
+
+impl<T> Transceiver<T>
+where
+    T: Ncp + Send + Sync + 'static,
+{
+    /// Start the ZCL transceiver.
+    pub fn spawn(
+        ncp: T,
+        network_manager: WeakSender<network_manager::Message>,
+    ) -> tokio::sync::mpsc::Sender<Message> {
+        let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
+        spawn(Self::new(ncp, network_manager).run(zcl_rx));
+        zcl_tx
     }
 }

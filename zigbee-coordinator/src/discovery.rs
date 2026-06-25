@@ -40,6 +40,17 @@ impl Actor {
         }
     }
 
+    /// Start the discovery manager.
+    pub fn spawn(
+        discovery_rx: Receiver<Message>,
+        zcl_tx: WeakSender<transceiver::zcl::Message>,
+        zdp_tx: WeakSender<transceiver::zdp::Message>,
+        binding_tx: Sender<binding::Message>,
+    ) {
+        let discovery_manager = Self::new(zcl_tx, zdp_tx, binding_tx);
+        spawn(discovery_manager.run(discovery_rx));
+    }
+
     /// Run the discovery actor.
     pub async fn run(self, mut messages: Receiver<Message>) {
         while let Some(event) = messages.recv().await {

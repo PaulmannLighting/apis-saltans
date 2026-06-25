@@ -1,9 +1,8 @@
 use ::zcl::Cluster;
 use ::zdp::SimpleDescriptor;
-use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
+use tokio::sync::mpsc::{Sender, channel};
 use zigbee::{Application, ExpectResponse};
-use zigbee_hw::{Error, Event, NcpHandle, Start, WeakNcpHandle};
+use zigbee_hw::{Error, NcpHandle, Start};
 
 use crate::mux::Mux;
 use crate::transceiver::zcl::Payload;
@@ -37,25 +36,25 @@ impl Coordinator {
 
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
         let network_manager =
-            Self::start_network_manager(ncp.clone(), discovery_tx.downgrade(), state);
+            network_manager::Actor::spawn(ncp.clone(), discovery_tx.downgrade(), state);
 
-        let zcl_tx = Self::start_zcl_transceiver(ncp.clone(), network_manager.downgrade());
-        let zdp_tx = Self::start_zdp_transceiver(ncp.clone(), discovery_tx.downgrade(), endpoints);
+        let zcl_tx = zcl::Transceiver::spawn(ncp.clone(), network_manager.downgrade());
+        let zdp_tx = zdp::Transceiver::spawn(ncp.clone(), discovery_tx.downgrade(), endpoints);
 
-        let binding_manager = Self::start_binding_manager(
+        let binding_manager = binding::Actor::spawn(
             zdp_tx.downgrade(),
             network_manager.downgrade(),
             ncp.downgrade(),
         );
 
-        Self::start_discovery_manager(
+        discovery::Actor::spawn(
             discovery_rx,
             zcl_tx.downgrade(),
             zdp_tx.downgrade(),
             binding_manager,
         );
 
-        Self::start_mux(
+        Mux::spawn(
             events,
             zcl_tx.clone(),
             zdp_tx,
@@ -68,72 +67,6 @@ impl Coordinator {
             zcl: zcl_tx,
             network_manager,
         })
-    }
-
-    /// Start the multiplexer.
-    fn start_mux(
-        events: Receiver<Event>,
-        zcl_tx: Sender<zcl::Message>,
-        zdp_tx: Sender<zdp::Message>,
-        discovery_tx: Sender<discovery::Message>,
-        network_manager: Sender<network_manager::Message>,
-    ) {
-        spawn(Mux::new(zcl_tx, zdp_tx, discovery_tx, network_manager).run(events));
-    }
-
-    /// Start the ZCL transceiver.
-    fn start_zcl_transceiver(
-        ncp: NcpHandle,
-        network_manager: WeakSender<network_manager::Message>,
-    ) -> Sender<zcl::Message> {
-        let (zcl_tx, zcl_rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(zcl::Transceiver::new(ncp, network_manager).run(zcl_rx));
-        zcl_tx
-    }
-
-    /// Start the ZDP transceiver.
-    fn start_zdp_transceiver(
-        ncp: NcpHandle,
-        discovery: WeakSender<discovery::Message>,
-        endpoints: &[SimpleDescriptor],
-    ) -> Sender<zdp::Message> {
-        let (zdp_tx, zdp_rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(zdp::Transceiver::new(ncp, discovery, endpoints.into()).run(zdp_rx));
-        zdp_tx
-    }
-
-    /// Start the network manager.
-    fn start_network_manager(
-        ncp: NcpHandle,
-        discovery: WeakSender<discovery::Message>,
-        state: State,
-    ) -> Sender<network_manager::Message> {
-        let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(network_manager::Actor::new(ncp, discovery, state).run(rx));
-        tx
-    }
-
-    /// Start the binding manager.
-    fn start_binding_manager(
-        zdp_tx: WeakSender<zdp::Message>,
-        network_manager: WeakSender<network_manager::Message>,
-        ncp: WeakNcpHandle,
-    ) -> Sender<binding::Message> {
-        let (binding_manager, binding_manager_tx) =
-            binding::Actor::new(zdp_tx, network_manager, ncp);
-        spawn(binding_manager.run());
-        binding_manager_tx
-    }
-
-    /// Start the discovery manager.
-    fn start_discovery_manager(
-        discovery_rx: Receiver<discovery::Message>,
-        zcl_tx: WeakSender<zcl::Message>,
-        zdp_tx: WeakSender<zdp::Message>,
-        binding_tx: Sender<binding::Message>,
-    ) {
-        let discovery_manager = discovery::Actor::new(zcl_tx, zdp_tx, binding_tx);
-        spawn(discovery_manager.run(discovery_rx));
     }
 }
 

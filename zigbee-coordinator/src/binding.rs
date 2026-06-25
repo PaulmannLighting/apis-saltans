@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use log::{error, trace, warn};
+use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zdp::{BindReq, Destination, Status};
@@ -59,6 +60,17 @@ impl Actor {
         };
 
         (instance, tx)
+    }
+
+    /// Start the binding manager.
+    pub fn spawn(
+        zdp_tx: WeakSender<transceiver::zdp::Message>,
+        network_manager: WeakSender<network_manager::Message>,
+        ncp: WeakNcpHandle,
+    ) -> Sender<Message> {
+        let (binding_manager, binding_manager_tx) = Self::new(zdp_tx, network_manager, ncp);
+        spawn(binding_manager.run());
+        binding_manager_tx
     }
 
     /// Run the binding management actor.

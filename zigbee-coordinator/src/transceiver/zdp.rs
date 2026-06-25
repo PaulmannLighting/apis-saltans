@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 
 use le_stream::ToLeStream;
 use log::{debug, error, trace};
+use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
@@ -17,7 +18,7 @@ use zigbee_hw::{Metadata, Ncp};
 pub use self::handle::Handle;
 use self::match_desc_req_ext::MatchDescReqExt;
 pub use self::message::{Message, Payload};
-use crate::discovery;
+use crate::{MPSC_CHANNEL_SIZE, discovery};
 
 mod handle;
 mod match_desc_req_ext;
@@ -223,5 +224,21 @@ where
             .unwrap_or_else(|error| {
                 error!("Failed to send device announcement: {error:?}");
             });
+    }
+}
+
+impl<T> Transceiver<T>
+where
+    T: Ncp + Send + Sync + 'static,
+{
+    /// Start the ZDP transceiver.
+    pub fn spawn(
+        ncp: T,
+        discovery: WeakSender<discovery::Message>,
+        endpoints: &[SimpleDescriptor],
+    ) -> tokio::sync::mpsc::Sender<Message> {
+        let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
+        spawn(Self::new(ncp, discovery, endpoints.into()).run(zdp_rx));
+        zdp_tx
     }
 }

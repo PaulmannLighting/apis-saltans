@@ -3,14 +3,15 @@ use std::collections::{BTreeMap, BTreeSet};
 use aps::Data;
 use log::{debug, error, warn};
 use macaddr::MacAddr8;
-use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
+use tokio::spawn;
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use zcl::{Cluster, Frame};
 use zigbee::Address;
 use zigbee_hw::Ncp;
 
 pub use self::message::Message;
 pub use self::state::{Attributes, Device, Endpoint, State};
-use crate::{Event, discovery};
+use crate::{Event, MPSC_CHANNEL_SIZE, discovery};
 
 mod message;
 mod state;
@@ -27,7 +28,7 @@ pub struct Actor<T> {
 
 impl<T> Actor<T>
 where
-    T: Ncp + Sync,
+    T: Ncp + Send + Sync,
 {
     /// Create a new actor.
     #[must_use]
@@ -175,5 +176,20 @@ where
             .unwrap_or_else(|error| {
                 error!("Failed to send discovery message: {error:?}");
             });
+    }
+}
+
+impl<T> Actor<T>
+where
+    T: Ncp + Send + Sync + 'static,
+{
+    /// Start the network manager.
+    pub fn spawn(ncp: T, discovery: WeakSender<discovery::Message>, state: State) -> Sender<Message>
+    where
+        T: Send + Sync + 'static,
+    {
+        let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
+        spawn(Self::new(ncp, discovery, state).run(rx));
+        tx
     }
 }
