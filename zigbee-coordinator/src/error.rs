@@ -1,6 +1,7 @@
 //! Coordinator-API errors.
 
 use std::fmt::Display;
+use std::time::Duration;
 
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::error::SendError;
@@ -30,6 +31,9 @@ pub enum Error {
 
     /// Invalid application endpoint.
     InvalidApplicationEndpoint(u8),
+
+    /// Invalid rate.
+    DurationOutOfBounds(Duration),
 }
 
 impl Display for Error {
@@ -44,6 +48,7 @@ impl Display for Error {
             Self::InvalidApplicationEndpoint(endpoint) => {
                 write!(f, "Invalid application endpoint: {endpoint:#04X}")
             }
+            Self::DurationOutOfBounds(rate) => write!(f, "Invalid dimming rate: {rate:?}"),
         }
     }
 }
@@ -57,7 +62,8 @@ impl std::error::Error for Error {
             Self::SendError
             | Self::InvalidResponseType(_)
             | Self::UnknownDevice(_)
-            | Self::InvalidApplicationEndpoint(_) => None,
+            | Self::InvalidApplicationEndpoint(_)
+            | Self::DurationOutOfBounds(_) => None,
         }
     }
 }

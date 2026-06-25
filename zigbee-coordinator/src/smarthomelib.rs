@@ -12,6 +12,7 @@ use zigbee::Application;
 use crate::{Coordinator, EVENT_CHANNEL_SIZE, Error, NetworkManager};
 
 mod color_control;
+mod constants;
 mod destination;
 mod dimming;
 mod event;
