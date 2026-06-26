@@ -52,7 +52,7 @@ impl TryFrom<Duration> for Deciseconds<Uint16> {
             Deciseconds::<u16>::try_from(duration)?
                 .0
                 .try_into()
-                .map_err(|_| duration)?,
+                .map_err(|()| duration)?,
         ))
     }
 }
@@ -63,12 +63,10 @@ impl From<Deciseconds<u16>> for Duration {
     }
 }
 
-impl TryFrom<Deciseconds<Uint16>> for Duration {
-    type Error = Deciseconds<Uint16>;
-
-    fn try_from(value: Deciseconds<Uint16>) -> Result<Self, Self::Error> {
-        Ok(Self::from_millis(
-            u64::from(Option::<u16>::from(value.0).ok_or(value)?) * MILLIS_PER_DECISECOND,
-        ))
+impl From<Deciseconds<Uint16>> for Duration {
+    fn from(value: Deciseconds<Uint16>) -> Self {
+        Self::from_millis(
+            u64::from(Option::<u16>::from(value.0).unwrap_or_default()) * MILLIS_PER_DECISECOND,
+        )
     }
 }
