@@ -1,7 +1,10 @@
+use le_stream::{FromLeStream, ToLeStream};
+
 use crate::types::Uint8;
 
 /// Type to represent a number of units per second.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream)]
 pub struct UnitsPerSecond(Uint8);
 
 impl Default for UnitsPerSecond {

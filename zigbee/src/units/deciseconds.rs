@@ -1,11 +1,16 @@
 use core::time::Duration;
 
+use le_stream::{FromLeStream, ToLeStream};
+
 use crate::types::Uint16;
 
 const MILLIS_PER_DECISECOND: u64 = 100;
 
 /// Type to represent a duration in 1/10ths of a second.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
+)]
 pub struct Deciseconds(Uint16);
 
 impl Deciseconds {
