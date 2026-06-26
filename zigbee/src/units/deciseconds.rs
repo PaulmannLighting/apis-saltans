@@ -20,20 +20,13 @@ impl<T> Deciseconds<T> {
     pub fn into_inner(self) -> T {
         self.0
     }
-}
 
-impl Deciseconds<Uint16> {
-    /// Get the inner value.
+    /// Return a copy of the inner value.
     #[must_use]
-    pub const fn as_uint16(&self) -> Uint16 {
-        self.0
-    }
-}
-
-impl Deciseconds<u16> {
-    /// Get the inner value.
-    #[must_use]
-    pub const fn as_u16(&self) -> u16 {
+    pub const fn copy_inner(&self) -> T
+    where
+        T: Copy,
+    {
         self.0
     }
 }
