@@ -20,13 +20,15 @@ impl<T> Deciseconds<T> {
     pub fn into_inner(self) -> T {
         self.0
     }
+}
 
+impl<T> Deciseconds<T>
+where
+    T: Copy,
+{
     /// Return a copy of the inner value.
     #[must_use]
-    pub const fn copy_inner(&self) -> T
-    where
-        T: Copy,
-    {
+    pub const fn copy_inner(self) -> T {
         self.0
     }
 }
