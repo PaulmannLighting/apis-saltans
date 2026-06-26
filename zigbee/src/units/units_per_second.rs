@@ -60,6 +60,6 @@ impl From<UnitsPerSecond> for u8 {
 
 #[cfg(feature = "smarthomelib")]
 impl smarthomelib::Limited<u8> for UnitsPerSecond {
-    const MIN: (u8, Self) = (Uint8::MIN.as_u8(), Self(Uint8::MIN));
-    const MAX: (u8, Self) = (Uint8::MAX.as_u8(), Self(Uint8::MAX));
+    const MIN: Self = Self(Uint8::MIN);
+    const MAX: Self = Self(Uint8::MAX);
 }
