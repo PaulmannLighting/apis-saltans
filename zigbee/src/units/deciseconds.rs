@@ -63,10 +63,12 @@ impl From<Deciseconds<u16>> for Duration {
     }
 }
 
-impl From<Deciseconds<Uint16>> for Duration {
-    fn from(value: Deciseconds<Uint16>) -> Self {
-        Self::from_millis(
-            u64::from(Option::<u16>::from(value.0).unwrap_or_default()) * MILLIS_PER_DECISECOND,
-        )
+impl TryFrom<Deciseconds<Uint16>> for Duration {
+    type Error = Deciseconds<Uint16>;
+
+    fn try_from(value: Deciseconds<Uint16>) -> Result<Self, Self::Error> {
+        Ok(Self::from_millis(
+            u64::from(Option::<u16>::from(value.0).ok_or(value)?) * MILLIS_PER_DECISECOND,
+        ))
     }
 }
