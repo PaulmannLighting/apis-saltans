@@ -7,6 +7,14 @@ use crate::types::Uint8;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream)]
 pub struct UnitsPerSecond(Uint8);
 
+impl UnitsPerSecond {
+    /// Return the inner value.
+    #[must_use]
+    pub const fn into_inner(self) -> Uint8 {
+        self.0
+    }
+}
+
 impl Default for UnitsPerSecond {
     fn default() -> Self {
         Self(Uint8::NONE)
