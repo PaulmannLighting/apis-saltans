@@ -1,5 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
+use zigbee::types::Uint8;
+use zigbee::units::UnitsPerSecond;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
@@ -11,17 +13,17 @@ use crate::options::Options;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct MoveWithOnOff {
     mode: u8,
-    rate: u8,
+    rate: Uint8,
     options: Options,
 }
 
 impl MoveWithOnOff {
     /// Crate a new `MoveWithOnOff` command.
     #[must_use]
-    pub const fn new(mode: Mode, rate: u8, options: Options) -> Self {
+    pub const fn new(mode: Mode, rate: UnitsPerSecond, options: Options) -> Self {
         Self {
             mode: mode as u8,
-            rate,
+            rate: rate.into_inner(),
             options,
         }
     }
@@ -37,8 +39,8 @@ impl MoveWithOnOff {
 
     /// Get the rate.
     #[must_use]
-    pub const fn rate(self) -> u8 {
-        self.rate
+    pub fn rate(self) -> Option<UnitsPerSecond> {
+        self.rate.try_into().ok()
     }
 
     /// Get the options.

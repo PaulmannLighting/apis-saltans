@@ -369,7 +369,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 [[package]]
 name = "smarthomelib"
 version = "0.1.0"
-source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#08ae44bcf9127f7e2dea0261905f35852204e1e3"
+source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#2f53a46f2cca34dbd6e023f9d5a4bf6ecb87c82a"
 dependencies = [
  "bunt",
  "const_env",
@@ -591,6 +591,7 @@ name = "zigbee-coordinator"
 version = "0.1.0"
 dependencies = [
  "aps",
+ "bunt",
  "const_env",
  "le-stream",
  "log",

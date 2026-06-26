@@ -3,7 +3,7 @@ use zcl::general::level::{
     Mode, Move, MoveToClosestFrequency, MoveToLevel, MoveToLevelWithOnOff, MoveWithOnOff, Step,
     StepWithOnOff, Stop, StopWithOnOff,
 };
-use zigbee::types::Uint16;
+use zigbee::units::{Deciseconds, UnitsPerSecond};
 
 use crate::transceiver::zcl::Handle;
 use crate::{Coordinator, Destination, Error};
@@ -19,7 +19,7 @@ pub trait Level {
         &self,
         destination: Destination,
         level: u8,
-        transition_time: Uint16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -32,7 +32,7 @@ pub trait Level {
         &self,
         destination: Destination,
         mode: Mode,
-        rate: u8,
+        rate: UnitsPerSecond,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -46,7 +46,7 @@ pub trait Level {
         destination: Destination,
         mode: Mode,
         size: u8,
-        transition_time: u16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -70,7 +70,7 @@ pub trait Level {
         &self,
         destination: Destination,
         level: u8,
-        transition_time: Uint16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -83,7 +83,7 @@ pub trait Level {
         &self,
         destination: Destination,
         mode: Mode,
-        rate: u8,
+        rate: UnitsPerSecond,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -97,7 +97,7 @@ pub trait Level {
         destination: Destination,
         mode: Mode,
         size: u8,
-        transition_time: u16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -129,7 +129,7 @@ impl Level for Coordinator {
         &self,
         destination: Destination,
         level: u8,
-        transition_time: Uint16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
         self.send_static_cluster(
@@ -143,7 +143,7 @@ impl Level for Coordinator {
         &self,
         destination: Destination,
         mode: Mode,
-        rate: u8,
+        rate: UnitsPerSecond,
         options: Options,
     ) -> Result<(), Error> {
         self.send_static_cluster(destination, Move::new(mode, rate, options))
@@ -155,7 +155,7 @@ impl Level for Coordinator {
         destination: Destination,
         mode: Mode,
         size: u8,
-        transition_time: u16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
         self.send_static_cluster(destination, Step::new(mode, size, transition_time, options))
@@ -171,7 +171,7 @@ impl Level for Coordinator {
         &self,
         destination: Destination,
         level: u8,
-        transition_time: Uint16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
         self.send_static_cluster(
@@ -185,7 +185,7 @@ impl Level for Coordinator {
         &self,
         destination: Destination,
         mode: Mode,
-        rate: u8,
+        rate: UnitsPerSecond,
         options: Options,
     ) -> Result<(), Error> {
         self.send_static_cluster(destination, MoveWithOnOff::new(mode, rate, options))
@@ -197,7 +197,7 @@ impl Level for Coordinator {
         destination: Destination,
         mode: Mode,
         size: u8,
-        transition_time: u16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
         self.send_static_cluster(

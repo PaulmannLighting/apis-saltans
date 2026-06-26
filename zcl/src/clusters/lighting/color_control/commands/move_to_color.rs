@@ -1,5 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
+use zigbee::units::Deciseconds;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
@@ -20,13 +21,13 @@ impl MoveToColor {
     pub const fn new(
         color_x: u16,
         color_y: u16,
-        transition_time: Uint16,
+        transition_time: Deciseconds,
         options: Options,
     ) -> Self {
         Self {
             color_x,
             color_y,
-            transition_time,
+            transition_time: transition_time.into_inner(),
             options,
         }
     }
@@ -45,8 +46,8 @@ impl MoveToColor {
 
     /// Return the transition time, if any, in deciseconds.
     #[must_use]
-    pub fn transition_time(&self) -> Option<u16> {
-        self.transition_time.into()
+    pub fn transition_time(&self) -> Option<Deciseconds> {
+        self.transition_time.try_into().ok()
     }
 
     /// Return the options.

@@ -1,5 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
+use zigbee::types::Uint16;
+use zigbee::units::Deciseconds;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
@@ -12,18 +14,18 @@ use crate::options::Options;
 pub struct StepWithOnOff {
     mode: u8,
     size: u8,
-    transition_time: u16,
+    transition_time: Uint16,
     options: Options,
 }
 
 impl StepWithOnOff {
     /// Creates a new `StepWithOnOff` command.
     #[must_use]
-    pub const fn new(mode: Mode, size: u8, transition_time: u16, options: Options) -> Self {
+    pub const fn new(mode: Mode, size: u8, transition_time: Deciseconds, options: Options) -> Self {
         Self {
             mode: mode as u8,
             size,
-            transition_time,
+            transition_time: transition_time.into_inner(),
             options,
         }
     }
@@ -45,8 +47,8 @@ impl StepWithOnOff {
 
     /// Return the transition time, if any, in deciseconds.
     #[must_use]
-    pub fn transition_time(self) -> Option<u16> {
-        self.transition_time.into()
+    pub fn transition_time(self) -> Option<Deciseconds> {
+        self.transition_time.try_into().ok()
     }
 
     /// Get the options.

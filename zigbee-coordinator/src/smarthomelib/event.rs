@@ -3,7 +3,7 @@ use std::time::Duration;
 use log::warn;
 use macaddr::MacAddr8;
 use smarthomelib::command::{Dimming, OnOff, Timing};
-use smarthomelib::{Command, Deciseconds, Event};
+use smarthomelib::{Command, Event};
 use zcl::Cluster;
 use zcl::general::level::Mode;
 use zcl::general::on_off::OnOffControl;
@@ -50,10 +50,8 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
                             params
                                 .on_off_control()
                                 .contains(OnOffControl::ACCEPT_ONLY_WHEN_ON),
-                            Duration::from_deci_secs(params.on_time().unwrap_or_default().into()),
-                            Duration::from_deci_secs(
-                                params.off_wait_time().unwrap_or_default().into(),
-                            ),
+                            Duration::from(params.on_time().unwrap_or_default()),
+                            Duration::from(params.off_wait_time().unwrap_or_default()),
                         )),
                     }),
                 )),
@@ -71,50 +69,53 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
                     Command::OnOff(OnOff::Toggle),
                 )),
             },
-            Cluster::Level(level) => match level {
-                level::Command::Move(mv) => {
-                    let command = match mv.mode() {
-                        Ok(Mode::Up) => Command::Dimming(Dimming::Up { rate: mv.rate() }),
-                        Ok(Mode::Down) => Command::Dimming(Dimming::Down { rate: mv.rate() }),
-                        _ => {
-                            return Err(crate::Event::new(
-                                address,
-                                application.into(),
-                                Cluster::Level(level),
-                            ));
-                        }
-                    };
-
-                    Ok(Self::new(address.ieee_address(), application, command))
-                }
-                level::Command::MoveWithOnOff(mv) => {
-                    let command = match mv.mode() {
-                        Ok(Mode::Up) => Command::Dimming(Dimming::Up { rate: mv.rate() }),
-                        Ok(Mode::Down) => Command::Dimming(Dimming::Down { rate: mv.rate() }),
-                        _ => {
-                            return Err(crate::Event::new(
-                                address,
-                                application.into(),
-                                Cluster::Level(level),
-                            ));
-                        }
-                    };
-
-                    Ok(Self::new(address.ieee_address(), application, command))
-                }
-                other => {
-                    warn!("Unhandled level command: {other:?}");
-                    Err(crate::Event::new(
-                        address,
-                        application.into(),
-                        Cluster::Level(other),
-                    ))
-                }
+            Cluster::Level(level) => match translate_level_command(level) {
+                Ok(command) => Ok(Self::new(address.ieee_address(), application, command)),
+                Err(command) => Err(crate::Event::new(
+                    address,
+                    endpoint,
+                    Cluster::Level(command),
+                )),
             },
             other => {
                 warn!("Unhandled level cluster: {other:?}");
                 Err(crate::Event::new(address, application.into(), other))
             }
+        }
+    }
+}
+
+fn translate_level_command(command: level::Command) -> Result<Command, level::Command> {
+    match command {
+        level::Command::Move(mv) => {
+            let rate = if let Some(rate) = mv.rate() {
+                rate.into()
+            } else {
+                return Err(command);
+            };
+
+            match mv.mode() {
+                Ok(Mode::Up) => Ok(Command::Dimming(Dimming::Up { rate })),
+                Ok(Mode::Down) => Ok(Command::Dimming(Dimming::Down { rate })),
+                _ => Err(command),
+            }
+        }
+        level::Command::MoveWithOnOff(mv) => {
+            let rate = if let Some(rate) = mv.rate() {
+                rate.into()
+            } else {
+                return Err(command);
+            };
+
+            match mv.mode() {
+                Ok(Mode::Up) => Ok(Command::Dimming(Dimming::Up { rate })),
+                Ok(Mode::Down) => Ok(Command::Dimming(Dimming::Down { rate })),
+                _ => Err(command),
+            }
+        }
+        other => {
+            warn!("Unhandled level command: {other:?}");
+            Err(other)
         }
     }
 }

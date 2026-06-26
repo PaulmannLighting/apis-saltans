@@ -1,5 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
+use zigbee::units::Deciseconds;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
@@ -17,10 +18,10 @@ pub struct MoveToLevel {
 impl MoveToLevel {
     /// Creates a new `MoveToLevel` command.
     #[must_use]
-    pub const fn new(level: u8, transition_time: Uint16, options: Options) -> Self {
+    pub const fn new(level: u8, transition_time: Deciseconds, options: Options) -> Self {
         Self {
             level,
-            transition_time,
+            transition_time: transition_time.into_inner(),
             options,
         }
     }
@@ -33,8 +34,8 @@ impl MoveToLevel {
 
     /// Return the transition time, if any, in deciseconds.
     #[must_use]
-    pub fn transition_time(self) -> Option<u16> {
-        self.transition_time.into()
+    pub fn transition_time(self) -> Option<Deciseconds> {
+        self.transition_time.try_into().ok()
     }
 
     /// Get the options.

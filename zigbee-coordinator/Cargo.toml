@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 aps = { path = "../aps", version = "0.1" }
+bunt = { git = "https://github.com/PaulmannLighting/bunt.git", version = "0.1", optional = true }
 const_env = "0.1"
 le-stream = { version = "10", features = ["derive"] }
 log = "0.4"
@@ -19,7 +20,7 @@ zigbee = { path = "../zigbee", version = "0.1", features = ["serde"] }
 zigbee-hw = { path = "../zigbee-hw", version = "0.1" }
 
 [features]
-smarthomelib = ["dep:smarthomelib"]
+smarthomelib = ["dep:smarthomelib", "dep:bunt"]
 
 [lints]
 workspace = true

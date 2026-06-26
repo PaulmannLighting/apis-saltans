@@ -6,13 +6,12 @@
 use std::collections::BTreeSet;
 
 use macaddr::MacAddr8;
-use smarthomelib::{Events, Protocol};
+use smarthomelib::{Core, Events};
 use zigbee::Application;
 
 use crate::{Coordinator, EVENT_CHANNEL_SIZE, Error, NetworkManager};
 
 mod color_control;
-mod constants;
 mod destination;
 mod dimming;
 mod event;
@@ -21,7 +20,7 @@ mod on_off;
 mod translate_device_id;
 mod translate_endpoint_id;
 
-impl Protocol for Coordinator {
+impl Core for Coordinator {
     type DeviceId = MacAddr8;
     type EndpointId = Application;
     type GroupId = u16;

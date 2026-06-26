@@ -1,5 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::types::Uint16;
+use zigbee::units::Deciseconds;
 use zigbee::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::on_off_control::OnOffControl;
@@ -19,11 +20,15 @@ pub struct OnWithTimedOff {
 impl OnWithTimedOff {
     /// Create a new `OnWithTimedOff` command.
     #[must_use]
-    pub const fn new(on_off_control: OnOffControl, on_time: Uint16, off_wait_time: Uint16) -> Self {
+    pub const fn new(
+        on_off_control: OnOffControl,
+        on_time: Deciseconds,
+        off_wait_time: Deciseconds,
+    ) -> Self {
         Self {
             on_off_control,
-            on_time,
-            off_wait_time,
+            on_time: on_time.into_inner(),
+            off_wait_time: off_wait_time.into_inner(),
         }
     }
 
@@ -35,14 +40,14 @@ impl OnWithTimedOff {
 
     /// Return the on time, if any, in deciseconds.
     #[must_use]
-    pub fn on_time(&self) -> Option<u16> {
-        self.on_time.into()
+    pub fn on_time(&self) -> Option<Deciseconds> {
+        self.on_time.try_into().ok()
     }
 
     /// Return the off wait time, if any, in deciseconds.
     #[must_use]
-    pub fn off_wait_time(&self) -> Option<u16> {
-        self.off_wait_time.into()
+    pub fn off_wait_time(&self) -> Option<Deciseconds> {
+        self.off_wait_time.try_into().ok()
     }
 }
 
