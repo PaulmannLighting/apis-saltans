@@ -61,3 +61,11 @@ impl From<Deciseconds> for Duration {
         )
     }
 }
+
+#[cfg(feature = "smarthomelib")]
+impl smarthomelib::Limited<Duration> for Deciseconds {
+    const MIN: Duration =
+        Duration::from_millis(Uint16::MIN.as_u16() as u64 * MILLIS_PER_DECISECOND);
+    const MAX: Duration =
+        Duration::from_millis(Uint16::MAX.as_u16() as u64 * MILLIS_PER_DECISECOND);
+}

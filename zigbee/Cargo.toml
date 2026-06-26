@@ -19,15 +19,17 @@ chrono = "0.4"
 heapless = "0.9"
 intx = "0.1"
 le-stream = { version = "10", features = ["alloc", "derive", "heapless", "intx", "macaddr"] }
-macaddr = "1"
-serde = { version = "1", optional = true }
 log = "0.4"
+macaddr = "1"
 num-traits = { version = "0.2", default-features = false }
 num-derive = "0.4"
 repr-discriminant = { version = "3", features = ["derive"] }
+serde = { version = "1", optional = true }
+smarthomelib = { git = "ssh://git@github.com/PaulmannLighting/smarthomelib.git", branch = "trait-based-approach", optional = true }
 
 [features]
 serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
+smarthomelib = ["dep:smarthomelib"]
 
 [lints]
 workspace = true

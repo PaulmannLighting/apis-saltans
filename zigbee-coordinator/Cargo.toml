@@ -20,7 +20,7 @@ zigbee = { path = "../zigbee", version = "0.1", features = ["serde"] }
 zigbee-hw = { path = "../zigbee-hw", version = "0.1" }
 
 [features]
-smarthomelib = ["dep:smarthomelib", "dep:bunt"]
+smarthomelib = ["dep:smarthomelib", "dep:bunt", "zigbee/smarthomelib"]
 
 [lints]
 workspace = true
