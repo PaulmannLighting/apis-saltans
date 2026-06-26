@@ -29,6 +29,18 @@ impl TryFrom<u8> for UnitsPerSecond {
     }
 }
 
+impl TryFrom<Uint8> for UnitsPerSecond {
+    type Error = Uint8;
+
+    fn try_from(value: Uint8) -> Result<Self, Self::Error> {
+        if value == Uint8::NONE {
+            Err(value)
+        } else {
+            Ok(Self(value))
+        }
+    }
+}
+
 impl TryFrom<UnitsPerSecond> for u8 {
     type Error = UnitsPerSecond;
 
