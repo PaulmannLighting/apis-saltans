@@ -9,7 +9,7 @@ pub struct UnitsPerSecond(Uint8);
 
 impl Default for UnitsPerSecond {
     fn default() -> Self {
-        Self(Uint8::NON_VALUE)
+        Self(Uint8::NONE)
     }
 }
 
