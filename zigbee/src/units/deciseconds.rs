@@ -5,7 +5,7 @@ use crate::types::Uint16;
 const MILLIS_PER_DECISECOND: u64 = 100;
 
 /// Type to represent a duration in 1/10ths of a second.
-#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Deciseconds<T>(T);
 
 impl<T> Deciseconds<T> {
@@ -18,6 +18,22 @@ impl<T> Deciseconds<T> {
     /// Get the inner value.
     #[must_use]
     pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+
+impl Deciseconds<Uint16> {
+    /// Get the inner value.
+    #[must_use]
+    pub const fn as_uint16(&self) -> Uint16 {
+        self.0
+    }
+}
+
+impl Deciseconds<u16> {
+    /// Get the inner value.
+    #[must_use]
+    pub const fn as_u16(&self) -> u16 {
         self.0
     }
 }
