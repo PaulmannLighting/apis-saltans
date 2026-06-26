@@ -21,6 +21,18 @@ impl Deciseconds {
     }
 }
 
+impl TryFrom<Uint16> for Deciseconds {
+    type Error = Uint16;
+
+    fn try_from(value: Uint16) -> Result<Self, Self::Error> {
+        if value == Uint16::NONE {
+            Err(value)
+        } else {
+            Ok(Self(value))
+        }
+    }
+}
+
 impl TryFrom<Duration> for Deciseconds {
     type Error = Duration;
 
