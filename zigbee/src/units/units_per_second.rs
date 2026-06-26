@@ -3,11 +3,19 @@ use le_stream::{FromLeStream, ToLeStream};
 use crate::types::Uint8;
 
 /// Type to represent a number of units per second.
+///
+/// The inner type is guaranteed to not be `Uint8::NONE`.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream)]
 pub struct UnitsPerSecond(Uint8);
 
 impl UnitsPerSecond {
+    /// Create a new units per second value.
+    #[must_use]
+    pub fn new(units_per_second: u8) -> Option<Self> {
+        units_per_second.try_into().map(Self).ok()
+    }
+
     /// Return the inner value.
     #[must_use]
     pub const fn into_inner(self) -> Uint8 {
@@ -41,10 +49,11 @@ impl TryFrom<Uint8> for UnitsPerSecond {
     }
 }
 
-impl TryFrom<UnitsPerSecond> for u8 {
-    type Error = UnitsPerSecond;
-
-    fn try_from(value: UnitsPerSecond) -> Result<Self, Self::Error> {
-        value.0.try_into().map_err(|()| value)
+impl From<UnitsPerSecond> for u8 {
+    fn from(value: UnitsPerSecond) -> Self {
+        value
+            .0
+            .try_into()
+            .expect("Inner value is guaranteed to not be NONE.")
     }
 }

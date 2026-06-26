@@ -7,6 +7,8 @@ use crate::types::Uint16;
 const MILLIS_PER_DECISECOND: u64 = 100;
 
 /// Type to represent a duration in 1/10ths of a second.
+///
+/// The inner type is guaranteed to not be `Uint16::NONE`.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
@@ -14,6 +16,12 @@ const MILLIS_PER_DECISECOND: u64 = 100;
 pub struct Deciseconds(Uint16);
 
 impl Deciseconds {
+    /// Create a new deciseconds value.
+    #[must_use]
+    pub fn new(deciseconds: u16) -> Option<Self> {
+        deciseconds.try_into().map(Self).ok()
+    }
+
     /// Get the inner value.
     #[must_use]
     pub const fn into_inner(self) -> Uint16 {
@@ -45,14 +53,11 @@ impl TryFrom<Duration> for Deciseconds {
     }
 }
 
-impl TryFrom<Deciseconds> for Duration {
-    type Error = Deciseconds;
-
-    fn try_from(value: Deciseconds) -> Result<Self, Self::Error> {
-        u16::try_from(value.0)
-            .map_err(|()| value)
-            .map(u64::from)
-            .map(|deciseconds| deciseconds * MILLIS_PER_DECISECOND)
-            .map(Self::from_millis)
+impl From<Deciseconds> for Duration {
+    fn from(value: Deciseconds) -> Self {
+        Self::from_millis(
+            u64::from(u16::try_from(value.0).expect("Inner value is guaranteed to not be NONE."))
+                * MILLIS_PER_DECISECOND,
+        )
     }
 }
