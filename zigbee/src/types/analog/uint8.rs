@@ -21,6 +21,9 @@ impl Uint8 {
     /// The maximum valid value.
     pub const MAX: Self = Self(NON_VALUE.checked_sub(1).expect("NON_VALUE is not zero"));
 
+    /// The non-value.
+    pub const NON_VALUE: Self = Self(NON_VALUE);
+
     /// Crate a new `Uint8` from a raw `u8` value.
     #[must_use]
     pub const fn new(raw: u8) -> Self {
