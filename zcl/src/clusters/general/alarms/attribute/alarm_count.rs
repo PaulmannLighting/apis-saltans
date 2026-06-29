@@ -77,6 +77,7 @@ impl TryFrom<Type> for AlarmCount {
     type Error = Type;
 
     fn try_from(typ: Type) -> Result<Self, Self::Error> {
-        typ.try_into().map(Self)
+        #[expect(clippy::result_large_err)]
+        Uint16::try_from(typ).and_then(|uint16| Self::try_from(uint16).map_err(Type::Uint16))
     }
 }
