@@ -133,7 +133,7 @@ pub trait ReadAttributesInternal {
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
-        T: ReadableAttribute,
+        T: ReadableAttribute + Send,
         <T as ReadableAttribute>::Attribute: Send,
     {
         async move {
