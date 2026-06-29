@@ -7,12 +7,12 @@ use tokio::time::error::Elapsed;
 
 /// Timeout for ZCL responses.
 #[env_item("ZIGBEE_COORDINATOR_ZCL_RESPONSE_TIMEOUT_SECS")]
-const ZCL_RESPONSE_TIMEOUT_SECS: u64 = 1;
+const ZCL_RESPONSE_TIMEOUT_SECS: u64 = 5;
 const ZCL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(ZCL_RESPONSE_TIMEOUT_SECS);
 
 /// Timeout for ZDP responses.
 #[env_item("ZIGBEE_COORDINATOR_ZDP_RESPONSE_TIMEOUT_SECS")]
-const ZDP_RESPONSE_TIMEOUT_SECS: u64 = 1;
+const ZDP_RESPONSE_TIMEOUT_SECS: u64 = 5;
 const ZDP_RESPONSE_TIMEOUT: Duration = Duration::from_secs(ZDP_RESPONSE_TIMEOUT_SECS);
 
 /// Extension trait to add a timeout while waiting for a future.
