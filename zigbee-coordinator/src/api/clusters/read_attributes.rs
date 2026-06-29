@@ -135,9 +135,9 @@ pub trait ReadAttributesInternal {
         Self: Sync,
         T: ReadableAttribute,
     {
-        let mut results = Vec::with_capacity(attributes.len());
-
         async move {
+            let mut results = Vec::with_capacity(attributes.len());
+
             for attribute in attributes {
                 results.extend(
                     self.read_attributes(short_id, endpoint, [attribute].into())
