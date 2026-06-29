@@ -49,6 +49,7 @@ impl Transactions {
                 error!("Invalid block number: {blocks}");
             }
 
+            debug!("Adding APS frame to transaction: blocks={blocks}");
             self.frames
                 .insert(header.counter(), (blocks, header, chunks));
             return None;
