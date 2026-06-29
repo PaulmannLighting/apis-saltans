@@ -32,7 +32,7 @@ impl Transactions {
 
             let (header, payload) = frame.into_parts();
             let mut chunks = Vec::with_capacity(blocks.into());
-            chunks[0] = payload;
+            chunks.push(payload);
 
             self.frames
                 .insert(header.counter(), (blocks, header, chunks));
