@@ -133,7 +133,8 @@ pub trait ReadAttributesInternal {
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
-        T: ReadableAttribute + Send,
+        T: ReadableAttribute,
+        <T as ReadableAttribute>::Attribute: Send,
     {
         async move {
             let mut results = Vec::with_capacity(attributes.len());
