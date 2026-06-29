@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use log::{debug, error, warn};
+use log::{debug, warn};
 
 use crate::ExtendedControl;
 use crate::data::{Frame, Header};
@@ -8,7 +8,7 @@ use crate::data::{Frame, Header};
 /// An APS data frame transaction.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Transactions {
-    frames: BTreeMap<u8, (u8, Header, Vec<Vec<u8>>)>,
+    frames: BTreeMap<u8, (u8, Header, Vec<u8>)>,
 }
 
 impl Transactions {
@@ -41,53 +41,45 @@ impl Transactions {
             };
 
             let (header, payload) = frame.into_parts();
-            let mut chunks = vec![Vec::new(); blocks.into()];
 
-            if let Some(entry) = chunks.get_mut(0) {
-                entry.extend(payload);
-            } else {
-                error!("Invalid block number: {blocks}");
+            if let Some((_, header, payload)) = self
+                .frames
+                .insert(header.counter(), (blocks, header, payload))
+            {
+                warn!("Got a previous APS frame: {header:?}");
+                return Some(Frame::raw(header, payload));
             }
 
-            debug!("Adding APS frame to transaction: blocks={blocks}");
-            self.frames
-                .insert(header.counter(), (blocks, header, chunks));
             return None;
         }
 
-        if !extended
+        if extended
             .control()
             .contains(ExtendedControl::FOLLOWUP_FRAGMENT)
         {
-            debug!("APS frame is not a follow-up fragment.");
-            return Some(frame);
-        }
+            let Some(index) = extended.block_number() else {
+                warn!("APS frame has no block number.");
+                return Some(frame);
+            };
 
-        let Some(index) = extended.block_number() else {
-            warn!("APS frame has no block number.");
-            return Some(frame);
-        };
+            debug!("APS frame is follow-up fragment: block_number={index}");
+            let (header, payload) = frame.into_parts();
+            let (blocks, mut header, mut buffer) = self.frames.remove(&header.counter())?;
+            buffer.extend(payload);
 
-        debug!("APS frame is follow-up fragment: block_number={index}");
-        let (header, payload) = frame.into_parts();
-        let (blocks, mut header, mut chunks) = self.frames.remove(&header.counter())?;
+            if index.saturating_add(1) == blocks {
+                debug!("APS frame complete: blocks={blocks}");
+                header.drop_extended();
+                return Some(Frame::raw(header, buffer));
+            }
 
-        if let Some(entry) = chunks.get_mut(usize::from(index)) {
-            entry.extend(payload);
-        } else {
-            error!("Invalid block number: {index}");
+            debug!("APS frame incomplete: blocks={blocks}");
+            self.frames
+                .insert(header.counter(), (blocks, header, buffer));
             return None;
         }
 
-        if chunks.len() == blocks.saturating_sub(1).into() {
-            debug!("APS frame complete: blocks={blocks}");
-            header.drop_extended();
-            return Some(Frame::raw(header, chunks.into_iter().flatten().collect()));
-        }
-
-        debug!("APS frame incomplete: blocks={blocks}");
-        self.frames
-            .insert(header.counter(), (blocks, header, chunks));
-        None
+        debug!("APS frame is not a follow-up fragment.");
+        Some(frame)
     }
 }
