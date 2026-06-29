@@ -173,48 +173,41 @@ async fn discover_attributes(
     trace!("Starting discovery of basic attributes for {address}:{application}.");
     let mut retries = 0;
 
-    'tries: while RETRY.retry(&mut retries).await {
+    while RETRY.retry(&mut retries).await {
         let Some(zcl) = zcl.upgrade() else {
             trace!("Failed to upgrade ZCL sender.");
             return;
         };
 
-        let mut results = Vec::with_capacity(ATTRIBUTES.len());
+        match zcl
+            .read_attributes_iteratively(address.short_id(), application, ATTRIBUTES.into())
+            .await
+        {
+            Ok(results) => {
+                let Some(loopback) = loopback.upgrade() else {
+                    trace!("Failed to upgrade loopback sender.");
+                    return;
+                };
 
-        for attribute in ATTRIBUTES.iter().copied() {
-            match zcl
-                .read_attributes(address.short_id(), application, [attribute].into())
-                .await
-            {
-                Ok(result) => {
-                    results.extend(result);
-                }
-                Err(error) => {
-                    error!(
-                        "Failed to discover basic attributes for {address}:{application:#04X}: {error}"
-                    );
-                    continue 'tries;
-                }
+                trace!(
+                    "Discovered basic attributes for {address}:{application}. Handing over to loopback."
+                );
+                loopback
+                    .send(Message::AttributesDiscovered {
+                        address: address.clone(),
+                        application,
+                        results,
+                    })
+                    .await
+                    .unwrap();
+                return;
+            }
+            Err(error) => {
+                error!(
+                    "Failed to discover basic attributes for {address}:{application:#04X}: {error}"
+                );
             }
         }
-
-        let Some(loopback) = loopback.upgrade() else {
-            trace!("Failed to upgrade loopback sender.");
-            return;
-        };
-
-        trace!(
-            "Discovered basic attributes for {address}:{application}. Handing over to loopback."
-        );
-        loopback
-            .send(Message::AttributesDiscovered {
-                address: address.clone(),
-                application,
-                results: results.into_boxed_slice(),
-            })
-            .await
-            .unwrap();
-        return;
     }
 
     error!("Failed to discover basic attributes for {address}:{application:#04X}.");
