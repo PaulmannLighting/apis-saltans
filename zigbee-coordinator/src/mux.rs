@@ -1,6 +1,6 @@
 use aps::Transactions;
 use aps::data::Frame;
-use log::trace;
+use log::{debug, trace};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zigbee_hw::Event;
@@ -90,6 +90,8 @@ impl Mux {
     }
 
     async fn handle_aps_frame(&mut self, src_address: u16, aps_frame: Frame<Vec<u8>>) {
+        debug!("Received APS frame from {src_address}: {aps_frame:?}");
+
         if let Some(frame) = self.transactions.add(aps_frame) {
             match frame.parse() {
                 Ok(frame) => self.forward_received_message(src_address, frame).await,
