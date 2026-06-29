@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 bitflags = "2"
 le-stream = { version = "10", features = ["derive"] }
+log = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
 zigbee = { path = "../zigbee" }

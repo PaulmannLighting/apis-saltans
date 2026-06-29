@@ -17,6 +17,7 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "le-stream",
+ "log",
  "num-derive",
  "num-traits",
  "zigbee",
