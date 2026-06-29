@@ -20,14 +20,14 @@ mod endpoint_info;
 mod message;
 
 /// The attributes we want to discover.
-const ATTRIBUTES: [Id; 9] = [
+const ATTRIBUTES: [Id; 10] = [
     Id::ZclVersion,
     Id::ApplicationVersion,
     Id::StackVersion,
     Id::HwVersion,
     Id::ManufacturerName,
     Id::ModelIdentifier,
-    //Id::DateCode,
+    Id::DateCode,
     Id::PowerSource,
     Id::LocationDescription,
     Id::SwBuildId,
@@ -173,41 +173,48 @@ async fn discover_attributes(
     trace!("Starting discovery of basic attributes for {address}:{application}.");
     let mut retries = 0;
 
-    while RETRY.retry(&mut retries).await {
+    'tries: while RETRY.retry(&mut retries).await {
         let Some(zcl) = zcl.upgrade() else {
             trace!("Failed to upgrade ZCL sender.");
             return;
         };
 
-        match zcl
-            .read_attributes(address.short_id(), application, ATTRIBUTES.into())
-            .await
-        {
-            Ok(results) => {
-                let Some(loopback) = loopback.upgrade() else {
-                    trace!("Failed to upgrade loopback sender.");
-                    return;
-                };
+        let mut results = Vec::with_capacity(ATTRIBUTES.len());
 
-                trace!(
-                    "Discovered basic attributes for {address}:{application}. Handing over to loopback."
-                );
-                loopback
-                    .send(Message::AttributesDiscovered {
-                        address: address.clone(),
-                        application,
-                        results,
-                    })
-                    .await
-                    .unwrap();
-                return;
-            }
-            Err(error) => {
-                error!(
-                    "Failed to discover basic attributes for {address}:{application:#04X}: {error}"
-                );
+        for attribute in ATTRIBUTES.iter().copied() {
+            match zcl
+                .read_attributes(address.short_id(), application, [attribute].into())
+                .await
+            {
+                Ok(result) => {
+                    results.extend(result);
+                }
+                Err(error) => {
+                    error!(
+                        "Failed to discover basic attributes for {address}:{application:#04X}: {error}"
+                    );
+                    continue 'tries;
+                }
             }
         }
+
+        let Some(loopback) = loopback.upgrade() else {
+            trace!("Failed to upgrade loopback sender.");
+            return;
+        };
+
+        trace!(
+            "Discovered basic attributes for {address}:{application}. Handing over to loopback."
+        );
+        loopback
+            .send(Message::AttributesDiscovered {
+                address: address.clone(),
+                application,
+                results: results.into_boxed_slice(),
+            })
+            .await
+            .unwrap();
+        return;
     }
 
     error!("Failed to discover basic attributes for {address}:{application:#04X}.");
