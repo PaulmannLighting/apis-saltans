@@ -42,7 +42,12 @@ impl Transactions {
 
             let (header, payload) = frame.into_parts();
             let mut chunks = vec![Vec::new(); blocks.into()];
-            chunks[0] = payload;
+
+            if let Some(entry) = chunks.get_mut(0) {
+                entry.extend(payload);
+            } else {
+                error!("Invalid block number: {blocks}");
+            }
 
             self.frames
                 .insert(header.counter(), (blocks, header, chunks));
