@@ -20,14 +20,14 @@ mod endpoint_info;
 mod message;
 
 /// The attributes we want to discover.
-const ATTRIBUTES: [Id; 10] = [
+const ATTRIBUTES: [Id; 9] = [
     Id::ZclVersion,
     Id::ApplicationVersion,
     Id::StackVersion,
     Id::HwVersion,
     Id::ManufacturerName,
     Id::ModelIdentifier,
-    Id::DateCode,
+    //Id::DateCode,
     Id::PowerSource,
     Id::LocationDescription,
     Id::SwBuildId,
