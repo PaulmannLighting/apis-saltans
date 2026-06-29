@@ -109,6 +109,10 @@ where
         }
 
         if let Some(sender) = self.responses.remove(&(seq, command.cluster_id())) {
+            debug!(
+                "Answering ZDP request: seq={seq} cluster_id={:#06X}",
+                command.cluster_id()
+            );
             sender.send(command).unwrap_or_else(|error| {
                 error!("Failed to send ZDP response: {error:?}");
             });
