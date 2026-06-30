@@ -46,6 +46,9 @@ pub enum ClusterId {
 
     /// Illuminance level sensing cluster.
     IlluminanceLevelSensing = 0x0401,
+
+    /// IAS Zone cluster.
+    IasZone = 0x0500,
 }
 
 impl ClusterId {

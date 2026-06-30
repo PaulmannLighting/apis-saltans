@@ -11,6 +11,7 @@ use crate::{CommandDispatch, Header, ParseFrameError, Scope};
 
 pub mod general;
 pub mod global;
+pub mod ias;
 pub mod lighting;
 pub mod measurement_and_sensing;
 
@@ -38,6 +39,9 @@ pub enum Cluster {
 
     /// Color Control cluster commands.
     ColorControl(color_control::Command),
+
+    /// IAS Zone cluster commands.
+    IasZone(ias::zone::Command),
 }
 
 impl Cluster {
@@ -76,6 +80,9 @@ impl Cluster {
                 <color_control::Command as zigbee::Cluster>::ID => {
                     color_control::Command::parse_zcl_frame(header, bytes).map(Self::ColorControl)
                 }
+                <ias::zone::Command as zigbee::Cluster>::ID => {
+                    ias::zone::Command::parse_zcl_frame(header, bytes).map(Self::IasZone)
+                }
                 invalid_cluster_id => Err(ParseFrameError::InvalidClusterId(invalid_cluster_id)),
             },
         }
@@ -92,6 +99,7 @@ impl CommandDispatch for Cluster {
             Self::OnOff(cmd) => cmd.command_id(),
             Self::Level(cmd) => cmd.command_id(),
             Self::ColorControl(cmd) => cmd.command_id(),
+            Self::IasZone(cmd) => cmd.command_id(),
         }
     }
 
@@ -104,6 +112,7 @@ impl CommandDispatch for Cluster {
             Self::OnOff(cmd) => cmd.scope(),
             Self::Level(cmd) => cmd.scope(),
             Self::ColorControl(cmd) => cmd.scope(),
+            Self::IasZone(cmd) => cmd.scope(),
         }
     }
 
@@ -116,6 +125,7 @@ impl CommandDispatch for Cluster {
             Self::OnOff(cmd) => cmd.direction(),
             Self::Level(cmd) => cmd.direction(),
             Self::ColorControl(cmd) => cmd.direction(),
+            Self::IasZone(cmd) => cmd.direction(),
         }
     }
 
@@ -128,6 +138,7 @@ impl CommandDispatch for Cluster {
             Self::OnOff(cmd) => cmd.disable_default_response(),
             Self::Level(cmd) => cmd.disable_default_response(),
             Self::ColorControl(cmd) => cmd.disable_default_response(),
+            Self::IasZone(cmd) => cmd.disable_default_response(),
         }
     }
 }
@@ -144,6 +155,7 @@ impl ToLeStream for Cluster {
             Self::OnOff(cmd) => Iter::OnOff(cmd.to_le_stream()),
             Self::Level(cmd) => Iter::Level(cmd.to_le_stream()),
             Self::ColorControl(cmd) => Iter::ColorControl(cmd.to_le_stream()),
+            Self::IasZone(cmd) => Iter::IasZone(cmd.to_le_stream()),
         }
     }
 }
@@ -156,6 +168,7 @@ pub enum Iter {
     OnOff(<on_off::Command as ToLeStream>::Iter),
     Level(<level::Command as ToLeStream>::Iter),
     ColorControl(<color_control::Command as ToLeStream>::Iter),
+    IasZone(<ias::zone::Command as ToLeStream>::Iter),
 }
 
 impl Iterator for Iter {
@@ -170,6 +183,7 @@ impl Iterator for Iter {
             Self::OnOff(iter) => iter.next(),
             Self::Level(iter) => iter.next(),
             Self::ColorControl(iter) => iter.next(),
+            Self::IasZone(iter) => iter.next(),
         }
     }
 }
