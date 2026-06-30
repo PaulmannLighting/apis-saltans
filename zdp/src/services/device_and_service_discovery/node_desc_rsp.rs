@@ -111,13 +111,25 @@ impl TryFrom<NodeDescRsp> for Descriptor {
     }
 }
 
+/// Parse a `NodeDescRsp` from the given byte stream.
+///
+/// # Examples
+///
+/// ```
+/// use le_stream::FromLeStream;
+///
+/// use zdp::{Frame, NodeDescRsp};
+///
+/// let bytes: [u8; _] = [5, 0, 62, 199, 1, 64, 142, 24, 18, 66, 66, 0, 0, 42, 66, 0, 0];
+/// let node_desc_rsp = Frame::<NodeDescRsp>::from_le_stream(bytes.into_iter()).unwrap();
+/// ```
 impl FromLeStream for NodeDescRsp {
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
-        let nwk_addr_of_interest = u16::from_le_stream(&mut bytes)?;
         let status = Status::try_from(u8::from_le_stream(&mut bytes)?);
+        let nwk_addr_of_interest = u16::from_le_stream(&mut bytes)?;
 
         let node_descriptor = if status == Ok(Status::Success) {
             Ok(Descriptor::from_le_stream(&mut bytes)?)
@@ -137,8 +149,11 @@ impl FromLeStream for NodeDescRsp {
 
 impl ToLeStream for NodeDescRsp {
     type Iter = Chain<
-        Chain<<u16 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>,
-        <Option<Descriptor> as ToLeStream>::Iter,
+        Chain<
+            Chain<<u8 as ToLeStream>::Iter, <u16 as ToLeStream>::Iter>,
+            <Option<Descriptor> as ToLeStream>::Iter,
+        >,
+        <Vec<Tlv> as ToLeStream>::Iter,
     >;
 
     fn to_le_stream(self) -> Self::Iter {
@@ -148,9 +163,10 @@ impl ToLeStream for NodeDescRsp {
             Err(Err(status)) => (status, None),
         };
 
-        self.nwk_addr_of_interest
+        status
             .to_le_stream()
-            .chain(status.to_le_stream())
+            .chain(self.nwk_addr_of_interest.to_le_stream())
             .chain(descriptor.to_le_stream())
+            .chain(self.tlvs.to_le_stream())
     }
 }
