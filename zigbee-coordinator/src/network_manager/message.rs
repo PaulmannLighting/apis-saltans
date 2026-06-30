@@ -6,6 +6,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zcl::{Cluster, Frame};
 use zigbee::Address;
+use zigbee_hw::RouteError;
 
 use super::Device;
 use crate::Event;
@@ -64,4 +65,13 @@ pub enum Message {
 
     /// Remove a device from the network.
     RemoveDevice(Address),
+
+    /// A routing error.
+    RouteError(RouteError),
+
+    /// The network has been opened for joining.
+    NetworkOpened,
+
+    /// The network has been closed for joining.
+    NetworkClosed,
 }

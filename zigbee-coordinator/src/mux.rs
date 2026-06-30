@@ -1,6 +1,6 @@
 use aps::Transactions;
 use aps::data::Frame;
-use log::{debug, error, info, trace};
+use log::{debug, error, trace};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zigbee_hw::Event;
@@ -57,16 +57,28 @@ impl Mux {
     async fn multiplex(&mut self, event: Event) {
         match event {
             Event::NetworkUp => {
-                info!("Network is up");
+                trace!("Network is up");
             }
             Event::NetworkDown => {
-                info!("Network is down");
+                trace!("Network is down");
             }
             Event::NetworkOpened => {
-                info!("Network has been opened");
+                trace!("Network has been opened");
+                self.network_manager
+                    .send(network_manager::Message::NetworkOpened)
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send network opened message: {error}");
+                    })
             }
             Event::NetworkClosed => {
-                info!("Network has been closed");
+                trace!("Network has been closed");
+                self.network_manager
+                    .send(network_manager::Message::NetworkClosed)
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send network closed message: {error}");
+                    })
             }
             Event::DeviceJoined(address) => {
                 self.discovery
@@ -98,7 +110,13 @@ impl Mux {
                 self.handle_aps_frame(src_address, aps_frame).await;
             }
             Event::RouteError(error) => {
-                error!("{error}");
+                trace!("{error}");
+                self.network_manager
+                    .send(network_manager::Message::RouteError(error))
+                    .await
+                    .unwrap_or_else(|error| {
+                        error!("Failed to send route error message: {error}");
+                    })
             }
         }
     }

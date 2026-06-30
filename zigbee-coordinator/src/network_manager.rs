@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use aps::Data;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use macaddr::MacAddr8;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
@@ -101,6 +101,18 @@ where
                 }
                 Message::RemoveDevice(address) => {
                     self.remove_device(&address);
+                }
+                Message::RouteError(route_error) => {
+                    warn!("{route_error}");
+                    self.ncp.route_request(64).await.unwrap_or_else(|error| {
+                        error!("Failed to request route: {error:?}");
+                    })
+                }
+                Message::NetworkOpened => {
+                    info!("Network opened");
+                }
+                Message::NetworkClosed => {
+                    info!("Network closed");
                 }
             }
         }
