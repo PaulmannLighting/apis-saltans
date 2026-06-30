@@ -8,7 +8,7 @@ use zigbee::{Address, Application};
 
 use crate::api::ReadAttributesInternal;
 use crate::discovery::attribute_discovery::Message;
-use crate::{Error, RETRY, Timeout, transceiver};
+use crate::{RETRY, Timeout, transceiver};
 
 #[env_item("ZIGBEE_COORDINATOR_ATTRIBUTE_DISCOVERY_TIMEOUT_SECS")]
 const TIMEOUT_SECS: u64 = 10;
@@ -65,22 +65,63 @@ impl DiscoveryTask {
         let mut retries = 0;
 
         while RETRY.retry(&mut retries).await {
-            match self.read_attributes(CORE_ATTRIBUTES.into()).await {
-                Ok(()) => debug!("Read core attributes"),
+            let mut attributes =
+                Vec::with_capacity(CORE_ATTRIBUTES.len() + EXTENDED_ATTRIBUTES.len());
+
+            match self
+                .zcl
+                .read_attributes(
+                    self.address.short_id(),
+                    self.endpoint,
+                    CORE_ATTRIBUTES.into(),
+                )
+                .timeout(TIMEOUT)
+                .await
+            {
+                Ok(core_attributes) => {
+                    debug!("Read core attributes");
+                    attributes.extend(core_attributes);
+                }
                 Err(error) => {
                     error!("Failed to read core attributes: {error:?}");
                     continue;
                 }
             }
 
-            match self.read_attributes(EXTENDED_ATTRIBUTES.into()).await {
-                Ok(()) => debug!("Read extended attributes"),
+            match self
+                .zcl
+                .read_attributes(
+                    self.address.short_id(),
+                    self.endpoint,
+                    EXTENDED_ATTRIBUTES.into(),
+                )
+                .timeout(TIMEOUT)
+                .await
+            {
+                Ok(extended_attributes) => {
+                    debug!("Read extended attributes");
+                    attributes.extend(extended_attributes);
+                }
                 Err(error) => {
                     error!("Failed to read extended attributes: {error:?}");
                 }
             }
 
-            return;
+            match self
+                .loopback
+                .send(Message::AttributesDiscovered {
+                    address: self.address.clone(),
+                    application: self.endpoint,
+                    results: attributes.into_boxed_slice(),
+                })
+                .await
+            {
+                Ok(()) => return,
+                Err(error) => {
+                    error!("Failed to send AttributesDiscovered message: {error:?}");
+                    continue;
+                }
+            }
         }
 
         error!(
@@ -91,23 +132,5 @@ impl DiscoveryTask {
             .send(Message::DiscoveryFailed(self.address))
             .await
             .unwrap_or_else(|error| error!("Failed to send DiscoveryFailed message: {error:?}"));
-    }
-
-    async fn read_attributes(&self, attributes: Box<[Id]>) -> Result<(), Error> {
-        let results = self
-            .zcl
-            .read_attributes(self.address.short_id(), self.endpoint, attributes)
-            .timeout(TIMEOUT)
-            .await?;
-
-        self.loopback
-            .send(Message::AttributesDiscovered {
-                address: self.address.clone(),
-                application: self.endpoint,
-                results,
-            })
-            .await?;
-
-        Ok(())
     }
 }
