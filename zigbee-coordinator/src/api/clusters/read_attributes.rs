@@ -116,39 +116,6 @@ pub trait ReadAttributesInternal {
                 .map(Into::into)
         }
     }
-
-    /// Read attributes one by one, sending one attribute request at a time.
-    ///
-    /// This method is useful when the number of attributes is large and the device
-    /// may not be able to handle all of them in a single request.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes_one_by_one<T>(
-        &self,
-        short_id: u16,
-        endpoint: Application,
-        attributes: Box<[T]>,
-    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
-    where
-        Self: Sync,
-        T: ReadableAttribute + Send,
-        <T as ReadableAttribute>::Attribute: Send,
-    {
-        async move {
-            let mut results = Vec::with_capacity(attributes.len());
-
-            for attribute in attributes {
-                results.extend(
-                    self.read_attributes(short_id, endpoint, [attribute].into())
-                        .await?,
-                );
-            }
-
-            Ok(results.into_boxed_slice())
-        }
-    }
 }
 
 impl ReadAttributesInternal for Sender<Message> {
