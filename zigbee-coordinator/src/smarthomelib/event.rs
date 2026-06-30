@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use log::warn;
 use macaddr::MacAddr8;
-use smarthomelib::command::{Dimming, OnOff, Timing};
+use smarthomelib::command::{Dimming, OnOff, OpenClosed, Timing};
 use smarthomelib::{Command, Event};
-use zcl::Cluster;
 use zcl::general::level::Mode;
 use zcl::general::on_off::OnOffControl;
 use zcl::general::{level, on_off};
+use zcl::{Cluster, ias};
 use zigbee::{Application, Endpoint};
 
 impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
@@ -75,6 +75,19 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
                     address,
                     endpoint,
                     Cluster::Level(command),
+                )),
+            },
+            Cluster::IasZone(ias_zone) => match ias_zone {
+                ias::zone::Command::StatusChange(status_change) => Ok(Self::new(
+                    address.ieee_address(),
+                    application,
+                    Command::OpenClosed(
+                        if status_change.status().contains(ias::zone::Status::TAMPER) {
+                            OpenClosed::Open
+                        } else {
+                            OpenClosed::Closed
+                        },
+                    ),
                 )),
             },
             other => {

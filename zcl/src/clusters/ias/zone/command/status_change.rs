@@ -14,6 +14,37 @@ pub struct StatusChange {
     delay: Uint16,
 }
 
+impl StatusChange {
+    /// Create a new status change command.
+    #[must_use]
+    pub const fn new(status: Status, extended_status: u8, zone_id: u8, delay: Uint16) -> Self {
+        Self {
+            status,
+            extended_status,
+            zone_id,
+            delay,
+        }
+    }
+
+    /// Return the status.
+    #[must_use]
+    pub const fn status(&self) -> Status {
+        self.status
+    }
+
+    /// Return the extended status.
+    #[must_use]
+    pub const fn extended_status(&self) -> u8 {
+        self.extended_status
+    }
+
+    /// Return the zone ID.
+    #[must_use]
+    pub const fn zone_id(&self) -> u8 {
+        self.zone_id
+    }
+}
+
 impl ClusterSpecific for StatusChange {
     const CLUSTER: ClusterId = ClusterId::IasZone;
 }
