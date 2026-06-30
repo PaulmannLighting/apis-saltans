@@ -7,7 +7,7 @@ use zigbee_hw::{Error, NcpHandle, Start};
 use crate::mux::Mux;
 use crate::transceiver::zcl::Payload;
 use crate::transceiver::{zcl, zdp};
-use crate::{MPSC_CHANNEL_SIZE, State, binding, discovery, network_manager};
+use crate::{MPSC_CHANNEL_SIZE, binding, discovery, network_manager};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
@@ -23,20 +23,14 @@ impl Coordinator {
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
-    pub async fn start<T>(
-        hardware: T,
-        endpoints: &[SimpleDescriptor],
-        state: impl Into<State>,
-    ) -> Result<Self, Error>
+    pub async fn start<T>(hardware: T, endpoints: &[SimpleDescriptor]) -> Result<Self, Error>
     where
         T: Start,
     {
         let (ncp, events) = hardware.start(endpoints).await?;
-        let state = state.into();
 
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
-        let network_manager =
-            network_manager::Actor::spawn(ncp.clone(), discovery_tx.downgrade(), state);
+        let network_manager = network_manager::Actor::spawn(ncp.clone(), discovery_tx.downgrade());
 
         let zcl_tx = zcl::Transceiver::spawn(ncp.clone(), network_manager.downgrade());
         let zdp_tx = zdp::Transceiver::spawn(ncp.clone(), discovery_tx.downgrade(), endpoints);

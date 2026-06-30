@@ -1,3 +1,4 @@
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 
 use aps::Data;
@@ -32,24 +33,12 @@ where
 {
     /// Create a new actor.
     #[must_use]
-    pub fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>, state: State) -> Self {
-        let mut short_ids = BTreeMap::new();
-        let devices = state
-            .devices
-            .into_iter()
-            .map(|device| {
-                let short_id = device.address.short_id();
-                let ieee_address = device.address.ieee_address();
-                short_ids.insert(short_id, ieee_address);
-                (ieee_address, device)
-            })
-            .collect();
-
+    pub fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>) -> Self {
         Self {
             ncp,
             discovery_manager,
-            devices,
-            short_ids,
+            devices: BTreeMap::new(),
+            short_ids: BTreeMap::new(),
             subscribers: Vec::new(),
         }
     }
@@ -58,6 +47,9 @@ where
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
+                Message::Load(state) => {
+                    self.load(state);
+                }
                 Message::SubscribeToIncomingCommands { devices, sender } => {
                     self.subscribers.push((devices, sender));
                 }
@@ -113,6 +105,22 @@ where
                 }
                 Message::NetworkClosed => {
                     info!("Network closed");
+                }
+            }
+        }
+    }
+
+    fn load(&mut self, state: State) {
+        for device in state.devices {
+            self.short_ids
+                .insert(device.address.short_id(), device.address.ieee_address());
+
+            match self.devices.entry(device.address.ieee_address()) {
+                Entry::Occupied(mut entry) => {
+                    entry.get_mut().endpoints = device.endpoints;
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(device);
                 }
             }
         }
@@ -199,12 +207,12 @@ where
     T: Ncp + Send + Sync + 'static,
 {
     /// Start the network manager.
-    pub fn spawn(ncp: T, discovery: WeakSender<discovery::Message>, state: State) -> Sender<Message>
+    pub fn spawn(ncp: T, discovery: WeakSender<discovery::Message>) -> Sender<Message>
     where
         T: Send + Sync + 'static,
     {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, discovery, state).run(rx));
+        spawn(Self::new(ncp, discovery).run(rx));
         tx
     }
 }
