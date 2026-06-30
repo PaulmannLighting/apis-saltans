@@ -6,15 +6,15 @@ use tokio_task_pool::Pool;
 use zigbee::Address;
 
 pub use self::message::Message;
-use crate::discovery::descriptor_discovery::discovery_task::DiscoveryTask;
 use crate::discovery::endpoint_discovery::{self, Device};
+use crate::discovery::node_descriptor_discovery::discovery_task::DiscoveryTask;
 use crate::{MPSC_CHANNEL_SIZE, TASK_POOL_SIZE, transceiver};
 
 mod discovery_task;
 mod message;
 
 #[derive(Debug)]
-pub struct DescriptorDiscovery {
+pub struct NodeDescriptorDiscovery {
     inbox: Receiver<Message>,
     loopback: Sender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
@@ -23,7 +23,7 @@ pub struct DescriptorDiscovery {
     tasks: Pool,
 }
 
-impl DescriptorDiscovery {
+impl NodeDescriptorDiscovery {
     /// Create a new instance of `DescriptorDiscovery`.
     #[must_use]
     pub fn new(

@@ -6,19 +6,19 @@ use self::attribute_discovery::AttributeDiscovery;
 use self::endpoint_descriptor_discovery::EndpointDescriptorDiscovery;
 use self::endpoint_discovery::EndpointDiscovery;
 pub use self::message::Message;
-use crate::discovery::descriptor_discovery::DescriptorDiscovery;
+use crate::discovery::node_descriptor_discovery::NodeDescriptorDiscovery;
 use crate::{binding, transceiver};
 
 mod attribute_discovery;
-mod descriptor_discovery;
 mod endpoint_descriptor_discovery;
 mod endpoint_discovery;
 mod message;
+mod node_descriptor_discovery;
 
 /// The device discovery actor.
 #[derive(Debug)]
 pub struct Actor {
-    descriptor_discovery: Sender<descriptor_discovery::Message>,
+    node_descriptor_discovery: Sender<node_descriptor_discovery::Message>,
 }
 
 impl Actor {
@@ -36,11 +36,11 @@ impl Actor {
         spawn(endpoint_descriptor_discovery.run());
         let (endpoint_discovery, ed_tx) = EndpointDiscovery::new(zdp.clone(), edd_tx);
         spawn(endpoint_discovery.run());
-        let (descriptor_discovery, dd_tx) = DescriptorDiscovery::new(zdp, ed_tx);
-        spawn(descriptor_discovery.run());
+        let (node_descriptor_discovery, ndd_tx) = NodeDescriptorDiscovery::new(zdp, ed_tx);
+        spawn(node_descriptor_discovery.run());
 
         Self {
-            descriptor_discovery: dd_tx,
+            node_descriptor_discovery: ndd_tx,
         }
     }
 
@@ -78,8 +78,8 @@ impl Actor {
 
             trace!("Start descriptor discovery for {address}");
 
-            self.descriptor_discovery
-                .send(descriptor_discovery::Message::Discover(address))
+            self.node_descriptor_discovery
+                .send(node_descriptor_discovery::Message::Discover(address))
                 .await
                 .unwrap_or_else(|error| error!("Failed to send discover message: {error:?}"));
         }
