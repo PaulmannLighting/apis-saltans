@@ -54,7 +54,7 @@ impl EndpointDiscovery {
                 }
                 Message::Discovered { address, endpoints } => {
                     if !self.pending.remove(&address) {
-                        warn!("Received Discovered message for unknown device: {address:?}");
+                        warn!("Received Discovered message for unknown device: {address}");
                     }
 
                     self.descriptor_discovery
@@ -66,7 +66,7 @@ impl EndpointDiscovery {
                 }
                 Message::DiscoveryFailed(address) => {
                     if !self.pending.remove(&address) {
-                        warn!("Received DiscoveryFailed message for unknown device: {address:?}");
+                        warn!("Received DiscoveryFailed message for unknown device: {address}");
                     }
                 }
             }
