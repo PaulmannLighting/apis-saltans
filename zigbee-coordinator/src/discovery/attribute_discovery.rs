@@ -7,6 +7,7 @@ use zcl::general::basic::readable::Id;
 use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
 
+pub use self::device::Device;
 use self::devices::{Devices, DevicesExt};
 use self::discovery_task::DiscoveryTask;
 pub use self::message::Message;
@@ -15,6 +16,7 @@ use crate::{
     Attributes, MPSC_CHANNEL_SIZE, ReadAttributeResult, TASK_POOL_SIZE, binding, transceiver,
 };
 
+mod device;
 mod devices;
 mod discovery_task;
 mod endpoint_info;
@@ -54,8 +56,8 @@ impl AttributeDiscovery {
     pub async fn run(mut self) {
         while let Some(message) = self.inbox.recv().await {
             match message {
-                Message::GetAttributes { address, endpoints } => {
-                    self.get_attributes(&address, endpoints).await;
+                Message::GetAttributes(device) => {
+                    self.get_attributes(device).await;
                 }
                 Message::AttributesDiscovered {
                     address,
@@ -73,26 +75,11 @@ impl AttributeDiscovery {
         }
     }
 
-    async fn get_attributes(
-        &mut self,
-        address: &Address,
-        endpoints: BTreeMap<Endpoint, SimpleDescriptor>,
-    ) {
-        if self.devices.contains_key(address) {
-            trace!("Discovery for {address} already in progress.");
+    async fn get_attributes(&mut self, device: Device) {
+        if self.devices.contains_key(&device.address) {
+            trace!("Discovery for {device:?} already in progress.");
             return;
         }
-
-        let application_endpoints_with_basic_cluster: Vec<_> = endpoints
-            .iter()
-            .filter_map(DevicesExt::application_eps_with_basic_cluster)
-            .map(|(application, _)| application)
-            .collect();
-
-        *self.devices.entry(address.clone()).or_default() = endpoints
-            .into_iter()
-            .map(|(endpoint, descriptor)| (endpoint, descriptor.into()))
-            .collect();
 
         let Some(loopback) = self.loopback.upgrade() else {
             warn!("Failed to upgrade loopback channel.");
@@ -104,11 +91,26 @@ impl AttributeDiscovery {
             return;
         };
 
-        for application in application_endpoints_with_basic_cluster {
+        let device = self
+            .devices
+            .entry(device.address.clone())
+            .or_insert(device.into());
+
+        for application in device
+            .endpoints
+            .iter()
+            .filter_map(DevicesExt::application_eps_with_basic_cluster)
+            .map(|(application, _)| application)
+        {
             self.tasks
                 .spawn(
-                    DiscoveryTask::new(address.clone(), application, loopback.clone(), zcl.clone())
-                        .run(),
+                    DiscoveryTask::new(
+                        device.address.clone(),
+                        application,
+                        loopback.clone(),
+                        zcl.clone(),
+                    )
+                    .run(),
                 )
                 .await
                 .map_or_else(|error| error!("Failed to spawn task: {error:?}"), drop);
@@ -121,49 +123,36 @@ impl AttributeDiscovery {
         application: Application,
         results: Box<[ReadAttributeResult<Id>]>,
     ) {
-        let Some(mut endpoints) = self.devices.remove(&address) else {
+        let Some(mut device) = self.devices.remove(&address) else {
             warn!("Received attributes for unknown device: {address}");
             return;
         };
 
-        let Some(endpoint) = endpoints.get_mut(&Endpoint::Application(application)) else {
+        let Some(endpoint) = device
+            .endpoints
+            .get_mut(&Endpoint::Application(application))
+        else {
             warn!("Received attributes for unknown endpoint: {address}:{application:#04X}");
-            self.devices.insert(address, endpoints);
+            self.devices.insert(address, device);
             return;
         };
 
         endpoint.set_attributes(results.into());
-        self.forward_device_if_complete(address, endpoints).await;
-    }
 
-    async fn forward_device_if_complete(
-        &mut self,
-        address: Address,
-        endpoints: BTreeMap<Endpoint, EndpointInfo>,
-    ) {
-        if endpoints
+        if !device
+            .endpoints
             .iter()
             .filter_map(DevicesExt::application_eps_with_basic_cluster)
             .all(|(_, endpoint_info)| endpoint_info.attributes().is_some())
         {
-            trace!("All attributes discovered for {address}: {endpoints:?}.");
-            self.forward_device(address, endpoints).await;
-        } else {
             trace!("Not all attributes discovered for {address}.");
-            self.devices.insert(address, endpoints);
+            self.devices.insert(address, device);
+            return;
         }
-    }
 
-    async fn forward_device(&self, address: Address, endpoints: BTreeMap<Endpoint, EndpointInfo>) {
         trace!("Forwarding device {address} to binding manager.");
         self.binding_manager
-            .send(binding::Message::DeviceDiscovered {
-                address,
-                endpoints: endpoints
-                    .into_iter()
-                    .map(|(endpoint, info)| (endpoint, info.into()))
-                    .collect(),
-            })
+            .send(binding::Message::DeviceDiscovered(device.into()))
             .await
             .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
     }

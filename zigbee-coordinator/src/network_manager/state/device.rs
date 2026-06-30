@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
+use zigbee::node::Descriptor;
 use zigbee::{Address, Endpoint};
 
 use super::Endpoint as EndpointInfo;
@@ -11,12 +12,25 @@ pub struct Device {
     /// The full address of the device.
     pub address: Address,
 
+    /// The device descriptor.
+    pub descriptor: Descriptor,
+
     /// The endpoints of the device.
     pub endpoints: BTreeMap<Endpoint, EndpointInfo>,
 }
 
-impl From<(Address, BTreeMap<Endpoint, EndpointInfo>)> for Device {
-    fn from((address, endpoints): (Address, BTreeMap<Endpoint, EndpointInfo>)) -> Self {
-        Self { address, endpoints }
+impl Device {
+    /// Create a new device.
+    #[must_use]
+    pub const fn new(
+        address: Address,
+        descriptor: Descriptor,
+        endpoints: BTreeMap<Endpoint, EndpointInfo>,
+    ) -> Self {
+        Self {
+            address,
+            descriptor,
+            endpoints,
+        }
     }
 }

@@ -8,21 +8,15 @@ use zdp::{BindReq, Destination, Status};
 use zigbee::{Address, ClusterId, Endpoint};
 use zigbee_hw::{Ncp, WeakNcpHandle};
 
-use self::clusters_to_bind::ClustersToBind;
-pub use self::devices_ext::Devices;
-use self::devices_ext::DevicesExt;
+pub use self::device::Device;
+pub use self::endpoints::Endpoints;
 pub use self::message::Message;
-use crate::binding::needs_binding::NeedsBinding;
 use crate::transceiver::zdp::Handle;
-use crate::{
-    Device, Endpoint as EndpointInfo, MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, network_manager,
-    transceiver,
-};
+use crate::{MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, network_manager, transceiver};
 
-mod clusters_to_bind;
-mod devices_ext;
+mod device;
+mod endpoints;
 mod message;
-mod needs_binding;
 
 /// The output clusters that the coordinator binds to.
 const BIND_OUTPUT_CLUSTERS: [ClusterId; 2] = [ClusterId::OnOff, ClusterId::Level];
@@ -35,7 +29,7 @@ pub struct Actor {
     zdp: WeakSender<transceiver::zdp::Message>,
     network_manager: WeakSender<network_manager::Message>,
     ncp: WeakNcpHandle,
-    devices: Devices,
+    devices: BTreeMap<Address, Device>,
     tasks: Pool,
 }
 
@@ -77,8 +71,8 @@ impl Actor {
     pub async fn run(mut self) {
         while let Some(message) = self.inbox.recv().await {
             match message {
-                Message::DeviceDiscovered { address, endpoints } => {
-                    self.bind_device_endpoints(address, endpoints).await;
+                Message::DeviceDiscovered(device) => {
+                    self.bind_device_endpoints(device.into()).await;
                 }
                 Message::EndpointBound {
                     address,
@@ -92,22 +86,19 @@ impl Actor {
         }
     }
 
-    async fn bind_device_endpoints(
-        &mut self,
-        address: Address,
-        endpoints: BTreeMap<Endpoint, EndpointInfo>,
-    ) {
-        trace!("Binding device {address} with endpoints: {endpoints:?}");
+    async fn bind_device_endpoints(&mut self, device: Device) {
+        trace!("Binding device: {device:?}");
 
-        if !endpoints.needs_binding(&BIND_OUTPUT_CLUSTERS) {
-            trace!("No binding necessary for {address}.");
-            self.forward_device(address, endpoints).await;
+        if !device.needs_binding(&BIND_OUTPUT_CLUSTERS) {
+            trace!("No binding necessary for {}.", device.address);
+            self.forward_device(device).await;
             return;
         }
 
-        let device = self.devices.update(address.clone(), endpoints);
+        let address = device.address.clone();
+        let device = self.devices.entry(address.clone()).or_insert(device);
 
-        for (endpoint, cluster) in device.get().clusters_to_bind(&BIND_OUTPUT_CLUSTERS) {
+        for (endpoint, cluster) in device.clusters_to_bind(&BIND_OUTPUT_CLUSTERS) {
             self.tasks
                 .spawn(bind_endpoint(
                     address.clone(),
@@ -133,30 +124,37 @@ impl Actor {
         endpoint: Endpoint,
         cluster: ClusterId,
     ) {
-        self.devices.endpoint_bound(&address, endpoint, cluster);
-        self.forward_device_if_complete(address).await;
-    }
-
-    async fn forward_device_if_complete(&mut self, address: Address) {
-        if let Some(endpoints) = self.devices.remove_if_binding_complete(&address) {
-            trace!("Device {address} is now bound: {endpoints:?}");
-
-            trace!("Forwarding device {address} to network manager.");
-            self.forward_device(address, endpoints).await;
-        } else {
-            trace!("Not all endpoints bound for {address}.");
-        }
-    }
-
-    async fn forward_device(&self, address: Address, endpoints: BTreeMap<Endpoint, EndpointInfo>) {
-        let Some(network_manager) = self.network_manager.upgrade() else {
-            trace!("Network manager channel closed. Aborting forwarding of device: {address}.");
+        let Some(mut device) = self.devices.remove(&address) else {
+            trace!("No device found for {address}.");
             return;
         };
+
+        let Some(endpoint) = device.endpoints.get_mut(&endpoint) else {
+            trace!("No endpoint found for {address}:{endpoint}.");
+            return;
+        };
+
+        endpoint.bound_clusters.insert(cluster);
+
+        if device.needs_binding(&BIND_OUTPUT_CLUSTERS) {
+            trace!("Not all endpoints bound for {address}.");
+            self.devices.insert(device.address.clone(), device);
+            return;
+        }
+
+        trace!("Device {address} is now bound.");
+        self.forward_device(device).await;
+    }
+
+    async fn forward_device(&mut self, device: Device) {
+        let Some(network_manager) = self.network_manager.upgrade() else {
+            trace!("Network manager channel closed.");
+            return;
+        };
+
+        trace!("Forwarding device {device:?} to network manager.");
         network_manager
-            .send(network_manager::Message::NewDevice(Device::from((
-                address, endpoints,
-            ))))
+            .send(network_manager::Message::NewDevice(device.into()))
             .await
             .unwrap_or_else(|error| {
                 error!("Failed to send new device message: {error:?}");

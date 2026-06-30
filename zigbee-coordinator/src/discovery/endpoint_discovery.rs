@@ -1,15 +1,17 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zigbee::Address;
 
+pub use self::device::Device;
 pub use self::message::Message;
-use super::descriptor_discovery;
+use super::endpoint_descriptor_discovery;
 use crate::discovery::endpoint_discovery::discovery_task::DiscoveryTask;
 use crate::{MPSC_CHANNEL_SIZE, TASK_POOL_SIZE, transceiver};
 
+mod device;
 mod discovery_task;
 mod message;
 
@@ -19,9 +21,9 @@ pub struct EndpointDiscovery {
     inbox: Receiver<Message>,
     loopback: Sender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
-    descriptor_discovery: Sender<descriptor_discovery::Message>,
+    descriptor_discovery: Sender<endpoint_descriptor_discovery::Message>,
     tasks: Pool,
-    pending: BTreeSet<Address>,
+    pending: BTreeMap<Address, Device>,
 }
 
 impl EndpointDiscovery {
@@ -29,7 +31,7 @@ impl EndpointDiscovery {
     #[must_use]
     pub fn new(
         zdp: WeakSender<transceiver::zdp::Message>,
-        descriptor_discovery: Sender<descriptor_discovery::Message>,
+        descriptor_discovery: Sender<endpoint_descriptor_discovery::Message>,
     ) -> (Self, Sender<Message>) {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
 
@@ -39,7 +41,7 @@ impl EndpointDiscovery {
             zdp,
             descriptor_discovery,
             tasks: Pool::bounded(TASK_POOL_SIZE),
-            pending: BTreeSet::new(),
+            pending: BTreeMap::new(),
         };
 
         (instance, tx)
@@ -49,23 +51,30 @@ impl EndpointDiscovery {
     pub async fn run(mut self) {
         while let Some(message) = self.inbox.recv().await {
             match message {
-                Message::Discover(address) => {
-                    self.discover_endpoints(address).await;
+                Message::Discover(device) => {
+                    self.discover_endpoints(device).await;
                 }
                 Message::Discovered { address, endpoints } => {
-                    if !self.pending.remove(&address) {
+                    let Some(device) = self.pending.remove(&address) else {
                         warn!("Received Discovered message for unknown device: {address}");
-                    }
+                        continue;
+                    };
 
                     self.descriptor_discovery
-                        .send(descriptor_discovery::Message::Discover { address, endpoints })
+                        .send(endpoint_descriptor_discovery::Message::Discover(
+                            endpoint_descriptor_discovery::Device::new(
+                                device.address,
+                                device.descriptor,
+                                endpoints,
+                            ),
+                        ))
                         .await
                         .unwrap_or_else(|error| {
                             error!("Failed to forward to descriptor discovery: {error:?}");
                         });
                 }
                 Message::DiscoveryFailed(address) => {
-                    if !self.pending.remove(&address) {
+                    if self.pending.remove(&address).is_none() {
                         warn!("Received DiscoveryFailed message for unknown device: {address}");
                     }
                 }
@@ -74,9 +83,9 @@ impl EndpointDiscovery {
     }
 
     /// Discover endpoints on the given device in a separate task.
-    async fn discover_endpoints(&self, address: Address) {
-        if self.pending.contains(&address) {
-            trace!("Already discovering endpoints for {address}");
+    async fn discover_endpoints(&self, device: Device) {
+        if self.pending.contains_key(&device.address) {
+            trace!("Already discovering endpoints for {}", device.address);
             return;
         }
 
@@ -86,7 +95,7 @@ impl EndpointDiscovery {
         };
 
         self.tasks
-            .spawn(DiscoveryTask::new(address, zdp, self.loopback.clone()).run())
+            .spawn(DiscoveryTask::new(device.address, zdp, self.loopback.clone()).run())
             .await
             .map_or_else(
                 |error| {

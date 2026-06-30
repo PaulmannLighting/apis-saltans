@@ -1,27 +1,20 @@
-use std::collections::BTreeSet;
-
-use zdp::SimpleDescriptor;
-use zigbee::{Address, Endpoint};
+use zigbee::Address;
+use zigbee::node::Descriptor;
 
 /// Message sent to the descriptor discovery actor.
 #[derive(Debug)]
 pub enum Message {
-    /// Discover descriptors for the given endpoints.
-    Discover {
-        /// The device to discover descriptors for.
-        address: Address,
-        /// The endpoints to discover descriptors for.
-        endpoints: BTreeSet<Endpoint>,
-    },
+    /// Discover descriptors on the given device.
+    Discover(Address),
 
-    /// Get the descriptor for the given endpoint.
+    /// Descriptor for the given device has been discovered.
     DescriptorDiscovered {
-        /// The device to get the descriptor for.
+        /// The device that the descriptor belongs to.
         address: Address,
-        /// The number of retries.
-        descriptor: Box<SimpleDescriptor>,
+        /// The discovered descriptor.
+        descriptor: Box<Descriptor>,
     },
 
-    /// Discovery of the given device has failed.
+    /// Discovery of the descriptor for the given device failed.
     DiscoveryFailed(Address),
 }
