@@ -129,8 +129,8 @@ impl AttributeDiscovery {
                 .spawn(discover_attributes(
                     address.clone(),
                     application,
-                    loopback,
-                    zcl,
+                    loopback.clone(),
+                    zcl.clone(),
                 ))
                 .await
                 .map_or_else(|error| error!("Failed to spawn task: {error:?}"), drop);
