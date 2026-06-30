@@ -1,7 +1,5 @@
 use std::collections::BTreeMap;
-use std::time::Duration;
 
-use const_env::env_item;
 use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
@@ -13,10 +11,8 @@ use self::devices::{Devices, DevicesExt};
 use self::discovery_task::DiscoveryTask;
 pub use self::message::Message;
 use crate::discovery::attribute_discovery::endpoint_info::EndpointInfo;
-use crate::timeout::Timeout;
 use crate::{
-    Attributes, MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributesInternal,
-    TASK_POOL_SIZE, binding, transceiver,
+    Attributes, MPSC_CHANNEL_SIZE, ReadAttributeResult, TASK_POOL_SIZE, binding, transceiver,
 };
 
 mod devices;
@@ -82,7 +78,7 @@ impl AttributeDiscovery {
                 } => {
                     self.update_attributes(address, application, results).await;
                 }
-                Message::DiscoveryFailed { address } => {
+                Message::DiscoveryFailed(address) => {
                     if self.devices.remove(&address).is_some() {
                         trace!("Removed failed discovery of: {address}");
                     }

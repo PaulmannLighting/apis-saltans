@@ -28,8 +28,5 @@ pub enum Message {
     },
 
     /// Discovery of the given device has failed.
-    DiscoveryFailed {
-        /// The device that has failed to be discovered.
-        address: Address,
-    },
+    DiscoveryFailed(Address),
 }

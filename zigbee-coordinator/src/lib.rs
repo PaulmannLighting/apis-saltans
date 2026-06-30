@@ -7,7 +7,6 @@ use core::time::Duration;
 
 use const_env::env_item;
 
-use self::api::ReadAttributesInternal;
 pub use self::api::{
     ColorControl, Joining, Level, NetworkManager, OnOff, ReadAttributeResult, ReadAttributes,
     WriteAttributes,

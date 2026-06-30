@@ -1,26 +1,20 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::time::Duration;
 
-use const_env::env_item;
 use log::{debug, error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
-use zdp::{SimpleDescReq, SimpleDescriptor, Status};
+use zdp::SimpleDescriptor;
 use zigbee::{Address, Endpoint};
 
 use self::devices::Devices;
 pub use self::message::Message;
 use crate::discovery::attribute_discovery;
-use crate::timeout::Timeout;
-use crate::transceiver::zdp::Handle;
-use crate::{MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, transceiver};
+use crate::discovery::descriptor_discovery::discovery_task::DiscoveryTask;
+use crate::{MPSC_CHANNEL_SIZE, TASK_POOL_SIZE, transceiver};
 
 mod devices;
+mod discovery_task;
 mod message;
-
-#[env_item("ZIGBEE_COORDINATOR_DESCRIPTOR_DISCOVERY_TIMEOUT_SECS")]
-const TIMEOUT_SECS: u64 = 5;
-const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 
 /// Actor to discover descriptors on devices.
 #[derive(Debug)]
@@ -65,6 +59,11 @@ impl DescriptorDiscovery {
                 } => {
                     self.descriptor_discovered(address, *descriptor).await;
                 }
+                Message::DiscoveryFailed(address) => {
+                    if self.devices.remove(&address).is_some() {
+                        trace!("Removed failed discovery of: {address}");
+                    }
+                }
             }
         }
     }
@@ -76,14 +75,22 @@ impl DescriptorDiscovery {
             endpoints.iter().map(|endpoint| (*endpoint, None)).collect(),
         );
 
+        let Some(loopback) = self.loopback.upgrade() else {
+            warn!("Failed to upgrade loopback channel.");
+            return;
+        };
+
+        let Some(zdp) = self.zdp.upgrade() else {
+            warn!("Failed to upgrade ZDP channel.");
+            return;
+        };
+
         for endpoint in endpoints {
             self.tasks
-                .spawn(get_descriptor(
-                    address.clone(),
-                    endpoint,
-                    self.loopback.clone(),
-                    self.zdp.clone(),
-                ))
+                .spawn(
+                    DiscoveryTask::new(address.clone(), endpoint, loopback.clone(), zdp.clone())
+                        .run(),
+                )
                 .await
                 .map_or_else(
                     |error| {
@@ -134,66 +141,4 @@ impl DescriptorDiscovery {
             .await
             .unwrap_or_else(|error| error!("Failed to send GetAttributes message: {error:?}"));
     }
-}
-
-/// Run the per-endpoint descriptor discovery loop.
-async fn get_descriptor(
-    address: Address,
-    endpoint: Endpoint,
-    loopback: WeakSender<Message>,
-    zdp: WeakSender<transceiver::zdp::Message>,
-) {
-    trace!("Starting discovery of descriptor for {address}:{endpoint}.");
-    let short_id = address.short_id();
-    let mut retries = 0;
-
-    while RETRY.retry(&mut retries).await {
-        let Some(zdp) = zdp.upgrade() else {
-            trace!("Failed to upgrade ZDP sender.");
-            return;
-        };
-
-        match zdp
-            .communicate(short_id, SimpleDescReq::new(short_id, endpoint))
-            .timeout(TIMEOUT)
-            .await
-        {
-            Ok(response) => {
-                if response.status() == Ok(Status::Success) {
-                    trace!("Got descriptor for {address}:{endpoint}.");
-
-                    let Some(loopback) = loopback.upgrade() else {
-                        return;
-                    };
-
-                    let Some(descriptor) = response.into_descriptor() else {
-                        error!("Got descriptor for {address}:{endpoint} but it was invalid.");
-                        continue;
-                    };
-
-                    trace!("Sending descriptor for {address}:{endpoint} to loopback.");
-                    loopback
-                        .send(Message::DescriptorDiscovered {
-                            address,
-                            descriptor: Box::new(descriptor),
-                        })
-                        .await
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send DescriptorsDiscovered message: {error:?}");
-                        });
-                    return;
-                }
-
-                warn!(
-                    "Failed to get descriptor for {address}:{endpoint}: {:?}",
-                    response.status()
-                );
-            }
-            Err(error) => {
-                warn!("Failed to get descriptor for {address}:{endpoint}: {error:?}");
-            }
-        }
-    }
-
-    error!("Failed to get descriptor for {address}:{endpoint}.");
 }

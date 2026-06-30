@@ -1,30 +1,27 @@
-use std::time::Duration;
+use std::collections::BTreeSet;
 
-use const_env::env_item;
-use log::{error, trace, warn};
-use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
+use log::{error, warn};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
-use zdp::{ActiveEpReq, Status};
 use zigbee::Address;
 
 pub use self::message::Message;
 use super::descriptor_discovery;
-use crate::timeout::Timeout;
-use crate::transceiver::zdp::Handle;
-use crate::{RETRY, TASK_POOL_SIZE, transceiver};
+use crate::discovery::endpoint_discovery::discovery_task::DiscoveryTask;
+use crate::{MPSC_CHANNEL_SIZE, TASK_POOL_SIZE, transceiver};
 
+mod discovery_task;
 mod message;
-
-#[env_item("ZIGBEE_COORDINATOR_ENDPOINT_DISCOVERY_TIMEOUT_SECS")]
-const TIMEOUT_SECS: u64 = 5;
-const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 
 /// Actor to discover endpoints on devices.
 #[derive(Debug)]
 pub struct EndpointDiscovery {
+    inbox: Receiver<Message>,
+    loopback: Sender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
     descriptor_discovery: Sender<descriptor_discovery::Message>,
     tasks: Pool,
+    pending: BTreeSet<Address>,
 }
 
 impl EndpointDiscovery {
@@ -33,20 +30,44 @@ impl EndpointDiscovery {
     pub fn new(
         zdp: WeakSender<transceiver::zdp::Message>,
         descriptor_discovery: Sender<descriptor_discovery::Message>,
-    ) -> Self {
-        Self {
+    ) -> (Self, Sender<Message>) {
+        let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
+
+        let instance = Self {
+            inbox: rx,
+            loopback: tx.clone(),
             zdp,
             descriptor_discovery,
             tasks: Pool::bounded(TASK_POOL_SIZE),
-        }
+            pending: BTreeSet::new(),
+        };
+
+        (instance, tx)
     }
 
     /// Run the actor.
-    pub async fn run(self, mut messages: Receiver<Message>) {
-        while let Some(message) = messages.recv().await {
+    pub async fn run(mut self) {
+        while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::Discover(address) => {
                     self.discover_endpoints(address).await;
+                }
+                Message::Discovered { address, endpoints } => {
+                    if !self.pending.remove(&address) {
+                        warn!("Received Discovered message for unknown device: {address:?}");
+                    }
+
+                    self.descriptor_discovery
+                        .send(descriptor_discovery::Message::Discover { address, endpoints })
+                        .await
+                        .unwrap_or_else(|error| {
+                            error!("Failed to forward to descriptor discovery: {error:?}");
+                        });
+                }
+                Message::DiscoveryFailed(address) => {
+                    if !self.pending.remove(&address) {
+                        warn!("Received DiscoveryFailed message for unknown device: {address:?}");
+                    }
                 }
             }
         }
@@ -54,12 +75,13 @@ impl EndpointDiscovery {
 
     /// Discover endpoints on the given device in a separate task.
     async fn discover_endpoints(&self, address: Address) {
+        let Some(zdp) = self.zdp.upgrade() else {
+            warn!("Failed to upgrade ZDP sender");
+            return;
+        };
+
         self.tasks
-            .spawn(discover_endpoints(
-                address,
-                self.zdp.clone(),
-                self.descriptor_discovery.downgrade(),
-            ))
+            .spawn(DiscoveryTask::new(address, zdp, self.loopback.clone()).run())
             .await
             .map_or_else(
                 |error| {
@@ -68,65 +90,4 @@ impl EndpointDiscovery {
                 drop,
             );
     }
-}
-
-/// Run the per-device endpoint discovery loop.
-async fn discover_endpoints(
-    address: Address,
-    zdp: WeakSender<transceiver::zdp::Message>,
-    descriptor_discovery: WeakSender<descriptor_discovery::Message>,
-) {
-    trace!("Starting endpoint discovery of {address}.");
-    let short_id = address.short_id();
-    let mut retries = 0;
-
-    while RETRY.retry(&mut retries).await {
-        let Some(zdp) = zdp.upgrade() else {
-            trace!("Failed to upgrade ZDP sender.");
-            return;
-        };
-
-        match zdp
-            .communicate(short_id, ActiveEpReq::new(short_id))
-            .timeout(TIMEOUT)
-            .await
-        {
-            Ok(response) => {
-                if response.status() == Ok(Status::Success) {
-                    let Some(descriptor_discovery) = descriptor_discovery.upgrade() else {
-                        trace!(
-                            "Descriptor discovery channel closed. Aborting endpoint discovery of {address}."
-                        );
-                        return;
-                    };
-
-                    trace!(
-                        "Discovered endpoints of {address}. Handing over to descriptor discovery."
-                    );
-                    descriptor_discovery
-                        .send(descriptor_discovery::Message::Discover {
-                            address: address.clone(),
-                            endpoints: response.into_active_eps().into_iter().collect(),
-                        })
-                        .await
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send Discover message of {address}: {error:?}");
-                        });
-                    return;
-                }
-
-                warn!(
-                    "Got non-success status of {address}: {:?}. Retrying endpoint discovery.",
-                    response.status()
-                );
-            }
-            Err(error) => {
-                warn!(
-                    "Failed to discover endpoints of {address}: {error:?}. Retrying endpoint discovery."
-                );
-            }
-        }
-    }
-
-    error!("Failed to discover endpoints of {address}.");
 }

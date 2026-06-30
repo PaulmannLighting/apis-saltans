@@ -7,7 +7,7 @@ use zcl::general::basic::readable::Id;
 use zigbee::{Address, Application};
 
 use crate::api::ReadAttributesInternal;
-use crate::discovery::attribute_discovery::{ATTRIBUTES, Message};
+use crate::discovery::attribute_discovery::Message;
 use crate::{RETRY, Timeout, transceiver};
 
 #[env_item("ZIGBEE_COORDINATOR_ATTRIBUTE_DISCOVERY_TIMEOUT_SECS")]
@@ -49,7 +49,10 @@ impl DiscoveryTask {
 
     /// Run the task.
     pub async fn run(self) {
-        trace!("Starting discovery of basic attributes for {address}:{application}.");
+        trace!(
+            "Starting discovery of basic attributes for {}:{}.",
+            self.address, self.endpoint
+        );
         let mut retries = 0;
 
         while RETRY.retry(&mut retries).await {
@@ -58,36 +61,45 @@ impl DiscoveryTask {
                 .read_attributes_one_by_one(
                     self.address.short_id(),
                     self.endpoint,
-                    ATTRIBUTES.into(),
+                    self.attributes.clone(),
                 )
                 .timeout(self.timeout)
                 .await
             {
                 Ok(results) => {
                     trace!(
-                        "Discovered basic attributes for {address}:{application}. Handing over to loopback."
+                        "Discovered basic attributes for {}:{}. Handing over to loopback.",
+                        self.address, self.endpoint
                     );
+
                     self.loopback
                         .send(Message::AttributesDiscovered {
                             address: self.address.clone(),
-                            application,
+                            application: self.endpoint.clone(),
                             results,
                         })
                         .await
                         .unwrap_or_else(|error| {
                             error!("Failed to send AttributesDiscovered message: {error:?}");
                         });
+
                     return;
                 }
                 Err(error) => {
-                    error!("Failed to read attributes for {address}:{application:#04X}: {error}");
+                    error!(
+                        "Failed to read attributes for {}:{:#04X}: {error}",
+                        self.address, self.endpoint
+                    );
                 }
             }
         }
 
-        error!("Failed to discover basic attributes for {address}:{application:#04X}.");
+        error!(
+            "Failed to discover basic attributes for {}:{:#04X}.",
+            self.address, self.endpoint
+        );
         self.loopback
-            .send(Message::DiscoveryFailed { address })
+            .send(Message::DiscoveryFailed(self.address))
             .await
             .unwrap_or_else(|error| error!("Failed to send DiscoveryFailed message: {error:?}"));
     }

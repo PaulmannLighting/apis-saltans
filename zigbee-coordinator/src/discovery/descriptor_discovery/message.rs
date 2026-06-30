@@ -21,4 +21,7 @@ pub enum Message {
         /// The number of retries.
         descriptor: Box<SimpleDescriptor>,
     },
+
+    /// Discovery of the given device has failed.
+    DiscoveryFailed(Address),
 }

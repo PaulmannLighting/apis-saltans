@@ -1,12 +1,12 @@
 use log::{error, info};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 
 use self::attribute_discovery::AttributeDiscovery;
 use self::descriptor_discovery::DescriptorDiscovery;
 use self::endpoint_discovery::EndpointDiscovery;
 pub use self::message::Message;
-use crate::{MPSC_CHANNEL_SIZE, binding, transceiver};
+use crate::{binding, transceiver};
 
 mod attribute_discovery;
 mod descriptor_discovery;
@@ -31,9 +31,8 @@ impl Actor {
         spawn(attribute_discovery.run());
         let (descriptor_discovery, dd_tx) = DescriptorDiscovery::new(zdp.clone(), ad_tx);
         spawn(descriptor_discovery.run());
-        let (ed_tx, ed_rx) = channel(MPSC_CHANNEL_SIZE);
-        let endpoint_discovery = EndpointDiscovery::new(zdp, dd_tx);
-        spawn(endpoint_discovery.run(ed_rx));
+        let (endpoint_discovery, ed_tx) = EndpointDiscovery::new(zdp, dd_tx);
+        spawn(endpoint_discovery.run());
 
         Self {
             endpoint_discovery: ed_tx,
