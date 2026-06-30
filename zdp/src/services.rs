@@ -99,6 +99,7 @@ impl Command {
             SystemServerDiscoveryReq::ID => Ok(SystemServerDiscoveryReq::from_le_stream(bytes)
                 .map(DeviceAndServiceDiscovery::SystemServerDiscoveryReq)
                 .map(Self::DeviceAndServiceDiscovery)),
+
             // Bind Management Commands
             BindReq::ID => Ok(BindReq::from_le_stream(bytes)
                 .map(BindManagement::BindReq)
@@ -112,6 +113,7 @@ impl Command {
             ClearAllBindingsReq::ID => Ok(ClearAllBindingsReq::from_le_stream(bytes)
                 .map(BindManagement::ClearAllBindingsReq)
                 .map(Self::BindManagement)),
+
             // Network Management Commands
             MgmtLqiReq::ID => Ok(MgmtLqiReq::from_le_stream(bytes)
                 .map(NetworkManagement::MgmtLqiReq)
