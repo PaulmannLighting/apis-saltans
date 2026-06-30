@@ -58,7 +58,7 @@ impl DiscoveryTask {
         while RETRY.retry(&mut retries).await {
             match self
                 .zcl
-                .read_attributes_one_by_one(
+                .read_attributes(
                     self.address.short_id(),
                     self.endpoint,
                     self.attributes.clone(),
