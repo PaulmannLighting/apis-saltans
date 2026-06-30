@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use log::{error, warn};
+use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zigbee::Address;
@@ -75,6 +75,11 @@ impl EndpointDiscovery {
 
     /// Discover endpoints on the given device in a separate task.
     async fn discover_endpoints(&self, address: Address) {
+        if self.pending.contains(&address) {
+            trace!("Already discovering endpoints for {address}");
+            return;
+        }
+
         let Some(zdp) = self.zdp.upgrade() else {
             warn!("Failed to upgrade ZDP sender");
             return;

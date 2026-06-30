@@ -70,6 +70,11 @@ impl DescriptorDiscovery {
 
     /// Discover the descriptors for the given endpoints.
     async fn discover(&mut self, address: &Address, endpoints: BTreeSet<Endpoint>) {
+        if self.devices.contains_key(address) {
+            trace!("Already discovering descriptors for {address}");
+            return;
+        }
+
         self.devices.insert(
             address.clone(),
             endpoints.iter().map(|endpoint| (*endpoint, None)).collect(),
