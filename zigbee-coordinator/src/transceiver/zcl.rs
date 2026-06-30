@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use aps::Data;
 use le_stream::ToLeStream;
-use log::{error, warn};
+use log::{debug, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot::{self, Sender, channel};
@@ -66,7 +66,7 @@ where
                                 .map(drop),
                         )
                         .unwrap_or_else(|error| {
-                            error!("Failed to send unicast response: {error:?}");
+                            debug!("Failed to send unicast response: {error:?}");
                         });
                 }
                 Message::Multicast {
@@ -83,7 +83,7 @@ where
                                 .map(drop),
                         )
                         .unwrap_or_else(|error| {
-                            error!("Failed to send unicast response: {error:?}");
+                            debug!("Failed to send unicast response: {error:?}");
                         });
                 }
                 Message::Communicate {
@@ -95,7 +95,7 @@ where
                     response
                         .send(self.communicate(short_id, endpoint, *payload).await)
                         .unwrap_or_else(|error| {
-                            error!("Failed to send unicast response: {error:?}");
+                            debug!("Failed to send unicast response: {error:?}");
                         });
                 }
             }
@@ -111,12 +111,13 @@ where
 
     /// Handle a received ZCL message.
     async fn handle_message_received(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
+        trace!("Received ZCL message from {src_address}: {frame:?}");
         let (aps_header, frame) = frame.into_parts();
         let (header, payload) = frame.into_parts();
 
         if let Some(sender) = self.responses.remove(&header.seq()) {
             sender.send(payload).unwrap_or_else(|error| {
-                warn!("Failed to send ZCL response: {error:?}");
+                debug!("Failed to send ZCL response: {error:?}");
             });
 
             return;
@@ -140,7 +141,7 @@ where
             })
             .await
             .unwrap_or_else(|error| {
-                error!("Failed to send command: {error:?}");
+                debug!("Failed to send command: {error:?}");
             });
     }
 

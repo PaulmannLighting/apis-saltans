@@ -73,7 +73,7 @@ where
                     response
                         .send(self.communicate(short_id, *payload).await)
                         .unwrap_or_else(|error| {
-                            error!("Failed to send unicast response: {error:?}");
+                            debug!("Failed to send unicast response: {error:?}");
                         });
                 }
             }
@@ -88,8 +88,8 @@ where
     }
 
     async fn handle_message_received(&mut self, src_address: u16, frame: Frame<Command>) {
+        trace!("Received ZDP message from {src_address}: {frame:?}");
         let (seq, command) = frame.into_parts();
-        debug!("Received ZDP message: seq={seq}");
 
         if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
             match_desc_req,
