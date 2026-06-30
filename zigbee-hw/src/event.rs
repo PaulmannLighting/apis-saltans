@@ -1,6 +1,10 @@
 use aps::data::Frame;
 use zigbee::Address;
 
+pub use self::route_error::RouteError;
+
+mod route_error;
+
 /// Events that can occur on the hardware layer.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Event {
@@ -37,4 +41,7 @@ pub enum Event {
         /// The APS frame.
         aps_frame: Frame<Vec<u8>>,
     },
+
+    /// A routing error.
+    RouteError(RouteError),
 }

@@ -1,6 +1,6 @@
 use aps::Transactions;
 use aps::data::Frame;
-use log::{debug, trace};
+use log::{debug, error, info, trace};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zigbee_hw::Event;
@@ -56,6 +56,18 @@ impl Mux {
 
     async fn multiplex(&mut self, event: Event) {
         match event {
+            Event::NetworkUp => {
+                info!("Network is up");
+            }
+            Event::NetworkDown => {
+                info!("Network is down");
+            }
+            Event::NetworkOpened => {
+                info!("Network has been opened");
+            }
+            Event::NetworkClosed => {
+                info!("Network has been closed");
+            }
             Event::DeviceJoined(address) => {
                 self.discovery
                     .send(discovery::Message::DeviceJoined(address))
@@ -85,7 +97,9 @@ impl Mux {
             } => {
                 self.handle_aps_frame(src_address, aps_frame).await;
             }
-            other => trace!("Received unknown event: {other:?}"),
+            Event::RouteError(error) => {
+                error!("{error}");
+            }
         }
     }
 
