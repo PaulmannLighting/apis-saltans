@@ -19,6 +19,7 @@ pub use self::event::Event;
 pub use self::event_receiver::EventReceiver;
 pub use self::network_manager::{Attributes, Device, Endpoint, State};
 use self::retry::Retry;
+pub use self::timeout::Timeout;
 
 mod api;
 mod aps_payload;
