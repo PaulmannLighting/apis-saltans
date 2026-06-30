@@ -11,7 +11,7 @@ use crate::discovery::attribute_discovery::Message;
 use crate::{Error, RETRY, Timeout, transceiver};
 
 #[env_item("ZIGBEE_COORDINATOR_ATTRIBUTE_DISCOVERY_TIMEOUT_SECS")]
-const TIMEOUT_SECS: u64 = 5;
+const TIMEOUT_SECS: u64 = 10;
 const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 
 const CORE_ATTRIBUTES: [Id; 6] = [
