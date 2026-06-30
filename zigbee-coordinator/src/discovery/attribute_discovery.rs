@@ -180,7 +180,7 @@ async fn discover_attributes(
         };
 
         match zcl
-            .read_attributes_iteratively(address.short_id(), application, ATTRIBUTES.into())
+            .read_attributes_one_by_one(address.short_id(), application, ATTRIBUTES.into())
             .await
         {
             Ok(results) => {

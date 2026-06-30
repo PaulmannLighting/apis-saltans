@@ -117,7 +117,7 @@ pub trait ReadAttributesInternal {
         }
     }
 
-    /// Read attributes iteratively, sending one attribute request at a time.
+    /// Read attributes one by one, sending one attribute request at a time.
     ///
     /// This method is useful when the number of attributes is large and the device
     /// may not be able to handle all of them in a single request.
@@ -125,7 +125,7 @@ pub trait ReadAttributesInternal {
     /// # Errors
     ///
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes_iteratively<T>(
+    fn read_attributes_one_by_one<T>(
         &self,
         short_id: u16,
         endpoint: Application,
