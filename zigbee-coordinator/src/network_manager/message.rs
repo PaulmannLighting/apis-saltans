@@ -9,13 +9,13 @@ use zigbee::Address;
 use zigbee_hw::RouteError;
 
 use super::Device;
-use crate::{Event, State};
+use crate::Event;
 
 /// Messages received by the network management actor.
 #[derive(Debug)]
 pub enum Message {
     /// Load previous state.
-    Load(State),
+    Load(Box<[Device]>),
 
     /// Subscribe to incoming ZCL commands.
     SubscribeToIncomingCommands {

@@ -110,8 +110,8 @@ where
         }
     }
 
-    fn load(&mut self, state: State) {
-        for device in state.devices {
+    fn load(&mut self, state: Box<[Device]>) {
+        for device in state {
             self.short_ids
                 .insert(device.address.short_id(), device.address.ieee_address());
 
