@@ -82,7 +82,7 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
                     address.ieee_address(),
                     application,
                     Command::OpenClosed(
-                        if status_change.status().contains(ias::zone::Status::TAMPER) {
+                        if status_change.status().contains(ias::zone::Status::ALARM_1) {
                             OpenClosed::Open
                         } else {
                             OpenClosed::Closed
