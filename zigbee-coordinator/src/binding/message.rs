@@ -6,7 +6,7 @@ use crate::Device;
 #[derive(Debug)]
 pub enum Message {
     /// Information that a certain device has been updated.
-    DeviceDiscovered(Device),
+    DeviceDiscovered(Box<Device>),
 
     /// Signal that an endpoint has been bound to a cluster.
     EndpointBound {

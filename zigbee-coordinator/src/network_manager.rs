@@ -33,7 +33,7 @@ where
 {
     /// Create a new actor.
     #[must_use]
-    pub fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>) -> Self {
+    pub const fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>) -> Self {
         Self {
             ncp,
             discovery_manager,
@@ -98,7 +98,7 @@ where
                     warn!("{route_error}");
                     self.ncp.route_request(64).await.unwrap_or_else(|error| {
                         error!("Failed to request route: {error:?}");
-                    })
+                    });
                 }
                 Message::NetworkOpened => {
                     info!("Network opened");

@@ -25,7 +25,7 @@ pub struct DiscoveryTask {
 impl DiscoveryTask {
     /// Create a new instance of `DiscoveryTask`.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         address: Address,
         zdp: Sender<transceiver::zdp::Message>,
         loopback: Sender<Message>,

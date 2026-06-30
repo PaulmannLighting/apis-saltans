@@ -69,7 +69,7 @@ impl Mux {
                     .await
                     .unwrap_or_else(|error| {
                         trace!("Failed to send network opened message: {error}");
-                    })
+                    });
             }
             Event::NetworkClosed => {
                 trace!("Network has been closed");
@@ -78,7 +78,7 @@ impl Mux {
                     .await
                     .unwrap_or_else(|error| {
                         trace!("Failed to send network closed message: {error}");
-                    })
+                    });
             }
             Event::DeviceJoined(address) => {
                 self.discovery
@@ -116,7 +116,7 @@ impl Mux {
                     .await
                     .unwrap_or_else(|error| {
                         error!("Failed to send route error message: {error}");
-                    })
+                    });
             }
         }
     }

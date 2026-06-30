@@ -9,13 +9,11 @@ use zigbee::{Address, ClusterId, Endpoint};
 use zigbee_hw::{Ncp, WeakNcpHandle};
 
 pub use self::device::Device;
-pub use self::endpoints::Endpoints;
 pub use self::message::Message;
 use crate::transceiver::zdp::Handle;
 use crate::{MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, network_manager, transceiver};
 
 mod device;
-mod endpoints;
 mod message;
 
 /// The output clusters that the coordinator binds to.
@@ -72,7 +70,7 @@ impl Actor {
         while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::DeviceDiscovered(device) => {
-                    self.bind_device_endpoints(device.into()).await;
+                    self.bind_device_endpoints((*device).into()).await;
                 }
                 Message::EndpointBound {
                     address,
@@ -146,7 +144,7 @@ impl Actor {
         self.forward_device(device).await;
     }
 
-    async fn forward_device(&mut self, device: Device) {
+    async fn forward_device(&self, device: Device) {
         let Some(network_manager) = self.network_manager.upgrade() else {
             trace!("Network manager channel closed.");
             return;

@@ -4,14 +4,12 @@ use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zcl::general::basic::readable::Id;
-use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
 
 pub use self::device::Device;
 use self::devices::{Devices, DevicesExt};
 use self::discovery_task::DiscoveryTask;
 pub use self::message::Message;
-use crate::discovery::attribute_discovery::endpoint_info::EndpointInfo;
 use crate::{
     Attributes, MPSC_CHANNEL_SIZE, ReadAttributeResult, TASK_POOL_SIZE, binding, transceiver,
 };
@@ -94,7 +92,7 @@ impl AttributeDiscovery {
         let device = self
             .devices
             .entry(device.address.clone())
-            .or_insert(device.into());
+            .or_insert_with(|| device.into());
 
         for application in device
             .endpoints
@@ -152,7 +150,7 @@ impl AttributeDiscovery {
 
         trace!("Forwarding device {address} to binding manager.");
         self.binding_manager
-            .send(binding::Message::DeviceDiscovered(device.into()))
+            .send(binding::Message::DeviceDiscovered(Box::new(device.into())))
             .await
             .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
     }

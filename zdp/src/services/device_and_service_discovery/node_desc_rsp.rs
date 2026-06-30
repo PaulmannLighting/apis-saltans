@@ -119,7 +119,7 @@ impl FromLeStream for NodeDescRsp {
         let nwk_addr_of_interest = u16::from_le_stream(&mut bytes)?;
         let status = Status::try_from(u8::from_le_stream(&mut bytes)?);
 
-        let node_descriptor = if let Ok(Status::Success) = status {
+        let node_descriptor = if status == Ok(Status::Success) {
             Ok(Descriptor::from_le_stream(&mut bytes)?)
         } else {
             Err(status)

@@ -42,7 +42,7 @@ pub struct DiscoveryTask {
 impl DiscoveryTask {
     /// Create a new instance of `DiscoveryTask`.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         address: Address,
         endpoint: Application,
         loopback: Sender<Message>,
@@ -119,7 +119,6 @@ impl DiscoveryTask {
                 Ok(()) => return,
                 Err(error) => {
                     error!("Failed to send AttributesDiscovered message: {error:?}");
-                    continue;
                 }
             }
         }

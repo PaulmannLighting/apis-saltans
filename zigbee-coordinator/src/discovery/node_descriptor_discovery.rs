@@ -66,8 +66,8 @@ impl NodeDescriptorDiscovery {
                         )))
                         .await
                         .unwrap_or_else(|error| {
-                            error!("Failed to forward to endpoint discovery: {error:?}")
-                        })
+                            error!("Failed to forward to endpoint discovery: {error:?}");
+                        });
                 }
                 Message::DiscoveryFailed(address) => {
                     if !self.pending.remove(&address) {

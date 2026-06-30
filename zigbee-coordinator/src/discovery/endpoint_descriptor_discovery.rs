@@ -1,10 +1,10 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use log::{debug, error, info, trace, warn};
+use log::{error, info, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 use zdp::SimpleDescriptor;
-use zigbee::{Address, Endpoint};
+use zigbee::Address;
 
 pub use self::device::Device;
 use self::devices::Devices;
@@ -80,7 +80,7 @@ impl EndpointDescriptorDiscovery {
         let device = self
             .devices
             .entry(device.address.clone())
-            .or_insert(device.into());
+            .or_insert_with(|| device.into());
 
         let Some(loopback) = self.loopback.upgrade() else {
             warn!("Failed to upgrade loopback channel.");

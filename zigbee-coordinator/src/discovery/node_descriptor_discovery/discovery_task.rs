@@ -3,9 +3,9 @@ use std::time::Duration;
 use const_env::env_item;
 use log::{error, trace, warn};
 use tokio::sync::mpsc::Sender;
-use zdp::{NodeDescReq, Status};
+use zdp::NodeDescReq;
 use zigbee::types::tlv::FragmentationParameters;
-use zigbee::{Address, Endpoint};
+use zigbee::Address;
 
 use super::Message;
 use crate::transceiver::zdp::Handle;
@@ -26,7 +26,7 @@ pub struct DiscoveryTask {
 impl DiscoveryTask {
     /// Create a new instance of `DiscoveryTask`.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         address: Address,
         loopback: Sender<Message>,
         zdp: Sender<transceiver::zdp::Message>,

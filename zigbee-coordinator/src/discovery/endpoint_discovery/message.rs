@@ -5,7 +5,6 @@ use zigbee::{Address, Endpoint};
 use super::Device;
 
 /// Message sent to the endpoint discovery actor.
-#[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]
 #[derive(Debug)]
 pub enum Message {
     /// Discover endpoints on the given device.

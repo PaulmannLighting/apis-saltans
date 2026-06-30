@@ -66,7 +66,7 @@ impl Display for NodeDescReq {
 
 impl From<NodeDescReq> for Command {
     fn from(req: NodeDescReq) -> Self {
-        Command::DeviceAndServiceDiscovery(req.into())
+        Self::DeviceAndServiceDiscovery(req.into())
     }
 }
 
