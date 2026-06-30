@@ -5,10 +5,10 @@ use le_stream::{FromLeStream, ToLeStream};
 pub use self::encapsulated_global::EncapsulatedGlobal;
 pub use self::general::{General, Payload};
 pub use self::global::{
-    BeaconAppendixEncapsulation, DeviceCapabilityExtension, FragmentationOptions, Global,
-    JoinerEncapsulation, KeyNegotiationProtocols, ManufacturerSpecific, NextChannelChange,
-    NextPanIdChange, PanIdConflictReport, PreSharedSecrets, RouterInformation,
-    SupportedKeyNegotiation, SymmetricPassphrase,
+    BeaconAppendixEncapsulation, DeviceCapabilityExtension, FragmentationOptions,
+    FragmentationParameters, Global, JoinerEncapsulation, KeyNegotiationProtocols,
+    ManufacturerSpecific, NextChannelChange, NextPanIdChange, PanIdConflictReport,
+    PreSharedSecrets, RouterInformation, SupportedKeyNegotiation, SymmetricPassphrase,
 };
 pub use self::local::{ClearAllBindingsReqEui64, Local};
 pub use self::tag::Tag;

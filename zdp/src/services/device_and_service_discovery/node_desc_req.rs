@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
-use zigbee::types::tlv::{Global, Tlv};
+use zigbee::types::tlv::{FragmentationParameters, Global, Tlv};
 
 use crate::Service;
 
@@ -57,5 +57,14 @@ impl Display for NodeDescReq {
             self.nwk_addr,
             self.tlvs
         )
+    }
+}
+
+impl From<FragmentationParameters> for NodeDescReq {
+    fn from(fragmentation: FragmentationParameters) -> Self {
+        Self {
+            nwk_addr: fragmentation.node_id(),
+            tlvs: vec![Tlv::Global(Global::FragmentationParameters(fragmentation))],
+        }
     }
 }
