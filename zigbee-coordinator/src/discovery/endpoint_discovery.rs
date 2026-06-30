@@ -23,7 +23,7 @@ pub struct EndpointDiscovery {
     zdp: WeakSender<transceiver::zdp::Message>,
     descriptor_discovery: Sender<endpoint_descriptor_discovery::Message>,
     tasks: Pool,
-    pending: BTreeMap<Address, Device>,
+    devices: BTreeMap<Address, Device>,
 }
 
 impl EndpointDiscovery {
@@ -41,7 +41,7 @@ impl EndpointDiscovery {
             zdp,
             descriptor_discovery,
             tasks: Pool::bounded(TASK_POOL_SIZE),
-            pending: BTreeMap::new(),
+            devices: BTreeMap::new(),
         };
 
         (instance, tx)
@@ -55,7 +55,7 @@ impl EndpointDiscovery {
                     self.discover_endpoints(device).await;
                 }
                 Message::Discovered { address, endpoints } => {
-                    let Some(device) = self.pending.remove(&address) else {
+                    let Some(device) = self.devices.remove(&address) else {
                         warn!("Received Discovered message for unknown device: {address}");
                         continue;
                     };
@@ -74,7 +74,7 @@ impl EndpointDiscovery {
                         });
                 }
                 Message::DiscoveryFailed(address) => {
-                    if self.pending.remove(&address).is_none() {
+                    if self.devices.remove(&address).is_none() {
                         warn!("Received DiscoveryFailed message for unknown device: {address}");
                     }
                 }
@@ -83,8 +83,8 @@ impl EndpointDiscovery {
     }
 
     /// Discover endpoints on the given device in a separate task.
-    async fn discover_endpoints(&self, device: Device) {
-        if self.pending.contains_key(&device.address) {
+    async fn discover_endpoints(&mut self, device: Device) {
+        if self.devices.contains_key(&device.address) {
             trace!("Already discovering endpoints for {device}");
             return;
         }
@@ -93,6 +93,8 @@ impl EndpointDiscovery {
             warn!("Failed to upgrade ZDP sender");
             return;
         };
+
+        let device = self.devices.entry(device.address.clone()).or_insert(device);
 
         self.tasks
             .spawn(DiscoveryTask::new(device.address, zdp, self.loopback.clone()).run())
