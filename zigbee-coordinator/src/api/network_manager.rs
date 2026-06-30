@@ -6,10 +6,17 @@ use tokio::sync::oneshot::channel;
 use zigbee::Address;
 
 use crate::network_manager::Message;
-use crate::{Coordinator, Device, Error, Event};
+use crate::{Coordinator, Device, Error, Event, State};
 
 /// Handle to the network manager actor.
 pub trait NetworkManager {
+    /// Load the network manager state from the given [`State`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the communication with the actor failed.
+    fn load(&self, state: State) -> impl Future<Output = Result<(), Error>> + Send;
+
     /// Return the IEEE address for the given short ID.
     ///
     /// # Returns
@@ -104,6 +111,10 @@ pub trait NetworkManager {
 }
 
 impl NetworkManager for Sender<Message> {
+    async fn load(&self, state: State) -> Result<(), Error> {
+        Ok(self.send(Message::Load(state)).await?)
+    }
+
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
@@ -149,6 +160,10 @@ impl NetworkManager for Sender<Message> {
 }
 
 impl NetworkManager for Coordinator {
+    async fn load(&self, state: State) -> Result<(), Error> {
+        self.network_manager.load(state).await
+    }
+
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
