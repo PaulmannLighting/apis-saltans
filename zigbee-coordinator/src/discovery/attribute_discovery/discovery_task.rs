@@ -1,28 +1,42 @@
 use std::time::Duration;
 
 use const_env::env_item;
-use log::{error, trace};
+use log::{debug, error, trace};
 use tokio::sync::mpsc::Sender;
 use zcl::general::basic::readable::Id;
 use zigbee::{Address, Application};
 
 use crate::api::ReadAttributesInternal;
 use crate::discovery::attribute_discovery::Message;
-use crate::{RETRY, Timeout, transceiver};
+use crate::{Error, RETRY, Timeout, transceiver};
 
 #[env_item("ZIGBEE_COORDINATOR_ATTRIBUTE_DISCOVERY_TIMEOUT_SECS")]
 const TIMEOUT_SECS: u64 = 5;
 const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
+
+const CORE_ATTRIBUTES: [Id; 6] = [
+    Id::ZclVersion,
+    Id::ApplicationVersion,
+    Id::StackVersion,
+    Id::HwVersion,
+    Id::ManufacturerName,
+    Id::ModelIdentifier,
+];
+
+const EXTENDED_ATTRIBUTES: [Id; 4] = [
+    Id::DateCode,
+    Id::PowerSource,
+    Id::LocationDescription,
+    Id::SwBuildId,
+];
 
 /// A single discovery task.
 #[derive(Debug)]
 pub struct DiscoveryTask {
     address: Address,
     endpoint: Application,
-    attributes: Box<[Id]>,
     loopback: Sender<Message>,
     zcl: Sender<transceiver::zcl::Message>,
-    timeout: Duration,
 }
 
 impl DiscoveryTask {
@@ -31,19 +45,14 @@ impl DiscoveryTask {
     pub fn new(
         address: Address,
         endpoint: Application,
-        attributes: Box<[Id]>,
         loopback: Sender<Message>,
         zcl: Sender<transceiver::zcl::Message>,
     ) -> Self {
-        let factor = u32::try_from(attributes.len()).unwrap_or(u32::MAX);
-
         Self {
             address,
             endpoint,
-            attributes,
             loopback,
             zcl,
-            timeout: TIMEOUT * factor,
         }
     }
 
@@ -56,42 +65,22 @@ impl DiscoveryTask {
         let mut retries = 0;
 
         while RETRY.retry(&mut retries).await {
-            match self
-                .zcl
-                .read_attributes(
-                    self.address.short_id(),
-                    self.endpoint,
-                    self.attributes.clone(),
-                )
-                .timeout(self.timeout)
-                .await
-            {
-                Ok(results) => {
-                    trace!(
-                        "Discovered basic attributes for {}:{}. Handing over to loopback.",
-                        self.address, self.endpoint
-                    );
-
-                    self.loopback
-                        .send(Message::AttributesDiscovered {
-                            address: self.address.clone(),
-                            application: self.endpoint.clone(),
-                            results,
-                        })
-                        .await
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send AttributesDiscovered message: {error:?}");
-                        });
-
-                    return;
-                }
+            match self.read_attributes(CORE_ATTRIBUTES.into()).await {
+                Ok(()) => debug!("Read core attributes"),
                 Err(error) => {
-                    error!(
-                        "Failed to read attributes for {}:{:#04X}: {error}",
-                        self.address, self.endpoint
-                    );
+                    error!("Failed to read core attributes: {error:?}");
+                    continue;
                 }
             }
+
+            match self.read_attributes(EXTENDED_ATTRIBUTES.into()).await {
+                Ok(()) => debug!("Read extended attributes"),
+                Err(error) => {
+                    error!("Failed to read extended attributes: {error:?}");
+                }
+            }
+
+            return;
         }
 
         error!(
@@ -102,5 +91,23 @@ impl DiscoveryTask {
             .send(Message::DiscoveryFailed(self.address))
             .await
             .unwrap_or_else(|error| error!("Failed to send DiscoveryFailed message: {error:?}"));
+    }
+
+    async fn read_attributes(&self, attributes: Box<[Id]>) -> Result<(), Error> {
+        let results = self
+            .zcl
+            .read_attributes(self.address.short_id(), self.endpoint, attributes)
+            .timeout(TIMEOUT)
+            .await?;
+
+        self.loopback
+            .send(Message::AttributesDiscovered {
+                address: self.address.clone(),
+                application: self.endpoint,
+                results,
+            })
+            .await?;
+
+        Ok(())
     }
 }

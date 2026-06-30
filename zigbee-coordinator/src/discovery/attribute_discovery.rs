@@ -20,20 +20,6 @@ mod discovery_task;
 mod endpoint_info;
 mod message;
 
-/// The attributes we want to discover.
-const ATTRIBUTES: [Id; 10] = [
-    Id::ZclVersion,
-    Id::ApplicationVersion,
-    Id::StackVersion,
-    Id::HwVersion,
-    Id::ManufacturerName,
-    Id::ModelIdentifier,
-    Id::DateCode,
-    Id::PowerSource,
-    Id::LocationDescription,
-    Id::SwBuildId,
-];
-
 /// Actor to discover attributes on devices.
 #[derive(Debug)]
 pub struct AttributeDiscovery {
@@ -121,14 +107,8 @@ impl AttributeDiscovery {
         for application in application_endpoints_with_basic_cluster {
             self.tasks
                 .spawn(
-                    DiscoveryTask::new(
-                        address.clone(),
-                        application,
-                        ATTRIBUTES.into(),
-                        loopback.clone(),
-                        zcl.clone(),
-                    )
-                    .run(),
+                    DiscoveryTask::new(address.clone(), application, loopback.clone(), zcl.clone())
+                        .run(),
                 )
                 .await
                 .map_or_else(|error| error!("Failed to spawn task: {error:?}"), drop);
