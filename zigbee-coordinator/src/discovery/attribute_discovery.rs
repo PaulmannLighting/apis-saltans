@@ -84,6 +84,11 @@ impl AttributeDiscovery {
                 } => {
                     self.update_attributes(address, application, results).await;
                 }
+                Message::DiscoveryFailed { address } => {
+                    if self.devices.remove(&address).is_some() {
+                        trace!("Removed failed discovery of: {address}");
+                    }
+                }
             }
         }
     }
@@ -93,6 +98,11 @@ impl AttributeDiscovery {
         address: &Address,
         endpoints: BTreeMap<Endpoint, SimpleDescriptor>,
     ) {
+        if self.devices.contains_key(address) {
+            trace!("Discovery for {address} already in progress.");
+            return;
+        }
+
         let application_endpoints_with_basic_cluster: Vec<_> = endpoints
             .iter()
             .filter_map(DevicesExt::application_eps_with_basic_cluster)
@@ -104,13 +114,23 @@ impl AttributeDiscovery {
             .map(|(endpoint, descriptor)| (endpoint, descriptor.into()))
             .collect();
 
+        let Some(loopback) = self.loopback.upgrade() else {
+            warn!("Failed to upgrade loopback channel.");
+            return;
+        };
+
+        let Some(zcl) = self.zcl.upgrade() else {
+            warn!("Failed to upgrade ZCL channel.");
+            return;
+        };
+
         for application in application_endpoints_with_basic_cluster {
             self.tasks
                 .spawn(discover_attributes(
                     address.clone(),
                     application,
-                    self.loopback.clone(),
-                    self.zcl.clone(),
+                    loopback,
+                    zcl,
                 ))
                 .await
                 .map_or_else(|error| error!("Failed to spawn task: {error:?}"), drop);
@@ -174,29 +194,19 @@ impl AttributeDiscovery {
 async fn discover_attributes(
     address: Address,
     application: Application,
-    loopback: WeakSender<Message>,
-    zcl: WeakSender<transceiver::zcl::Message>,
+    loopback: Sender<Message>,
+    zcl: Sender<transceiver::zcl::Message>,
 ) {
     trace!("Starting discovery of basic attributes for {address}:{application}.");
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
-        let Some(zcl) = zcl.upgrade() else {
-            trace!("Failed to upgrade ZCL sender.");
-            return;
-        };
-
         match zcl
             .read_attributes_one_by_one(address.short_id(), application, ATTRIBUTES.into())
             .timeout(TIMEOUT * u32::try_from(ATTRIBUTES.len()).unwrap_or(u32::MAX))
             .await
         {
             Ok(results) => {
-                let Some(loopback) = loopback.upgrade() else {
-                    trace!("Failed to upgrade loopback sender.");
-                    return;
-                };
-
                 trace!(
                     "Discovered basic attributes for {address}:{application}. Handing over to loopback."
                 );
@@ -207,16 +217,20 @@ async fn discover_attributes(
                         results,
                     })
                     .await
-                    .unwrap();
+                    .unwrap_or_else(|error| {
+                        error!("Failed to send AttributesDiscovered message: {error:?}");
+                    });
                 return;
             }
             Err(error) => {
-                error!(
-                    "Failed to discover basic attributes for {address}:{application:#04X}: {error}"
-                );
+                error!("Failed to read attributes for {address}:{application:#04X}: {error}");
             }
         }
     }
 
     error!("Failed to discover basic attributes for {address}:{application:#04X}.");
+    loopback
+        .send(Message::DiscoveryFailed { address })
+        .await
+        .unwrap_or_else(|error| error!("Failed to send DiscoveryFailed message: {error:?}"));
 }
