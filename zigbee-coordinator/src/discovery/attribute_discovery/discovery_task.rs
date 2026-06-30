@@ -18,7 +18,7 @@ const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 #[derive(Debug)]
 pub struct DiscoveryTask {
     address: Address,
-    application: Application,
+    endpoint: Application,
     attributes: Box<[Id]>,
     loopback: Sender<Message>,
     zcl: Sender<transceiver::zcl::Message>,
@@ -30,7 +30,7 @@ impl DiscoveryTask {
     #[must_use]
     pub fn new(
         address: Address,
-        application: Application,
+        endpoint: Application,
         attributes: Box<[Id]>,
         loopback: Sender<Message>,
         zcl: Sender<transceiver::zcl::Message>,
@@ -39,7 +39,7 @@ impl DiscoveryTask {
 
         Self {
             address,
-            application,
+            endpoint,
             attributes,
             loopback,
             zcl,
@@ -57,7 +57,7 @@ impl DiscoveryTask {
                 .zcl
                 .read_attributes_one_by_one(
                     self.address.short_id(),
-                    self.application,
+                    self.endpoint,
                     ATTRIBUTES.into(),
                 )
                 .timeout(self.timeout)
