@@ -97,7 +97,7 @@ impl EndpointDiscovery {
         let device = self.devices.entry(device.address.clone()).or_insert(device);
 
         self.tasks
-            .spawn(DiscoveryTask::new(device.address, zdp, self.loopback.clone()).run())
+            .spawn(DiscoveryTask::new(device.address.clone(), zdp, self.loopback.clone()).run())
             .await
             .map_or_else(
                 |error| {
