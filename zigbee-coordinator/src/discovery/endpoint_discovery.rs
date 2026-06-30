@@ -85,7 +85,7 @@ impl EndpointDiscovery {
     /// Discover endpoints on the given device in a separate task.
     async fn discover_endpoints(&self, device: Device) {
         if self.pending.contains_key(&device.address) {
-            trace!("Already discovering endpoints for {}", device.address);
+            trace!("Already discovering endpoints for {device}");
             return;
         }
 

@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Display;
 
 use zigbee::node::Descriptor;
 use zigbee::{Address, ClusterId, Endpoint};
@@ -27,6 +28,12 @@ impl Device {
     #[must_use]
     pub fn needs_binding(&self, clusters: &[ClusterId]) -> bool {
         self.clusters_to_bind(clusters).next().is_some()
+    }
+}
+
+impl Display for Device {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.address.fmt(f)
     }
 }
 

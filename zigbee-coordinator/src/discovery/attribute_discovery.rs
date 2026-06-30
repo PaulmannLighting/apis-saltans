@@ -75,7 +75,7 @@ impl AttributeDiscovery {
 
     async fn get_attributes(&mut self, device: Device) {
         if self.devices.contains_key(&device.address) {
-            trace!("Discovery for {device:?} already in progress.");
+            trace!("Discovery for {device} already in progress.");
             return;
         }
 

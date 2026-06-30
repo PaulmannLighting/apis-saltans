@@ -73,7 +73,7 @@ impl EndpointDescriptorDiscovery {
     /// Discover the descriptors for the given endpoints.
     async fn discover(&mut self, device: Device) {
         if self.devices.contains_key(&device.address) {
-            trace!("Already discovering descriptors for {}", device.address);
+            trace!("Already discovering descriptors for {device}");
             return;
         }
 

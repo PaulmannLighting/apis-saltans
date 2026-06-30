@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::fmt::Display;
 
 use zigbee::node::Descriptor;
 use zigbee::{Address, Endpoint};
@@ -23,5 +24,11 @@ impl Device {
             descriptor,
             endpoints,
         }
+    }
+}
+
+impl Display for Device {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.address.fmt(f)
     }
 }

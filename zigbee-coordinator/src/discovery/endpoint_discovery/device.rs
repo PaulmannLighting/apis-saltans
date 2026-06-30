@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use zigbee::Address;
 use zigbee::node::Descriptor;
 
@@ -14,5 +16,11 @@ impl Device {
             address,
             descriptor,
         }
+    }
+}
+
+impl Display for Device {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.address.fmt(f)
     }
 }

@@ -85,10 +85,10 @@ impl Actor {
     }
 
     async fn bind_device_endpoints(&mut self, device: Device) {
-        trace!("Binding device: {device:?}");
+        trace!("Binding device: {device}");
 
         if !device.needs_binding(&BIND_OUTPUT_CLUSTERS) {
-            trace!("No binding necessary for {}.", device.address);
+            trace!("No binding necessary for {device}.");
             self.forward_device(device).await;
             return;
         }
@@ -150,7 +150,7 @@ impl Actor {
             return;
         };
 
-        trace!("Forwarding device {device:?} to network manager.");
+        trace!("Forwarding device {device} to network manager.");
         network_manager
             .send(network_manager::Message::NewDevice(device.into()))
             .await
