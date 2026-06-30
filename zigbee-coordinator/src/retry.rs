@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use log::debug;
 use tokio::time::sleep;
 
 /// Utility struct to facilitate retrying operations.
@@ -24,6 +25,7 @@ impl Retry {
         }
 
         if *retries > 0 {
+            debug!("Retry #{retries} in {} seconds.", self.delay.as_secs());
             sleep(self.delay).await;
         }
 
