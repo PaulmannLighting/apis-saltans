@@ -5,8 +5,9 @@ use core::fmt::{self, Display};
 use macaddr::MacAddr8;
 
 /// Zigbee device addressing modes.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+
 #[cfg_attr(feature = "serde_with", serde_with::serde_as)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Address {
     #[cfg_attr(feature = "serde_with", serde_as(as = "serde_with::DisplayFromStr"))]
