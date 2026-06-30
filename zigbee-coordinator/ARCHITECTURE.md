@@ -26,8 +26,9 @@ flowchart TD
     ZCL[ZCL transceiver actor]
     ZDP[ZDP transceiver actor]
     D[Discovery supervisor actor]
+    ND[Node descriptor discovery actor]
     ED[Endpoint discovery actor]
-    DD[Descriptor discovery actor]
+    EDD[Endpoint descriptor discovery actor]
     AD[Attribute discovery actor]
     B[Binding actor]
     NM[Network manager actor]
@@ -39,8 +40,9 @@ flowchart TD
     C -->|start| B
     C -->|start| NM
 
+    D -->|start| ND
     D -->|start| ED
-    D -->|start| DD
+    D -->|start| EDD
     D -->|start| AD
 
     HW -->|events| M
@@ -49,10 +51,12 @@ flowchart TD
     M -->|join rejoin announce| D
     M -->|device left| NM
 
+    ND -->|node descriptor request| ZDP
+    ND -->|descriptor| ED
     ED -->|active endpoint request| ZDP
-    ED -->|endpoint list| DD
-    DD -->|simple descriptor request| ZDP
-    DD -->|descriptor set| AD
+    ED -->|endpoint list| EDD
+    EDD -->|simple descriptor request| ZDP
+    EDD -->|descriptor set| AD
     AD -->|read attributes| ZCL
     AD -->|binding::DeviceDiscovered| B
     B -->|bind request| ZDP
@@ -62,7 +66,6 @@ flowchart TD
     ZDP -->|device announce event| D
 
     C -->|api call| ZCL
-    C -->|api call| ZDP
     C -->|state query| NM
     C -->|allow joining| HW
 ```
@@ -73,10 +76,10 @@ flowchart TD
 1. Starts hardware via `Start::start(...)` and receives `(NcpHandle, Receiver<Event>)`.
 2. Starts `NetworkManager` with initial persistent `State`.
 3. Starts `ZCL` and `ZDP` transceivers.
-4. Starts `Mux`, which fans out inbound hardware events.
-5. Starts `Binding` actor and keeps its sender for downstream discovery handoff.
-6. Starts `Discovery` supervisor with weak links to `ZCL`, `ZDP`, and `Binding`.
-7. Inside discovery startup, workers are wired as `ED -> DD -> AD`, and `AD` forwards completed devices directly to `Binding`.
+4. Starts `Binding` actor with weak links to `ZDP` and `NetworkManager`, and a weak `NCP` handle.
+5. Starts `Discovery` with weak links to `ZCL` and `ZDP`, and a strong sender to `Binding`.
+6. Inside discovery startup, workers are wired as `NodeDescriptorDiscovery -> EndpointDiscovery -> EndpointDescriptorDiscovery -> AttributeDiscovery`, and `AttributeDiscovery` forwards completed devices directly to `Binding`.
+7. Starts `Mux`, which fans out inbound hardware events.
 
 All major actor inboxes are bounded MPSC channels (size configurable by `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`).
 
@@ -87,9 +90,7 @@ All major actor inboxes are bounded MPSC channels (size configurable by `ZIGBEE_
 Holds:
 - `ncp: NcpHandle`
 - sender to `ZCL` actor
-- sender to `ZDP` actor
 - sender to `NetworkManager`
-- sender to `Binding` actor
 
 Implements user-facing traits (`OnOff`, `ColorControl`, `ReadAttributes`, `WriteAttributes`, `Joining`, `NetworkManager`) by forwarding requests to actors and composing responses.
 
@@ -135,29 +136,37 @@ Important details:
 
 ### Discovery Supervisor
 
-Receives high-level discovery triggers and feeds endpoint discovery:
+Receives high-level discovery triggers and feeds node descriptor discovery:
 - `DeviceJoined`
 - `DeviceRejoined`
 - `DeviceAnnounced`
 
 Internally owns and starts:
+- `NodeDescriptorDiscovery` (`ND`)
 - `EndpointDiscovery` (`ED`)
-- `DescriptorDiscovery` (`DD`)
+- `EndpointDescriptorDiscovery` (`EDD`)
 - `AttributeDiscovery` (`AD`)
 
 Wiring detail:
-- supervisor emits discovery work only to `ED`
-- `ED` forwards to `DD`, `DD` forwards to `AD`
+- supervisor emits discovery work only to `ND`
+- `ND` forwards to `ED`, `ED` forwards to `EDD`, `EDD` forwards to `AD`
 - `AD` does not route back through the supervisor; it forwards directly to `Binding`
+
+### NodeDescriptorDiscovery (ND)
+
+For each target device:
+- sends `NodeDescReq` (via ZDP)
+- retries using global retry policy (`RETRY`)
+- on success forwards `(Address, NodeDescriptor)` to `EndpointDiscovery`
 
 ### EndpointDiscovery (ED)
 
 For each target device:
 - sends `ActiveEpReq` (via ZDP)
 - retries using global retry policy (`RETRY`)
-- on success forwards endpoint set to `DescriptorDiscovery`
+- on success forwards endpoint set plus node descriptor to `EndpointDescriptorDiscovery`
 
-### DescriptorDiscovery (DD)
+### EndpointDescriptorDiscovery (EDD)
 
 For each discovered endpoint:
 - sends `SimpleDescReq` (via ZDP)
@@ -224,27 +233,32 @@ sequenceDiagram
 sequenceDiagram
     participant M as Mux
     participant D as Discovery
+    participant ND as NodeDescriptorDiscovery
     participant ED as EndpointDiscovery
     participant ZDP as ZDP Actor
-    participant DD as DescriptorDiscovery
+    participant EDD as EndpointDescriptorDiscovery
     participant AD as AttributeDiscovery
     participant ZCL as ZCL Actor
     participant B as Binding
     participant NM as NetworkManager
 
     M->>D: DeviceJoined/Rejoined/Announced
-    D->>ED: Discover(address)
+    D->>ND: Discover(address)
+
+    ND->>ZDP: communicate(NodeDescReq)
+    ZDP-->>ND: NodeDescRsp(status, descriptor)
+    ND->>ED: Discover{address, descriptor}
 
     ED->>ZDP: communicate(ActiveEpReq)
     ZDP-->>ED: ActiveEpRsp(status, endpoints)
-    ED->>DD: Discover{address, endpoints}
+    ED->>EDD: Discover{address, descriptor, endpoints}
 
     loop for each endpoint
-        DD->>ZDP: communicate(SimpleDescReq)
-        ZDP-->>DD: SimpleDescRsp
+        EDD->>ZDP: communicate(SimpleDescReq)
+        ZDP-->>EDD: SimpleDescRsp
     end
 
-    DD->>AD: GetAttributes{address, endpoint->descriptor}
+    EDD->>AD: GetAttributes{address, endpoint->descriptor}
 
     loop for each application endpoint with Basic cluster
         AD->>ZCL: read basic attributes
