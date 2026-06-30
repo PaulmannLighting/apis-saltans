@@ -10,7 +10,7 @@ use crate::Command;
 mod parse_frame_error;
 
 /// A frame with a sequence number and associated data.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Frame<T> {
     seq: u8,
     data: T,
