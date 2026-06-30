@@ -23,7 +23,7 @@ mod endpoint_info;
 mod message;
 
 #[env_item("ZIGBEE_COORDINATOR_ATTRIBUTE_DISCOVERY_TIMEOUT_SECS")]
-const TIMEOUT_SECS: u64 = 30;
+const TIMEOUT_SECS: u64 = 5;
 const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 
 /// The attributes we want to discover.
@@ -188,7 +188,7 @@ async fn discover_attributes(
 
         match zcl
             .read_attributes_one_by_one(address.short_id(), application, ATTRIBUTES.into())
-            .timeout(TIMEOUT)
+            .timeout(TIMEOUT * u32::try_from(ATTRIBUTES.len()).unwrap_or(u32::MAX))
             .await
         {
             Ok(results) => {
