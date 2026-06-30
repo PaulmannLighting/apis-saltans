@@ -16,6 +16,7 @@ publish = false
 [dependencies]
 bitflags = "2"
 chrono = "0.4"
+cfg_eval = { version = "0.1", optional = true }
 heapless = "0.9"
 intx = "0.1"
 le-stream = { version = "10", features = ["alloc", "derive", "heapless", "intx", "macaddr"] }
@@ -30,8 +31,9 @@ smarthomelib = { git = "ssh://git@github.com/PaulmannLighting/smarthomelib.git",
 
 [features]
 serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
-serde_with = ["dep:serde_with", "serde"]
+serde_with = ["dep:serde_with", "dep:cfg_eval", "serde"]
 smarthomelib = ["dep:smarthomelib"]
+cfg_eval = ["dep:cfg_eval"]
 
 [lints]
 workspace = true
