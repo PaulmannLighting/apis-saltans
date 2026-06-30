@@ -1,18 +1,18 @@
 use std::fmt::Display;
+use std::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
 use zigbee::node::Descriptor;
 use zigbee::types::tlv::Tlv;
 
-use crate::{Displayable, Service, Status};
+use crate::{Command, DeviceAndServiceDiscovery, Service, Status};
 
 /// Node Descriptor Response structure.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct NodeDescRsp {
     nwk_addr_of_interest: u16,
-    status: u8,
-    node_descriptor: Descriptor,
+    node_descriptor: Result<Descriptor, Result<Status, u8>>,
     tlvs: Vec<Tlv>,
 }
 
@@ -21,14 +21,15 @@ impl NodeDescRsp {
     #[must_use]
     pub const fn new(
         nwk_addr_of_interest: u16,
-        status: Status,
-        node_descriptor: Descriptor,
+        node_descriptor: Result<Descriptor, Status>,
         tlvs: Vec<Tlv>,
     ) -> Self {
         Self {
             nwk_addr_of_interest,
-            status: status as u8,
-            node_descriptor,
+            node_descriptor: match node_descriptor {
+                Ok(node_descriptor) => Ok(node_descriptor),
+                Err(status) => Err(Ok(status)),
+            },
             tlvs,
         }
     }
@@ -39,25 +40,9 @@ impl NodeDescRsp {
         self.nwk_addr_of_interest
     }
 
-    /// Returns the status.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the status value is not valid.
-    pub fn status(&self) -> Result<Status, u8> {
-        self.status.try_into()
-    }
-
-    /// Returns the node descriptor.
-    #[must_use]
-    pub const fn node_descriptor(&self) -> &Descriptor {
-        &self.node_descriptor
-    }
-
-    /// Returns the TLVs.
-    #[must_use]
-    pub fn tlvs(&self) -> &[Tlv] {
-        &self.tlvs
+    /// Returns the descriptor result and TLVs.
+    pub fn into_parts(self) -> (Result<Descriptor, Result<Status, u8>>, Vec<Tlv>) {
+        (self.node_descriptor, self.tlvs)
     }
 }
 
@@ -73,12 +58,23 @@ impl Display for NodeDescRsp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} {{ nwk_addr_of_interest: {:#06X}, status: {}, node_descriptor: {:?}, tlvs: [",
+            "{} {{ nwk_addr_of_interest: {:#06X}, ",
             Self::NAME,
             self.nwk_addr_of_interest,
-            self.status().display(),
-            self.node_descriptor
         )?;
+
+        match &self.node_descriptor {
+            Ok(node_descriptor) => write!(
+                f,
+                "status: {}, node_descriptor: {:?}, ",
+                Status::Success,
+                node_descriptor
+            )?,
+            Err(Ok(status)) => write!(f, "status: {status:?}, ")?,
+            Err(Err(status)) => write!(f, "status: {status:#04X}, ")?,
+        }
+
+        write!(f, "tlvs: [")?;
 
         let mut tlvs = self.tlvs.iter();
 
@@ -91,5 +87,70 @@ impl Display for NodeDescRsp {
         }
 
         write!(f, "] }}")
+    }
+}
+
+impl TryFrom<Command> for NodeDescRsp {
+    type Error = Command;
+
+    fn try_from(cmd: Command) -> Result<Self, Self::Error> {
+        match cmd {
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescRsp(rsp)) => {
+                Ok(rsp)
+            }
+            other => Err(other),
+        }
+    }
+}
+
+impl TryFrom<NodeDescRsp> for Descriptor {
+    type Error = Result<Status, u8>;
+
+    fn try_from(value: NodeDescRsp) -> Result<Self, Self::Error> {
+        value.node_descriptor
+    }
+}
+
+impl FromLeStream for NodeDescRsp {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let nwk_addr_of_interest = u16::from_le_stream(&mut bytes)?;
+        let status = Status::try_from(u8::from_le_stream(&mut bytes)?);
+
+        let node_descriptor = if let Ok(Status::Success) = status {
+            Ok(Descriptor::from_le_stream(&mut bytes)?)
+        } else {
+            Err(status)
+        };
+
+        let tlvs = Vec::from_le_stream(&mut bytes)?;
+
+        Some(Self {
+            nwk_addr_of_interest,
+            node_descriptor,
+            tlvs,
+        })
+    }
+}
+
+impl ToLeStream for NodeDescRsp {
+    type Iter = Chain<
+        Chain<<u16 as ToLeStream>::Iter, <u8 as ToLeStream>::Iter>,
+        <Option<Descriptor> as ToLeStream>::Iter,
+    >;
+
+    fn to_le_stream(self) -> Self::Iter {
+        let (status, descriptor) = match self.node_descriptor {
+            Ok(node_descriptor) => (u8::from(Status::Success), Some(node_descriptor)),
+            Err(Ok(status)) => (u8::from(status), None),
+            Err(Err(status)) => (status, None),
+        };
+
+        self.nwk_addr_of_interest
+            .to_le_stream()
+            .chain(status.to_le_stream())
+            .chain(descriptor.to_le_stream())
     }
 }

@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
-use zigbee::Cluster;
 use zigbee::types::tlv::{FragmentationParameters, Global, Tlv};
+use zigbee::{Cluster, ExpectResponse};
 
-use crate::Service;
+use crate::{Command, NodeDescRsp, Service};
 
 /// Node Descriptor Request structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -48,6 +48,10 @@ impl Service for NodeDescReq {
     const NAME: &'static str = "Node_Desc_req";
 }
 
+impl ExpectResponse<Command> for NodeDescReq {
+    type Response = NodeDescRsp;
+}
+
 impl Display for NodeDescReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -57,6 +61,12 @@ impl Display for NodeDescReq {
             self.nwk_addr,
             self.tlvs
         )
+    }
+}
+
+impl From<NodeDescReq> for Command {
+    fn from(req: NodeDescReq) -> Self {
+        Command::DeviceAndServiceDiscovery(req.into())
     }
 }
 
