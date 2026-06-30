@@ -16,7 +16,7 @@ tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
 tokio-task-pool = "0.1"
 zcl = { path = "../zcl", version = "0.1", features = ["serde"] }
 zdp = { path = "../zdp", version = "0.1", features = ["serde"] }
-zigbee = { path = "../zigbee", version = "0.1", features = ["serde"] }
+zigbee = { path = "../zigbee", version = "0.1", features = ["serde", "serde_with"] }
 zigbee-hw = { path = "../zigbee-hw", version = "0.1" }
 
 [features]
