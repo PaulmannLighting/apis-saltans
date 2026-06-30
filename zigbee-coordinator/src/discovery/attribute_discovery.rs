@@ -116,26 +116,26 @@ impl AttributeDiscovery {
         application: Application,
         results: Box<[ReadAttributeResult<Id>]>,
     ) {
-        let Some(endpoints) = self.devices.get_mut(&address) else {
+        let Some(mut endpoints) = self.devices.remove(&address) else {
             warn!("Received attributes for unknown device: {address}");
             return;
         };
 
         let Some(endpoint) = endpoints.get_mut(&Endpoint::Application(application)) else {
             warn!("Received attributes for unknown endpoint: {address}:{application:#04X}");
+            self.devices.insert(address, endpoints);
             return;
         };
 
         endpoint.set_attributes(results.into());
-        self.forward_device_if_complete(address).await;
+        self.forward_device_if_complete(address, endpoints).await;
     }
 
-    async fn forward_device_if_complete(&mut self, address: Address) {
-        let Some(endpoints) = self.devices.remove(&address) else {
-            warn!("Received attributes for unknown device: {address}");
-            return;
-        };
-
+    async fn forward_device_if_complete(
+        &mut self,
+        address: Address,
+        endpoints: BTreeMap<Endpoint, EndpointInfo>,
+    ) {
         if endpoints
             .iter()
             .filter_map(DevicesExt::application_eps_with_basic_cluster)
