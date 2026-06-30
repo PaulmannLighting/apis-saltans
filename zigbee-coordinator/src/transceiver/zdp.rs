@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use le_stream::ToLeStream;
-use log::{debug, error, trace};
+use log::{debug, error, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot;
@@ -114,7 +114,7 @@ where
                 command.cluster_id()
             );
             sender.send(command).unwrap_or_else(|error| {
-                error!("Failed to send ZDP response: {error:?}");
+                warn!("Failed to send ZDP response: {error:?}");
             });
         }
     }

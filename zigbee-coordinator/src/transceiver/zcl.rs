@@ -116,7 +116,7 @@ where
 
         if let Some(sender) = self.responses.remove(&header.seq()) {
             sender.send(payload).unwrap_or_else(|error| {
-                error!("Failed to send ZCL response: {error:?}");
+                warn!("Failed to send ZCL response: {error:?}");
             });
 
             return;
