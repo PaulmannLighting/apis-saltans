@@ -97,7 +97,7 @@ where
                     todo!()
                 }
                 Message::NewDevice(device) => {
-                    self.add_device(device);
+                    self.add_device(device).await;
                 }
                 Message::RemoveDevice(address) => {
                     self.remove_device(&address);
@@ -138,11 +138,14 @@ where
         self.subscribers.retain(|(_, sender)| !sender.is_closed());
     }
 
-    fn add_device(&mut self, device: Device) {
+    async fn add_device(&mut self, device: Device) {
         let ieee_address = device.address.ieee_address();
         let short_id = device.address.short_id();
         self.devices.insert(ieee_address, device);
         self.short_ids.insert(short_id, ieee_address);
+        self.ncp.route_request(64).await.unwrap_or_else(|error| {
+            error!("Failed to request route: {error:?}");
+        });
     }
 
     fn remove_device(&mut self, address: &Address) {
