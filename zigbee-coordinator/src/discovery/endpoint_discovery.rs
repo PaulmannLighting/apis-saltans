@@ -1,3 +1,6 @@
+use std::time::Duration;
+
+use const_env::env_item;
 use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio_task_pool::Pool;
@@ -6,10 +9,15 @@ use zigbee::Address;
 
 pub use self::message::Message;
 use super::descriptor_discovery;
+use crate::timeout::Timeout;
 use crate::transceiver::zdp::Handle;
 use crate::{RETRY, TASK_POOL_SIZE, transceiver};
 
 mod message;
+
+#[env_item("ZIGBEE_COORDINATOR_ENDPOINT_DISCOVERY_TIMEOUT_SECS")]
+const TIMEOUT_SECS: u64 = 5;
+const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 
 /// Actor to discover endpoints on devices.
 #[derive(Debug)]
@@ -78,7 +86,11 @@ async fn discover_endpoints(
             return;
         };
 
-        match zdp.communicate(short_id, ActiveEpReq::new(short_id)).await {
+        match zdp
+            .communicate(short_id, ActiveEpReq::new(short_id))
+            .timeout(TIMEOUT)
+            .await
+        {
             Ok(response) => {
                 if response.status() == Ok(Status::Success) {
                     let Some(descriptor_discovery) = descriptor_discovery.upgrade() else {

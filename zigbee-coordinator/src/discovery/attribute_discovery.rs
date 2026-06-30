@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
+use std::time::Duration;
 
+use const_env::env_item;
 use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
@@ -10,6 +12,7 @@ use zigbee::{Address, Application, Endpoint};
 use self::devices::{Devices, DevicesExt};
 pub use self::message::Message;
 use crate::discovery::attribute_discovery::endpoint_info::EndpointInfo;
+use crate::timeout::Timeout;
 use crate::{
     Attributes, MPSC_CHANNEL_SIZE, RETRY, ReadAttributeResult, ReadAttributesInternal,
     TASK_POOL_SIZE, binding, transceiver,
@@ -18,6 +21,10 @@ use crate::{
 mod devices;
 mod endpoint_info;
 mod message;
+
+#[env_item("ZIGBEE_COORDINATOR_ATTRIBUTE_DISCOVERY_TIMEOUT_SECS")]
+const TIMEOUT_SECS: u64 = 30;
+const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 
 /// The attributes we want to discover.
 const ATTRIBUTES: [Id; 10] = [
@@ -181,6 +188,7 @@ async fn discover_attributes(
 
         match zcl
             .read_attributes_one_by_one(address.short_id(), application, ATTRIBUTES.into())
+            .timeout(TIMEOUT)
             .await
         {
             Ok(results) => {

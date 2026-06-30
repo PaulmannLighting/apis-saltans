@@ -3,49 +3,26 @@
 use std::time::Duration;
 
 use const_env::env_item;
-use tokio::time::error::Elapsed;
+
+use crate::Error;
 
 /// Timeout for ZCL responses.
 #[env_item("ZIGBEE_COORDINATOR_ZCL_RESPONSE_TIMEOUT_SECS")]
 const ZCL_RESPONSE_TIMEOUT_SECS: u64 = 10;
 const ZCL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(ZCL_RESPONSE_TIMEOUT_SECS);
 
-/// Timeout for ZDP responses.
-#[env_item("ZIGBEE_COORDINATOR_ZDP_RESPONSE_TIMEOUT_SECS")]
-const ZDP_RESPONSE_TIMEOUT_SECS: u64 = 10;
-const ZDP_RESPONSE_TIMEOUT: Duration = Duration::from_secs(ZDP_RESPONSE_TIMEOUT_SECS);
-
 /// Extension trait to add a timeout while waiting for a future.
-pub trait Timeout {
-    type Output;
-
+pub trait Timeout<S, E> {
     /// Wait for the future to complete, or timeout.
-    fn timeout(self, timeout: Duration) -> impl Future<Output = Result<Self::Output, Elapsed>>;
-
-    /// Wait for a ZCL response, or timeout.
-    fn zcl_response_timeout(self) -> impl Future<Output = Result<Self::Output, Elapsed>>
-    where
-        Self: Sized,
-    {
-        self.timeout(ZCL_RESPONSE_TIMEOUT)
-    }
-
-    /// Wait for a ZDP response, or timeout.
-    fn zdp_response_timeout(self) -> impl Future<Output = Result<Self::Output, Elapsed>>
-    where
-        Self: Sized,
-    {
-        self.timeout(ZDP_RESPONSE_TIMEOUT)
-    }
+    fn timeout(self, timeout: Duration) -> impl Future<Output = Result<S, Error>>;
 }
 
-impl<T> Timeout for T
+impl<T, S, E> Timeout<S, E> for T
 where
-    T: IntoFuture,
+    T: IntoFuture<Output = Result<S, E>>,
+    Error: From<E>,
 {
-    type Output = <Self as IntoFuture>::Output;
-
-    async fn timeout(self, timeout: Duration) -> Result<Self::Output, Elapsed> {
-        tokio::time::timeout(timeout, self).await
+    async fn timeout(self, timeout: Duration) -> Result<S, Error> {
+        Ok(tokio::time::timeout(timeout, self).await??)
     }
 }

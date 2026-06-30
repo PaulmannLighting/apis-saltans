@@ -7,7 +7,6 @@ use zigbee::{Cluster, ExpectResponse};
 
 use super::Message;
 use crate::Error;
-use crate::timeout::Timeout;
 
 /// Handle trait on the ZDP transceiver.
 pub trait Handle {
@@ -46,8 +45,7 @@ where
                 .await?;
             result
                 .await??
-                .zdp_response_timeout()
-                .await??
+                .await?
                 .try_into()
                 .map_err(|error| Error::InvalidResponseType(format!("{error:?}")))
         }

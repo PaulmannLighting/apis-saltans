@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::time::Duration;
 
+use const_env::env_item;
 use log::{debug, error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
@@ -9,11 +11,16 @@ use zigbee::{Address, Endpoint};
 use self::devices::Devices;
 pub use self::message::Message;
 use crate::discovery::attribute_discovery;
+use crate::timeout::Timeout;
 use crate::transceiver::zdp::Handle;
 use crate::{MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, transceiver};
 
 mod devices;
 mod message;
+
+#[env_item("ZIGBEE_COORDINATOR_DESCRIPTOR_DISCOVERY_TIMEOUT_SECS")]
+const TIMEOUT_SECS: u64 = 5;
+const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 
 /// Actor to discover descriptors on devices.
 #[derive(Debug)]
@@ -148,6 +155,7 @@ async fn get_descriptor(
 
         match zdp
             .communicate(short_id, SimpleDescReq::new(short_id, endpoint))
+            .timeout(TIMEOUT)
             .await
         {
             Ok(response) => {

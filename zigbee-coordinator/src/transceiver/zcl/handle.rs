@@ -4,7 +4,6 @@ use tokio::sync::oneshot::channel;
 use zigbee::{Application, Cluster, ExpectResponse};
 
 use super::{Message, Payload};
-use crate::timeout::Timeout;
 use crate::{Destination, Error, NetworkManager};
 
 /// Handle trait on the ZCL transceiver.
@@ -158,8 +157,7 @@ impl Handle for Sender<Message> {
             .await?;
             result
                 .await??
-                .zcl_response_timeout()
-                .await??
+                .await?
                 .try_into()
                 .map_err(|error| Error::InvalidResponseType(format!("{error:?}")))
         }
