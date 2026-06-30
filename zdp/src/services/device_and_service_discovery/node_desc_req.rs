@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zigbee::Cluster;
-use zigbee::types::tlv::Tlv;
+use zigbee::types::tlv::{Global, Tlv};
 
 use crate::Service;
 
@@ -16,8 +16,15 @@ pub struct NodeDescReq {
 impl NodeDescReq {
     /// Creates a new `NodeDescReq`.
     #[must_use]
-    pub const fn new(nwk_addr: u16, tlvs: Vec<Tlv>) -> Self {
-        Self { nwk_addr, tlvs }
+    pub fn new(nwk_addr: u16, tlvs: Vec<Tlv>) -> Option<Self> {
+        if !tlvs
+            .iter()
+            .any(|tlv| matches!(tlv, Tlv::Global(Global::FragmentationParameters(_))))
+        {
+            return None;
+        }
+
+        Some(Self { nwk_addr, tlvs })
     }
 
     /// Returns the network address.
