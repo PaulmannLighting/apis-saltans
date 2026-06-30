@@ -4,7 +4,7 @@ use core::fmt::{Display, LowerHex, UpperHex};
 /// A Zigbee application endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 #[repr(transparent)]
-pub struct Application(pub(crate) u8);
+pub struct Application(pub(super) u8);
 
 impl Application {
     /// The minimum valid application endpoint ID.
