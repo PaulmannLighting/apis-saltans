@@ -10,6 +10,7 @@ use zdp::SimpleDescriptor;
 use zigbee::{Address, Application, Endpoint};
 
 use self::devices::{Devices, DevicesExt};
+use self::discovery_task::DiscoveryTask;
 pub use self::message::Message;
 use crate::discovery::attribute_discovery::endpoint_info::EndpointInfo;
 use crate::timeout::Timeout;
@@ -19,12 +20,9 @@ use crate::{
 };
 
 mod devices;
+mod discovery_task;
 mod endpoint_info;
 mod message;
-
-#[env_item("ZIGBEE_COORDINATOR_ATTRIBUTE_DISCOVERY_TIMEOUT_SECS")]
-const TIMEOUT_SECS: u64 = 5;
-const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 
 /// The attributes we want to discover.
 const ATTRIBUTES: [Id; 10] = [
@@ -126,12 +124,16 @@ impl AttributeDiscovery {
 
         for application in application_endpoints_with_basic_cluster {
             self.tasks
-                .spawn(discover_attributes(
-                    address.clone(),
-                    application,
-                    loopback.clone(),
-                    zcl.clone(),
-                ))
+                .spawn(
+                    DiscoveryTask::new(
+                        address.clone(),
+                        application,
+                        ATTRIBUTES.into(),
+                        loopback.clone(),
+                        zcl.clone(),
+                    )
+                    .run(),
+                )
                 .await
                 .map_or_else(|error| error!("Failed to spawn task: {error:?}"), drop);
         }
@@ -189,48 +191,4 @@ impl AttributeDiscovery {
             .await
             .unwrap_or_else(|error| error!("Failed to forward device: {error:?}"));
     }
-}
-
-async fn discover_attributes(
-    address: Address,
-    application: Application,
-    loopback: Sender<Message>,
-    zcl: Sender<transceiver::zcl::Message>,
-) {
-    trace!("Starting discovery of basic attributes for {address}:{application}.");
-    let mut retries = 0;
-
-    while RETRY.retry(&mut retries).await {
-        match zcl
-            .read_attributes_one_by_one(address.short_id(), application, ATTRIBUTES.into())
-            .timeout(TIMEOUT * u32::try_from(ATTRIBUTES.len()).unwrap_or(u32::MAX))
-            .await
-        {
-            Ok(results) => {
-                trace!(
-                    "Discovered basic attributes for {address}:{application}. Handing over to loopback."
-                );
-                loopback
-                    .send(Message::AttributesDiscovered {
-                        address: address.clone(),
-                        application,
-                        results,
-                    })
-                    .await
-                    .unwrap_or_else(|error| {
-                        error!("Failed to send AttributesDiscovered message: {error:?}");
-                    });
-                return;
-            }
-            Err(error) => {
-                error!("Failed to read attributes for {address}:{application:#04X}: {error}");
-            }
-        }
-    }
-
-    error!("Failed to discover basic attributes for {address}:{application:#04X}.");
-    loopback
-        .send(Message::DiscoveryFailed { address })
-        .await
-        .unwrap_or_else(|error| error!("Failed to send DiscoveryFailed message: {error:?}"));
 }
