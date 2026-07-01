@@ -44,8 +44,8 @@ dependencies = [
  "apis-saltans-aps 0.1.0",
  "apis-saltans-core 0.1.1",
  "apis-saltans-hw",
- "apis-saltans-zcl",
- "apis-saltans-zdp",
+ "apis-saltans-zcl 0.1.0",
+ "apis-saltans-zdp 0.1.0",
  "const_env",
  "le-stream",
  "log",
@@ -97,10 +97,10 @@ dependencies = [
 name = "apis-saltans-hw"
 version = "0.1.0"
 dependencies = [
- "apis-saltans-aps 0.1.0",
- "apis-saltans-core 0.1.1",
- "apis-saltans-zcl",
- "apis-saltans-zdp",
+ "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-zcl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-zdp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "le-stream",
  "log",
  "macaddr",
@@ -147,6 +147,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "apis-saltans-zcl"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cd32b3ab9ecf60fa5fbe4011bbf6bd6a044437eaac5bbac8f2cd82caba43d25"
+dependencies = [
+ "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags",
+ "chrono",
+ "either",
+ "heapless",
+ "le-stream",
+ "macaddr",
+ "num-derive",
+ "num-traits",
+ "repr-discriminant",
+]
+
+[[package]]
 name = "apis-saltans-zdp"
 version = "0.1.0"
 dependencies = [
@@ -160,6 +180,23 @@ dependencies = [
  "num-traits",
  "repr-discriminant",
  "serde",
+]
+
+[[package]]
+name = "apis-saltans-zdp"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9137d332f84bfcb7c0a1f23bed2afecd4cd07433e7e3b2555263202d7c338f99"
+dependencies = [
+ "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags",
+ "heapless",
+ "le-stream",
+ "macaddr",
+ "num-derive",
+ "num-traits",
+ "repr-discriminant",
 ]
 
 [[package]]
