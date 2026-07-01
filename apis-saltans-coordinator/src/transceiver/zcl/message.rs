@@ -1,6 +1,8 @@
+use std::collections::BTreeMap;
+
 use apis_saltans_aps::Data;
 use apis_saltans_core::Application;
-use apis_saltans_hw::Error;
+use apis_saltans_hw::{Error, ParallelUnicastResult};
 use apis_saltans_zcl::{Cluster, Frame};
 use tokio::sync::oneshot::{Receiver, Sender};
 
@@ -55,5 +57,15 @@ pub enum Message {
         payload: Box<Payload<Cluster>>,
         /// The response channel.
         response: Sender<Result<Receiver<Cluster>, Error>>,
+    },
+
+    /// Communicate a unicast with an expected response.
+    ParallelUnicast {
+        /// The destination address.
+        targets: BTreeMap<u16, Box<[Application]>>,
+        /// The payload.
+        payload: Box<Payload<Cluster>>,
+        /// The response channel.
+        response: Sender<ParallelUnicastResult>,
     },
 }
