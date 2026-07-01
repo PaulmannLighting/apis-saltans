@@ -1,13 +1,13 @@
 [package]
 name = "apis-saltans-zcl"
-description = "Zigbee Cluster library."
+description = "Zigbee Cluster Library"
 authors = ["Richard Neumann <neumann@paulmann.de>"]
 license = "MIT"
 repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "ZCL", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-zcl"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 exclude = [".gitignore", "TODO.md"]
 
