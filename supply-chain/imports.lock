@@ -1,6 +1,10 @@
 
 # cargo-vet imports lock
 
+[[unpublished.apis-saltans-macros]]
+version = "0.1.1"
+audited_as = "0.1.0"
+
 [[audits.google.audits.num-traits]]
 who = "Manish Goregaokar <manishearth@google.com>"
 criteria = "safe-to-deploy"
