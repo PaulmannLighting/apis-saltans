@@ -1,11 +1,19 @@
 [package]
 name = "apis-saltans-zdp"
+description = "Zigbee ZDP library."
+authors = ["Richard Neumann <neumann@paulmann.de>"]
+license = "MIT"
+repository = "https://github.com/PaulmannLighting/apis-saltans"
+keywords = ["zigbee", "ZDP", "library"]
+categories = ["network-programming"]
+documentation = "https://docs.rs/apis-saltans-zdp"
 version = "0.1.0"
 edition = "2024"
+exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = { version = "0.1", path = "../apis-saltans-aps" }
-apis-saltans-core = { version = "0.1", path = "../apis-saltans-core" }
+apis-saltans-aps = "0.1"
+apis-saltans-core = "0.1"
 bitflags = "2"
 heapless = "0.9"
 le-stream = { version = "10", features = ["derive", "macaddr"] }
