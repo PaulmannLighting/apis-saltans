@@ -1,8 +1,8 @@
 //! Commands for the On/Off cluster.
 
-use le_stream::ToLeStream;
-use apis_saltans_core::{ClusterId, Cluster, Direction};
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use apis_saltans_macros::ParseZclFrame;
+use le_stream::ToLeStream;
 
 pub use self::off::Off;
 pub use self::off_with_effect::{DelayedAllOff, DyingLight, Effect, OffWithEffect};

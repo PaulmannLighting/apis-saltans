@@ -1,7 +1,7 @@
 //! Writable attributes.
 
-use repr_discriminant::ReprDiscriminant;
 use apis_saltans_core::types::Uint16;
+use repr_discriminant::ReprDiscriminant;
 
 /// Attributes for the illuminance level sensing cluster.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]

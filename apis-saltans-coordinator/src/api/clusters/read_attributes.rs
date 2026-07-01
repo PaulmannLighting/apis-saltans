@@ -1,9 +1,9 @@
-use macaddr::MacAddr8;
-use tokio::sync::mpsc::Sender;
-use apis_saltans_zcl::global::read_attributes::{Command, Response};
-use apis_saltans_zcl::{ParseAttributeError, ReadableAttribute};
 use apis_saltans_core::Application;
 use apis_saltans_hw::Metadata;
+use apis_saltans_zcl::global::read_attributes::{Command, Response};
+use apis_saltans_zcl::{ParseAttributeError, ReadableAttribute};
+use macaddr::MacAddr8;
+use tokio::sync::mpsc::Sender;
 
 use crate::transceiver::zcl::{Handle, Message, Payload};
 use crate::{Coordinator, Error, NetworkManager};

@@ -2,11 +2,11 @@
 
 use core::fmt::{Display, LowerHex, UpperHex};
 
+use apis_saltans_core::types::{Bool, OctStr, String, Type, Uint8};
+use apis_saltans_core::{Cluster, ClusterId};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Bool, OctStr, String, Type, Uint8};
-use apis_saltans_core::{ClusterId, Cluster};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;

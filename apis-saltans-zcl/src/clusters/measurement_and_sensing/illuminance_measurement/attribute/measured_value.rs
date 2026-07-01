@@ -1,7 +1,7 @@
 use core::ops::RangeInclusive;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Uint16;
+use le_stream::{FromLeStream, ToLeStream};
 
 const BASE: f32 = 10.0;
 const FACTOR: f32 = 10_000.0;

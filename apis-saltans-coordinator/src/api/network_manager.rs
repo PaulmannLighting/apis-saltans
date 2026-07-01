@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use apis_saltans_core::Address;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
-use apis_saltans_core::Address;
 
 use crate::network_manager::Message;
 use crate::{Coordinator, Device, Error, Event};

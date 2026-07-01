@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use le_stream::{Consume, FromLeStream, ToLeStream};
 use apis_saltans_core::Cluster;
+use le_stream::{Consume, FromLeStream, ToLeStream};
 
 use crate::{ByteSizedVec, Command, DeviceAndServiceDiscovery, Service, SimpleDescriptor, Status};
 

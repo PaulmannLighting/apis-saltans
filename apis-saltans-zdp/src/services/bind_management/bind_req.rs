@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
+use apis_saltans_core::{Cluster, Endpoint, ExpectResponse};
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
-use apis_saltans_core::{Cluster, Endpoint, ExpectResponse};
 
 pub use self::address::Address;
 pub use self::address_mode::AddressMode;

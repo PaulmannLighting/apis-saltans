@@ -2,10 +2,10 @@
 
 use core::iter::Chain;
 
+use apis_saltans_core::types::{Bool, String};
+use apis_saltans_core::{Cluster, ClusterId};
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Bool, String};
-use apis_saltans_core::{ClusterId, Cluster};
 
 use self::iterator::LeStreamIter;
 use super::alarm_mask::AlarmMask;

@@ -1,8 +1,8 @@
 //! Reportable attributes for the On/Off cluster.
 
+use apis_saltans_core::types::{Bool, Type};
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Bool, Type};
 
 use crate::global::report_attributes::AttributeReport;
 

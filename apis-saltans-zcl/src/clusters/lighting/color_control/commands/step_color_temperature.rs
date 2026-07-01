@@ -1,7 +1,7 @@
+use apis_saltans_core::types::Uint16;
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::clusters::lighting::color_control::step_hue::Mode;
 use crate::{Command, Options};

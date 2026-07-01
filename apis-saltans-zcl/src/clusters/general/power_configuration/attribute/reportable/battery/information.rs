@@ -1,6 +1,6 @@
+use apis_saltans_core::types::Uint8;
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::Uint8;
 
 const MASK: u16 = 0x000f;
 

@@ -1,8 +1,8 @@
 //! General-purpose APS frame.
 
-use apis_saltans_zdp::Command;
 use apis_saltans_core::Cluster;
 use apis_saltans_hw::Metadata;
+use apis_saltans_zdp::Command;
 
 /// A simplified APS frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

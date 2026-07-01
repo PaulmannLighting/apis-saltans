@@ -1,5 +1,5 @@
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::{Type, Uint16};
+use le_stream::{FromLeStream, ToLeStream};
 
 const MAX: u16 = 0x00ff;
 

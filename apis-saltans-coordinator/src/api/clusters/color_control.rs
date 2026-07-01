@@ -1,6 +1,6 @@
+use apis_saltans_core::units::Deciseconds;
 use apis_saltans_zcl::Options;
 use apis_saltans_zcl::lighting::color_control::MoveToColor;
-use apis_saltans_core::units::Deciseconds;
 
 use crate::transceiver::zcl::Handle;
 use crate::{Coordinator, Destination, Error};

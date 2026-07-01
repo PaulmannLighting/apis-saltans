@@ -1,8 +1,8 @@
 use core::iter::Chain;
 
+use apis_saltans_core::types::{Type, Uint16};
 use le_stream::{FromLeStream, ToLeStream};
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Type, Uint16};
 
 /// Attributes for the Identify cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

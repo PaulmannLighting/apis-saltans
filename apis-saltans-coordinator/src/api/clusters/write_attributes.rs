@@ -1,8 +1,8 @@
-use macaddr::MacAddr8;
-use apis_saltans_zcl::WritableAttribute;
-use apis_saltans_zcl::global::write_attributes::{Command, Record, Response};
 use apis_saltans_core::Application;
 use apis_saltans_hw::Metadata;
+use apis_saltans_zcl::WritableAttribute;
+use apis_saltans_zcl::global::write_attributes::{Command, Record, Response};
+use macaddr::MacAddr8;
 
 use crate::transceiver::zcl::{Handle, Payload};
 use crate::{Coordinator, Error, NetworkManager};

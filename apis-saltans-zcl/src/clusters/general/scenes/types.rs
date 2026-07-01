@@ -1,5 +1,5 @@
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Uint16;
+use le_stream::{FromLeStream, ToLeStream};
 
 const MAX_GROUP: u16 = 0xfff7;
 

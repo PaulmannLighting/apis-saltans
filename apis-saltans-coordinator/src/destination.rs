@@ -1,5 +1,5 @@
-use macaddr::MacAddr8;
 use apis_saltans_core::Application;
+use macaddr::MacAddr8;
 
 /// Destination of a message.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]

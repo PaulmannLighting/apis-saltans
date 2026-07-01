@@ -1,9 +1,9 @@
+use apis_saltans_core::types::{String, Type, Uint8, Uint16};
+use apis_saltans_core::{Cluster, ClusterId};
 use le_stream::FromLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{String, Type, Uint8, Uint16};
-use apis_saltans_core::{ClusterId, Cluster};
 
 use crate::clusters::general::power_configuration::attribute::{
     BatteryAlarmMask, BatteryAlarmState, BatterySize,

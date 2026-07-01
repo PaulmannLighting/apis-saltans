@@ -2,8 +2,8 @@
 
 use std::fmt::Display;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::Cluster;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::bind_management::{
     BindManagement, BindReq, BindRsp, ClearAllBindingsReq, Destination, UnbindReq,

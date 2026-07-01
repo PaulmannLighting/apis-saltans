@@ -2,9 +2,9 @@
 
 use core::iter::Chain;
 
+use apis_saltans_core::types::Type;
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::Type;
 
 use crate::general::groups::NameSupport;
 

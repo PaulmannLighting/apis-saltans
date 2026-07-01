@@ -1,5 +1,5 @@
-use le_stream::{FromLeStream, ToLeStream};
 pub use apis_saltans_core::Direction;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::control::Control;
 pub use self::scope::Scope;

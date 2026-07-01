@@ -1,8 +1,8 @@
 //! Scene-related attributes for the On/Off cluster.
 
+use apis_saltans_core::types::Bool;
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::Bool;
 
 /// Readable attributes for the On/Off cluster.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

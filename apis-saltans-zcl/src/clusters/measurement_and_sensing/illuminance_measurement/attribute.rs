@@ -1,7 +1,7 @@
 //! Attributes of the illuminance measurement cluster.
 
-use repr_discriminant::ReprDiscriminant;
 use apis_saltans_core::types::Uint16;
+use repr_discriminant::ReprDiscriminant;
 
 pub use self::measured_value::MeasuredValue;
 use super::LightSensorType;

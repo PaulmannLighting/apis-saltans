@@ -1,10 +1,10 @@
 //! Readable attributes of the Alarms cluster.
 
+use apis_saltans_core::types::Type;
+use apis_saltans_core::{Cluster, ClusterId};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::Type;
-use apis_saltans_core::{ClusterId, Cluster};
 
 use super::AlarmCount;
 use crate::{InvalidType, ReadableAttribute};

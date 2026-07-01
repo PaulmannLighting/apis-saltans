@@ -1,5 +1,5 @@
-use apis_saltans_zcl::Cluster;
 use apis_saltans_core::{Address, Endpoint};
+use apis_saltans_zcl::Cluster;
 
 /// A generic Zigbee event.
 #[derive(Clone, Debug)]

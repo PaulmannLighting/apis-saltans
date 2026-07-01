@@ -1,10 +1,10 @@
 use std::fmt::Display;
 use std::iter::Chain;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::Cluster;
 use apis_saltans_core::node::Descriptor;
 use apis_saltans_core::types::tlv::Tlv;
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::{Command, DeviceAndServiceDiscovery, Service, Status};
 

@@ -1,5 +1,5 @@
-use tokio::sync::mpsc::Receiver;
 use apis_saltans_zdp::SimpleDescriptor;
+use tokio::sync::mpsc::Receiver;
 
 use crate::{Error, Event, NcpHandle};
 

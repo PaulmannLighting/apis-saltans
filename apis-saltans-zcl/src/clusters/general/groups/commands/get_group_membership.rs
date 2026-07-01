@@ -1,9 +1,9 @@
 use core::iter::Chain;
 use std::boxed::Box;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{ClusterId, Cluster, Direction};
+use apis_saltans_core::{Cluster, ClusterId, Direction};
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::Command;
 

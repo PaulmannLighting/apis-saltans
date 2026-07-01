@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use apis_saltans_core::{ClusterId, Cluster};
+use apis_saltans_core::{Cluster, ClusterId};
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
 

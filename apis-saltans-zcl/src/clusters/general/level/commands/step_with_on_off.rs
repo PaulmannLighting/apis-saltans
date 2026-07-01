@@ -1,8 +1,8 @@
-use le_stream::{FromLeStream, ToLeStream};
-use num_traits::FromPrimitive;
 use apis_saltans_core::types::Uint16;
 use apis_saltans_core::units::Deciseconds;
-use apis_saltans_core::{ClusterId, Cluster, Direction};
+use apis_saltans_core::{Cluster, ClusterId, Direction};
+use le_stream::{FromLeStream, ToLeStream};
+use num_traits::FromPrimitive;
 
 use crate::Command;
 use crate::general::level::Mode;

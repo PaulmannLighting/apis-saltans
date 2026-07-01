@@ -1,5 +1,5 @@
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;

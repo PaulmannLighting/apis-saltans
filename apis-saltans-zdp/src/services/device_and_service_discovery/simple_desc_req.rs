@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::{Cluster, Endpoint, ExpectResponse};
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::{Command, Service, SimpleDescRsp};
 

@@ -1,6 +1,6 @@
+use apis_saltans_core::Direction;
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::Direction;
 
 use super::scope::Scope;
 

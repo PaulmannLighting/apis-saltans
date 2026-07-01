@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
+use apis_saltans_core::Cluster;
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
-use apis_saltans_core::Cluster;
 
 pub use self::leave_req_flags::LeaveReqFlags;
 use crate::Service;

@@ -1,7 +1,7 @@
 //! Writeable attributes for the On/Off cluster.
 
-use repr_discriminant::ReprDiscriminant;
 use apis_saltans_core::types::{Bool, Uint16};
+use repr_discriminant::ReprDiscriminant;
 
 use super::StartUpOnOff;
 

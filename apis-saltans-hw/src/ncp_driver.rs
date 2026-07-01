@@ -3,10 +3,10 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
+use apis_saltans_core::Endpoint;
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
-use apis_saltans_core::Endpoint;
 
 use self::sealed_driver::SealedDriver;
 use crate::message::Message;

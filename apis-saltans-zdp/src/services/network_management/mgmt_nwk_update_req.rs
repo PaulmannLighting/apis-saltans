@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::Cluster;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::scan_duration::ScanDuration;
 use crate::Service;

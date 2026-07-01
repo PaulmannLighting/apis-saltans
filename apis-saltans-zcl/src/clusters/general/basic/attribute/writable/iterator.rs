@@ -1,5 +1,5 @@
-use le_stream::ToLeStream;
 use apis_saltans_core::types::{Bool, String};
+use le_stream::ToLeStream;
 
 use crate::clusters::general::basic::{AlarmMask, DisableLocalConfig, PhysicalEnvironment};
 use crate::general::basic::writable::Attribute;
