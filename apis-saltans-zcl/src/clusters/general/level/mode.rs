@@ -33,3 +33,16 @@ impl<T> Mode<T> {
         }
     }
 }
+
+#[cfg(feature = "smarthomelib")]
+impl<T, U> From<smarthomelib::Stepping<T>> for Mode<U>
+where
+    T: Into<U>,
+{
+    fn from(stepping: smarthomelib::Stepping<T>) -> Self {
+        match stepping {
+            smarthomelib::Stepping::Up(step) => Self::Up(step.into()),
+            smarthomelib::Stepping::Down(step) => Self::Down(step.into()),
+        }
+    }
+}

@@ -28,11 +28,13 @@ impl Move {
     }
 
     /// Get the mode.
+    #[must_use]
     pub fn mode(self) -> Option<Mode<UnitsPerSecond>> {
         Mode::new(self.mode, self.rate()?).ok()
     }
 
     /// Get the rate.
+    #[must_use]
     pub fn rate(self) -> Option<UnitsPerSecond> {
         self.rate.try_into().ok()
     }
