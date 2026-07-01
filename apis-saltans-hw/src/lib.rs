@@ -26,7 +26,8 @@ pub type NcpHandle = Sender<Message>;
 /// A weak handle on the NCP.
 pub type WeakNcpHandle = WeakSender<Message>;
 
-type ParallelUnicastResult = Result<BTreeMap<(u16, Endpoint), Result<u8, Error>>, Error>;
+/// A result of parallel unicast operation.
+pub type ParallelUnicastResult = Result<BTreeMap<(u16, Endpoint), Result<u8, Error>>, Error>;
 
 mod await_event;
 mod bridge;
