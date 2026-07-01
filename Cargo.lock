@@ -13,20 +13,6 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-aps"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e88711b65a90b420cb3b96f04cc3b67b82c6a5137b60d285b28153ebde532642"
-dependencies = [
- "apis-saltans-core 0.1.1",
- "bitflags",
- "le-stream",
- "log",
- "num-derive",
- "num-traits",
-]
-
-[[package]]
-name = "apis-saltans-aps"
 version = "0.1.1"
 dependencies = [
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
@@ -40,7 +26,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-aps"
 version = "0.1.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
 dependencies = [
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "bitflags",
@@ -54,11 +40,11 @@ dependencies = [
 name = "apis-saltans-coordinator"
 version = "0.1.2"
 dependencies = [
- "apis-saltans-aps 0.1.0",
- "apis-saltans-core 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "apis-saltans-hw 0.1.0",
- "apis-saltans-zcl 0.1.0",
- "apis-saltans-zdp 0.1.1",
+ "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
+ "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
+ "apis-saltans-hw 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
+ "apis-saltans-zcl 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
+ "apis-saltans-zdp 0.1.2 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "const_env",
  "le-stream",
  "log",
@@ -70,25 +56,6 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-core"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae17bf8fb771fa1fe87abd4886affcb04ad4a0a053690f4d68e892655c0b60af"
-dependencies = [
- "bitflags",
- "chrono",
- "heapless",
- "intx",
- "le-stream",
- "log",
- "macaddr",
- "num-derive",
- "num-traits",
- "repr-discriminant",
- "serde",
-]
-
-[[package]]
-name = "apis-saltans-core"
 version = "0.2.1"
 dependencies = [
  "bitflags",
@@ -109,8 +76,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-core"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79b50729a76cab0b397ead6389f4ae8e97f335c585cfd6e24cb8e4699ffb3588"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
 dependencies = [
  "bitflags",
  "cfg_eval",
@@ -125,36 +91,16 @@ dependencies = [
  "repr-discriminant",
  "serde",
  "serde_with",
-]
-
-[[package]]
-name = "apis-saltans-core"
-version = "0.2.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
-dependencies = [
- "bitflags",
- "chrono",
- "heapless",
- "intx",
- "le-stream",
- "log",
- "macaddr",
- "num-derive",
- "num-traits",
- "repr-discriminant",
- "serde",
 ]
 
 [[package]]
 name = "apis-saltans-hw"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "659f1bb72e92fc39ff3673b06532ddc8bb60c3e7d77b8eedb6827822261ee340"
+version = "0.1.1"
 dependencies = [
- "apis-saltans-aps 0.1.0",
- "apis-saltans-core 0.1.1",
- "apis-saltans-zcl 0.1.0",
- "apis-saltans-zdp 0.1.1",
+ "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
+ "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
+ "apis-saltans-zcl 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
+ "apis-saltans-zdp 0.1.2 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "le-stream",
  "log",
  "macaddr",
@@ -164,6 +110,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-hw"
 version = "0.1.1"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
@@ -187,43 +134,11 @@ dependencies = [
 [[package]]
 name = "apis-saltans-macros"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b1d3ffe3f9f2852d67bc2f0ac237260b3487eb683c2e4cf6b474c3ef0923a6a"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "apis-saltans-macros"
-version = "0.1.0"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "apis-saltans-zcl"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cd32b3ab9ecf60fa5fbe4011bbf6bd6a044437eaac5bbac8f2cd82caba43d25"
-dependencies = [
- "apis-saltans-aps 0.1.0",
- "apis-saltans-core 0.1.1",
- "apis-saltans-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "bitflags",
- "chrono",
- "either",
- "heapless",
- "le-stream",
- "macaddr",
- "num-derive",
- "num-traits",
- "repr-discriminant",
- "serde",
 ]
 
 [[package]]
@@ -248,7 +163,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-zcl"
 version = "0.1.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
@@ -256,23 +171,6 @@ dependencies = [
  "bitflags",
  "chrono",
  "either",
- "heapless",
- "le-stream",
- "macaddr",
- "num-derive",
- "num-traits",
- "repr-discriminant",
-]
-
-[[package]]
-name = "apis-saltans-zdp"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efabcc9374c7e8017bc44a4dbe9094fa9a69e12a25019834349e7d217002e9d5"
-dependencies = [
- "apis-saltans-aps 0.1.0",
- "apis-saltans-core 0.1.1",
- "bitflags",
  "heapless",
  "le-stream",
  "macaddr",
@@ -301,7 +199,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-zdp"
 version = "0.1.2"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
@@ -312,6 +210,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "repr-discriminant",
+ "serde",
 ]
 
 [[package]]
