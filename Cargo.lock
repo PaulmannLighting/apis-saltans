@@ -42,15 +42,17 @@ name = "apis-saltans-coordinator"
 version = "0.1.0"
 dependencies = [
  "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-core 0.1.1",
  "apis-saltans-hw 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-zcl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "apis-saltans-zdp 0.1.0",
+ "apis-saltans-zdp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bunt",
  "const_env",
  "le-stream",
  "log",
  "macaddr",
  "serde",
+ "smarthomelib",
  "tokio",
  "tokio-task-pool",
 ]
@@ -72,6 +74,7 @@ dependencies = [
  "repr-discriminant",
  "serde",
  "serde_with",
+ "smarthomelib",
 ]
 
 [[package]]
@@ -81,7 +84,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae17bf8fb771fa1fe87abd4886affcb04ad4a0a053690f4d68e892655c0b60af"
 dependencies = [
  "bitflags",
- "cfg_eval",
  "chrono",
  "heapless",
  "intx",
@@ -92,7 +94,6 @@ dependencies = [
  "num-traits",
  "repr-discriminant",
  "serde",
- "serde_with",
 ]
 
 [[package]]
@@ -102,7 +103,7 @@ dependencies = [
  "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-zcl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "apis-saltans-zdp 0.1.0",
+ "apis-saltans-zdp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "le-stream",
  "log",
  "macaddr",
@@ -118,7 +119,7 @@ dependencies = [
  "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-zcl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "apis-saltans-zdp 0.1.0",
+ "apis-saltans-zdp 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "le-stream",
  "log",
  "macaddr",
@@ -187,9 +188,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-zdp"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9137d332f84bfcb7c0a1f23bed2afecd4cd07433e7e3b2555263202d7c338f99"
+version = "0.1.1"
 dependencies = [
  "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -206,6 +205,8 @@ dependencies = [
 [[package]]
 name = "apis-saltans-zdp"
 version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efabcc9374c7e8017bc44a4dbe9094fa9a69e12a25019834349e7d217002e9d5"
 dependencies = [
  "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -236,6 +237,11 @@ name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
+
+[[package]]
+name = "bunt"
+version = "0.1.0"
+source = "git+https://github.com/PaulmannLighting/bunt.git#a52cce33ffa533e5db1d5584f19ece6acfc65da0"
 
 [[package]]
 name = "byteorder"
@@ -632,6 +638,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 
 [[package]]
+name = "smarthomelib"
+version = "0.1.0"
+source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#5f64a73e7e27bdc1fd393f5f9b0dc00ddbb8febb"
+dependencies = [
+ "bunt",
+ "const_env",
+ "log",
+ "tokio",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -661,6 +678,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
 dependencies = [
  "pin-project-lite",
+ "tokio-macros",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "385a6cb71ab9ab790c5fe8d67f1645e6c450a7ce006a33de03daa956cf70a496"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -13,17 +13,22 @@ exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
 apis-saltans-aps = "0.1"
-apis-saltans-core = { version = "0.1", features = ["serde", "serde_with"] }
+apis-saltans-core = { version = "0.1", path = "../apis-saltans-core", features = ["serde", "serde_with"] }
 apis-saltans-hw = "0.1"
 apis-saltans-zcl = { version = "0.1", features = ["serde"] }
 apis-saltans-zdp = { version = "0.1", features = ["serde"] }
+bunt = { git = "https://github.com/PaulmannLighting/bunt.git", version = "0.1", optional = true }
 const_env = "0.1"
 le-stream = { version = "10", features = ["derive"] }
 log = "0.4"
 macaddr = "1"
 serde = { version = "1", features = ["derive"] }
+smarthomelib = { git = "ssh://git@github.com/PaulmannLighting/smarthomelib.git", branch = "trait-based-approach", optional = true }
 tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
 tokio-task-pool = "0.1"
+
+[features]
+smarthomelib = ["dep:smarthomelib", "dep:bunt", "apis-saltans-core/smarthomelib"]
 
 [lints]
 workspace = true

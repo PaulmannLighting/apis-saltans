@@ -57,3 +57,9 @@ impl From<UnitsPerSecond> for u8 {
             .expect("Inner value is guaranteed to not be NONE.")
     }
 }
+
+#[cfg(feature = "smarthomelib")]
+impl smarthomelib::Limited<u8> for UnitsPerSecond {
+    const MIN: Self = Self(Uint8::MIN);
+    const MAX: Self = Self(Uint8::MAX);
+}
