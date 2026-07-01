@@ -35,14 +35,16 @@ impl<T> Mode<T> {
 }
 
 #[cfg(feature = "smarthomelib")]
-impl<T, U> From<smarthomelib::Stepping<T>> for Mode<U>
+impl<T, U> TryFrom<smarthomelib::Stepping<T>> for Mode<U>
 where
-    T: Into<U>,
+    T: TryInto<U>,
 {
-    fn from(stepping: smarthomelib::Stepping<T>) -> Self {
+    type Error = T::Error;
+
+    fn try_from(stepping: smarthomelib::Stepping<T>) -> Result<Self, Self::Error> {
         match stepping {
-            smarthomelib::Stepping::Up(step) => Self::Up(step.into()),
-            smarthomelib::Stepping::Down(step) => Self::Down(step.into()),
+            smarthomelib::Stepping::Up(step) => Ok(Self::Up(step.try_into()?)),
+            smarthomelib::Stepping::Down(step) => Ok(Self::Down(step.try_into()?)),
         }
     }
 }
