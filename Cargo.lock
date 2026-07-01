@@ -26,7 +26,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-aps"
 version = "0.1.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#c5de68077338d3dac6c3ab1b715ec7af44b1a70c"
 dependencies = [
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "bitflags",
@@ -76,7 +76,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-core"
 version = "0.2.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#c5de68077338d3dac6c3ab1b715ec7af44b1a70c"
 dependencies = [
  "bitflags",
  "cfg_eval",
@@ -110,7 +110,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-hw"
 version = "0.1.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#c5de68077338d3dac6c3ab1b715ec7af44b1a70c"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
@@ -134,7 +134,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-macros"
 version = "0.1.0"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#c5de68077338d3dac6c3ab1b715ec7af44b1a70c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -163,7 +163,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-zcl"
 version = "0.1.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#c5de68077338d3dac6c3ab1b715ec7af44b1a70c"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
@@ -199,7 +199,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-zdp"
 version = "0.1.2"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#16411ae9c951fdeb564793d4f67f34b3bc5c2990"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main#c5de68077338d3dac6c3ab1b715ec7af44b1a70c"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=main)",
