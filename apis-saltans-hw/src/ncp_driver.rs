@@ -10,7 +10,7 @@ use tokio::task::JoinHandle;
 
 use self::sealed_driver::SealedDriver;
 use crate::message::Message;
-use crate::{Error, FoundNetwork, Frame, NcpHandle, ScannedChannel};
+use crate::{Error, FoundNetwork, Frame, NcpHandle, ParallelUnicastResult, ScannedChannel};
 
 mod sealed_driver;
 
@@ -163,7 +163,7 @@ pub trait NcpDriver {
         &mut self,
         targets: BTreeMap<u16, Box<[Endpoint]>>,
         frame: Frame,
-    ) -> impl Future<Output = Result<Vec<Result<u8, Error>>, Error>> + Send;
+    ) -> impl Future<Output = ParallelUnicastResult> + Send;
 
     /// Run the network manager actor.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = Self> + Send

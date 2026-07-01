@@ -7,7 +7,7 @@ use tokio::sync::oneshot::Sender;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
-use crate::{Error, Frame};
+use crate::{Error, Frame, ParallelUnicastResult};
 
 mod found_network;
 mod scanned_channel;
@@ -99,6 +99,6 @@ pub enum Message {
     ParallelUnicast {
         targets: BTreeMap<u16, Box<[Endpoint]>>,
         frame: Frame,
-        response: Sender<Result<Vec<Result<u8, Error>>, Error>>,
+        response: Sender<ParallelUnicastResult>,
     },
 }

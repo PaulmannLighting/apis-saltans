@@ -7,7 +7,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 
 use crate::message::Message;
-use crate::{Error, FoundNetwork, Frame, ScannedChannel};
+use crate::{Error, FoundNetwork, Frame, ParallelUnicastResult, ScannedChannel};
 
 /// Proxy trait to communicate with Zigbee NCPs which implement [`NcpDriver`](crate::NcpDriver).
 ///
@@ -169,7 +169,7 @@ pub trait Ncp {
         &mut self,
         targets: BTreeMap<u16, Box<[Endpoint]>>,
         frame: Frame,
-    ) -> impl Future<Output = Result<Vec<Result<u8, Error>>, Error>> + Send;
+    ) -> impl Future<Output = ParallelUnicastResult> + Send;
 }
 
 impl Ncp for Sender<Message> {
@@ -305,7 +305,7 @@ impl Ncp for Sender<Message> {
         &mut self,
         targets: BTreeMap<u16, Box<[Endpoint]>>,
         frame: Frame,
-    ) -> Result<Vec<Result<u8, Error>>, Error> {
+    ) -> ParallelUnicastResult {
         let (response, rx) = channel();
         self.send(Message::ParallelUnicast {
             targets,

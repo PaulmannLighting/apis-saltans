@@ -3,6 +3,9 @@
 //! This library provides a unified interface to implement Zigbee coordinator functionality for
 //! Zigbee hardware (NCP) drivers.
 
+use std::collections::BTreeMap;
+
+use apis_saltans_core::Endpoint;
 pub use event_translator::EventTranslator;
 use tokio::sync::mpsc::{Sender, WeakSender};
 
@@ -22,6 +25,8 @@ pub type NcpHandle = Sender<Message>;
 
 /// A weak handle on the NCP.
 pub type WeakNcpHandle = WeakSender<Message>;
+
+type ParallelUnicastResult = Result<BTreeMap<(u16, Endpoint), Result<u8, Error>>, Error>;
 
 mod await_event;
 mod bridge;
