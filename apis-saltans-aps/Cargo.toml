@@ -1,7 +1,15 @@
 [package]
 name = "apis-saltans-aps"
+description = "Zigbee APS library."
+authors = ["Richard Neumann <neumann@paulmann.de>"]
+license = "MIT"
+repository = "https://github.com/PaulmannLighting/apis-saltans"
+keywords = ["zigbee", "APS", "library"]
+categories = ["network-programming"]
+documentation = "https://docs.rs/apis-saltans-aps"
 version = "0.1.0"
 edition = "2024"
+exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
 bitflags = "2"
