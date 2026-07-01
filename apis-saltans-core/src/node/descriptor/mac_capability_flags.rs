@@ -6,7 +6,11 @@ use le_stream::{FromLeStream, ToLeStream};
 use super::device_type::DeviceType;
 
 /// MAC Capability Flags as defined in the IEEE 802.15.4 standard.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct MacCapabilityFlags(u8);
 

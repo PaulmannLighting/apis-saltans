@@ -7,7 +7,11 @@ use le_stream::{FromLeStream, ToLeStream};
 /// with bit settings signifying the system server capabilities of this node.
 ///
 /// It is used to facilitate discovery of particular system servers by other nodes on the system.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ServerMask(u16);
 

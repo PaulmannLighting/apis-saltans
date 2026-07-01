@@ -5,7 +5,11 @@ use super::frequency_band::FrequencyBand;
 use super::logical_type::LogicalType;
 
 /// First two bytes of the node descriptor.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(transparent)
+)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Flags(u16);
 
@@ -13,12 +17,16 @@ bitflags! {
     impl Flags: u16 {
         /// Logical type of the device.
         const LOGICAL_TYPE = 0b1110_0000_0000_0000;
+
         /// Complex descriptor availability.
         const COMPLEX_DESCRIPTOR_AVAILABLE = 0b0001_0000_0000_0000;
+
         /// User descriptor availability.
         const USER_DESCRIPTOR_AVAILABLE = 0b0000_1000_0000_0000;
+
         /// APS flags.
         const APS_FLAGS = 0b0000_0000_1110_0000;
+
         /// Frequency band.
         const FREQUENCY_BAND = 0b0000_0000_0001_1111;
     }
