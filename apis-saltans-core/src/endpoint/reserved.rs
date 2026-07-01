@@ -8,10 +8,10 @@ pub struct Reserved(pub(crate) u8);
 
 impl Reserved {
     /// The minimum valid reserved endpoint ID.
-    pub const MIN: u8 = 241;
+    pub const MIN_ID: u8 = 241;
 
     /// The maximum valid reserved endpoint ID.
-    pub const MAX: u8 = 254;
+    pub const MAX_ID: u8 = 254;
 }
 
 impl Display for Reserved {

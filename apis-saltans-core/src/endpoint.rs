@@ -36,8 +36,8 @@ impl Endpoint {
     pub const fn new(value: u8) -> Self {
         match value {
             0 => Self::Data,
-            Application::MIN..=Application::MAX => Self::Application(Application(value)),
-            Reserved::MIN..=Reserved::MAX => Self::Reserved(Reserved(value)),
+            Application::MIN_ID..=Application::MAX_ID => Self::Application(Application(value)),
+            Reserved::MIN_ID..=Reserved::MAX_ID => Self::Reserved(Reserved(value)),
             255 => Self::Broadcast,
         }
     }
