@@ -6,6 +6,7 @@
 pub enum DeviceType {
     /// A full-function device (FFD).
     FullFunctionDevice,
+
     /// A reduced-function device (RFD).
     ReducedFunctionDevice,
 }
