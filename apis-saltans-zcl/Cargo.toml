@@ -25,9 +25,11 @@ num-derive = "0.4"
 num-traits = "0.2"
 repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1", optional = true }
+smarthomelib = { git = "ssh://git@github.com/PaulmannLighting/smarthomelib.git", branch = "trait-based-approach", optional = true }
 
 [features]
 serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde", "apis-saltans-core/serde"]
+smarthomelib = ["dep:smarthomelib", "apis-saltans-core/smarthomelib"]
 
 [lints]
 workspace = true
