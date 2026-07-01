@@ -3,6 +3,12 @@ use core::fmt::{Display, LowerHex, UpperHex};
 use core::ops::RangeInclusive;
 
 /// A Zigbee application endpoint ID.
+#[cfg_attr(
+    feature = "serde",
+    expect(clippy::unsafe_derive_deserialize),
+    derive(serde::Serialize, serde::Deserialize),
+    serde(try_from = "u8", into = "u8")
+)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 #[repr(transparent)]
 pub struct Application(pub(super) u8);
