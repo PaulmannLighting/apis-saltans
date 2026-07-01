@@ -57,17 +57,17 @@ impl TryFrom<(u8, u8)> for Effect {
 }
 
 #[cfg(feature = "smarthomelib")]
-impl From<smarthomelib::Effect> for Effect {
-    fn from(effect: smarthomelib::Effect) -> Self {
+impl From<smarthomelib::command::Effect> for Effect {
+    fn from(effect: smarthomelib::command::Effect) -> Self {
         match effect {
-            smarthomelib::Effect::DelayedAllOff(delayed_all_off) => {
+            smarthomelib::command::Effect::DelayedAllOff(delayed_all_off) => {
                 Self::DelayedAllOff(match delayed_all_off {
-                    smarthomelib::DelayedAllOff::Fade => DelayedAllOff::FadeToOff,
-                    smarthomelib::DelayedAllOff::Instant => DelayedAllOff::NoFade,
-                    smarthomelib::DelayedAllOff::DimThenFade => DelayedAllOff::DimDown,
+                    smarthomelib::command::DelayedAllOff::Fade => DelayedAllOff::FadeToOff,
+                    smarthomelib::command::DelayedAllOff::Instant => DelayedAllOff::NoFade,
+                    smarthomelib::command::DelayedAllOff::DimThenFade => DelayedAllOff::DimDown,
                 })
             }
-            smarthomelib::Effect::DyingLight => Self::DyingLight(DyingLight::default()),
+            smarthomelib::command::Effect::DyingLight => Self::DyingLight(DyingLight::default()),
         }
     }
 }

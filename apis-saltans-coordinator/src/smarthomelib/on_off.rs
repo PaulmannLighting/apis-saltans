@@ -1,6 +1,4 @@
-use apis_saltans_zcl::general::on_off;
-use apis_saltans_zcl::general::on_off::DyingLight;
-use smarthomelib::command::{DelayedAllOff, Effect};
+use smarthomelib::command::Effect;
 use smarthomelib::protocol::OnOff;
 
 use crate::Coordinator;
