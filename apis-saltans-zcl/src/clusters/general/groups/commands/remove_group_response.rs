@@ -1,6 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::{Command, Status};
 
@@ -37,8 +37,8 @@ impl RemoveGroupResponse {
     }
 }
 
-impl ClusterSpecific for RemoveGroupResponse {
-    const CLUSTER: ClusterId = ClusterId::Groups;
+impl Cluster<ClusterId> for RemoveGroupResponse {
+    const ID: ClusterId = ClusterId::Groups;
 }
 
 impl Command for RemoveGroupResponse {

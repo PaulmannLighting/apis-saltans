@@ -5,7 +5,7 @@ use core::iter::Chain;
 use le_stream::ToLeStream;
 use repr_discriminant::ReprDiscriminant;
 use apis_saltans_core::types::{Bool, String};
-use apis_saltans_core::{ClusterId, ClusterSpecific};
+use apis_saltans_core::{ClusterId, Cluster};
 
 use self::iterator::LeStreamIter;
 use super::alarm_mask::AlarmMask;
@@ -39,8 +39,8 @@ pub enum Attribute {
     DisableLocalConfig(DisableLocalConfig) = 0x0014,
 }
 
-impl ClusterSpecific for Attribute {
-    const CLUSTER: ClusterId = ClusterId::Basic;
+impl Cluster<ClusterId> for Attribute {
+    const ID: ClusterId = ClusterId::Basic;
 }
 
 impl WritableAttribute for Attribute {

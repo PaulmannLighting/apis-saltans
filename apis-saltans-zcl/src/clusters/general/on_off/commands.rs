@@ -1,7 +1,7 @@
 //! Commands for the On/Off cluster.
 
 use le_stream::ToLeStream;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 use apis_saltans_macros::ParseZclFrame;
 
 pub use self::off::Off;
@@ -42,8 +42,8 @@ pub enum Command {
     OnWithTimedOff(OnWithTimedOff),
 }
 
-impl ClusterSpecific for Command {
-    const CLUSTER: ClusterId = ClusterId::OnOff;
+impl Cluster<ClusterId> for Command {
+    const ID: ClusterId = ClusterId::OnOff;
 }
 
 impl From<Command> for crate::Cluster {

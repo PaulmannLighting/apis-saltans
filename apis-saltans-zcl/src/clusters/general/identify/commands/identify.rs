@@ -2,7 +2,7 @@ use core::time::Duration;
 
 use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::Command;
 
@@ -35,8 +35,8 @@ impl Identify {
     }
 }
 
-impl ClusterSpecific for Identify {
-    const CLUSTER: ClusterId = ClusterId::Identify;
+impl Cluster<ClusterId> for Identify {
+    const ID: ClusterId = ClusterId::Identify;
 }
 
 impl Command for Identify {

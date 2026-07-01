@@ -1,9 +1,9 @@
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::ias::zone::Status;
-use crate::{Cluster, Command};
+use crate::{Cluster as ZclCluster, Command};
 
 /// Zone status change attributes.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream)]
@@ -45,8 +45,8 @@ impl StatusChange {
     }
 }
 
-impl ClusterSpecific for StatusChange {
-    const CLUSTER: ClusterId = ClusterId::IasZone;
+impl Cluster<ClusterId> for StatusChange {
+    const ID: ClusterId = ClusterId::IasZone;
 }
 
 impl Command for StatusChange {
@@ -54,7 +54,7 @@ impl Command for StatusChange {
     const DIRECTION: Direction = Direction::ServerToClient;
 }
 
-impl From<StatusChange> for Cluster {
+impl From<StatusChange> for ZclCluster {
     fn from(value: StatusChange) -> Self {
         Self::IasZone(value.into())
     }

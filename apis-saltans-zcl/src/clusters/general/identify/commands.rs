@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 use apis_saltans_macros::ParseZclFrame;
 
 pub use self::identify::Identify;
@@ -26,8 +26,8 @@ pub enum Command {
     IdentifyQueryResponse(IdentifyQueryResponse),
 }
 
-impl ClusterSpecific for Command {
-    const CLUSTER: ClusterId = ClusterId::Identify;
+impl Cluster<ClusterId> for Command {
+    const ID: ClusterId = ClusterId::Identify;
 }
 
 impl From<Command> for crate::Cluster {

@@ -1,6 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::{Command, Options};
 
@@ -42,8 +42,8 @@ impl MoveToSaturation {
     }
 }
 
-impl ClusterSpecific for MoveToSaturation {
-    const CLUSTER: ClusterId = ClusterId::ColorControl;
+impl Cluster<ClusterId> for MoveToSaturation {
+    const ID: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for MoveToSaturation {

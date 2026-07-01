@@ -2,7 +2,7 @@
 
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 pub use self::mode::Mode;
 use crate::{Command, Options};
@@ -50,8 +50,8 @@ impl MoveSaturation {
     }
 }
 
-impl ClusterSpecific for MoveSaturation {
-    const CLUSTER: ClusterId = ClusterId::ColorControl;
+impl Cluster<ClusterId> for MoveSaturation {
+    const ID: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for MoveSaturation {

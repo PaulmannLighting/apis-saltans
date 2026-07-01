@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
 use apis_saltans_core::types::Uint8;
 use apis_saltans_core::units::UnitsPerSecond;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::Command;
 use crate::general::level::Mode;
@@ -50,8 +50,8 @@ impl MoveWithOnOff {
     }
 }
 
-impl ClusterSpecific for MoveWithOnOff {
-    const CLUSTER: ClusterId = ClusterId::Level;
+impl Cluster<ClusterId> for MoveWithOnOff {
+    const ID: ClusterId = ClusterId::Level;
 }
 
 impl Command for MoveWithOnOff {

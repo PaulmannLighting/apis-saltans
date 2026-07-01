@@ -1,5 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::{Command, Options};
 
@@ -23,8 +23,8 @@ impl StopMoveStep {
     }
 }
 
-impl ClusterSpecific for StopMoveStep {
-    const CLUSTER: ClusterId = ClusterId::ColorControl;
+impl Cluster<ClusterId> for StopMoveStep {
+    const ID: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for StopMoveStep {

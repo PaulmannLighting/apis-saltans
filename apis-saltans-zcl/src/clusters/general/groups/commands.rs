@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 use apis_saltans_macros::ParseZclFrame;
 
 pub use self::add_group::AddGroup;
@@ -59,8 +59,8 @@ pub enum Command {
     RemoveGroupResponse(RemoveGroupResponse),
 }
 
-impl ClusterSpecific for Command {
-    const CLUSTER: ClusterId = ClusterId::Groups;
+impl Cluster<ClusterId> for Command {
+    const ID: ClusterId = ClusterId::Groups;
 }
 
 impl From<Command> for crate::Cluster {

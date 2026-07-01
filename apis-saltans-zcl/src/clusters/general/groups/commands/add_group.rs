@@ -2,7 +2,7 @@ use core::str::Utf8Error;
 
 use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::{String, Uint16};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::Command;
 
@@ -47,8 +47,8 @@ impl AddGroup {
     }
 }
 
-impl ClusterSpecific for AddGroup {
-    const CLUSTER: ClusterId = ClusterId::Groups;
+impl Cluster<ClusterId> for AddGroup {
+    const ID: ClusterId = ClusterId::Groups;
 }
 
 impl Command for AddGroup {

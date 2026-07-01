@@ -1,7 +1,7 @@
 //! Data structures for the `Move To Hue` command in the `Lighting` cluster.
 
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, ClusterSpecific};
+use apis_saltans_core::{ClusterId, Cluster};
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
 
@@ -64,8 +64,8 @@ impl MoveToHue {
     }
 }
 
-impl ClusterSpecific for MoveToHue {
-    const CLUSTER: ClusterId = ClusterId::ColorControl;
+impl Cluster<ClusterId> for MoveToHue {
+    const ID: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for MoveToHue {

@@ -1,6 +1,6 @@
-use le_stream::ToLeStream;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use apis_saltans_macros::ParseZclFrame;
+use le_stream::ToLeStream;
 
 pub use self::color_loop_set::ColorLoopSet;
 pub use self::enhanced_move_hue::EnhancedMoveHue;
@@ -48,46 +48,64 @@ mod stop_move_step;
 pub enum Command {
     /// Move to hue command.
     MoveToHue(MoveToHue),
+
     /// Move hue command.
     MoveHue(MoveHue),
+
     /// Step hue command.
     StepHue(StepHue),
+
     /// Move to saturation command.
     MoveToSaturation(MoveToSaturation),
+
     /// Move saturation command.
     MoveSaturation(MoveSaturation),
+
     /// Step saturation command.
     StepSaturation(StepSaturation),
+
     /// Move to hue and saturation command.
     MoveToHueAndSaturation(MoveToHueAndSaturation),
+
     /// Move to color command.
     MoveToColor(MoveToColor),
+
     /// Move color command.
     MoveColor(MoveColor),
+
     /// Step color command.
     StepColor(StepColor),
+
     /// Move to color temperature command.
     MoveToColorTemperature(MoveToColorTemperature),
+
     /// Enhanced move to hue command.
     EnhancedMoveToHue(EnhancedMoveToHue),
+
     /// Enhanced move hue command.
     EnhancedMoveHue(EnhancedMoveHue),
+
     /// Enhanced step hue command.
     EnhancedStepHue(EnhancedStepHue),
+
     /// Enhanced move to hue and saturation command.
     EnhancedMoveToHueAndSaturation(EnhancedMoveToHueAndSaturation),
+
     /// Color loop set command.
     ColorLoopSet(ColorLoopSet),
+
     /// Stop move step command.
     StopMoveStep(StopMoveStep),
+
     /// Move color temperature command.
     MoveColorTemperature(MoveColorTemperature),
+
     /// Step color temperature command.
     StepColorTemperature(StepColorTemperature),
 }
 
-impl ClusterSpecific for Command {
-    const CLUSTER: ClusterId = ClusterId::ColorControl;
+impl Cluster<ClusterId> for Command {
+    const ID: ClusterId = ClusterId::ColorControl;
 }
 
 impl From<Command> for crate::Cluster {

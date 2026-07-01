@@ -1,5 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::Command;
 
@@ -51,8 +51,8 @@ impl GetAlarmResponse {
     }
 }
 
-impl ClusterSpecific for GetAlarmResponse {
-    const CLUSTER: ClusterId = ClusterId::Alarms;
+impl Cluster<ClusterId> for GetAlarmResponse {
+    const ID: ClusterId = ClusterId::Alarms;
 }
 
 impl Command for GetAlarmResponse {

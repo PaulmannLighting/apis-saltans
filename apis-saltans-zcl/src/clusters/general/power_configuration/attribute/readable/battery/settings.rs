@@ -3,7 +3,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
 use apis_saltans_core::types::{String, Type, Uint8, Uint16};
-use apis_saltans_core::{ClusterId, ClusterSpecific};
+use apis_saltans_core::{ClusterId, Cluster};
 
 use crate::clusters::general::power_configuration::attribute::{
     BatteryAlarmMask, BatteryAlarmState, BatterySize,
@@ -255,8 +255,8 @@ pub enum Id {
     AlarmState = 0x000e,
 }
 
-impl ClusterSpecific for Id {
-    const CLUSTER: ClusterId = ClusterId::PowerConfiguration;
+impl Cluster<ClusterId> for Id {
+    const ID: ClusterId = ClusterId::PowerConfiguration;
 }
 
 impl ReadableAttribute for Id {

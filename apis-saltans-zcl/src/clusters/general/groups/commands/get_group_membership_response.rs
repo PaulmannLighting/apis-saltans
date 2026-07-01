@@ -2,7 +2,7 @@ use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::Command;
 use crate::clusters::general::groups::types::GroupList;
@@ -62,8 +62,8 @@ impl IntoIterator for GetGroupMembershipResponse {
     }
 }
 
-impl ClusterSpecific for GetGroupMembershipResponse {
-    const CLUSTER: ClusterId = ClusterId::Groups;
+impl Cluster<ClusterId> for GetGroupMembershipResponse {
+    const ID: ClusterId = ClusterId::Groups;
 }
 
 impl Command for GetGroupMembershipResponse {

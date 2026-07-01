@@ -12,8 +12,8 @@ edition = "2024"
 exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = "0.1"
-apis-saltans-core = "0.1"
+apis-saltans-aps = { version = "0.1", git = "https://github.com/PaulmannLighting/apis-saltans.git", branch = "main" }
+apis-saltans-core = { version = "0.2", git = "https://github.com/PaulmannLighting/apis-saltans.git", branch = "main" }
 bitflags = "2"
 heapless = "0.9"
 le-stream = { version = "10", features = ["derive", "macaddr"] }

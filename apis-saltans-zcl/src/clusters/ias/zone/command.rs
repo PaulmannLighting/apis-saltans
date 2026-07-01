@@ -1,5 +1,5 @@
 use le_stream::ToLeStream;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 use apis_saltans_macros::ParseZclFrame;
 
 pub use self::status_change::StatusChange;
@@ -14,8 +14,8 @@ pub enum Command {
     StatusChange(StatusChange),
 }
 
-impl ClusterSpecific for Command {
-    const CLUSTER: ClusterId = ClusterId::IasZone;
+impl Cluster<ClusterId> for Command {
+    const ID: ClusterId = ClusterId::IasZone;
 }
 
 impl CommandDispatch for Command {

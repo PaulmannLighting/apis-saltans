@@ -1,6 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::clusters::lighting::color_control::move_hue::Mode;
 use crate::{Command, Options};
@@ -68,8 +68,8 @@ impl MoveColorTemperature {
     }
 }
 
-impl ClusterSpecific for MoveColorTemperature {
-    const CLUSTER: ClusterId = ClusterId::ColorControl;
+impl Cluster<ClusterId> for MoveColorTemperature {
+    const ID: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for MoveColorTemperature {

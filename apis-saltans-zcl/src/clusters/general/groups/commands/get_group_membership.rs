@@ -3,7 +3,7 @@ use std::boxed::Box;
 
 use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::Command;
 
@@ -55,8 +55,8 @@ impl IntoIterator for GetGroupMembership {
     }
 }
 
-impl ClusterSpecific for GetGroupMembership {
-    const CLUSTER: ClusterId = ClusterId::Groups;
+impl Cluster<ClusterId> for GetGroupMembership {
+    const ID: ClusterId = ClusterId::Groups;
 }
 
 impl Command for GetGroupMembership {

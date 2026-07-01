@@ -1,5 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 
 use crate::Command;
 
@@ -8,8 +8,8 @@ use crate::Command;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct On;
 
-impl ClusterSpecific for On {
-    const CLUSTER: ClusterId = ClusterId::OnOff;
+impl Cluster<ClusterId> for On {
+    const ID: ClusterId = ClusterId::OnOff;
 }
 
 impl Command for On {

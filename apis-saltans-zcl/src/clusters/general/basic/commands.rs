@@ -1,7 +1,7 @@
 //! Commands for the Basic cluster.
 
 use le_stream::ToLeStream;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{ClusterId, Cluster, Direction};
 use apis_saltans_macros::ParseZclFrame;
 
 pub use self::reset_to_factory_defaults::ResetToFactoryDefaults;
@@ -16,8 +16,8 @@ pub enum Command {
     ResetToFactoryDefaults(ResetToFactoryDefaults),
 }
 
-impl ClusterSpecific for Command {
-    const CLUSTER: ClusterId = ClusterId::Basic;
+impl Cluster<ClusterId> for Command {
+    const ID: ClusterId = ClusterId::Basic;
 }
 
 impl From<Command> for crate::Cluster {
