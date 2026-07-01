@@ -61,9 +61,3 @@ impl From<Deciseconds> for Duration {
         )
     }
 }
-
-#[cfg(feature = "smarthomelib")]
-impl smarthomelib::Limited<Duration> for Deciseconds {
-    const MIN: Self = Self(Uint16::MIN);
-    const MAX: Self = Self(Uint16::MAX);
-}

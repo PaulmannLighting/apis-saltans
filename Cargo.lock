@@ -32,13 +32,11 @@ dependencies = [
  "apis-saltans-hw",
  "apis-saltans-zcl",
  "apis-saltans-zdp",
- "bunt",
  "const_env",
  "le-stream",
  "log",
  "macaddr",
  "serde",
- "smarthomelib",
  "tokio",
  "tokio-task-pool",
 ]
@@ -60,7 +58,6 @@ dependencies = [
  "repr-discriminant",
  "serde",
  "serde_with",
- "smarthomelib",
 ]
 
 [[package]]
@@ -138,11 +135,6 @@ name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
-
-[[package]]
-name = "bunt"
-version = "0.1.0"
-source = "git+https://github.com/PaulmannLighting/bunt.git#a52cce33ffa533e5db1d5584f19ece6acfc65da0"
 
 [[package]]
 name = "byteorder"
@@ -539,17 +531,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 
 [[package]]
-name = "smarthomelib"
-version = "0.1.0"
-source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#5f64a73e7e27bdc1fd393f5f9b0dc00ddbb8febb"
-dependencies = [
- "bunt",
- "const_env",
- "log",
- "tokio",
-]
-
-[[package]]
 name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -579,18 +560,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
 dependencies = [
  "pin-project-lite",
- "tokio-macros",
-]
-
-[[package]]
-name = "tokio-macros"
-version = "2.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "385a6cb71ab9ab790c5fe8d67f1645e6c450a7ce006a33de03daa956cf70a496"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

@@ -32,7 +32,6 @@ mod event_receiver;
 mod mux;
 mod network_manager;
 mod retry;
-mod smarthomelib;
 mod timeout;
 mod transceiver;
 
@@ -52,8 +51,3 @@ const TASK_POOL_SIZE: usize = 16;
 /// The delay between retries, in seconds.
 #[env_item("ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE")]
 const MPSC_CHANNEL_SIZE: usize = 128;
-
-/// Size of the event channel.
-#[cfg(feature = "smarthomelib")]
-#[env_item("ZIGBEE_COORDINATOR_EVENT_CHANNEL_SIZE")]
-const EVENT_CHANNEL_SIZE: usize = 32;
