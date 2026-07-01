@@ -117,12 +117,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "apis-saltans-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b1d3ffe3f9f2852d67bc2f0ac237260b3487eb683c2e4cf6b474c3ef0923a6a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "apis-saltans-zcl"
 version = "0.1.0"
 dependencies = [
  "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "apis-saltans-macros",
+ "apis-saltans-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags",
  "chrono",
  "either",

@@ -14,7 +14,7 @@ exclude = [".gitignore", "TODO.md"]
 [dependencies]
 apis-saltans-aps = "0.1"
 apis-saltans-core = "0.1"
-apis-saltans-macros = { path = "../apis-saltans-macros" }
+apis-saltans-macros = "0.1"
 bitflags = "2"
 chrono = "0.4"
 either = "1"
