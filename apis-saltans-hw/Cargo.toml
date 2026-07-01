@@ -1,0 +1,17 @@
+[package]
+name = "apis-saltans-hw"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+apis-saltans-aps = { path = "../apis-saltans-aps", version = "0.1" }
+apis-saltans-core = { path = "../apis-saltans-core", version = "0.1" }
+apis-saltans-zcl = { path = "../apis-saltans-zcl", version = "0.1" }
+apis-saltans-zdp = { path = "../apis-saltans-zdp", version = "0.1" }
+le-stream = { version = "10", features = ["derive"] }
+log = "0.4"
+macaddr = "1"
+tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread"] }
+
+[lints]
+workspace = true

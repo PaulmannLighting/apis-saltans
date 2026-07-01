@@ -15,12 +15,12 @@ This library is a work in progress and is not yet ready for production use.
 
 This workspace contains multiple crates pertaining to the Zigbee protocol stack:
 
-- [`aps`](./aps): The Zigbee APS layer implementation.
-- [`zcl`](./zcl): The Zigbee Cluster Library implementation.
-- [`zdp`](./zdp): The Zigbee Device Profile implementation.
-- [`zigbee`](./zigbee): The Zigbee core protocol stack implementation.
-- [`zigbee-coordinator`](./zigbee-coordinator): A Zigbee coordinator API using the actor model.
-- [`zigbee-hw`](./zigbee-hw): A Zigbee hardware abstraction layer.
+- [`aps`](apis-saltans-aps): The Zigbee APS layer implementation.
+- [`zcl`](apis-saltans-zcl): The Zigbee Cluster Library implementation.
+- [`zdp`](apis-saltans-zdp): The Zigbee Device Profile implementation.
+- [`zigbee`](apis-saltans-core): The Zigbee core protocol stack implementation.
+- [`zigbee-coordinator`](apis-saltans-coordinator): A Zigbee coordinator API using the actor model.
+- [`zigbee-hw`](apis-saltans-hw): A Zigbee hardware abstraction layer.
 
 ## Legal
 

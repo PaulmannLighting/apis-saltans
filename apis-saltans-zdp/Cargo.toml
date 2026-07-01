@@ -1,0 +1,22 @@
+[package]
+name = "apis-saltans-zdp"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+apis-saltans-aps = { version = "0.1", path = "../apis-saltans-aps" }
+apis-saltans-core = { version = "0.1", path = "../apis-saltans-core" }
+bitflags = "2"
+heapless = "0.9"
+le-stream = { version = "10", features = ["derive", "macaddr"] }
+macaddr = "1.0"
+num-derive = "0.4"
+num-traits = "0.2"
+repr-discriminant = { version = "3", features = ["derive"] }
+serde = { version = "1", optional = true }
+
+[features]
+serde = ["dep:serde", "serde/derive", "heapless/serde", "macaddr/serde", "apis-saltans-core/serde"]
+
+[lints]
+workspace = true

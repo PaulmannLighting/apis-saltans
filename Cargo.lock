@@ -12,15 +12,113 @@ dependencies = [
 ]
 
 [[package]]
-name = "aps"
+name = "apis-saltans-aps"
 version = "0.1.0"
 dependencies = [
+ "apis-saltans-core",
  "bitflags",
  "le-stream",
  "log",
  "num-derive",
  "num-traits",
- "zigbee",
+]
+
+[[package]]
+name = "apis-saltans-coordinator"
+version = "0.1.0"
+dependencies = [
+ "apis-saltans-aps",
+ "apis-saltans-core",
+ "apis-saltans-hw",
+ "apis-saltans-zcl",
+ "apis-saltans-zdp",
+ "bunt",
+ "const_env",
+ "le-stream",
+ "log",
+ "macaddr",
+ "serde",
+ "smarthomelib",
+ "tokio",
+ "tokio-task-pool",
+]
+
+[[package]]
+name = "apis-saltans-core"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "cfg_eval",
+ "chrono",
+ "heapless",
+ "intx",
+ "le-stream",
+ "log",
+ "macaddr",
+ "num-derive",
+ "num-traits",
+ "repr-discriminant",
+ "serde",
+ "serde_with",
+ "smarthomelib",
+]
+
+[[package]]
+name = "apis-saltans-hw"
+version = "0.1.0"
+dependencies = [
+ "apis-saltans-aps",
+ "apis-saltans-core",
+ "apis-saltans-zcl",
+ "apis-saltans-zdp",
+ "le-stream",
+ "log",
+ "macaddr",
+ "tokio",
+]
+
+[[package]]
+name = "apis-saltans-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "apis-saltans-zcl"
+version = "0.1.0"
+dependencies = [
+ "apis-saltans-aps",
+ "apis-saltans-core",
+ "apis-saltans-macros",
+ "bitflags",
+ "chrono",
+ "either",
+ "heapless",
+ "le-stream",
+ "macaddr",
+ "num-derive",
+ "num-traits",
+ "repr-discriminant",
+ "serde",
+]
+
+[[package]]
+name = "apis-saltans-zdp"
+version = "0.1.0"
+dependencies = [
+ "apis-saltans-aps",
+ "apis-saltans-core",
+ "bitflags",
+ "heapless",
+ "le-stream",
+ "macaddr",
+ "num-derive",
+ "num-traits",
+ "repr-discriminant",
+ "serde",
 ]
 
 [[package]]
@@ -612,102 +710,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7837d08f69c77cf6b07689544538e017c1bfcf57e34b4c0ff58e6c2cd3b37091"
 dependencies = [
  "windows-link",
-]
-
-[[package]]
-name = "zcl"
-version = "0.1.0"
-dependencies = [
- "aps",
- "bitflags",
- "chrono",
- "either",
- "heapless",
- "le-stream",
- "macaddr",
- "num-derive",
- "num-traits",
- "repr-discriminant",
- "serde",
- "zigbee",
- "zigbee-macros",
-]
-
-[[package]]
-name = "zdp"
-version = "0.1.0"
-dependencies = [
- "aps",
- "bitflags",
- "heapless",
- "le-stream",
- "macaddr",
- "num-derive",
- "num-traits",
- "repr-discriminant",
- "serde",
- "zigbee",
-]
-
-[[package]]
-name = "zigbee"
-version = "0.1.0"
-dependencies = [
- "bitflags",
- "cfg_eval",
- "chrono",
- "heapless",
- "intx",
- "le-stream",
- "log",
- "macaddr",
- "num-derive",
- "num-traits",
- "repr-discriminant",
- "serde",
- "serde_with",
- "smarthomelib",
-]
-
-[[package]]
-name = "zigbee-coordinator"
-version = "0.1.0"
-dependencies = [
- "aps",
- "bunt",
- "const_env",
- "le-stream",
- "log",
- "macaddr",
- "serde",
- "smarthomelib",
- "tokio",
- "tokio-task-pool",
- "zcl",
- "zdp",
- "zigbee",
- "zigbee-hw",
-]
-
-[[package]]
-name = "zigbee-hw"
-version = "0.1.0"
-dependencies = [
- "aps",
- "le-stream",
- "log",
- "macaddr",
- "tokio",
- "zcl",
- "zdp",
- "zigbee",
-]
-
-[[package]]
-name = "zigbee-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]

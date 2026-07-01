@@ -1,0 +1,39 @@
+[package]
+name = "apis-saltans-core"
+description = "Zigbee core library."
+authors = ["Richard Neumann <neumann@paulmann.de>"]
+license = "MIT"
+repository = "https://github.com/PaulmannLighting/apis-saltans"
+keywords = ["zigbee", "protocol", "library"]
+categories = ["network-programming"]
+documentation = "https://csa-iot.org/wp-content/uploads/2022/01/docs-05-3474-22-0csg-zigbee-specification-1.pdf"
+version = "0.1.0"
+edition = "2024"
+exclude = [".gitignore"]
+publish = false
+
+
+[dependencies]
+bitflags = "2"
+chrono = "0.4"
+cfg_eval = { version = "0.1", optional = true }
+heapless = "0.9"
+intx = "0.1"
+le-stream = { version = "10", features = ["alloc", "derive", "heapless", "intx", "macaddr"] }
+log = "0.4"
+macaddr = "1"
+num-traits = { version = "0.2", default-features = false }
+num-derive = "0.4"
+repr-discriminant = { version = "3", features = ["derive"] }
+serde = { version = "1", optional = true }
+serde_with = { version = "3.21.0", default-features = false, features = ["macros"], optional = true }
+smarthomelib = { git = "ssh://git@github.com/PaulmannLighting/smarthomelib.git", branch = "trait-based-approach", optional = true }
+
+[features]
+serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
+serde_with = ["dep:serde_with", "dep:cfg_eval", "serde"]
+smarthomelib = ["dep:smarthomelib"]
+cfg_eval = ["dep:cfg_eval"]
+
+[lints]
+workspace = true

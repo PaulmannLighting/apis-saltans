@@ -1,0 +1,40 @@
+use apis_saltans_zcl::Options;
+use apis_saltans_zcl::lighting::color_control::MoveToColor;
+use apis_saltans_core::units::Deciseconds;
+
+use crate::transceiver::zcl::Handle;
+use crate::{Coordinator, Destination, Error};
+
+/// Trait for Color Control cluster operations.
+pub trait ColorControl {
+    /// Move to the specified color (x, y) over the given transition time.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if execution of the command failed.
+    fn move_to_xy(
+        &self,
+        destination: Destination,
+        color_x: u16,
+        color_y: u16,
+        transition_time: Deciseconds,
+        options: Options,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+}
+
+impl ColorControl for Coordinator {
+    async fn move_to_xy(
+        &self,
+        destination: Destination,
+        color_x: u16,
+        color_y: u16,
+        transition_time: Deciseconds,
+        options: Options,
+    ) -> Result<(), Error> {
+        self.send_static_cluster(
+            destination,
+            MoveToColor::new(color_x, color_y, transition_time, options),
+        )
+        .await
+    }
+}

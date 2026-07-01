@@ -1,0 +1,66 @@
+use std::fmt::Display;
+
+use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{Cluster, Endpoint, ExpectResponse};
+
+use crate::{Command, Service, SimpleDescRsp};
+
+/// Simple Descriptor Request structure.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
+pub struct SimpleDescReq {
+    nwk_address_of_interest: u16,
+    endpoint: u8,
+}
+
+impl SimpleDescReq {
+    /// Creates a new `SimpleDescReq`.
+    #[must_use]
+    pub fn new(nwk_address_of_interest: u16, endpoint: Endpoint) -> Self {
+        Self {
+            nwk_address_of_interest,
+            endpoint: endpoint.into(),
+        }
+    }
+
+    /// Returns the network address of interest.
+    #[must_use]
+    pub const fn nwk_address_of_interest(self) -> u16 {
+        self.nwk_address_of_interest
+    }
+
+    /// Returns the endpoint.
+    #[must_use]
+    pub const fn endpoint(self) -> u8 {
+        self.endpoint
+    }
+}
+
+impl Cluster for SimpleDescReq {
+    const ID: u16 = 0x0004;
+}
+
+impl Service for SimpleDescReq {
+    const NAME: &'static str = "Simple_Desc_req";
+}
+
+impl ExpectResponse<Command> for SimpleDescReq {
+    type Response = SimpleDescRsp;
+}
+
+impl Display for SimpleDescReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {{ nwk_address_of_interest: {:#06X}, endpoint: {:#04X} }}",
+            Self::NAME,
+            self.nwk_address_of_interest,
+            self.endpoint
+        )
+    }
+}
+
+impl From<SimpleDescReq> for Command {
+    fn from(simple_desc_req: SimpleDescReq) -> Self {
+        Self::DeviceAndServiceDiscovery(simple_desc_req.into())
+    }
+}

@@ -1,0 +1,167 @@
+use apis_saltans_aps::Transactions;
+use apis_saltans_aps::data::Frame;
+use log::{debug, error, trace};
+use tokio::spawn;
+use tokio::sync::mpsc::{Receiver, Sender};
+use apis_saltans_hw::Event;
+
+use crate::aps_payload::ApsPayload;
+use crate::transceiver::{zcl, zdp};
+use crate::{discovery, network_manager};
+
+/// Event multiplexer.
+#[derive(Debug)]
+pub struct Mux {
+    zcl: Sender<zcl::Message>,
+    zdp: Sender<zdp::Message>,
+    discovery: Sender<discovery::Message>,
+    network_manager: Sender<network_manager::Message>,
+    transactions: Transactions,
+}
+
+impl Mux {
+    /// Create a new multiplexer.
+    pub const fn new(
+        zcl: Sender<zcl::Message>,
+        zdp: Sender<zdp::Message>,
+        discovery: Sender<discovery::Message>,
+        network_manager: Sender<network_manager::Message>,
+    ) -> Self {
+        Self {
+            zcl,
+            zdp,
+            discovery,
+            network_manager,
+            transactions: Transactions::new(),
+        }
+    }
+
+    /// Start the multiplexer.
+    pub fn spawn(
+        events: Receiver<Event>,
+        zcl_tx: Sender<zcl::Message>,
+        zdp_tx: Sender<zdp::Message>,
+        discovery_tx: Sender<discovery::Message>,
+        network_manager: Sender<network_manager::Message>,
+    ) {
+        spawn(Self::new(zcl_tx, zdp_tx, discovery_tx, network_manager).run(events));
+    }
+
+    /// Run the multiplexer.
+    pub async fn run(mut self, mut messages: Receiver<Event>) {
+        while let Some(event) = messages.recv().await {
+            self.multiplex(event).await;
+        }
+    }
+
+    async fn multiplex(&mut self, event: Event) {
+        match event {
+            Event::NetworkUp => {
+                trace!("Network is up");
+            }
+            Event::NetworkDown => {
+                trace!("Network is down");
+            }
+            Event::NetworkOpened => {
+                trace!("Network has been opened");
+                self.network_manager
+                    .send(network_manager::Message::NetworkOpened)
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send network opened message: {error}");
+                    });
+            }
+            Event::NetworkClosed => {
+                trace!("Network has been closed");
+                self.network_manager
+                    .send(network_manager::Message::NetworkClosed)
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send network closed message: {error}");
+                    });
+            }
+            Event::DeviceJoined(address) => {
+                self.discovery
+                    .send(discovery::Message::DeviceJoined(address))
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send device joined message: {error}");
+                    });
+            }
+            Event::DeviceRejoined { address, secured } => {
+                self.discovery
+                    .send(discovery::Message::DeviceRejoined { address, secured })
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send device rejoined message: {error}");
+                    });
+            }
+            Event::DeviceLeft(address) => self
+                .network_manager
+                .send(network_manager::Message::RemoveDevice(address))
+                .await
+                .unwrap_or_else(|error| {
+                    trace!("Failed to send device left message: {error}");
+                }),
+            Event::MessageReceived {
+                src_address,
+                aps_frame,
+            } => {
+                self.handle_aps_frame(src_address, aps_frame).await;
+            }
+            Event::RouteError(error) => {
+                trace!("{error}");
+                self.network_manager
+                    .send(network_manager::Message::RouteError(error))
+                    .await
+                    .unwrap_or_else(|error| {
+                        error!("Failed to send route error message: {error}");
+                    });
+            }
+        }
+    }
+
+    async fn handle_aps_frame(&mut self, src_address: u16, aps_frame: Frame<Vec<u8>>) {
+        debug!("Received APS frame from {src_address}: {aps_frame:?}");
+
+        if let Some(frame) = self.transactions.add(aps_frame) {
+            match frame.parse() {
+                Ok(frame) => self.forward_received_message(src_address, frame).await,
+                Err(error) => trace!("Failed to parse APS frame: {error}"),
+            }
+        }
+    }
+
+    async fn forward_received_message(&self, src_address: u16, aps_frame: Frame<ApsPayload>) {
+        let (header, payload) = aps_frame.into_parts();
+
+        match payload {
+            ApsPayload::Zcl(frame) => {
+                #[expect(unsafe_code)]
+                // SAFETY: We reconstructed the frame from its original parts above.
+                let frame = unsafe { Frame::new_unchecked(header, frame) };
+
+                self.zcl
+                    .send(zcl::Message::Received {
+                        src_address,
+                        frame: frame.into(),
+                    })
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send ZCL message: {error}");
+                    });
+            }
+            ApsPayload::Zdp(frame) => {
+                self.zdp
+                    .send(zdp::Message::Received {
+                        src_address,
+                        frame: frame.into(),
+                    })
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send ZDP message: {error}");
+                    });
+            }
+        }
+    }
+}
