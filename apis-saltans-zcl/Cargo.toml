@@ -1,20 +1,19 @@
 [package]
 name = "apis-saltans-zcl"
-description = "Zigbee Cluster Library."
+description = "Zigbee Cluster library."
 authors = ["Richard Neumann <neumann@paulmann.de>"]
 license = "MIT"
 repository = "https://github.com/PaulmannLighting/apis-saltans"
-keywords = ["zigbee", "cluster", "library", "zcl"]
+keywords = ["zigbee", "ZCL", "library"]
 categories = ["network-programming"]
-documentation = "https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf"
+documentation = "https://docs.rs/apis-saltans-zcl"
 version = "0.1.0"
 edition = "2024"
-exclude = [".gitignore"]
-publish = false
+exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = { path = "../apis-saltans-aps" }
-apis-saltans-core = { path = "../apis-saltans-core" }
+apis-saltans-aps = "0.1"
+apis-saltans-core = "0.1"
 apis-saltans-macros = { path = "../apis-saltans-macros" }
 bitflags = "2"
 chrono = "0.4"

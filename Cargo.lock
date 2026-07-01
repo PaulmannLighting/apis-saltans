@@ -120,8 +120,8 @@ dependencies = [
 name = "apis-saltans-zcl"
 version = "0.1.0"
 dependencies = [
- "apis-saltans-aps 0.1.0",
- "apis-saltans-core 0.1.1",
+ "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-macros",
  "bitflags",
  "chrono",

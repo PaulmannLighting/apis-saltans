@@ -1,7 +1,15 @@
 [package]
 name = "apis-saltans-macros"
+description = "Zigbee library macros."
+authors = ["Richard Neumann <neumann@paulmann.de>"]
+license = "MIT"
+repository = "https://github.com/PaulmannLighting/apis-saltans"
+keywords = ["zigbee", "macros", "library"]
+categories = ["network-programming"]
+documentation = "https://docs.rs/apis-saltans-macros"
 version = "0.1.0"
 edition = "2024"
+exclude = [".gitignore"]
 
 [dependencies]
 proc-macro2 = "1.0"
