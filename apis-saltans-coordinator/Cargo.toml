@@ -12,11 +12,11 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = { version = "0.1", git = "https://github.com/PaulmannLighting/apis-saltans.git", branch = "main" }
-apis-saltans-core = { version = "0.2", features = ["serde", "serde_with"], git = "https://github.com/PaulmannLighting/apis-saltans.git", branch = "main" }
-apis-saltans-hw = { version = "0.1", git = "https://github.com/PaulmannLighting/apis-saltans.git", branch = "main" }
-apis-saltans-zcl = { version = "0.1", features = ["serde"], git = "https://github.com/PaulmannLighting/apis-saltans.git", branch = "main" }
-apis-saltans-zdp = { version = "0.1", features = ["serde"], git = "https://github.com/PaulmannLighting/apis-saltans.git", branch = "main" }
+apis-saltans-aps = { version = "0.1", }
+apis-saltans-core = { version = "0.2", features = ["serde", "serde_with"] }
+apis-saltans-hw = { version = "0.1" }
+apis-saltans-zcl = { version = "0.1", features = ["serde"] }
+apis-saltans-zdp = { version = "0.1", features = ["serde"] }
 const_env = "0.1"
 le-stream = { version = "10", features = ["derive"] }
 log = "0.4"
