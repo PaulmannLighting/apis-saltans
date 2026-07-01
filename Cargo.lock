@@ -142,8 +142,8 @@ checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 
 [[package]]
 name = "bunt"
-version = "0.1.0"
-source = "git+https://github.com/PaulmannLighting/bunt.git#a52cce33ffa533e5db1d5584f19ece6acfc65da0"
+version = "0.1.1"
+source = "git+https://github.com/PaulmannLighting/bunt.git#4f465c0affd13d55be15d78fa081c729479021b0"
 
 [[package]]
 name = "byteorder"
@@ -542,7 +542,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 [[package]]
 name = "smarthomelib"
 version = "0.1.0"
-source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#3f93918c477a1e5a20be28e44a46772756758b22"
+source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#e45e66978a911c81aed10ab682643087e4f00a93"
 dependencies = [
  "bunt",
  "const_env",

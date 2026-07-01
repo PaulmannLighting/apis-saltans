@@ -35,11 +35,12 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
                     application,
                     Command::OnOff(OnOff::Off { effect: None }),
                 )),
-                on_off::Command::OffWithEffect(_params) => Ok(Self::new(
+                on_off::Command::OffWithEffect(params) => Ok(Self::new(
                     address.ieee_address(),
                     application,
-                    // TODO: Handle effects
-                    Command::OnOff(OnOff::Off { effect: None }),
+                    Command::OnOff(OnOff::Off {
+                        effect: params.effect().ok().map(Into::into),
+                    }),
                 )),
                 on_off::Command::OnWithTimedOff(params) => Ok(Self::new(
                     address.ieee_address(),
@@ -125,6 +126,9 @@ fn translate_level_command(command: level::Command) -> Result<Command, level::Co
                 Ok(Mode::Down) => Ok(Command::Dimming(Dimming::Down { rate })),
                 _ => Err(command),
             }
+        }
+        level::Command::Stop(_) | level::Command::StopWithOnOff(_) => {
+            Ok(Command::Dimming(Dimming::Stop))
         }
         other => {
             warn!("Unhandled level command: {other:?}");
