@@ -6,8 +6,8 @@ license = "MIT"
 repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "protocol", "library"]
 categories = ["network-programming"]
-documentation = "https://csa-iot.org/wp-content/uploads/2022/01/docs-05-3474-22-0csg-zigbee-specification-1.pdf"
-version = "0.1.0"
+documentation = "https://docs.rs/apis-saltans-aps"
+version = "0.1.1"
 edition = "2024"
 exclude = [".gitignore"]
 
