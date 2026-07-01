@@ -32,19 +32,15 @@ audit-as-crates-io = true
 audit-as-crates-io = true
 
 [[exemptions.apis-saltans-aps]]
-version = "0.1.0"
+version = "0.1.1"
 criteria = "safe-to-deploy"
 
 [[exemptions.apis-saltans-aps]]
-version = "0.1.1@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+version = "0.1.1@git:9d009f813493e4722b28901acdf87156afaa8705"
 criteria = "safe-to-deploy"
 
 [[exemptions.apis-saltans-coordinator]]
-version = "0.1.1"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-core]]
-version = "0.1.1"
+version = "0.1.2"
 criteria = "safe-to-deploy"
 
 [[exemptions.apis-saltans-core]]
@@ -52,35 +48,39 @@ version = "0.2.1"
 criteria = "safe-to-deploy"
 
 [[exemptions.apis-saltans-core]]
-version = "0.2.1@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+version = "0.2.1@git:9d009f813493e4722b28901acdf87156afaa8705"
 criteria = "safe-to-deploy"
 
 [[exemptions.apis-saltans-hw]]
-version = "0.1.0"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-macros]]
-version = "0.1.0"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-macros]]
-version = "0.1.0@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-zcl]]
-version = "0.1.0"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-zcl]]
-version = "0.1.1@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-zdp]]
 version = "0.1.1"
 criteria = "safe-to-deploy"
 
+[[exemptions.apis-saltans-hw]]
+version = "0.1.1@git:9d009f813493e4722b28901acdf87156afaa8705"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-macros]]
+version = "0.1.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-macros]]
+version = "0.1.0@git:9d009f813493e4722b28901acdf87156afaa8705"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-zcl]]
+version = "0.1.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-zcl]]
+version = "0.1.1@git:9d009f813493e4722b28901acdf87156afaa8705"
+criteria = "safe-to-deploy"
+
 [[exemptions.apis-saltans-zdp]]
-version = "0.1.2@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+version = "0.1.2"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-zdp]]
+version = "0.1.2@git:9d009f813493e4722b28901acdf87156afaa8705"
 criteria = "safe-to-deploy"
 
 [[exemptions.cfg_eval]]
