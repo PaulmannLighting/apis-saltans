@@ -7,6 +7,12 @@ criteria = "safe-to-deploy"
 version = "0.1.5"
 notes = "AI-assisted audit"
 
+[[audits.apis-saltans-core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.1 -> 0.2.2"
+notes = "AI-assisted delta audit; endpoint constant refactor only"
+
 [[audits.autocfg]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
