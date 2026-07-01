@@ -1,14 +1,14 @@
 use std::time::Duration;
 
-use log::warn;
-use macaddr::MacAddr8;
-use smarthomelib::command::{Dimming, OnOff, OpenClosed, Timing};
-use smarthomelib::{Command, Event};
+use apis_saltans_core::{Application, Endpoint};
 use apis_saltans_zcl::general::level::Mode;
 use apis_saltans_zcl::general::on_off::OnOffControl;
 use apis_saltans_zcl::general::{level, on_off};
 use apis_saltans_zcl::{Cluster, ias};
-use apis_saltans_core::{Application, Endpoint};
+use log::warn;
+use macaddr::MacAddr8;
+use smarthomelib::command::{Dimming, OnOff, OpenClosed, Timing};
+use smarthomelib::{Command, Event};
 
 impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
     type Error = crate::Event;

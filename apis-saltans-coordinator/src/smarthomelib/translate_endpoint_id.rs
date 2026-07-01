@@ -1,5 +1,5 @@
-use smarthomelib::TranslateEndpointId;
 use apis_saltans_core::Endpoint;
+use smarthomelib::TranslateEndpointId;
 
 use crate::Coordinator;
 

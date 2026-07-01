@@ -1,7 +1,7 @@
+use apis_saltans_core::units::Deciseconds;
+use apis_saltans_zcl::Options;
 use smarthomelib::Percent;
 use smarthomelib::protocol::Dimming;
-use apis_saltans_zcl::Options;
-use apis_saltans_core::units::Deciseconds;
 
 use crate::Coordinator;
 

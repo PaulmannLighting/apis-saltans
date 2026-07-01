@@ -1,7 +1,7 @@
+use apis_saltans_core::Application;
 use log::warn;
 use macaddr::MacAddr8;
 use smarthomelib::{Event, EventReceiver};
-use apis_saltans_core::Application;
 
 impl EventReceiver<MacAddr8, Application> for crate::EventReceiver {
     async fn recv(&mut self) -> Option<Event<MacAddr8, Application>> {

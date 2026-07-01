@@ -1,8 +1,8 @@
+use apis_saltans_core::units::Deciseconds;
+use apis_saltans_zcl::Options;
 use bunt::Xy;
 use smarthomelib::Protocol;
 use smarthomelib::protocol::ColorControl;
-use apis_saltans_zcl::Options;
-use apis_saltans_core::units::Deciseconds;
 
 use crate::Coordinator;
 

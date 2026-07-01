@@ -1,5 +1,5 @@
-use smarthomelib::TranslateDeviceId;
 use apis_saltans_hw::Ncp;
+use smarthomelib::TranslateDeviceId;
 
 use crate::Coordinator;
 

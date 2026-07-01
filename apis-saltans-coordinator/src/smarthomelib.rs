@@ -5,9 +5,9 @@
 
 use std::collections::BTreeSet;
 
+use apis_saltans_core::Application;
 use macaddr::MacAddr8;
 use smarthomelib::{Core, Events};
-use apis_saltans_core::Application;
 
 use crate::{Coordinator, EVENT_CHANNEL_SIZE, Error, NetworkManager};
 

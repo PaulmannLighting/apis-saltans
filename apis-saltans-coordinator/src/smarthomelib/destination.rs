@@ -1,6 +1,6 @@
+use apis_saltans_core::Application;
 use macaddr::MacAddr8;
 use smarthomelib::Destination;
-use apis_saltans_core::Application;
 
 impl From<Destination<MacAddr8, Application, u16>> for crate::Destination {
     fn from(destination: Destination<MacAddr8, Application, u16>) -> Self {
