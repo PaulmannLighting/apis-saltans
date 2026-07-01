@@ -2,8 +2,8 @@
 
 use std::boxed::Box;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::Direction;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::attribute_reporting_configuration::AttributeReportingConfiguration;
 pub use self::attribute_status::AttributeStatus;

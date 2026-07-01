@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
+use apis_saltans_core::Address;
 use log::{error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
-use apis_saltans_core::Address;
 
 pub use self::device::Device;
 pub use self::message::Message;

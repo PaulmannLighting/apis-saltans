@@ -1,9 +1,9 @@
 pub mod readable {
     //! Readable attributes for the Scenes cluster.
 
+    use apis_saltans_core::types::{Bool, Uint8};
     use macaddr::MacAddr8;
     use repr_discriminant::ReprDiscriminant;
-    use apis_saltans_core::types::{Bool, Uint8};
 
     use super::super::types::CurrentGroup;
     pub use crate::clusters::general::groups::NameSupport;

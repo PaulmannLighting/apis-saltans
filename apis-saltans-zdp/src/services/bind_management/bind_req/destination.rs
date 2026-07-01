@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
+use apis_saltans_core::Endpoint;
 use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::Endpoint;
 
 /// Address type for Bind Request.
 #[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]

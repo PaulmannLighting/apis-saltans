@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::fmt::Display;
 
-use apis_saltans_zdp::SimpleDescriptor;
 use apis_saltans_core::node::Descriptor;
 use apis_saltans_core::{Address, Endpoint};
+use apis_saltans_zdp::SimpleDescriptor;
 
 #[derive(Debug)]
 pub struct Device {

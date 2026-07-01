@@ -1,5 +1,5 @@
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
@@ -45,8 +45,8 @@ impl TriggerEffect {
     }
 }
 
-impl ClusterSpecific for TriggerEffect {
-    const CLUSTER: ClusterId = ClusterId::Identify;
+impl Cluster<ClusterId> for TriggerEffect {
+    const ID: ClusterId = ClusterId::Identify;
 }
 
 impl Command for TriggerEffect {

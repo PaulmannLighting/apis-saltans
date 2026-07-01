@@ -7,12 +7,12 @@ repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "APS", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-aps"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
-apis-saltans-core = "0.1"
+apis-saltans-core = { version = "0.2", git = "https://github.com/PaulmannLighting/apis-saltans.git", branch = "smarthomelib" }
 bitflags = "2"
 le-stream = { version = "10", features = ["derive"] }
 log = "0.4"

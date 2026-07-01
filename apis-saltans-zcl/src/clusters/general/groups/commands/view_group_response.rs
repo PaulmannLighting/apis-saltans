@@ -1,6 +1,6 @@
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::{String, Uint16};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{Cluster, ClusterId, Direction};
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::{Command, Status};
 
@@ -45,8 +45,8 @@ impl ViewGroupResponse {
     }
 }
 
-impl ClusterSpecific for ViewGroupResponse {
-    const CLUSTER: ClusterId = ClusterId::Groups;
+impl Cluster<ClusterId> for ViewGroupResponse {
+    const ID: ClusterId = ClusterId::Groups;
 }
 
 impl Command for ViewGroupResponse {

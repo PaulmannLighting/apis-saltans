@@ -1,5 +1,5 @@
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
 
@@ -7,8 +7,8 @@ use crate::Command;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct RemoveAllGroups;
 
-impl ClusterSpecific for RemoveAllGroups {
-    const CLUSTER: ClusterId = ClusterId::Groups;
+impl Cluster<ClusterId> for RemoveAllGroups {
+    const ID: ClusterId = ClusterId::Groups;
 }
 
 impl Command for RemoveAllGroups {

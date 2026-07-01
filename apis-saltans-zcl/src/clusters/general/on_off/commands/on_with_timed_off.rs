@@ -1,7 +1,7 @@
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Uint16;
 use apis_saltans_core::units::Deciseconds;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{Cluster, ClusterId, Direction};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::on_off_control::OnOffControl;
 use crate::Command;
@@ -51,8 +51,8 @@ impl OnWithTimedOff {
     }
 }
 
-impl ClusterSpecific for OnWithTimedOff {
-    const CLUSTER: ClusterId = ClusterId::OnOff;
+impl Cluster<ClusterId> for OnWithTimedOff {
+    const ID: ClusterId = ClusterId::OnOff;
 }
 
 impl Command for OnWithTimedOff {

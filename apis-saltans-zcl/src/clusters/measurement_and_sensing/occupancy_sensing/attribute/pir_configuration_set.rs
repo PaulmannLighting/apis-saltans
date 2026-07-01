@@ -1,8 +1,8 @@
 //! Configuration attributes of PIR sensors.
 
+use apis_saltans_core::types::{Uint8, Uint16};
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Uint8, Uint16};
 
 /// Available configuration attributes of PIR sensors.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream)]

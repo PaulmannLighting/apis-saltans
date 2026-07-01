@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
+use apis_saltans_core::Cluster;
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
-use apis_saltans_core::Cluster;
 
 pub use self::request_type::RequestType;
 use crate::Service;

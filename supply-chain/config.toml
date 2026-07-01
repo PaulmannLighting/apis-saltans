@@ -9,3 +9,124 @@ url = "https://raw.githubusercontent.com/google/supply-chain/main/audits.toml"
 
 [imports.mozilla]
 url = "https://raw.githubusercontent.com/mozilla/supply-chain/main/audits.toml"
+
+[policy.apis-saltans-aps]
+audit-as-crates-io = true
+
+[policy.apis-saltans-coordinator]
+audit-as-crates-io = true
+
+[policy.apis-saltans-core]
+audit-as-crates-io = true
+
+[policy.apis-saltans-hw]
+audit-as-crates-io = true
+
+[policy.apis-saltans-macros]
+audit-as-crates-io = true
+
+[policy.apis-saltans-zcl]
+audit-as-crates-io = true
+
+[policy.apis-saltans-zdp]
+audit-as-crates-io = true
+
+[[exemptions.apis-saltans-aps]]
+version = "0.1.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-aps]]
+version = "0.1.1@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-coordinator]]
+version = "0.1.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-core]]
+version = "0.1.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-core]]
+version = "0.2.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-core]]
+version = "0.2.1@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-hw]]
+version = "0.1.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-macros]]
+version = "0.1.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-macros]]
+version = "0.1.0@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-zcl]]
+version = "0.1.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-zcl]]
+version = "0.1.1@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-zdp]]
+version = "0.1.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.apis-saltans-zdp]]
+version = "0.1.2@git:f8ca4cbf6c2e2a87d506fd000f0070ec3a5a2e3f"
+criteria = "safe-to-deploy"
+
+[[exemptions.cfg_eval]]
+version = "0.1.2"
+criteria = "safe-to-deploy"
+
+[[exemptions.darling]]
+version = "0.23.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.darling_core]]
+version = "0.23.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.darling_macro]]
+version = "0.23.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.ident_case]]
+version = "1.0.1"
+criteria = "safe-to-deploy"
+
+[[exemptions.js-sys]]
+version = "0.3.103"
+criteria = "safe-to-deploy"
+
+[[exemptions.serde_with]]
+version = "3.21.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.serde_with_macros]]
+version = "3.21.0"
+criteria = "safe-to-deploy"
+
+[[exemptions.wasm-bindgen]]
+version = "0.2.126"
+criteria = "safe-to-deploy"
+
+[[exemptions.wasm-bindgen-macro]]
+version = "0.2.126"
+criteria = "safe-to-deploy"
+
+[[exemptions.wasm-bindgen-macro-support]]
+version = "0.2.126"
+criteria = "safe-to-deploy"
+
+[[exemptions.wasm-bindgen-shared]]
+version = "0.2.126"
+criteria = "safe-to-deploy"

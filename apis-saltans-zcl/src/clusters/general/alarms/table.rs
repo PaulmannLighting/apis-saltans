@@ -1,7 +1,7 @@
 //! Alarms table implementation.
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::{Uint8, Uint32};
+use le_stream::{FromLeStream, ToLeStream};
 
 /// An entry in the Alarms cluster's table.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream)]

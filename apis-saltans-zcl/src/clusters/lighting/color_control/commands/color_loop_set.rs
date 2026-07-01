@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use apis_saltans_core::{ClusterId, ClusterSpecific};
+use apis_saltans_core::{Cluster, ClusterId};
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
 
@@ -90,8 +90,8 @@ impl ColorLoopSet {
     }
 }
 
-impl ClusterSpecific for ColorLoopSet {
-    const CLUSTER: ClusterId = ClusterId::ColorControl;
+impl Cluster<ClusterId> for ColorLoopSet {
+    const ID: ClusterId = ClusterId::ColorControl;
 }
 
 impl Command for ColorLoopSet {

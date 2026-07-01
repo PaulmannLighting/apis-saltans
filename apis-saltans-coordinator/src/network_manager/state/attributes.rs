@@ -1,7 +1,7 @@
-use log::{trace, warn};
-use serde::{Deserialize, Serialize};
 use apis_saltans_zcl::general::basic::readable::{Attribute, Id};
 use apis_saltans_zcl::general::basic::{DateCode, PowerSource};
+use log::{trace, warn};
+use serde::{Deserialize, Serialize};
 
 use crate::ReadAttributeResult;
 

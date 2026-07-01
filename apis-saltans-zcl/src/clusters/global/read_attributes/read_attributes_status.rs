@@ -1,5 +1,5 @@
-use le_stream::FromLeStream;
 use apis_saltans_core::types::Type;
+use le_stream::FromLeStream;
 
 use crate::Status;
 

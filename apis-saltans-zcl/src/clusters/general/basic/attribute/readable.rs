@@ -2,11 +2,11 @@
 
 use core::fmt::{Display, LowerHex, UpperHex};
 
+use apis_saltans_core::types::{Bool, OctStr, String, Type, Uint8};
+use apis_saltans_core::{Cluster, ClusterId};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Bool, OctStr, String, Type, Uint8};
-use apis_saltans_core::{ClusterId, ClusterSpecific};
 
 use super::alarm_mask::AlarmMask;
 use super::date_code::DateCode;
@@ -214,8 +214,8 @@ pub enum Id {
     SwBuildId = 0x4000,
 }
 
-impl ClusterSpecific for Id {
-    const CLUSTER: ClusterId = ClusterId::Basic;
+impl Cluster<ClusterId> for Id {
+    const ID: ClusterId = ClusterId::Basic;
 }
 
 impl ReadableAttribute for Id {

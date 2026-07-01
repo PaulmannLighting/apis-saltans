@@ -1,8 +1,8 @@
 //! Readable attributes for the Time cluster.
 
+use apis_saltans_core::types::UtcTime;
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::UtcTime;
 
 use crate::general::time::attribute::TimeStatus;
 

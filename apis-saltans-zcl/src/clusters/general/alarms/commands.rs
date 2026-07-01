@@ -1,8 +1,8 @@
 //! Commands of the Alarms cluster.
 
-use le_stream::ToLeStream;
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use apis_saltans_macros::ParseZclFrame;
+use le_stream::ToLeStream;
 
 pub use self::alarm::Alarm;
 pub use self::get_alarm::GetAlarm;
@@ -36,8 +36,8 @@ pub enum Command {
     GetAlarmResponse(GetAlarmResponse),
 }
 
-impl ClusterSpecific for Command {
-    const CLUSTER: ClusterId = ClusterId::Alarms;
+impl Cluster<ClusterId> for Command {
+    const ID: ClusterId = ClusterId::Alarms;
 }
 
 impl CommandDispatch for Command {

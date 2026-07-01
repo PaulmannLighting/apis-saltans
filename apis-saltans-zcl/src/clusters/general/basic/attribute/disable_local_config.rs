@@ -1,6 +1,6 @@
+use apis_saltans_core::types::Type;
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::types::Type;
 
 /// Flags for local device configuration functions to be disabled.
 #[cfg_attr(

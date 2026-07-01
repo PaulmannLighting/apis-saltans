@@ -1,7 +1,7 @@
+use apis_saltans_core::types::{Type, Uint8};
 use le_stream::ToLeStream;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use apis_saltans_core::types::{Type, Uint8};
 
 /// Device power source attribute.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

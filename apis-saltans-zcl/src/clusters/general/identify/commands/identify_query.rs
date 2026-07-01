@@ -1,5 +1,5 @@
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
 
@@ -11,8 +11,8 @@ use crate::Command;
 #[repr(transparent)]
 pub struct IdentifyQuery;
 
-impl ClusterSpecific for IdentifyQuery {
-    const CLUSTER: ClusterId = ClusterId::Identify;
+impl Cluster<ClusterId> for IdentifyQuery {
+    const ID: ClusterId = ClusterId::Identify;
 }
 
 impl Command for IdentifyQuery {

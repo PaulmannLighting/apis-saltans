@@ -1,16 +1,16 @@
 //! Readable attributes of the Alarms cluster.
 
+use apis_saltans_core::types::Type;
+use apis_saltans_core::{Cluster, ClusterId};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::Type;
-use apis_saltans_core::{ClusterId, ClusterSpecific};
 
 use super::AlarmCount;
 use crate::{InvalidType, ReadableAttribute};
 
-impl ClusterSpecific for Id {
-    const CLUSTER: ClusterId = ClusterId::Alarms;
+impl Cluster<ClusterId> for Id {
+    const ID: ClusterId = ClusterId::Alarms;
 }
 
 /// Values of readable attributes for the Alarms cluster.
@@ -48,8 +48,8 @@ impl TryFrom<(Id, Type)> for Attribute {
     }
 }
 
-impl ClusterSpecific for Attribute {
-    const CLUSTER: ClusterId = ClusterId::Alarms;
+impl Cluster<ClusterId> for Attribute {
+    const ID: ClusterId = ClusterId::Alarms;
 }
 
 /// Readable attributes for the Alarms cluster.

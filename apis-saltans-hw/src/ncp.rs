@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
+use apis_saltans_core::{Address, Endpoint};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
-use apis_saltans_core::{Address, Endpoint};
 
 use crate::message::Message;
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};

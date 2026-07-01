@@ -1,7 +1,7 @@
 use core::iter::Empty;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::{Bool, Uint8, Uint16};
+use le_stream::{FromLeStream, ToLeStream};
 
 /// Scene table extension field set.
 ///

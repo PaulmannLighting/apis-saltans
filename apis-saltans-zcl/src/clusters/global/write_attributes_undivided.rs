@@ -3,8 +3,8 @@
 use core::ops::Deref;
 use std::boxed::Box;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::{Direction, ExpectResponse};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use super::write_attributes::{Record, Response, Status};
 use crate::command::Scoped;

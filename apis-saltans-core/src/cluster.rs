@@ -1,18 +1,16 @@
-pub use cluster_id::ClusterId;
-pub use cluster_specific::ClusterSpecific;
+pub use self::cluster_id::ClusterId;
 
 mod cluster_id;
-mod cluster_specific;
 
 /// Trait to identify Zigbee zcl.
-pub trait Cluster {
+pub trait Cluster<T = u16> {
     /// The cluster identifier.
-    const ID: u16;
+    const ID: T;
 }
 
-impl<T> Cluster for T
+impl<T> Cluster<u16> for T
 where
-    T: ClusterSpecific,
+    T: Cluster<ClusterId>,
 {
-    const ID: u16 = T::CLUSTER.as_u16();
+    const ID: u16 = <T as Cluster<ClusterId>>::ID.as_u16();
 }

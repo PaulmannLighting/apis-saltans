@@ -1,5 +1,5 @@
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
 
@@ -8,8 +8,8 @@ use crate::Command;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct Toggle;
 
-impl ClusterSpecific for Toggle {
-    const CLUSTER: ClusterId = ClusterId::OnOff;
+impl Cluster<ClusterId> for Toggle {
+    const ID: ClusterId = ClusterId::OnOff;
 }
 
 impl Command for Toggle {

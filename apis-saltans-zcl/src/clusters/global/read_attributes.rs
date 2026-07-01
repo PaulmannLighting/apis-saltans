@@ -6,9 +6,9 @@ use std::boxed::Box;
 use std::collections::BTreeMap;
 use std::collections::btree_map::IntoIter;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Type;
 use apis_saltans_core::{Direction, ExpectResponse};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::read_attributes_status::ReadAttributesStatus;
 use crate::command::Scoped;

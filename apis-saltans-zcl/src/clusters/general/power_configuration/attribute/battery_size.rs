@@ -1,7 +1,7 @@
+use apis_saltans_core::types::Uint8;
 use le_stream::{FromLeStream, ToLeStream};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use apis_saltans_core::types::Uint8;
 
 /// Available battery sizes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

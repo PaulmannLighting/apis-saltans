@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use apis_saltans_zdp::SimpleDescriptor;
 use apis_saltans_core::node::Descriptor;
 use apis_saltans_core::{Address, Endpoint};
+use apis_saltans_zdp::SimpleDescriptor;
 
 /// Type alias for a map of devices to their endpoints.
 pub type Devices = BTreeMap<Address, Device>;

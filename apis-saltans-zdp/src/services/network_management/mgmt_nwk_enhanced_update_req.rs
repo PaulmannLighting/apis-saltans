@@ -3,9 +3,9 @@ mod enhanced_update_parameters;
 use std::fmt::Display;
 use std::iter::once;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{ChannelList, ConfigurationBitmask};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::enhanced_update_parameters::EnhancedNwkUpdateParameters;
 use crate::{ScanDuration, Service};

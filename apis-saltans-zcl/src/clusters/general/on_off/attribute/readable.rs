@@ -1,10 +1,10 @@
 //! Readable attributes for the On/Off cluster.
 
+use apis_saltans_core::types::{Bool, Type, Uint16};
+use apis_saltans_core::{Cluster, ClusterId};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Bool, Type, Uint16};
-use apis_saltans_core::{ClusterId, ClusterSpecific};
 
 use super::StartUpOnOff;
 use crate::{InvalidType, ReadableAttribute};
@@ -88,8 +88,8 @@ pub enum Id {
     StartUpOnOff = 0x4003,
 }
 
-impl ClusterSpecific for Id {
-    const CLUSTER: ClusterId = ClusterId::OnOff;
+impl Cluster<ClusterId> for Id {
+    const ID: ClusterId = ClusterId::OnOff;
 }
 
 impl ReadableAttribute for Id {

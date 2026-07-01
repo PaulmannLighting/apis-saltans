@@ -1,5 +1,5 @@
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Type;
+use le_stream::{FromLeStream, ToLeStream};
 
 /// Configuration for attribute reporting.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]

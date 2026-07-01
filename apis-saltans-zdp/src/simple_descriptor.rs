@@ -1,5 +1,5 @@
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::{Endpoint, Profile};
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::app_flags::AppFlags;
 use crate::ByteSizedVec;

@@ -1,8 +1,8 @@
 //! Reportable attributes of the Power Configuration cluster.
 
+use apis_saltans_core::types::{Uint8, Uint16};
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Uint8, Uint16};
 
 pub use self::battery::{Battery, Information, Settings};
 use super::MainsAlarmMask;

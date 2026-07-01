@@ -1,7 +1,7 @@
 //! Iterator over Device Temperature Configuration attributes.
 
-use le_stream::ToLeStream;
 use apis_saltans_core::types::{Uint16, Uint24};
+use le_stream::ToLeStream;
 
 use crate::clusters::general::device_temperature_configuration::{
     DeviceTempAlarmMask, Temperature,

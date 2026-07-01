@@ -1,5 +1,5 @@
+use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
-use apis_saltans_core::{ClusterId, ClusterSpecific, Direction};
 
 use crate::Command;
 use crate::options::Options;
@@ -27,8 +27,8 @@ impl Stop {
     }
 }
 
-impl ClusterSpecific for Stop {
-    const CLUSTER: ClusterId = ClusterId::Level;
+impl Cluster<ClusterId> for Stop {
+    const ID: ClusterId = ClusterId::Level;
 }
 
 impl Command for Stop {

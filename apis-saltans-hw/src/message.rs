@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
+use apis_saltans_core::Endpoint;
 use macaddr::MacAddr8;
 use tokio::sync::oneshot::Sender;
-use apis_saltans_core::Endpoint;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;

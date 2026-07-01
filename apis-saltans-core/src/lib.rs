@@ -4,7 +4,7 @@
 
 pub use self::address::Address;
 pub use self::byte_sized_vec::ByteSizedVec;
-pub use self::cluster::{Cluster, ClusterId, ClusterSpecific};
+pub use self::cluster::{Cluster, ClusterId};
 pub use self::direction::Direction;
 pub use self::endpoint::{Application, Endpoint, Reserved};
 pub use self::profile::Profile;

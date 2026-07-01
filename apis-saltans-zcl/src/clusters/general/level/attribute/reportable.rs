@@ -1,8 +1,8 @@
 //! Reportable attributes for the Level cluster.
 
+use apis_saltans_core::types::Uint8;
 use le_stream::FromLeStream;
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::Uint8;
 
 use super::readable;
 

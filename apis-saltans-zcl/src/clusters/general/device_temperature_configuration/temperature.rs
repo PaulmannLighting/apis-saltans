@@ -1,7 +1,7 @@
 use core::ops::RangeInclusive;
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::types::Int16;
+use le_stream::{FromLeStream, ToLeStream};
 
 const RANGE: RangeInclusive<i16> = -200..=200;
 

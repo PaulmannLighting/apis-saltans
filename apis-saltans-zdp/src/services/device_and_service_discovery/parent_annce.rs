@@ -1,10 +1,10 @@
 use std::fmt::Display;
 use std::ops::Deref;
 
+use apis_saltans_core::Cluster;
 use heapless::CapacityError;
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
-use apis_saltans_core::Cluster;
 
 use crate::{ByteSizedVec, Service};
 

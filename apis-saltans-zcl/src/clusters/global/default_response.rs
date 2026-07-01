@@ -1,7 +1,7 @@
 //! Default Response Command.
 
-use le_stream::{FromLeStream, ToLeStream};
 use apis_saltans_core::Direction;
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::Scope;
 use crate::command::Scoped;

@@ -2,9 +2,9 @@
 
 use core::iter::Chain;
 
+use apis_saltans_core::types::{Uint16, Uint24};
 use le_stream::{FromLeStream, ToLeStream};
 use repr_discriminant::ReprDiscriminant;
-use apis_saltans_core::types::{Uint16, Uint24};
 
 use super::{iterator, writable};
 use crate::clusters::general::device_temperature_configuration::{
