@@ -542,7 +542,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 [[package]]
 name = "smarthomelib"
 version = "0.1.0"
-source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#e45e66978a911c81aed10ab682643087e4f00a93"
+source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#c3641ac85f0e135ebcbb76965e359e8913909b2a"
 dependencies = [
  "bunt",
  "const_env",

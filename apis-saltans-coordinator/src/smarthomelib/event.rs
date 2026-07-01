@@ -101,32 +101,16 @@ impl TryFrom<crate::Event> for Event<MacAddr8, Application> {
 
 fn translate_level_command(command: level::Command) -> Result<Command, level::Command> {
     match command {
-        level::Command::Move(mv) => {
-            let rate = if let Some(rate) = mv.rate() {
-                rate.into()
-            } else {
-                return Err(command);
-            };
-
-            match mv.mode() {
-                Ok(Mode::Up) => Ok(Command::Dimming(Dimming::Up { rate })),
-                Ok(Mode::Down) => Ok(Command::Dimming(Dimming::Down { rate })),
-                _ => Err(command),
-            }
-        }
-        level::Command::MoveWithOnOff(mv) => {
-            let rate = if let Some(rate) = mv.rate() {
-                rate.into()
-            } else {
-                return Err(command);
-            };
-
-            match mv.mode() {
-                Ok(Mode::Up) => Ok(Command::Dimming(Dimming::Up { rate })),
-                Ok(Mode::Down) => Ok(Command::Dimming(Dimming::Down { rate })),
-                _ => Err(command),
-            }
-        }
+        level::Command::Move(mv) => match mv.mode() {
+            Some(Mode::Up(rate)) => Ok(Command::Dimming(Dimming::Up { rate: rate.into() })),
+            Some(Mode::Down(rate)) => Ok(Command::Dimming(Dimming::Down { rate: rate.into() })),
+            _ => Err(command),
+        },
+        level::Command::MoveWithOnOff(mv) => match mv.mode() {
+            Some(Mode::Up(rate)) => Ok(Command::Dimming(Dimming::Up { rate: rate.into() })),
+            Some(Mode::Down(rate)) => Ok(Command::Dimming(Dimming::Down { rate: rate.into() })),
+            _ => Err(command),
+        },
         level::Command::Stop(_) | level::Command::StopWithOnOff(_) => {
             Ok(Command::Dimming(Dimming::Stop))
         }
