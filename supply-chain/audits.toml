@@ -13,6 +13,12 @@ criteria = "safe-to-deploy"
 delta = "0.2.1 -> 0.2.2"
 notes = "AI-assisted delta audit; endpoint constant refactor only"
 
+[[audits.apis-saltans-macros]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.1.0 -> 0.1.1"
+notes = "AI-assisted delta audit; version bump and README only"
+
 [[audits.autocfg]]
 who = "Codex AI"
 criteria = "safe-to-deploy"

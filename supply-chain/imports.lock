@@ -1,9 +1,13 @@
 
 # cargo-vet imports lock
 
-[[unpublished.apis-saltans-macros]]
-version = "0.1.1"
-audited_as = "0.1.0"
+[[unpublished.apis-saltans-coordinator]]
+version = "0.1.3"
+audited_as = "0.1.2"
+
+[[unpublished.apis-saltans-core]]
+version = "0.2.3"
+audited_as = "0.2.2"
 
 [[audits.google.audits.num-traits]]
 who = "Manish Goregaokar <manishearth@google.com>"
