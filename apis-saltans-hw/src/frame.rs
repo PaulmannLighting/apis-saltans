@@ -5,6 +5,8 @@
 //! Unlike raw APS frames, these types hide implementation details like frame counters
 //! and extended headers, providing a clean interface for coordinator implementations.
 
+use std::sync::Arc;
+
 use apis_saltans_core::{Cluster, Endpoint, Profile};
 use le_stream::ToLeStream;
 
@@ -18,10 +20,10 @@ mod metadata;
 /// representation for transmission via the network layer. It contains:
 /// - A serialized payload (ZCL or ZDP frame)
 /// - Metadata: cluster ID, profile ID (optional), source endpoint (optional)
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Frame {
     aps_metadata: Metadata,
-    payload: Box<[u8]>,
+    payload: Arc<[u8]>,
 }
 
 impl Frame {
@@ -32,7 +34,7 @@ impl Frame {
     /// The caller must ensure that the `aps_metadata` and `payload` are valid and consistent with each other.
     #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new(aps_metadata: Metadata, payload: Box<[u8]>) -> Self {
+    pub const unsafe fn new(aps_metadata: Metadata, payload: Arc<[u8]>) -> Self {
         Self {
             aps_metadata,
             payload,
@@ -53,7 +55,7 @@ impl Frame {
 
     /// Return the cluster ID and payload of the frame.
     #[must_use]
-    pub fn into_parts(self) -> (Metadata, Box<[u8]>) {
+    pub fn into_parts(self) -> (Metadata, Arc<[u8]>) {
         (self.aps_metadata, self.payload)
     }
 }

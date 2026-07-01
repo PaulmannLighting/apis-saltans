@@ -94,4 +94,11 @@ pub enum Message {
         frame: Frame,
         response: Sender<Result<u8, Error>>,
     },
+
+    /// Send multiple unicast requests in parallel.
+    ParallelUnicast {
+        targets: BTreeMap<u16, Box<[Endpoint]>>,
+        frame: Frame,
+        response: Sender<Result<Vec<Result<u8, Error>>, Error>>,
+    },
 }

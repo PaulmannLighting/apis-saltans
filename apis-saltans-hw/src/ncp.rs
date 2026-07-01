@@ -4,7 +4,7 @@ use std::time::Duration;
 use apis_saltans_core::{Address, Endpoint};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::oneshot;
+use tokio::sync::oneshot::channel;
 
 use crate::message::Message;
 use crate::{Error, FoundNetwork, Frame, ScannedChannel};
@@ -159,23 +159,34 @@ pub trait Ncp {
         radius: u8,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
+
+    /// Send multiple unicasts in parallel without waiting for the stack to confirm any sent frames.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails.
+    fn parallel_unicast(
+        &mut self,
+        targets: BTreeMap<u16, Box<[Endpoint]>>,
+        frame: Frame,
+    ) -> impl Future<Output = Result<Vec<Result<u8, Error>>, Error>> + Send;
 }
 
 impl Ncp for Sender<Message> {
     async fn next_transaction_seq(&self) -> Result<u8, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::GetTransactionSeq { response }).await?;
         Ok(rx.await?)
     }
 
     async fn get_pan_id(&self) -> Result<u16, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::GetPanId { response }).await?;
         rx.await?
     }
 
     async fn get_ieee_address(&self) -> Result<MacAddr8, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::GetIeeeAddress { response }).await?;
         rx.await?
     }
@@ -185,7 +196,7 @@ impl Ncp for Sender<Message> {
         channel_mask: u32,
         duration: u8,
     ) -> Result<Vec<FoundNetwork>, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::ScanNetworks {
             channel_mask,
             duration,
@@ -200,7 +211,7 @@ impl Ncp for Sender<Message> {
         channel_mask: u32,
         duration: u8,
     ) -> Result<Vec<ScannedChannel>, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::ScanChannels {
             channel_mask,
             duration,
@@ -211,34 +222,34 @@ impl Ncp for Sender<Message> {
     }
 
     async fn allow_joins(&self, duration: Duration) -> Result<Duration, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::AllowJoins { duration, response })
             .await?;
         rx.await?
     }
 
     async fn get_neighbors(&self) -> Result<BTreeMap<MacAddr8, u16>, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::GetNeighbors { response }).await?;
         rx.await?
     }
 
     async fn route_request(&self, radius: u8) -> Result<(), Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::RouteRequest { radius, response })
             .await?;
         rx.await?
     }
 
     async fn short_id_to_ieee_address(&self, short_id: u16) -> Result<MacAddr8, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::TranslateIeeeAddress { short_id, response })
             .await?;
         rx.await?
     }
 
     async fn ieee_address_to_short_id(&self, ieee_address: MacAddr8) -> Result<u16, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::TranslateShortId {
             ieee_address,
             response,
@@ -248,7 +259,7 @@ impl Ncp for Sender<Message> {
     }
 
     async fn unicast(&self, short_id: u16, endpoint: Endpoint, frame: Frame) -> Result<u8, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::Unicast {
             short_id,
             endpoint,
@@ -266,7 +277,7 @@ impl Ncp for Sender<Message> {
         radius: u8,
         frame: Frame,
     ) -> Result<u8, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::Multicast {
             group_id,
             hops,
@@ -279,10 +290,25 @@ impl Ncp for Sender<Message> {
     }
 
     async fn broadcast(&self, short_id: u16, radius: u8, frame: Frame) -> Result<u8, Error> {
-        let (response, rx) = oneshot::channel();
+        let (response, rx) = channel();
         self.send(Message::Broadcast {
             short_id,
             radius,
+            frame,
+            response,
+        })
+        .await?;
+        rx.await?
+    }
+
+    async fn parallel_unicast(
+        &mut self,
+        targets: BTreeMap<u16, Box<[Endpoint]>>,
+        frame: Frame,
+    ) -> Result<Vec<Result<u8, Error>>, Error> {
+        let (response, rx) = channel();
+        self.send(Message::ParallelUnicast {
+            targets,
             frame,
             response,
         })
