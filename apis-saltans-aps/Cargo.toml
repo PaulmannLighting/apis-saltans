@@ -12,12 +12,12 @@ edition = "2024"
 exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
+apis-saltans-core = "0.1"
 bitflags = "2"
 le-stream = { version = "10", features = ["derive"] }
 log = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
-apis-saltans-core = { path = "../apis-saltans-core" }
 
 [lints]
 workspace = true

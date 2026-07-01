@@ -15,7 +15,7 @@ dependencies = [
 name = "apis-saltans-aps"
 version = "0.1.0"
 dependencies = [
- "apis-saltans-core",
+ "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags",
  "le-stream",
  "log",
@@ -28,7 +28,7 @@ name = "apis-saltans-coordinator"
 version = "0.1.0"
 dependencies = [
  "apis-saltans-aps",
- "apis-saltans-core",
+ "apis-saltans-core 0.1.1",
  "apis-saltans-hw",
  "apis-saltans-zcl",
  "apis-saltans-zdp",
@@ -43,7 +43,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bitflags",
  "cfg_eval",
@@ -61,11 +61,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "apis-saltans-core"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae17bf8fb771fa1fe87abd4886affcb04ad4a0a053690f4d68e892655c0b60af"
+dependencies = [
+ "bitflags",
+ "chrono",
+ "heapless",
+ "intx",
+ "le-stream",
+ "log",
+ "macaddr",
+ "num-derive",
+ "num-traits",
+ "repr-discriminant",
+]
+
+[[package]]
 name = "apis-saltans-hw"
 version = "0.1.0"
 dependencies = [
  "apis-saltans-aps",
- "apis-saltans-core",
+ "apis-saltans-core 0.1.1",
  "apis-saltans-zcl",
  "apis-saltans-zdp",
  "le-stream",
@@ -88,7 +106,7 @@ name = "apis-saltans-zcl"
 version = "0.1.0"
 dependencies = [
  "apis-saltans-aps",
- "apis-saltans-core",
+ "apis-saltans-core 0.1.1",
  "apis-saltans-macros",
  "bitflags",
  "chrono",
@@ -107,7 +125,7 @@ name = "apis-saltans-zdp"
 version = "0.1.0"
 dependencies = [
  "apis-saltans-aps",
- "apis-saltans-core",
+ "apis-saltans-core 0.1.1",
  "bitflags",
  "heapless",
  "le-stream",
