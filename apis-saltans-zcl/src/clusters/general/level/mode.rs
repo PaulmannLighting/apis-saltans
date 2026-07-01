@@ -13,6 +13,10 @@ pub enum Mode<T> {
 
 impl<T> Mode<T> {
     /// Create a new move mode.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the direction is not 0x00 or 0x01.
     pub const fn new(direction: u8, stride: T) -> Result<Self, T> {
         match direction {
             0x00 => Ok(Self::Up(stride)),
@@ -25,8 +29,7 @@ impl<T> Mode<T> {
     #[must_use]
     pub fn into_stride(self) -> T {
         match self {
-            Self::Up(value) => value,
-            Self::Down(value) => value,
+            Self::Up(stride) | Self::Down(stride) => stride,
         }
     }
 }
