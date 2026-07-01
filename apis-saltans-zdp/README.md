@@ -1,4 +1,4 @@
-# zdp
+# apis-saltans-zdp
 
 Zigbee Device Profile (ZDP) command and service definitions.
 
@@ -78,7 +78,7 @@ Includes:
 
 ```rust
 use le_stream::ToLeStream;
-use zdp::{ActiveEpReq, Command, Frame};
+use apis_saltans_zdp::{ActiveEpReq, Command, Frame};
 
 let request = ActiveEpReq::new(0x1234);
 let command: Command = request.into();
@@ -91,8 +91,8 @@ assert!(!bytes.is_empty());
 ### Parse a Frame with Known Cluster ID
 
 ```rust
-use zigbee::Cluster;
-use zdp::{ActiveEpReq, Frame};
+use apis_saltans_core::Cluster;
+use apis_saltans_zdp::{ActiveEpReq, Frame};
 
 let raw = vec![0x42, 0x34, 0x12]; // seq + Active_EP_req payload
 let parsed = Frame::parse_with_cluster_id(ActiveEpReq::ID, raw.into_iter());
@@ -101,7 +101,7 @@ assert!(parsed.is_ok());
 
 ## Response Coupling
 
-Many request types implement `zigbee::ExpectResponse<zdp::Command>`, allowing request/response relationships to be expressed in type signatures (for example, `ActiveEpReq -> ActiveEpRsp`, `BindReq -> BindRsp`).
+Many request types implement `apis_saltans_core::ExpectResponse<apis_saltans_zdp::Command>`, allowing request/response relationships to be expressed in type signatures (for example, `ActiveEpReq -> ActiveEpRsp`, `BindReq -> BindRsp`).
 
 ## Simple Descriptor Support
 
@@ -117,7 +117,7 @@ This makes it suitable for descriptor transport and higher-level endpoint capabi
 ## Dependencies
 
 Key dependencies:
-- `zigbee` (cluster IDs, endpoint/profile primitives, shared traits)
+- `apis-saltans-core` (cluster IDs, endpoint/profile primitives, shared traits)
 - `le-stream`
 - `heapless`
 - `macaddr`
@@ -125,6 +125,6 @@ Key dependencies:
 
 ## Related Workspace Crates
 
-- `zigbee`: core protocol definitions
-- `aps`: APS layer frame structures
-- `zcl`: ZCL command and cluster models
+- `apis-saltans-core`: core protocol definitions
+- `apis-saltans-aps`: APS layer frame structures
+- `apis-saltans-zcl`: ZCL command and cluster models

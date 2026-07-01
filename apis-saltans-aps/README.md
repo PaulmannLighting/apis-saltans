@@ -1,4 +1,4 @@
-# aps
+# apis-saltans-aps
 
 APS layer frame definitions and utilities for Zigbee.
 
@@ -28,7 +28,7 @@ This crate is under active development.
   - `Fragmentation`
   - `AckFmt`
 
-Top-level re-exports are available from `aps` directly.
+Top-level re-exports are available from `apis-saltans-aps` directly.
 
 ## Crate Layout
 
@@ -54,7 +54,7 @@ Most frame builders produce strongly typed structures first, then serialize via 
 ### Build and Serialize a Unicast APS Data Frame
 
 ```rust
-use aps::Unicast;
+use apis_saltans_aps::Unicast;
 use le_stream::ToLeStream;
 
 let frame = Unicast::new(
@@ -76,7 +76,7 @@ assert!(!bytes.is_empty());
 ### Parse an APS Data Header
 
 ```rust
-use aps::data::Header;
+use apis_saltans_aps::data::Header;
 use le_stream::FromLeStream;
 
 let raw = [
@@ -104,6 +104,6 @@ Primary dependencies:
 
 ## Related Workspace Crates
 
-- `zigbee`: core Zigbee protocol types
-- `zcl`: Zigbee Cluster Library framing and commands
-- `zdp`: Zigbee Device Profile services
+- `apis-saltans-core`: core Zigbee protocol types
+- `apis-saltans-zcl`: Zigbee Cluster Library framing and commands
+- `apis-saltans-zdp`: Zigbee Device Profile services

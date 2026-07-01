@@ -1,4 +1,4 @@
-# zigbee-coordinator Architecture
+# apis-saltans-coordinator Architecture
 
 This document explains how the coordinator is implemented internally, with a focus on:
 - actor responsibilities
@@ -8,7 +8,7 @@ This document explains how the coordinator is implemented internally, with a foc
 
 ## Overview
 
-`zigbee-coordinator` uses an actor-style runtime on top of `tokio`:
+`apis-saltans-coordinator` uses an actor-style runtime on top of `tokio`:
 - each major subsystem runs in its own async loop (`run(...)`)
 - subsystems communicate via `tokio::sync::mpsc` and `oneshot`
 - long-running or per-device work is offloaded to bounded task pools (`tokio-task-pool`)
@@ -176,7 +176,7 @@ For each discovered endpoint:
 ### AttributeDiscovery (AD)
 
 For each application endpoint containing the Basic cluster:
-- reads a fixed attribute set from `zcl::general::basic`
+- reads a fixed attribute set from `apis_saltans_zcl::general::basic`
 - converts read results into coordinator `Attributes`
 - when complete, sends `binding::Message::DeviceDiscovered` directly to `Binding`
 

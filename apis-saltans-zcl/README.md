@@ -1,4 +1,4 @@
-# zcl
+# apis-saltans-zcl
 
 Zigbee Cluster Library (ZCL) frame, command, attribute, and cluster definitions.
 
@@ -13,7 +13,7 @@ This crate is under active development and currently implements a substantial, b
 - `no_std` when `std` feature is disabled
 - uses `alloc` (`extern crate alloc`)
 - little-endian serialization/deserialization via `le-stream`
-- depends on the local `zigbee` core crate
+- depends on the local `apis-saltans-core` core crate
 
 ## Features
 
@@ -84,8 +84,8 @@ The repository also contains additional cluster/type modules that are not yet wi
 
 ```rust
 use le_stream::ToLeStream;
-use zcl::clusters::global::{Command as GlobalCommand, default_response::DefaultResponse};
-use zcl::{Cluster, Direction, Frame, Header, Scope};
+use apis_saltans_zcl::clusters::global::{Command as GlobalCommand, default_response::DefaultResponse};
+use apis_saltans_zcl::{Cluster, Direction, Frame, Header, Scope};
 
 let payload = Cluster::Global(GlobalCommand::DefaultResponse(DefaultResponse::new(0x00, 0x01)));
 let header = Header::new(
@@ -105,7 +105,7 @@ assert!(!bytes.is_empty());
 ### Parse a ZCL Frame into a Runtime Cluster Command
 
 ```rust
-use zcl::Frame;
+use apis_saltans_zcl::Frame;
 
 let bytes = vec![0x18, 0x11, 0x0B, 0x00, 0x01];
 let parsed = Frame::parse(0x0006, bytes.into_iter());
@@ -115,7 +115,7 @@ assert!(parsed.is_ok());
 ## Attribute Traits
 
 The crate provides type-safe patterns for attribute access:
-- `ReadableAttribute`: map attribute IDs and wire `zigbee::types::Type` values into strongly typed attribute enums/structs
+- `ReadableAttribute`: map attribute IDs and wire `apis_saltans_core::types::Type` values into strongly typed attribute enums/structs
 - `WritableAttribute`: convert attribute write structures into global write records
 
 This is intended to keep attribute handling explicit and strongly typed across clusters.
@@ -123,7 +123,7 @@ This is intended to keep attribute handling explicit and strongly typed across c
 ## Dependencies
 
 Key dependencies:
-- `zigbee` (core protocol definitions)
+- `apis-saltans-core` (core protocol definitions)
 - `le-stream`
 - `heapless`
 - `bitflags`
@@ -131,6 +131,6 @@ Key dependencies:
 
 ## Related Workspace Crates
 
-- `zigbee`: core datatypes and TLV support
-- `aps`: APS frame definitions
-- `zdp`: ZDP service and command models
+- `apis-saltans-core`: core datatypes and TLV support
+- `apis-saltans-aps`: APS frame definitions
+- `apis-saltans-zdp`: ZDP service and command models

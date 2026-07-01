@@ -1,4 +1,4 @@
-# zigbee-hw
+# apis-saltans-hw
 
 An abstraction layer for Zigbee hardware.
 

@@ -1,6 +1,6 @@
-# zigbee-coordinator
+# apis-saltans-coordinator
 
-High-level Zigbee coordinator API built on top of [`zigbee-hw`](../apis-saltans-hw).
+High-level Zigbee coordinator API built on top of [`apis-saltans-hw`](../apis-saltans-hw).
 
 This crate exposes a single coordinator handle (`Coordinator`) plus trait-based APIs for common coordinator operations:
 
@@ -34,15 +34,15 @@ Public API exports:
 
 `Coordinator` is started with:
 
-- a hardware backend implementing `zigbee_hw::Start`
+- a hardware backend implementing `apis_saltans_hw::Start`
 - the local endpoint descriptors to expose on the coordinator
 - an initial persisted `State`
 
 ```rust,no_run
-use zigbee_coordinator::{Coordinator, State};
-use zdp::SimpleDescriptor;
+use apis_saltans_coordinator::{Coordinator, State};
+use apis_saltans_zdp::SimpleDescriptor;
 
-async fn init<T: zigbee_hw::Start>(hardware: T) -> Result<Coordinator, zigbee_hw::Error> {
+async fn init<T: apis_saltans_hw::Start>(hardware: T) -> Result<Coordinator, apis_saltans_hw::Error> {
     let endpoints: &[SimpleDescriptor] = &[];
     let state = State { devices: Box::new([]) };
 
@@ -56,7 +56,7 @@ The library intentionally uses traits to group functionality.
 Import the traits you use so extension methods become available.
 
 ```rust,no_run
-use zigbee_coordinator::{
+use apis_saltans_coordinator::{
     ColorControl, Coordinator, Joining, NetworkManager, OnOff, ReadAttributes, WriteAttributes,
 };
 ```
@@ -67,9 +67,9 @@ Allows opening the network for joins:
 
 ```rust,no_run
 use std::time::Duration;
-use zigbee_coordinator::Joining;
+use apis_saltans_coordinator::Joining;
 
-async fn allow_joins(coordinator: &impl Joining) -> Result<Duration, zigbee_coordinator::Error> {
+async fn allow_joins(coordinator: &impl Joining) -> Result<Duration, apis_saltans_coordinator::Error> {
     coordinator.allow_joining(Duration::from_secs(60)).await
 }
 ```
@@ -88,9 +88,9 @@ Provides queries against coordinator-maintained network state:
 
 ```rust,no_run
 use macaddr::MacAddr8;
-use zigbee_coordinator::NetworkManager;
+use apis_saltans_coordinator::NetworkManager;
 
-async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, zigbee_coordinator::Error> {
+async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, apis_saltans_coordinator::Error> {
     let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
     api.get_short_id_from_ieee_address(ieee).await
 }
@@ -106,10 +106,10 @@ High-level helpers for standard On/Off cluster control:
 
 ```rust,no_run
 use macaddr::MacAddr8;
-use zigbee::Endpoint;
-use zigbee_coordinator::OnOff;
+use apis_saltans_core::Endpoint;
+use apis_saltans_coordinator::OnOff;
 
-async fn switch_on(api: &impl OnOff) -> Result<(), zigbee_coordinator::Error> {
+async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Error> {
     let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
     api.on(ieee, Endpoint::from(1)).await
 }
@@ -123,11 +123,11 @@ High-level color control operation:
 
 ```rust,no_run
 use macaddr::MacAddr8;
-use zcl::Options;
-use zigbee::Endpoint;
-use zigbee_coordinator::ColorControl;
+use apis_saltans_zcl::Options;
+use apis_saltans_core::Endpoint;
+use apis_saltans_coordinator::ColorControl;
 
-async fn set_xy(api: &impl ColorControl) -> Result<(), zigbee_coordinator::Error> {
+async fn set_xy(api: &impl ColorControl) -> Result<(), apis_saltans_coordinator::Error> {
     let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
     api.move_to_xy(
         ieee,
@@ -146,20 +146,20 @@ async fn set_xy(api: &impl ColorControl) -> Result<(), zigbee_coordinator::Error
 Two API levels are exposed:
 
 - `read_attributes_raw(...)` for direct cluster/id reads
-- `read_attributes<T>(...)` for typed reads using a `zcl::ReadableAttribute` ID enum
+- `read_attributes<T>(...)` for typed reads using a `apis_saltans_zcl::ReadableAttribute` ID enum
 
 Typed example with Basic-cluster readable IDs:
 
 ```rust,no_run
 use macaddr::MacAddr8;
-use zcl::general::basic::readable::Id as BasicReadableId;
-use zigbee::Endpoint;
-use zigbee_coordinator::{ReadAttributeResult, ReadAttributes};
+use apis_saltans_zcl::general::basic::readable::Id as BasicReadableId;
+use apis_saltans_core::Endpoint;
+use apis_saltans_coordinator::{ReadAttributeResult, ReadAttributes};
 
 async fn read_basic(
     api: &impl ReadAttributes,
     ieee: MacAddr8,
-) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, zigbee_coordinator::Error> {
+) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, apis_saltans_coordinator::Error> {
     api.read_attributes(
         ieee,
         Endpoint::from(1),
@@ -174,21 +174,21 @@ async fn read_basic(
 Two API levels are exposed:
 
 - `write_attributes_raw(...)` for direct record writes
-- `write_attributes<T>(...)` for typed writes via `zcl::WritableAttribute`
+- `write_attributes<T>(...)` for typed writes via `apis_saltans_zcl::WritableAttribute`
 
 Typed example with Basic writable attributes:
 
 ```rust,no_run
 use macaddr::MacAddr8;
-use zcl::general::basic::writable::Attribute as BasicWritable;
-use zigbee::types::String;
-use zigbee::Endpoint;
-use zigbee_coordinator::WriteAttributes;
+use apis_saltans_zcl::general::basic::writable::Attribute as BasicWritable;
+use apis_saltans_core::types::String;
+use apis_saltans_core::Endpoint;
+use apis_saltans_coordinator::WriteAttributes;
 
 async fn write_location(
     api: &impl WriteAttributes,
     ieee: MacAddr8,
-) -> Result<(), zigbee_coordinator::Error> {
+) -> Result<(), apis_saltans_coordinator::Error> {
     let location = String::<16>::try_from("Living Room").unwrap();
 
     let result = api
@@ -213,18 +213,18 @@ State model:
 
 - `State`: persistent snapshot (`devices: Box<[Device]>`)
 - `Device`:
-    - `address: zigbee::Address`
-    - `endpoints: BTreeMap<zigbee::Endpoint, zigbee_coordinator::Endpoint>`
+    - `address: apis_saltans_core::Address`
+    - `endpoints: BTreeMap<apis_saltans_core::Endpoint, apis_saltans_coordinator::Endpoint>`
 - `Endpoint`:
-    - `descriptor: zdp::SimpleDescriptor`
-    - `attributes: zigbee_coordinator::Attributes`
+    - `descriptor: apis_saltans_zdp::SimpleDescriptor`
+    - `attributes: apis_saltans_coordinator::Attributes`
 - `Attributes`: normalized subset of discovered Basic-cluster metadata (manufacturer/model/version/etc.)
 
 ## Error Model
 
-All high-level API traits return `zigbee_coordinator::Error`:
+All high-level API traits return `apis_saltans_coordinator::Error`:
 
-- `Hardware(zigbee_hw::Error)`
+- `Hardware(apis_saltans_hw::Error)`
 - `SendError`
 - `ReceiveError`
 - `Timeout`

@@ -1,6 +1,6 @@
-# zigbee
+# apis-saltans-core
 
-Core Zigbee protocol definitions used by the workspace crates (`aps`, `zcl`, `zdp`, coordinator, and hardware integrations).
+Core Zigbee protocol definitions used by the workspace crates (`apis-saltans-aps`, `apis-saltans-zcl`, `apis-saltans-zdp`, coordinator, and hardware integrations).
 
 This crate provides:
 - protocol-level data types (`types::Type`, scalar wrappers, strings, dates/times)
@@ -27,19 +27,19 @@ Add the crate from the workspace or repository path (the crate is currently conf
 
 ```toml
 [dependencies]
-zigbee = { path = "../zigbee" }
+apis_saltans_core = { path = "../apis-saltans-core" }
 ```
 
 Enable serde support if needed:
 
 ```toml
 [dependencies]
-zigbee = { path = "../zigbee", features = ["serde"] }
+apis_saltans_core = { path = "../apis-saltans-core", features = ["serde"] }
 ```
 
 ## Public API Overview
 
-Top-level re-exports from `zigbee`:
+Top-level re-exports from `apis-saltans-core`:
 - `Address`
 - `Cluster`, `ClusterId`, `ClusterSpecific`
 - `Direction`
@@ -108,7 +108,7 @@ Useful types:
 
 ```rust
 use le_stream::ToLeStream;
-use zigbee::types::tlv::{Global, SymmetricPassphrase, Tlv};
+use apis_saltans_core::types::tlv::{Global, SymmetricPassphrase, Tlv};
 
 let passphrase = SymmetricPassphrase::new([0xAA; 16]);
 let tlv = Tlv::Global(Global::SymmetricPassphrase(passphrase));
@@ -121,7 +121,7 @@ let bytes = tlv.to_le_stream().collect::<heapless::Vec<u8, 18>>();
 
 ```rust
 use le_stream::FromLeStreamTagged;
-use zigbee::types::Type;
+use apis_saltans_core::types::Type;
 
 let tag = 0x21; // Uint16
 let payload = [0x34, 0x12];
@@ -135,7 +135,7 @@ assert!(matches!(value, Type::Uint16(_)));
 ### Convert Endpoints and Profiles
 
 ```rust
-use zigbee::{Endpoint, Profile};
+use apis_saltans_core::{Endpoint, Profile};
 
 let ep = Endpoint::from(1u8);
 let profile = Profile::try_from(0x0104).expect("known profile");
@@ -152,11 +152,11 @@ assert_eq!(u8::from(ep), 1);
 
 ## Related Crates In This Workspace
 
-- `aps`: Zigbee APS layer
-- `zcl`: Zigbee Cluster Library
-- `zdp`: Zigbee Device Profile
-- `zigbee-coordinator`: actor-based coordinator API
-- `zigbee-hw`: hardware abstraction layer
+- `apis-saltans-aps`: Zigbee APS layer
+- `apis-saltans-zcl`: Zigbee Cluster Library
+- `apis-saltans-zdp`: Zigbee Device Profile
+- `apis-saltans-coordinator`: actor-based coordinator API
+- `apis-saltans-hw`: hardware abstraction layer
 
 ## Legal
 

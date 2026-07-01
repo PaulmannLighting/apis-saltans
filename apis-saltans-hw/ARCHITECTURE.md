@@ -1,6 +1,6 @@
-# zigbee-hw Architecture
+# apis-saltans-hw Architecture
 
-`zigbee-hw` is the hardware abstraction crate between coordinator-level logic and concrete Zigbee network co-processor (NCP) drivers. It defines three main boundaries:
+`apis-saltans-hw` is the hardware abstraction crate between coordinator-level logic and concrete Zigbee network co-processor (NCP) drivers. It defines three main boundaries:
 
 - `NcpDriver`: implementor-facing trait for concrete hardware backends.
 - `Ncp`: caller-facing proxy trait implemented for the actor handle (`tokio::sync::mpsc::Sender<Message>`).
@@ -352,11 +352,11 @@ Trait implementations:
 
 | Implementation | Behavior |
 | --- | --- |
-| `From<zcl::Frame<T>> for Frame where T: zigbee::Cluster + ToLeStream` | Serializes the ZCL frame and uses `Metadata::new(T::ID, None, None)`. |
-| `From<zdp::Frame<T>> for Frame where T: zigbee::Cluster + ToLeStream` | Serializes the ZDP frame and uses `Metadata::new(T::ID, Some(Profile::Network), Some(Endpoint::Data))`. |
+| `From<apis_saltans_zcl::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZCL frame and uses `Metadata::new(T::ID, None, None)`. |
+| `From<apis_saltans_zdp::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZDP frame and uses `Metadata::new(T::ID, Some(Profile::Network), Some(Endpoint::Data))`. |
 
 Transport note:
-- `zigbee-hw` treats the serialized payload as opaque bytes after `ToLeStream` conversion
+- `apis-saltans-hw` treats the serialized payload as opaque bytes after `ToLeStream` conversion
 - attribute IDs inside global ZCL read/write commands are not interpreted or rewritten in this crate
 - composed IDs (for example, Power Configuration battery setting attributes where bank and setting bits are combined into one ID) therefore pass through unchanged
 
@@ -369,8 +369,8 @@ Fields:
 | Field | Type | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `cluster_id` | `u16` | private | APS cluster ID. |
-| `profile` | `Option<zigbee::Profile>` | private | Optional APS profile ID. |
-| `source_endpoint` | `Option<zigbee::Endpoint>` | private | Optional APS source endpoint. |
+| `profile` | `Option<apis_saltans_core::Profile>` | private | Optional APS profile ID. |
+| `source_endpoint` | `Option<apis_saltans_core::Endpoint>` | private | Optional APS source endpoint. |
 
 Methods:
 
@@ -491,7 +491,7 @@ Variants:
 | `DeviceJoined` | `ieee_address: MacAddr8`, `short_id: u16` | A new device joined. |
 | `DeviceRejoined` | `ieee_address: MacAddr8`, `short_id: u16`, `secured: bool` | A device rejoined, with security status. |
 | `DeviceLeft` | `ieee_address: MacAddr8`, `short_id: u16` | A device left. |
-| `MessageReceived` | `src_address: u16`, `aps_frame: Box<aps::Data<Command>>` | A message was received from a device. |
+| `MessageReceived` | `src_address: u16`, `aps_frame: Box<apis_saltans_aps::Data<Command>>` | A message was received from a device. |
 
 ### `Command`
 
@@ -501,8 +501,8 @@ Variants:
 
 | Variant | Payload | Purpose |
 | --- | --- | --- |
-| `Zdp` | `zdp::Frame<zdp::Command>` | A ZDP frame was received. |
-| `Zcl` | `zcl::Frame<zcl::Cluster>` | A ZCL frame was received. |
+| `Zdp` | `apis_saltans_zdp::Frame<apis_saltans_zdp::Command>` | A ZDP frame was received. |
+| `Zcl` | `apis_saltans_zcl::Frame<apis_saltans_zcl::Cluster>` | A ZCL frame was received. |
 
 Methods:
 
@@ -582,7 +582,7 @@ Event-side flow:
 
 Frame-side flow:
 
-1. Coordinator code builds a `zcl::Frame<T>` or `zdp::Frame<T>`.
+1. Coordinator code builds a `apis_saltans_zcl::Frame<T>` or `apis_saltans_zdp::Frame<T>`.
 2. `Frame::from` serializes the application frame with `ToLeStream`.
 3. `Metadata` records the cluster ID and, for ZDP, network profile/source endpoint defaults.
 4. `NcpDriver` implementations receive `Frame` values in `unicast`, `multicast`, or `broadcast` and translate them into backend-specific transmit operations.
