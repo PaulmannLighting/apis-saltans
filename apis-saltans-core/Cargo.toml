@@ -29,7 +29,7 @@ smarthomelib = { version = "0.1", git = "ssh://git@github.com/PaulmannLighting/s
 
 [features]
 serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
-serde_with = ["dep:serde_with", "dep:cfg_eval", "serde"]
+ieee_address_as_str = ["dep:serde_with", "dep:cfg_eval", "serde"]
 smarthomelib = ["dep:smarthomelib"]
 
 [lints]
