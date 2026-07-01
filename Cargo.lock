@@ -41,11 +41,11 @@ dependencies = [
 name = "apis-saltans-coordinator"
 version = "0.1.0"
 dependencies = [
- "apis-saltans-aps 0.1.0",
- "apis-saltans-core 0.1.1",
- "apis-saltans-hw",
- "apis-saltans-zcl 0.1.0",
- "apis-saltans-zdp 0.1.0",
+ "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-hw 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-zcl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-zdp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "const_env",
  "le-stream",
  "log",
@@ -81,6 +81,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae17bf8fb771fa1fe87abd4886affcb04ad4a0a053690f4d68e892655c0b60af"
 dependencies = [
  "bitflags",
+ "cfg_eval",
  "chrono",
  "heapless",
  "intx",
@@ -91,11 +92,28 @@ dependencies = [
  "num-traits",
  "repr-discriminant",
  "serde",
+ "serde_with",
 ]
 
 [[package]]
 name = "apis-saltans-hw"
 version = "0.1.0"
+dependencies = [
+ "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-zcl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "apis-saltans-zdp 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "le-stream",
+ "log",
+ "macaddr",
+ "tokio",
+]
+
+[[package]]
+name = "apis-saltans-hw"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "659f1bb72e92fc39ff3673b06532ddc8bb60c3e7d77b8eedb6827822261ee340"
 dependencies = [
  "apis-saltans-aps 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "apis-saltans-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -164,6 +182,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "repr-discriminant",
+ "serde",
 ]
 
 [[package]]
@@ -197,6 +216,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "repr-discriminant",
+ "serde",
 ]
 
 [[package]]
