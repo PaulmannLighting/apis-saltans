@@ -26,7 +26,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-aps"
 version = "0.1.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#9d009f813493e4722b28901acdf87156afaa8705"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#cff0193a056351e249a8693e10e55da69bdd31e1"
 dependencies = [
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib)",
  "bitflags",
@@ -79,7 +79,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-core"
 version = "0.2.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#9d009f813493e4722b28901acdf87156afaa8705"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#cff0193a056351e249a8693e10e55da69bdd31e1"
 dependencies = [
  "bitflags",
  "cfg_eval",
@@ -114,7 +114,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-hw"
 version = "0.1.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#9d009f813493e4722b28901acdf87156afaa8705"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#cff0193a056351e249a8693e10e55da69bdd31e1"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib)",
@@ -138,7 +138,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-macros"
 version = "0.1.0"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#9d009f813493e4722b28901acdf87156afaa8705"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#cff0193a056351e249a8693e10e55da69bdd31e1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -162,12 +162,13 @@ dependencies = [
  "num-traits",
  "repr-discriminant",
  "serde",
+ "smarthomelib",
 ]
 
 [[package]]
 name = "apis-saltans-zcl"
 version = "0.1.1"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#9d009f813493e4722b28901acdf87156afaa8705"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#cff0193a056351e249a8693e10e55da69bdd31e1"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib)",
@@ -203,7 +204,7 @@ dependencies = [
 [[package]]
 name = "apis-saltans-zdp"
 version = "0.1.2"
-source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#9d009f813493e4722b28901acdf87156afaa8705"
+source = "git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib#cff0193a056351e249a8693e10e55da69bdd31e1"
 dependencies = [
  "apis-saltans-aps 0.1.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib)",
  "apis-saltans-core 0.2.1 (git+https://github.com/PaulmannLighting/apis-saltans.git?branch=smarthomelib)",
@@ -637,7 +638,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 [[package]]
 name = "smarthomelib"
 version = "0.1.0"
-source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#5f64a73e7e27bdc1fd393f5f9b0dc00ddbb8febb"
+source = "git+ssh://git@github.com/PaulmannLighting/smarthomelib.git?branch=trait-based-approach#7bc44a5149d25440e4eb913937a7f8bdad307df8"
 dependencies = [
  "bunt",
  "const_env",
