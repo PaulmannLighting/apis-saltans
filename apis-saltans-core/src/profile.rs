@@ -2,6 +2,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 /// Defines the Zigbee Profile Identifiers as per the Zigbee specification.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromPrimitive)]
 #[repr(u16)]
 pub enum Profile {
