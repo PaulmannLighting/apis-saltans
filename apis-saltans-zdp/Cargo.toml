@@ -1,6 +1,6 @@
 [package]
 name = "apis-saltans-zdp"
-description = "Zigbee ZDP library."
+description = "Zigbee Device Profile library."
 authors = ["Richard Neumann <neumann@paulmann.de>"]
 license = "MIT"
 repository = "https://github.com/PaulmannLighting/apis-saltans"
