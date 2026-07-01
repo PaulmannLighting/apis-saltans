@@ -8,8 +8,10 @@ use num_traits::FromPrimitive;
 pub enum LogicalType {
     /// The device is a coordinator.
     Coordinator = 0b000,
+
     /// The device is a router.
     Router = 0b001,
+
     /// The device is an end device.
     EndDevice = 0b010,
 }
