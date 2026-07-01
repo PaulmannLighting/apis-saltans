@@ -33,7 +33,6 @@ smarthomelib = { git = "ssh://git@github.com/PaulmannLighting/smarthomelib.git",
 serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
 serde_with = ["dep:serde_with", "dep:cfg_eval", "serde"]
 smarthomelib = ["dep:smarthomelib"]
-cfg_eval = ["dep:cfg_eval"]
 
 [lints]
 workspace = true
