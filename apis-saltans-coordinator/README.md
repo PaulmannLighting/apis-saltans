@@ -21,6 +21,7 @@ Public API exports:
     - `NetworkManager`
     - `OnOff`
     - `ColorControl`
+    - `Level`
     - `ReadAttributes`
     - `WriteAttributes`
 - attribute helper alias:
@@ -36,19 +37,18 @@ Public API exports:
 
 - a hardware backend implementing `apis_saltans_hw::Start`
 - the local endpoint descriptors to expose on the coordinator
-- an initial persisted `State`
 
 ```rust,no_run
-use apis_saltans_coordinator::{Coordinator, State};
+use apis_saltans_coordinator::Coordinator;
 use apis_saltans_zdp::SimpleDescriptor;
 
 async fn init<T: apis_saltans_hw::Start>(hardware: T) -> Result<Coordinator, apis_saltans_hw::Error> {
-    let endpoints: &[SimpleDescriptor] = &[];
-    let state = State { devices: Box::new([]) };
-
-    Coordinator::start(hardware, endpoints, state).await
+    let endpoints: &[SimpleDescriptor] = &[/* your endpoint descriptors here */];
+    Coordinator::start(hardware, endpoints).await
 }
 ```
+
+To load persisted devices after startup, call `NetworkManager::load(...)` on the coordinator.
 
 ## Trait-Based API
 
@@ -57,7 +57,8 @@ Import the traits you use so extension methods become available.
 
 ```rust,no_run
 use apis_saltans_coordinator::{
-    ColorControl, Coordinator, Joining, NetworkManager, OnOff, ReadAttributes, WriteAttributes,
+    ColorControl, Coordinator, Joining, Level, NetworkManager, OnOff, ReadAttributes,
+    WriteAttributes,
 };
 ```
 
@@ -106,12 +107,16 @@ High-level helpers for standard On/Off cluster control:
 
 ```rust,no_run
 use macaddr::MacAddr8;
-use apis_saltans_core::Endpoint;
-use apis_saltans_coordinator::OnOff;
+use apis_saltans_core::Application;
+use apis_saltans_coordinator::{Destination, OnOff};
 
 async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Error> {
     let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
-    api.on(ieee, Endpoint::from(1)).await
+    let destination = Destination::Endpoint {
+        ieee_address: ieee,
+        endpoint: Application::try_from(1).expect("valid endpoint"),
+    };
+    api.on(destination).await
 }
 ```
 
@@ -124,17 +129,20 @@ High-level color control operation:
 ```rust,no_run
 use macaddr::MacAddr8;
 use apis_saltans_zcl::Options;
-use apis_saltans_core::Endpoint;
-use apis_saltans_coordinator::ColorControl;
+use apis_saltans_core::{Application, units::Deciseconds};
+use apis_saltans_coordinator::{ColorControl, Destination};
 
 async fn set_xy(api: &impl ColorControl) -> Result<(), apis_saltans_coordinator::Error> {
     let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
+    let destination = Destination::Endpoint {
+        ieee_address: ieee,
+        endpoint: Application::try_from(1).expect("valid endpoint"),
+    };
     api.move_to_xy(
-        ieee,
-        Endpoint::from(1),
+        destination,
         30_000,
         30_000,
-        10,
+        Deciseconds::from(10),
         Options::empty(),
     )
     .await
@@ -153,7 +161,7 @@ Typed example with Basic-cluster readable IDs:
 ```rust,no_run
 use macaddr::MacAddr8;
 use apis_saltans_zcl::general::basic::readable::Id as BasicReadableId;
-use apis_saltans_core::Endpoint;
+use apis_saltans_core::Application;
 use apis_saltans_coordinator::{ReadAttributeResult, ReadAttributes};
 
 async fn read_basic(
@@ -162,7 +170,7 @@ async fn read_basic(
 ) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, apis_saltans_coordinator::Error> {
     api.read_attributes(
         ieee,
-        Endpoint::from(1),
+        Application::try_from(1).expect("valid endpoint"),
         vec![BasicReadableId::ModelIdentifier, BasicReadableId::ManufacturerName].into_boxed_slice(),
     )
     .await
@@ -182,7 +190,7 @@ Typed example with Basic writable attributes:
 use macaddr::MacAddr8;
 use apis_saltans_zcl::general::basic::writable::Attribute as BasicWritable;
 use apis_saltans_core::types::String;
-use apis_saltans_core::Endpoint;
+use apis_saltans_core::Application;
 use apis_saltans_coordinator::WriteAttributes;
 
 async fn write_location(
@@ -194,7 +202,7 @@ async fn write_location(
     let result = api
         .write_attributes(
             ieee,
-            Endpoint::from(1),
+            Application::try_from(1).expect("valid endpoint"),
             vec![BasicWritable::LocationDescription(location)].into_boxed_slice(),
         )
         .await?;
@@ -241,9 +249,3 @@ Behavior is configurable via environment variables:
 - `ZIGBEE_COORDINATOR_RETRY_DELAY_SECS`
 - `ZIGBEE_COORDINATOR_TASK_POOL_SIZE`
 - `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`
-- `ZIGBEE_COORDINATOR_ZCL_RESPONSE_TIMEOUT_SECS`
-- `ZIGBEE_COORDINATOR_ZDP_RESPONSE_TIMEOUT_SECS`
-
-## Optional Feature
-
-- `smarthomelib`: enables integration with `smarthomelib::Protocol` for `Coordinator`.
