@@ -2,7 +2,6 @@ use apis_saltans_core::types::Uint8;
 use apis_saltans_core::units::UnitsPerSecond;
 use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
-use num_traits::FromPrimitive;
 
 use crate::Command;
 use crate::general::level::Mode;
@@ -20,25 +19,20 @@ pub struct Move {
 impl Move {
     /// Crate a new `Move` command.
     #[must_use]
-    pub const fn new(mode: Mode, rate: UnitsPerSecond, options: Options) -> Self {
+    pub fn new(mode: Mode<UnitsPerSecond>, options: Options) -> Self {
         Self {
-            mode: mode as u8,
-            rate: rate.into_inner(),
+            mode: mode.discriminant(),
+            rate: mode.into_stride().into_inner(),
             options,
         }
     }
 
     /// Get the mode.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw mode value if it is invalid.
-    pub fn mode(self) -> Result<Mode, u8> {
-        Mode::from_u8(self.mode).ok_or(self.mode)
+    pub fn mode(self) -> Option<Mode<UnitsPerSecond>> {
+        Mode::new(self.mode, self.rate()?).ok()
     }
 
     /// Get the rate.
-    #[must_use]
     pub fn rate(self) -> Option<UnitsPerSecond> {
         self.rate.try_into().ok()
     }
