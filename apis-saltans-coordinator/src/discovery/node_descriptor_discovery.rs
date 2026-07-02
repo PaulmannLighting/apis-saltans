@@ -1,10 +1,7 @@
-use std::collections::BTreeMap;
-
 use apis_saltans_core::Address;
-use log::{error, trace, warn};
+use log::{error, trace};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
-use tokio::task::JoinHandle;
-use tokio_task_pool::{Error, Pool};
+use tokio_task_pool::Pool;
 
 pub use self::message::Message;
 use crate::discovery::endpoint_discovery::{self, Device};
@@ -20,7 +17,6 @@ pub struct NodeDescriptorDiscovery {
     loopback: Sender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
     endpoint_discovery: Sender<endpoint_discovery::Message>,
-    pending: BTreeMap<Address, JoinHandle<Result<(), Error>>>,
     tasks: Pool,
 }
 
@@ -38,7 +34,6 @@ impl NodeDescriptorDiscovery {
             loopback: tx.clone(),
             zdp,
             endpoint_discovery,
-            pending: BTreeMap::new(),
             tasks: Pool::bounded(TASK_POOL_SIZE),
         };
 
@@ -56,10 +51,6 @@ impl NodeDescriptorDiscovery {
                     address,
                     descriptor,
                 } => {
-                    if self.pending.remove(&address).is_none() {
-                        warn!("Received descriptor for unknown device: {address}");
-                    }
-
                     self.endpoint_discovery
                         .send(endpoint_discovery::Message::Discover(Device::new(
                             address,
@@ -71,34 +62,26 @@ impl NodeDescriptorDiscovery {
                         });
                 }
                 Message::DiscoveryFailed(address) => {
-                    if self.pending.remove(&address).is_none() {
-                        warn!("Received discovery failure for unknown device: {address}");
-                    }
+                    error!("Received discovery failed: {address}");
                 }
             }
         }
     }
 
-    async fn start_discovery(&mut self, address: Address) {
-        if let Some(join_handle) = self.pending.remove(&address) {
-            trace!("Terminating already running discovery if node descriptors for {address}");
-            join_handle.abort();
-        }
-
+    async fn start_discovery(&self, address: Address) {
         let Some(zdp) = self.zdp.upgrade() else {
             trace!("Failed to upgrade ZDP sender");
             return;
         };
 
-        if let Ok(join_handle) = self
-            .tasks
+        self.tasks
             .spawn(DiscoveryTask::new(address.clone(), self.loopback.clone(), zdp).run())
             .await
-            .inspect_err(|error| {
-                error!("Failed to spawn task: {error:?}");
-            })
-        {
-            self.pending.insert(address, join_handle);
-        }
+            .map_or_else(
+                |error| {
+                    error!("Failed to spawn task: {error:?}");
+                },
+                drop,
+            );
     }
 }
