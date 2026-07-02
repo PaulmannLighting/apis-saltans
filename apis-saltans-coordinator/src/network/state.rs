@@ -12,5 +12,5 @@ mod endpoint;
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub struct State {
     /// The devices in the network.
-    pub devices: Box<[Device]>,
+    pub devices: Vec<Device>,
 }
