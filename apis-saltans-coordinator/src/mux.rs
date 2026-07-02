@@ -6,15 +6,14 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::aps_payload::ApsPayload;
+use crate::network_manager;
 use crate::transceiver::{zcl, zdp};
-use crate::{discovery, network_manager};
 
 /// Event multiplexer.
 #[derive(Debug)]
 pub struct Mux {
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
-    discovery: Sender<discovery::Message>,
     network_manager: Sender<network_manager::Message>,
     transactions: Transactions,
 }
@@ -24,13 +23,11 @@ impl Mux {
     pub const fn new(
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
-        discovery: Sender<discovery::Message>,
         network_manager: Sender<network_manager::Message>,
     ) -> Self {
         Self {
             zcl,
             zdp,
-            discovery,
             network_manager,
             transactions: Transactions::new(),
         }
@@ -41,10 +38,9 @@ impl Mux {
         events: Receiver<Event>,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
-        discovery_tx: Sender<discovery::Message>,
         network_manager: Sender<network_manager::Message>,
     ) {
-        spawn(Self::new(zcl_tx, zdp_tx, discovery_tx, network_manager).run(events));
+        spawn(Self::new(zcl_tx, zdp_tx, network_manager).run(events));
     }
 
     /// Run the multiplexer.

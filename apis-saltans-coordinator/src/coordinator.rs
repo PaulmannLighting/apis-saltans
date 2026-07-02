@@ -52,13 +52,7 @@ impl Coordinator {
             ncp.downgrade(),
         );
 
-        Mux::spawn(
-            events,
-            zcl_tx.clone(),
-            zdp_tx,
-            discovery_tx.clone(),
-            network_manager.clone(),
-        );
+        Mux::spawn(events, zcl_tx.clone(), zdp_tx, network_manager.clone());
 
         Ok(Self {
             ncp,
