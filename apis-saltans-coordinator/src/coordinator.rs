@@ -48,6 +48,7 @@ impl Coordinator {
             zcl_tx.downgrade(),
             zdp_tx.downgrade(),
             binding_manager,
+            ncp.downgrade(),
         );
 
         Mux::spawn(
