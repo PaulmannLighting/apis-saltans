@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::io::Result;
 
 use apis_saltans_core::Address;
 use macaddr::MacAddr8;
@@ -10,14 +10,14 @@ use crate::{Device, State};
 #[derive(Debug)]
 pub enum Message {
     /// Load the network state.
-    Load(Sender<Result<Option<State>, Error>>),
+    Load(Sender<Result<Option<State>>>),
 
     /// Save the network state.
     Save {
         /// The state to save.
         state: State,
         /// The response channel.
-        response: Sender<Result<(), Error>>,
+        response: Sender<Result<()>>,
     },
 
     /// Add a device.
@@ -27,7 +27,7 @@ pub enum Message {
         /// The response channel.
         ///
         /// Returns the previously stored device on ID clashes.
-        response: Sender<Result<Option<Device>, Error>>,
+        response: Sender<Result<Option<Device>>>,
     },
 
     /// Remove a device by its address.
@@ -37,7 +37,7 @@ pub enum Message {
         /// The response channel.
         ///
         /// Returns the removed device, if any.
-        response: Sender<Result<Option<Device>, Error>>,
+        response: Sender<Result<Option<Device>>>,
     },
 
     /// Return a device given its full address.
@@ -45,7 +45,7 @@ pub enum Message {
         /// The full address of the device.
         address: Address,
         /// The response channel.
-        response: Sender<Result<Option<Device>, Error>>,
+        response: Sender<Result<Option<Device>>>,
     },
 
     /// Return a device given its short ID.
@@ -53,7 +53,7 @@ pub enum Message {
         /// The short ID of the device.
         short_id: u16,
         /// The response channel.
-        response: Sender<Result<Option<Device>, Error>>,
+        response: Sender<Result<Option<Device>>>,
     },
 
     /// Return a device given its IEEE address.
@@ -61,6 +61,6 @@ pub enum Message {
         /// The IEEE address of the device.
         ieee_address: MacAddr8,
         /// The response channel.
-        response: Sender<Result<Option<Device>, Error>>,
+        response: Sender<Result<Option<Device>>>,
     },
 }
