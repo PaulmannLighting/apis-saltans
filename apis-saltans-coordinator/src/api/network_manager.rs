@@ -6,7 +6,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
 
 use crate::network_manager::Message;
-use crate::{Coordinator, Error, Event};
+use crate::{Coordinator, Device, Error, Event};
 
 /// Handle to the network manager actor.
 pub trait NetworkManager {
@@ -94,6 +94,9 @@ pub trait NetworkManager {
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
     ) -> impl Future<Output = Result<Receiver<Event>, Error>> + Send;
+
+    /// Yield devices of the network.
+    fn devices(&self) -> impl Future<Output = Result<Box<[Device]>, Error>> + Send;
 }
 
 impl NetworkManager for Sender<Message> {
@@ -133,6 +136,12 @@ impl NetworkManager for Sender<Message> {
         .await?;
         Ok(receiver)
     }
+
+    async fn devices(&self) -> Result<Box<[Device]>, Error> {
+        let (tx, rx) = channel();
+        self.send(Message::GetDevices(tx)).await?;
+        Ok(rx.await?)
+    }
 }
 
 impl NetworkManager for Coordinator {
@@ -162,5 +171,9 @@ impl NetworkManager for Coordinator {
         self.network_manager
             .subscribe_to_incoming_commands(device, channel_size)
             .await
+    }
+
+    async fn devices(&self) -> Result<Box<[Device]>, Error> {
+        self.network_manager.devices().await
     }
 }

@@ -65,6 +65,9 @@ pub enum Message {
     /// A routing error.
     RouteError(RouteError),
 
+    /// Get devices.
+    GetDevices(oneshot::Sender<Box<[Device]>>),
+
     /// The network has been opened for joining.
     NetworkOpened,
 

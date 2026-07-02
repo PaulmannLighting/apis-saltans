@@ -100,6 +100,11 @@ where
                         error!("Failed to request route: {error:?}");
                     });
                 }
+                Message::GetDevices(sender) => {
+                    sender
+                        .send(self.devices().await.collect())
+                        .unwrap_or_else(drop);
+                }
                 Message::NetworkOpened => {
                     info!("Network opened");
                 }
@@ -165,7 +170,7 @@ where
         self.subscribers.retain(|(_, sender)| !sender.is_closed());
     }
 
-    async fn add_device(&mut self, device: Device) {
+    async fn add_device(&self, device: Device) {
         self.storage.add(device).await.map_or_else(
             |error| {
                 error!("Failed to store device: {error:?}");
@@ -182,7 +187,7 @@ where
         });
     }
 
-    async fn remove_device(&mut self, address: Address) {
+    async fn remove_device(&self, address: Address) {
         self.storage.remove(address).await.map_or_else(
             |error| {
                 error!("Failed to remove device: {error:?}");
