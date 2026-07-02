@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use apis_saltans_core::{Address, Application, Endpoint};
 use apis_saltans_zcl::general::basic::readable::Id;
-use log::{error, trace, warn};
+use log::{error, info, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 
@@ -148,6 +148,7 @@ impl AttributeDiscovery {
             return;
         }
 
+        info!("All attributes discovered for {address}.");
         trace!("Forwarding device {address} to binding manager.");
         self.binding_manager
             .send(binding::Message::DeviceDiscovered(Box::new(device.into())))

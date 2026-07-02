@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use apis_saltans_core::Address;
-use log::{error, trace, warn};
+use log::{error, info, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 
@@ -60,6 +60,7 @@ impl EndpointDiscovery {
                         continue;
                     };
 
+                    info!("Endpoints discovered: {address}: {endpoints:?}");
                     self.descriptor_discovery
                         .send(endpoint_descriptor_discovery::Message::Discover(
                             endpoint_descriptor_discovery::Device::new(

@@ -116,11 +116,11 @@ impl EndpointDescriptorDiscovery {
     /// Update the descriptor map with the newly discovered descriptors.
     async fn descriptor_discovered(&mut self, address: Address, descriptor: SimpleDescriptor) {
         let Some(mut device) = self.devices.remove(&address) else {
-            warn!("Discarding descriptors for {address} before we discovered them.");
+            warn!("Discarding endpoint descriptor for {address} before we discovered them.");
             return;
         };
 
-        trace!("Discovered descriptor for {address}: {descriptor:?}");
+        trace!("Discovered endpoint descriptor for {address}: {descriptor:?}");
         device
             .endpoints
             .insert(descriptor.endpoint(), Some(descriptor));
@@ -131,7 +131,7 @@ impl EndpointDescriptorDiscovery {
             return;
         }
 
-        info!("All descriptors for {address} discovered.");
+        info!("All endpoint descriptors for {address} discovered.");
 
         let endpoints = device
             .endpoints

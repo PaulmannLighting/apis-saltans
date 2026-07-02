@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use apis_saltans_core::{Address, ClusterId, Endpoint};
 use apis_saltans_hw::{Ncp, WeakNcpHandle};
 use apis_saltans_zdp::{BindReq, Destination, Status};
-use log::{error, trace, warn};
+use log::{error, info, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
@@ -88,7 +88,7 @@ impl Actor {
         trace!("Binding device: {device}");
 
         if !device.needs_binding(&BIND_OUTPUT_CLUSTERS) {
-            trace!("No binding necessary for {device}.");
+            info!("No binding necessary for {device}.");
             self.forward_device(device).await;
             return;
         }
@@ -140,7 +140,7 @@ impl Actor {
             return;
         }
 
-        trace!("Device {address} is now bound.");
+        info!("Device {address} is now bound.");
         self.forward_device(device).await;
     }
 

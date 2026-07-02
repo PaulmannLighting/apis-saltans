@@ -88,12 +88,13 @@ where
                 }
                 Message::DeviceJoined { address, secured } => {
                     if let Some(secured) = secured {
-                        info!("Device rejoined the network: {address}, secured: {secured}");
+                        debug!("Device rejoined the network: {address}, secured: {secured}");
                     } else {
-                        info!("Device joined the network: {address}");
+                        debug!("Device joined the network: {address}");
                     }
                 }
                 Message::NewDevice(device) => {
+                    info!("New device: {device:?}");
                     self.add_device(device).await;
                 }
                 Message::RemoveDevice(address) => {

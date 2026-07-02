@@ -4,7 +4,7 @@ use apis_saltans_core::Address;
 use apis_saltans_core::types::tlv::FragmentationParameters;
 use apis_saltans_zdp::NodeDescReq;
 use const_env::env_item;
-use log::{error, trace, warn};
+use log::{error, info, trace, warn};
 use tokio::sync::mpsc::Sender;
 
 use super::Message;
@@ -53,6 +53,7 @@ impl DiscoveryTask {
         {
             Ok(response) => match response.try_into() {
                 Ok(descriptor) => {
+                    info!("Descriptor discovered for {}: {descriptor:?}", self.address);
                     self.loopback
                         .send(Message::DescriptorDiscovered {
                             address: self.address.clone(),
