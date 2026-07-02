@@ -8,7 +8,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::api::ReadAttributesInternal;
 use crate::discovery::attribute_discovery::Message;
-use crate::{RETRY, Timeout, transceiver};
+use crate::{Timeout, transceiver};
 
 #[env_item("ZIGBEE_COORDINATOR_ATTRIBUTE_DISCOVERY_TIMEOUT_SECS")]
 const TIMEOUT_SECS: u64 = 10;
@@ -62,74 +62,67 @@ impl DiscoveryTask {
             "Starting discovery of basic attributes for {}:{}.",
             self.address, self.endpoint
         );
-        let mut retries = 0;
 
-        while RETRY.retry(&mut retries).await {
-            let mut attributes =
-                Vec::with_capacity(CORE_ATTRIBUTES.len() + EXTENDED_ATTRIBUTES.len());
+        let mut attributes = Vec::with_capacity(CORE_ATTRIBUTES.len() + EXTENDED_ATTRIBUTES.len());
 
-            match self
-                .zcl
-                .read_attributes(
-                    self.address.short_id(),
-                    self.endpoint,
-                    CORE_ATTRIBUTES.into(),
-                )
-                .timeout(TIMEOUT)
-                .await
-            {
-                Ok(core_attributes) => {
-                    debug!("Read core attributes");
-                    attributes.extend(core_attributes);
-                }
-                Err(error) => {
-                    error!("Failed to read core attributes: {error:?}");
-                    continue;
-                }
+        match self
+            .zcl
+            .read_attributes(
+                self.address.short_id(),
+                self.endpoint,
+                CORE_ATTRIBUTES.into(),
+            )
+            .timeout(TIMEOUT)
+            .await
+        {
+            Ok(core_attributes) => {
+                debug!("Read core attributes");
+                attributes.extend(core_attributes);
             }
-
-            match self
-                .zcl
-                .read_attributes(
-                    self.address.short_id(),
-                    self.endpoint,
-                    EXTENDED_ATTRIBUTES.into(),
-                )
-                .timeout(TIMEOUT)
-                .await
-            {
-                Ok(extended_attributes) => {
-                    debug!("Read extended attributes");
-                    attributes.extend(extended_attributes);
-                }
-                Err(error) => {
-                    error!("Failed to read extended attributes: {error:?}");
-                }
-            }
-
-            match self
-                .loopback
-                .send(Message::AttributesDiscovered {
-                    address: self.address.clone(),
-                    application: self.endpoint,
-                    results: attributes.into_boxed_slice(),
-                })
-                .await
-            {
-                Ok(()) => return,
-                Err(error) => {
-                    error!("Failed to send AttributesDiscovered message: {error:?}");
-                }
+            Err(error) => {
+                error!(
+                    "Failed to discover basic attributes for {}:{}: {error}",
+                    self.address, self.endpoint
+                );
+                self.loopback
+                    .send(Message::DiscoveryFailed(self.address))
+                    .await
+                    .unwrap_or_else(|error| {
+                        error!("Failed to send DiscoveryFailed message: {error:?}");
+                    });
+                return;
             }
         }
 
-        error!(
-            "Failed to discover basic attributes for {}:{:#04X}.",
-            self.address, self.endpoint
-        );
-        self.loopback
-            .send(Message::DiscoveryFailed(self.address))
+        match self
+            .zcl
+            .read_attributes(
+                self.address.short_id(),
+                self.endpoint,
+                EXTENDED_ATTRIBUTES.into(),
+            )
+            .timeout(TIMEOUT)
             .await
-            .unwrap_or_else(|error| error!("Failed to send DiscoveryFailed message: {error:?}"));
+        {
+            Ok(extended_attributes) => {
+                debug!("Read extended attributes");
+                attributes.extend(extended_attributes);
+            }
+            Err(error) => {
+                error!("Failed to read extended attributes: {error:?}");
+            }
+        }
+
+        if let Err(error) = self
+            .loopback
+            .send(Message::AttributesDiscovered {
+                address: self.address.clone(),
+                application: self.endpoint,
+                results: attributes.into_boxed_slice(),
+            })
+            .await
+        {
+            error!("Failed to send AttributesDiscovered message: {error:?}");
+        }
     }
 }
