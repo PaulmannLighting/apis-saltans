@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use apis_saltans_aps::Data;
 use apis_saltans_core::Address;
@@ -14,9 +14,6 @@ use crate::Event;
 /// Messages received by the network management actor.
 #[derive(Debug)]
 pub enum Message {
-    /// Load previous state.
-    Load(Box<[Device]>),
-
     /// Subscribe to incoming ZCL commands.
     SubscribeToIncomingCommands {
         /// The source addresses of the devices to listen to.
@@ -49,18 +46,6 @@ pub enum Message {
         ieee_address: MacAddr8,
         /// Response channel to send the resolved IEEE address to.
         response: oneshot::Sender<Option<u16>>,
-    },
-
-    /// A request to send a list of the current devices.
-    GetDevices {
-        /// Response channel to send the current device list to.
-        response: oneshot::Sender<BTreeMap<MacAddr8, Device>>,
-    },
-
-    /// A request to subscribe for updates on devices.
-    SubscribeToDevice {
-        /// Response channel to send the updated device list to.
-        response: Sender<Box<[Device]>>,
     },
 
     /// A device joined the network.

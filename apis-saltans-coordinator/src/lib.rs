@@ -30,9 +30,11 @@ mod error;
 mod event;
 mod event_receiver;
 mod mux;
+mod network;
 mod network_manager;
 mod retry;
 mod smarthomelib;
+pub mod storage;
 mod timeout;
 mod transceiver;
 

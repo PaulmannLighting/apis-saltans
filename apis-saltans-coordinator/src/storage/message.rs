@@ -1,0 +1,66 @@
+use std::io::Error;
+
+use apis_saltans_core::Address;
+use macaddr::MacAddr8;
+use tokio::sync::oneshot::Sender;
+
+use crate::{Device, State};
+
+/// Messages exchanged with the storage manager.
+#[derive(Debug)]
+pub enum Message {
+    /// Load the network state.
+    Load(Sender<Result<Option<State>, Error>>),
+
+    /// Save the network state.
+    Save {
+        /// The state to save.
+        state: State,
+        /// The response channel.
+        response: Sender<Result<(), Error>>,
+    },
+
+    /// Add a device.
+    Add {
+        /// The device to add.
+        device: Device,
+        /// The response channel.
+        ///
+        /// Returns the previously stored device on ID clashes.
+        response: Sender<Result<Option<Device>, Error>>,
+    },
+
+    /// Remove a device by its address.
+    Remove {
+        /// The address of the device to remove.
+        address: Address,
+        /// The response channel.
+        ///
+        /// Returns the removed device, if any.
+        response: Sender<Result<Option<Device>, Error>>,
+    },
+
+    /// Return a device given its full address.
+    GetByAddress {
+        /// The full address of the device.
+        address: Address,
+        /// The response channel.
+        response: Sender<Result<Option<Device>, Error>>,
+    },
+
+    /// Return a device given its short ID.
+    GetByShortId {
+        /// The short ID of the device.
+        short_id: u16,
+        /// The response channel.
+        response: Sender<Result<Option<Device>, Error>>,
+    },
+
+    /// Return a device given its IEEE address.
+    GetByIeeeAddress {
+        /// The IEEE address of the device.
+        ieee_address: MacAddr8,
+        /// The response channel.
+        response: Sender<Result<Option<Device>, Error>>,
+    },
+}
