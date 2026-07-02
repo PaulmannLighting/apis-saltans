@@ -81,16 +81,22 @@ impl Mux {
                     });
             }
             Event::DeviceJoined(address) => {
-                self.discovery
-                    .send(discovery::Message::DeviceJoined(address))
+                self.network_manager
+                    .send(network_manager::Message::DeviceJoined {
+                        address,
+                        secured: None,
+                    })
                     .await
                     .unwrap_or_else(|error| {
                         trace!("Failed to send device joined message: {error}");
                     });
             }
             Event::DeviceRejoined { address, secured } => {
-                self.discovery
-                    .send(discovery::Message::DeviceRejoined { address, secured })
+                self.network_manager
+                    .send(network_manager::Message::DeviceJoined {
+                        address,
+                        secured: Some(secured),
+                    })
                     .await
                     .unwrap_or_else(|error| {
                         trace!("Failed to send device rejoined message: {error}");

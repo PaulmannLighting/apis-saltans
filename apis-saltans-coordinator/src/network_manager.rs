@@ -88,6 +88,13 @@ where
                 Message::SubscribeToDevice { .. } => {
                     todo!()
                 }
+                Message::DeviceJoined { address, secured } => {
+                    if let Some(secured) = secured {
+                        info!("Device rejoined the network: {address}, secured: {secured}");
+                    } else {
+                        info!("Device joined the network: {address}");
+                    }
+                }
                 Message::NewDevice(device) => {
                     self.add_device(device).await;
                 }

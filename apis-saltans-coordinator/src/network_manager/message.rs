@@ -63,6 +63,14 @@ pub enum Message {
         response: Sender<Box<[Device]>>,
     },
 
+    /// A device joined the network.
+    DeviceJoined {
+        /// The address of the device.
+        address: Address,
+        /// Whether the rejoin was secured.
+        secured: Option<bool>,
+    },
+
     /// Add a new device to the network.
     NewDevice(Device),
 

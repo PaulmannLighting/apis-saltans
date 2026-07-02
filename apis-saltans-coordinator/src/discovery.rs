@@ -64,14 +64,6 @@ impl Actor {
     pub async fn run(self, mut messages: Receiver<Message>) {
         while let Some(event) = messages.recv().await {
             let address = match event {
-                Message::DeviceJoined(address) => {
-                    info!("Device joined: {address}");
-                    address
-                }
-                Message::DeviceRejoined { address, secured } => {
-                    info!("Device rejoined: {address}, secured: {secured}");
-                    address
-                }
                 Message::DeviceAnnounced {
                     address,
                     capabilities,
