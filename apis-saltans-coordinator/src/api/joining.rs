@@ -17,7 +17,10 @@ pub trait Joining {
     /// # Errors
     ///
     /// Returns an [`Error`] if joining could not be allowed.
-    fn allow_joining(&self, duration: Duration) -> impl Future<Output = Result<Duration, Error>>;
+    fn allow_joining(
+        &self,
+        duration: Duration,
+    ) -> impl Future<Output = Result<Duration, Error>> + Send;
 }
 
 impl Joining for Coordinator {

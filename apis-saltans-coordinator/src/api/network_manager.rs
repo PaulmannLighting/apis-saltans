@@ -96,7 +96,7 @@ pub trait NetworkManager {
     /// # Errors
     ///
     /// Returns an [`Error`] if the communication with the actor failed.
-    fn state(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, Device>, Error>>;
+    fn state(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, Device>, Error>> + Send;
 
     /// Subscribes to a stream of incoming commands.
     ///
@@ -107,7 +107,7 @@ pub trait NetworkManager {
         &self,
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> impl Future<Output = Result<Receiver<Event>, Error>>;
+    ) -> impl Future<Output = Result<Receiver<Event>, Error>> + Send;
 }
 
 impl NetworkManager for Sender<Message> {

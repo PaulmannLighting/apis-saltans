@@ -9,5 +9,5 @@ pub trait Start {
     fn start(
         self,
         endpoints: &[SimpleDescriptor],
-    ) -> impl Future<Output = Result<(NcpHandle, Receiver<Event>), Error>>;
+    ) -> impl Future<Output = Result<(NcpHandle, Receiver<Event>), Error>> + Send;
 }
