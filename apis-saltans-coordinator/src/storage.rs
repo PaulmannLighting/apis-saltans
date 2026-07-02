@@ -7,7 +7,7 @@ use tokio::sync::oneshot::channel;
 
 pub use self::error::Error;
 pub use self::message::Message;
-use crate::{Device, State};
+use crate::Device;
 
 mod error;
 mod message;
@@ -17,19 +17,12 @@ pub type Server = Receiver<Message>;
 
 /// Storage client handle trait.
 pub trait Storage {
-    /// Load the current state from the storage.
+    /// Return the current devices from the storage.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if loading from the storage fails.
-    fn load(&self) -> impl Future<Output = Result<Option<State>, Error>> + Send;
-
-    /// Save the current state.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if writing to the storage fails.
-    fn save(&self, state: State) -> impl Future<Output = Result<(), Error>> + Send;
+    fn devices(&self) -> impl Future<Output = Result<Box<[Device]>, Error>> + Send;
 
     /// Add a device to the storage.
     ///
@@ -80,19 +73,9 @@ pub trait Storage {
 }
 
 impl Storage for Sender<Message> {
-    async fn load(&self) -> Result<Option<State>, Error> {
+    async fn devices(&self) -> Result<Box<[Device]>, Error> {
         let (tx, rx) = channel();
-        self.send(Message::Load(tx)).await?;
-        Ok(rx.await??)
-    }
-
-    async fn save(&self, state: State) -> Result<(), Error> {
-        let (tx, rx) = channel();
-        self.send(Message::Save {
-            state,
-            response: tx,
-        })
-        .await?;
+        self.send(Message::Devices(tx)).await?;
         Ok(rx.await??)
     }
 

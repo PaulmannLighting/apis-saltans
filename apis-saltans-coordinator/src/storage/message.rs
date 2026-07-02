@@ -4,21 +4,13 @@ use apis_saltans_core::Address;
 use macaddr::MacAddr8;
 use tokio::sync::oneshot::Sender;
 
-use crate::{Device, State};
+use crate::Device;
 
 /// Messages exchanged with the storage manager.
 #[derive(Debug)]
 pub enum Message {
     /// Load the network state.
-    Load(Sender<Result<Option<State>>>),
-
-    /// Save the network state.
-    Save {
-        /// The state to save.
-        state: State,
-        /// The response channel.
-        response: Sender<Result<()>>,
-    },
+    Devices(Sender<Result<Box<[Device]>>>),
 
     /// Add a device.
     Add {

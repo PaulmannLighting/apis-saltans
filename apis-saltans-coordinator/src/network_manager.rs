@@ -10,9 +10,9 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 pub use self::message::Message;
-pub use crate::network::{Attributes, Device, Endpoint, State};
+pub use crate::network::{Attributes, Device, Endpoint};
 use crate::storage::Storage;
-use crate::{Event, MPSC_CHANNEL_SIZE, storage};
+use crate::{Error, Event, MPSC_CHANNEL_SIZE, storage};
 
 mod message;
 
@@ -53,14 +53,20 @@ where
                 }
                 Message::GetIeeeAddressFromShortId { short_id, response } => {
                     response
-                        .send(self.devices().await.find_map(|device| {
-                            let address = device.address;
-                            if address.short_id() == short_id {
-                                Some(address.ieee_address())
-                            } else {
-                                None
-                            }
-                        }))
+                        .send(
+                            self.devices()
+                                .await
+                                .unwrap_or_default()
+                                .into_iter()
+                                .find_map(|device| {
+                                    let address = device.address;
+                                    if address.short_id() == short_id {
+                                        Some(address.ieee_address())
+                                    } else {
+                                        None
+                                    }
+                                }),
+                        )
                         .unwrap_or_else(|error| {
                             error!("Failed to send response: {error:?}");
                         });
@@ -73,6 +79,8 @@ where
                         .send(
                             self.devices()
                                 .await
+                                .unwrap_or_default()
+                                .into_iter()
                                 .find(|device| device.address.ieee_address() == ieee_address)
                                 .map(|device| device.address.short_id()),
                         )
@@ -102,7 +110,7 @@ where
                 }
                 Message::GetDevices(sender) => {
                     sender
-                        .send(self.devices().await.collect())
+                        .send(self.devices().await.unwrap_or_default())
                         .unwrap_or_else(drop);
                 }
                 Message::NetworkOpened => {
@@ -115,20 +123,8 @@ where
         }
     }
 
-    async fn state(&self) -> Option<State> {
-        self.storage
-            .load()
-            .await
-            .inspect_err(|error| error!("{error:?}"))
-            .ok()
-            .flatten()
-    }
-
-    async fn devices(&self) -> impl Iterator<Item = Device> {
-        self.state()
-            .await
-            .into_iter()
-            .flat_map(|state| state.devices.into_iter())
+    async fn devices(&self) -> Result<Box<[Device]>, Error> {
+        Ok(self.storage.devices().await?)
     }
 
     async fn handle_incoming_command(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {

@@ -16,7 +16,7 @@ pub use self::destination::Destination;
 pub use self::error::Error;
 pub use self::event::Event;
 pub use self::event_receiver::EventReceiver;
-pub use self::network_manager::{Attributes, Device, Endpoint, State};
+pub use self::network_manager::{Attributes, Device, Endpoint};
 use self::retry::Retry;
 pub use self::timeout::Timeout;
 
