@@ -79,6 +79,10 @@ impl Actor {
                     info!("Device announced: {address}, capabilities: {capabilities}");
                     address
                 }
+                Message::AdministrativeDiscovery(address) => {
+                    info!("Administrative discovery requested.");
+                    address
+                }
             };
 
             trace!("Start descriptor discovery for {address}");

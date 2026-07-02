@@ -23,4 +23,7 @@ pub enum Message {
         /// The capabilities of the device.
         capabilities: MacCapabilityFlags,
     },
+
+    /// An administrative discovery sent by the network manager.
+    AdministrativeDiscovery(Address),
 }

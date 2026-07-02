@@ -129,7 +129,7 @@ where
     async fn handle_incoming_command(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
         let Some(ieee_address) = self.short_ids.get(&src_address) else {
             warn!("Received command from unknown short ID: {src_address:04X}");
-            self.try_rediscover(src_address).await;
+            //self.try_rediscover(src_address).await;
             return;
         };
 
@@ -191,7 +191,7 @@ where
         };
 
         sender
-            .send(discovery::Message::DeviceJoined(Address::new(
+            .send(discovery::Message::AdministrativeDiscovery(Address::new(
                 ieee_address,
                 src_address,
             )))
