@@ -17,6 +17,7 @@ pub struct Coordinator {
     pub(crate) ncp: NcpHandle,
     pub(crate) zcl: Sender<zcl::Message>,
     pub(crate) network_manager: Sender<network_manager::Message>,
+    pub(crate) discovery_manager: Sender<discovery::Message>,
 }
 
 impl Coordinator {
@@ -32,7 +33,7 @@ impl Coordinator {
         let (ncp, events) = hardware.start(endpoints).await?;
 
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
-        let network_manager = network_manager::Actor::spawn(ncp.clone(), discovery_tx.downgrade());
+        let network_manager = network_manager::Actor::spawn(ncp.clone());
 
         let zcl_tx = zcl::Transceiver::spawn(ncp.clone(), network_manager.downgrade());
         let zdp_tx = zdp::Transceiver::spawn(ncp.clone(), discovery_tx.downgrade(), endpoints);
@@ -55,7 +56,7 @@ impl Coordinator {
             events,
             zcl_tx.clone(),
             zdp_tx,
-            discovery_tx,
+            discovery_tx.clone(),
             network_manager.clone(),
         );
 
@@ -63,6 +64,7 @@ impl Coordinator {
             ncp,
             zcl: zcl_tx,
             network_manager,
+            discovery_manager: discovery_tx,
         })
     }
 }

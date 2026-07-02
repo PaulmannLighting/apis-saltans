@@ -8,11 +8,11 @@ use apis_saltans_zcl::{Cluster, Frame};
 use log::{debug, error, info, warn};
 use macaddr::MacAddr8;
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 pub use self::message::Message;
 pub use self::state::{Attributes, Device, Endpoint, State};
-use crate::{Event, MPSC_CHANNEL_SIZE, discovery};
+use crate::{Event, MPSC_CHANNEL_SIZE};
 
 mod message;
 mod state;
@@ -21,7 +21,6 @@ mod state;
 #[derive(Debug)]
 pub struct Actor<T> {
     ncp: T,
-    discovery_manager: WeakSender<discovery::Message>,
     devices: BTreeMap<MacAddr8, Device>,
     short_ids: BTreeMap<u16, MacAddr8>,
     subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Event>)>,
@@ -33,10 +32,9 @@ where
 {
     /// Create a new actor.
     #[must_use]
-    pub const fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>) -> Self {
+    pub const fn new(ncp: T) -> Self {
         Self {
             ncp,
-            discovery_manager,
             devices: BTreeMap::new(),
             short_ids: BTreeMap::new(),
             subscribers: Vec::new(),
@@ -136,7 +134,6 @@ where
     async fn handle_incoming_command(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
         let Some(ieee_address) = self.short_ids.get(&src_address) else {
             warn!("Received command from unknown short ID: {src_address:04X}");
-            //self.try_rediscover(src_address).await;
             return;
         };
 
@@ -179,34 +176,6 @@ where
         self.devices.remove(&address.ieee_address());
         self.short_ids.remove(&address.short_id());
     }
-
-    async fn try_rediscover(&self, src_address: u16) {
-        let Ok(ieee_address) = self
-            .ncp
-            .short_id_to_ieee_address(src_address)
-            .await
-            .inspect_err(|error| {
-                error!("Failed to get IEEE address for short ID {src_address:04X}: {error:?}");
-            })
-        else {
-            return;
-        };
-
-        let Some(sender) = self.discovery_manager.upgrade() else {
-            warn!("Failed to send discovery message: discovery manager is gone");
-            return;
-        };
-
-        sender
-            .send(discovery::Message::AdministrativeDiscovery(Address::new(
-                ieee_address,
-                src_address,
-            )))
-            .await
-            .unwrap_or_else(|error| {
-                error!("Failed to send discovery message: {error:?}");
-            });
-    }
 }
 
 impl<T> Actor<T>
@@ -214,12 +183,12 @@ where
     T: Ncp + Send + Sync + 'static,
 {
     /// Start the network manager.
-    pub fn spawn(ncp: T, discovery: WeakSender<discovery::Message>) -> Sender<Message>
+    pub fn spawn(ncp: T) -> Sender<Message>
     where
         T: Send + Sync + 'static,
     {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, discovery).run(rx));
+        spawn(Self::new(ncp).run(rx));
         tx
     }
 }

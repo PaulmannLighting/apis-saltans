@@ -8,8 +8,8 @@ use core::time::Duration;
 use const_env::env_item;
 
 pub use self::api::{
-    ColorControl, Joining, Level, NetworkManager, OnOff, ReadAttributeResult, ReadAttributes,
-    WriteAttributes,
+    ColorControl, Discovery, Joining, Level, NetworkManager, OnOff, ReadAttributeResult,
+    ReadAttributes, WriteAttributes,
 };
 pub use self::coordinator::Coordinator;
 pub use self::destination::Destination;
