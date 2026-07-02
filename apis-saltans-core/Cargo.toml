@@ -28,8 +28,7 @@ serde_with = { version = "3.21.0", default-features = false, features = ["macros
 smarthomelib = { version = "0.1", git = "ssh://git@github.com/PaulmannLighting/smarthomelib.git", branch = "trait-based-approach", optional = true }
 
 [features]
-serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
-ieee_address_as_str = ["dep:serde_with", "dep:cfg_eval", "serde"]
+serde = ["dep:serde", "dep:serde_with", "dep:cfg_eval", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
 smarthomelib = ["dep:smarthomelib"]
 
 [lints]
