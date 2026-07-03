@@ -12,7 +12,7 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ClientToServer;
         => super::Identify;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             identify_time_secs: Uint16,
         }

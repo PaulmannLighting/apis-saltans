@@ -14,7 +14,7 @@ zcl_command! {
         command_id: 0x40;
         direction: Direction::ClientToServer;
         => super::TriggerEffect;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             identifier: u8,
             variant: u8,

@@ -14,7 +14,7 @@ zcl_command! {
         command_id: 0x42;
         direction: Direction::ClientToServer;
         => super::OnWithTimedOff;
-        derive(Default, Ord, PartialOrd);
+        derive(Default);
         fields {
             on_off_control: OnOffControl,
             on_time: Uint16,

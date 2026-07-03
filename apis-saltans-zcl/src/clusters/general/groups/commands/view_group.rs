@@ -10,7 +10,7 @@ zcl_command! {
         command_id: 0x01;
         direction: Direction::ClientToServer;
         => super::ViewGroup;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             /// The identifier of the group to view.
             group_id: Uint16,

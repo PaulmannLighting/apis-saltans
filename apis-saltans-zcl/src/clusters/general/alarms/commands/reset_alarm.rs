@@ -9,7 +9,7 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ClientToServer;
         => super::ResetAlarm;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             code: u8,
             cluster_id: u16,

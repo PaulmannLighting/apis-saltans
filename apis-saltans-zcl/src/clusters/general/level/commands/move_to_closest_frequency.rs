@@ -9,7 +9,7 @@ zcl_command! {
         command_id: 0x08;
         direction: Direction::ClientToServer;
         => super::MoveToClosestFrequency;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             frequency: u16,
         }

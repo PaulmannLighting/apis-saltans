@@ -13,7 +13,7 @@ zcl_command! {
         command_id: 0x01;
         direction: Direction::ClientToServer;
         => super::Move;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             mode: u8,
             rate: Uint8,

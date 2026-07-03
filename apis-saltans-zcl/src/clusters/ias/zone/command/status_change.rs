@@ -11,7 +11,6 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ServerToClient;
         => super::StatusChange;
-        derive(Ord, PartialOrd);
         fields {
             status: Status,
             extended_status: u8,

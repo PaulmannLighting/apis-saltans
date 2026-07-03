@@ -11,7 +11,7 @@ zcl_command! {
         command_id: 0x03;
         direction: Direction::ClientToServer;
         => super::RemoveGroup;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             group_id: Uint16,
         }

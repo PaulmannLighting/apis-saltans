@@ -12,7 +12,7 @@ zcl_command! {
         command_id: 0x04;
         direction: Direction::ClientToServer;
         => super::MoveToLevelWithOnOff;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             level: u8,
             transition_time: Uint16,

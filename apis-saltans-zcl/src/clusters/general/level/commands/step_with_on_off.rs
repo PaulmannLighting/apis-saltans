@@ -13,7 +13,7 @@ zcl_command! {
         command_id: 0x06;
         direction: Direction::ClientToServer;
         => super::StepWithOnOff;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             mode: u8,
             size: u8,

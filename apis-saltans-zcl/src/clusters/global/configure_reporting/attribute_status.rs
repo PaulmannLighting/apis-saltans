@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 
 /// Status of an attribute reporting configuration.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct AttributeStatus {
     status: u8,
     direction: u8,

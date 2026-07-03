@@ -10,7 +10,6 @@ zcl_command! {
         command_id: 0x05;
         direction: Direction::ClientToServer;
         => super::AddGroupIfIdentifying;
-        derive(Ord, PartialOrd);
         fields {
             group_id: Uint16,
             group_name: String,

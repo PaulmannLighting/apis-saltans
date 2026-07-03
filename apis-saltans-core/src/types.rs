@@ -34,7 +34,9 @@ pub mod tlv;
     expect(clippy::unsafe_derive_deserialize),
     derive(serde::Serialize, serde::Deserialize)
 )]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ReprDiscriminant, FromLeStream, ToLeStream)]
+#[derive(
+    Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, ReprDiscriminant, FromLeStream, ToLeStream,
+)]
 #[repr(u8)]
 pub enum Type {
     /// Unknown type.

@@ -32,7 +32,6 @@
 ///         direction: Direction::ClientToServer;
 ///         response: Response;
 ///         => crate::global::ReadAttributes;
-///         derive(Ord, PartialOrd);
 ///         fields {
 ///             attribute_ids: Box<[u16]>,
 ///         }
@@ -586,7 +585,17 @@ macro_rules! zcl_command {
     ) => {
         $(#[$attr])*
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-        #[derive(Clone, Debug, Eq, PartialEq, Hash $(, $stream_derive)* $(, $extra_derive)*)]
+        #[derive(
+            Clone,
+            Debug,
+            Eq,
+            Hash,
+            Ord,
+            PartialEq,
+            PartialOrd
+            $(, $stream_derive)*
+            $(, $extra_derive)*
+        )]
         pub struct $command {
             $(
                 $(#[$field_attr])*

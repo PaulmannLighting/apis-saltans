@@ -13,7 +13,7 @@ zcl_command! {
         direction: Direction::ServerToClient;
         disable_default_response: true;
         => super::IdentifyQueryResponse;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             timeout_secs: Uint16,
         }

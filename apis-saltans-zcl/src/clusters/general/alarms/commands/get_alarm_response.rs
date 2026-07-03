@@ -10,7 +10,7 @@ zcl_command! {
         direction: Direction::ServerToClient;
         disable_default_response: true;
         => super::GetAlarmResponse;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             status: u8,
             alarm_code: u8,

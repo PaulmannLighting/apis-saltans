@@ -3,7 +3,7 @@ use le_stream::{FromLeStream, ToLeStream};
 
 /// Write Attributes record.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct Record {
     id: u16,
     typ: Type,

@@ -13,7 +13,7 @@ zcl_command! {
         command_id: 0x40;
         direction: Direction::ClientToServer;
         => super::OffWithEffect;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             id: Uint8,
             variant: Uint8,

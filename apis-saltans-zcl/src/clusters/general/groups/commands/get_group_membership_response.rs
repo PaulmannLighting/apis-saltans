@@ -15,7 +15,6 @@ zcl_command! {
         direction: Direction::ServerToClient;
         disable_default_response: true;
         => super::GetGroupMembershipResponse;
-        derive(Ord, PartialOrd);
         fields {
             capacity: Uint8,
             groups: GroupList,

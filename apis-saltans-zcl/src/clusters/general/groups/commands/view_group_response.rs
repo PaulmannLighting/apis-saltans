@@ -12,7 +12,6 @@ zcl_command! {
         direction: Direction::ServerToClient;
         disable_default_response: true;
         => super::ViewGroupResponse;
-        derive(Ord, PartialOrd);
         fields {
             status: u8,
             group_id: Uint16,

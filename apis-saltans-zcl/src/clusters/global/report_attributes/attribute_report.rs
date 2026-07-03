@@ -4,7 +4,7 @@ use le_stream::{FromLeStream, ToLeStream};
 /// Attribute report.
 #[allow(clippy::unsafe_derive_deserialize)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct AttributeReport {
     attribute_id: u16,
     data: Type,

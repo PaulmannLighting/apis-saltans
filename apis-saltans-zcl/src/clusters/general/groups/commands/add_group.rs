@@ -12,7 +12,6 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ClientToServer;
         => super::AddGroup;
-        derive(Ord, PartialOrd);
         fields {
             /// The identifier of the group to be added.
             group_id: Uint16,

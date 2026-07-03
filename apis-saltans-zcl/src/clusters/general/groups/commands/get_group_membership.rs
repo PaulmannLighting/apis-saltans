@@ -14,7 +14,6 @@ zcl_command! {
         command_id: 0x02;
         direction: Direction::ClientToServer;
         => super::GetGroupMembership;
-        derive(Ord, PartialOrd);
         fields {
             groups: Box<[Uint16]>,
         }

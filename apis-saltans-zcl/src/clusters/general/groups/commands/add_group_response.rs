@@ -12,7 +12,7 @@ zcl_command! {
         direction: Direction::ServerToClient;
         disable_default_response: true;
         => super::AddGroupResponse;
-        derive(Copy, Ord, PartialOrd);
+        derive(Copy);
         fields {
             status: u8,
             group_id: Uint16,
