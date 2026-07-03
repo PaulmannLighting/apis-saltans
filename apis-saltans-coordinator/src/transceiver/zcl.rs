@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 
 use apis_saltans_aps::Data;
-use apis_saltans_core::Application;
-use apis_saltans_hw::{Metadata, Ncp};
+use apis_saltans_core::{Application, Endpoint};
+use apis_saltans_hw::{Metadata, Ncp, ParallelUnicastResult};
 use apis_saltans_zcl::{Cluster, CommandDispatch, Frame, Header};
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
@@ -96,6 +96,18 @@ where
                         .send(self.communicate(short_id, endpoint, *payload).await)
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
+                        });
+                }
+                Message::ParallelUnicast {
+                    targets,
+                    payload,
+                    response,
+                } => {
+                    let seq = self.next_seq();
+                    response
+                        .send(self.parallel_unicast(seq, targets, *payload).await)
+                        .unwrap_or_else(|error| {
+                            debug!("Failed to send parallel unicast response: {error:?}");
                         });
                 }
             }
@@ -228,6 +240,37 @@ where
         let (tx, rx) = channel();
         self.responses.insert(seq, tx);
         Ok(rx)
+    }
+
+    async fn parallel_unicast(
+        &mut self,
+        seq: u8,
+        targets: BTreeMap<u16, Box<[Application]>>,
+        frame: Payload<Cluster>,
+    ) -> ParallelUnicastResult {
+        let (metadata, manufacturer_code, command) = frame.into_parts();
+        let zcl_frame = Self::make_zcl_frame(seq, manufacturer_code, command);
+
+        #[expect(unsafe_code)]
+        // SAFETY: We extracted the metadata and command from the payload above
+        // and created a valid ZCL frame from that command.
+        // Hence, the resulting metadata and payload match.
+        let aps_frame = unsafe { Self::make_aps_frame(metadata, zcl_frame) };
+
+        self.ncp
+            .parallel_unicast(
+                targets
+                    .into_iter()
+                    .map(|(short_id, endpoints)| {
+                        (
+                            short_id,
+                            endpoints.into_iter().map(Endpoint::Application).collect(),
+                        )
+                    })
+                    .collect(),
+                aps_frame,
+            )
+            .await
     }
 
     /// Create a new APS frame.

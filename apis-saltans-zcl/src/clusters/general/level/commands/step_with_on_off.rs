@@ -2,7 +2,6 @@ use apis_saltans_core::types::Uint16;
 use apis_saltans_core::units::Deciseconds;
 use apis_saltans_core::{Cluster, ClusterId, Direction};
 use le_stream::{FromLeStream, ToLeStream};
-use num_traits::FromPrimitive;
 
 use crate::Command;
 use crate::general::level::Mode;
@@ -21,22 +20,19 @@ pub struct StepWithOnOff {
 impl StepWithOnOff {
     /// Creates a new `StepWithOnOff` command.
     #[must_use]
-    pub const fn new(mode: Mode, size: u8, transition_time: Deciseconds, options: Options) -> Self {
+    pub fn new(mode: Mode<u8>, transition_time: Deciseconds, options: Options) -> Self {
         Self {
-            mode: mode as u8,
-            size,
+            mode: mode.discriminant(),
+            size: mode.into_stride(),
             transition_time: transition_time.into_inner(),
             options,
         }
     }
 
     /// Get the mode.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw mode value if it is invalid.
-    pub fn mode(self) -> Result<Mode, u8> {
-        Mode::from_u8(self.mode).ok_or(self.mode)
+    #[must_use]
+    pub fn mode(self) -> Option<Mode<u8>> {
+        Mode::new(self.mode, self.size()).ok()
     }
 
     /// Get the size.

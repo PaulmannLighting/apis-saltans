@@ -27,8 +27,7 @@ serde = { version = "1", optional = true }
 serde_with = { version = "3.21.0", default-features = false, features = ["macros"], optional = true }
 
 [features]
-serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
-ieee_address_as_str = ["dep:serde_with", "dep:cfg_eval", "serde"]
+serde = ["dep:serde", "dep:serde_with", "dep:cfg_eval", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde"]
 
 [lints]
 workspace = true

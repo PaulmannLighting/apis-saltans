@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use apis_saltans_aps::Data;
 use apis_saltans_core::Address;
@@ -14,9 +14,6 @@ use crate::Event;
 /// Messages received by the network management actor.
 #[derive(Debug)]
 pub enum Message {
-    /// Load previous state.
-    Load(Box<[Device]>),
-
     /// Subscribe to incoming ZCL commands.
     SubscribeToIncomingCommands {
         /// The source addresses of the devices to listen to.
@@ -51,16 +48,12 @@ pub enum Message {
         response: oneshot::Sender<Option<u16>>,
     },
 
-    /// A request to send a list of the current devices.
-    GetDevices {
-        /// Response channel to send the current device list to.
-        response: oneshot::Sender<BTreeMap<MacAddr8, Device>>,
-    },
-
-    /// A request to subscribe for updates on devices.
-    SubscribeToDevice {
-        /// Response channel to send the updated device list to.
-        response: Sender<Box<[Device]>>,
+    /// A device joined the network.
+    DeviceJoined {
+        /// The address of the device.
+        address: Address,
+        /// Whether the rejoin was secured.
+        secured: Option<bool>,
     },
 
     /// Add a new device to the network.
@@ -71,6 +64,9 @@ pub enum Message {
 
     /// A routing error.
     RouteError(RouteError),
+
+    /// Get devices.
+    GetDevices(oneshot::Sender<Box<[Device]>>),
 
     /// The network has been opened for joining.
     NetworkOpened,

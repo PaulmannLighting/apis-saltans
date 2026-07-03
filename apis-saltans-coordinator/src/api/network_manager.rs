@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use apis_saltans_core::Address;
 use macaddr::MacAddr8;
@@ -10,13 +10,6 @@ use crate::{Coordinator, Device, Error, Event};
 
 /// Handle to the network manager actor.
 pub trait NetworkManager {
-    /// Load the network manager state from the given [`Device`]s.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if the communication with the actor failed.
-    fn load(&self, state: Box<[Device]>) -> impl Future<Output = Result<(), Error>> + Send;
-
     /// Return the IEEE address for the given short ID.
     ///
     /// # Returns
@@ -91,13 +84,6 @@ pub trait NetworkManager {
         }
     }
 
-    /// List known devices of the network manager.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if the communication with the actor failed.
-    fn state(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, Device>, Error>>;
-
     /// Subscribes to a stream of incoming commands.
     ///
     /// # Errors
@@ -107,14 +93,13 @@ pub trait NetworkManager {
         &self,
         device: BTreeSet<MacAddr8>,
         channel_size: usize,
-    ) -> impl Future<Output = Result<Receiver<Event>, Error>>;
+    ) -> impl Future<Output = Result<Receiver<Event>, Error>> + Send;
+
+    /// Yield devices of the network.
+    fn devices(&self) -> impl Future<Output = Result<Box<[Device]>, Error>> + Send;
 }
 
 impl NetworkManager for Sender<Message> {
-    async fn load(&self, state: Box<[Device]>) -> Result<(), Error> {
-        Ok(self.send(Message::Load(state)).await?)
-    }
-
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
@@ -138,12 +123,6 @@ impl NetworkManager for Sender<Message> {
         Ok(result.await?)
     }
 
-    async fn state(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
-        let (response, result) = channel();
-        self.send(Message::GetDevices { response }).await?;
-        Ok(result.await?)
-    }
-
     async fn subscribe_to_incoming_commands(
         &self,
         device: BTreeSet<MacAddr8>,
@@ -157,13 +136,15 @@ impl NetworkManager for Sender<Message> {
         .await?;
         Ok(receiver)
     }
+
+    async fn devices(&self) -> Result<Box<[Device]>, Error> {
+        let (tx, rx) = channel();
+        self.send(Message::GetDevices(tx)).await?;
+        Ok(rx.await?)
+    }
 }
 
 impl NetworkManager for Coordinator {
-    async fn load(&self, state: Box<[Device]>) -> Result<(), Error> {
-        self.network_manager.load(state).await
-    }
-
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
@@ -182,10 +163,6 @@ impl NetworkManager for Coordinator {
             .await
     }
 
-    async fn state(&self) -> Result<BTreeMap<MacAddr8, Device>, Error> {
-        self.network_manager.state().await
-    }
-
     async fn subscribe_to_incoming_commands(
         &self,
         device: BTreeSet<MacAddr8>,
@@ -194,5 +171,9 @@ impl NetworkManager for Coordinator {
         self.network_manager
             .subscribe_to_incoming_commands(device, channel_size)
             .await
+    }
+
+    async fn devices(&self) -> Result<Box<[Device]>, Error> {
+        self.network_manager.devices().await
     }
 }

@@ -1,5 +1,7 @@
+use std::collections::BTreeMap;
+
 use apis_saltans_core::{Application, ExpectResponse};
-use apis_saltans_hw::{Error, NcpHandle, Start};
+use apis_saltans_hw::{Error, NcpHandle, ParallelUnicastResult, Start};
 use apis_saltans_zcl::Cluster;
 use apis_saltans_zdp::SimpleDescriptor;
 use tokio::sync::mpsc::{Sender, channel};
@@ -7,7 +9,7 @@ use tokio::sync::mpsc::{Sender, channel};
 use crate::mux::Mux;
 use crate::transceiver::zcl::Payload;
 use crate::transceiver::{zcl, zdp};
-use crate::{MPSC_CHANNEL_SIZE, binding, discovery, network_manager};
+use crate::{MPSC_CHANNEL_SIZE, binding, discovery, network_manager, storage};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
@@ -15,6 +17,7 @@ pub struct Coordinator {
     pub(crate) ncp: NcpHandle,
     pub(crate) zcl: Sender<zcl::Message>,
     pub(crate) network_manager: Sender<network_manager::Message>,
+    pub(crate) discovery_manager: Sender<discovery::Message>,
 }
 
 impl Coordinator {
@@ -23,14 +26,18 @@ impl Coordinator {
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
-    pub async fn start<T>(hardware: T, endpoints: &[SimpleDescriptor]) -> Result<Self, Error>
+    pub async fn start<T>(
+        hardware: T,
+        storage: Sender<storage::Message>,
+        endpoints: &[SimpleDescriptor],
+    ) -> Result<Self, Error>
     where
         T: Start,
     {
         let (ncp, events) = hardware.start(endpoints).await?;
 
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
-        let network_manager = network_manager::Actor::spawn(ncp.clone(), discovery_tx.downgrade());
+        let network_manager = network_manager::Actor::spawn(ncp.clone(), storage);
 
         let zcl_tx = zcl::Transceiver::spawn(ncp.clone(), network_manager.downgrade());
         let zdp_tx = zdp::Transceiver::spawn(ncp.clone(), discovery_tx.downgrade(), endpoints);
@@ -46,20 +53,16 @@ impl Coordinator {
             zcl_tx.downgrade(),
             zdp_tx.downgrade(),
             binding_manager,
+            ncp.downgrade(),
         );
 
-        Mux::spawn(
-            events,
-            zcl_tx.clone(),
-            zdp_tx,
-            discovery_tx,
-            network_manager.clone(),
-        );
+        Mux::spawn(events, zcl_tx.clone(), zdp_tx, network_manager.clone());
 
         Ok(Self {
             ncp,
             zcl: zcl_tx,
             network_manager,
+            discovery_manager: discovery_tx,
         })
     }
 }
@@ -94,5 +97,13 @@ impl zcl::Handle for Coordinator {
         T: ExpectResponse<Cluster>,
     {
         self.zcl.communicate(short_id, endpoint, payload)
+    }
+
+    fn parallel_unicast(
+        &self,
+        targets: BTreeMap<u16, Box<[Application]>>,
+        payload: Payload<Cluster>,
+    ) -> impl Future<Output = ParallelUnicastResult> + Send {
+        self.zcl.parallel_unicast(targets, payload)
     }
 }

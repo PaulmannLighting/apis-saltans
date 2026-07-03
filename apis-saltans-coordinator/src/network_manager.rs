@@ -1,5 +1,4 @@
-use std::collections::btree_map::Entry;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use apis_saltans_aps::Data;
 use apis_saltans_core::Address;
@@ -8,22 +7,20 @@ use apis_saltans_zcl::{Cluster, Frame};
 use log::{debug, error, info, warn};
 use macaddr::MacAddr8;
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 pub use self::message::Message;
-pub use self::state::{Attributes, Device, Endpoint, State};
-use crate::{Event, MPSC_CHANNEL_SIZE, discovery};
+pub use crate::network::{Attributes, Device, Endpoint};
+use crate::storage::Storage;
+use crate::{Error, Event, MPSC_CHANNEL_SIZE, storage};
 
 mod message;
-mod state;
 
 /// The network management actor.
 #[derive(Debug)]
 pub struct Actor<T> {
     ncp: T,
-    discovery_manager: WeakSender<discovery::Message>,
-    devices: BTreeMap<MacAddr8, Device>,
-    short_ids: BTreeMap<u16, MacAddr8>,
+    storage: Sender<storage::Message>,
     subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Event>)>,
 }
 
@@ -33,12 +30,10 @@ where
 {
     /// Create a new actor.
     #[must_use]
-    pub const fn new(ncp: T, discovery_manager: WeakSender<discovery::Message>) -> Self {
+    pub const fn new(ncp: T, storage: Sender<storage::Message>) -> Self {
         Self {
             ncp,
-            discovery_manager,
-            devices: BTreeMap::new(),
-            short_ids: BTreeMap::new(),
+            storage,
             subscribers: Vec::new(),
         }
     }
@@ -47,9 +42,6 @@ where
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Load(state) => {
-                    self.load(state);
-                }
                 Message::SubscribeToIncomingCommands { devices, sender } => {
                     self.subscribers.push((devices, sender));
                 }
@@ -61,7 +53,20 @@ where
                 }
                 Message::GetIeeeAddressFromShortId { short_id, response } => {
                     response
-                        .send(self.short_ids.get(&short_id).copied())
+                        .send(
+                            self.devices()
+                                .await
+                                .unwrap_or_default()
+                                .into_iter()
+                                .find_map(|device| {
+                                    let address = device.address;
+                                    if address.short_id() == short_id {
+                                        Some(address.ieee_address())
+                                    } else {
+                                        None
+                                    }
+                                }),
+                        )
                         .unwrap_or_else(|error| {
                             error!("Failed to send response: {error:?}");
                         });
@@ -72,33 +77,41 @@ where
                 } => {
                     response
                         .send(
-                            self.devices
-                                .get(&ieee_address)
+                            self.devices()
+                                .await
+                                .unwrap_or_default()
+                                .into_iter()
+                                .find(|device| device.address.ieee_address() == ieee_address)
                                 .map(|device| device.address.short_id()),
                         )
                         .unwrap_or_else(|error| {
                             error!("Failed to send response: {error:?}");
                         });
                 }
-                Message::GetDevices { response } => {
-                    response.send(self.devices.clone()).unwrap_or_else(|error| {
-                        error!("Failed to send response: {error:?}");
-                    });
-                }
-                Message::SubscribeToDevice { .. } => {
-                    todo!()
+                Message::DeviceJoined { address, secured } => {
+                    if let Some(secured) = secured {
+                        debug!("Device rejoined the network: {address}, secured: {secured}");
+                    } else {
+                        debug!("Device joined the network: {address}");
+                    }
                 }
                 Message::NewDevice(device) => {
+                    info!("New device: {device:?}");
                     self.add_device(device).await;
                 }
                 Message::RemoveDevice(address) => {
-                    self.remove_device(&address);
+                    self.remove_device(address).await;
                 }
                 Message::RouteError(route_error) => {
                     warn!("{route_error}");
                     self.ncp.route_request(64).await.unwrap_or_else(|error| {
                         error!("Failed to request route: {error:?}");
                     });
+                }
+                Message::GetDevices(sender) => {
+                    sender
+                        .send(self.devices().await.unwrap_or_default())
+                        .unwrap_or_else(drop);
                 }
                 Message::NetworkOpened => {
                     info!("Network opened");
@@ -110,34 +123,29 @@ where
         }
     }
 
-    fn load(&mut self, state: Box<[Device]>) {
-        for device in state {
-            self.short_ids
-                .insert(device.address.short_id(), device.address.ieee_address());
-
-            match self.devices.entry(device.address.ieee_address()) {
-                Entry::Occupied(mut entry) => {
-                    entry.get_mut().endpoints = device.endpoints;
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(device);
-                }
-            }
-        }
+    async fn devices(&self) -> Result<Box<[Device]>, Error> {
+        Ok(self.storage.devices().await?)
     }
 
     async fn handle_incoming_command(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
-        let Some(ieee_address) = self.short_ids.get(&src_address) else {
+        let Some(device) = self
+            .storage
+            .get_by_short_id(src_address)
+            .await
+            .inspect_err(|error| error!("{error}"))
+            .ok()
+            .flatten()
+        else {
             warn!("Received command from unknown short ID: {src_address:04X}");
-            self.try_rediscover(src_address).await;
             return;
         };
 
+        let ieee_address = device.address.ieee_address();
         let (aps_header, zcl_frame) = frame.into_parts();
         let (_zcl_header, cluster) = zcl_frame.into_parts();
 
         for subscriber in self.subscribers.iter().filter_map(|(devices, sender)| {
-            if devices.is_empty() || devices.contains(ieee_address) {
+            if devices.is_empty() || devices.contains(&ieee_address) {
                 Some(sender)
             } else {
                 None
@@ -145,7 +153,7 @@ where
         }) {
             subscriber
                 .send(Event::new(
-                    Address::new(*ieee_address, src_address),
+                    Address::new(ieee_address, src_address),
                     aps_header.source_endpoint(),
                     cluster.clone(),
                 ))
@@ -158,47 +166,34 @@ where
         self.subscribers.retain(|(_, sender)| !sender.is_closed());
     }
 
-    async fn add_device(&mut self, device: Device) {
-        let ieee_address = device.address.ieee_address();
-        let short_id = device.address.short_id();
-        self.devices.insert(ieee_address, device);
-        self.short_ids.insert(short_id, ieee_address);
+    async fn add_device(&self, device: Device) {
+        self.storage.add(device).await.map_or_else(
+            |error| {
+                error!("Failed to store device: {error:?}");
+            },
+            |device| {
+                if let Some(device) = device {
+                    debug!("Replaced existing device: {device:?}");
+                }
+            },
+        );
+
         self.ncp.route_request(64).await.unwrap_or_else(|error| {
             error!("Failed to request route: {error:?}");
         });
     }
 
-    fn remove_device(&mut self, address: &Address) {
-        self.devices.remove(&address.ieee_address());
-        self.short_ids.remove(&address.short_id());
-    }
-
-    async fn try_rediscover(&self, src_address: u16) {
-        let Ok(ieee_address) = self
-            .ncp
-            .short_id_to_ieee_address(src_address)
-            .await
-            .inspect_err(|error| {
-                error!("Failed to get IEEE address for short ID {src_address:04X}: {error:?}");
-            })
-        else {
-            return;
-        };
-
-        let Some(sender) = self.discovery_manager.upgrade() else {
-            warn!("Failed to send discovery message: discovery manager is gone");
-            return;
-        };
-
-        sender
-            .send(discovery::Message::DeviceJoined(Address::new(
-                ieee_address,
-                src_address,
-            )))
-            .await
-            .unwrap_or_else(|error| {
-                error!("Failed to send discovery message: {error:?}");
-            });
+    async fn remove_device(&self, address: Address) {
+        self.storage.remove(address).await.map_or_else(
+            |error| {
+                error!("Failed to remove device: {error:?}");
+            },
+            |device| {
+                if let Some(device) = device {
+                    debug!("Removed device: {device:?}");
+                }
+            },
+        );
     }
 }
 
@@ -207,12 +202,12 @@ where
     T: Ncp + Send + Sync + 'static,
 {
     /// Start the network manager.
-    pub fn spawn(ncp: T, discovery: WeakSender<discovery::Message>) -> Sender<Message>
+    pub fn spawn(ncp: T, storage: Sender<storage::Message>) -> Sender<Message>
     where
         T: Send + Sync + 'static,
     {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, discovery).run(rx));
+        spawn(Self::new(ncp, storage).run(rx));
         tx
     }
 }

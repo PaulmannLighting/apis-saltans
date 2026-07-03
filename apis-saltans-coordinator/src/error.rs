@@ -8,11 +8,16 @@ use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use tokio::time::error::Elapsed;
 
+use crate::storage;
+
 /// Errors that can occur in the coordinator-API.
 #[derive(Debug)]
 pub enum Error {
     /// Hardware error.
     Hardware(apis_saltans_hw::Error),
+
+    /// A storage error
+    Storage(storage::Error),
 
     /// Transmission through the channel failed.
     SendError,
@@ -40,6 +45,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Hardware(error) => write!(f, "Hardware error: {error}"),
+            Self::Storage(error) => write!(f, "Storage error: {error}"),
             Self::SendError => write!(f, "Sending failed"),
             Self::ReceiveError(error) => write!(f, "Receiving failed: {error}"),
             Self::Timeout(error) => write!(f, "Timeout: {error}"),
@@ -57,6 +63,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Hardware(error) => Some(error),
+            Self::Storage(error) => Some(error),
             Self::ReceiveError(error) => Some(error),
             Self::Timeout(error) => Some(error),
             Self::SendError
@@ -89,5 +96,11 @@ impl From<RecvError> for Error {
 impl From<Elapsed> for Error {
     fn from(error: Elapsed) -> Self {
         Self::Timeout(error)
+    }
+}
+
+impl From<storage::Error> for Error {
+    fn from(error: storage::Error) -> Self {
+        Self::Storage(error)
     }
 }

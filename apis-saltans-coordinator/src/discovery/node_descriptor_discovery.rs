@@ -1,7 +1,5 @@
-use std::collections::BTreeSet;
-
 use apis_saltans_core::Address;
-use log::{error, trace, warn};
+use log::{error, trace};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 
@@ -19,7 +17,6 @@ pub struct NodeDescriptorDiscovery {
     loopback: Sender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
     endpoint_discovery: Sender<endpoint_discovery::Message>,
-    pending: BTreeSet<Address>,
     tasks: Pool,
 }
 
@@ -37,7 +34,6 @@ impl NodeDescriptorDiscovery {
             loopback: tx.clone(),
             zdp,
             endpoint_discovery,
-            pending: BTreeSet::new(),
             tasks: Pool::bounded(TASK_POOL_SIZE),
         };
 
@@ -55,10 +51,6 @@ impl NodeDescriptorDiscovery {
                     address,
                     descriptor,
                 } => {
-                    if !self.pending.remove(&address) {
-                        warn!("Received descriptor for unknown device: {address}");
-                    }
-
                     self.endpoint_discovery
                         .send(endpoint_discovery::Message::Discover(Device::new(
                             address,
@@ -70,28 +62,20 @@ impl NodeDescriptorDiscovery {
                         });
                 }
                 Message::DiscoveryFailed(address) => {
-                    if !self.pending.remove(&address) {
-                        warn!("Received discovery failure for unknown device: {address}");
-                    }
+                    error!("Received discovery failed: {address}");
                 }
             }
         }
     }
 
-    async fn start_discovery(&mut self, address: Address) {
-        if self.pending.contains(&address) {
-            trace!("Already discovering descriptors for {address}");
-            return;
-        }
-
+    async fn start_discovery(&self, address: Address) {
         let Some(zdp) = self.zdp.upgrade() else {
             trace!("Failed to upgrade ZDP sender");
             return;
         };
 
-        self.pending.insert(address.clone());
         self.tasks
-            .spawn(DiscoveryTask::new(address, self.loopback.clone(), zdp).run())
+            .spawn(DiscoveryTask::new(address.clone(), self.loopback.clone(), zdp).run())
             .await
             .map_or_else(
                 |error| {

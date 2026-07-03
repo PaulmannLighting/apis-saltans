@@ -31,8 +31,7 @@ pub trait Level {
     fn r#move(
         &self,
         destination: Destination,
-        mode: Mode,
-        rate: UnitsPerSecond,
+        mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -44,8 +43,7 @@ pub trait Level {
     fn step(
         &self,
         destination: Destination,
-        mode: Mode,
-        size: u8,
+        mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -82,8 +80,7 @@ pub trait Level {
     fn move_with_on_off(
         &self,
         destination: Destination,
-        mode: Mode,
-        rate: UnitsPerSecond,
+        mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -95,8 +92,7 @@ pub trait Level {
     fn step_with_on_off(
         &self,
         destination: Destination,
-        mode: Mode,
-        size: u8,
+        mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -142,23 +138,21 @@ impl Level for Coordinator {
     async fn r#move(
         &self,
         destination: Destination,
-        mode: Mode,
-        rate: UnitsPerSecond,
+        mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(destination, Move::new(mode, rate, options))
+        self.send_static_cluster(destination, Move::new(mode, options))
             .await
     }
 
     async fn step(
         &self,
         destination: Destination,
-        mode: Mode,
-        size: u8,
+        mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(destination, Step::new(mode, size, transition_time, options))
+        self.send_static_cluster(destination, Step::new(mode, transition_time, options))
             .await
     }
 
@@ -184,25 +178,23 @@ impl Level for Coordinator {
     async fn move_with_on_off(
         &self,
         destination: Destination,
-        mode: Mode,
-        rate: UnitsPerSecond,
+        mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(destination, MoveWithOnOff::new(mode, rate, options))
+        self.send_static_cluster(destination, MoveWithOnOff::new(mode, options))
             .await
     }
 
     async fn step_with_on_off(
         &self,
         destination: Destination,
-        mode: Mode,
-        size: u8,
+        mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
         self.send_static_cluster(
             destination,
-            StepWithOnOff::new(mode, size, transition_time, options),
+            StepWithOnOff::new(mode, transition_time, options),
         )
         .await
     }

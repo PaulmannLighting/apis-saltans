@@ -8,15 +8,15 @@ use core::time::Duration;
 use const_env::env_item;
 
 pub use self::api::{
-    ColorControl, Joining, Level, NetworkManager, OnOff, ReadAttributeResult, ReadAttributes,
-    WriteAttributes,
+    ColorControl, Discovery, Joining, Level, NetworkManager, OnOff, ReadAttributeResult,
+    ReadAttributes, WriteAttributes,
 };
 pub use self::coordinator::Coordinator;
 pub use self::destination::Destination;
 pub use self::error::Error;
 pub use self::event::Event;
 pub use self::event_receiver::EventReceiver;
-pub use self::network_manager::{Attributes, Device, Endpoint, State};
+pub use self::network_manager::{Attributes, Device, Endpoint};
 use self::retry::Retry;
 pub use self::timeout::Timeout;
 
@@ -30,8 +30,10 @@ mod error;
 mod event;
 mod event_receiver;
 mod mux;
+mod network;
 mod network_manager;
 mod retry;
+pub mod storage;
 mod timeout;
 mod transceiver;
 
