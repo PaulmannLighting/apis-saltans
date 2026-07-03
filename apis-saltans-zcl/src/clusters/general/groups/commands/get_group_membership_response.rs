@@ -1,6 +1,5 @@
 use apis_saltans_core::types::{Uint8, Uint16};
 use apis_saltans_core::{ClusterId, Direction};
-use le_stream::ToLeStream;
 
 use crate::clusters::general::groups::types::GroupList;
 use crate::macros::zcl_command;
