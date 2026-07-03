@@ -1,7 +1,5 @@
 //! Analog data types.
 
-use core::num::TryFromIntError;
-
 use intx::{I24, I40, I48, I56, U24, U40, U48, U56};
 
 macro_rules! analog_integer {
@@ -506,63 +504,5 @@ analog_integers! {
 
         /// The `64-bit unsigned integer` type, short `uint64`.
         Uint64(u64, 0xffff_ffff_ffff_ffff);
-    }
-}
-
-impl Uint8 {
-    /// Convert to a `u8`.
-    #[must_use]
-    pub const fn as_u8(self) -> u8 {
-        self.into_inner()
-    }
-
-    /// Convert to a `usize`.
-    #[must_use]
-    pub const fn as_usize(self) -> usize {
-        self.0 as usize
-    }
-}
-
-impl TryFrom<usize> for Uint8 {
-    type Error = Option<TryFromIntError>;
-
-    fn try_from(value: usize) -> Result<Self, Self::Error> {
-        match u8::try_from(value) {
-            Ok(value) => Self::try_from(value).map_err(|()| None),
-            Err(error) => Err(Some(error)),
-        }
-    }
-}
-
-impl Uint16 {
-    /// Convert to a `u16`.
-    #[must_use]
-    pub const fn as_u16(self) -> u16 {
-        self.into_inner()
-    }
-
-    /// Convert to a `usize`.
-    #[must_use]
-    pub const fn as_usize(self) -> usize {
-        self.0 as usize
-    }
-}
-
-impl TryFrom<usize> for Uint16 {
-    type Error = Option<TryFromIntError>;
-
-    fn try_from(value: usize) -> Result<Self, Self::Error> {
-        match u16::try_from(value) {
-            Ok(value) => Self::try_from(value).map_err(|()| None),
-            Err(error) => Err(Some(error)),
-        }
-    }
-}
-
-impl Uint32 {
-    /// Return the inner raw value.
-    #[must_use]
-    pub const fn as_u32(self) -> u32 {
-        self.into_inner()
     }
 }

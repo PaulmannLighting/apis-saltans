@@ -143,7 +143,7 @@ impl TryFrom<(Id, Type)> for Settings {
             Id::AlarmMask => {
                 if let Type::Enum8(alarm_mask) = typ {
                     Ok(Self::AlarmMask(BatteryAlarmMask::from_bits_retain(
-                        alarm_mask.as_u8(),
+                        alarm_mask.into_inner(),
                     )))
                 } else {
                     Err(InvalidType::new(id, typ))
@@ -208,7 +208,7 @@ impl TryFrom<(Id, Type)> for Settings {
             Id::AlarmState => {
                 if let Type::Uint32(alarm_state) = typ {
                     Ok(Self::AlarmState(BatteryAlarmState::from_bits_retain(
-                        alarm_state.as_u32(),
+                        alarm_state.into_inner(),
                     )))
                 } else {
                     Err(InvalidType::new(id, typ))

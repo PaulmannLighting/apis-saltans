@@ -88,7 +88,7 @@ impl TryFrom<Uint8> for GenericDeviceType {
     type Error = Uint8;
 
     fn try_from(value: Uint8) -> Result<Self, Self::Error> {
-        Self::try_from(value.as_u8()).map_err(|_| value)
+        Self::try_from(value.into_inner()).map_err(|_| value)
     }
 }
 

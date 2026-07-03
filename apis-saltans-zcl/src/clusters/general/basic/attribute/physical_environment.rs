@@ -258,7 +258,7 @@ impl TryFrom<Uint8> for PhysicalEnvironment {
     type Error = Uint8;
 
     fn try_from(value: Uint8) -> Result<Self, Self::Error> {
-        value.as_u8().try_into().map_err(Uint8::new)
+        value.into_inner().try_into().map_err(Uint8::new)
     }
 }
 

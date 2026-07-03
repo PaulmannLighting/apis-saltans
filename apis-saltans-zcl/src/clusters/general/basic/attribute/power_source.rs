@@ -54,7 +54,7 @@ impl TryFrom<Uint8> for PowerSource {
     type Error = Uint8;
 
     fn try_from(value: Uint8) -> Result<Self, Self::Error> {
-        value.as_u8().try_into().map_err(|_| value)
+        value.into_inner().try_into().map_err(|_| value)
     }
 }
 

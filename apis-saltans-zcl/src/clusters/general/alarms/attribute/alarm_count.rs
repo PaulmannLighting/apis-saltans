@@ -56,7 +56,7 @@ impl From<AlarmCount> for Option<u8> {
         } else {
             #[expect(clippy::cast_possible_truncation)]
             // We guarantee that the value is in the range `0x00` to `0xff`.
-            Some(value.0.as_u16() as u8)
+            Some(value.0.into_inner() as u8)
         }
     }
 }
@@ -65,7 +65,7 @@ impl TryFrom<Uint16> for AlarmCount {
     type Error = Uint16;
 
     fn try_from(value: Uint16) -> Result<Self, Self::Error> {
-        if value.as_u16() <= MAX || value == Uint16::NONE {
+        if value.into_inner() <= MAX || value == Uint16::NONE {
             Ok(Self(value))
         } else {
             Err(value)
