@@ -10,7 +10,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x0a;
         direction: Direction::ClientToServer;
-        => super::MoveToColorTemperature(box);
+        => super::MoveToColorTemperature;
         fields {
             mireds: u16,
             transition_time: Uint16,

@@ -10,7 +10,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x09;
         direction: Direction::ClientToServer;
-        => super::StepColor(box);
+        => super::StepColor;
         fields {
             step_x: i16,
             step_y: i16,

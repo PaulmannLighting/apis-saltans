@@ -10,7 +10,7 @@ zcl_command! {
         { ClusterId::Groups } => Groups;
         command_id: 0x03;
         direction: Direction::ClientToServer;
-        => super::RemoveGroup(box);
+        => super::RemoveGroup;
         derive(Copy, Ord, PartialOrd);
         fields {
             group_id: Uint16,

@@ -8,7 +8,7 @@ zcl_command! {
         { ClusterId::Basic } => Basic;
         command_id: 0x00;
         direction: Direction::ClientToServer;
-        => super::ResetToFactoryDefaults(box);
+        => super::ResetToFactoryDefaults;
         derive(Default);
         fields;
     }

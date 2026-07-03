@@ -15,7 +15,7 @@ zcl_command! {
         command_id: 0x05;
         direction: Direction::ClientToServer;
         response: Response;
-        => crate::global::WriteAttributesNoResponse(box);
+        => crate::global::WriteAttributesNoResponse;
         fields {
             records: Box<[Record]>,
         }

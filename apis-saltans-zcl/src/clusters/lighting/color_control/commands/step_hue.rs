@@ -15,7 +15,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x02;
         direction: Direction::ClientToServer;
-        => super::StepHue(box);
+        => super::StepHue;
         fields {
             mode: u8,
             size: u8,

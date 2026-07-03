@@ -10,7 +10,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x06;
         direction: Direction::ClientToServer;
-        => super::MoveToHueAndSaturation(box);
+        => super::MoveToHueAndSaturation;
         fields {
             hue: u8,
             saturation: u8,

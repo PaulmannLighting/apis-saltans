@@ -11,7 +11,7 @@ zcl_command! {
         command_id: 0x0b;
         direction: Direction::ClientToServer;
         disable_default_response: true;
-        => crate::global::DefaultResponse(box);
+        => crate::global::DefaultResponse;
         fields {
             status: u8,
             command_id: u8,

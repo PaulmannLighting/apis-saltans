@@ -17,7 +17,7 @@ zcl_command! {
         Global;
         command_id: 0x06;
         direction: Direction::ClientToServer;
-        => crate::global::ConfigureReporting(box);
+        => crate::global::ConfigureReporting;
         fields {
             attributes: Box<[AttributeReportingConfiguration]>,
         }
@@ -38,7 +38,7 @@ zcl_command! {
         Global;
         command_id: 0x07;
         direction: Direction::ServerToClient;
-        => crate::global::ConfigureReportingResponse(box);
+        => crate::global::ConfigureReportingResponse;
         fields {
             status: Box<[AttributeStatus]>,
         }

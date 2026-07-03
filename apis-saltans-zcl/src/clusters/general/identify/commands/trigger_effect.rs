@@ -13,7 +13,7 @@ zcl_command! {
         { ClusterId::Identify } => Identify;
         command_id: 0x40;
         direction: Direction::ClientToServer;
-        => super::TriggerEffect(box);
+        => super::TriggerEffect;
         derive(Copy, Ord, PartialOrd);
         fields {
             identifier: u8,

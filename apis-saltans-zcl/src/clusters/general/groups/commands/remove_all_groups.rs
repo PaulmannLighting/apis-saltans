@@ -8,7 +8,7 @@ zcl_command! {
         { ClusterId::Groups } => Groups;
         command_id: 0x04;
         direction: Direction::ClientToServer;
-        => super::RemoveAllGroups(box);
+        => super::RemoveAllGroups;
         fields;
     }
 }

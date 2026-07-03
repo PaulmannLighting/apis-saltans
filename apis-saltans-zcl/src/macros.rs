@@ -66,7 +66,7 @@ macro_rules! zcl_command {
             direction: $direction:expr;
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
-            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)? $(($try_wrapper:ident))?;
+            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
             $(derive($($extra_derive:path),* $(,)?);)?
             fields;
             $($rest:tt)*
@@ -79,7 +79,7 @@ macro_rules! zcl_command {
             [$command]
             [cluster $cluster_id]
             [$cluster_variant]
-            [$try_module::$try_variant_or_module $(::$try_variant)? $(($try_wrapper))?]
+            [$try_module::$try_variant_or_module $(::$try_variant)?]
             [$command_id]
             [$direction]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
@@ -97,7 +97,7 @@ macro_rules! zcl_command {
             direction: $direction:expr;
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
-            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)? $(($try_wrapper:ident))?;
+            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
             $(derive($($extra_derive:path),* $(,)?);)?
             fields {
                 $(
@@ -115,7 +115,7 @@ macro_rules! zcl_command {
             [$command]
             [cluster $cluster_id]
             [$cluster_variant]
-            [$try_module::$try_variant_or_module $(::$try_variant)? $(($try_wrapper))?]
+            [$try_module::$try_variant_or_module $(::$try_variant)?]
             [$command_id]
             [$direction]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
@@ -133,7 +133,7 @@ macro_rules! zcl_command {
             direction: $direction:expr;
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
-            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)? $(($try_wrapper:ident))?;
+            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
             $(derive($($extra_derive:path),* $(,)?);)?
             fields;
             $($rest:tt)*
@@ -146,7 +146,7 @@ macro_rules! zcl_command {
             [$command]
             [global]
             [$cluster_variant]
-            [$try_module::$try_variant_or_module $(::$try_variant)? $(($try_wrapper))?]
+            [$try_module::$try_variant_or_module $(::$try_variant)?]
             [$command_id]
             [$direction]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
@@ -164,7 +164,7 @@ macro_rules! zcl_command {
             direction: $direction:expr;
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
-            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)? $(($try_wrapper:ident))?;
+            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
             $(derive($($extra_derive:path),* $(,)?);)?
             fields {
                 $(
@@ -182,7 +182,7 @@ macro_rules! zcl_command {
             [$command]
             [global]
             [$cluster_variant]
-            [$try_module::$try_variant_or_module $(::$try_variant)? $(($try_wrapper))?]
+            [$try_module::$try_variant_or_module $(::$try_variant)?]
             [$command_id]
             [$direction]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
@@ -802,18 +802,6 @@ macro_rules! zcl_command {
     ) => {
         impl From<$command> for $crate::Cluster {
             fn from(command: $command) -> Self {
-                Self::$cluster_variant($try_module::Command::$try_variant(command))
-            }
-        }
-    };
-    (
-        @from_cluster
-        $command:ident
-        [$cluster_variant:ident]
-        [$try_module:ident::$try_variant:ident (box)]
-    ) => {
-        impl From<$command> for $crate::Cluster {
-            fn from(command: $command) -> Self {
                 Self::$cluster_variant($try_module::Command::$try_variant(command.into()))
             }
         }
@@ -823,18 +811,6 @@ macro_rules! zcl_command {
         $command:ident
         [$cluster_variant:ident]
         [$try_module:ident::$try_submodule:ident::$try_variant:ident]
-    ) => {
-        impl From<$command> for $crate::Cluster {
-            fn from(command: $command) -> Self {
-                Self::$cluster_variant($try_module::$try_submodule::Command::$try_variant(command))
-            }
-        }
-    };
-    (
-        @from_cluster
-        $command:ident
-        [$cluster_variant:ident]
-        [$try_module:ident::$try_submodule:ident::$try_variant:ident (box)]
     ) => {
         impl From<$command> for $crate::Cluster {
             fn from(command: $command) -> Self {
@@ -857,26 +833,6 @@ macro_rules! zcl_command {
                 if let $crate::Cluster::$cluster_variant($try_module::Command::$try_variant(command)) =
                     cluster
                 {
-                    Ok(command)
-                } else {
-                    Err(cluster)
-                }
-            }
-        }
-    };
-    (
-        @try_from_cluster
-        $command:ident
-        [$cluster_variant:ident]
-        [$try_module:ident::$try_variant:ident (box)]
-    ) => {
-        impl TryFrom<$crate::Cluster> for $command {
-            type Error = $crate::Cluster;
-
-            fn try_from(cluster: $crate::Cluster) -> Result<Self, Self::Error> {
-                if let $crate::Cluster::$cluster_variant($try_module::Command::$try_variant(command)) =
-                    cluster
-                {
                     Ok(*command)
                 } else {
                     Err(cluster)
@@ -889,27 +845,6 @@ macro_rules! zcl_command {
         $command:ident
         [$cluster_variant:ident]
         [$try_module:ident::$try_submodule:ident::$try_variant:ident]
-    ) => {
-        impl TryFrom<$crate::Cluster> for $command {
-            type Error = $crate::Cluster;
-
-            fn try_from(cluster: $crate::Cluster) -> Result<Self, Self::Error> {
-                if let $crate::Cluster::$cluster_variant(
-                    $try_module::$try_submodule::Command::$try_variant(command),
-                ) = cluster
-                {
-                    Ok(command)
-                } else {
-                    Err(cluster)
-                }
-            }
-        }
-    };
-    (
-        @try_from_cluster
-        $command:ident
-        [$cluster_variant:ident]
-        [$try_module:ident::$try_submodule:ident::$try_variant:ident (box)]
     ) => {
         impl TryFrom<$crate::Cluster> for $command {
             type Error = $crate::Cluster;

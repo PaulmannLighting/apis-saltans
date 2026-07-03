@@ -12,7 +12,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x42;
         direction: Direction::ClientToServer;
-        => super::EnhancedStepHue(box);
+        => super::EnhancedStepHue;
         fields {
             mode: u8,
             size: u16,

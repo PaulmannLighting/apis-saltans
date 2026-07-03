@@ -11,7 +11,7 @@ zcl_command! {
         command_id: 0x03;
         direction: Direction::ServerToClient;
         disable_default_response: true;
-        => super::RemoveGroupResponse(box);
+        => super::RemoveGroupResponse;
         derive(Copy, Ord, PartialOrd);
         fields {
             status: u8,

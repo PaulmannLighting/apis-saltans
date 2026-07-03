@@ -12,7 +12,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x40;
         direction: apis_saltans_core::Direction::ClientToServer;
-        => super::EnhancedMoveToHue(box);
+        => super::EnhancedMoveToHue;
         fields {
             enhanced_hue: u16,
             direction: u8,

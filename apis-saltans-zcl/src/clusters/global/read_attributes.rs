@@ -22,7 +22,7 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ClientToServer;
         response: Response;
-        => crate::global::ReadAttributes(box);
+        => crate::global::ReadAttributes;
         fields {
             attribute_ids: Box<[u16]>,
         }
@@ -43,7 +43,7 @@ zcl_command! {
         Global;
         command_id: 0x01;
         direction: Direction::ServerToClient;
-        => crate::global::ReadAttributesResponse(box);
+        => crate::global::ReadAttributesResponse;
         fields {
             attribute_values: BTreeMap<u16, Type>,
         }

@@ -9,7 +9,7 @@ zcl_command! {
         command_id: 0x01;
         direction: Direction::ServerToClient;
         disable_default_response: true;
-        => super::GetAlarmResponse(box);
+        => super::GetAlarmResponse;
         derive(Copy, Ord, PartialOrd);
         fields {
             status: u8,

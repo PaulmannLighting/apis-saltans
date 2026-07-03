@@ -19,7 +19,7 @@ zcl_command! {
         command_id: 0x02;
         direction: Direction::ClientToServer;
         response: Response;
-        => crate::global::WriteAttributes(box);
+        => crate::global::WriteAttributes;
         fields {
             records: Box<[Record]>,
         }
@@ -40,7 +40,7 @@ zcl_command! {
         Global;
         command_id: 0x04;
         direction: Direction::ServerToClient;
-        => crate::global::WriteAttributesResponse(box);
+        => crate::global::WriteAttributesResponse;
         fields {
             records: Box<[Status]>,
         }

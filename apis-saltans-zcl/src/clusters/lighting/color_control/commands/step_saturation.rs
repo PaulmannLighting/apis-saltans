@@ -15,7 +15,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x04;
         direction: Direction::ClientToServer;
-        => super::StepSaturation(box);
+        => super::StepSaturation;
         fields {
             mode: u8,
             size: u8,

@@ -9,7 +9,7 @@ zcl_command! {
         { ClusterId::Groups } => Groups;
         command_id: 0x05;
         direction: Direction::ClientToServer;
-        => super::AddGroupIfIdentifying(box);
+        => super::AddGroupIfIdentifying;
         derive(Ord, PartialOrd);
         fields {
             group_id: Uint16,

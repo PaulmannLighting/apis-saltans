@@ -8,7 +8,7 @@ zcl_command! {
         { ClusterId::OnOff } => OnOff;
         command_id: 0x00;
         direction: Direction::ClientToServer;
-        => super::Off(box);
+        => super::Off;
         fields;
     }
 }
