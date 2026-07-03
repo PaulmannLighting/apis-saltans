@@ -9,7 +9,11 @@ const MILLIS_PER_DECISECOND: u64 = 100;
 /// Type to represent a duration in 1/10ths of a second.
 ///
 /// The inner type is guaranteed to not be `Uint16::NONE`.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    //serde(try_from = "Uint16", into = "Uint16")
+)]
 #[derive(
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
 )]
