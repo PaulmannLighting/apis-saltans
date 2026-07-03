@@ -12,7 +12,7 @@ zcl_command! {
         { ClusterId::Level } => Level;
         command_id: 0x01;
         direction: Direction::ClientToServer;
-        => super::Move;
+        => super::Move(box);
         derive(Copy, Ord, PartialOrd);
         fields {
             mode: u8,

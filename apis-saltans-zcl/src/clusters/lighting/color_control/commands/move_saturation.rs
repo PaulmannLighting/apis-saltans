@@ -15,7 +15,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x04;
         direction: Direction::ClientToServer;
-        => super::MoveSaturation;
+        => super::MoveSaturation(box);
         fields {
             mode: u8,
             rate: u8,

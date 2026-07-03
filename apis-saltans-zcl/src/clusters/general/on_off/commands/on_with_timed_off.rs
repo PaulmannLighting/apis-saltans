@@ -13,7 +13,7 @@ zcl_command! {
         { ClusterId::OnOff } => OnOff;
         command_id: 0x42;
         direction: Direction::ClientToServer;
-        => super::OnWithTimedOff;
+        => super::OnWithTimedOff(box);
         derive(Default, Ord, PartialOrd);
         fields {
             on_off_control: OnOffControl,

@@ -21,7 +21,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x44;
         direction: apis_saltans_core::Direction::ClientToServer;
-        => super::ColorLoopSet;
+        => super::ColorLoopSet(box);
         fields {
             update: Update,
             action: u8,

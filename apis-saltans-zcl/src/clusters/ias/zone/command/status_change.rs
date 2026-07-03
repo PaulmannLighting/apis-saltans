@@ -10,7 +10,7 @@ zcl_command! {
         { ClusterId::IasZone } => IasZone;
         command_id: 0x00;
         direction: Direction::ServerToClient;
-        => super::StatusChange;
+        => super::StatusChange(box);
         derive(Ord, PartialOrd);
         fields {
             status: Status,

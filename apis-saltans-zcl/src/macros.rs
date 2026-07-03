@@ -929,3 +929,182 @@ macro_rules! zcl_command {
 }
 
 pub(crate) use zcl_command;
+
+macro_rules! zcl_command_enum {
+    (
+        $(#[$attr:meta])*
+        { $cluster_id:expr } => $cluster_name:ident;
+        $($command:ident),+ $(,)?
+    ) => {
+        $crate::macros::zcl_command_enum! {
+            @define
+            [$(#[$attr])*]
+            [$cluster_name]
+            [cluster $cluster_id]
+            [$($command($command)),+]
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        $cluster_name:ident;
+        $($command:ident),+ $(,)?
+    ) => {
+        $crate::macros::zcl_command_enum! {
+            @define
+            [$(#[$attr])*]
+            [$cluster_name]
+            [global]
+            [$($command($command)),+]
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        { $cluster_id:expr } => $cluster_name:ident;
+        $($variant:ident($command:ty)),+ $(,)?
+    ) => {
+        $crate::macros::zcl_command_enum! {
+            @define
+            [$(#[$attr])*]
+            [$cluster_name]
+            [cluster $cluster_id]
+            [$($variant($command)),+]
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        $cluster_name:ident;
+        $($variant:ident($command:ty)),+ $(,)?
+    ) => {
+        $crate::macros::zcl_command_enum! {
+            @define
+            [$(#[$attr])*]
+            [$cluster_name]
+            [global]
+            [$($variant($command)),+]
+        }
+    };
+    (
+        @define
+        [$(#[$attr:meta])*]
+        [$cluster_name:ident]
+        $scope:tt
+        [$($variant:ident($command:ty)),+]
+    ) => {
+        $(#[$attr])*
+        /// Available ZCL commands.
+        #[derive(Clone, Debug, Eq, PartialEq, Hash, apis_saltans_macros::ParseZclFrame)]
+        pub enum Command {
+            $(
+                /// ZCL command variant.
+                $variant(std::boxed::Box<$command>),
+            )+
+        }
+
+        $crate::macros::zcl_command_enum! {
+            @cluster_impl
+            $scope
+        }
+
+        impl From<Command> for $crate::Cluster {
+            fn from(command: Command) -> Self {
+                Self::$cluster_name(command)
+            }
+        }
+
+        $(
+            impl From<$command> for Command {
+                fn from(command: $command) -> Self {
+                    Self::$variant(command.into())
+                }
+            }
+        )+
+
+        impl $crate::CommandDispatch for Command {
+            fn command_id(&self) -> u8 {
+                match self {
+                    $(
+                        Self::$variant(command) => {
+                            $crate::CommandDispatch::command_id(command.as_ref())
+                        }
+                    )+
+                }
+            }
+
+            fn scope(&self) -> $crate::Scope {
+                match self {
+                    $(
+                        Self::$variant(command) => {
+                            $crate::CommandDispatch::scope(command.as_ref())
+                        }
+                    )+
+                }
+            }
+
+            fn direction(&self) -> apis_saltans_core::Direction {
+                match self {
+                    $(
+                        Self::$variant(command) => {
+                            $crate::CommandDispatch::direction(command.as_ref())
+                        }
+                    )+
+                }
+            }
+
+            fn disable_default_response(&self) -> bool {
+                match self {
+                    $(
+                        Self::$variant(command) => {
+                            $crate::CommandDispatch::disable_default_response(command.as_ref())
+                        }
+                    )+
+                }
+            }
+        }
+
+        impl le_stream::ToLeStream for Command {
+            type Iter = iterator::Iter;
+
+            fn to_le_stream(self) -> Self::Iter {
+                match self {
+                    $(
+                        Self::$variant(command) => {
+                            iterator::Iter::$variant(
+                                le_stream::ToLeStream::to_le_stream(*command).into(),
+                            )
+                        }
+                    )+
+                }
+            }
+        }
+
+        mod iterator {
+            use super::*;
+
+            pub enum Iter {
+                $(
+                    $variant(std::boxed::Box<<$command as le_stream::ToLeStream>::Iter>),
+                )+
+            }
+
+            impl Iterator for Iter {
+                type Item = u8;
+
+                fn next(&mut self) -> Option<Self::Item> {
+                    match self {
+                        $(
+                            Self::$variant(iter) => iter.next(),
+                        )+
+                    }
+                }
+            }
+        }
+    };
+    (@cluster_impl [global]) => {};
+    (@cluster_impl [cluster $cluster_id:expr]) => {
+        impl apis_saltans_core::Cluster<apis_saltans_core::ClusterId> for Command {
+            const ID: apis_saltans_core::ClusterId = $cluster_id;
+        }
+    };
+}
+
+pub(crate) use zcl_command_enum;

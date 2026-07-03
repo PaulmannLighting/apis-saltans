@@ -9,7 +9,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 47;
         direction: Direction::ClientToServer;
-        => super::StopMoveStep;
+        => super::StopMoveStep(box);
         derive(Copy);
         fields {
             options: Options,

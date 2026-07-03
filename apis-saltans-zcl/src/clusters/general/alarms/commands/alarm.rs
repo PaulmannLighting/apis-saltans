@@ -8,7 +8,7 @@ zcl_command! {
         { ClusterId::Alarms } => Alarms;
         command_id: 0x00;
         direction: Direction::ServerToClient;
-        => super::Alarm;
+        => super::Alarm(box);
         derive(Copy, Ord, PartialOrd);
         fields {
             code: u8,

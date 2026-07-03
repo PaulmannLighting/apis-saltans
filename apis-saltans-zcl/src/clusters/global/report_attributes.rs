@@ -15,7 +15,7 @@ zcl_command! {
         Global;
         command_id: 0x0A;
         direction: Direction::ServerToClient;
-        => crate::global::ReportAttributes;
+        => crate::global::ReportAttributes(box);
         fields {
             reports: Box<[AttributeReport]>,
         }

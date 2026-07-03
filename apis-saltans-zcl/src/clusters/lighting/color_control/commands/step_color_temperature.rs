@@ -12,7 +12,7 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x4c;
         direction: Direction::ClientToServer;
-        => super::StepColorTemperature;
+        => super::StepColorTemperature(box);
         fields {
             mode: u8,
             size: u16,

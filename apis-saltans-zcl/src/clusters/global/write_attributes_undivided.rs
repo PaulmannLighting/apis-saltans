@@ -15,7 +15,7 @@ zcl_command! {
         command_id: 0x03;
         direction: Direction::ClientToServer;
         response: Response;
-        => crate::global::WriteAttributesUndivided;
+        => crate::global::WriteAttributesUndivided(box);
         fields {
             records: Box<[Record]>,
         }
