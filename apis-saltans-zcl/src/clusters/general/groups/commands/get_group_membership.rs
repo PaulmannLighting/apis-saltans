@@ -2,41 +2,76 @@ use core::iter::Chain;
 use std::boxed::Box;
 
 use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
+use le_stream::ToLeStream;
 
-use crate::Command;
+use crate::macros::zcl_command;
 
-/// Command to request the membership of a device in multiple groups.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct GetGroupMembership {
-    groups: Box<[Uint16]>,
-}
+zcl_command! {
+    /// Command to request the membership of a device in multiple groups.
+    GetGroupMembership {
+        { ClusterId::Groups } => Groups;
+        command_id: 0x02;
+        direction: Direction::ClientToServer;
+        => super::GetGroupMembership;
+        derive(Ord, PartialOrd);
+        fields {
+            groups: Box<[Uint16]>,
+        }
 
-impl GetGroupMembership {
-    /// Creates a new `GetGroupMembership` command with the specified group count and list.
-    #[must_use]
-    pub const fn new(groups: Box<[Uint16]>) -> Self {
-        Self { groups }
-    }
+        getters {
+            /// Return the groups the sender is a member of.
+            #[must_use]
+            pub fn groups(&self) -> &[Uint16] {
+                &self.groups
+            }
 
-    /// Return the groups the sender is a member of.
-    #[must_use]
-    pub fn groups(&self) -> &[Uint16] {
-        &self.groups
-    }
+            /// Return the group count.
+            ///
+            /// # Panics
+            ///
+            /// This function will panic if the number of groups exceeds [`Uint8::MAX`], which should never happen.
+            #[must_use]
+            pub fn group_count(&self) -> Uint8 {
+                self.groups
+                    .len()
+                    .try_into()
+                    .expect("GroupList size always fits into a Uint8.")
+            }
+        }
 
-    /// Return the group count.
-    ///
-    /// # Panics
-    ///
-    /// This function will panic if the number of groups exceeds [`Uint8::MAX`], which should never happen.
-    #[must_use]
-    pub fn group_count(&self) -> Uint8 {
-        self.groups
-            .len()
-            .try_into()
-            .expect("GroupList size always fits into a Uint8.")
+        from_le_stream {
+            fn from_le_stream<I>(mut bytes: I) -> Option<Self>
+                where
+                    I: Iterator<Item = u8>,
+                {
+                    let group_count = Uint8::from_le_stream(&mut bytes)?;
+
+                    let Ok(size) = u8::try_from(group_count) else {
+                        return None;
+                    };
+
+                    let mut groups = Vec::with_capacity(size.into());
+
+                    for _ in 0..size {
+                        groups.push(Uint16::from_le_stream(&mut bytes)?);
+                    }
+
+                    Some(Self {
+                        groups: groups.into_boxed_slice(),
+                    })
+                }
+        }
+
+        to_le_stream {
+            type Iter = Chain<<Uint8 as ToLeStream>::Iter, <Box<[Uint16]> as ToLeStream>::Iter>;
+
+                fn to_le_stream(self) -> Self::Iter {
+                    self.group_count()
+                        .to_le_stream()
+                        .chain(self.groups.to_le_stream())
+                }
+        }
     }
 }
 
@@ -52,53 +87,5 @@ impl IntoIterator for GetGroupMembership {
 
     fn into_iter(self) -> Self::IntoIter {
         self.groups.into_iter()
-    }
-}
-
-impl Cluster<ClusterId> for GetGroupMembership {
-    const ID: ClusterId = ClusterId::Groups;
-}
-
-impl Command for GetGroupMembership {
-    const ID: u8 = 0x02;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<GetGroupMembership> for crate::Cluster {
-    fn from(command: GetGroupMembership) -> Self {
-        Self::Groups(command.into())
-    }
-}
-
-impl FromLeStream for GetGroupMembership {
-    fn from_le_stream<I>(mut bytes: I) -> Option<Self>
-    where
-        I: Iterator<Item = u8>,
-    {
-        let group_count = Uint8::from_le_stream(&mut bytes)?;
-
-        let Ok(size) = u8::try_from(group_count) else {
-            return None;
-        };
-
-        let mut groups = Vec::with_capacity(size.into());
-
-        for _ in 0..size {
-            groups.push(Uint16::from_le_stream(&mut bytes)?);
-        }
-
-        Some(Self {
-            groups: groups.into_boxed_slice(),
-        })
-    }
-}
-
-impl ToLeStream for GetGroupMembership {
-    type Iter = Chain<<Uint8 as ToLeStream>::Iter, <Box<[Uint16]> as ToLeStream>::Iter>;
-
-    fn to_le_stream(self) -> Self::Iter {
-        self.group_count()
-            .to_le_stream()
-            .chain(self.groups.to_le_stream())
     }
 }

@@ -1,61 +1,54 @@
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
-use crate::Command;
+use crate::macros::zcl_command;
 
 mod effect_identifier;
 mod effect_variant;
 
-/// Trigger an effect on a device.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
-pub struct TriggerEffect {
-    identifier: u8,
-    variant: u8,
-}
-
-impl TriggerEffect {
-    /// Create a new `TriggerEffect` command.
-    #[must_use]
-    pub fn new(identifier: EffectIdentifier, variant: EffectVariant) -> Self {
-        Self {
-            identifier: identifier.into(),
-            variant: variant.into(),
+zcl_command! {
+    /// Trigger an effect on a device.
+    TriggerEffect {
+        { ClusterId::Identify } => Identify;
+        command_id: 0x40;
+        direction: Direction::ClientToServer;
+        => super::TriggerEffect;
+        derive(Copy, Ord, PartialOrd);
+        fields {
+            identifier: u8,
+            variant: u8,
         }
-    }
 
-    /// Return the effect identifier.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw identifier if it cannot be converted to an `EffectIdentifier`.
-    pub fn identifier(self) -> Result<EffectIdentifier, u8> {
-        EffectIdentifier::try_from(self.identifier)
-    }
+        constructor {
+            /// Create a new `TriggerEffect` command.
+            #[must_use]
+            pub fn new(identifier: EffectIdentifier, variant: EffectVariant) -> Self {
+                Self {
+                    identifier: identifier.into(),
+                    variant: variant.into(),
+                }
+            }
+        }
 
-    /// Return the effect variant.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw variant if it cannot be converted to an `EffectVariant`.
-    pub fn variant(self) -> Result<EffectVariant, u8> {
-        EffectVariant::try_from(self.variant)
-    }
-}
+        getters {
+            /// Return the effect identifier.
+            ///
+            /// # Errors
+            ///
+            /// Returns the raw identifier if it cannot be converted to an `EffectIdentifier`.
+            pub fn identifier(self) -> Result<EffectIdentifier, u8> {
+                EffectIdentifier::try_from(self.identifier)
+            }
 
-impl Cluster<ClusterId> for TriggerEffect {
-    const ID: ClusterId = ClusterId::Identify;
-}
-
-impl Command for TriggerEffect {
-    const ID: u8 = 0x40;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<TriggerEffect> for crate::Cluster {
-    fn from(command: TriggerEffect) -> Self {
-        Self::Identify(command.into())
+            /// Return the effect variant.
+            ///
+            /// # Errors
+            ///
+            /// Returns the raw variant if it cannot be converted to an `EffectVariant`.
+            pub fn variant(self) -> Result<EffectVariant, u8> {
+                EffectVariant::try_from(self.variant)
+            }
+        }
     }
 }

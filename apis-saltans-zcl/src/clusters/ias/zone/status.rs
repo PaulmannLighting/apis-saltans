@@ -2,6 +2,7 @@ use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
 /// Zone status attributes.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
 )]

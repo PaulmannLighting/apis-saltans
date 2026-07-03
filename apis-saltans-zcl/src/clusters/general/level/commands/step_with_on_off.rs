@@ -1,70 +1,63 @@
 use apis_saltans_core::types::Uint16;
 use apis_saltans_core::units::Deciseconds;
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
-use crate::Command;
 use crate::general::level::Mode;
+use crate::macros::zcl_command;
 use crate::options::Options;
 
-/// Step with on/off command.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
-pub struct StepWithOnOff {
-    mode: u8,
-    size: u8,
-    transition_time: Uint16,
-    options: Options,
-}
-
-impl StepWithOnOff {
-    /// Creates a new `StepWithOnOff` command.
-    #[must_use]
-    pub fn new(mode: Mode<u8>, transition_time: Deciseconds, options: Options) -> Self {
-        Self {
-            mode: mode.discriminant(),
-            size: mode.into_stride(),
-            transition_time: transition_time.into_inner(),
-            options,
+zcl_command! {
+    /// Step with on/off command.
+    StepWithOnOff {
+        { ClusterId::Level } => Level;
+        command_id: 0x06;
+        direction: Direction::ClientToServer;
+        => super::StepWithOnOff;
+        derive(Copy, Ord, PartialOrd);
+        fields {
+            mode: u8,
+            size: u8,
+            transition_time: Uint16,
+            options: Options,
         }
-    }
 
-    /// Get the mode.
-    #[must_use]
-    pub fn mode(self) -> Option<Mode<u8>> {
-        Mode::new(self.mode, self.size()).ok()
-    }
+        constructor {
+            /// Creates a new `StepWithOnOff` command.
+            #[must_use]
+            pub fn new(mode: Mode<u8>, transition_time: Deciseconds, options: Options) -> Self {
+                Self {
+                    mode: mode.discriminant(),
+                    size: mode.into_stride(),
+                    transition_time: transition_time.into_inner(),
+                    options,
+                }
+            }
+        }
 
-    /// Get the size.
-    #[must_use]
-    pub const fn size(self) -> u8 {
-        self.size
-    }
+        getters {
+            /// Get the mode.
+            #[must_use]
+            pub fn mode(self) -> Option<Mode<u8>> {
+                Mode::new(self.mode, self.size()).ok()
+            }
 
-    /// Return the transition time, if any, in deciseconds.
-    #[must_use]
-    pub fn transition_time(self) -> Option<Deciseconds> {
-        self.transition_time.try_into().ok()
-    }
+            /// Get the size.
+            #[must_use]
+            pub const fn size(self) -> u8 {
+                self.size
+            }
 
-    /// Get the options.
-    #[must_use]
-    pub const fn options(self) -> Options {
-        self.options
-    }
-}
+            /// Return the transition time, if any, in deciseconds.
+            #[must_use]
+            pub fn transition_time(self) -> Option<Deciseconds> {
+                self.transition_time.try_into().ok()
+            }
 
-impl Cluster<ClusterId> for StepWithOnOff {
-    const ID: ClusterId = ClusterId::Level;
-}
-
-impl Command for StepWithOnOff {
-    const ID: u8 = 0x06;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<StepWithOnOff> for crate::Cluster {
-    fn from(command: StepWithOnOff) -> Self {
-        Self::Level(command.into())
+            /// Get the options.
+            #[must_use]
+            pub const fn options(self) -> Options {
+                self.options
+            }
+        }
     }
 }

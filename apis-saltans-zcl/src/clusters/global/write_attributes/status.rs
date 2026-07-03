@@ -1,6 +1,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 
 /// Write Attributes Status record.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Status {
     status: u8,

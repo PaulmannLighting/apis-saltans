@@ -1,41 +1,27 @@
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
-use crate::Command;
+use crate::macros::zcl_command;
 
-/// Command to view a group in the device's group table.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
-pub struct ViewGroup {
-    /// The identifier of the group to view.
-    group_id: Uint16,
-}
+zcl_command! {
+    /// Command to view a group in the device's group table.
+    ViewGroup {
+        { ClusterId::Groups } => Groups;
+        command_id: 0x01;
+        direction: Direction::ClientToServer;
+        => super::ViewGroup;
+        derive(Copy, Ord, PartialOrd);
+        fields {
+            /// The identifier of the group to view.
+            group_id: Uint16,
+        }
 
-impl ViewGroup {
-    /// Creates a new `ViewGroup` command with the specified group ID.
-    #[must_use]
-    pub const fn new(group_id: Uint16) -> Self {
-        Self { group_id }
-    }
-
-    /// Returns the identifier of the group to view.
-    #[must_use]
-    pub const fn group_id(self) -> Uint16 {
-        self.group_id
-    }
-}
-
-impl Cluster<ClusterId> for ViewGroup {
-    const ID: ClusterId = ClusterId::Groups;
-}
-
-impl Command for ViewGroup {
-    const ID: u8 = 0x01;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<ViewGroup> for crate::Cluster {
-    fn from(command: ViewGroup) -> Self {
-        Self::Groups(command.into())
+        getters {
+            /// Returns the identifier of the group to view.
+            #[must_use]
+            pub const fn group_id(self) -> Uint16 {
+                self.group_id
+            }
+        }
     }
 }

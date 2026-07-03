@@ -1,63 +1,56 @@
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 use num_traits::FromPrimitive;
 
 use crate::Options;
 use crate::clusters::lighting::color_control::move_hue::Mode;
-use crate::command::Command;
+use crate::macros::zcl_command;
 
-/// Command to move a light's hue in an enhanced way, allowing for more control over the rate.
-#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
-pub struct EnhancedMoveHue {
-    mode: u8,
-    rate: u16,
-    options: Options,
-}
-
-impl EnhancedMoveHue {
-    /// Create a new `EnhancedMoveHue` command.
-    #[must_use]
-    pub const fn new(mode: Mode, rate: u16, options: Options) -> Self {
-        Self {
-            mode: mode as u8,
-            rate,
-            options,
+zcl_command! {
+    /// Command to move a light's hue in an enhanced way, allowing for more control over the rate.
+    EnhancedMoveHue {
+        { ClusterId::ColorControl } => ColorControl;
+        command_id: 0x41;
+        direction: Direction::ClientToServer;
+        => super::EnhancedMoveHue;
+        fields {
+            mode: u8,
+            rate: u16,
+            options: Options,
         }
-    }
 
-    /// Return the mode of hue movement.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw mode value if it does not correspond to a valid `Mode` variant.
-    pub fn mode(&self) -> Result<Mode, u8> {
-        Mode::from_u8(self.mode).ok_or(self.mode)
-    }
+        constructor {
+            /// Create a new `EnhancedMoveHue` command.
+            #[must_use]
+            pub const fn new(mode: Mode, rate: u16, options: Options) -> Self {
+                Self {
+                    mode: mode as u8,
+                    rate,
+                    options,
+                }
+            }
+        }
 
-    /// Return the rate of hue change in steps per second.
-    #[must_use]
-    pub const fn rate(&self) -> u16 {
-        self.rate
-    }
+        getters {
+            /// Return the mode of hue movement.
+            ///
+            /// # Errors
+            ///
+            /// Returns the raw mode value if it does not correspond to a valid `Mode` variant.
+            pub fn mode(&self) -> Result<Mode, u8> {
+                Mode::from_u8(self.mode).ok_or(self.mode)
+            }
 
-    /// Return the options for the command.
-    #[must_use]
-    pub const fn options(&self) -> Options {
-        self.options
-    }
-}
+            /// Return the rate of hue change in steps per second.
+            #[must_use]
+            pub const fn rate(&self) -> u16 {
+                self.rate
+            }
 
-impl Cluster<ClusterId> for EnhancedMoveHue {
-    const ID: ClusterId = ClusterId::ColorControl;
-}
-
-impl Command for EnhancedMoveHue {
-    const ID: u8 = 0x41;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<EnhancedMoveHue> for crate::Cluster {
-    fn from(command: EnhancedMoveHue) -> Self {
-        Self::ColorControl(command.into())
+            /// Return the options for the command.
+            #[must_use]
+            pub const fn options(&self) -> Options {
+                self.options
+            }
+        }
     }
 }

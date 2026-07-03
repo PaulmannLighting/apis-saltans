@@ -1,66 +1,60 @@
 //! Data structures for the `Move Saturation` command in the `Lighting` cluster.
 
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 use num_traits::FromPrimitive;
 
 pub use self::mode::Mode;
-use crate::{Command, Options};
+use crate::Options;
+use crate::macros::zcl_command;
 
 mod mode;
 
-/// Command to move a light's saturation.
-#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
-pub struct MoveSaturation {
-    mode: u8,
-    rate: u8,
-    options: Options,
-}
-
-impl MoveSaturation {
-    /// Create a new `MoveSaturation` command.
-    #[must_use]
-    pub const fn new(mode: Mode, rate: u8, options: Options) -> Self {
-        Self {
-            mode: mode as u8,
-            rate,
-            options,
+zcl_command! {
+    /// Command to move a light's saturation.
+    MoveSaturation {
+        { ClusterId::ColorControl } => ColorControl;
+        command_id: 0x04;
+        direction: Direction::ClientToServer;
+        => super::MoveSaturation;
+        fields {
+            mode: u8,
+            rate: u8,
+            options: Options,
         }
-    }
 
-    /// Return the mode.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw mode value if it does not correspond to a valid `Mode` variant.
-    pub fn mode(&self) -> Result<Mode, u8> {
-        Mode::from_u8(self.mode).ok_or(self.mode)
-    }
+        constructor {
+            /// Create a new `MoveSaturation` command.
+            #[must_use]
+            pub const fn new(mode: Mode, rate: u8, options: Options) -> Self {
+                Self {
+                    mode: mode as u8,
+                    rate,
+                    options,
+                }
+            }
+        }
 
-    /// Return the rate of saturation change in steps per second.
-    #[must_use]
-    pub const fn rate(&self) -> u8 {
-        self.rate
-    }
+        getters {
+            /// Return the mode.
+            ///
+            /// # Errors
+            ///
+            /// Returns the raw mode value if it does not correspond to a valid `Mode` variant.
+            pub fn mode(&self) -> Result<Mode, u8> {
+                Mode::from_u8(self.mode).ok_or(self.mode)
+            }
 
-    /// Return the options for the command.
-    #[must_use]
-    pub const fn options(&self) -> Options {
-        self.options
-    }
-}
+            /// Return the rate of saturation change in steps per second.
+            #[must_use]
+            pub const fn rate(&self) -> u8 {
+                self.rate
+            }
 
-impl Cluster<ClusterId> for MoveSaturation {
-    const ID: ClusterId = ClusterId::ColorControl;
-}
-
-impl Command for MoveSaturation {
-    const ID: u8 = 0x04;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<MoveSaturation> for crate::Cluster {
-    fn from(command: MoveSaturation) -> Self {
-        Self::ColorControl(command.into())
+            /// Return the options for the command.
+            #[must_use]
+            pub const fn options(&self) -> Options {
+                self.options
+            }
+        }
     }
 }

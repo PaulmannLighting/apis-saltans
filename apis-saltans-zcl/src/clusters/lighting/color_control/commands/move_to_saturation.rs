@@ -1,58 +1,40 @@
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
-use crate::{Command, Options};
+use crate::Options;
+use crate::macros::zcl_command;
 
-/// Command to move a light to a specific saturation.
-#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
-pub struct MoveToSaturation {
-    saturation: u8,
-    transition_time: Uint16,
-    options: Options,
-}
-
-impl MoveToSaturation {
-    /// Create a new `MoveToSaturation` command.
-    #[must_use]
-    pub const fn new(saturation: u8, transition_time: Uint16, options: Options) -> Self {
-        Self {
-            saturation,
-            transition_time,
-            options,
+zcl_command! {
+    /// Command to move a light to a specific saturation.
+    MoveToSaturation {
+        { ClusterId::ColorControl } => ColorControl;
+        command_id: 0x03;
+        direction: Direction::ClientToServer;
+        => super::MoveToSaturation;
+        fields {
+            saturation: u8,
+            transition_time: Uint16,
+            options: Options,
         }
-    }
 
-    /// Return the saturation value.
-    #[must_use]
-    pub const fn saturation(&self) -> u8 {
-        self.saturation
-    }
+        getters {
+            /// Return the saturation value.
+            #[must_use]
+            pub const fn saturation(&self) -> u8 {
+                self.saturation
+            }
 
-    /// Return the transition time, if any, in deciseconds.
-    #[must_use]
-    pub fn transition_time(&self) -> Option<u16> {
-        self.transition_time.into()
-    }
+            /// Return the transition time, if any, in deciseconds.
+            #[must_use]
+            pub fn transition_time(&self) -> Option<u16> {
+                self.transition_time.into()
+            }
 
-    /// Return the options for this command.
-    #[must_use]
-    pub const fn options(&self) -> Options {
-        self.options
-    }
-}
-
-impl Cluster<ClusterId> for MoveToSaturation {
-    const ID: ClusterId = ClusterId::ColorControl;
-}
-
-impl Command for MoveToSaturation {
-    const ID: u8 = 0x03;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<MoveToSaturation> for crate::Cluster {
-    fn from(command: MoveToSaturation) -> Self {
-        Self::ColorControl(command.into())
+            /// Return the options for this command.
+            #[must_use]
+            pub const fn options(&self) -> Options {
+                self.options
+            }
+        }
     }
 }

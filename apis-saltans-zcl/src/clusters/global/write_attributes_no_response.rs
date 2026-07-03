@@ -3,24 +3,22 @@
 use core::ops::Deref;
 use std::boxed::Box;
 
-use apis_saltans_core::{Direction, ExpectResponse};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::Direction;
 
 pub use super::write_attributes::{Record, Response, Status};
-use crate::command::Scoped;
-use crate::{Cluster, Scope};
+use crate::macros::zcl_command;
 
-/// Write Attributes No Response Command.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
-pub struct Command {
-    records: Box<[Record]>,
-}
-
-impl Command {
-    /// Create a new command.
-    #[must_use]
-    pub const fn new(records: Box<[Record]>) -> Self {
-        Self { records }
+zcl_command! {
+    /// Write Attributes No Response Command.
+    Command {
+        Global;
+        command_id: 0x05;
+        direction: Direction::ClientToServer;
+        response: Response;
+        => crate::global::WriteAttributesNoResponse;
+        fields {
+            records: Box<[Record]>,
+        }
     }
 }
 
@@ -30,23 +28,4 @@ impl Deref for Command {
     fn deref(&self) -> &Self::Target {
         &self.records
     }
-}
-
-impl From<Command> for Cluster {
-    fn from(cmd: Command) -> Self {
-        Self::Global(cmd.into())
-    }
-}
-
-impl crate::Command for Command {
-    const ID: u8 = 0x05;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl Scoped for Command {
-    const SCOPE: Scope = Scope::Global;
-}
-
-impl ExpectResponse<Cluster> for Command {
-    type Response = Response;
 }

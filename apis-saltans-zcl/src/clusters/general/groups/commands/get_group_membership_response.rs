@@ -1,49 +1,87 @@
 use core::iter::Chain;
 
 use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
+use le_stream::ToLeStream;
 
-use crate::Command;
 use crate::clusters::general::groups::types::GroupList;
+use crate::macros::zcl_command;
 
-/// Represents a response to an `GetGroupMembership` command.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct GetGroupMembershipResponse {
-    capacity: Uint8,
-    groups: GroupList,
-}
+zcl_command! {
+    /// Represents a response to an `GetGroupMembership` command.
+    GetGroupMembershipResponse {
+        { ClusterId::Groups } => Groups;
+        command_id: 0x02;
+        direction: Direction::ServerToClient;
+        disable_default_response: true;
+        => super::GetGroupMembershipResponse(box);
+        derive(Ord, PartialOrd);
+        fields {
+            capacity: Uint8,
+            groups: GroupList,
+        }
 
-impl GetGroupMembershipResponse {
-    /// Creates a new `GetGroupMembershipResponse` with the given status and group ID.
-    #[must_use]
-    pub const fn new(capacity: Uint8, groups: GroupList) -> Self {
-        Self { capacity, groups }
-    }
+        getters {
+            /// Return the remaining capacity of the group table.
+            #[must_use]
+            pub const fn capacity(&self) -> Uint8 {
+                self.capacity
+            }
 
-    /// Return the remaining capacity of the group table.
-    #[must_use]
-    pub const fn capacity(&self) -> Uint8 {
-        self.capacity
-    }
+            /// Return the groups in the group table.
+            #[must_use]
+            pub fn groups(&self) -> &[Uint16] {
+                &self.groups
+            }
 
-    /// Return the groups in the group table.
-    #[must_use]
-    pub fn groups(&self) -> &[Uint16] {
-        &self.groups
-    }
+            /// Return the group count.
+            ///
+            /// # Panics
+            ///
+            /// This function will panic if the amount of groups exceeds [`Uint8::MAX`], which should never happen.
+            #[must_use]
+            pub fn group_count(&self) -> Uint8 {
+                self.groups
+                    .len()
+                    .try_into()
+                    .expect("GroupList size always fits into a Uint8.")
+            }
+        }
 
-    /// Return the group count.
-    ///
-    /// # Panics
-    ///
-    /// This function will panic if the amount of groups exceeds [`Uint8::MAX`], which should never happen.
-    #[must_use]
-    pub fn group_count(&self) -> Uint8 {
-        self.groups
-            .len()
-            .try_into()
-            .expect("GroupList size always fits into a Uint8.")
+        from_le_stream {
+            fn from_le_stream<I>(mut bytes: I) -> Option<Self>
+                where
+                    I: Iterator<Item = u8>,
+                {
+                    let capacity = Uint8::from_le_stream(&mut bytes)?;
+                    let group_count = Uint8::from_le_stream(&mut bytes)?;
+                    let mut groups = GroupList::new();
+
+                    let Ok(size) = u8::try_from(group_count) else {
+                        return None;
+                    };
+
+                    for _ in 0..size {
+                        groups.push(Uint16::from_le_stream(&mut bytes)?).ok()?;
+                    }
+
+                    Some(Self { capacity, groups })
+                }
+        }
+
+        to_le_stream {
+            type Iter = Chain<
+                    Chain<<Uint8 as ToLeStream>::Iter, <Uint8 as ToLeStream>::Iter>,
+                    <GroupList as ToLeStream>::Iter,
+                >;
+
+                fn to_le_stream(self) -> Self::Iter {
+                    self.capacity
+                        .to_le_stream()
+                        .chain(self.group_count().to_le_stream())
+                        .chain(self.groups.to_le_stream())
+                }
+        }
     }
 }
 
@@ -59,56 +97,5 @@ impl IntoIterator for GetGroupMembershipResponse {
 
     fn into_iter(self) -> Self::IntoIter {
         self.groups.into_iter()
-    }
-}
-
-impl Cluster<ClusterId> for GetGroupMembershipResponse {
-    const ID: ClusterId = ClusterId::Groups;
-}
-
-impl Command for GetGroupMembershipResponse {
-    const ID: u8 = 0x02;
-    const DIRECTION: Direction = Direction::ServerToClient;
-    const DISABLE_DEFAULT_RESPONSE: bool = true;
-}
-
-impl From<GetGroupMembershipResponse> for crate::Cluster {
-    fn from(command: GetGroupMembershipResponse) -> Self {
-        Self::Groups(command.into())
-    }
-}
-
-impl FromLeStream for GetGroupMembershipResponse {
-    fn from_le_stream<I>(mut bytes: I) -> Option<Self>
-    where
-        I: Iterator<Item = u8>,
-    {
-        let capacity = Uint8::from_le_stream(&mut bytes)?;
-        let group_count = Uint8::from_le_stream(&mut bytes)?;
-        let mut groups = GroupList::new();
-
-        let Ok(size) = u8::try_from(group_count) else {
-            return None;
-        };
-
-        for _ in 0..size {
-            groups.push(Uint16::from_le_stream(&mut bytes)?).ok()?;
-        }
-
-        Some(Self { capacity, groups })
-    }
-}
-
-impl ToLeStream for GetGroupMembershipResponse {
-    type Iter = Chain<
-        Chain<<Uint8 as ToLeStream>::Iter, <Uint8 as ToLeStream>::Iter>,
-        <GroupList as ToLeStream>::Iter,
-    >;
-
-    fn to_le_stream(self) -> Self::Iter {
-        self.capacity
-            .to_le_stream()
-            .chain(self.group_count().to_le_stream())
-            .chain(self.groups.to_le_stream())
     }
 }

@@ -1,25 +1,15 @@
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
-use crate::Command;
+use crate::macros::zcl_command;
 
-/// Reset a device to factory defaults.
-#[derive(
-    Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
-)]
-pub struct ResetToFactoryDefaults;
-
-impl Cluster<ClusterId> for ResetToFactoryDefaults {
-    const ID: ClusterId = ClusterId::Basic;
-}
-
-impl Command for ResetToFactoryDefaults {
-    const ID: u8 = 0x00;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<ResetToFactoryDefaults> for crate::Cluster {
-    fn from(command: ResetToFactoryDefaults) -> Self {
-        Self::Basic(command.into())
+zcl_command! {
+    /// Reset a device to factory defaults.
+    ResetToFactoryDefaults {
+        { ClusterId::Basic } => Basic;
+        command_id: 0x00;
+        direction: Direction::ClientToServer;
+        => super::ResetToFactoryDefaults;
+        derive(Default);
+        fields;
     }
 }

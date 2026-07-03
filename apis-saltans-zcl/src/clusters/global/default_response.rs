@@ -1,50 +1,34 @@
 //! Default Response Command.
 
 use apis_saltans_core::Direction;
-use le_stream::{FromLeStream, ToLeStream};
 
-use crate::Scope;
-use crate::command::Scoped;
+use crate::macros::zcl_command;
 
-/// Default Response Command
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
-pub struct DefaultResponse {
-    status: u8,
-    command_id: u8,
-}
+zcl_command! {
+    /// Default Response Command
+    DefaultResponse {
+        Global;
+        command_id: 0x0b;
+        direction: Direction::ClientToServer;
+        disable_default_response: true;
+        => crate::global::DefaultResponse;
+        fields {
+            status: u8,
+            command_id: u8,
+        }
 
-impl DefaultResponse {
-    /// Create a new `DefaultResponse` instance.
-    #[must_use]
-    pub const fn new(status: u8, command_id: u8) -> Self {
-        Self { status, command_id }
-    }
+        getters {
+            /// Return the status of the default response.
+            #[must_use]
+            pub const fn status(&self) -> u8 {
+                self.status
+            }
 
-    /// Return the status of the default response.
-    #[must_use]
-    pub const fn status(&self) -> u8 {
-        self.status
-    }
-
-    /// Return the command ID of the default response.
-    #[must_use]
-    pub const fn command_id(&self) -> u8 {
-        self.command_id
-    }
-}
-
-impl crate::Command for DefaultResponse {
-    const ID: u8 = 0x0b;
-    const DIRECTION: Direction = Direction::ClientToServer;
-    const DISABLE_DEFAULT_RESPONSE: bool = true;
-}
-
-impl Scoped for DefaultResponse {
-    const SCOPE: Scope = Scope::Global;
-}
-
-impl From<DefaultResponse> for crate::Cluster {
-    fn from(command: DefaultResponse) -> Self {
-        Self::Global(command.into())
+            /// Return the command ID of the default response.
+            #[must_use]
+            pub const fn command_id(&self) -> u8 {
+                self.command_id
+            }
+        }
     }
 }

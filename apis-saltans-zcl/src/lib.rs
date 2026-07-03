@@ -13,5 +13,6 @@ mod attributes;
 mod clusters;
 mod command;
 mod frame;
+mod macros;
 mod options;
 mod status;

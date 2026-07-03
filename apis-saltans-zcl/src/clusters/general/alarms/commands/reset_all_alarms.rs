@@ -1,20 +1,15 @@
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
-use crate::Command;
+use crate::macros::zcl_command;
 
-/// Reset all alarms.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(
-    Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
-)]
-pub struct ResetAllAlarms;
-
-impl Cluster<ClusterId> for ResetAllAlarms {
-    const ID: ClusterId = ClusterId::Alarms;
-}
-
-impl Command for ResetAllAlarms {
-    const ID: u8 = 0x01;
-    const DIRECTION: Direction = Direction::ClientToServer;
+zcl_command! {
+    /// Reset all alarms.
+    ResetAllAlarms {
+        { ClusterId::Alarms } => Alarms;
+        command_id: 0x01;
+        direction: Direction::ClientToServer;
+        => super::ResetAllAlarms;
+        derive(Default);
+        fields;
+    }
 }

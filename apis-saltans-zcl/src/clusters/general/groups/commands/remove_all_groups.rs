@@ -1,23 +1,14 @@
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
-use crate::Command;
+use crate::macros::zcl_command;
 
-/// Command to remove all groups from the device's group table.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
-pub struct RemoveAllGroups;
-
-impl Cluster<ClusterId> for RemoveAllGroups {
-    const ID: ClusterId = ClusterId::Groups;
-}
-
-impl Command for RemoveAllGroups {
-    const ID: u8 = 0x04;
-    const DIRECTION: Direction = Direction::ClientToServer;
-}
-
-impl From<RemoveAllGroups> for crate::Cluster {
-    fn from(command: RemoveAllGroups) -> Self {
-        Self::Groups(command.into())
+zcl_command! {
+    /// Command to remove all groups from the device's group table.
+    RemoveAllGroups {
+        { ClusterId::Groups } => Groups;
+        command_id: 0x04;
+        direction: Direction::ClientToServer;
+        => super::RemoveAllGroups;
+        fields;
     }
 }

@@ -3,45 +3,29 @@
 use std::boxed::Box;
 
 use apis_saltans_core::Direction;
-use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::attribute_report::AttributeReport;
-use crate::Scope;
-use crate::command::Scoped;
+use crate::macros::zcl_command;
 
 mod attribute_report;
 
-/// Report Attributes Command.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
-pub struct Command {
-    reports: Box<[AttributeReport]>,
-}
+zcl_command! {
+    /// Report Attributes Command.
+    Command {
+        Global;
+        command_id: 0x0A;
+        direction: Direction::ServerToClient;
+        => crate::global::ReportAttributes;
+        fields {
+            reports: Box<[AttributeReport]>,
+        }
 
-impl Command {
-    /// Creates a new `Report Attributes` command with the given attribute reports.
-    #[must_use]
-    pub const fn new(reports: Box<[AttributeReport]>) -> Self {
-        Self { reports }
-    }
-
-    /// Returns the attribute reports of the command.
-    #[must_use]
-    pub fn reports(&self) -> &[AttributeReport] {
-        &self.reports
-    }
-}
-
-impl crate::Command for Command {
-    const ID: u8 = 0x0A;
-    const DIRECTION: Direction = Direction::ServerToClient;
-}
-
-impl Scoped for Command {
-    const SCOPE: Scope = Scope::Global;
-}
-
-impl From<Command> for crate::Cluster {
-    fn from(command: Command) -> Self {
-        Self::Global(command.into())
+        getters {
+            /// Returns the attribute reports of the command.
+            #[must_use]
+            pub fn reports(&self) -> &[AttributeReport] {
+                &self.reports
+            }
+        }
     }
 }

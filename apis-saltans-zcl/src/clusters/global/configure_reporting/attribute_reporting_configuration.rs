@@ -2,6 +2,7 @@ use apis_saltans_core::types::Type;
 use le_stream::{FromLeStream, ToLeStream};
 
 /// Configuration for attribute reporting.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct AttributeReportingConfiguration {
     direction: u8,

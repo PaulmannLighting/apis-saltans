@@ -1,62 +1,57 @@
 use apis_saltans_core::types::{String, Uint16};
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
-use crate::{Command, Status};
+use crate::Status;
+use crate::macros::zcl_command;
 
-/// Represents a response to an `ViewGroup` command.
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
-pub struct ViewGroupResponse {
-    status: u8,
-    group_id: Uint16,
-    group_name: String,
-}
-
-impl ViewGroupResponse {
-    /// Creates a new `ViewGroupResponse` with the given status and group ID.
-    #[must_use]
-    pub fn new(status: Status, group_id: Uint16, group_name: String) -> Self {
-        Self {
-            status: status.into(),
-            group_id,
-            group_name,
+zcl_command! {
+    /// Represents a response to an `ViewGroup` command.
+    ViewGroupResponse {
+        { ClusterId::Groups } => Groups;
+        command_id: 0x01;
+        direction: Direction::ServerToClient;
+        disable_default_response: true;
+        => super::ViewGroupResponse(box);
+        derive(Ord, PartialOrd);
+        fields {
+            status: u8,
+            group_id: Uint16,
+            group_name: String,
         }
-    }
 
-    /// Returns the status of the response.
-    ///
-    /// # Errors
-    ///
-    /// If the status byte does not correspond to a valid `Status`, this will return the raw status value as an error.
-    pub fn status(&self) -> Result<Status, u8> {
-        Status::try_from(self.status)
-    }
+        constructor {
+            /// Creates a new `ViewGroupResponse` with the given status and group ID.
+            #[must_use]
+            pub fn new(status: Status, group_id: Uint16, group_name: String) -> Self {
+                Self {
+                    status: status.into(),
+                    group_id,
+                    group_name,
+                }
+            }
+        }
 
-    /// Returns the group ID associated with the response.
-    #[must_use]
-    pub const fn group_id(&self) -> Uint16 {
-        self.group_id
-    }
+        getters {
+            /// Returns the status of the response.
+            ///
+            /// # Errors
+            ///
+            /// If the status byte does not correspond to a valid `Status`, this will return the raw status value as an error.
+            pub fn status(&self) -> Result<Status, u8> {
+                Status::try_from(self.status)
+            }
 
-    /// Returns the name of the group associated with the response.
-    #[must_use]
-    pub const fn group_name(&self) -> &String {
-        &self.group_name
-    }
-}
+            /// Returns the group ID associated with the response.
+            #[must_use]
+            pub const fn group_id(&self) -> Uint16 {
+                self.group_id
+            }
 
-impl Cluster<ClusterId> for ViewGroupResponse {
-    const ID: ClusterId = ClusterId::Groups;
-}
-
-impl Command for ViewGroupResponse {
-    const ID: u8 = 0x01;
-    const DIRECTION: Direction = Direction::ServerToClient;
-    const DISABLE_DEFAULT_RESPONSE: bool = true;
-}
-
-impl From<ViewGroupResponse> for crate::Cluster {
-    fn from(command: ViewGroupResponse) -> Self {
-        Self::Groups(command.into())
+            /// Returns the name of the group associated with the response.
+            #[must_use]
+            pub const fn group_name(&self) -> &String {
+                &self.group_name
+            }
+        }
     }
 }

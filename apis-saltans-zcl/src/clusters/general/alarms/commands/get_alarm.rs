@@ -1,20 +1,15 @@
-use apis_saltans_core::{Cluster, ClusterId, Direction};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::{ClusterId, Direction};
 
-use crate::Command;
+use crate::macros::zcl_command;
 
-/// Returns the alarm with the earliest generated entry.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(
-    Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
-)]
-pub struct GetAlarm;
-
-impl Cluster<ClusterId> for GetAlarm {
-    const ID: ClusterId = ClusterId::Alarms;
-}
-
-impl Command for GetAlarm {
-    const ID: u8 = 0x02;
-    const DIRECTION: Direction = Direction::ClientToServer;
+zcl_command! {
+    /// Returns the alarm with the earliest generated entry.
+    GetAlarm {
+        { ClusterId::Alarms } => Alarms;
+        command_id: 0x02;
+        direction: Direction::ClientToServer;
+        => super::GetAlarm;
+        derive(Default);
+        fields;
+    }
 }

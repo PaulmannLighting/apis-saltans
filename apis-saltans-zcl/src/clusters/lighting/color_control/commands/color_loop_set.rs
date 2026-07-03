@@ -2,105 +2,99 @@
 
 use core::time::Duration;
 
-use apis_saltans_core::{Cluster, ClusterId};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::ClusterId;
 use num_traits::FromPrimitive;
 
 pub use self::action::{Action, Source};
 pub use self::direction::Direction;
 pub use self::update::Update;
-use crate::{Command, Options};
+use crate::Options;
+use crate::macros::zcl_command;
 
 mod action;
 mod direction;
 mod update;
 
-/// Activate a light's color loop.
-#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
-pub struct ColorLoopSet {
-    update: Update,
-    action: u8,
-    direction: u8,
-    time: u16,
-    start_hue: u16,
-    options: Options,
-}
-
-impl ColorLoopSet {
-    /// Create a new `ColorLoopSet` command.
-    #[must_use]
-    pub const fn new(
-        update: Update,
-        action: Action,
-        direction: Direction,
-        time: u16,
-        start_hue: u16,
-        options: Options,
-    ) -> Self {
-        Self {
-            update,
-            action: action.as_u8(),
-            direction: direction as u8,
-            time,
-            start_hue,
-            options,
+zcl_command! {
+    /// Activate a light's color loop.
+    ColorLoopSet {
+        { ClusterId::ColorControl } => ColorControl;
+        command_id: 0x44;
+        direction: apis_saltans_core::Direction::ClientToServer;
+        => super::ColorLoopSet;
+        fields {
+            update: Update,
+            action: u8,
+            direction: u8,
+            time: u16,
+            start_hue: u16,
+            options: Options,
         }
-    }
 
-    /// Return the update mode.
-    #[must_use]
-    pub const fn update(self) -> Update {
-        self.update
-    }
+        constructor {
+            /// Create a new `ColorLoopSet` command.
+            #[must_use]
+            pub const fn new(
+                update: Update,
+                action: Action,
+                direction: Direction,
+                time: u16,
+                start_hue: u16,
+                options: Options,
+            ) -> Self {
+                Self {
+                    update,
+                    action: action.as_u8(),
+                    direction: direction as u8,
+                    time,
+                    start_hue,
+                    options,
+                }
+            }
+        }
 
-    /// Return the action to perform.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw `u8` value if it does not correspond to a valid `Action`.
-    pub fn action(self) -> Result<Action, u8> {
-        Action::from_u8(self.action).ok_or(self.action)
-    }
+        getters {
+            /// Return the update mode.
+            #[must_use]
+            pub const fn update(self) -> Update {
+                self.update
+            }
 
-    /// Return the direction of the color loop.
-    ///
-    /// # Errors
-    ///
-    /// Returns the raw `u8` value if the direction is invalid.
-    pub fn direction(self) -> Result<Direction, u8> {
-        Direction::from_u8(self.direction).ok_or(self.direction)
-    }
+            /// Return the action to perform.
+            ///
+            /// # Errors
+            ///
+            /// Returns the raw `u8` value if it does not correspond to a valid `Action`.
+            pub fn action(self) -> Result<Action, u8> {
+                Action::from_u8(self.action).ok_or(self.action)
+            }
 
-    /// Return the time.
-    #[must_use]
-    pub fn time(self) -> Duration {
-        Duration::from_secs(u64::from(self.time))
-    }
+            /// Return the direction of the color loop.
+            ///
+            /// # Errors
+            ///
+            /// Returns the raw `u8` value if the direction is invalid.
+            pub fn direction(self) -> Result<Direction, u8> {
+                Direction::from_u8(self.direction).ok_or(self.direction)
+            }
 
-    /// Return the starting hue value.
-    #[must_use]
-    pub const fn start_hue(self) -> u16 {
-        self.start_hue
-    }
+            /// Return the time.
+            #[must_use]
+            pub fn time(self) -> Duration {
+                Duration::from_secs(u64::from(self.time))
+            }
 
-    /// Return the options for this command.
-    #[must_use]
-    pub const fn options(self) -> Options {
-        self.options
-    }
-}
+            /// Return the starting hue value.
+            #[must_use]
+            pub const fn start_hue(self) -> u16 {
+                self.start_hue
+            }
 
-impl Cluster<ClusterId> for ColorLoopSet {
-    const ID: ClusterId = ClusterId::ColorControl;
-}
-
-impl Command for ColorLoopSet {
-    const ID: u8 = 0x44;
-    const DIRECTION: apis_saltans_core::Direction = apis_saltans_core::Direction::ClientToServer;
-}
-
-impl From<ColorLoopSet> for crate::Cluster {
-    fn from(command: ColorLoopSet) -> Self {
-        Self::ColorControl(command.into())
+            /// Return the options for this command.
+            #[must_use]
+            pub const fn options(self) -> Options {
+                self.options
+            }
+        }
     }
 }

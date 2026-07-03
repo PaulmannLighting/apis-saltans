@@ -2,6 +2,7 @@ use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
 /// The `Update` flags for the Color Loop Set command in the Lighting cluster.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream,
 )]
