@@ -1,145 +1,139 @@
-use std::fmt::Display;
-
-use apis_saltans_core::{Cluster, Endpoint, ExpectResponse};
-use le_stream::{FromLeStream, ToLeStream};
+use apis_saltans_core::Endpoint;
+use le_stream::FromLeStream;
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
 
 pub use self::address::Address;
 pub use self::address_mode::AddressMode;
 pub use self::destination::Destination;
-use crate::{BindRsp, Command, Service};
+use crate::{BindRsp, Command};
 
 mod address;
 mod address_mode;
 mod destination;
 
-/// Request type for Bind Request.
-#[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
-pub struct BindReq {
-    src_address: MacAddr8,
-    src_endpoint: Endpoint,
-    cluster_id: u16,
-    dst_addr_mode: u8,
-    dst_address: Address,
-    dst_endpoint: Option<Endpoint>,
-}
-
-impl BindReq {
-    /// Creates a new `BindReq`.
-    #[must_use]
-    pub const fn new(
+crate::services::zdp_command! {
+    /// Request type for Bind Request.
+    BindReq => Bind_req;
+    cluster_id: 0x0021;
+    response: BindRsp;
+    fields {
         src_address: MacAddr8,
         src_endpoint: Endpoint,
         cluster_id: u16,
-        destination: Destination,
-    ) -> Self {
-        let (dst_address, dst_endpoint) = match destination {
-            Destination::Group(group_addr) => (Address::Group(group_addr), None),
-            Destination::Extended { address, endpoint } => {
-                (Address::Extended(address), Some(endpoint))
+        dst_addr_mode: u8,
+        dst_address: Address,
+        dst_endpoint: Option<Endpoint>,
+    }
+    constructor {
+        /// Creates a new `BindReq`.
+        #[must_use]
+        pub const fn new(
+            src_address: MacAddr8,
+            src_endpoint: Endpoint,
+            cluster_id: u16,
+            destination: Destination,
+        ) -> Self {
+            let (dst_address, dst_endpoint) = match destination {
+                Destination::Group(group_addr) => (Address::Group(group_addr), None),
+                Destination::Extended { address, endpoint } => {
+                    (Address::Extended(address), Some(endpoint))
+                }
+            };
+
+            Self {
+                src_address,
+                src_endpoint,
+                cluster_id,
+                dst_addr_mode: destination.discriminant(),
+                dst_address,
+                dst_endpoint,
             }
-        };
-
-        Self {
-            src_address,
-            src_endpoint,
-            cluster_id,
-            dst_addr_mode: destination.discriminant(),
-            dst_address,
-            dst_endpoint,
         }
     }
+    getters {
+        /// Returns the source address.
+        #[must_use]
+        pub const fn src_address(&self) -> MacAddr8 {
+            self.src_address
+        }
 
-    /// Returns the source address.
-    #[must_use]
-    pub const fn src_address(&self) -> MacAddr8 {
-        self.src_address
-    }
+        /// Returns the source endpoint.
+        #[must_use]
+        pub const fn src_endpoint(&self) -> Endpoint {
+            self.src_endpoint
+        }
 
-    /// Returns the source endpoint.
-    #[must_use]
-    pub const fn src_endpoint(&self) -> Endpoint {
-        self.src_endpoint
-    }
+        /// Returns the cluster ID.
+        #[must_use]
+        pub const fn cluster_id(&self) -> u16 {
+            self.cluster_id
+        }
 
-    /// Returns the cluster ID.
-    #[must_use]
-    pub const fn cluster_id(&self) -> u16 {
-        self.cluster_id
-    }
-
-    /// Returns the destination.
-    #[expect(clippy::missing_panics_doc)]
-    #[must_use]
-    pub const fn destination(&self) -> Destination {
-        match &self.dst_address {
-            Address::Group(addr) => Destination::Group(*addr),
-            Address::Extended(addr) => Destination::Extended {
-                address: *addr,
-                endpoint: self
-                    .dst_endpoint
-                    .expect("Extended address is guaranteed to have an endpoint"),
-            },
+        /// Returns the destination.
+        #[expect(clippy::missing_panics_doc)]
+        #[must_use]
+        pub const fn destination(&self) -> Destination {
+            match &self.dst_address {
+                Address::Group(addr) => Destination::Group(*addr),
+                Address::Extended(addr) => Destination::Extended {
+                    address: *addr,
+                    endpoint: self
+                        .dst_endpoint
+                        .expect("Extended address is guaranteed to have an endpoint"),
+                },
+            }
         }
     }
-}
-
-impl Cluster for BindReq {
-    const ID: u16 = 0x0021;
-}
-
-impl Service for BindReq {
-    const NAME: &'static str = "Bind_req";
-}
-
-impl ExpectResponse<Command> for BindReq {
-    type Response = BindRsp;
-}
-
-impl Display for BindReq {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} {{ src_address: {}, src_endpoint: {}, cluster_id: {:#06X}, destination: {} }}",
-            Self::NAME,
-            self.src_address,
-            self.src_endpoint,
-            self.cluster_id,
-            self.destination(),
-        )
+    display {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "{} {{ src_address: {}, src_endpoint: {}, cluster_id: {:#06X}, destination: {} }}",
+                Self::NAME,
+                self.src_address,
+                self.src_endpoint,
+                self.cluster_id,
+                self.destination(),
+            )
+        }
+    }
+    le_stream {
+        from {
+            impl FromLeStream for BindReq {
+                fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+                where
+                    T: Iterator<Item = u8>,
+                {
+                    let src_address = MacAddr8::from_le_stream(&mut bytes)?;
+                    let src_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+                    let cluster_id = u16::from_le_stream(&mut bytes)?;
+                    let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
+                    let (dst_address, dst_endpoint) = match AddressMode::from_u8(dst_addr_mode)? {
+                        AddressMode::Group => {
+                            (u16::from_le_stream(&mut bytes).map(Address::Group)?, None)
+                        }
+                        AddressMode::Extended => (
+                            MacAddr8::from_le_stream(&mut bytes).map(Address::Extended)?,
+                            Some(Endpoint::from_le_stream(&mut bytes)?),
+                        ),
+                    };
+                    Some(Self {
+                        src_address,
+                        src_endpoint,
+                        cluster_id,
+                        dst_addr_mode,
+                        dst_address,
+                        dst_endpoint,
+                    })
+                }
+            }
+        }
     }
 }
 
 impl From<BindReq> for Command {
     fn from(value: BindReq) -> Self {
         Self::BindManagement(value.into())
-    }
-}
-
-impl FromLeStream for BindReq {
-    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        let src_address = MacAddr8::from_le_stream(&mut bytes)?;
-        let src_endpoint = Endpoint::from_le_stream(&mut bytes)?;
-        let cluster_id = u16::from_le_stream(&mut bytes)?;
-        let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
-        let (dst_address, dst_endpoint) = match AddressMode::from_u8(dst_addr_mode)? {
-            AddressMode::Group => (u16::from_le_stream(&mut bytes).map(Address::Group)?, None),
-            AddressMode::Extended => (
-                MacAddr8::from_le_stream(&mut bytes).map(Address::Extended)?,
-                Some(Endpoint::from_le_stream(&mut bytes)?),
-            ),
-        };
-        Some(Self {
-            src_address,
-            src_endpoint,
-            cluster_id,
-            dst_addr_mode,
-            dst_address,
-            dst_endpoint,
-        })
     }
 }

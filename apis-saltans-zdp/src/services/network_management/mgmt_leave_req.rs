@@ -1,60 +1,39 @@
-use std::fmt::Display;
-
-use apis_saltans_core::Cluster;
-use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 
 pub use self::leave_req_flags::LeaveReqFlags;
-use crate::Service;
 
 mod leave_req_flags;
 
-/// Management Leave Request structure.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
-pub struct MgmtLeaveReq {
-    device_address: MacAddr8,
-    flags: LeaveReqFlags,
-}
+crate::services::zdp_command! {
+    /// Management Leave Request structure.
+    MgmtLeaveReq => Mgmt_Leave_req;
+    cluster_id: 0x0034;
+    fields {
+        device_address: MacAddr8,
+        flags: LeaveReqFlags,
+    }
+    getters {
+        /// Returns the device address.
+        #[must_use]
+        pub const fn device_address(&self) -> MacAddr8 {
+            self.device_address
+        }
 
-impl MgmtLeaveReq {
-    /// Creates a new `MgmtLeaveReq`.
-    #[must_use]
-    pub const fn new(device_address: MacAddr8, flags: LeaveReqFlags) -> Self {
-        Self {
-            device_address,
-            flags,
+        /// Returns the leave request flags.
+        #[must_use]
+        pub const fn flags(&self) -> LeaveReqFlags {
+            self.flags
         }
     }
-
-    /// Returns the device address.
-    #[must_use]
-    pub const fn device_address(&self) -> MacAddr8 {
-        self.device_address
-    }
-
-    /// Returns the leave request flags.
-    #[must_use]
-    pub const fn flags(&self) -> LeaveReqFlags {
-        self.flags
-    }
-}
-
-impl Cluster for MgmtLeaveReq {
-    const ID: u16 = 0x0034;
-}
-
-impl Service for MgmtLeaveReq {
-    const NAME: &'static str = "Mgmt_Leave_req";
-}
-
-impl Display for MgmtLeaveReq {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} {{ device_address: {}, flags: {} }}",
-            Self::NAME,
-            self.device_address,
-            self.flags
-        )
+    display {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "{} {{ device_address: {}, flags: {} }}",
+                Self::NAME,
+                self.device_address,
+                self.flags
+            )
+        }
     }
 }

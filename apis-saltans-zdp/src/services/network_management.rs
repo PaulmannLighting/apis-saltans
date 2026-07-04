@@ -2,8 +2,6 @@
 
 use std::fmt::Display;
 
-use apis_saltans_core::Cluster;
-
 pub use self::mgmt_bind_req::MgmtBindReq;
 pub use self::mgmt_leave_req::{LeaveReqFlags, MgmtLeaveReq};
 pub use self::mgmt_lqi_req::MgmtLqiReq;

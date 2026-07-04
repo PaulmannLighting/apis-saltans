@@ -1,45 +1,26 @@
-use std::fmt::Display;
-
-use apis_saltans_core::Cluster;
-use le_stream::{FromLeStream, ToLeStream};
-
-use crate::Service;
-
-/// Management Routing Table Request structure.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
-pub struct MgmtRtgReq {
-    start_index: u8,
-}
-
-impl MgmtRtgReq {
-    /// Creates a new `MgmtRtgReq`.
-    #[must_use]
-    pub const fn new(start_index: u8) -> Self {
-        Self { start_index }
+crate::services::zdp_command! {
+    /// Management Routing Table Request structure.
+    derive { Copy }
+    MgmtRtgReq => Mgmt_Rtg_req;
+    cluster_id: 0x0032;
+    fields {
+        start_index: u8,
     }
-
-    /// Returns the start index.
-    #[must_use]
-    pub const fn start_index(self) -> u8 {
-        self.start_index
-    }
-}
-
-impl Cluster for MgmtRtgReq {
-    const ID: u16 = 0x0032;
-}
-
-impl Service for MgmtRtgReq {
-    const NAME: &'static str = "Mgmt_Rtg_req";
-}
-
-impl Display for MgmtRtgReq {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} {{ start_index: {:#04X} }}",
-            Self::NAME,
+    getters {
+        /// Returns the start index.
+        #[must_use]
+        pub const fn start_index(self) -> u8 {
             self.start_index
-        )
+        }
+    }
+    display {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "{} {{ start_index: {:#04X} }}",
+                Self::NAME,
+                self.start_index
+            )
+        }
     }
 }

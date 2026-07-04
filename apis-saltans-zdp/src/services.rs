@@ -2,7 +2,6 @@
 
 use std::fmt::Display;
 
-use apis_saltans_core::Cluster;
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::bind_management::{
@@ -28,6 +27,554 @@ pub trait Service {
     /// The name of the service.
     const NAME: &'static str;
 }
+
+macro_rules! zdp_command {
+    (
+        $(#[$attribute:meta])*
+        derive { $($extra_derive:path),* $(,)? }
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        $(response: $response:ty;)?
+        fields {
+            $($field:ident: $field_type:ty),* $(,)?
+        }
+        constructor {
+            $($constructor:tt)*
+        }
+        getters {
+            $($getter:tt)*
+        }
+        $(display {
+            $($display:tt)*
+        })?
+        $(le_stream {
+            $($le_stream:tt)*
+        })?
+    ) => {
+        $crate::services::zdp_command! {
+            @stream
+            [$($attribute),*]
+            [$($extra_derive),*]
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                $($constructor)*
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($($display)*)?
+            }
+            le_stream {
+                $($($le_stream)*)?
+            }
+        }
+    };
+    (
+        $(#[$attribute:meta])*
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        $(response: $response:ty;)?
+        fields {
+            $($field:ident: $field_type:ty),* $(,)?
+        }
+        constructor {
+            $($constructor:tt)*
+        }
+        getters {
+            $($getter:tt)*
+        }
+        $(display {
+            $($display:tt)*
+        })?
+        $(le_stream {
+            $($le_stream:tt)*
+        })?
+    ) => {
+        $crate::services::zdp_command! {
+            @stream
+            [$($attribute),*]
+            []
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                $($constructor)*
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($($display)*)?
+            }
+            le_stream {
+                $($($le_stream)*)?
+            }
+        }
+    };
+    (
+        $(#[$attribute:meta])*
+        derive { $($extra_derive:path),* $(,)? }
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        $(response: $response:ty;)?
+        fields {
+            $($field:ident: $field_type:ty),* $(,)?
+        }
+        getters {
+            $($getter:tt)*
+        }
+        $(display {
+            $($display:tt)*
+        })?
+        $(le_stream {
+            $($le_stream:tt)*
+        })?
+    ) => {
+        $crate::services::zdp_command! {
+            @stream
+            [$($attribute),*]
+            [$($extra_derive),*]
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                /// Creates a new instance.
+                #[must_use]
+                pub const fn new($($field: $field_type),*) -> Self {
+                    Self {
+                        $($field),*
+                    }
+                }
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($($display)*)?
+            }
+            le_stream {
+                $($($le_stream)*)?
+            }
+        }
+    };
+    (
+        $(#[$attribute:meta])*
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        $(response: $response:ty;)?
+        fields {
+            $($field:ident: $field_type:ty),* $(,)?
+        }
+        getters {
+            $($getter:tt)*
+        }
+        $(display {
+            $($display:tt)*
+        })?
+        $(le_stream {
+            $($le_stream:tt)*
+        })?
+    ) => {
+        $crate::services::zdp_command! {
+            @stream
+            [$($attribute),*]
+            []
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                /// Creates a new instance.
+                #[must_use]
+                pub const fn new($($field: $field_type),*) -> Self {
+                    Self {
+                        $($field),*
+                    }
+                }
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($($display)*)?
+            }
+            le_stream {
+                $($($le_stream)*)?
+            }
+        }
+    };
+    (
+        @stream
+        [$($attribute:meta),*]
+        [$($extra_derive:path),*]
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        response [$($response:ty)?];
+        fields {
+            $($field:ident: $field_type:ty),*
+        }
+        constructor {
+            $($constructor:tt)*
+        }
+        getters {
+            $($getter:tt)*
+        }
+        display {
+            $($display:tt)*
+        }
+        le_stream {
+        }
+    ) => {
+        $crate::services::zdp_command! {
+            @emit
+            [$($attribute),*]
+            [$($extra_derive),*]
+            [le_stream::FromLeStream, le_stream::ToLeStream]
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                $($constructor)*
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($display)*
+            }
+            le_stream {
+            }
+        }
+    };
+    (
+        @stream
+        [$($attribute:meta),*]
+        [$($extra_derive:path),*]
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        response [$($response:ty)?];
+        fields {
+            $($field:ident: $field_type:ty),*
+        }
+        constructor {
+            $($constructor:tt)*
+        }
+        getters {
+            $($getter:tt)*
+        }
+        display {
+            $($display:tt)*
+        }
+        le_stream {
+            from {
+                $($from_le_stream:tt)*
+            }
+        }
+    ) => {
+        $crate::services::zdp_command! {
+            @emit
+            [$($attribute),*]
+            [$($extra_derive),*]
+            [le_stream::ToLeStream]
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                $($constructor)*
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($display)*
+            }
+            le_stream {
+                $($from_le_stream)*
+            }
+        }
+    };
+    (
+        @stream
+        [$($attribute:meta),*]
+        [$($extra_derive:path),*]
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        response [$($response:ty)?];
+        fields {
+            $($field:ident: $field_type:ty),*
+        }
+        constructor {
+            $($constructor:tt)*
+        }
+        getters {
+            $($getter:tt)*
+        }
+        display {
+            $($display:tt)*
+        }
+        le_stream {
+            to {
+                $($to_le_stream:tt)*
+            }
+        }
+    ) => {
+        $crate::services::zdp_command! {
+            @emit
+            [$($attribute),*]
+            [$($extra_derive),*]
+            [le_stream::FromLeStream]
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                $($constructor)*
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($display)*
+            }
+            le_stream {
+                $($to_le_stream)*
+            }
+        }
+    };
+    (
+        @stream
+        [$($attribute:meta),*]
+        [$($extra_derive:path),*]
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        response [$($response:ty)?];
+        fields {
+            $($field:ident: $field_type:ty),*
+        }
+        constructor {
+            $($constructor:tt)*
+        }
+        getters {
+            $($getter:tt)*
+        }
+        display {
+            $($display:tt)*
+        }
+        le_stream {
+            from {
+                $($from_le_stream:tt)*
+            }
+            to {
+                $($to_le_stream:tt)*
+            }
+        }
+    ) => {
+        $crate::services::zdp_command! {
+            @emit
+            [$($attribute),*]
+            [$($extra_derive),*]
+            []
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                $($constructor)*
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($display)*
+            }
+            le_stream {
+                $($from_le_stream)*
+                $($to_le_stream)*
+            }
+        }
+    };
+    (
+        @stream
+        [$($attribute:meta),*]
+        [$($extra_derive:path),*]
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        response [$($response:ty)?];
+        fields {
+            $($field:ident: $field_type:ty),*
+        }
+        constructor {
+            $($constructor:tt)*
+        }
+        getters {
+            $($getter:tt)*
+        }
+        display {
+            $($display:tt)*
+        }
+        le_stream {
+            to {
+                $($to_le_stream:tt)*
+            }
+            from {
+                $($from_le_stream:tt)*
+            }
+        }
+    ) => {
+        $crate::services::zdp_command! {
+            @emit
+            [$($attribute),*]
+            [$($extra_derive),*]
+            []
+            $command => $name;
+            cluster_id: $cluster_id;
+            response [$($response)?];
+            fields {
+                $($field: $field_type),*
+            }
+            constructor {
+                $($constructor)*
+            }
+            getters {
+                $($getter)*
+            }
+            display {
+                $($display)*
+            }
+            le_stream {
+                $($to_le_stream)*
+                $($from_le_stream)*
+            }
+        }
+    };
+    (
+        @emit
+        [$($attribute:meta),*]
+        [$($extra_derive:path),*]
+        [$($stream_derive:path),*]
+        $command:ident => $name:ident;
+        cluster_id: $cluster_id:expr;
+        response [$($response:ty)?];
+        fields {
+            $($field:ident: $field_type:ty),*
+        }
+        constructor {
+            $($constructor:tt)*
+        }
+        getters {
+            $($getter:tt)*
+        }
+        display {
+            $($display:tt)*
+        }
+        le_stream {
+            $($le_stream:tt)*
+        }
+    ) => {
+        $(#[$attribute])*
+        #[derive(Clone, Debug, Eq, PartialEq, Hash $(, $extra_derive)* $(, $stream_derive)*)]
+        pub struct $command {
+            $($field: $field_type),*
+        }
+
+        impl $command {
+            /// The cluster ID.
+            pub const ID: u16 = $cluster_id;
+
+            /// The service name.
+            pub const NAME: &'static str = stringify!($name);
+
+            $($constructor)*
+
+            $($getter)*
+        }
+
+        impl apis_saltans_core::Cluster for $command {
+            const ID: u16 = Self::ID;
+        }
+
+        impl $crate::services::Service for $command {
+            const NAME: &'static str = Self::NAME;
+        }
+
+        $crate::services::zdp_command! {
+            @response
+            $command
+            $($response)?
+        }
+
+        impl std::fmt::Display for $command {
+            $crate::services::zdp_command! {
+                @display
+                self,
+                f,
+                [$($field),*],
+                {
+                    $($display)*
+                }
+            }
+        }
+
+        $($le_stream)*
+    };
+    (@response $command:ident) => {};
+    (@response $command:ident $response:ty) => {
+        impl apis_saltans_core::ExpectResponse<$crate::services::Command> for $command {
+            type Response = $response;
+        }
+    };
+    (
+        @display
+        $self:ident,
+        $formatter:ident,
+        [$($field:ident),*],
+        {
+        }
+    ) => {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let mut debug = f.debug_struct(Self::NAME);
+            $(debug.field(stringify!($field), &self.$field);)*
+            debug.finish()
+        }
+    };
+    (
+        @display
+        $self:ident,
+        $formatter:ident,
+        [$($field:ident),*],
+        {
+            $($display:tt)+
+        }
+    ) => {
+        $($display)+
+    };
+}
+
+pub(crate) use zdp_command;
 
 /// Available ZDP commands.
 // TODO: Implement all commands.

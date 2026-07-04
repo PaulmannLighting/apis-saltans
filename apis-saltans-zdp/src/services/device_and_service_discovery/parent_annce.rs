@@ -1,39 +1,41 @@
-use std::fmt::Display;
 use std::ops::Deref;
 
-use apis_saltans_core::Cluster;
 use heapless::CapacityError;
-use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 
-use crate::{ByteSizedVec, Service};
+use crate::ByteSizedVec;
 
-/// Parent Announcement Service.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
-pub struct ParentAnnce {
-    child_info: ByteSizedVec<MacAddr8>,
-}
-
-impl ParentAnnce {
-    /// Creates a new `ParentAnnce`.
-    #[must_use]
-    pub const fn new(child_info: ByteSizedVec<MacAddr8>) -> Self {
-        Self { child_info }
+crate::services::zdp_command! {
+    /// Parent Announcement Service.
+    ParentAnnce => Parent_annce;
+    cluster_id: 0x001F;
+    fields {
+        child_info: ByteSizedVec<MacAddr8>,
     }
-
-    /// Returns a reference to the child info.
-    #[must_use]
-    pub fn child_info(&self) -> &[MacAddr8] {
-        &self.child_info
+    getters {
+        /// Returns a reference to the child info.
+        #[must_use]
+        pub fn child_info(&self) -> &[MacAddr8] {
+            &self.child_info
+        }
     }
-}
+    display {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{} {{ child_info: [", Self::NAME)?;
 
-impl Cluster for ParentAnnce {
-    const ID: u16 = 0x001F;
-}
+            let mut mac_addresses = self.child_info().iter();
 
-impl Service for ParentAnnce {
-    const NAME: &'static str = "Parent_annce";
+            if let Some(mac_address) = mac_addresses.next() {
+                write!(f, "{mac_address}")?;
+
+                for mac_address in mac_addresses {
+                    write!(f, ", {mac_address}")?;
+                }
+            }
+
+            write!(f, "] }}")
+        }
+    }
 }
 
 impl Deref for ParentAnnce {
@@ -41,24 +43,6 @@ impl Deref for ParentAnnce {
 
     fn deref(&self) -> &Self::Target {
         &self.child_info
-    }
-}
-
-impl Display for ParentAnnce {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {{ child_info: [", Self::NAME)?;
-
-        let mut mac_addresses = self.child_info().iter();
-
-        if let Some(mac_address) = mac_addresses.next() {
-            write!(f, "{mac_address}")?;
-
-            for mac_address in mac_addresses {
-                write!(f, ", {mac_address}")?;
-            }
-        }
-
-        write!(f, "] }}")
     }
 }
 
