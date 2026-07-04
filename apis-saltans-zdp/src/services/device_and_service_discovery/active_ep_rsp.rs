@@ -67,6 +67,22 @@ crate::services::zdp_command! {
             )
         }
     }
+    try_from {
+        impl TryFrom<Command> for ActiveEpRsp {
+            type Error = Command;
+
+            fn try_from(cmd: Command) -> Result<Self, Self::Error> {
+                if let Command::DeviceAndServiceDiscovery(
+                    DeviceAndServiceDiscovery::ActiveEpRsp(active_eps),
+                ) = cmd
+                {
+                    Ok(*active_eps)
+                } else {
+                    Err(cmd)
+                }
+            }
+        }
+    }
 }
 
 impl IntoIterator for ActiveEpRsp {
@@ -75,20 +91,5 @@ impl IntoIterator for ActiveEpRsp {
 
     fn into_iter(self) -> Self::IntoIter {
         self.active_eps.into_iter()
-    }
-}
-
-impl TryFrom<Command> for ActiveEpRsp {
-    type Error = Command;
-
-    fn try_from(cmd: Command) -> Result<Self, Self::Error> {
-        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::ActiveEpRsp(
-            active_eps,
-        )) = cmd
-        {
-            Ok(*active_eps)
-        } else {
-            Err(cmd)
-        }
     }
 }

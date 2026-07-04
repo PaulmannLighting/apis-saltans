@@ -69,10 +69,11 @@ crate::services::zdp_command! {
             write!(f, "] }}")
         }
     }
-}
-
-impl From<MatchDescRsp> for Command {
-    fn from(value: MatchDescRsp) -> Self {
-        Self::DeviceAndServiceDiscovery(value.into())
+    from {
+        impl From<MatchDescRsp> for Command {
+            fn from(value: MatchDescRsp) -> Self {
+                Self::DeviceAndServiceDiscovery(value.into())
+            }
+        }
     }
 }

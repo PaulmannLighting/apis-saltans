@@ -46,10 +46,11 @@ crate::services::zdp_command! {
             )
         }
     }
-}
-
-impl From<SimpleDescReq> for Command {
-    fn from(simple_desc_req: SimpleDescReq) -> Self {
-        Self::DeviceAndServiceDiscovery(simple_desc_req.into())
+    from {
+        impl From<SimpleDescReq> for Command {
+            fn from(simple_desc_req: SimpleDescReq) -> Self {
+                Self::DeviceAndServiceDiscovery(simple_desc_req.into())
+            }
+        }
     }
 }

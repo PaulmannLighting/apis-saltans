@@ -36,6 +36,32 @@ crate::services::zdp_command! {
             write!(f, "] }}")
         }
     }
+
+    try_from {
+        impl TryFrom<Box<[MacAddr8]>> for ParentAnnce {
+            type Error = CapacityError;
+
+            fn try_from(value: Box<[MacAddr8]>) -> Result<Self, Self::Error> {
+                Self::try_from(&*value)
+            }
+        }
+
+        impl TryFrom<Vec<MacAddr8>> for ParentAnnce {
+            type Error = CapacityError;
+
+            fn try_from(value: Vec<MacAddr8>) -> Result<Self, Self::Error> {
+                Self::try_from(value.into_boxed_slice())
+            }
+        }
+
+        impl TryFrom<&[MacAddr8]> for ParentAnnce {
+            type Error = CapacityError;
+
+            fn try_from(value: &[MacAddr8]) -> Result<Self, Self::Error> {
+                value.try_into().map(Self::new)
+            }
+        }
+    }
 }
 
 impl Deref for ParentAnnce {
@@ -43,29 +69,5 @@ impl Deref for ParentAnnce {
 
     fn deref(&self) -> &Self::Target {
         &self.child_info
-    }
-}
-
-impl TryFrom<Box<[MacAddr8]>> for ParentAnnce {
-    type Error = CapacityError;
-
-    fn try_from(value: Box<[MacAddr8]>) -> Result<Self, Self::Error> {
-        Self::try_from(&*value)
-    }
-}
-
-impl TryFrom<Vec<MacAddr8>> for ParentAnnce {
-    type Error = CapacityError;
-
-    fn try_from(value: Vec<MacAddr8>) -> Result<Self, Self::Error> {
-        Self::try_from(value.into_boxed_slice())
-    }
-}
-
-impl TryFrom<&[MacAddr8]> for ParentAnnce {
-    type Error = CapacityError;
-
-    fn try_from(value: &[MacAddr8]) -> Result<Self, Self::Error> {
-        value.try_into().map(Self::new)
     }
 }

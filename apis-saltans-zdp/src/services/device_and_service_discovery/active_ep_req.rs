@@ -26,10 +26,11 @@ crate::services::zdp_command! {
             )
         }
     }
-}
-
-impl From<ActiveEpReq> for Command {
-    fn from(active_ep_req: ActiveEpReq) -> Self {
-        Self::DeviceAndServiceDiscovery(active_ep_req.into())
+    from {
+        impl From<ActiveEpReq> for Command {
+            fn from(active_ep_req: ActiveEpReq) -> Self {
+                Self::DeviceAndServiceDiscovery(active_ep_req.into())
+            }
+        }
     }
 }

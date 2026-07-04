@@ -50,6 +50,12 @@ macro_rules! zdp_command {
         $(le_stream {
             $($le_stream:tt)*
         })?
+        $(from {
+            $($from:item)*
+        })?
+        $(try_from {
+            $($try_from:item)*
+        })?
     ) => {
         $crate::services::zdp_command! {
             @stream
@@ -72,6 +78,12 @@ macro_rules! zdp_command {
             }
             le_stream {
                 $($($le_stream)*)?
+            }
+            from {
+                $($($from)*)?
+            }
+            try_from {
+                $($($try_from)*)?
             }
         }
     };
@@ -95,6 +107,12 @@ macro_rules! zdp_command {
         $(le_stream {
             $($le_stream:tt)*
         })?
+        $(from {
+            $($from:item)*
+        })?
+        $(try_from {
+            $($try_from:item)*
+        })?
     ) => {
         $crate::services::zdp_command! {
             @stream
@@ -118,6 +136,12 @@ macro_rules! zdp_command {
             le_stream {
                 $($($le_stream)*)?
             }
+            from {
+                $($($from)*)?
+            }
+            try_from {
+                $($($try_from)*)?
+            }
         }
     };
     (
@@ -137,6 +161,12 @@ macro_rules! zdp_command {
         })?
         $(le_stream {
             $($le_stream:tt)*
+        })?
+        $(from {
+            $($from:item)*
+        })?
+        $(try_from {
+            $($try_from:item)*
         })?
     ) => {
         $crate::services::zdp_command! {
@@ -167,6 +197,12 @@ macro_rules! zdp_command {
             le_stream {
                 $($($le_stream)*)?
             }
+            from {
+                $($($from)*)?
+            }
+            try_from {
+                $($($try_from)*)?
+            }
         }
     };
     (
@@ -185,6 +221,12 @@ macro_rules! zdp_command {
         })?
         $(le_stream {
             $($le_stream:tt)*
+        })?
+        $(from {
+            $($from:item)*
+        })?
+        $(try_from {
+            $($try_from:item)*
         })?
     ) => {
         $crate::services::zdp_command! {
@@ -214,6 +256,12 @@ macro_rules! zdp_command {
             }
             le_stream {
                 $($($le_stream)*)?
+            }
+            from {
+                $($($from)*)?
+            }
+            try_from {
+                $($($try_from)*)?
             }
         }
     };
@@ -237,6 +285,12 @@ macro_rules! zdp_command {
             $($display:tt)*
         }
         le_stream {
+        }
+        from {
+            $($from:item)*
+        }
+        try_from {
+            $($try_from:item)*
         }
     ) => {
         $crate::services::zdp_command! {
@@ -263,6 +317,12 @@ macro_rules! zdp_command {
             }
             to_le_stream {
             }
+            from {
+                $($from)*
+            }
+            try_from {
+                $($try_from)*
+            }
         }
     };
     (
@@ -288,6 +348,12 @@ macro_rules! zdp_command {
             from {
                 $($from_le_stream:tt)*
             }
+        }
+        from {
+            $($from:item)*
+        }
+        try_from {
+            $($try_from:item)*
         }
     ) => {
         $crate::services::zdp_command! {
@@ -315,6 +381,12 @@ macro_rules! zdp_command {
             }
             to_le_stream {
             }
+            from {
+                $($from)*
+            }
+            try_from {
+                $($try_from)*
+            }
         }
     };
     (
@@ -340,6 +412,12 @@ macro_rules! zdp_command {
             to {
                 $($to_le_stream:tt)*
             }
+        }
+        from {
+            $($from:item)*
+        }
+        try_from {
+            $($try_from:item)*
         }
     ) => {
         $crate::services::zdp_command! {
@@ -367,6 +445,12 @@ macro_rules! zdp_command {
             to_le_stream {
                 $($to_le_stream)*
             }
+            from {
+                $($from)*
+            }
+            try_from {
+                $($try_from)*
+            }
         }
     };
     (
@@ -396,6 +480,12 @@ macro_rules! zdp_command {
                 $($to_le_stream:tt)*
             }
         }
+        from {
+            $($from:item)*
+        }
+        try_from {
+            $($try_from:item)*
+        }
     ) => {
         $crate::services::zdp_command! {
             @emit
@@ -422,6 +512,12 @@ macro_rules! zdp_command {
             }
             to_le_stream {
                 $($to_le_stream)*
+            }
+            from {
+                $($from)*
+            }
+            try_from {
+                $($try_from)*
             }
         }
     };
@@ -452,6 +548,12 @@ macro_rules! zdp_command {
                 $($from_le_stream:tt)*
             }
         }
+        from {
+            $($from:item)*
+        }
+        try_from {
+            $($try_from:item)*
+        }
     ) => {
         $crate::services::zdp_command! {
             @emit
@@ -478,6 +580,12 @@ macro_rules! zdp_command {
             }
             to_le_stream {
                 $($to_le_stream)*
+            }
+            from {
+                $($from)*
+            }
+            try_from {
+                $($try_from)*
             }
         }
     };
@@ -506,6 +614,12 @@ macro_rules! zdp_command {
         }
         to_le_stream {
             $($to_le_stream:tt)*
+        }
+        from {
+            $($from:item)*
+        }
+        try_from {
+            $($try_from:item)*
         }
     ) => {
         $(#[$attribute])*
@@ -551,6 +665,10 @@ macro_rules! zdp_command {
                 }
             }
         }
+
+        $($from)*
+
+        $($try_from)*
 
         $crate::services::zdp_command! {
             @from_le_stream

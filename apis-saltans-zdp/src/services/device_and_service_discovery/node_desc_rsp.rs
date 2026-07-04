@@ -140,25 +140,27 @@ crate::services::zdp_command! {
             }
         }
     }
-}
 
-impl TryFrom<Command> for NodeDescRsp {
-    type Error = Command;
+    try_from {
+        impl TryFrom<Command> for NodeDescRsp {
+            type Error = Command;
 
-    fn try_from(cmd: Command) -> Result<Self, Self::Error> {
-        match cmd {
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescRsp(rsp)) => {
-                Ok(rsp)
+            fn try_from(cmd: Command) -> Result<Self, Self::Error> {
+                match cmd {
+                    Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescRsp(
+                        rsp,
+                    )) => Ok(rsp),
+                    other => Err(other),
+                }
             }
-            other => Err(other),
         }
-    }
-}
 
-impl TryFrom<NodeDescRsp> for Descriptor {
-    type Error = Result<Status, u8>;
+        impl TryFrom<NodeDescRsp> for Descriptor {
+            type Error = Result<Status, u8>;
 
-    fn try_from(value: NodeDescRsp) -> Result<Self, Self::Error> {
-        value.node_descriptor
+            fn try_from(value: NodeDescRsp) -> Result<Self, Self::Error> {
+                value.node_descriptor
+            }
+        }
     }
 }

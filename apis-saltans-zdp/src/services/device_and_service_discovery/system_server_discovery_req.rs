@@ -20,16 +20,17 @@ crate::services::zdp_command! {
             write!(f, "{} {{ server_mask: {} }}", Self::NAME, self.server_mask)
         }
     }
-}
+    from {
+        impl From<ServerMask> for SystemServerDiscoveryReq {
+            fn from(server_mask: ServerMask) -> Self {
+                Self::new(server_mask)
+            }
+        }
 
-impl From<ServerMask> for SystemServerDiscoveryReq {
-    fn from(server_mask: ServerMask) -> Self {
-        Self::new(server_mask)
-    }
-}
-
-impl From<SystemServerDiscoveryReq> for ServerMask {
-    fn from(req: SystemServerDiscoveryReq) -> Self {
-        req.server_mask()
+        impl From<SystemServerDiscoveryReq> for ServerMask {
+            fn from(req: SystemServerDiscoveryReq) -> Self {
+                req.server_mask()
+            }
+        }
     }
 }

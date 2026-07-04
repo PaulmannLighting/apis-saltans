@@ -64,19 +64,21 @@ crate::services::zdp_command! {
             )
         }
     }
-}
 
-impl TryFrom<Command> for SimpleDescRsp {
-    type Error = Command;
+    try_from {
+        impl TryFrom<Command> for SimpleDescRsp {
+            type Error = Command;
 
-    fn try_from(cmd: Command) -> Result<Self, Self::Error> {
-        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::SimpleDescRsp(
-            descriptors,
-        )) = cmd
-        {
-            Ok(*descriptors)
-        } else {
-            Err(cmd)
+            fn try_from(cmd: Command) -> Result<Self, Self::Error> {
+                if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::SimpleDescRsp(
+                    descriptors,
+                )) = cmd
+                {
+                    Ok(*descriptors)
+                } else {
+                    Err(cmd)
+                }
+            }
         }
     }
 }

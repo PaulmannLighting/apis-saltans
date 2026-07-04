@@ -23,16 +23,17 @@ crate::services::zdp_command! {
             )
         }
     }
-}
+    from {
+        impl From<PowerDescReq> for u16 {
+            fn from(req: PowerDescReq) -> Self {
+                req.nwk_addr_of_interest
+            }
+        }
 
-impl From<PowerDescReq> for u16 {
-    fn from(req: PowerDescReq) -> Self {
-        req.nwk_addr_of_interest
-    }
-}
-
-impl From<u16> for PowerDescReq {
-    fn from(nwk_addr_of_interest: u16) -> Self {
-        Self::new(nwk_addr_of_interest)
+        impl From<u16> for PowerDescReq {
+            fn from(nwk_addr_of_interest: u16) -> Self {
+                Self::new(nwk_addr_of_interest)
+            }
+        }
     }
 }

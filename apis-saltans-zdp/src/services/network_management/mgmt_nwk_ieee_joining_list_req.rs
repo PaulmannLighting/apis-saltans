@@ -23,16 +23,17 @@ crate::services::zdp_command! {
             )
         }
     }
-}
+    from {
+        impl From<u8> for MgmtNwkIeeeJoiningListReq {
+            fn from(value: u8) -> Self {
+                Self::new(value)
+            }
+        }
 
-impl From<u8> for MgmtNwkIeeeJoiningListReq {
-    fn from(value: u8) -> Self {
-        Self::new(value)
-    }
-}
-
-impl From<MgmtNwkIeeeJoiningListReq> for u8 {
-    fn from(value: MgmtNwkIeeeJoiningListReq) -> Self {
-        value.start_index
+        impl From<MgmtNwkIeeeJoiningListReq> for u8 {
+            fn from(value: MgmtNwkIeeeJoiningListReq) -> Self {
+                value.start_index
+            }
+        }
     }
 }

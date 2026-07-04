@@ -127,10 +127,11 @@ crate::services::zdp_command! {
             }
         }
     }
-}
-
-impl From<BindReq> for Command {
-    fn from(value: BindReq) -> Self {
-        Self::BindManagement(value.into())
+    from {
+        impl From<BindReq> for Command {
+            fn from(value: BindReq) -> Self {
+                Self::BindManagement(value.into())
+            }
+        }
     }
 }

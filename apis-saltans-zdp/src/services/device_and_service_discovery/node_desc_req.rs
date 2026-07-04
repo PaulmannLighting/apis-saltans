@@ -49,19 +49,20 @@ crate::services::zdp_command! {
             )
         }
     }
-}
+    from {
+        impl From<NodeDescReq> for Command {
+            fn from(req: NodeDescReq) -> Self {
+                Self::DeviceAndServiceDiscovery(req.into())
+            }
+        }
 
-impl From<NodeDescReq> for Command {
-    fn from(req: NodeDescReq) -> Self {
-        Self::DeviceAndServiceDiscovery(req.into())
-    }
-}
-
-impl From<FragmentationParameters> for NodeDescReq {
-    fn from(fragmentation: FragmentationParameters) -> Self {
-        Self {
-            nwk_addr: fragmentation.node_id(),
-            tlvs: vec![Tlv::Global(Global::FragmentationParameters(fragmentation))],
+        impl From<FragmentationParameters> for NodeDescReq {
+            fn from(fragmentation: FragmentationParameters) -> Self {
+                Self {
+                    nwk_addr: fragmentation.node_id(),
+                    tlvs: vec![Tlv::Global(Global::FragmentationParameters(fragmentation))],
+                }
+            }
         }
     }
 }

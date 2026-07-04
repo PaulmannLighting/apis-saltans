@@ -37,16 +37,17 @@ crate::services::zdp_command! {
             )
         }
     }
-}
+    try_from {
+        impl TryFrom<Command> for BindRsp {
+            type Error = Command;
 
-impl TryFrom<Command> for BindRsp {
-    type Error = Command;
-
-    fn try_from(command: Command) -> Result<Self, Self::Error> {
-        if let Command::BindManagement(BindManagement::BindRsp(bind_rsp)) = command {
-            Ok(bind_rsp)
-        } else {
-            Err(command)
+            fn try_from(command: Command) -> Result<Self, Self::Error> {
+                if let Command::BindManagement(BindManagement::BindRsp(bind_rsp)) = command {
+                    Ok(bind_rsp)
+                } else {
+                    Err(command)
+                }
+            }
         }
     }
 }
