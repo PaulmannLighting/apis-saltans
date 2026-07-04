@@ -1,5 +1,4 @@
 use apis_saltans_core::Endpoint;
-use le_stream::FromLeStream;
 use macaddr::MacAddr8;
 use num_traits::FromPrimitive;
 
@@ -100,33 +99,31 @@ crate::services::zdp_command! {
     }
     le_stream {
         from {
-            impl FromLeStream for BindReq {
-                fn from_le_stream<T>(mut bytes: T) -> Option<Self>
-                where
-                    T: Iterator<Item = u8>,
-                {
-                    let src_address = MacAddr8::from_le_stream(&mut bytes)?;
-                    let src_endpoint = Endpoint::from_le_stream(&mut bytes)?;
-                    let cluster_id = u16::from_le_stream(&mut bytes)?;
-                    let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
-                    let (dst_address, dst_endpoint) = match AddressMode::from_u8(dst_addr_mode)? {
-                        AddressMode::Group => {
-                            (u16::from_le_stream(&mut bytes).map(Address::Group)?, None)
-                        }
-                        AddressMode::Extended => (
-                            MacAddr8::from_le_stream(&mut bytes).map(Address::Extended)?,
-                            Some(Endpoint::from_le_stream(&mut bytes)?),
-                        ),
-                    };
-                    Some(Self {
-                        src_address,
-                        src_endpoint,
-                        cluster_id,
-                        dst_addr_mode,
-                        dst_address,
-                        dst_endpoint,
-                    })
-                }
+            fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+            where
+                T: Iterator<Item = u8>,
+            {
+                let src_address = MacAddr8::from_le_stream(&mut bytes)?;
+                let src_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+                let cluster_id = u16::from_le_stream(&mut bytes)?;
+                let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
+                let (dst_address, dst_endpoint) = match AddressMode::from_u8(dst_addr_mode)? {
+                    AddressMode::Group => {
+                        (u16::from_le_stream(&mut bytes).map(Address::Group)?, None)
+                    }
+                    AddressMode::Extended => (
+                        MacAddr8::from_le_stream(&mut bytes).map(Address::Extended)?,
+                        Some(Endpoint::from_le_stream(&mut bytes)?),
+                    ),
+                };
+                Some(Self {
+                    src_address,
+                    src_endpoint,
+                    cluster_id,
+                    dst_addr_mode,
+                    dst_address,
+                    dst_endpoint,
+                })
             }
         }
     }

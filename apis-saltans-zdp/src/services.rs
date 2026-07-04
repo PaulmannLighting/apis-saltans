@@ -259,7 +259,9 @@ macro_rules! zdp_command {
             display {
                 $($display)*
             }
-            le_stream {
+            from_le_stream {
+            }
+            to_le_stream {
             }
         }
     };
@@ -308,8 +310,10 @@ macro_rules! zdp_command {
             display {
                 $($display)*
             }
-            le_stream {
+            from_le_stream {
                 $($from_le_stream)*
+            }
+            to_le_stream {
             }
         }
     };
@@ -358,7 +362,9 @@ macro_rules! zdp_command {
             display {
                 $($display)*
             }
-            le_stream {
+            from_le_stream {
+            }
+            to_le_stream {
                 $($to_le_stream)*
             }
         }
@@ -411,8 +417,10 @@ macro_rules! zdp_command {
             display {
                 $($display)*
             }
-            le_stream {
+            from_le_stream {
                 $($from_le_stream)*
+            }
+            to_le_stream {
                 $($to_le_stream)*
             }
         }
@@ -465,9 +473,11 @@ macro_rules! zdp_command {
             display {
                 $($display)*
             }
-            le_stream {
-                $($to_le_stream)*
+            from_le_stream {
                 $($from_le_stream)*
+            }
+            to_le_stream {
+                $($to_le_stream)*
             }
         }
     };
@@ -491,8 +501,11 @@ macro_rules! zdp_command {
         display {
             $($display:tt)*
         }
-        le_stream {
-            $($le_stream:tt)*
+        from_le_stream {
+            $($from_le_stream:tt)*
+        }
+        to_le_stream {
+            $($to_le_stream:tt)*
         }
     ) => {
         $(#[$attribute])*
@@ -539,7 +552,55 @@ macro_rules! zdp_command {
             }
         }
 
-        $($le_stream)*
+        $crate::services::zdp_command! {
+            @from_le_stream
+            $command
+            {
+                $($from_le_stream)*
+            }
+        }
+
+        $crate::services::zdp_command! {
+            @to_le_stream
+            $command
+            {
+                $($to_le_stream)*
+            }
+        }
+    };
+    (
+        @from_le_stream
+        $command:ident
+        {
+        }
+    ) => {};
+    (
+        @from_le_stream
+        $command:ident
+        {
+            $($from_le_stream:tt)+
+        }
+    ) => {
+        impl le_stream::FromLeStream for $command {
+            $($from_le_stream)+
+        }
+    };
+    (
+        @to_le_stream
+        $command:ident
+        {
+        }
+    ) => {};
+    (
+        @to_le_stream
+        $command:ident
+        {
+            $($to_le_stream:tt)+
+        }
+    ) => {
+        impl le_stream::ToLeStream for $command {
+            $($to_le_stream)+
+        }
     };
     (@response $command:ident) => {};
     (@response $command:ident $response:ty) => {

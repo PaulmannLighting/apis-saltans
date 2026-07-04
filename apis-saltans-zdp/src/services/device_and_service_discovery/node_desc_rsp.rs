@@ -2,7 +2,7 @@ use std::iter::Chain;
 
 use apis_saltans_core::node::Descriptor;
 use apis_saltans_core::types::tlv::Tlv;
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::ToLeStream;
 
 use crate::{Command, DeviceAndServiceDiscovery, Status};
 
@@ -94,53 +94,49 @@ crate::services::zdp_command! {
             /// let bytes: [u8; _] = [5, 0, 62, 199, 1, 64, 142, 24, 18, 66, 66, 0, 0, 42, 66, 0, 0];
             /// let node_desc_rsp = Frame::<NodeDescRsp>::from_le_stream(bytes.into_iter()).unwrap();
             /// ```
-            impl FromLeStream for NodeDescRsp {
-                fn from_le_stream<T>(mut bytes: T) -> Option<Self>
-                where
-                    T: Iterator<Item = u8>,
-                {
-                    let status = Status::try_from(u8::from_le_stream(&mut bytes)?);
-                    let nwk_addr_of_interest = u16::from_le_stream(&mut bytes)?;
+            fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+            where
+                T: Iterator<Item = u8>,
+            {
+                let status = Status::try_from(u8::from_le_stream(&mut bytes)?);
+                let nwk_addr_of_interest = u16::from_le_stream(&mut bytes)?;
 
-                    let node_descriptor = if status == Ok(Status::Success) {
-                        Ok(Descriptor::from_le_stream(&mut bytes)?)
-                    } else {
-                        Err(status)
-                    };
+                let node_descriptor = if status == Ok(Status::Success) {
+                    Ok(Descriptor::from_le_stream(&mut bytes)?)
+                } else {
+                    Err(status)
+                };
 
-                    let tlvs = Vec::from_le_stream(&mut bytes)?;
+                let tlvs = Vec::from_le_stream(&mut bytes)?;
 
-                    Some(Self {
-                        nwk_addr_of_interest,
-                        node_descriptor,
-                        tlvs,
-                    })
-                }
+                Some(Self {
+                    nwk_addr_of_interest,
+                    node_descriptor,
+                    tlvs,
+                })
             }
         }
         to {
-            impl ToLeStream for NodeDescRsp {
-                type Iter = Chain<
-                    Chain<
-                        Chain<<u8 as ToLeStream>::Iter, <u16 as ToLeStream>::Iter>,
-                        <Option<Descriptor> as ToLeStream>::Iter,
-                    >,
-                    <Vec<Tlv> as ToLeStream>::Iter,
-                >;
+            type Iter = Chain<
+                Chain<
+                    Chain<<u8 as ToLeStream>::Iter, <u16 as ToLeStream>::Iter>,
+                    <Option<Descriptor> as ToLeStream>::Iter,
+                >,
+                <Vec<Tlv> as ToLeStream>::Iter,
+            >;
 
-                fn to_le_stream(self) -> Self::Iter {
-                    let (status, descriptor) = match self.node_descriptor {
-                        Ok(node_descriptor) => (u8::from(Status::Success), Some(node_descriptor)),
-                        Err(Ok(status)) => (u8::from(status), None),
-                        Err(Err(status)) => (status, None),
-                    };
+            fn to_le_stream(self) -> Self::Iter {
+                let (status, descriptor) = match self.node_descriptor {
+                    Ok(node_descriptor) => (u8::from(Status::Success), Some(node_descriptor)),
+                    Err(Ok(status)) => (u8::from(status), None),
+                    Err(Err(status)) => (status, None),
+                };
 
-                    status
-                        .to_le_stream()
-                        .chain(self.nwk_addr_of_interest.to_le_stream())
-                        .chain(descriptor.to_le_stream())
-                        .chain(self.tlvs.to_le_stream())
-                }
+                status
+                    .to_le_stream()
+                    .chain(self.nwk_addr_of_interest.to_le_stream())
+                    .chain(descriptor.to_le_stream())
+                    .chain(self.tlvs.to_le_stream())
             }
         }
     }
