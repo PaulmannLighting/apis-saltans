@@ -4,6 +4,7 @@ crate::services::zdp_command! {
     /// Service for management permit joining request.
     MgmtPermitJoiningReq => Mgmt_Permit_Joining_req;
     cluster_id: 0x0036;
+    group: NetworkManagement;
     fields {
         duration: u8,
         tc_significance: bool,

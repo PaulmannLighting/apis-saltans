@@ -1,12 +1,13 @@
 use apis_saltans_core::Endpoint;
 
-use crate::{Command, SimpleDescRsp};
+use crate::SimpleDescRsp;
 
 crate::services::zdp_command! {
     /// Simple Descriptor Request structure.
     derive { Copy }
     SimpleDescReq => Simple_Desc_req;
     cluster_id: 0x0004;
+    group: DeviceAndServiceDiscovery;
     response: SimpleDescRsp;
     fields {
         nwk_address_of_interest: u16,
@@ -44,13 +45,6 @@ crate::services::zdp_command! {
                 self.nwk_address_of_interest,
                 self.endpoint
             )
-        }
-    }
-    from {
-        impl From<SimpleDescReq> for Command {
-            fn from(simple_desc_req: SimpleDescReq) -> Self {
-                Self::DeviceAndServiceDiscovery(simple_desc_req.into())
-            }
         }
     }
 }

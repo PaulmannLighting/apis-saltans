@@ -1,9 +1,10 @@
-use crate::{ByteSizedVec, Command, Displayable, Status};
+use crate::{ByteSizedVec, Displayable, Status};
 
 crate::services::zdp_command! {
     /// Match Descriptor Response.
     MatchDescRsp => Match_Desc_rsp;
     cluster_id: 0x8006;
+    group: DeviceAndServiceDiscovery;
     fields {
         status: u8,
         nwk_addr_of_interest: u16,
@@ -67,13 +68,6 @@ crate::services::zdp_command! {
             }
 
             write!(f, "] }}")
-        }
-    }
-    from {
-        impl From<MatchDescRsp> for Command {
-            fn from(value: MatchDescRsp) -> Self {
-                Self::DeviceAndServiceDiscovery(value.into())
-            }
         }
     }
 }

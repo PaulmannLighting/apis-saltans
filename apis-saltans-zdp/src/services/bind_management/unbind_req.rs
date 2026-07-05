@@ -8,6 +8,7 @@ crate::services::zdp_command! {
     /// Request type for Bind Request.
     UnbindReq => Unbind_req;
     cluster_id: 0x0022;
+    group: BindManagement;
     fields {
         src_address: MacAddr8,
         src_endpoint: Endpoint,

@@ -3,6 +3,7 @@ crate::services::zdp_command! {
     derive { Copy }
     PowerDescReq => Power_Desc_req;
     cluster_id: 0x0003;
+    group: DeviceAndServiceDiscovery;
     fields {
         nwk_addr_of_interest: u16,
     }

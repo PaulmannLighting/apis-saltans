@@ -9,6 +9,7 @@ crate::services::zdp_command! {
     /// Parent Announcement Service.
     ParentAnnce => Parent_annce;
     cluster_id: 0x001F;
+    group: DeviceAndServiceDiscovery;
     fields {
         child_info: ByteSizedVec<MacAddr8>,
     }

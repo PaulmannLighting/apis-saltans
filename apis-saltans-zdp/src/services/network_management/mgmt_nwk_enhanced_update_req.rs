@@ -11,6 +11,7 @@ crate::services::zdp_command! {
     /// Management Network Enhanced Update Request.
     MgmtNwkEnhancedUpdateReq => Mgmt_NWK_Enhanced_Update_req;
     cluster_id: 0x0039;
+    group: NetworkManagement;
     fields {
         scan_channels: ChannelList,
         scan_duration: u8,

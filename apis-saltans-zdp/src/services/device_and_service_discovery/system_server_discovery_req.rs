@@ -5,6 +5,7 @@ crate::services::zdp_command! {
     derive { Copy }
     SystemServerDiscoveryReq => System_Server_Discovery_req;
     cluster_id: 0x0015;
+    group: DeviceAndServiceDiscovery;
     fields {
         server_mask: ServerMask,
     }

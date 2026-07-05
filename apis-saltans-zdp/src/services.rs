@@ -20,740 +20,16 @@ pub use self::network_management::{
 
 mod bind_management;
 mod device_and_service_discovery;
+mod macros;
 mod network_management;
+
+pub(crate) use self::macros::{zdp_command, zdp_command_group};
 
 /// A ZDP client service.
 pub trait Service {
     /// The name of the service.
     const NAME: &'static str;
 }
-
-macro_rules! zdp_command {
-    (
-        $(#[$attribute:meta])*
-        derive { $($extra_derive:path),* $(,)? }
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        $(response: $response:ty;)?
-        fields {
-            $($field:ident: $field_type:ty),* $(,)?
-        }
-        constructor {
-            $($constructor:tt)*
-        }
-        getters {
-            $($getter:tt)*
-        }
-        $(display {
-            $($display:tt)*
-        })?
-        $(le_stream {
-            $($le_stream:tt)*
-        })?
-        $(from {
-            $($from:item)*
-        })?
-        $(try_from {
-            $($try_from:item)*
-        })?
-    ) => {
-        $crate::services::zdp_command! {
-            @stream
-            [$($attribute),*]
-            [$($extra_derive),*]
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                $($constructor)*
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($($display)*)?
-            }
-            le_stream {
-                $($($le_stream)*)?
-            }
-            from {
-                $($($from)*)?
-            }
-            try_from {
-                $($($try_from)*)?
-            }
-        }
-    };
-    (
-        $(#[$attribute:meta])*
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        $(response: $response:ty;)?
-        fields {
-            $($field:ident: $field_type:ty),* $(,)?
-        }
-        constructor {
-            $($constructor:tt)*
-        }
-        getters {
-            $($getter:tt)*
-        }
-        $(display {
-            $($display:tt)*
-        })?
-        $(le_stream {
-            $($le_stream:tt)*
-        })?
-        $(from {
-            $($from:item)*
-        })?
-        $(try_from {
-            $($try_from:item)*
-        })?
-    ) => {
-        $crate::services::zdp_command! {
-            @stream
-            [$($attribute),*]
-            []
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                $($constructor)*
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($($display)*)?
-            }
-            le_stream {
-                $($($le_stream)*)?
-            }
-            from {
-                $($($from)*)?
-            }
-            try_from {
-                $($($try_from)*)?
-            }
-        }
-    };
-    (
-        $(#[$attribute:meta])*
-        derive { $($extra_derive:path),* $(,)? }
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        $(response: $response:ty;)?
-        fields {
-            $($field:ident: $field_type:ty),* $(,)?
-        }
-        getters {
-            $($getter:tt)*
-        }
-        $(display {
-            $($display:tt)*
-        })?
-        $(le_stream {
-            $($le_stream:tt)*
-        })?
-        $(from {
-            $($from:item)*
-        })?
-        $(try_from {
-            $($try_from:item)*
-        })?
-    ) => {
-        $crate::services::zdp_command! {
-            @stream
-            [$($attribute),*]
-            [$($extra_derive),*]
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                /// Creates a new instance.
-                #[must_use]
-                pub const fn new($($field: $field_type),*) -> Self {
-                    Self {
-                        $($field),*
-                    }
-                }
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($($display)*)?
-            }
-            le_stream {
-                $($($le_stream)*)?
-            }
-            from {
-                $($($from)*)?
-            }
-            try_from {
-                $($($try_from)*)?
-            }
-        }
-    };
-    (
-        $(#[$attribute:meta])*
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        $(response: $response:ty;)?
-        fields {
-            $($field:ident: $field_type:ty),* $(,)?
-        }
-        getters {
-            $($getter:tt)*
-        }
-        $(display {
-            $($display:tt)*
-        })?
-        $(le_stream {
-            $($le_stream:tt)*
-        })?
-        $(from {
-            $($from:item)*
-        })?
-        $(try_from {
-            $($try_from:item)*
-        })?
-    ) => {
-        $crate::services::zdp_command! {
-            @stream
-            [$($attribute),*]
-            []
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                /// Creates a new instance.
-                #[must_use]
-                pub const fn new($($field: $field_type),*) -> Self {
-                    Self {
-                        $($field),*
-                    }
-                }
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($($display)*)?
-            }
-            le_stream {
-                $($($le_stream)*)?
-            }
-            from {
-                $($($from)*)?
-            }
-            try_from {
-                $($($try_from)*)?
-            }
-        }
-    };
-    (
-        @stream
-        [$($attribute:meta),*]
-        [$($extra_derive:path),*]
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        response [$($response:ty)?];
-        fields {
-            $($field:ident: $field_type:ty),*
-        }
-        constructor {
-            $($constructor:tt)*
-        }
-        getters {
-            $($getter:tt)*
-        }
-        display {
-            $($display:tt)*
-        }
-        le_stream {
-        }
-        from {
-            $($from:item)*
-        }
-        try_from {
-            $($try_from:item)*
-        }
-    ) => {
-        $crate::services::zdp_command! {
-            @emit
-            [$($attribute),*]
-            [$($extra_derive),*]
-            [le_stream::FromLeStream, le_stream::ToLeStream]
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                $($constructor)*
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($display)*
-            }
-            from_le_stream {
-            }
-            to_le_stream {
-            }
-            from {
-                $($from)*
-            }
-            try_from {
-                $($try_from)*
-            }
-        }
-    };
-    (
-        @stream
-        [$($attribute:meta),*]
-        [$($extra_derive:path),*]
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        response [$($response:ty)?];
-        fields {
-            $($field:ident: $field_type:ty),*
-        }
-        constructor {
-            $($constructor:tt)*
-        }
-        getters {
-            $($getter:tt)*
-        }
-        display {
-            $($display:tt)*
-        }
-        le_stream {
-            from {
-                $($from_le_stream:tt)*
-            }
-        }
-        from {
-            $($from:item)*
-        }
-        try_from {
-            $($try_from:item)*
-        }
-    ) => {
-        $crate::services::zdp_command! {
-            @emit
-            [$($attribute),*]
-            [$($extra_derive),*]
-            [le_stream::ToLeStream]
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                $($constructor)*
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($display)*
-            }
-            from_le_stream {
-                $($from_le_stream)*
-            }
-            to_le_stream {
-            }
-            from {
-                $($from)*
-            }
-            try_from {
-                $($try_from)*
-            }
-        }
-    };
-    (
-        @stream
-        [$($attribute:meta),*]
-        [$($extra_derive:path),*]
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        response [$($response:ty)?];
-        fields {
-            $($field:ident: $field_type:ty),*
-        }
-        constructor {
-            $($constructor:tt)*
-        }
-        getters {
-            $($getter:tt)*
-        }
-        display {
-            $($display:tt)*
-        }
-        le_stream {
-            to {
-                $($to_le_stream:tt)*
-            }
-        }
-        from {
-            $($from:item)*
-        }
-        try_from {
-            $($try_from:item)*
-        }
-    ) => {
-        $crate::services::zdp_command! {
-            @emit
-            [$($attribute),*]
-            [$($extra_derive),*]
-            [le_stream::FromLeStream]
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                $($constructor)*
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($display)*
-            }
-            from_le_stream {
-            }
-            to_le_stream {
-                $($to_le_stream)*
-            }
-            from {
-                $($from)*
-            }
-            try_from {
-                $($try_from)*
-            }
-        }
-    };
-    (
-        @stream
-        [$($attribute:meta),*]
-        [$($extra_derive:path),*]
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        response [$($response:ty)?];
-        fields {
-            $($field:ident: $field_type:ty),*
-        }
-        constructor {
-            $($constructor:tt)*
-        }
-        getters {
-            $($getter:tt)*
-        }
-        display {
-            $($display:tt)*
-        }
-        le_stream {
-            from {
-                $($from_le_stream:tt)*
-            }
-            to {
-                $($to_le_stream:tt)*
-            }
-        }
-        from {
-            $($from:item)*
-        }
-        try_from {
-            $($try_from:item)*
-        }
-    ) => {
-        $crate::services::zdp_command! {
-            @emit
-            [$($attribute),*]
-            [$($extra_derive),*]
-            []
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                $($constructor)*
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($display)*
-            }
-            from_le_stream {
-                $($from_le_stream)*
-            }
-            to_le_stream {
-                $($to_le_stream)*
-            }
-            from {
-                $($from)*
-            }
-            try_from {
-                $($try_from)*
-            }
-        }
-    };
-    (
-        @stream
-        [$($attribute:meta),*]
-        [$($extra_derive:path),*]
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        response [$($response:ty)?];
-        fields {
-            $($field:ident: $field_type:ty),*
-        }
-        constructor {
-            $($constructor:tt)*
-        }
-        getters {
-            $($getter:tt)*
-        }
-        display {
-            $($display:tt)*
-        }
-        le_stream {
-            to {
-                $($to_le_stream:tt)*
-            }
-            from {
-                $($from_le_stream:tt)*
-            }
-        }
-        from {
-            $($from:item)*
-        }
-        try_from {
-            $($try_from:item)*
-        }
-    ) => {
-        $crate::services::zdp_command! {
-            @emit
-            [$($attribute),*]
-            [$($extra_derive),*]
-            []
-            $command => $name;
-            cluster_id: $cluster_id;
-            response [$($response)?];
-            fields {
-                $($field: $field_type),*
-            }
-            constructor {
-                $($constructor)*
-            }
-            getters {
-                $($getter)*
-            }
-            display {
-                $($display)*
-            }
-            from_le_stream {
-                $($from_le_stream)*
-            }
-            to_le_stream {
-                $($to_le_stream)*
-            }
-            from {
-                $($from)*
-            }
-            try_from {
-                $($try_from)*
-            }
-        }
-    };
-    (
-        @emit
-        [$($attribute:meta),*]
-        [$($extra_derive:path),*]
-        [$($stream_derive:path),*]
-        $command:ident => $name:ident;
-        cluster_id: $cluster_id:expr;
-        response [$($response:ty)?];
-        fields {
-            $($field:ident: $field_type:ty),*
-        }
-        constructor {
-            $($constructor:tt)*
-        }
-        getters {
-            $($getter:tt)*
-        }
-        display {
-            $($display:tt)*
-        }
-        from_le_stream {
-            $($from_le_stream:tt)*
-        }
-        to_le_stream {
-            $($to_le_stream:tt)*
-        }
-        from {
-            $($from:item)*
-        }
-        try_from {
-            $($try_from:item)*
-        }
-    ) => {
-        $(#[$attribute])*
-        #[derive(Clone, Debug, Eq, PartialEq, Hash $(, $extra_derive)* $(, $stream_derive)*)]
-        pub struct $command {
-            $($field: $field_type),*
-        }
-
-        impl $command {
-            /// The cluster ID.
-            pub const ID: u16 = $cluster_id;
-
-            /// The service name.
-            pub const NAME: &'static str = stringify!($name);
-
-            $($constructor)*
-
-            $($getter)*
-        }
-
-        impl apis_saltans_core::Cluster for $command {
-            const ID: u16 = Self::ID;
-        }
-
-        impl $crate::services::Service for $command {
-            const NAME: &'static str = Self::NAME;
-        }
-
-        $crate::services::zdp_command! {
-            @response
-            $command
-            $($response)?
-        }
-
-        impl std::fmt::Display for $command {
-            $crate::services::zdp_command! {
-                @display
-                self,
-                f,
-                [$($field),*],
-                {
-                    $($display)*
-                }
-            }
-        }
-
-        $($from)*
-
-        $($try_from)*
-
-        $crate::services::zdp_command! {
-            @from_le_stream
-            $command
-            {
-                $($from_le_stream)*
-            }
-        }
-
-        $crate::services::zdp_command! {
-            @to_le_stream
-            $command
-            {
-                $($to_le_stream)*
-            }
-        }
-    };
-    (
-        @from_le_stream
-        $command:ident
-        {
-        }
-    ) => {};
-    (
-        @from_le_stream
-        $command:ident
-        {
-            $($from_le_stream:tt)+
-        }
-    ) => {
-        impl le_stream::FromLeStream for $command {
-            $($from_le_stream)+
-        }
-    };
-    (
-        @to_le_stream
-        $command:ident
-        {
-        }
-    ) => {};
-    (
-        @to_le_stream
-        $command:ident
-        {
-            $($to_le_stream:tt)+
-        }
-    ) => {
-        impl le_stream::ToLeStream for $command {
-            $($to_le_stream)+
-        }
-    };
-    (@response $command:ident) => {};
-    (@response $command:ident $response:ty) => {
-        impl apis_saltans_core::ExpectResponse<$crate::services::Command> for $command {
-            type Response = $response;
-        }
-    };
-    (
-        @display
-        $self:ident,
-        $formatter:ident,
-        [$($field:ident),*],
-        {
-        }
-    ) => {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let mut debug = f.debug_struct(Self::NAME);
-            $(debug.field(stringify!($field), &self.$field);)*
-            debug.finish()
-        }
-    };
-    (
-        @display
-        $self:ident,
-        $formatter:ident,
-        [$($field:ident),*],
-        {
-            $($display:tt)+
-        }
-    ) => {
-        $($display)+
-    };
-}
-
-pub(crate) use zdp_command;
 
 /// Available ZDP commands.
 // TODO: Implement all commands.
@@ -778,100 +54,92 @@ impl Command {
         match cluster_id {
             // Device and Service Discovery Commands
             NwkAddrReq::ID => Ok(NwkAddrReq::from_le_stream(bytes)
-                .map(DeviceAndServiceDiscovery::NwkAddrReq)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             IeeeAddrReq::ID => Ok(IeeeAddrReq::from_le_stream(bytes)
-                .map(DeviceAndServiceDiscovery::IeeeAddrReq)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             NodeDescReq::ID => Ok(NodeDescReq::from_le_stream(bytes)
-                .map(DeviceAndServiceDiscovery::NodeDescReq)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             NodeDescRsp::ID => Ok(NodeDescRsp::from_le_stream(bytes)
-                .map(DeviceAndServiceDiscovery::NodeDescRsp)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             PowerDescReq::ID => Ok(PowerDescReq::from_le_stream(bytes)
-                .map(DeviceAndServiceDiscovery::PowerDescReq)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             SimpleDescReq::ID => Ok(SimpleDescReq::from_le_stream(bytes)
-                .map(DeviceAndServiceDiscovery::SimpleDescReq)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             SimpleDescRsp::ID => Ok(SimpleDescRsp::from_le_stream(bytes)
-                .map(Box::new)
-                .map(DeviceAndServiceDiscovery::SimpleDescRsp)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             ActiveEpReq::ID => Ok(ActiveEpReq::from_le_stream(bytes)
-                .map(Box::new)
-                .map(DeviceAndServiceDiscovery::ActiveEpReq)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             ActiveEpRsp::ID => Ok(ActiveEpRsp::from_le_stream(bytes)
-                .map(Box::new)
-                .map(DeviceAndServiceDiscovery::ActiveEpRsp)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             MatchDescReq::ID => Ok(MatchDescReq::from_le_stream(bytes)
-                .map(Box::new)
-                .map(DeviceAndServiceDiscovery::MatchDescReq)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             MatchDescRsp::ID => Ok(MatchDescRsp::from_le_stream(bytes)
-                .map(Box::new)
-                .map(DeviceAndServiceDiscovery::MatchDescRsp)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             DeviceAnnce::ID => Ok(DeviceAnnce::from_le_stream(bytes)
-                .map(DeviceAndServiceDiscovery::DeviceAnnce)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             ParentAnnce::ID => Ok(ParentAnnce::from_le_stream(bytes)
-                .map(Box::new)
-                .map(DeviceAndServiceDiscovery::ParentAnnce)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
             SystemServerDiscoveryReq::ID => Ok(SystemServerDiscoveryReq::from_le_stream(bytes)
-                .map(DeviceAndServiceDiscovery::SystemServerDiscoveryReq)
+                .map(DeviceAndServiceDiscovery::from)
                 .map(Self::DeviceAndServiceDiscovery)),
 
             // Bind Management Commands
             BindReq::ID => Ok(BindReq::from_le_stream(bytes)
-                .map(BindManagement::BindReq)
+                .map(BindManagement::from)
                 .map(Self::BindManagement)),
             BindRsp::ID => Ok(BindRsp::from_le_stream(bytes)
-                .map(BindManagement::BindRsp)
+                .map(BindManagement::from)
                 .map(Self::BindManagement)),
             UnbindReq::ID => Ok(UnbindReq::from_le_stream(bytes)
-                .map(BindManagement::UnbindReq)
+                .map(BindManagement::from)
                 .map(Self::BindManagement)),
             ClearAllBindingsReq::ID => Ok(ClearAllBindingsReq::from_le_stream(bytes)
-                .map(BindManagement::ClearAllBindingsReq)
+                .map(BindManagement::from)
                 .map(Self::BindManagement)),
 
             // Network Management Commands
             MgmtLqiReq::ID => Ok(MgmtLqiReq::from_le_stream(bytes)
-                .map(NetworkManagement::MgmtLqiReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtRtgReq::ID => Ok(MgmtRtgReq::from_le_stream(bytes)
-                .map(NetworkManagement::MgmtRtgReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtBindReq::ID => Ok(MgmtBindReq::from_le_stream(bytes)
-                .map(NetworkManagement::MgmtBindReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtLeaveReq::ID => Ok(MgmtLeaveReq::from_le_stream(bytes)
-                .map(NetworkManagement::MgmtLeaveReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtPermitJoiningReq::ID => Ok(MgmtPermitJoiningReq::from_le_stream(bytes)
-                .map(Box::new)
-                .map(NetworkManagement::MgmtPermitJoiningReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtNwkUpdateReq::ID => Ok(MgmtNwkUpdateReq::from_le_stream(bytes)
-                .map(NetworkManagement::MgmtNwkUpdateReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtNwkEnhancedUpdateReq::ID => Ok(MgmtNwkEnhancedUpdateReq::from_le_stream(bytes)
-                .map(Box::new)
-                .map(NetworkManagement::MgmtNwkEnhancedUpdateReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtNwkIeeeJoiningListReq::ID => Ok(MgmtNwkIeeeJoiningListReq::from_le_stream(bytes)
-                .map(NetworkManagement::MgmtNwkIeeeJoiningListReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtNwkBeaconSurveyReq::ID => Ok(MgmtNwkBeaconSurveyReq::from_le_stream(bytes)
-                .map(NetworkManagement::MgmtNwkBeaconSurveyReq)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             MgmtPermitJoiningRsp::ID => Ok(MgmtPermitJoiningRsp::from_le_stream(bytes)
-                .map(NetworkManagement::MgmtPermitJoiningRsp)
+                .map(NetworkManagement::from)
                 .map(Self::NetworkManagement)),
             other => Err(other),
         }

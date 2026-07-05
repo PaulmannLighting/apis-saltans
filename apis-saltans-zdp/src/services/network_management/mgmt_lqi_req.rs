@@ -3,6 +3,7 @@ crate::services::zdp_command! {
     derive { Copy }
     MgmtLqiReq => Mgmt_Lqi_req;
     cluster_id: 0x0031;
+    group: NetworkManagement;
     fields {
         start_index: u8,
     }

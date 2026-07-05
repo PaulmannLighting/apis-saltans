@@ -5,6 +5,7 @@ crate::services::zdp_command! {
     /// Device Announcement Service.
     DeviceAnnce => Device_annce;
     cluster_id: 0x0013;
+    group: DeviceAndServiceDiscovery;
     fields {
         nwk_addr: u16,
         ieee_addr: MacAddr8,

@@ -5,7 +5,7 @@ use num_traits::FromPrimitive;
 pub use self::address::Address;
 pub use self::address_mode::AddressMode;
 pub use self::destination::Destination;
-use crate::{BindRsp, Command};
+use crate::BindRsp;
 
 mod address;
 mod address_mode;
@@ -15,6 +15,7 @@ crate::services::zdp_command! {
     /// Request type for Bind Request.
     BindReq => Bind_req;
     cluster_id: 0x0021;
+    group: BindManagement;
     response: BindRsp;
     fields {
         src_address: MacAddr8,
@@ -124,13 +125,6 @@ crate::services::zdp_command! {
                     dst_address,
                     dst_endpoint,
                 })
-            }
-        }
-    }
-    from {
-        impl From<BindReq> for Command {
-            fn from(value: BindReq) -> Self {
-                Self::BindManagement(value.into())
             }
         }
     }

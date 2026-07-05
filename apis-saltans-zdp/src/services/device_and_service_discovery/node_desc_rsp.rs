@@ -4,12 +4,13 @@ use apis_saltans_core::node::Descriptor;
 use apis_saltans_core::types::tlv::Tlv;
 use le_stream::ToLeStream;
 
-use crate::{Command, DeviceAndServiceDiscovery, Status};
+use crate::Status;
 
 crate::services::zdp_command! {
     /// Node Descriptor Response structure.
     NodeDescRsp => Node_Desc_rsp;
     cluster_id: 0x8002;
+    group: DeviceAndServiceDiscovery;
     fields {
         nwk_addr_of_interest: u16,
         node_descriptor: Result<Descriptor, Result<Status, u8>>,
@@ -142,19 +143,6 @@ crate::services::zdp_command! {
     }
 
     try_from {
-        impl TryFrom<Command> for NodeDescRsp {
-            type Error = Command;
-
-            fn try_from(cmd: Command) -> Result<Self, Self::Error> {
-                match cmd {
-                    Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescRsp(
-                        rsp,
-                    )) => Ok(rsp),
-                    other => Err(other),
-                }
-            }
-        }
-
         impl TryFrom<NodeDescRsp> for Descriptor {
             type Error = Result<Status, u8>;
 

@@ -1,10 +1,11 @@
-use crate::{BindManagement, Command, Displayable, Status};
+use crate::{Displayable, Status};
 
 crate::services::zdp_command! {
     /// Binding response.
     derive { Copy }
     BindRsp => Bind_rsp;
     cluster_id: 0x8021;
+    group: BindManagement;
     fields {
         status: u8,
     }
@@ -35,19 +36,6 @@ crate::services::zdp_command! {
                 Self::NAME,
                 self.status().display()
             )
-        }
-    }
-    try_from {
-        impl TryFrom<Command> for BindRsp {
-            type Error = Command;
-
-            fn try_from(command: Command) -> Result<Self, Self::Error> {
-                if let Command::BindManagement(BindManagement::BindRsp(bind_rsp)) = command {
-                    Ok(bind_rsp)
-                } else {
-                    Err(command)
-                }
-            }
         }
     }
 }

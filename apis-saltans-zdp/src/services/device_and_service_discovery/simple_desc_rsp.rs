@@ -1,11 +1,12 @@
 use le_stream::{Consume, ToLeStream};
 
-use crate::{ByteSizedVec, Command, DeviceAndServiceDiscovery, SimpleDescriptor, Status};
+use crate::{ByteSizedVec, SimpleDescriptor, Status};
 
 crate::services::zdp_command! {
     /// Simple Descriptor Response.
     SimpleDescRsp => Simple_Desc_rsp;
     cluster_id: 0x8004;
+    group: DeviceAndServiceDiscovery;
     fields {
         status: u8,
         nwk_addr_of_interest: u16,
@@ -65,20 +66,4 @@ crate::services::zdp_command! {
         }
     }
 
-    try_from {
-        impl TryFrom<Command> for SimpleDescRsp {
-            type Error = Command;
-
-            fn try_from(cmd: Command) -> Result<Self, Self::Error> {
-                if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::SimpleDescRsp(
-                    descriptors,
-                )) = cmd
-                {
-                    Ok(*descriptors)
-                } else {
-                    Err(cmd)
-                }
-            }
-        }
-    }
 }

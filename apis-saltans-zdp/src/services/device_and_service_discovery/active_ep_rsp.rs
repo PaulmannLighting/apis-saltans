@@ -1,12 +1,12 @@
 use apis_saltans_core::Endpoint;
 
-use crate::services::DeviceAndServiceDiscovery;
-use crate::{ByteSizedVec, Command, Status};
+use crate::{ByteSizedVec, Status};
 
 crate::services::zdp_command! {
     /// Active Endpoint Response.
     ActiveEpRsp => Active_EP_rsp;
     cluster_id: 0x8005;
+    group: DeviceAndServiceDiscovery;
     fields {
         status: u8,
         nwk_addr_of_interest: u16,
@@ -65,22 +65,6 @@ crate::services::zdp_command! {
                 self.nwk_addr_of_interest,
                 self.active_eps
             )
-        }
-    }
-    try_from {
-        impl TryFrom<Command> for ActiveEpRsp {
-            type Error = Command;
-
-            fn try_from(cmd: Command) -> Result<Self, Self::Error> {
-                if let Command::DeviceAndServiceDiscovery(
-                    DeviceAndServiceDiscovery::ActiveEpRsp(active_eps),
-                ) = cmd
-                {
-                    Ok(*active_eps)
-                } else {
-                    Err(cmd)
-                }
-            }
         }
     }
 }

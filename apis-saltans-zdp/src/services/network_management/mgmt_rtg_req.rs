@@ -3,6 +3,7 @@ crate::services::zdp_command! {
     derive { Copy }
     MgmtRtgReq => Mgmt_Rtg_req;
     cluster_id: 0x0032;
+    group: NetworkManagement;
     fields {
         start_index: u8,
     }

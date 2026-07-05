@@ -9,6 +9,7 @@ crate::services::zdp_command! {
     /// Request parameters for network address request.
     NwkAddrReq => NWK_addr_req;
     cluster_id: 0x0000;
+    group: DeviceAndServiceDiscovery;
     fields {
         ieee_addr: MacAddr8,
         request_type: u8,

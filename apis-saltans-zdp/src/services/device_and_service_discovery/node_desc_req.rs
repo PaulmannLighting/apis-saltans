@@ -1,11 +1,12 @@
 use apis_saltans_core::types::tlv::{FragmentationParameters, Global, Tlv};
 
-use crate::{Command, NodeDescRsp};
+use crate::NodeDescRsp;
 
 crate::services::zdp_command! {
     /// Node Descriptor Request structure.
     NodeDescReq => Node_Desc_req;
     cluster_id: 0x0002;
+    group: DeviceAndServiceDiscovery;
     response: NodeDescRsp;
     fields {
         nwk_addr: u16,
@@ -50,12 +51,6 @@ crate::services::zdp_command! {
         }
     }
     from {
-        impl From<NodeDescReq> for Command {
-            fn from(req: NodeDescReq) -> Self {
-                Self::DeviceAndServiceDiscovery(req.into())
-            }
-        }
-
         impl From<FragmentationParameters> for NodeDescReq {
             fn from(fragmentation: FragmentationParameters) -> Self {
                 Self {

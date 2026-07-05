@@ -5,6 +5,7 @@ crate::services::zdp_command! {
     derive { Copy }
     MgmtPermitJoiningRsp => Mgmt_Permit_Joining_rsp;
     cluster_id: 0x8036;
+    group: NetworkManagement;
     fields {
         status: u8,
     }

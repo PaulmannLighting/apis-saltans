@@ -1,10 +1,11 @@
-use crate::{ActiveEpRsp, Command};
+use crate::ActiveEpRsp;
 
 crate::services::zdp_command! {
     /// Active Endpoint Request
     derive { Copy }
     ActiveEpReq => Active_EP_req;
     cluster_id: 0x0005;
+    group: DeviceAndServiceDiscovery;
     response: ActiveEpRsp;
     fields {
         nwk_addr_of_interest: u16,
@@ -24,13 +25,6 @@ crate::services::zdp_command! {
                 Self::NAME,
                 self.nwk_addr_of_interest
             )
-        }
-    }
-    from {
-        impl From<ActiveEpReq> for Command {
-            fn from(active_ep_req: ActiveEpReq) -> Self {
-                Self::DeviceAndServiceDiscovery(active_ep_req.into())
-            }
         }
     }
 }

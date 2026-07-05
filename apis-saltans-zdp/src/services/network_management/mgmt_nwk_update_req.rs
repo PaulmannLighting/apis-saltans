@@ -6,6 +6,7 @@ crate::services::zdp_command! {
     /// Management Network Update Request
     MgmtNwkUpdateReq => Mgmt_NWK_Update_req;
     cluster_id: 0x0038;
+    group: NetworkManagement;
     fields {
         scan_channels: u32,
         scan_duration: u8,
