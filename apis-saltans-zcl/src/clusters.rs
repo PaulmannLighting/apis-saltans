@@ -5,7 +5,7 @@ use std::boxed::Box;
 use apis_saltans_core::Direction;
 use le_stream::ToLeStream;
 
-use self::general::{alarms, basic, groups, identify, level, on_off};
+use self::general::{alarms, basic, groups, identify, level, on_off, scenes};
 use self::lighting::color_control;
 use crate::{CommandDispatch, Header, ParseFrameError, Scope};
 
@@ -39,6 +39,9 @@ pub enum Cluster {
 
     /// Alarms cluster commands.
     Alarms(alarms::Command),
+
+    /// Scenes cluster commands.
+    Scenes(scenes::Command),
 
     /// Color Control cluster commands.
     ColorControl(color_control::Command),
@@ -83,6 +86,9 @@ impl Cluster {
                 <alarms::Command as apis_saltans_core::Cluster>::ID => {
                     alarms::Command::parse_zcl_frame(header, bytes).map(Self::Alarms)
                 }
+                <scenes::Command as apis_saltans_core::Cluster>::ID => {
+                    scenes::Command::parse_zcl_frame(header, bytes).map(Self::Scenes)
+                }
                 <color_control::Command as apis_saltans_core::Cluster>::ID => {
                     color_control::Command::parse_zcl_frame(header, bytes).map(Self::ColorControl)
                 }
@@ -105,6 +111,7 @@ impl CommandDispatch for Cluster {
             Self::OnOff(cmd) => cmd.command_id(),
             Self::Level(cmd) => cmd.command_id(),
             Self::Alarms(cmd) => cmd.command_id(),
+            Self::Scenes(cmd) => cmd.command_id(),
             Self::ColorControl(cmd) => cmd.command_id(),
             Self::IasZone(cmd) => cmd.command_id(),
         }
@@ -119,6 +126,7 @@ impl CommandDispatch for Cluster {
             Self::OnOff(cmd) => cmd.scope(),
             Self::Level(cmd) => cmd.scope(),
             Self::Alarms(cmd) => cmd.scope(),
+            Self::Scenes(cmd) => cmd.scope(),
             Self::ColorControl(cmd) => cmd.scope(),
             Self::IasZone(cmd) => cmd.scope(),
         }
@@ -133,6 +141,7 @@ impl CommandDispatch for Cluster {
             Self::OnOff(cmd) => cmd.direction(),
             Self::Level(cmd) => cmd.direction(),
             Self::Alarms(cmd) => cmd.direction(),
+            Self::Scenes(cmd) => cmd.direction(),
             Self::ColorControl(cmd) => cmd.direction(),
             Self::IasZone(cmd) => cmd.direction(),
         }
@@ -147,6 +156,7 @@ impl CommandDispatch for Cluster {
             Self::OnOff(cmd) => cmd.disable_default_response(),
             Self::Level(cmd) => cmd.disable_default_response(),
             Self::Alarms(cmd) => cmd.disable_default_response(),
+            Self::Scenes(cmd) => cmd.disable_default_response(),
             Self::ColorControl(cmd) => cmd.disable_default_response(),
             Self::IasZone(cmd) => cmd.disable_default_response(),
         }
@@ -165,6 +175,7 @@ impl ToLeStream for Cluster {
             Self::OnOff(cmd) => Iter::OnOff(cmd.to_le_stream()),
             Self::Level(cmd) => Iter::Level(cmd.to_le_stream()),
             Self::Alarms(cmd) => Iter::Alarms(cmd.to_le_stream()),
+            Self::Scenes(cmd) => Iter::Scenes(cmd.to_le_stream()),
             Self::ColorControl(cmd) => Iter::ColorControl(cmd.to_le_stream()),
             Self::IasZone(cmd) => Iter::IasZone(cmd.to_le_stream()),
         }
@@ -179,6 +190,7 @@ pub enum Iter {
     OnOff(<on_off::Command as ToLeStream>::Iter),
     Level(<level::Command as ToLeStream>::Iter),
     Alarms(<alarms::Command as ToLeStream>::Iter),
+    Scenes(<scenes::Command as ToLeStream>::Iter),
     ColorControl(<color_control::Command as ToLeStream>::Iter),
     IasZone(<ias::zone::Command as ToLeStream>::Iter),
 }
@@ -195,6 +207,7 @@ impl Iterator for Iter {
             Self::OnOff(iter) => iter.next(),
             Self::Level(iter) => iter.next(),
             Self::Alarms(iter) => iter.next(),
+            Self::Scenes(iter) => iter.next(),
             Self::ColorControl(iter) => iter.next(),
             Self::IasZone(iter) => iter.next(),
         }

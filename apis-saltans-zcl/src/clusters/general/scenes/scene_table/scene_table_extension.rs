@@ -8,7 +8,7 @@ use le_stream::{FromLeStream, ToLeStream};
 /// TODO: The possible extensions depend on the zcl supported by the device.
 /// - Group extensions by cluster.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum SceneTableExtension {
     /// On/Off state of the device.
     OnOff(Bool),

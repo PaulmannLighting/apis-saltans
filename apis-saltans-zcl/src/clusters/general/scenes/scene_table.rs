@@ -6,7 +6,7 @@ use apis_saltans_core::types::{String, Uint8, Uint16};
 use chrono::Duration;
 use le_stream::{FromLeStream, ToLeStream};
 
-use crate::general::scenes::scene_table::scene_table_extension::SceneTableExtension;
+pub use self::scene_table_extension::SceneTableExtension;
 
 /// Scene table entry.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

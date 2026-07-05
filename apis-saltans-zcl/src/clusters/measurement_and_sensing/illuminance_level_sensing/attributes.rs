@@ -13,9 +13,9 @@ zcl_attributes! {
     cluster: ClusterId::IlluminanceLevelSensing;
 
     /// The level status.
-    LevelStatus = 0x0000: LevelStatus { R },
+    LevelStatus = 0x0000: LevelStatus { R, P },
     /// The light sensor type.
     LightSensorType = 0x0001: LightSensorType { R },
     /// Target illuminance level in lux.
-    IlluminanceTargetLevel = 0x0010: Uint16 { W },
+    IlluminanceTargetLevel = 0x0010: Uint16 { R, W },
 }

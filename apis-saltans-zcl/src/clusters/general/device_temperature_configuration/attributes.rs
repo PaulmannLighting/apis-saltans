@@ -1,7 +1,7 @@
 //! Attributes of the Device Temperature Configuration cluster.
 
 use apis_saltans_core::ClusterId;
-use apis_saltans_core::types::{Int16, Uint24};
+use apis_saltans_core::types::{Int16, Uint16, Uint24};
 
 pub use self::types::AlarmMask;
 use crate::macros::zcl_attributes;
@@ -18,7 +18,7 @@ zcl_attributes! {
     /// Maximum temperature experienced in degrees Celsius.
     MaxTempExperienced = 0x0002: Int16 { R },
     /// Total time the temperature was above the maximum threshold in hours.
-    OverTempTotalDwell = 0x0003: Int16 { R },
+    OverTempTotalDwell = 0x0003: Uint16 { R },
     /// Alarms mask for device temperature.
     DeviceTempAlarmMask = 0x0010: AlarmMask { R, W },
     /// Low temperature threshold in degrees Celsius.

@@ -12,7 +12,7 @@ zcl_attributes! {
     cluster: ClusterId::IlluminanceMeasurement;
 
     /// The measured illuminance value.
-    MeasuredValue = 0x0000: MeasuredValue { R },
+    MeasuredValue = 0x0000: MeasuredValue { R, P },
     /// The minimum measured illuminance value that can be measured by the device.
     MinMeasuredValue = 0x0001: Uint16 { R },
     /// The maximum measured illuminance value that can be measured by the device.
