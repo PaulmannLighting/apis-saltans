@@ -12,10 +12,10 @@ use crate::Status;
 pub enum ParseAttributeError<T> {
     /// The attribute is unsupported.
     Unsupported {
-        /// The error status.
-        status: Result<Status, u8>,
         /// The attribute ID.
         id: u16,
+        /// The error status.
+        status: Result<Status, u8>,
     },
 
     /// The attribute ID is invalid.

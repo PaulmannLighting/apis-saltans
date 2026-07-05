@@ -60,7 +60,7 @@ zcl_command! {
                                 .map_err(ParseAttributeError::InvalidId)
                                 .and_then(|id| T::Attribute::try_from((id, typ)).map_err(Into::into)),
                             Err(status) => Err(ParseAttributeError::Unsupported {
-                                status, id
+                                id, status
                             }),
                         }
                     })
