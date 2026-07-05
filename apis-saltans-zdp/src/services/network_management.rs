@@ -24,7 +24,7 @@ mod mgmt_permit_joining_req;
 mod mgmt_permit_joining_rsp;
 mod mgmt_rtg_req;
 
-crate::services::zdp_command_group! {
+crate::zdp_command_group! {
     /// Network Management Commands.
     NetworkManagement {
         MgmtLqiReq,

@@ -18,15 +18,13 @@ mod bind_management;
 mod device_and_service_discovery;
 mod network_management;
 
-pub(crate) use crate::macros::{zdp_command, zdp_command_enum, zdp_command_group};
-
 /// A ZDP client service.
 pub trait Service {
     /// The name of the service.
     const NAME: &'static str;
 }
 
-zdp_command_enum! {
+crate::zdp_command_enum! {
     /// Available ZDP commands.
     Command {
         DeviceAndServiceDiscovery,

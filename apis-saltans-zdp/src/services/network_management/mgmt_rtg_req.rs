@@ -1,4 +1,4 @@
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Management Routing Table Request structure.
     derive { Copy }
     MgmtRtgReq => Mgmt_Rtg_req;

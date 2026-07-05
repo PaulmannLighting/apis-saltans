@@ -10,7 +10,7 @@ mod bind_rsp;
 mod clear_all_bindings_req;
 mod unbind_req;
 
-crate::services::zdp_command_group! {
+crate::zdp_command_group! {
     /// Bind management commands.
     BindManagement {
         BindReq,

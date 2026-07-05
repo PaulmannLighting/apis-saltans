@@ -11,7 +11,7 @@ mod address;
 mod address_mode;
 mod destination;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Request type for Bind Request.
     BindReq => Bind_req;
     cluster_id: 0x0021;

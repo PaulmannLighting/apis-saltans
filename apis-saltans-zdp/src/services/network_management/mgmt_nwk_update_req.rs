@@ -2,7 +2,7 @@ pub use self::scan_duration::ScanDuration;
 
 mod scan_duration;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Management Network Update Request
     MgmtNwkUpdateReq => Mgmt_NWK_Update_req;
     cluster_id: 0x0038;

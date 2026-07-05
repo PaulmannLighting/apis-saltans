@@ -1,4 +1,4 @@
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Management Bind Request structure.
     derive { Copy }
     MgmtBindReq => Mgmt_Bind_req;

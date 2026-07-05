@@ -1,6 +1,6 @@
 use apis_saltans_core::types::tlv::Tlv;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Management Network Beacon Survey Request.
     MgmtNwkBeaconSurveyReq => Mgmt_NWK_Beacon_Survey_req;
     cluster_id: 0x003c;

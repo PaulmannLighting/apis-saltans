@@ -30,7 +30,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         })?
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @stream
             [$($attribute),*]
             [$($extra_derive),*]
@@ -89,7 +89,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         })?
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @stream
             [$($attribute),*]
             []
@@ -146,7 +146,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         })?
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @stream
             [$($attribute),*]
             [$($extra_derive),*]
@@ -208,7 +208,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         })?
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @stream
             [$($attribute),*]
             []
@@ -274,7 +274,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         }
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @emit
             [$($attribute),*]
             [$($extra_derive),*]
@@ -339,7 +339,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         }
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @emit
             [$($attribute),*]
             [$($extra_derive),*]
@@ -405,7 +405,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         }
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @emit
             [$($attribute),*]
             [$($extra_derive),*]
@@ -474,7 +474,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         }
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @emit
             [$($attribute),*]
             [$($extra_derive),*]
@@ -544,7 +544,7 @@ macro_rules! zdp_command {
             $($try_from:item)*
         }
     ) => {
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @emit
             [$($attribute),*]
             [$($extra_derive),*]
@@ -663,14 +663,14 @@ macro_rules! zdp_command {
             }
         }
 
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @response
             $command
             $($response)?
         }
 
         impl std::fmt::Display for $command {
-            $crate::services::zdp_command! {
+            $crate::zdp_command! {
                 @display
                 self,
                 f,
@@ -685,7 +685,7 @@ macro_rules! zdp_command {
 
         $($try_from)*
 
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @from_le_stream
             $command
             {
@@ -693,7 +693,7 @@ macro_rules! zdp_command {
             }
         }
 
-        $crate::services::zdp_command! {
+        $crate::zdp_command! {
             @to_le_stream
             $command
             {

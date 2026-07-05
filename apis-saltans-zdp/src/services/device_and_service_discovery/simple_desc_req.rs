@@ -2,7 +2,7 @@ use apis_saltans_core::Endpoint;
 
 use crate::SimpleDescRsp;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Simple Descriptor Request structure.
     derive { Copy }
     SimpleDescReq => Simple_Desc_req;

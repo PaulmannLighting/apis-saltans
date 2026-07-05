@@ -2,7 +2,7 @@ use le_stream::{Consume, ToLeStream};
 
 use crate::{ByteSizedVec, SimpleDescriptor, Status};
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Simple Descriptor Response.
     SimpleDescRsp => Simple_Desc_rsp;
     cluster_id: 0x8004;

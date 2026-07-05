@@ -5,7 +5,7 @@ pub use self::request_type::RequestType;
 
 mod request_type;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Request parameters for network address request.
     NwkAddrReq => NWK_addr_req;
     cluster_id: 0x0000;

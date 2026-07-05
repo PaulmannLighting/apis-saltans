@@ -1,4 +1,4 @@
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Management Network IEEE Joining List Request.
     derive { Copy }
     MgmtNwkIeeeJoiningListReq => Mgmt_NWK_IEEE_Joining_List_req;

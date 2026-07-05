@@ -1,7 +1,7 @@
 use apis_saltans_core::types::tlv::{Local, Tlv};
 use macaddr::MacAddr8;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Clear All Bindings Request
     ClearAllBindingsReq => Clear_All_Bindings_req;
     cluster_id: 0x002b;

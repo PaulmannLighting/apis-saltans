@@ -4,7 +4,7 @@ use num_traits::FromPrimitive;
 
 use super::{Address, AddressMode, Destination};
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Request type for Bind Request.
     UnbindReq => Unbind_req;
     cluster_id: 0x0022;

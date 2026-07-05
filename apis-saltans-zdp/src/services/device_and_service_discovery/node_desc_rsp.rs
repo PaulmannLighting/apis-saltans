@@ -6,7 +6,7 @@ use le_stream::ToLeStream;
 
 use crate::Status;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Node Descriptor Response structure.
     NodeDescRsp => Node_Desc_rsp;
     cluster_id: 0x8002;

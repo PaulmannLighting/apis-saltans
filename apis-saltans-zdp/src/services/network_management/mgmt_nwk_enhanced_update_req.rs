@@ -7,7 +7,7 @@ use apis_saltans_core::types::{ChannelList, ConfigurationBitmask};
 pub use self::enhanced_update_parameters::EnhancedNwkUpdateParameters;
 use crate::ScanDuration;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Management Network Enhanced Update Request.
     MgmtNwkEnhancedUpdateReq => Mgmt_NWK_Enhanced_Update_req;
     cluster_id: 0x0039;

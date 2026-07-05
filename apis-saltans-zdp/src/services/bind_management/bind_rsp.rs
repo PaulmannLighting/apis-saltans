@@ -1,6 +1,6 @@
 use crate::{Displayable, Status};
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Binding response.
     derive { Copy }
     BindRsp => Bind_rsp;

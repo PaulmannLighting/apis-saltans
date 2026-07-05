@@ -30,7 +30,7 @@ mod simple_desc_req;
 mod simple_desc_rsp;
 mod system_server_discovery_req;
 
-crate::services::zdp_command_group! {
+crate::zdp_command_group! {
     /// Device and Service Discovery Commands.
     DeviceAndServiceDiscovery {
         NwkAddrReq,

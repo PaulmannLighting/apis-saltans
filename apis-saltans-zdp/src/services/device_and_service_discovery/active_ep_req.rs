@@ -1,6 +1,6 @@
 use crate::ActiveEpRsp;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Active Endpoint Request
     derive { Copy }
     ActiveEpReq => Active_EP_req;

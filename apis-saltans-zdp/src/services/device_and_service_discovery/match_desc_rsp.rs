@@ -1,6 +1,6 @@
 use crate::{ByteSizedVec, Displayable, Status};
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Match Descriptor Response.
     MatchDescRsp => Match_Desc_rsp;
     cluster_id: 0x8006;

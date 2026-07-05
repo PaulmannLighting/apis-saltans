@@ -24,5 +24,7 @@ mod services;
 mod simple_descriptor;
 mod status;
 
+pub(crate) use self::macros::{zdp_command, zdp_command_enum, zdp_command_group};
+
 /// Type alias for a byte-sized heapless vector.
 type ByteSizedVec<T> = heapless::Vec<T, { u8::MAX as usize }, u8>;

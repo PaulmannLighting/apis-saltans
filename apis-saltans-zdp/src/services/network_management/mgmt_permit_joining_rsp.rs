@@ -1,6 +1,6 @@
 use crate::{Displayable, Status};
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Response type for Mgmt Permit Joining Request.
     derive { Copy }
     MgmtPermitJoiningRsp => Mgmt_Permit_Joining_rsp;

@@ -1,4 +1,4 @@
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Power Descriptor Request structure.
     derive { Copy }
     PowerDescReq => Power_Desc_req;

@@ -1,4 +1,4 @@
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Management LQI Request structure.
     derive { Copy }
     MgmtLqiReq => Mgmt_Lqi_req;

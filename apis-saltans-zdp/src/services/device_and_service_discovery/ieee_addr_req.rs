@@ -1,4 +1,4 @@
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Request type for IEEE address request.
     IeeeAddrReq => IEEE_addr_req;
     cluster_id: 0x0001;

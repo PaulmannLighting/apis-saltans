@@ -2,7 +2,7 @@ use apis_saltans_core::Endpoint;
 
 use crate::{ByteSizedVec, Status};
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Active Endpoint Response.
     ActiveEpRsp => Active_EP_rsp;
     cluster_id: 0x8005;

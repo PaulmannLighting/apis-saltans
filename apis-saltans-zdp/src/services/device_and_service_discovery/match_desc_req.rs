@@ -1,6 +1,6 @@
 use crate::ByteSizedVec;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Match Descriptor Request.
     MatchDescReq => Match_Desc_req;
     cluster_id: 0x0006;

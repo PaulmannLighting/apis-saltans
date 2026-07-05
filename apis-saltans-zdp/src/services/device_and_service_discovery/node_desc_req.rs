@@ -2,7 +2,7 @@ use apis_saltans_core::types::tlv::{FragmentationParameters, Global, Tlv};
 
 use crate::NodeDescRsp;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Node Descriptor Request structure.
     NodeDescReq => Node_Desc_req;
     cluster_id: 0x0002;

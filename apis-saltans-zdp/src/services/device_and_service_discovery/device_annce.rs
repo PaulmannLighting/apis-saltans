@@ -1,7 +1,7 @@
 use apis_saltans_core::node::MacCapabilityFlags;
 use macaddr::MacAddr8;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Device Announcement Service.
     DeviceAnnce => Device_annce;
     cluster_id: 0x0013;

@@ -4,7 +4,7 @@ pub use self::leave_req_flags::LeaveReqFlags;
 
 mod leave_req_flags;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// Management Leave Request structure.
     MgmtLeaveReq => Mgmt_Leave_req;
     cluster_id: 0x0034;

@@ -1,6 +1,6 @@
 use apis_saltans_core::node::ServerMask;
 
-crate::services::zdp_command! {
+crate::zdp_command! {
     /// System Server Discovery Request
     derive { Copy }
     SystemServerDiscoveryReq => System_Server_Discovery_req;
