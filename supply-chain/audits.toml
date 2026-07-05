@@ -7,11 +7,23 @@ criteria = "safe-to-deploy"
 version = "0.1.5"
 notes = "AI-assisted audit"
 
+[[audits.apis-saltans-aps]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.1.1 -> 0.2.0"
+notes = "AI-assisted delta audit; dependency version updates for bumped workspace crates only"
+
 [[audits.apis-saltans-coordinator]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.1.2 -> 0.1.3"
 notes = "AI-assisted delta audit; version bump and core feature rename only"
+
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.1.3 -> 0.2.0"
+notes = "AI-assisted delta audit; event API, discovery, storage, network state, and ZCL/ZDP transceiver refactors for bumped workspace APIs, with no new unsafe code"
 
 [[audits.apis-saltans-core]]
 who = "Codex AI"
@@ -25,11 +37,35 @@ criteria = "safe-to-deploy"
 delta = "0.2.2 -> 0.2.3"
 notes = "AI-assisted delta audit; serde feature rename and serde derives only"
 
+[[audits.apis-saltans-core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.3 -> 0.3.0"
+notes = "AI-assisted delta audit; analog integer macro refactor, serde conversion updates, cluster/type additions, and no new unsafe code"
+
+[[audits.apis-saltans-hw]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.1.1 -> 0.2.0"
+notes = "AI-assisted delta audit; public result alias and NCP/frame/message adjustments for bumped workspace APIs, with no new unsafe code"
+
 [[audits.apis-saltans-macros]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.1.0 -> 0.1.1"
 notes = "AI-assisted delta audit; version bump and README only"
+
+[[audits.apis-saltans-zcl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.1.1 -> 0.2.0"
+notes = "AI-assisted delta audit; command and attribute macro refactors, expanded implemented ZCL attributes/commands, documentation updates, and no new unsafe code"
+
+[[audits.apis-saltans-zdp]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.1.2 -> 0.2.0"
+notes = "AI-assisted delta audit; ZDP command/group macro refactors, expanded service command coverage, response wiring, documentation updates, and no new unsafe code"
 
 [[audits.autocfg]]
 who = "Codex AI"
@@ -60,6 +96,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "1.2.65"
 notes = "AI-assisted audit"
+
+[[audits.cc]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.2.65 -> 1.2.66"
+notes = "AI-assisted delta audit; target parsing and compiler wrapper updates only"
 
 [[audits.cfg-if]]
 who = "Codex AI"
@@ -163,11 +205,23 @@ criteria = "safe-to-deploy"
 version = "10.1.2"
 notes = "AI-assisted audit"
 
+[[audits.le-stream]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "10.1.2 -> 10.1.3"
+notes = "AI-assisted delta audit; documentation and test coverage updates only"
+
 [[audits.le-stream-derive]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "1.3.8"
 notes = "AI-assisted audit"
+
+[[audits.le-stream-derive]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.3.8 -> 1.3.9"
+notes = "AI-assisted delta audit; enum serialization now uses explicit discriminants and removes unsafe pointer read; documentation updates only otherwise"
 
 [[audits.libc]]
 who = "Codex AI"
