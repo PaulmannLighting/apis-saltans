@@ -1,5 +1,7 @@
 //! Common types used across the protocol.
 
+use core::convert::Infallible;
+
 use le_stream::{FromLeStream, ToLeStream};
 use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
@@ -167,4 +169,11 @@ pub enum Type {
 
     /// 128-bit Key.
     Key128([u8; 16]) = 0xf1,
+}
+
+/// Conversion implementation for types that require `From<Type, Error: Into<Type>>`.
+impl From<Infallible> for Type {
+    fn from(value: Infallible) -> Self {
+        match value {}
+    }
 }

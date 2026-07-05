@@ -1261,8 +1261,8 @@ macro_rules! zcl_attributes {
                 0xfffe => Ok(Id::AttributeReportingStatus),
             ]
             [
-                (Id::ClusterRevision, typ) => $crate::attributes::TryFromAttributeType::try_from_attribute_type(typ).map(Readable::ClusterRevision),
-                (Id::AttributeReportingStatus, typ) => $crate::attributes::TryFromAttributeType::try_from_attribute_type(typ).map(Readable::AttributeReportingStatus),
+                (Id::ClusterRevision, typ) => <apis_saltans_core::types::Uint16 as TryFrom<apis_saltans_core::types::Type>>::try_from(typ).map(Readable::ClusterRevision).map_err(Into::into),
+                (Id::AttributeReportingStatus, typ) => <apis_saltans_core::types::Uint8 as TryFrom<apis_saltans_core::types::Type>>::try_from(typ).map(Readable::AttributeReportingStatus).map_err(Into::into),
             ]
             [
                 Readable::ClusterRevision(value) => value.into(),
@@ -1498,36 +1498,6 @@ macro_rules! zcl_attributes {
         [$($variant_attr:tt)*]
         [$variant:ident]
         [$id:tt]
-        [Type]
-        [R $(, $($tail:tt)*)?]
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @define_readable
-            $cluster
-            [$($manufacturer_code)?]
-            [$($id_variants)* $($variant_attr)* $variant = $id,]
-            [$($readable_variants)* $($variant_attr)* $variant(Type) = $id,]
-            [$($from_id_arms)* Id::$variant => $id,]
-            [$($try_from_u16_arms)* $id => Ok(Id::$variant),]
-            [$($try_from_readable_arms)* (Id::$variant, typ) => Ok(Readable::$variant(typ)),]
-            [$($from_readable_arms)* Readable::$variant(value) => value.into(),]
-            [$($rest)*]
-        }
-    };
-    (
-        @readable_access
-        $cluster:tt
-        [$($manufacturer_code:expr)?]
-        [$($id_variants:tt)*]
-        [$($readable_variants:tt)*]
-        [$($from_id_arms:tt)*]
-        [$($try_from_u16_arms:tt)*]
-        [$($try_from_readable_arms:tt)*]
-        [$($from_readable_arms:tt)*]
-        [$($rest:tt)*]
-        [$($variant_attr:tt)*]
-        [$variant:ident]
-        [$id:tt]
         [$ty:ty]
         [R $(, $($tail:tt)*)?]
     ) => {
@@ -1539,7 +1509,7 @@ macro_rules! zcl_attributes {
             [$($readable_variants)* $($variant_attr)* $variant($ty) = $id,]
             [$($from_id_arms)* Id::$variant => $id,]
             [$($try_from_u16_arms)* $id => Ok(Id::$variant),]
-            [$($try_from_readable_arms)* (Id::$variant, typ) => $crate::attributes::TryFromAttributeType::try_from_attribute_type(typ).map(Readable::$variant),]
+            [$($try_from_readable_arms)* (Id::$variant, typ) => <$ty as TryFrom<apis_saltans_core::types::Type>>::try_from(typ).map(Readable::$variant).map_err(Into::into),]
             [$($from_readable_arms)* Readable::$variant(value) => value.into(),]
             [$($rest)*]
         }
