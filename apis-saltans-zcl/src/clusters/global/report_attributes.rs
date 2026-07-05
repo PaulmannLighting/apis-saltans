@@ -23,8 +23,8 @@ zcl_command! {
         getters {
             /// Returns the attribute reports of the command.
             #[must_use]
-            pub fn reports(&self) -> &[AttributeReport] {
-                &self.reports
+            pub fn into_reports(self) -> Box<[AttributeReport]> {
+                self.reports
             }
         }
     }
