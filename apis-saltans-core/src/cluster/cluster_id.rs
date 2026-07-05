@@ -41,11 +41,17 @@ pub enum ClusterId {
     /// Color control cluster.
     ColorControl = 0x0300,
 
+    /// Ballast configuration cluster.
+    BallastConfiguration = 0x0301,
+
     /// Illuminance measurement cluster.
     IlluminanceMeasurement = 0x0400,
 
     /// Illuminance level sensing cluster.
     IlluminanceLevelSensing = 0x0401,
+
+    /// Occupancy sensing cluster.
+    OccupancySensing = 0x0406,
 
     /// IAS Zone cluster.
     IasZone = 0x0500,

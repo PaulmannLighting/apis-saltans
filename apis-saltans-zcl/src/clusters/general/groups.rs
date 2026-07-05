@@ -8,5 +8,6 @@ pub use self::commands::{
 };
 
 mod attribute;
+pub mod attributes;
 mod commands;
 mod types;

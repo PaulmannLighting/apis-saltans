@@ -16,5 +16,6 @@ pub use self::commands::{
     move_saturation, move_to_hue, step_hue, step_saturation,
 };
 
+pub mod attributes;
 mod color_information_attribute;
 mod commands;

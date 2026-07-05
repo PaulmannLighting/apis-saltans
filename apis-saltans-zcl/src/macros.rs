@@ -1121,7 +1121,10 @@ pub(crate) use zcl_command_enum;
 ///
 /// The macro generates fixed enum names in the invocation module:
 /// `Id` for readable attribute IDs, plus `Readable`, `Writable`,
-/// `Reportable`, and `Scene` for access-specific attribute values.
+/// `Reportable`, and `Scene` for access-specific attribute values. The
+/// cluster ID is required and is used to implement `Cluster` for the generated
+/// enums. The global readable attributes `ClusterRevision` and
+/// `AttributeReportingStatus` are always included.
 ///
 /// ```ignore
 /// zcl_attributes! {
@@ -1223,47 +1226,6 @@ macro_rules! zcl_attributes {
         }
     };
     (
-        manufacturer_code: $manufacturer_code:expr;
-        $(
-            $(#[$variant_attr:meta])*
-            $variant:ident = $id:tt: $ty:ty {
-                $($access:tt)*
-            }
-        ),* $(,)?
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @define
-            []
-            [$manufacturer_code]
-            $(
-                $(#[$variant_attr])*
-                $variant = $id: $ty {
-                    $($access)*
-                }
-            ),*
-        }
-    };
-    (
-        $(
-            $(#[$variant_attr:meta])*
-            $variant:ident = $id:tt: $ty:ty {
-                $($access:tt)*
-            }
-        ),* $(,)?
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @define
-            []
-            []
-            $(
-                $(#[$variant_attr])*
-                $variant = $id: $ty {
-                    $($access)*
-                }
-            ),*
-        }
-    };
-    (
         @define
         $cluster:tt
         [$($manufacturer_code:expr)?]
@@ -1278,7 +1240,34 @@ macro_rules! zcl_attributes {
             @define_readable
             $cluster
             [$($manufacturer_code)?]
-            [] [] [] [] [] []
+            [
+                /// The revision of the cluster specification that the cluster instance supports.
+                ClusterRevision = 0xfffd,
+                /// The reporting status of the cluster instance.
+                AttributeReportingStatus = 0xfffe,
+            ]
+            [
+                /// The revision of the cluster specification that the cluster instance supports.
+                ClusterRevision(apis_saltans_core::types::Uint16) = 0xfffd,
+                /// The reporting status of the cluster instance.
+                AttributeReportingStatus(apis_saltans_core::types::Uint8) = 0xfffe,
+            ]
+            [
+                Id::ClusterRevision => 0xfffd,
+                Id::AttributeReportingStatus => 0xfffe,
+            ]
+            [
+                0xfffd => Ok(Id::ClusterRevision),
+                0xfffe => Ok(Id::AttributeReportingStatus),
+            ]
+            [
+                (Id::ClusterRevision, typ) => $crate::attributes::TryFromAttributeType::try_from_attribute_type(typ).map(Readable::ClusterRevision),
+                (Id::AttributeReportingStatus, typ) => $crate::attributes::TryFromAttributeType::try_from_attribute_type(typ).map(Readable::AttributeReportingStatus),
+            ]
+            [
+                Readable::ClusterRevision(value) => value.into(),
+                Readable::AttributeReportingStatus(value) => value.into(),
+            ]
             [$([$(#[$variant_attr])*] [$variant] [$id] [$ty] [$($access)*];)*]
         }
 
@@ -1292,6 +1281,7 @@ macro_rules! zcl_attributes {
 
         $crate::macros::zcl_attributes! {
             @define_data_enum
+            $cluster
             [Reportable]
             ["Attributes that can be reported."]
             [P]
@@ -1301,6 +1291,7 @@ macro_rules! zcl_attributes {
 
         $crate::macros::zcl_attributes! {
             @define_data_enum
+            $cluster
             [Scene]
             ["Attributes that can be stored in scenes."]
             [S]
@@ -1312,19 +1303,9 @@ macro_rules! zcl_attributes {
     (@manufacturer_code [$manufacturer_code:expr]) => {
         const MANUFACTURER_CODE: Option<u16> = Some($manufacturer_code);
     };
-    (@cluster_impl [] $ty:ident) => {};
     (@cluster_impl [cluster $cluster_id:expr] $ty:ident) => {
         impl apis_saltans_core::Cluster<apis_saltans_core::ClusterId> for $ty {
             const ID: apis_saltans_core::ClusterId = $cluster_id;
-        }
-    };
-    (@readable_attribute_impl [] [$($manufacturer_code:expr)?]) => {
-        impl $crate::ReadableAttribute for Id {
-            type Attribute = Readable;
-
-            $crate::macros::zcl_attributes! {
-                @manufacturer_code [$($manufacturer_code)?]
-            }
         }
     };
     (@readable_attribute_impl [cluster $cluster_id:expr] [$($manufacturer_code:expr)?]) => {
@@ -1336,24 +1317,12 @@ macro_rules! zcl_attributes {
             }
         }
     };
-    (@writable_attribute_impl [] [$($manufacturer_code:expr)?] [$($id_arms:tt)*]) => {
-        impl $crate::WritableAttribute for Writable {
-            $crate::macros::zcl_attributes! {
-                @manufacturer_code [$($manufacturer_code)?]
-            }
-
-            fn id(&self) -> u16 {
-                match self {
-                    $($id_arms)*
-                }
-            }
-        }
-    };
+    (@writable_attribute_impl $cluster:tt [$($manufacturer_code:expr)?] []) => {};
     (
         @writable_attribute_impl
         [cluster $cluster_id:expr]
         [$($manufacturer_code:expr)?]
-        [$($id_arms:tt)*]
+        [$($id_arms:tt)+]
     ) => {
         impl $crate::WritableAttribute for Writable {
             $crate::macros::zcl_attributes! {
@@ -1362,7 +1331,7 @@ macro_rules! zcl_attributes {
 
             fn id(&self) -> u16 {
                 match self {
-                    $($id_arms)*
+                    $($id_arms)+
                 }
             }
         }
@@ -1395,6 +1364,12 @@ macro_rules! zcl_attributes {
             @cluster_impl
             $cluster
             Id
+        }
+
+        $crate::macros::zcl_attributes! {
+            @cluster_impl
+            $cluster
+            Readable
         }
 
         $crate::macros::zcl_attributes! {
@@ -1523,6 +1498,36 @@ macro_rules! zcl_attributes {
         [$($variant_attr:tt)*]
         [$variant:ident]
         [$id:tt]
+        [Type]
+        [R $(, $($tail:tt)*)?]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_readable
+            $cluster
+            [$($manufacturer_code)?]
+            [$($id_variants)* $($variant_attr)* $variant = $id,]
+            [$($readable_variants)* $($variant_attr)* $variant(Type) = $id,]
+            [$($from_id_arms)* Id::$variant => $id,]
+            [$($try_from_u16_arms)* $id => Ok(Id::$variant),]
+            [$($try_from_readable_arms)* (Id::$variant, typ) => Ok(Readable::$variant(typ)),]
+            [$($from_readable_arms)* Readable::$variant(value) => value.into(),]
+            [$($rest)*]
+        }
+    };
+    (
+        @readable_access
+        $cluster:tt
+        [$($manufacturer_code:expr)?]
+        [$($id_variants:tt)*]
+        [$($readable_variants:tt)*]
+        [$($from_id_arms:tt)*]
+        [$($try_from_u16_arms:tt)*]
+        [$($try_from_readable_arms:tt)*]
+        [$($from_readable_arms:tt)*]
+        [$($rest:tt)*]
+        [$($variant_attr:tt)*]
+        [$variant:ident]
+        [$id:tt]
         [$ty:ty]
         [R $(, $($tail:tt)*)?]
     ) => {
@@ -1534,7 +1539,7 @@ macro_rules! zcl_attributes {
             [$($readable_variants)* $($variant_attr)* $variant($ty) = $id,]
             [$($from_id_arms)* Id::$variant => $id,]
             [$($try_from_u16_arms)* $id => Ok(Id::$variant),]
-            [$($try_from_readable_arms)* (Id::$variant, typ) => typ.try_into().map(Readable::$variant),]
+            [$($try_from_readable_arms)* (Id::$variant, typ) => $crate::attributes::TryFromAttributeType::try_from_attribute_type(typ).map(Readable::$variant),]
             [$($from_readable_arms)* Readable::$variant(value) => value.into(),]
             [$($rest)*]
         }
@@ -1714,6 +1719,7 @@ macro_rules! zcl_attributes {
     };
     (
         @define_data_enum
+        $cluster:tt
         [$enum:ident]
         [$doc:literal]
         [$access:tt]
@@ -1721,9 +1727,16 @@ macro_rules! zcl_attributes {
         []
     ) => {
         $crate::macros::zcl_attributes! { @emit_value_enum [$enum] [$doc] [$($variants)*] }
+
+        $crate::macros::zcl_attributes! {
+            @cluster_impl
+            $cluster
+            $enum
+        }
     };
     (
         @define_data_enum
+        $cluster:tt
         [$enum:ident]
         [$doc:literal]
         [$access:tt]
@@ -1732,6 +1745,7 @@ macro_rules! zcl_attributes {
     ) => {
         $crate::macros::zcl_attributes! {
             @data_access
+            $cluster
             [$enum]
             [$doc]
             [$access]
@@ -1744,17 +1758,17 @@ macro_rules! zcl_attributes {
             [$($flags)*]
         }
     };
-    (@data_access [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] []) => {
-        $crate::macros::zcl_attributes! { @define_data_enum [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] }
+    (@data_access $cluster:tt [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] []) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] }
     };
-    (@data_access [Reportable] [$doc:literal] [P] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [P $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @define_data_enum [Reportable] [$doc] [P] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    (@data_access $cluster:tt [Reportable] [$doc:literal] [P] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [P $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Reportable] [$doc] [P] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
     };
-    (@data_access [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [S $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @define_data_enum [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    (@data_access $cluster:tt [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [S $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
     };
-    (@data_access [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [$ignored:tt $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @data_access [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] [$($variant_attr)*] [$variant] [$id] [$ty] [$($($tail)*)?] }
+    (@data_access $cluster:tt [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [$ignored:tt $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @data_access $cluster [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] [$($variant_attr)*] [$variant] [$id] [$ty] [$($($tail)*)?] }
     };
     (@emit_id_enum []) => {
         /// IDs of readable attributes.
@@ -1776,6 +1790,7 @@ macro_rules! zcl_attributes {
     };
     (@emit_value_enum [$enum:ident] [$doc:literal] [$($variants:tt)+]) => {
         #[doc = $doc]
+        #[allow(clippy::large_enum_variant, variant_size_differences)]
         #[derive(Clone, Debug, Eq, Hash, PartialEq)]
         #[repr(u16)]
         pub enum $enum {
@@ -1816,18 +1831,24 @@ mod zcl_attributes_macro_tests {
     #[test]
     fn generates_access_specific_enums() {
         let _ = Id::ReadOnly;
+        let _ = Id::ClusterRevision;
+        let _ = Id::AttributeReportingStatus;
         let _ = Readable::ReadOnly(Uint8::new(1));
         let _ = Readable::Writable(Uint8::new(2));
+        let _ = Readable::ClusterRevision(apis_saltans_core::types::Uint16::new(1));
+        let _ = Readable::AttributeReportingStatus(Uint8::new(0));
         let _ = Writable::Writable(Uint8::new(3));
         let _ = Writable::WriteOnly(Custom(Uint8::new(4)));
         let _ = Reportable::Writable(Uint8::new(5));
         let _ = Scene::Writable(Uint8::new(6));
     }
 
-    mod without_cluster {
-        use super::Uint8;
+    mod required_cluster {
+        use super::{ClusterId, Uint8};
 
         zcl_attributes! {
+            cluster: ClusterId::Basic;
+
             /// Read-only test attribute.
             ReadOnly = 0x0000: Uint8 { R },
             /// Writable test attribute.
@@ -1835,24 +1856,37 @@ mod zcl_attributes_macro_tests {
         }
 
         #[test]
-        fn generates_without_cluster_bound_impls() {
+        fn generates_cluster_bound_impls() {
             fn assert_readable<T>()
             where
-                T: crate::ReadableAttribute,
+                T: apis_saltans_core::Cluster<ClusterId> + crate::ReadableAttribute,
             {
             }
 
             fn assert_writable<T>()
             where
-                T: crate::WritableAttribute,
+                T: apis_saltans_core::Cluster<ClusterId> + crate::WritableAttribute,
+            {
+            }
+
+            fn assert_cluster<T>()
+            where
+                T: apis_saltans_core::Cluster<ClusterId>,
             {
             }
 
             assert_readable::<Id>();
             assert_writable::<Writable>();
+            assert_cluster::<Readable>();
+            assert_cluster::<Reportable>();
+            assert_cluster::<Scene>();
 
             let _ = Id::ReadOnly;
+            let _ = Id::ClusterRevision;
+            let _ = Id::AttributeReportingStatus;
             let _ = Readable::ReadOnly(Uint8::new(1));
+            let _ = Readable::ClusterRevision(apis_saltans_core::types::Uint16::new(1));
+            let _ = Readable::AttributeReportingStatus(Uint8::new(0));
             let _ = Writable::Writable(Uint8::new(2));
             let _ = Reportable::Writable(Uint8::new(3));
             let _ = Scene::Writable(Uint8::new(4));

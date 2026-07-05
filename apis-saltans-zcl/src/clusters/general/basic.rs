@@ -7,4 +7,5 @@ pub use self::attribute::{
 pub use self::commands::{Command, ResetToFactoryDefaults};
 
 mod attribute;
+pub mod attributes;
 mod commands;

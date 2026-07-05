@@ -7,4 +7,5 @@ pub use self::attribute::{
 pub use self::battery_alarm::BatteryAlarm;
 
 mod attribute;
+pub mod attributes;
 mod battery_alarm;

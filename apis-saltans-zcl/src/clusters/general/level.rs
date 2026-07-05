@@ -8,5 +8,6 @@ pub use self::commands::{
 pub use self::mode::Mode;
 
 mod attribute;
+pub mod attributes;
 mod commands;
 mod mode;

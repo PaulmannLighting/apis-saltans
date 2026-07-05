@@ -5,5 +5,6 @@ pub use self::scene_table::SceneTable;
 pub use self::types::CurrentGroup;
 
 mod attribute;
+pub mod attributes;
 mod scene_table;
 mod types;
