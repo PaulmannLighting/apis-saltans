@@ -1,4 +1,4 @@
-use apis_saltans_core::Application;
+use apis_saltans_core::{Application, Cluster};
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::Writable;
 use apis_saltans_zcl::global::write_attributes::{Command, Record, Response};
@@ -39,18 +39,24 @@ pub trait WriteAttributes {
         &self,
         ieee_address: MacAddr8,
         endpoint: Application,
-        attributes: Box<[T]>,
+        attributes: T,
     ) -> impl Future<Output = Result<Vec<Result<u16, u16>>, Error>> + Send
     where
         Self: Sync,
-        T: Writable,
+        T: IntoIterator<Item: Writable>,
     {
         let records = attributes.into_iter().map(Into::into).collect();
 
         async move {
-            self.write_attributes_raw(ieee_address, endpoint, T::ID, T::MANUFACTURER_CODE, records)
-                .await
-                .map(|response| response.into_iter().map(TryInto::try_into).collect())
+            self.write_attributes_raw(
+                ieee_address,
+                endpoint,
+                <T::Item as Cluster>::ID,
+                T::Item::MANUFACTURER_CODE,
+                records,
+            )
+            .await
+            .map(|response| response.into_iter().map(TryInto::try_into).collect())
         }
     }
 }

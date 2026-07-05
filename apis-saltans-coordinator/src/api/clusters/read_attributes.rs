@@ -1,4 +1,4 @@
-use apis_saltans_core::Application;
+use apis_saltans_core::{Application, Cluster};
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::global::read_attributes::{Command, Response};
 use apis_saltans_zcl::{ParseAttributeError, Readable};
@@ -18,14 +18,16 @@ pub trait ReadAttributes {
     /// # Errors
     ///
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes_raw(
+    fn read_attributes_raw<T>(
         &self,
         ieee_address: MacAddr8,
         endpoint: Application,
         cluster: u16,
         manufacturer_code: Option<u16>,
-        ids: Box<[u16]>,
-    ) -> impl Future<Output = Result<Response, Error>> + Send;
+        ids: T,
+    ) -> impl Future<Output = Result<Response, Error>> + Send
+    where
+        T: IntoIterator<Item = u16> + Send;
 
     /// Read attributes from a device.
     ///
@@ -36,31 +38,38 @@ pub trait ReadAttributes {
         &self,
         ieee_address: MacAddr8,
         endpoint: Application,
-        attributes: Box<[T]>,
-    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
+        attributes: T,
+    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T::Item>]>, Error>> + Send
     where
         Self: Sync,
-        T: Readable,
+        T: IntoIterator<Item: Readable, IntoIter: Send> + Send,
     {
-        let ids = attributes.into_iter().map(Into::into).collect();
-
         async move {
-            self.read_attributes_raw(ieee_address, endpoint, T::ID, T::MANUFACTURER_CODE, ids)
-                .await
-                .map(Into::into)
+            self.read_attributes_raw(
+                ieee_address,
+                endpoint,
+                <T::Item as Cluster>::ID,
+                T::Item::MANUFACTURER_CODE,
+                attributes.into_iter().map(Into::into),
+            )
+            .await
+            .map(Into::into)
         }
     }
 }
 
 impl ReadAttributes for Coordinator {
-    async fn read_attributes_raw(
+    async fn read_attributes_raw<T>(
         &self,
         ieee_address: MacAddr8,
         endpoint: Application,
         cluster: u16,
         manufacturer_code: Option<u16>,
-        ids: Box<[u16]>,
-    ) -> Result<Response, Error> {
+        ids: T,
+    ) -> Result<Response, Error>
+    where
+        T: IntoIterator<Item = u16> + Send,
+    {
         self.zcl
             .read_attributes_raw(
                 self.network_manager
@@ -70,7 +79,7 @@ impl ReadAttributes for Coordinator {
                 endpoint,
                 cluster,
                 manufacturer_code,
-                ids,
+                ids.into_iter().collect(),
             )
             .await
     }
