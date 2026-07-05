@@ -1,3 +1,5 @@
+use crate::Status;
+
 crate::zdp_command! {
     /// System Server Discovery Response.
     derive { Copy }
@@ -9,5 +11,13 @@ crate::zdp_command! {
         server_mask: u16,
     }
     getters {
+        /// Return the status of the response.
+        ///
+        /// # Errors
+        ///
+        /// Returns the raw status code if the conversion to a [`Status`] fails.
+        pub fn status(&self) -> Result<Status, u8> {
+            self.status.try_into()
+        }
     }
 }

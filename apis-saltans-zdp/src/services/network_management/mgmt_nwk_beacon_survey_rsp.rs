@@ -1,5 +1,7 @@
 use apis_saltans_core::types::tlv::Tlv;
 
+use crate::Status;
+
 crate::zdp_command! {
     /// Management Network Beacon Survey Response.
     MgmtNwkBeaconSurveyRsp => Mgmt_NWK_Beacon_Survey_rsp;
@@ -10,5 +12,13 @@ crate::zdp_command! {
         tlvs: Box<[Tlv]>,
     }
     getters {
+        /// Return the status of the response.
+        ///
+        /// # Errors
+        ///
+        /// Returns the raw status code if the conversion to a [`Status`] fails.
+        pub fn status(&self) -> Result<Status, u8> {
+            self.status.try_into()
+        }
     }
 }

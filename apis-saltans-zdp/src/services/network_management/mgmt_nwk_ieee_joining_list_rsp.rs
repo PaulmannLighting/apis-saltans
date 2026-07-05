@@ -1,6 +1,6 @@
 use macaddr::MacAddr8;
 
-use crate::ByteSizedVec;
+use crate::{ByteSizedVec, Status};
 
 crate::zdp_command! {
     /// Management Network IEEE Joining List Response.
@@ -16,5 +16,13 @@ crate::zdp_command! {
         ieee_joining_list: Option<ByteSizedVec<MacAddr8>>,
     }
     getters {
+        /// Return the status of the response.
+        ///
+        /// # Errors
+        ///
+        /// Returns the raw status code if the conversion to a [`Status`] fails.
+        pub fn status(&self) -> Result<Status, u8> {
+            self.status.try_into()
+        }
     }
 }

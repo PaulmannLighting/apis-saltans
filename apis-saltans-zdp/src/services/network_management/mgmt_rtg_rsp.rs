@@ -1,3 +1,5 @@
+use crate::Status;
+
 crate::zdp_command! {
     /// Management Routing Table Response.
     MgmtRtgRsp => Mgmt_Rtg_rsp;
@@ -11,5 +13,13 @@ crate::zdp_command! {
         routing_table_list: Box<[u8]>,
     }
     getters {
+        /// Return the status of the response.
+        ///
+        /// # Errors
+        ///
+        /// Returns the raw status code if the conversion to a [`Status`] fails.
+        pub fn status(&self) -> Result<Status, u8> {
+            self.status.try_into()
+        }
     }
 }

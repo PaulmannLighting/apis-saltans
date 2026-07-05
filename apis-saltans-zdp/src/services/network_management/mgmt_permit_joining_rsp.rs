@@ -19,12 +19,12 @@ crate::zdp_command! {
         }
     }
     getters {
-        /// Returns the status.
+        /// Return the status of the response.
         ///
         /// # Errors
         ///
-        /// Returns an error if the status code is invalid.
-        pub fn status(self) -> Result<Status, u8> {
+        /// Returns the raw status code if the conversion to a [`Status`] fails.
+        pub fn status(&self) -> Result<Status, u8> {
             self.status.try_into()
         }
     }

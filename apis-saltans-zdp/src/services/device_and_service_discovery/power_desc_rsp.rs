@@ -1,3 +1,5 @@
+use crate::Status;
+
 crate::zdp_command! {
     /// Power Descriptor Response.
     derive { Copy }
@@ -10,5 +12,13 @@ crate::zdp_command! {
         power_descriptor: Option<u16>,
     }
     getters {
+        /// Return the status of the response.
+        ///
+        /// # Errors
+        ///
+        /// Returns the raw status code if the conversion to a [`Status`] fails.
+        pub fn status(&self) -> Result<Status, u8> {
+            self.status.try_into()
+        }
     }
 }

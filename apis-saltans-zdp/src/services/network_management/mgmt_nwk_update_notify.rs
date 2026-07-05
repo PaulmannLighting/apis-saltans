@@ -1,4 +1,4 @@
-use crate::ByteSizedVec;
+use crate::{ByteSizedVec, Status};
 
 crate::zdp_command! {
     /// Management Network Update Notify.
@@ -13,5 +13,13 @@ crate::zdp_command! {
         energy_values: ByteSizedVec<u8>,
     }
     getters {
+        /// Return the status of the response.
+        ///
+        /// # Errors
+        ///
+        /// Returns the raw status code if the conversion to a [`Status`] fails.
+        pub fn status(&self) -> Result<Status, u8> {
+            self.status.try_into()
+        }
     }
 }
