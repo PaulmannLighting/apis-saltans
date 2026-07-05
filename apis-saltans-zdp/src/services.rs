@@ -1,22 +1,36 @@
 //! ZDP services.
 
 pub use self::bind_management::{
-    BindManagement, BindReq, BindRsp, ClearAllBindingsReq, Destination, UnbindReq,
+    BindManagement, BindReq, BindRsp, ClearAllBindingsReq, ClearAllBindingsRsp, Destination,
+    UnbindReq, UnbindRsp,
 };
 pub use self::device_and_service_discovery::{
-    ActiveEpReq, ActiveEpRsp, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, MatchDescReq,
-    MatchDescRsp, NodeDescReq, NodeDescRsp, NwkAddrReq, ParentAnnce, PowerDescReq, RequestType,
-    SimpleDescReq, SimpleDescRsp, SystemServerDiscoveryReq,
+    ActiveEpReq, ActiveEpRsp, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, IeeeAddrRsp,
+    MatchDescReq, MatchDescRsp, NodeDescReq, NodeDescRsp, NwkAddrReq, NwkAddrRsp, ParentAnnce,
+    ParentAnnceRsp, PowerDescReq, PowerDescRsp, RequestType, SimpleDescReq, SimpleDescRsp,
+    SystemServerDiscoveryReq, SystemServerDiscoveryRsp,
 };
 pub use self::network_management::{
-    EnhancedNwkUpdateParameters, LeaveReqFlags, MgmtBindReq, MgmtLeaveReq, MgmtLqiReq,
-    MgmtNwkBeaconSurveyReq, MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq, MgmtNwkUpdateReq,
-    MgmtPermitJoiningReq, MgmtPermitJoiningRsp, MgmtRtgReq, NetworkManagement, ScanDuration,
+    EnhancedNwkUpdateParameters, LeaveReqFlags, MgmtBindReq, MgmtBindRsp, MgmtLeaveReq,
+    MgmtLeaveRsp, MgmtLqiReq, MgmtLqiRsp, MgmtNwkBeaconSurveyReq, MgmtNwkBeaconSurveyRsp,
+    MgmtNwkEnhancedUpdateNotify, MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq,
+    MgmtNwkIeeeJoiningListRsp, MgmtNwkUnsolicitedEnhancedUpdateNotify, MgmtNwkUpdateNotify,
+    MgmtNwkUpdateReq, MgmtPermitJoiningReq, MgmtPermitJoiningRsp, MgmtRtgReq, MgmtRtgRsp,
+    NetworkManagement, ScanDuration,
+};
+pub use self::security::{
+    Security, SecurityChallengeReq, SecurityChallengeRsp, SecurityDecommissionReq,
+    SecurityDecommissionRsp, SecurityGetAuthenticationLevelReq, SecurityGetAuthenticationLevelRsp,
+    SecurityGetConfigurationReq, SecurityGetConfigurationRsp,
+    SecurityRetrieveAuthenticationTokenReq, SecurityRetrieveAuthenticationTokenRsp,
+    SecuritySetConfigurationReq, SecuritySetConfigurationRsp, SecurityStartKeyNegotiationReq,
+    SecurityStartKeyNegotiationRsp, SecurityStartKeyUpdateReq, SecurityStartKeyUpdateRsp,
 };
 
 mod bind_management;
 mod device_and_service_discovery;
 mod network_management;
+mod security;
 
 /// A ZDP client service.
 pub trait Service {
@@ -30,5 +44,6 @@ crate::zdp_command_enum! {
         DeviceAndServiceDiscovery,
         BindManagement,
         NetworkManagement,
+        Security,
     }
 }
