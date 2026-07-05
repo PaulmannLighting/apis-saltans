@@ -1,6 +1,6 @@
-use apis_saltans_core::{Application, Cluster};
+use apis_saltans_core::Application;
 use apis_saltans_hw::Metadata;
-use apis_saltans_zcl::WritableAttribute;
+use apis_saltans_zcl::Writable;
 use apis_saltans_zcl::global::write_attributes::{Command, Record, Response};
 use macaddr::MacAddr8;
 
@@ -43,7 +43,7 @@ pub trait WriteAttributes {
     ) -> impl Future<Output = Result<Vec<Result<u16, u16>>, Error>> + Send
     where
         Self: Sync,
-        T: Cluster + WritableAttribute,
+        T: Writable,
     {
         let records = attributes.into_iter().map(Into::into).collect();
 

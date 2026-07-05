@@ -1,7 +1,7 @@
-use apis_saltans_core::{Application, Cluster};
+use apis_saltans_core::Application;
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::global::read_attributes::{Command, Response};
-use apis_saltans_zcl::{ParseAttributeError, ReadableAttribute};
+use apis_saltans_zcl::{ParseAttributeError, Readable};
 use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 
@@ -9,8 +9,7 @@ use crate::transceiver::zcl::{Handle, Message, Payload};
 use crate::{Coordinator, Error, NetworkManager};
 
 /// Result of reading an attribute.
-pub type ReadAttributeResult<T> =
-    Result<<T as ReadableAttribute>::Attribute, ParseAttributeError<T>>;
+pub type ReadAttributeResult<T> = Result<<T as Readable>::Attribute, ParseAttributeError<T>>;
 
 /// Trait for reading attributes.
 pub trait ReadAttributes {
@@ -41,7 +40,7 @@ pub trait ReadAttributes {
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
-        T: Cluster + ReadableAttribute,
+        T: Readable,
     {
         let ids = attributes.into_iter().map(Into::into).collect();
 
@@ -106,7 +105,7 @@ pub trait ReadAttributesInternal {
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
-        T: Cluster + ReadableAttribute,
+        T: Readable,
     {
         let ids = attributes.into_iter().map(Into::into).collect();
 

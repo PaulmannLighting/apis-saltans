@@ -1670,7 +1670,7 @@ macro_rules! zcl_attributes {
         }
     };
     (@readable_attribute_impl [cluster $cluster_id:expr] [$($manufacturer_code:expr)?]) => {
-        impl $crate::ReadableAttribute for Id {
+        impl $crate::Readable for Id {
             type Attribute = Readable;
 
             $crate::macros::zcl_attributes! {
@@ -1685,7 +1685,7 @@ macro_rules! zcl_attributes {
         [$($manufacturer_code:expr)?]
         [$($id_arms:tt)+]
     ) => {
-        impl $crate::WritableAttribute for Writable {
+        impl $crate::Writable for Writable {
             $crate::macros::zcl_attributes! {
                 @manufacturer_code [$($manufacturer_code)?]
             }
@@ -2432,13 +2432,13 @@ mod zcl_attributes_macro_tests {
         fn generates_cluster_bound_impls() {
             fn assert_readable<T>()
             where
-                T: apis_saltans_core::Cluster<ClusterId> + crate::ReadableAttribute,
+                T: apis_saltans_core::Cluster<ClusterId> + crate::Readable,
             {
             }
 
             fn assert_writable<T>()
             where
-                T: apis_saltans_core::Cluster<ClusterId> + crate::WritableAttribute,
+                T: apis_saltans_core::Cluster<ClusterId> + crate::Writable,
             {
             }
 

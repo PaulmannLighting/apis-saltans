@@ -11,7 +11,7 @@ use apis_saltans_core::types::Type;
 
 pub use self::read_attributes_status::ReadAttributesStatus;
 use crate::macros::zcl_command;
-use crate::{ParseAttributeError, ReadableAttribute};
+use crate::{ParseAttributeError, Readable};
 
 mod read_attributes_status;
 
@@ -80,7 +80,7 @@ zcl_command! {
                     self,
                 ) -> impl Iterator<Item = Result<T::Attribute, ParseAttributeError<T>>>
                 where
-                    T: ReadableAttribute,
+                    T: Readable,
                 {
                     self.attribute_values.into_iter().map(|(id, typ)| {
                         T::try_from(id)
@@ -92,7 +92,7 @@ zcl_command! {
 
             impl<T> From<Response> for Box<[Result<T::Attribute, ParseAttributeError<T>>]>
             where
-                T: ReadableAttribute,
+                T: Readable,
             {
                 fn from(response: Response) -> Self {
                     response.parse::<T>().collect()
