@@ -6,16 +6,18 @@ pub use self::bind_management::{
 };
 pub use self::device_and_service_discovery::{
     ActiveEpReq, ActiveEpRsp, DeviceAndServiceDiscovery, DeviceAnnce, IeeeAddrReq, IeeeAddrRsp,
-    MatchDescReq, MatchDescRsp, NodeDescReq, NodeDescRsp, NwkAddrReq, NwkAddrRsp, ParentAnnce,
-    ParentAnnceRsp, PowerDescReq, PowerDescRsp, RequestType, SimpleDescReq, SimpleDescRsp,
-    SystemServerDiscoveryReq, SystemServerDiscoveryRsp,
+    IeeeAddrRspResponse, MatchDescReq, MatchDescRsp, NodeDescReq, NodeDescRsp, NwkAddrReq,
+    NwkAddrRsp, NwkAddrRspResponse, ParentAnnce, ParentAnnceRsp, PowerDescReq, PowerDescRsp,
+    RequestType, SimpleDescReq, SimpleDescRsp, SystemServerDiscoveryReq, SystemServerDiscoveryRsp,
 };
 pub use self::network_management::{
-    EnhancedNwkUpdateParameters, LeaveReqFlags, MgmtBindReq, MgmtBindRsp, MgmtLeaveReq,
-    MgmtLeaveRsp, MgmtLqiReq, MgmtLqiRsp, MgmtNwkBeaconSurveyReq, MgmtNwkBeaconSurveyRsp,
-    MgmtNwkEnhancedUpdateNotify, MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq,
-    MgmtNwkIeeeJoiningListRsp, MgmtNwkUnsolicitedEnhancedUpdateNotify, MgmtNwkUpdateNotify,
-    MgmtNwkUpdateReq, MgmtPermitJoiningReq, MgmtPermitJoiningRsp, MgmtRtgReq, MgmtRtgRsp,
+    EnhancedNwkUpdateParameters, JoiningPolicy, LeaveReqFlags, MgmtBindReq, MgmtBindRsp,
+    MgmtBindRspPayload, MgmtLeaveReq, MgmtLeaveRsp, MgmtLqiReq, MgmtLqiRsp, MgmtLqiRspPayload,
+    MgmtNwkBeaconSurveyReq, MgmtNwkBeaconSurveyRsp, MgmtNwkEnhancedUpdateNotify,
+    MgmtNwkEnhancedUpdateReq, MgmtNwkIeeeJoiningListReq, MgmtNwkIeeeJoiningListRsp,
+    MgmtNwkIeeeJoiningListRspEntries, MgmtNwkIeeeJoiningListRspPayload,
+    MgmtNwkUnsolicitedEnhancedUpdateNotify, MgmtNwkUpdateNotify, MgmtNwkUpdateReq,
+    MgmtPermitJoiningReq, MgmtPermitJoiningRsp, MgmtRtgReq, MgmtRtgRsp, MgmtRtgRspPayload,
     NetworkManagement, ScanDuration,
 };
 pub use self::security::{

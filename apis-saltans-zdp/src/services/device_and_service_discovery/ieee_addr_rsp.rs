@@ -1,6 +1,9 @@
 use macaddr::MacAddr8;
 
+pub use self::response::IeeeAddrRspResponse;
 use crate::Status;
+
+mod response;
 
 crate::zdp_command! {
     /// IEEE Address Response.
@@ -14,6 +17,53 @@ crate::zdp_command! {
         num_assoc_dev: Option<u8>,
         start_index: Option<u8>,
         nwk_addr_assoc_dev_list: Box<[u16]>,
+    }
+    constructor {
+        /// Creates a new IEEE Address Response.
+        #[must_use]
+        pub fn new(response: Result<IeeeAddrRspResponse, Status>) -> Self {
+            match response {
+                Ok(IeeeAddrRspResponse::Single {
+                    ieee_addr_remote_dev,
+                    nwk_addr_remote_dev,
+                }) => Self {
+                    status: Status::Success.into(),
+                    ieee_addr_remote_dev: Some(ieee_addr_remote_dev),
+                    nwk_addr_remote_dev: Some(nwk_addr_remote_dev),
+                    num_assoc_dev: None,
+                    start_index: None,
+                    nwk_addr_assoc_dev_list: Box::default(),
+                },
+                Ok(IeeeAddrRspResponse::Extended {
+                    ieee_addr_remote_dev,
+                    nwk_addr_remote_dev,
+                    start_index,
+                    nwk_addr_assoc_dev_list,
+                }) => Self {
+                    status: Status::Success.into(),
+                    ieee_addr_remote_dev: Some(ieee_addr_remote_dev),
+                    nwk_addr_remote_dev: Some(nwk_addr_remote_dev),
+                    num_assoc_dev: Some(u8::try_from(nwk_addr_assoc_dev_list.len()).unwrap_or(u8::MAX)),
+                    start_index: if nwk_addr_assoc_dev_list.is_empty() {
+                        None
+                    } else {
+                        Some(start_index)
+                    },
+                    nwk_addr_assoc_dev_list: (*nwk_addr_assoc_dev_list)
+                        .into_iter()
+                        .collect::<Vec<_>>()
+                        .into_boxed_slice(),
+                },
+                Err(status) => Self {
+                    status: status.into(),
+                    ieee_addr_remote_dev: None,
+                    nwk_addr_remote_dev: None,
+                    num_assoc_dev: None,
+                    start_index: None,
+                    nwk_addr_assoc_dev_list: Box::default(),
+                },
+            }
+        }
     }
     getters {
         /// Return the status of the response.

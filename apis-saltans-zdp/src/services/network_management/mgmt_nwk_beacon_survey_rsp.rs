@@ -11,6 +11,22 @@ crate::zdp_command! {
         status: u8,
         tlvs: Box<[Tlv]>,
     }
+    constructor {
+        /// Creates a new `MgmtNwkBeaconSurveyRsp`.
+        #[must_use]
+        pub fn new(response: Result<Box<[Tlv]>, Status>) -> Self {
+            match response {
+                Ok(tlvs) => Self {
+                    status: Status::Success.into(),
+                    tlvs,
+                },
+                Err(status) => Self {
+                    status: status.into(),
+                    tlvs: Box::default(),
+                },
+            }
+        }
+    }
     getters {
         /// Return the status of the response.
         ///

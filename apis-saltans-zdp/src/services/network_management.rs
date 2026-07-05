@@ -1,11 +1,11 @@
 //! Network Management Client ZDP Services.
 
 pub use self::mgmt_bind_req::MgmtBindReq;
-pub use self::mgmt_bind_rsp::MgmtBindRsp;
+pub use self::mgmt_bind_rsp::{MgmtBindRsp, MgmtBindRspPayload};
 pub use self::mgmt_leave_req::{LeaveReqFlags, MgmtLeaveReq};
 pub use self::mgmt_leave_rsp::MgmtLeaveRsp;
 pub use self::mgmt_lqi_req::MgmtLqiReq;
-pub use self::mgmt_lqi_rsp::MgmtLqiRsp;
+pub use self::mgmt_lqi_rsp::{MgmtLqiRsp, MgmtLqiRspPayload};
 pub use self::mgmt_nwk_beacon_survey_req::MgmtNwkBeaconSurveyReq;
 pub use self::mgmt_nwk_beacon_survey_rsp::MgmtNwkBeaconSurveyRsp;
 pub use self::mgmt_nwk_enhanced_update_notify::MgmtNwkEnhancedUpdateNotify;
@@ -13,14 +13,17 @@ pub use self::mgmt_nwk_enhanced_update_req::{
     EnhancedNwkUpdateParameters, MgmtNwkEnhancedUpdateReq,
 };
 pub use self::mgmt_nwk_ieee_joining_list_req::MgmtNwkIeeeJoiningListReq;
-pub use self::mgmt_nwk_ieee_joining_list_rsp::MgmtNwkIeeeJoiningListRsp;
+pub use self::mgmt_nwk_ieee_joining_list_rsp::{
+    JoiningPolicy, MgmtNwkIeeeJoiningListRsp, MgmtNwkIeeeJoiningListRspEntries,
+    MgmtNwkIeeeJoiningListRspPayload,
+};
 pub use self::mgmt_nwk_unsolicited_enhanced_update_notify::MgmtNwkUnsolicitedEnhancedUpdateNotify;
 pub use self::mgmt_nwk_update_notify::MgmtNwkUpdateNotify;
 pub use self::mgmt_nwk_update_req::{MgmtNwkUpdateReq, ScanDuration};
 pub use self::mgmt_permit_joining_req::MgmtPermitJoiningReq;
 pub use self::mgmt_permit_joining_rsp::MgmtPermitJoiningRsp;
 pub use self::mgmt_rtg_req::MgmtRtgReq;
-pub use self::mgmt_rtg_rsp::MgmtRtgRsp;
+pub use self::mgmt_rtg_rsp::{MgmtRtgRsp, MgmtRtgRspPayload};
 
 mod mgmt_bind_req;
 mod mgmt_bind_rsp;

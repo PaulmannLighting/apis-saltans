@@ -16,14 +16,20 @@ crate::zdp_command! {
         /// Creates a new Active Endpoint Response.
         #[must_use]
         pub fn new(
-            status: Status,
             nwk_addr_of_interest: u16,
-            active_eps: ByteSizedVec<Endpoint>,
+            active_eps: Result<ByteSizedVec<Endpoint>, Status>,
         ) -> Self {
-            Self {
-                status: status.into(),
-                nwk_addr_of_interest,
-                active_eps,
+            match active_eps {
+                Ok(active_eps) => Self {
+                    status: Status::Success.into(),
+                    nwk_addr_of_interest,
+                    active_eps,
+                },
+                Err(status) => Self {
+                    status: status.into(),
+                    nwk_addr_of_interest,
+                    active_eps: ByteSizedVec::new(),
+                },
             }
         }
     }

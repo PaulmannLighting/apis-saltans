@@ -15,15 +15,21 @@ crate::zdp_command! {
     constructor {
         /// Creates a new `MatchDescRsp`.
         #[must_use]
-        pub const fn new(
-            status: Status,
+        pub fn new(
             nwk_addr_of_interest: u16,
-            matches: ByteSizedVec<u8>,
+            matches: Result<ByteSizedVec<u8>, Status>,
         ) -> Self {
-            Self {
-                status: status as u8,
-                nwk_addr_of_interest,
-                matches,
+            match matches {
+                Ok(matches) => Self {
+                    status: Status::Success as u8,
+                    nwk_addr_of_interest,
+                    matches,
+                },
+                Err(status) => Self {
+                    status: status as u8,
+                    nwk_addr_of_interest,
+                    matches: ByteSizedVec::new(),
+                },
             }
         }
     }

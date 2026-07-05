@@ -11,6 +11,24 @@ crate::zdp_command! {
         nwk_addr_of_interest: u16,
         power_descriptor: Option<u16>,
     }
+    constructor {
+        /// Creates a new `PowerDescRsp`.
+        #[must_use]
+        pub const fn new(nwk_addr_of_interest: u16, power_descriptor: Result<u16, Status>) -> Self {
+            match power_descriptor {
+                Ok(power_descriptor) => Self {
+                    status: Status::Success as u8,
+                    nwk_addr_of_interest,
+                    power_descriptor: Some(power_descriptor),
+                },
+                Err(status) => Self {
+                    status: status as u8,
+                    nwk_addr_of_interest,
+                    power_descriptor: None,
+                },
+            }
+        }
+    }
     getters {
         /// Return the status of the response.
         ///

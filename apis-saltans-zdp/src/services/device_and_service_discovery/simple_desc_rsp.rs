@@ -16,11 +16,21 @@ crate::zdp_command! {
     constructor {
         /// Creates a new Simple Descriptor Response.
         #[must_use]
-        pub fn new(status: Status, nwk_addr_of_interest: u16, descriptor: SimpleDescriptor) -> Self {
-            Self {
-                status: status.into(),
-                nwk_addr_of_interest,
-                descriptor: descriptor.to_le_stream().collect(),
+        pub fn new(
+            nwk_addr_of_interest: u16,
+            descriptor: Result<SimpleDescriptor, Status>,
+        ) -> Self {
+            match descriptor {
+                Ok(descriptor) => Self {
+                    status: Status::Success.into(),
+                    nwk_addr_of_interest,
+                    descriptor: descriptor.to_le_stream().collect(),
+                },
+                Err(status) => Self {
+                    status: status.into(),
+                    nwk_addr_of_interest,
+                    descriptor: ByteSizedVec::new(),
+                },
             }
         }
     }

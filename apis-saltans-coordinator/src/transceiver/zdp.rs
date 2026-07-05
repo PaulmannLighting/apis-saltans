@@ -6,7 +6,7 @@ use apis_saltans_core::{Address, Endpoint};
 use apis_saltans_hw::{Metadata, Ncp};
 use apis_saltans_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
-    SimpleDescriptor, Status,
+    SimpleDescriptor,
 };
 use le_stream::ToLeStream;
 use log::{debug, error, trace, warn};
@@ -191,9 +191,9 @@ where
 
     async fn handle_match_desc_req(&self, src_address: u16, seq: u8, match_desc_req: MatchDescReq) {
         let payload = MatchDescRsp::new(
-            Status::Success,
             0x0000,
-            self.endpoints
+            Ok(self
+                .endpoints
                 .iter()
                 .filter_map(|endpoint| {
                     if match_desc_req.matches(endpoint) {
@@ -202,7 +202,7 @@ where
                         None
                     }
                 })
-                .collect(),
+                .collect()),
         );
 
         if let Err(error) = self
