@@ -17,7 +17,7 @@ impl From<Data<Frame<Cluster>>> for Type {
         let (_zcl_header, command) = payload.into_parts();
 
         if let Cluster::Global(global::Command::ReportAttributes(report_attributes)) = command {
-            Type::AttributeReport(
+            Self::AttributeReport(
                 report_attributes
                     .into_reports()
                     .into_iter()
@@ -32,7 +32,7 @@ impl From<Data<Frame<Cluster>>> for Type {
                     .collect(),
             )
         } else {
-            Type::Cluster(command)
+            Self::Cluster(command)
         }
     }
 }
