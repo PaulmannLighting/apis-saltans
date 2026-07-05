@@ -1120,6 +1120,78 @@ pub(crate) use zcl_command_enum;
 macro_rules! zcl_attribute_newtype {
     (
         $(#[$attr:meta])*
+        $vis:vis ranged struct $name:ident($inner:ty) = $min:literal..=$max:literal;
+    ) => {
+        $(#[$attr])*
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            serde(transparent)
+        )]
+        #[derive(
+            Clone,
+            Copy,
+            Debug,
+            Eq,
+            Hash,
+            Ord,
+            PartialEq,
+            PartialOrd,
+            le_stream::ToLeStream,
+        )]
+        #[repr(transparent)]
+        $vis struct $name($inner);
+
+        impl $name {
+            /// Minimum allowed value.
+            pub const MIN: $inner = $min;
+
+            /// Maximum allowed value.
+            pub const MAX: $inner = $max;
+
+            /// Try to create a new attribute value.
+            #[must_use]
+            pub fn try_new(value: $inner) -> Option<Self> {
+                if (Self::MIN..=Self::MAX).contains(&value) {
+                    Some(Self(value))
+                } else {
+                    None
+                }
+            }
+
+            /// Return the inner value.
+            #[must_use]
+            pub const fn into_inner(self) -> $inner {
+                self.0
+            }
+        }
+
+        impl From<$name> for $inner {
+            fn from(value: $name) -> Self {
+                value.0
+            }
+        }
+
+        impl TryFrom<$inner> for $name {
+            type Error = $inner;
+
+            fn try_from(value: $inner) -> Result<Self, Self::Error> {
+                Self::try_new(value).ok_or(value)
+            }
+        }
+
+        impl le_stream::FromLeStream for $name {
+            fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+            where
+                T: Iterator<Item = u8>,
+            {
+                <$inner as le_stream::FromLeStream>::from_le_stream(&mut bytes)
+                    .and_then(|value| value.try_into().ok())
+            }
+        }
+    };
+    (
+        $(#[$attr:meta])*
         $vis:vis bitflags $name:ident($inner:ty) => $variant:ident {
             $(
                 $(#[$($flag_attr:tt)*])*

@@ -2,6 +2,7 @@
 
 use apis_saltans_core::ClusterId;
 use apis_saltans_core::types::{String, Uint8, Uint16};
+use apis_saltans_core::units::Mireds;
 
 pub use self::color_capabilities::ColorCapabilities;
 pub use self::color_loop_direction::ColorLoopDirection;
@@ -38,7 +39,7 @@ zcl_attributes! {
     /// The drift compensation text for the light.
     CompensationText = 0x0006: String<254> { R },
     /// The color temperature of the light in mireds.
-    ColorTemperature = 0x0007: Uint16 { R },
+    ColorTemperature = 0x0007: Mireds { R },
     /// The color mode of the light.
     ColorMode = 0x0008: ColorMode { R },
     /// Commissioning options.

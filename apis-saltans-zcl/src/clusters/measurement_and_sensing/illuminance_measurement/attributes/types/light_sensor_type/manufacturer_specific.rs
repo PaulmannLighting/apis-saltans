@@ -9,7 +9,7 @@ impl ManufacturerSpecific {
     pub const MIN: u8 = 0x40;
 
     /// Maximum allowed value.
-    pub const MAX: u8 = 0xFE;
+    pub const MAX: u8 = 0xfe;
 
     /// Return the raw value of the manufacturer specific light sensor type.
     #[must_use]

@@ -25,7 +25,7 @@ impl LightSensorType {
             Self::Photodiode => 0x00,
             Self::Cmos => 0x01,
             Self::ManufacturerSpecific(manufacturer_specific) => manufacturer_specific.as_u8(),
-            Self::Unknown => 0xFF,
+            Self::Unknown => 0xff,
         }
     }
 }
@@ -52,7 +52,7 @@ impl TryFrom<u8> for LightSensorType {
             ManufacturerSpecific::MIN..=ManufacturerSpecific::MAX => {
                 ManufacturerSpecific::try_from(value).map(Self::ManufacturerSpecific)
             }
-            0xFF => Ok(Self::Unknown),
+            0xff => Ok(Self::Unknown),
             other => Err(other),
         }
     }
