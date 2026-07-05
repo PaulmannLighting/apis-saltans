@@ -1,3 +1,5 @@
+use apis_saltans_core::ByteSizedVec;
+
 use crate::Status;
 
 crate::zdp_command! {
@@ -9,8 +11,7 @@ crate::zdp_command! {
         status: u8,
         binding_table_entries: u8,
         start_index: u8,
-        binding_table_list_count: u8,
-        binding_table_list: Box<[u8]>,
+        binding_table_list: ByteSizedVec<u8>,
     }
     getters {
         /// Return the status of the response.
