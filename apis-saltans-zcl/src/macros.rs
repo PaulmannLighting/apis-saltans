@@ -1954,6 +1954,44 @@ macro_rules! zcl_attributes {
         [$($writable_variants:tt)*]
         [$($id_arms:tt)*]
         [$($record_arms:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, W $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_writable
+            $cluster
+            [$($manufacturer_code)?]
+            [$($writable_variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($id_arms)* Writable::$variant(_) => $id,]
+            [$($record_arms)* Writable::$variant(value) => $crate::global::write_attributes::Record::new($id, value.into()),]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_writable
+        $cluster:tt
+        [$($manufacturer_code:expr)?]
+        [$($writable_variants:tt)*]
+        [$($id_arms:tt)*]
+        [$($record_arms:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_writable
+            $cluster
+            [$($manufacturer_code)?]
+            [$($writable_variants)*]
+            [$($id_arms)*]
+            [$($record_arms)*]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_writable
+        $cluster:tt
+        [$($manufacturer_code:expr)?]
+        [$($writable_variants:tt)*]
+        [$($id_arms:tt)*]
+        [$($record_arms:tt)*]
         [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [$($access:tt)*]; $($rest:tt)*]
     ) => {
         $crate::macros::zcl_attributes! {
@@ -1992,6 +2030,30 @@ macro_rules! zcl_attributes {
             [$($writable_variants)*]
             [$($id_arms)*]
             [$($record_arms)*]
+            [$($rest)*]
+        }
+    };
+    (
+        @writable_access
+        $cluster:tt
+        [$($manufacturer_code:expr)?]
+        [$($writable_variants:tt)*]
+        [$($id_arms:tt)*]
+        [$($record_arms:tt)*]
+        [$($rest:tt)*]
+        [$($variant_attr:tt)*]
+        [$variant:ident]
+        [$id:tt]
+        [$ty:ty]
+        [R, W $(, $($tail:tt)*)?]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_writable
+            $cluster
+            [$($manufacturer_code)?]
+            [$($writable_variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($id_arms)* Writable::$variant(_) => $id,]
+            [$($record_arms)* Writable::$variant(value) => $crate::global::write_attributes::Record::new($id, value.into()),]
             [$($rest)*]
         }
     };
@@ -2068,6 +2130,177 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [Reportable]
+        [$doc:literal]
+        [P]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Reportable]
+            [$doc]
+            [P]
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
+        [Reportable]
+        [$doc:literal]
+        [P]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, W, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Reportable]
+            [$doc]
+            [P]
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
+        [Scene]
+        [$doc:literal]
+        [S]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, S $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Scene]
+            [$doc]
+            [S]
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
+        [Scene]
+        [$doc:literal]
+        [S]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P, S $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Scene]
+            [$doc]
+            [S]
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
+        [Scene]
+        [$doc:literal]
+        [S]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, W, S $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Scene]
+            [$doc]
+            [S]
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
+        [Reportable]
+        [$doc:literal]
+        [P]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Reportable]
+            [$doc]
+            [P]
+            [$($variants)*]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
+        [Reportable]
+        [$doc:literal]
+        [P]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, W $(, S)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Reportable]
+            [$doc]
+            [P]
+            [$($variants)*]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
+        [Scene]
+        [$doc:literal]
+        [S]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Scene]
+            [$doc]
+            [S]
+            [$($variants)*]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
+        [Scene]
+        [$doc:literal]
+        [S]
+        [$($variants:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, W $(, P)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_data_enum
+            $cluster
+            [Scene]
+            [$doc]
+            [S]
+            [$($variants)*]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_data_enum
+        $cluster:tt
         [$enum:ident]
         [$doc:literal]
         [$access:tt]
@@ -2091,6 +2324,15 @@ macro_rules! zcl_attributes {
     };
     (@data_access $cluster:tt [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] []) => {
         $crate::macros::zcl_attributes! { @define_data_enum $cluster [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] }
+    };
+    (@data_access $cluster:tt [Reportable] [$doc:literal] [P] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Reportable] [$doc] [P] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    };
+    (@data_access $cluster:tt [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, S $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    };
+    (@data_access $cluster:tt [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P, S $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
     };
     (@data_access $cluster:tt [Reportable] [$doc:literal] [P] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [P $(, $($tail:tt)*)?]) => {
         $crate::macros::zcl_attributes! { @define_data_enum $cluster [Reportable] [$doc] [P] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
