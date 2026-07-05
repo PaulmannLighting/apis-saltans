@@ -2,12 +2,14 @@
 
 Zigbee Cluster Library (ZCL) frame, command, attribute, and cluster definitions.
 
-This crate provides typed ZCL frame handling plus a broad set of cluster command/data models for global and
-cluster-specific commands.
+This crate provides typed ZCL frame handling plus cluster command, attribute, and value models for global and
+cluster-specific ZCL traffic.
 
 ## Status
 
-This crate is under active development and currently implements a substantial, but not complete, subset of ZCL.
+This crate is under active development and currently implements a substantial, but not complete, subset of ZCL. Command
+runtime dispatch and attribute coverage are tracked separately: some clusters expose attributes even when they do not yet
+have cluster-specific command dispatch.
 
 ## Crate Characteristics
 
@@ -32,9 +34,10 @@ Top-level re-exports include:
     - `CommandDispatch` trait
 - Clusters:
     - `Cluster` enum (runtime command container)
-    - cluster modules: `general`, `global`, `lighting`, `measurement_and_sensing`
+    - cluster modules: `general`, `global`, `ias`, `lighting`, `measurement_and_sensing`
 - Attributes:
-    - `ReadableAttribute`, `WritableAttribute`
+    - `Readable`, `Writable`
+    - global `Reportable` enum with `Reportable::parse(cluster_id, attribute_id, typ)`
     - `ParseAttributeError`, `InvalidType`
 - Common:
     - `Status`, `Options`
@@ -67,11 +70,47 @@ For parsed runtime payloads, use `Frame<Cluster>` and `Frame::parse(cluster_id, 
     - Identify
     - On/Off
     - Level
+    - Alarms
+    - Scenes
 - Lighting cluster commands:
     - Color Control
+- IAS cluster commands:
+    - IAS Zone
 
-The repository also contains additional cluster/type modules that are not yet wired into the top-level runtime `Cluster`
-dispatch enum.
+The repository also contains additional cluster and attribute modules that are not yet wired into the top-level runtime
+`Cluster` command dispatch enum.
+
+## Attribute Coverage
+
+Implemented attribute modules generate typed `Id`, `Readable`, `Writable`, `Reportable`, and `Scene` enums according to
+the access flags present for each attribute. The global readable attributes `ClusterRevision` and
+`AttributeReportingStatus` are included in every cluster attribute module.
+
+Current attribute modules include:
+
+- General:
+    - Basic
+    - Power Configuration
+    - Device Temperature Configuration
+    - Identify
+    - Groups
+    - Scenes
+    - On/Off
+    - Level Control
+    - Alarms
+    - Time
+- Measurement and Sensing:
+    - Illuminance Measurement
+    - Illuminance Level Sensing
+    - Occupancy Sensing
+- Lighting:
+    - Ballast Configuration
+    - Color Control
+- IAS:
+    - IAS Zone
+
+For reports, use `apis_saltans_zcl::Reportable::parse(cluster_id, attribute_id, typ)` to map a raw cluster ID,
+attribute ID, and ZCL `Type` into the corresponding typed reportable attribute enum.
 
 ## Serialization and Parsing
 
@@ -85,25 +124,14 @@ dispatch enum.
 
 ## Quick Start
 
-### Encode a Global Default Response Frame
+### Encode a Global Default Response Payload
 
 ```rust
 use le_stream::ToLeStream;
-use apis_saltans_zcl::clusters::global::{Command as GlobalCommand, default_response::DefaultResponse};
-use apis_saltans_zcl::{Cluster, Direction, Frame, Header, Scope};
+use apis_saltans_zcl::clusters::global::default_response::DefaultResponse;
 
-let payload = Cluster::Global(GlobalCommand::DefaultResponse(DefaultResponse::new(0x00, 0x01)));
-let header = Header::new(
-Scope::Global,
-Direction::ClientToServer,
-true,  // disable default response
-None,  // no manufacturer code
-0x11,  // sequence
-0x0B,  // Default Response command id
-);
-
-let frame = unsafe { Frame::new_unchecked(header, payload) };
-let bytes: Vec<u8> = frame.to_le_stream().collect();
+let response = DefaultResponse::new(0x00, 0x01);
+let bytes: Vec<u8> = response.to_le_stream().collect();
 assert!(!bytes.is_empty());
 ```
 
@@ -121,9 +149,10 @@ assert!(parsed.is_ok());
 
 The crate provides type-safe patterns for attribute access:
 
-- `ReadableAttribute`: map attribute IDs and wire `apis_saltans_core::types::Type` values into strongly typed attribute
-  enums/structs
-- `WritableAttribute`: convert attribute write structures into global write records
+- `Readable`: map attribute IDs and wire `apis_saltans_core::types::Type` values into strongly typed readable attribute
+  enums/structs.
+- `Writable`: convert writable attribute values into global write records.
+- `Reportable`: parse reportable attributes across all implemented cluster attribute modules.
 
 This is intended to keep attribute handling explicit and strongly typed across clusters.
 

@@ -2,7 +2,8 @@
 
 Zigbee Device Profile (ZDP) command and service definitions.
 
-This crate provides typed request/response models for ZDP services, command dispatch by cluster ID, and frame wrappers with sequence numbers.
+This crate provides typed request/response models for ZDP services, grouped command enums, command dispatch by cluster ID,
+and frame wrappers with sequence numbers.
 
 ## Status
 
@@ -16,6 +17,7 @@ This crate is under active development and does not yet implement the full ZDP c
   - `DeviceAndServiceDiscovery`
   - `BindManagement`
   - `NetworkManagement`
+  - `Security`
 - Unified command enum:
   - `Command` (all currently supported ZDP commands)
 - Descriptor and status types:
@@ -49,28 +51,47 @@ APIs:
 ## Supported Service Groups
 
 ### Device and Service Discovery
-Includes request/response types such as:
+Includes:
 - `NwkAddrReq`, `IeeeAddrReq`
+- `NwkAddrRsp`, `IeeeAddrRsp`
 - `NodeDescReq`, `NodeDescRsp`
-- `PowerDescReq`
+- `PowerDescReq`, `PowerDescRsp`
 - `SimpleDescReq`, `SimpleDescRsp`
 - `ActiveEpReq`, `ActiveEpRsp`
 - `MatchDescReq`, `MatchDescRsp`
-- `DeviceAnnce`, `ParentAnnce`
-- `SystemServerDiscoveryReq`
+- `DeviceAnnce`
+- `ParentAnnce`, `ParentAnnceRsp`
+- `SystemServerDiscoveryReq`, `SystemServerDiscoveryRsp`
 
 ### Bind Management
 Includes:
 - `BindReq`, `BindRsp`
-- `UnbindReq`
-- `ClearAllBindingsReq`
+- `UnbindReq`, `UnbindRsp`
+- `ClearAllBindingsReq`, `ClearAllBindingsRsp`
 
 ### Network Management
 Includes:
-- `MgmtLqiReq`, `MgmtRtgReq`, `MgmtBindReq`, `MgmtLeaveReq`
+- `MgmtLqiReq`, `MgmtLqiRsp`
+- `MgmtRtgReq`, `MgmtRtgRsp`
+- `MgmtBindReq`, `MgmtBindRsp`
+- `MgmtLeaveReq`, `MgmtLeaveRsp`
 - `MgmtPermitJoiningReq`, `MgmtPermitJoiningRsp`
-- `MgmtNwkUpdateReq`, `MgmtNwkEnhancedUpdateReq`
-- `MgmtNwkIeeeJoiningListReq`, `MgmtNwkBeaconSurveyReq`
+- `MgmtNwkUpdateReq`, `MgmtNwkUpdateNotify`
+- `MgmtNwkEnhancedUpdateReq`, `MgmtNwkEnhancedUpdateNotify`
+- `MgmtNwkIeeeJoiningListReq`, `MgmtNwkIeeeJoiningListRsp`
+- `MgmtNwkUnsolicitedEnhancedUpdateNotify`
+- `MgmtNwkBeaconSurveyReq`, `MgmtNwkBeaconSurveyRsp`
+
+### Security
+Includes:
+- `SecurityStartKeyNegotiationReq`, `SecurityStartKeyNegotiationRsp`
+- `SecurityRetrieveAuthenticationTokenReq`, `SecurityRetrieveAuthenticationTokenRsp`
+- `SecurityGetAuthenticationLevelReq`, `SecurityGetAuthenticationLevelRsp`
+- `SecuritySetConfigurationReq`, `SecuritySetConfigurationRsp`
+- `SecurityGetConfigurationReq`, `SecurityGetConfigurationRsp`
+- `SecurityStartKeyUpdateReq`, `SecurityStartKeyUpdateRsp`
+- `SecurityDecommissionReq`, `SecurityDecommissionRsp`
+- `SecurityChallengeReq`, `SecurityChallengeRsp`
 
 ## Quick Start
 
@@ -99,9 +120,13 @@ let parsed = Frame::parse_with_cluster_id(ActiveEpReq::ID, raw.into_iter());
 assert!(parsed.is_ok());
 ```
 
-## Response Coupling
+## Response Coupling and Typed Constructors
 
 Many request types implement `apis_saltans_core::ExpectResponse<apis_saltans_zdp::Command>`, allowing request/response relationships to be expressed in type signatures (for example, `ActiveEpReq -> ActiveEpRsp`, `BindReq -> BindRsp`).
+
+Several response payloads use helper types to encode status-dependent invariants. For example, address and management
+responses use typed success payloads when the ZDP status is success and preserve raw status codes when the status cannot
+be converted into the crate's `Status` enum.
 
 ## Simple Descriptor Support
 

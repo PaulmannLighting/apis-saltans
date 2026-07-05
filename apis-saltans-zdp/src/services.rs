@@ -1,4 +1,7 @@
-//! ZDP services.
+//! ZDP service command payloads and grouped command enums.
+//!
+//! The module is organized by ZDP service group. Each group enum can parse by cluster ID, expose
+//! the cluster ID of its contained command, and serialize by dispatching to the contained command.
 
 pub use self::bind_management::{
     BindManagement, BindReq, BindRsp, ClearAllBindingsReq, ClearAllBindingsRsp, Destination,

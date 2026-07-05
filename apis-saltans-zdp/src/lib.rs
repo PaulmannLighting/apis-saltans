@@ -1,4 +1,9 @@
-//! Zigbee device profile (ZDP) library.
+//! Zigbee Device Profile (ZDP) frame and service command models.
+//!
+//! The crate provides typed ZDP request/response payloads, grouped service enums, a unified
+//! [`Command`] enum, command dispatch by cluster ID, and sequence-numbered [`Frame`] wrappers.
+//! Implemented service groups currently include Device and Service Discovery, Bind Management,
+//! Network Management, and Security.
 
 extern crate core;
 
