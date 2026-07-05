@@ -1,7 +1,13 @@
-//! Attribute value types of the Illuminance Level Sensing cluster.
+use crate::macros::zcl_attribute_newtype;
 
-pub use self::level_status::LevelStatus;
-pub use self::light_sensor_type::LightSensorType;
-
-mod level_status;
-mod light_sensor_type;
+zcl_attribute_newtype! {
+    /// Whether the illuminance is on target.
+    pub enum LevelStatus: Enum8 {
+        /// Illuminance on target.
+        OnTarget = 0x00,
+        /// Illuminance below target.
+        BelowTarget = 0x01,
+        /// Illuminance above target.
+        AboveTarget = 0x02,
+    }
+}

@@ -3,8 +3,9 @@
 use apis_saltans_core::ClusterId;
 use apis_saltans_core::types::Uint16;
 
-pub use self::types::{LevelStatus, LightSensorType};
+pub use self::types::LevelStatus;
 use crate::macros::zcl_attributes;
+pub use crate::measurement_and_sensing::illuminance_measurement::attributes::LightSensorType;
 
 mod types;
 

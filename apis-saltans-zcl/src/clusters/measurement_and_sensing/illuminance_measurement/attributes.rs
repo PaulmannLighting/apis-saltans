@@ -3,11 +3,10 @@
 use apis_saltans_core::ClusterId;
 use apis_saltans_core::types::Uint16;
 
-pub use self::measured_value::MeasuredValue;
-use super::LightSensorType;
+pub use self::types::{LightSensorType, ManufacturerSpecific, MeasuredValue};
 use crate::macros::zcl_attributes;
 
-mod measured_value;
+mod types;
 
 zcl_attributes! {
     cluster: ClusterId::IlluminanceMeasurement;
