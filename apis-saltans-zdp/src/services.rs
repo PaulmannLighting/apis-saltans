@@ -16,10 +16,9 @@ pub use self::network_management::{
 
 mod bind_management;
 mod device_and_service_discovery;
-mod macros;
 mod network_management;
 
-pub(crate) use self::macros::{zdp_command, zdp_command_enum, zdp_command_group};
+pub(crate) use crate::macros::{zdp_command, zdp_command_enum, zdp_command_group};
 
 /// A ZDP client service.
 pub trait Service {

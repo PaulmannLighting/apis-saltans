@@ -19,6 +19,7 @@ pub use self::services::{
 pub use self::simple_descriptor::{AppFlags, Clusters, SimpleDescriptor};
 
 mod frame;
+mod macros;
 mod services;
 mod simple_descriptor;
 mod status;
