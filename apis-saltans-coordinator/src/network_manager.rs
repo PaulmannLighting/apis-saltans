@@ -141,8 +141,7 @@ where
         };
 
         let ieee_address = device.address.ieee_address();
-        let (aps_header, zcl_frame) = frame.into_parts();
-        let (_zcl_header, cluster) = zcl_frame.into_parts();
+        let event = Event::new(Address::new(ieee_address, src_address), frame);
 
         for subscriber in self.subscribers.iter().filter_map(|(devices, sender)| {
             if devices.is_empty() || devices.contains(&ieee_address) {
@@ -152,11 +151,7 @@ where
             }
         }) {
             subscriber
-                .send(Event::new(
-                    Address::new(ieee_address, src_address),
-                    aps_header.source_endpoint(),
-                    cluster.clone(),
-                ))
+                .send(event.clone())
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to send command to subscriber: {error:?}");
