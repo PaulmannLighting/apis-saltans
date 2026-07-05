@@ -3,7 +3,7 @@
 use apis_saltans_core::ClusterId;
 use apis_saltans_core::types::{Uint8, Uint16};
 
-use self::types::{Occupancy, SensorBitmap, SensorType};
+pub use self::types::{Occupancy, SensorBitmap, SensorType};
 use crate::macros::zcl_attributes;
 
 mod types;

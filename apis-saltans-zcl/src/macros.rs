@@ -1641,12 +1641,9 @@ macro_rules! zcl_attributes {
         }
 
         $crate::macros::zcl_attributes! {
-            @define_data_enum
+            @define_reportable
             $cluster
-            [Reportable]
-            ["Attributes that can be reported."]
-            [P]
-            []
+            [] []
             [$([$(#[$variant_attr])*] [$variant] [$id] [$ty] [$($access)*];)*]
         }
 
@@ -2108,6 +2105,148 @@ macro_rules! zcl_attributes {
             [$id]
             [$ty]
             [$($($tail)*)?]
+        }
+    };
+    (
+        @define_reportable
+        $cluster:tt
+        [$($variants:tt)*]
+        []
+        []
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @emit_value_enum
+            [Reportable]
+            ["Attributes that can be reported."]
+            [$($variants)*]
+        }
+
+        $crate::macros::zcl_attributes! {
+            @cluster_impl
+            $cluster
+            Reportable
+        }
+
+        impl TryFrom<(u16, apis_saltans_core::types::Type)> for Reportable {
+            type Error = $crate::ParseAttributeError<u16>;
+
+            fn try_from(
+                (id, _typ): (u16, apis_saltans_core::types::Type),
+            ) -> Result<Self, Self::Error> {
+                Err($crate::ParseAttributeError::InvalidId(id))
+            }
+        }
+    };
+    (
+        @define_reportable
+        $cluster:tt
+        [$($variants:tt)*]
+        [$([$try_variant:ident] [$try_id:tt] [$try_ty:ty];)+]
+        []
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @emit_value_enum
+            [Reportable]
+            ["Attributes that can be reported."]
+            [$($variants)*]
+        }
+
+        $crate::macros::zcl_attributes! {
+            @cluster_impl
+            $cluster
+            Reportable
+        }
+
+        impl TryFrom<(u16, apis_saltans_core::types::Type)> for Reportable {
+            type Error = $crate::ParseAttributeError<u16>;
+
+            fn try_from(
+                (id, typ): (u16, apis_saltans_core::types::Type),
+            ) -> Result<Self, Self::Error> {
+                match id {
+                    $(
+                        $try_id => <$try_ty as TryFrom<apis_saltans_core::types::Type>>::try_from(typ)
+                            .map(Reportable::$try_variant)
+                            .map_err(|typ| $crate::InvalidType::new(id, typ).into()),
+                    )+
+                    other => Err($crate::ParseAttributeError::InvalidId(other)),
+                }
+            }
+        }
+    };
+    (
+        @define_reportable
+        $cluster:tt
+        [$($variants:tt)*]
+        [$($try_from_arms:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_reportable
+            $cluster
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($try_from_arms)* [$variant] [$id] [$ty];]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_reportable
+        $cluster:tt
+        [$($variants:tt)*]
+        [$($try_from_arms:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, W, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_reportable
+            $cluster
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($try_from_arms)* [$variant] [$id] [$ty];]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_reportable
+        $cluster:tt
+        [$($variants:tt)*]
+        [$($try_from_arms:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [W, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_reportable
+            $cluster
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($try_from_arms)* [$variant] [$id] [$ty];]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_reportable
+        $cluster:tt
+        [$($variants:tt)*]
+        [$($try_from_arms:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_reportable
+            $cluster
+            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
+            [$($try_from_arms)* [$variant] [$id] [$ty];]
+            [$($rest)*]
+        }
+    };
+    (
+        @define_reportable
+        $cluster:tt
+        [$($variants:tt)*]
+        [$($try_from_arms:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [$($access:tt)*]; $($rest:tt)*]
+    ) => {
+        $crate::macros::zcl_attributes! {
+            @define_reportable
+            $cluster
+            [$($variants)*]
+            [$($try_from_arms)*]
+            [$($rest)*]
         }
     };
     (

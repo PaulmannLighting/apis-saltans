@@ -1,6 +1,6 @@
 //! The Zigbee Cluster Library (ZCL).
 
-pub use self::attributes::{InvalidType, ParseAttributeError, Readable, Writable};
+pub use self::attributes::{InvalidType, ParseAttributeError, Readable, Reportable, Writable};
 pub use self::clusters::{Cluster, general, global, ias, lighting, measurement_and_sensing};
 pub use self::command::{Command, CommandDispatch};
 pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Scope};
