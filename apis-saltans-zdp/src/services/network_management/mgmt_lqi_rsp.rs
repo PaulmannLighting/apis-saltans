@@ -1,4 +1,4 @@
-use crate::Status;
+use crate::{ByteSizedVec, Status};
 
 crate::zdp_command! {
     /// Management LQI Response.
@@ -9,8 +9,7 @@ crate::zdp_command! {
         status: u8,
         neighbor_table_entries: u8,
         start_index: u8,
-        neighbor_table_list_count: u8,
-        neighbor_table_list: Box<[u8]>,
+        neighbor_table_list: ByteSizedVec<u8>,
     }
     getters {
         /// Return the status of the response.
