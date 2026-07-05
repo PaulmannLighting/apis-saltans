@@ -9,7 +9,6 @@ zcl_command! {
         { ClusterId::Identify } => Identify;
         command_id: 0x01;
         direction: Direction::ClientToServer;
-        => super::IdentifyQuery;
         derive(Default);
         fields;
     }

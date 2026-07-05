@@ -11,7 +11,6 @@ zcl_command! {
         command_id: 0x01;
         direction: Direction::ServerToClient;
         disable_default_response: true;
-        => super::ViewGroupResponse;
         fields {
             status: u8,
             group_id: Uint16,

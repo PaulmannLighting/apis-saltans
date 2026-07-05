@@ -8,7 +8,6 @@ zcl_command! {
         { ClusterId::OnOff } => OnOff;
         command_id: 0x41;
         direction: Direction::ClientToServer;
-        => super::OnWithRecallGlobalScene;
         fields;
     }
 }

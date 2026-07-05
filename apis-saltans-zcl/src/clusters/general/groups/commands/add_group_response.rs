@@ -11,7 +11,6 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ServerToClient;
         disable_default_response: true;
-        => super::AddGroupResponse;
         derive(Copy);
         fields {
             status: u8,

@@ -9,7 +9,6 @@ zcl_command! {
         { ClusterId::Groups } => Groups;
         command_id: 0x01;
         direction: Direction::ClientToServer;
-        => super::ViewGroup;
         derive(Copy);
         fields {
             /// The identifier of the group to view.

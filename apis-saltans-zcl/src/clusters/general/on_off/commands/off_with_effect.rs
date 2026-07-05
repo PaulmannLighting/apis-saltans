@@ -12,7 +12,6 @@ zcl_command! {
         { ClusterId::OnOff } => OnOff;
         command_id: 0x40;
         direction: Direction::ClientToServer;
-        => super::OffWithEffect;
         derive(Copy);
         fields {
             id: Uint8,

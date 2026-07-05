@@ -10,18 +10,19 @@
 ///         { ClusterId::OnOff } => OnOff;
 ///         command_id: 0x01;
 ///         direction: Direction::ClientToServer;
-///         => super::On;
 ///         fields;
 ///     }
 /// }
 /// ```
 ///
 /// Global commands omit the cluster ID and implement [`crate::command::Scoped`]
-/// with [`crate::Scope::Global`] instead. A `constructor` section can override
-/// the generated `new` constructor, and a `getters` section can contain
-/// accessor methods. Optional `from_le_stream` and `to_le_stream` sections
-/// replace the respective derive, and the final `impl` section can contain
-/// custom inherent or trait implementations for the type:
+/// with [`crate::Scope::Global`] instead. If the global command enum variant
+/// differs from the generated type name, pass that variant explicitly. A
+/// `constructor` section can override the generated `new` constructor, and a
+/// `getters` section can contain accessor methods. Optional `from_le_stream`
+/// and `to_le_stream` sections replace the respective derive, and the final
+/// `impl` section can contain custom inherent or trait implementations for the
+/// type:
 ///
 /// ```ignore
 /// zcl_command! {
@@ -65,7 +66,6 @@ macro_rules! zcl_command {
             direction: $direction:expr;
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
-            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
             $(derive($($extra_derive:path),* $(,)?);)?
             fields;
             $($rest:tt)*
@@ -78,7 +78,7 @@ macro_rules! zcl_command {
             [$command]
             [cluster $cluster_id]
             [$cluster_variant]
-            [$try_module::$try_variant_or_module $(::$try_variant)?]
+            [super::$command]
             [$command_id]
             [$direction]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
@@ -96,7 +96,6 @@ macro_rules! zcl_command {
             direction: $direction:expr;
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
-            => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
             $(derive($($extra_derive:path),* $(,)?);)?
             fields {
                 $(
@@ -114,7 +113,7 @@ macro_rules! zcl_command {
             [$command]
             [cluster $cluster_id]
             [$cluster_variant]
-            [$try_module::$try_variant_or_module $(::$try_variant)?]
+            [super::$command]
             [$command_id]
             [$direction]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
@@ -182,6 +181,71 @@ macro_rules! zcl_command {
             [global]
             [$cluster_variant]
             [$try_module::$try_variant_or_module $(::$try_variant)?]
+            [$command_id]
+            [$direction]
+            [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
+            [$($response)?]
+            [$($($extra_derive),*)?]
+            [$($(#[$field_attr])* $field: $field_ty,)*]
+            $($rest)*
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        $command:ident {
+            $cluster_variant:ident;
+            command_id: $command_id:expr;
+            direction: $direction:expr;
+            $(disable_default_response: $disable_default_response:expr;)?
+            $(response: $response:ty;)?
+            $(derive($($extra_derive:path),* $(,)?);)?
+            fields;
+            $($rest:tt)*
+        }
+    ) => {
+        $crate::macros::zcl_command! {
+            @parse_constructor
+            [unit]
+            [$(#[$attr])*]
+            [$command]
+            [global]
+            [$cluster_variant]
+            [crate::global::$command]
+            [$command_id]
+            [$direction]
+            [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
+            [$($response)?]
+            [$($($extra_derive),*)?]
+            []
+            $($rest)*
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        $command:ident {
+            $cluster_variant:ident;
+            command_id: $command_id:expr;
+            direction: $direction:expr;
+            $(disable_default_response: $disable_default_response:expr;)?
+            $(response: $response:ty;)?
+            $(derive($($extra_derive:path),* $(,)?);)?
+            fields {
+                $(
+                    $(#[$field_attr:meta])*
+                    $field:ident: $field_ty:ty
+                ),* $(,)?
+            }
+            $($rest:tt)*
+        }
+    ) => {
+        $crate::macros::zcl_command! {
+            @parse_constructor
+            [named]
+            [$(#[$attr])*]
+            [$command]
+            [global]
+            [$cluster_variant]
+            [crate::global::$command]
             [$command_id]
             [$direction]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]

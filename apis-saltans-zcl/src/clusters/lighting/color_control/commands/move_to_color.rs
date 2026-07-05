@@ -11,7 +11,6 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x07;
         direction: Direction::ClientToServer;
-        => super::MoveToColor;
         fields {
             color_x: u16,
             color_y: u16,

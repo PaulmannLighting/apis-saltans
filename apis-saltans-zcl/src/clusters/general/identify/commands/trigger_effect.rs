@@ -13,7 +13,6 @@ zcl_command! {
         { ClusterId::Identify } => Identify;
         command_id: 0x40;
         direction: Direction::ClientToServer;
-        => super::TriggerEffect;
         derive(Copy);
         fields {
             identifier: u8,

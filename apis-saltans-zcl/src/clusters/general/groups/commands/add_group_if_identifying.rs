@@ -9,7 +9,6 @@ zcl_command! {
         { ClusterId::Groups } => Groups;
         command_id: 0x05;
         direction: Direction::ClientToServer;
-        => super::AddGroupIfIdentifying;
         fields {
             group_id: Uint16,
             group_name: String,

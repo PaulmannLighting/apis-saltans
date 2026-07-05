@@ -10,7 +10,6 @@ zcl_command! {
         { ClusterId::Groups } => Groups;
         command_id: 0x02;
         direction: Direction::ClientToServer;
-        => super::GetGroupMembership;
         fields {
             groups: GroupList,
         }

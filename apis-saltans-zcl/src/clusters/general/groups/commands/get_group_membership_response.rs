@@ -11,7 +11,6 @@ zcl_command! {
         command_id: 0x02;
         direction: Direction::ServerToClient;
         disable_default_response: true;
-        => super::GetGroupMembershipResponse;
         fields {
             capacity: Uint8,
             groups: GroupList,

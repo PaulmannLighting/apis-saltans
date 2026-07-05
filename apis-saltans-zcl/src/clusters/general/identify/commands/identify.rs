@@ -11,7 +11,6 @@ zcl_command! {
         { ClusterId::Identify } => Identify;
         command_id: 0x00;
         direction: Direction::ClientToServer;
-        => super::Identify;
         derive(Copy);
         fields {
             identify_time_secs: Uint16,

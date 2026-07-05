@@ -10,7 +10,6 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x43;
         direction: Direction::ClientToServer;
-        => super::EnhancedMoveToHueAndSaturation;
         fields {
             enhanced_hue: u16,
             saturation: u8,

@@ -11,7 +11,6 @@ zcl_command! {
         { ClusterId::Groups } => Groups;
         command_id: 0x00;
         direction: Direction::ClientToServer;
-        => super::AddGroup;
         fields {
             /// The identifier of the group to be added.
             group_id: Uint16,

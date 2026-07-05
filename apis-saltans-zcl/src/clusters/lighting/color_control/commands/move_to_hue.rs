@@ -16,7 +16,6 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x00;
         direction: apis_saltans_core::Direction::ClientToServer;
-        => super::MoveToHue;
         fields {
             hue: u8,
             direction: u8,

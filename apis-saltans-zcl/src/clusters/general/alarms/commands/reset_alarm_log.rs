@@ -8,7 +8,6 @@ zcl_command! {
         { ClusterId::Alarms } => Alarms;
         command_id: 0x03;
         direction: Direction::ClientToServer;
-        => super::ResetAlarmLog;
         derive(Default);
         fields;
     }

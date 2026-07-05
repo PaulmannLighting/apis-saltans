@@ -12,7 +12,6 @@ zcl_command! {
         { ClusterId::Level } => Level;
         command_id: 0x05;
         direction: Direction::ClientToServer;
-        => super::MoveWithOnOff;
         derive(Copy);
         fields {
             mode: u8,

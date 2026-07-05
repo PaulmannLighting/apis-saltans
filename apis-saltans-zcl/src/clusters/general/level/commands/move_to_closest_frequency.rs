@@ -8,7 +8,6 @@ zcl_command! {
         { ClusterId::Level } => Level;
         command_id: 0x08;
         direction: Direction::ClientToServer;
-        => super::MoveToClosestFrequency;
         derive(Copy);
         fields {
             frequency: u16,

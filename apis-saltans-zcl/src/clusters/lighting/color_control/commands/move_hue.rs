@@ -15,7 +15,6 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x01;
         direction: Direction::ClientToServer;
-        => super::MoveHue;
         fields {
             mode: u8,
             rate: u8,

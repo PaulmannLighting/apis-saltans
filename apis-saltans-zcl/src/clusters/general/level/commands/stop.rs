@@ -9,7 +9,6 @@ zcl_command! {
         { ClusterId::Level } => Level;
         command_id: 0x03;
         direction: Direction::ClientToServer;
-        => super::Stop;
         derive(Default);
         fields {
             options: Options,

@@ -9,7 +9,6 @@ zcl_command! {
         { ClusterId::ColorControl } => ColorControl;
         command_id: 0x08;
         direction: Direction::ClientToServer;
-        => super::MoveColor;
         derive(Copy);
         fields {
             rate_x: i16,
