@@ -1,6 +1,7 @@
+use apis_saltans_core::ByteSizedVec;
 use le_stream::{Consume, ToLeStream};
 
-use crate::{ByteSizedVec, SimpleDescriptor, Status};
+use crate::{SimpleDescriptor, Status};
 
 crate::zdp_command! {
     /// Simple Descriptor Response.

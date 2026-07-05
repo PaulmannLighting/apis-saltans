@@ -1,8 +1,7 @@
-use apis_saltans_core::{Endpoint, Profile};
+use apis_saltans_core::{ByteSizedVec, Endpoint, Profile};
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::app_flags::AppFlags;
-use crate::ByteSizedVec;
 
 mod app_flags;
 

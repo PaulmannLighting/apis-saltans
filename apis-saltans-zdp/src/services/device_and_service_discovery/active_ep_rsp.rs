@@ -1,6 +1,6 @@
-use apis_saltans_core::Endpoint;
+use apis_saltans_core::{ByteSizedVec, Endpoint};
 
-use crate::{ByteSizedVec, Status};
+use crate::Status;
 
 crate::zdp_command! {
     /// Active Endpoint Response.

@@ -1,4 +1,4 @@
-use crate::ByteSizedVec;
+use apis_saltans_core::ByteSizedVec;
 
 crate::zdp_command! {
     /// Match Descriptor Request.

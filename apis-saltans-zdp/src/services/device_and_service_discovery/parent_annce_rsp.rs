@@ -1,6 +1,7 @@
+use apis_saltans_core::ByteSizedVec;
 use macaddr::MacAddr8;
 
-use crate::{ByteSizedVec, Status};
+use crate::Status;
 
 crate::zdp_command! {
     /// Parent Announce Response.

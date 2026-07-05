@@ -1,4 +1,6 @@
-use crate::{ByteSizedVec, Status};
+use apis_saltans_core::ByteSizedVec;
+
+use crate::Status;
 
 crate::zdp_command! {
     /// Management LQI Response.

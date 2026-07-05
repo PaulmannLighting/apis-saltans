@@ -1,7 +1,6 @@
+use apis_saltans_core::ByteSizedVec;
 use heapless::CapacityError;
 use macaddr::MacAddr8;
-
-use crate::ByteSizedVec;
 
 crate::zdp_command! {
     /// Parent Announcement Service.
