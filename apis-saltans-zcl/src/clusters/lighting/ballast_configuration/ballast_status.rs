@@ -1,3 +1,4 @@
+use apis_saltans_core::types::Type;
 use bitflags::bitflags;
 
 /// Ballast status attribute.
@@ -6,6 +7,7 @@ use bitflags::bitflags;
     derive(serde::Serialize, serde::Deserialize),
     serde(transparent)
 )]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct BallastStatus(u8);
 
 bitflags! {
@@ -14,6 +16,24 @@ bitflags! {
         const NON_OPERATIONAL = 0b0000_0001;
         /// Flag, indicating that the lamp is not in the socket.
         const LAMP_NOT_IN_SOCKET = 0b0000_0010;
+    }
+}
+
+impl From<BallastStatus> for Type {
+    fn from(value: BallastStatus) -> Self {
+        Self::Map8(value.bits())
+    }
+}
+
+impl TryFrom<Type> for BallastStatus {
+    type Error = Type;
+
+    fn try_from(value: Type) -> Result<Self, Self::Error> {
+        if let Type::Map8(value) = value {
+            Ok(Self::from_bits_retain(value))
+        } else {
+            Err(value)
+        }
     }
 }
 

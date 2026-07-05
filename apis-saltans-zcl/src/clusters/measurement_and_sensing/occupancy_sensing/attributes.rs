@@ -1,19 +1,22 @@
 //! Attributes of the Occupancy Sensing cluster.
 
 use apis_saltans_core::ClusterId;
-use apis_saltans_core::types::{Type, Uint8, Uint16};
+use apis_saltans_core::types::{Uint8, Uint16};
 
+use self::types::{Occupancy, SensorBitmap, SensorType};
 use crate::macros::zcl_attributes;
+
+mod types;
 
 zcl_attributes! {
     cluster: ClusterId::OccupancySensing;
 
     /// Occupancy status.
-    Occupancy = 0x0000: Type { R, P },
+    Occupancy = 0x0000: Occupancy { R, P },
     /// Sensor type.
-    SensorType = 0x0001: Type { R },
+    SensorType = 0x0001: SensorType { R },
     /// Sensor type bitmap.
-    SensorBitmap = 0x0002: Type { R },
+    SensorBitmap = 0x0002: SensorBitmap { R },
     /// PIR delay in seconds before the sensor changes from occupied to unoccupied.
     PirOccupiedToUnoccupiedDelay = 0x0010: Uint16 { R, W },
     /// PIR delay in seconds before the sensor changes from unoccupied to occupied.

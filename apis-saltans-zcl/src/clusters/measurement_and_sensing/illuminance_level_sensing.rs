@@ -1,6 +1,5 @@
 //! Illuminance Level Sensing cluster.
 
-pub use attribute::{LevelStatus, LightSensorType};
+pub use attributes::{LevelStatus, LightSensorType};
 
-pub mod attribute;
 pub mod attributes;

@@ -1,9 +1,13 @@
 //! Attributes of the Scenes cluster.
 
 use apis_saltans_core::ClusterId;
-use apis_saltans_core::types::{Bool, Type, Uint8};
+use apis_saltans_core::types::{Bool, Uint8};
 
+pub use self::types::{CurrentGroup, LastConfiguredBy};
+pub use crate::clusters::general::groups::attributes::NameSupport;
 use crate::macros::zcl_attributes;
+
+mod types;
 
 zcl_attributes! {
     cluster: ClusterId::Scenes;
@@ -13,11 +17,11 @@ zcl_attributes! {
     /// ID of the last invoked scene.
     CurrentScene = 0x0001: Uint8 { R },
     /// Group ID of the last invoked scene.
-    CurrentGroup = 0x0002: Type { R },
+    CurrentGroup = 0x0002: CurrentGroup { R },
     /// Flag indicating whether the scene is valid.
     SceneValid = 0x0003: Bool { R },
     /// Flag indicating whether the device supports scene names.
-    NameSupport = 0x0004: Type { R },
+    NameSupport = 0x0004: NameSupport { R },
     /// IEEE address of the device that last configured the scene.
-    LastConfiguredBy = 0x0005: Type { R },
+    LastConfiguredBy = 0x0005: LastConfiguredBy { R },
 }

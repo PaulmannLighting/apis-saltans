@@ -1,31 +1,36 @@
 //! Attributes of the Time cluster.
 
 use apis_saltans_core::ClusterId;
-use apis_saltans_core::types::Type;
 
+pub use self::types::{
+    DstEnd, DstShift, DstStart, LastSetTime, LocalTime, StandardTime, Time, TimeStatus, TimeZone,
+    ValidUntilTime,
+};
 use crate::macros::zcl_attributes;
+
+mod types;
 
 zcl_attributes! {
     cluster: ClusterId::Time;
 
     /// Current time.
-    Time = 0x0000: Type { R, W },
+    Time = 0x0000: Time { R, W },
     /// Time status.
-    TimeStatus = 0x0001: Type { R, W },
+    TimeStatus = 0x0001: TimeStatus { R, W },
     /// Time zone.
-    TimeZone = 0x0002: Type { R, W },
+    TimeZone = 0x0002: TimeZone { R, W },
     /// DST start time.
-    DstStart = 0x0003: Type { R, W },
+    DstStart = 0x0003: DstStart { R, W },
     /// DST end time.
-    DstEnd = 0x0004: Type { R, W },
+    DstEnd = 0x0004: DstEnd { R, W },
     /// DST time shift.
-    DstShift = 0x0005: Type { R, W },
+    DstShift = 0x0005: DstShift { R, W },
     /// Standard time.
-    StandardTime = 0x0006: Type { R },
+    StandardTime = 0x0006: StandardTime { R },
     /// Local time.
-    LocalTime = 0x0007: Type { R },
+    LocalTime = 0x0007: LocalTime { R },
     /// Last time the `Time` attribute was set.
-    LastSetTime = 0x0008: Type { R },
+    LastSetTime = 0x0008: LastSetTime { R },
     /// Deadline until which the `Time` attribute can be trusted.
-    ValidUntilTime = 0x0009: Type { R, W },
+    ValidUntilTime = 0x0009: ValidUntilTime { R, W },
 }

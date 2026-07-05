@@ -1,9 +1,12 @@
 //! Attributes of the Level Control cluster.
 
 use apis_saltans_core::ClusterId;
-use apis_saltans_core::types::{Type, Uint8, Uint16};
+use apis_saltans_core::types::{Uint8, Uint16};
 
+pub use self::types::Options;
 use crate::macros::zcl_attributes;
+
+mod types;
 
 zcl_attributes! {
     cluster: ClusterId::Level;
@@ -23,7 +26,7 @@ zcl_attributes! {
     /// Maximum frequency of the device.
     MaxFrequency = 0x0006: Uint16 { R },
     /// Bitmask of options for the device.
-    Options = 0x000f: Type { R, W },
+    Options = 0x000f: Options { R, W },
     /// On/Off transition time, in tenths of a second.
     OnOffTransitionTime = 0x0010: Uint16 { R, W },
     /// Level to move to when the device is turned on.

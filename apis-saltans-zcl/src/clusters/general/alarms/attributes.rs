@@ -2,8 +2,10 @@
 
 use apis_saltans_core::ClusterId;
 
-use super::attribute::AlarmCount;
+pub use self::alarm_count::AlarmCount;
 use crate::macros::zcl_attributes;
+
+mod alarm_count;
 
 zcl_attributes! {
     cluster: ClusterId::Alarms;

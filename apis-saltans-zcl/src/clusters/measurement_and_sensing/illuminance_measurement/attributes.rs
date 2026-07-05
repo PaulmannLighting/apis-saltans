@@ -1,15 +1,19 @@
 //! Attributes of the Illuminance Measurement cluster.
 
 use apis_saltans_core::ClusterId;
-use apis_saltans_core::types::{Type, Uint16};
+use apis_saltans_core::types::Uint16;
 
+pub use self::measured_value::MeasuredValue;
+use super::LightSensorType;
 use crate::macros::zcl_attributes;
+
+mod measured_value;
 
 zcl_attributes! {
     cluster: ClusterId::IlluminanceMeasurement;
 
     /// The measured illuminance value.
-    MeasuredValue = 0x0000: Type { R },
+    MeasuredValue = 0x0000: MeasuredValue { R },
     /// The minimum measured illuminance value that can be measured by the device.
     MinMeasuredValue = 0x0001: Uint16 { R },
     /// The maximum measured illuminance value that can be measured by the device.
@@ -17,5 +21,5 @@ zcl_attributes! {
     /// The tolerance of the measured illuminance value.
     Tolerance = 0x0003: Uint16 { R },
     /// The type of light sensor used to measure the illuminance.
-    LightSensorType = 0x0004: Type { R },
+    LightSensorType = 0x0004: LightSensorType { R },
 }

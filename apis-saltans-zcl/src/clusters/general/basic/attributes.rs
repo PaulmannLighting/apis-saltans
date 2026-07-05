@@ -1,12 +1,17 @@
 //! Attributes of the Basic cluster.
 
 use apis_saltans_core::ClusterId;
-use apis_saltans_core::types::{Bool, OctStr, String, Type, Uint8};
+use apis_saltans_core::types::{Bool, OctStr, String, Uint8};
 
-use super::attribute::{
-    AlarmMask, DateCode, DisableLocalConfig, GenericDeviceClass, PhysicalEnvironment, PowerSource,
+pub use self::date_code::{DateCode, ParseError};
+pub use self::types::{
+    AlarmMask, DisableLocalConfig, GenericDeviceClass, GenericDeviceType, PhysicalEnvironment,
+    PowerSource,
 };
 use crate::macros::zcl_attributes;
+
+mod date_code;
+mod types;
 
 zcl_attributes! {
     cluster: ClusterId::Basic;
@@ -30,7 +35,7 @@ zcl_attributes! {
     /// The generic device class.
     GenericDeviceClass = 0x0008: GenericDeviceClass { R },
     /// The generic device type.
-    GenericDeviceType = 0x0009: Type { R },
+    GenericDeviceType = 0x0009: GenericDeviceType { R },
     /// The product code.
     ProductCode = 0x000a: OctStr { R },
     /// The product URL.

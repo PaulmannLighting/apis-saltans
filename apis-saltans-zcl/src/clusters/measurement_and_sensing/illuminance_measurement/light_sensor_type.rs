@@ -1,3 +1,5 @@
+use apis_saltans_core::types::{Type, Uint8};
+
 pub use self::manufacturer_specific::ManufacturerSpecific;
 
 mod manufacturer_specific;
@@ -34,6 +36,12 @@ impl From<LightSensorType> for u8 {
     }
 }
 
+impl From<LightSensorType> for Type {
+    fn from(value: LightSensorType) -> Self {
+        Self::Enum8(Uint8::new(value.into()))
+    }
+}
+
 impl TryFrom<u8> for LightSensorType {
     type Error = u8;
 
@@ -46,6 +54,26 @@ impl TryFrom<u8> for LightSensorType {
             }
             0xFF => Ok(Self::Unknown),
             other => Err(other),
+        }
+    }
+}
+
+impl TryFrom<Uint8> for LightSensorType {
+    type Error = Uint8;
+
+    fn try_from(value: Uint8) -> Result<Self, Self::Error> {
+        Self::try_from(value.into_inner()).map_err(|_| value)
+    }
+}
+
+impl TryFrom<Type> for LightSensorType {
+    type Error = Type;
+
+    fn try_from(value: Type) -> Result<Self, Self::Error> {
+        if let Type::Enum8(value) = value {
+            Self::try_from(value).map_err(Type::Enum8)
+        } else {
+            Err(value)
         }
     }
 }

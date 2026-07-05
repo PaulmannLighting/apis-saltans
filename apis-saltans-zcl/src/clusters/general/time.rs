@@ -1,6 +1,8 @@
 //! Time cluster implementation.
 
-pub use self::attribute::{TimeStatus, readable, writable};
+pub use self::attributes::{
+    DstEnd, DstShift, DstStart, Id, LastSetTime, LocalTime, Readable, StandardTime, Time,
+    TimeStatus, TimeZone, ValidUntilTime, Writable,
+};
 
-mod attribute;
 pub mod attributes;

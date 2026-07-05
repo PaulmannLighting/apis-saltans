@@ -1,6 +1,6 @@
 use repr_discriminant::ReprDiscriminant;
 
-use self::level::Level;
+pub use self::level::Level;
 
 mod level;
 

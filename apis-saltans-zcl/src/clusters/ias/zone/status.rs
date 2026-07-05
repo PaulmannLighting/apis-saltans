@@ -1,3 +1,4 @@
+use apis_saltans_core::types::Type;
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -39,5 +40,23 @@ bitflags! {
 
         /// 1 – Sensor battery defect, 0 – no sensor battery defect
         const BATTERY_DEFECT = 0b0000_0010_0000_0000;
+    }
+}
+
+impl From<Status> for Type {
+    fn from(value: Status) -> Self {
+        Self::Map16(value.bits())
+    }
+}
+
+impl TryFrom<Type> for Status {
+    type Error = Type;
+
+    fn try_from(value: Type) -> Result<Self, Self::Error> {
+        if let Type::Map16(value) = value {
+            Ok(Self::from_bits_retain(value))
+        } else {
+            Err(value)
+        }
     }
 }

@@ -1,5 +1,7 @@
 //! The Zigbee Cluster Library (ZCL).
 
+#![recursion_limit = "256"]
+
 pub use self::attributes::{
     InvalidType, ParseAttributeError, ReadableAttribute, WritableAttribute,
 };

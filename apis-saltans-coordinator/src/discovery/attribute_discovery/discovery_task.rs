@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use apis_saltans_core::{Address, Application};
-use apis_saltans_zcl::general::basic::readable::Id;
+use apis_saltans_zcl::general::basic::attributes::Id;
 use const_env::env_item;
 use log::{debug, error, trace};
 use tokio::sync::mpsc::Sender;

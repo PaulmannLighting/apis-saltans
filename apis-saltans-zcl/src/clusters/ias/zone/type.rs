@@ -1,7 +1,12 @@
+use apis_saltans_core::types::{Type as ZclType, Uint16};
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+
 /// Zone types.
 ///
 /// TODO: Add option for manufacturer-specific types.
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromPrimitive)]
+#[repr(u16)]
 pub enum Type {
     /// Standard CIE
     StandardCie = 0x0000,
@@ -50,4 +55,44 @@ pub enum Type {
 
     /// Invalid zone type
     Invalid = 0xffff,
+}
+
+impl From<Type> for u16 {
+    fn from(value: Type) -> Self {
+        value as Self
+    }
+}
+
+impl From<Type> for ZclType {
+    fn from(value: Type) -> Self {
+        Self::Enum16(Uint16::new(value.into()))
+    }
+}
+
+impl TryFrom<u16> for Type {
+    type Error = u16;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Self::from_u16(value).ok_or(value)
+    }
+}
+
+impl TryFrom<Uint16> for Type {
+    type Error = Uint16;
+
+    fn try_from(value: Uint16) -> Result<Self, Self::Error> {
+        Self::try_from(value.into_inner()).map_err(|_| value)
+    }
+}
+
+impl TryFrom<ZclType> for Type {
+    type Error = ZclType;
+
+    fn try_from(value: ZclType) -> Result<Self, Self::Error> {
+        if let ZclType::Enum16(value) = value {
+            Self::try_from(value).map_err(ZclType::Enum16)
+        } else {
+            Err(value)
+        }
+    }
 }
