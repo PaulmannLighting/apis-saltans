@@ -1,4 +1,4 @@
-use apis_saltans_core::Application;
+use apis_saltans_core::{Application, Cluster};
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::global::read_attributes::{Command, Response};
 use apis_saltans_zcl::{ParseAttributeError, ReadableAttribute};
@@ -41,7 +41,7 @@ pub trait ReadAttributes {
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
-        T: ReadableAttribute,
+        T: Cluster + ReadableAttribute,
     {
         let ids = attributes.into_iter().map(Into::into).collect();
 
@@ -106,7 +106,7 @@ pub trait ReadAttributesInternal {
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
     where
         Self: Sync,
-        T: ReadableAttribute,
+        T: Cluster + ReadableAttribute,
     {
         let ids = attributes.into_iter().map(Into::into).collect();
 
