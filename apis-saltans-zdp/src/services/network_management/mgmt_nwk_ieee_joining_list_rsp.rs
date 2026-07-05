@@ -11,10 +11,10 @@ crate::zdp_command! {
     fields {
         status: u8,
         ieee_joining_list_update_id: Option<u8>,
-        joining_policy: Option<u8>,
-        ieee_joining_list_total: Option<u8>,
-        start_index: Option<u8>,
-        ieee_joining_list: Option<ByteSizedVec<MacAddr8>>,
+        joining_policy: u8,
+        ieee_joining_list_total: u8,
+        start_index: u8,
+        ieee_joining_list: ByteSizedVec<MacAddr8>,
     }
     getters {
         /// Return the status of the response.
