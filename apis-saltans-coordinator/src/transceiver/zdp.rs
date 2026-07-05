@@ -104,7 +104,7 @@ where
             device_annce,
         )) = command
         {
-            self.handle_device_annce(device_annce).await;
+            self.handle_device_annce(*device_annce).await;
             return;
         }
 
