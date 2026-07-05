@@ -2,31 +2,25 @@ use apis_saltans_core::Cluster;
 use apis_saltans_core::types::Type;
 
 pub use self::errors::{InvalidType, ParseAttributeError};
-use crate::clusters::{general, ias, lighting, measurement_and_sensing};
+use crate::clusters::general::alarms::attributes::Reportable as AlarmsAttributes;
+use crate::clusters::general::basic::attributes::Reportable as BasicAttributes;
+use crate::clusters::general::device_temperature_configuration::attributes::Reportable as DeviceTemperatureConfigurationAttributes;
+use crate::clusters::general::groups::attributes::Reportable as GroupsAttributes;
+use crate::clusters::general::identify::attributes::Reportable as IdentifyAttributes;
+use crate::clusters::general::level::attributes::Reportable as LevelAttributes;
+use crate::clusters::general::on_off::attributes::Reportable as OnOffAttributes;
+use crate::clusters::general::power_configuration::attributes::Reportable as PowerConfigurationAttributes;
+use crate::clusters::general::scenes::attributes::Reportable as ScenesAttributes;
+use crate::clusters::general::time::attributes::Reportable as TimeAttributes;
+use crate::clusters::ias::zone::attributes::Reportable as IasZoneAttributes;
+use crate::clusters::lighting::ballast_configuration::attributes::Reportable as BallastConfigurationAttributes;
+use crate::clusters::lighting::color_control::attributes::Reportable as ColorControlAttributes;
+use crate::clusters::measurement_and_sensing::illuminance_level_sensing::attributes::Reportable as IlluminanceLevelSensingAttributes;
+use crate::clusters::measurement_and_sensing::illuminance_measurement::attributes::Reportable as IlluminanceMeasurementAttributes;
+use crate::clusters::measurement_and_sensing::occupancy_sensing::attributes::Reportable as OccupancySensingAttributes;
 use crate::global::write_attributes::Record;
 
 mod errors;
-
-type BasicAttributes = general::basic::attributes::Reportable;
-type PowerConfigurationAttributes = general::power_configuration::attributes::Reportable;
-type DeviceTemperatureConfigurationAttributes =
-    general::device_temperature_configuration::attributes::Reportable;
-type IdentifyAttributes = general::identify::attributes::Reportable;
-type GroupsAttributes = general::groups::attributes::Reportable;
-type ScenesAttributes = general::scenes::attributes::Reportable;
-type OnOffAttributes = general::on_off::attributes::Reportable;
-type LevelAttributes = general::level::attributes::Reportable;
-type AlarmsAttributes = general::alarms::attributes::Reportable;
-type TimeAttributes = general::time::attributes::Reportable;
-type IlluminanceMeasurementAttributes =
-    measurement_and_sensing::illuminance_measurement::attributes::Reportable;
-type IlluminanceLevelSensingAttributes =
-    measurement_and_sensing::illuminance_level_sensing::attributes::Reportable;
-type OccupancySensingAttributes =
-    measurement_and_sensing::occupancy_sensing::attributes::Reportable;
-type BallastConfigurationAttributes = lighting::ballast_configuration::attributes::Reportable;
-type ColorControlAttributes = lighting::color_control::attributes::Reportable;
-type IasZoneAttributes = ias::zone::attributes::Reportable;
 
 /// A trait to allow the reading of attributes by their respective IDs in a type-safe manner.
 pub trait Readable: Cluster + TryFrom<u16, Error = u16> + Into<u16> {
@@ -50,43 +44,37 @@ pub trait Writable: Cluster + Into<Record> {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Reportable {
     /// Reportable attributes of the Basic cluster.
-    Basic(general::basic::attributes::Reportable),
+    Basic(BasicAttributes),
     /// Reportable attributes of the Power Configuration cluster.
-    PowerConfiguration(general::power_configuration::attributes::Reportable),
+    PowerConfiguration(PowerConfigurationAttributes),
     /// Reportable attributes of the Device Temperature Configuration cluster.
-    DeviceTemperatureConfiguration(
-        general::device_temperature_configuration::attributes::Reportable,
-    ),
+    DeviceTemperatureConfiguration(DeviceTemperatureConfigurationAttributes),
     /// Reportable attributes of the Identify cluster.
-    Identify(general::identify::attributes::Reportable),
+    Identify(IdentifyAttributes),
     /// Reportable attributes of the Groups cluster.
-    Groups(general::groups::attributes::Reportable),
+    Groups(GroupsAttributes),
     /// Reportable attributes of the Scenes cluster.
-    Scenes(general::scenes::attributes::Reportable),
+    Scenes(ScenesAttributes),
     /// Reportable attributes of the On/Off cluster.
-    OnOff(general::on_off::attributes::Reportable),
+    OnOff(OnOffAttributes),
     /// Reportable attributes of the Level Control cluster.
-    Level(general::level::attributes::Reportable),
+    Level(LevelAttributes),
     /// Reportable attributes of the Alarms cluster.
-    Alarms(general::alarms::attributes::Reportable),
+    Alarms(AlarmsAttributes),
     /// Reportable attributes of the Time cluster.
-    Time(general::time::attributes::Reportable),
+    Time(TimeAttributes),
     /// Reportable attributes of the Illuminance Measurement cluster.
-    IlluminanceMeasurement(
-        measurement_and_sensing::illuminance_measurement::attributes::Reportable,
-    ),
+    IlluminanceMeasurement(IlluminanceMeasurementAttributes),
     /// Reportable attributes of the Illuminance Level Sensing cluster.
-    IlluminanceLevelSensing(
-        measurement_and_sensing::illuminance_level_sensing::attributes::Reportable,
-    ),
+    IlluminanceLevelSensing(IlluminanceLevelSensingAttributes),
     /// Reportable attributes of the Occupancy Sensing cluster.
-    OccupancySensing(measurement_and_sensing::occupancy_sensing::attributes::Reportable),
+    OccupancySensing(OccupancySensingAttributes),
     /// Reportable attributes of the Ballast Configuration cluster.
-    BallastConfiguration(lighting::ballast_configuration::attributes::Reportable),
+    BallastConfiguration(BallastConfigurationAttributes),
     /// Reportable attributes of the Color Control cluster.
-    ColorControl(lighting::color_control::attributes::Reportable),
+    ColorControl(ColorControlAttributes),
     /// Reportable attributes of the IAS Zone cluster.
-    IasZone(ias::zone::attributes::Reportable),
+    IasZone(IasZoneAttributes),
 }
 
 impl Reportable {
