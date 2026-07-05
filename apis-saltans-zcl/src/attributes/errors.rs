@@ -4,10 +4,20 @@ use std::boxed::Box;
 
 use apis_saltans_core::types::Type;
 
+use crate::Status;
+
 /// An error that occurs when parsing an attribute fails.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]
 pub enum ParseAttributeError<T> {
+    /// The attribute is unsupported.
+    Unsupported {
+        /// The error status.
+        status: Result<Status, u8>,
+        /// The attribute ID.
+        id: u16,
+    },
+
     /// The attribute ID is invalid.
     InvalidId(u16),
 
@@ -21,6 +31,10 @@ where
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::Unsupported { status, id } => match status {
+                Ok(status) => write!(f, "unsupported attribute {id:#04X}: {status:?}"),
+                Err(status) => write!(f, "unsupported attribute {id:#04X}: {status:#06X}"),
+            },
             Self::InvalidId(id) => write!(f, "Invalid attribute ID: {id}"),
             Self::InvalidType(error) => write!(f, "{error}"),
         }
@@ -33,7 +47,7 @@ where
 {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::InvalidId(_) => None,
+            Self::Unsupported { .. } | Self::InvalidId(_) => None,
             Self::InvalidType(error) => Some(error),
         }
     }

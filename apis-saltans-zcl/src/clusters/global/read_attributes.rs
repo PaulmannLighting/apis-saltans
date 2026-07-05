@@ -1,13 +1,8 @@
 //! Reading Attributes Command and Response.
 
-use core::iter::Empty;
-use core::ops::Deref;
 use std::boxed::Box;
-use std::collections::BTreeMap;
-use std::collections::btree_map::IntoIter;
 
 use apis_saltans_core::Direction;
-use apis_saltans_core::types::Type;
 
 pub use self::read_attributes_status::ReadAttributesStatus;
 use crate::macros::zcl_command;
@@ -45,32 +40,7 @@ zcl_command! {
         direction: Direction::ServerToClient;
         => crate::global::ReadAttributesResponse;
         fields {
-            attribute_values: BTreeMap<u16, Type>,
-        }
-
-        from_le_stream {
-            fn from_le_stream<T>(bytes: T) -> Option<Self>
-            where
-                T: Iterator<Item = u8>,
-            {
-                Box::<[ReadAttributesStatus]>::from_le_stream(bytes).map(|items| Self {
-                    attribute_values: items
-                        .into_iter()
-                        .map(ReadAttributesStatus::into_parts)
-                        .filter_map(|(attribute_id, result)| {
-                            result.ok().map(|value| (attribute_id, value))
-                        })
-                        .collect(),
-                })
-            }
-        }
-
-        to_le_stream {
-            type Iter = Empty<u8>;
-
-            fn to_le_stream(self) -> Self::Iter {
-                todo!("Not implemented")
-            }
+            attribute_values: Box<[ReadAttributesStatus]>,
         }
 
         impl {
@@ -82,10 +52,17 @@ zcl_command! {
                 where
                     T: Readable,
                 {
-                    self.attribute_values.into_iter().map(|(id, typ)| {
-                        T::try_from(id)
-                            .map_err(ParseAttributeError::InvalidId)
-                            .and_then(|id| T::Attribute::try_from((id, typ)).map_err(Into::into))
+                    self.attribute_values.into_iter().map(|status| {
+                        let (id, result) = status.into_parts();
+
+                        match result {
+                            Ok(typ) => T::try_from(id)
+                                .map_err(ParseAttributeError::InvalidId)
+                                .and_then(|id| T::Attribute::try_from((id, typ)).map_err(Into::into)),
+                            Err(status) => Err(ParseAttributeError::Unsupported {
+                                status, id
+                            }),
+                        }
                     })
                 }
             }
@@ -96,23 +73,6 @@ zcl_command! {
             {
                 fn from(response: Response) -> Self {
                     response.parse::<T>().collect()
-                }
-            }
-
-            impl Deref for Response {
-                type Target = BTreeMap<u16, Type>;
-
-                fn deref(&self) -> &Self::Target {
-                    &self.attribute_values
-                }
-            }
-
-            impl IntoIterator for Response {
-                type Item = (u16, Type);
-                type IntoIter = IntoIter<u16, Type>;
-
-                fn into_iter(self) -> Self::IntoIter {
-                    self.attribute_values.into_iter()
                 }
             }
         }
