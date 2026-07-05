@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use heapless::CapacityError;
 use macaddr::MacAddr8;
 
@@ -62,13 +60,5 @@ crate::services::zdp_command! {
                 value.try_into().map(Self::new)
             }
         }
-    }
-}
-
-impl Deref for ParentAnnce {
-    type Target = [MacAddr8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.child_info
     }
 }

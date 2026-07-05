@@ -68,12 +68,3 @@ crate::services::zdp_command! {
         }
     }
 }
-
-impl IntoIterator for ActiveEpRsp {
-    type Item = <ByteSizedVec<Endpoint> as IntoIterator>::Item;
-    type IntoIter = <ByteSizedVec<Endpoint> as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.active_eps.into_iter()
-    }
-}
