@@ -5,6 +5,7 @@ crate::zdp_command! {
     SecurityChallengeReq => Security_Challenge_req;
     cluster_id: 0x0047;
     group: Security;
+    response: crate::SecurityChallengeRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }

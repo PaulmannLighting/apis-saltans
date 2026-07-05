@@ -3,6 +3,7 @@ crate::zdp_command! {
     IeeeAddrReq => IEEE_addr_req;
     cluster_id: 0x0001;
     group: DeviceAndServiceDiscovery;
+    response: crate::IeeeAddrRsp;
     fields {
         nwk_addr_of_interest: u16,
         request_type: u8,

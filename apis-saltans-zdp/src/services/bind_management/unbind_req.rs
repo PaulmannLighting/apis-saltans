@@ -9,6 +9,7 @@ crate::zdp_command! {
     UnbindReq => Unbind_req;
     cluster_id: 0x0022;
     group: BindManagement;
+    response: crate::UnbindRsp;
     fields {
         src_address: MacAddr8,
         src_endpoint: Endpoint,

@@ -4,6 +4,7 @@ crate::zdp_command! {
     MgmtLqiReq => Mgmt_Lqi_req;
     cluster_id: 0x0031;
     group: NetworkManagement;
+    response: crate::MgmtLqiRsp;
     fields {
         start_index: u8,
     }

@@ -5,6 +5,7 @@ crate::zdp_command! {
     MgmtNwkBeaconSurveyReq => Mgmt_NWK_Beacon_Survey_req;
     cluster_id: 0x003c;
     group: NetworkManagement;
+    response: crate::MgmtNwkBeaconSurveyRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }

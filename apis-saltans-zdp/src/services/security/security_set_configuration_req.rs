@@ -5,6 +5,7 @@ crate::zdp_command! {
     SecuritySetConfigurationReq => Security_Set_Configuration_req;
     cluster_id: 0x0043;
     group: Security;
+    response: crate::SecuritySetConfigurationRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }

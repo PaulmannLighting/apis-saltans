@@ -5,6 +5,7 @@ crate::zdp_command! {
     MatchDescReq => Match_Desc_req;
     cluster_id: 0x0006;
     group: DeviceAndServiceDiscovery;
+    response: crate::MatchDescRsp;
     fields {
         nwk_addr_of_interest: u16,
         profile_id: u16,

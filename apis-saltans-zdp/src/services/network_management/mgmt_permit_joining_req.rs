@@ -5,6 +5,7 @@ crate::zdp_command! {
     MgmtPermitJoiningReq => Mgmt_Permit_Joining_req;
     cluster_id: 0x0036;
     group: NetworkManagement;
+    response: crate::MgmtPermitJoiningRsp;
     fields {
         duration: u8,
         tc_significance: bool,

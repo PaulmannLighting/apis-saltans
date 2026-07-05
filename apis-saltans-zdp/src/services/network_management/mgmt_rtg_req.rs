@@ -4,6 +4,7 @@ crate::zdp_command! {
     MgmtRtgReq => Mgmt_Rtg_req;
     cluster_id: 0x0032;
     group: NetworkManagement;
+    response: crate::MgmtRtgRsp;
     fields {
         start_index: u8,
     }

@@ -5,6 +5,7 @@ crate::zdp_command! {
     SecurityGetConfigurationReq => Security_Get_Configuration_req;
     cluster_id: 0x0044;
     group: Security;
+    response: crate::SecurityGetConfigurationRsp;
     fields {
         tlv_ids: ByteSizedVec<u8>,
     }

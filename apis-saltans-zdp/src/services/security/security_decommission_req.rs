@@ -5,6 +5,7 @@ crate::zdp_command! {
     SecurityDecommissionReq => Security_Decommission_req;
     cluster_id: 0x0046;
     group: Security;
+    response: crate::SecurityDecommissionRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }

@@ -10,6 +10,7 @@ crate::zdp_command! {
     NwkAddrReq => NWK_addr_req;
     cluster_id: 0x0000;
     group: DeviceAndServiceDiscovery;
+    response: crate::NwkAddrRsp;
     fields {
         ieee_addr: MacAddr8,
         request_type: u8,

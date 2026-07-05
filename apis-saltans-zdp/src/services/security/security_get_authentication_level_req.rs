@@ -5,6 +5,7 @@ crate::zdp_command! {
     SecurityGetAuthenticationLevelReq => Security_Get_Authentication_Level_req;
     cluster_id: 0x0042;
     group: Security;
+    response: crate::SecurityGetAuthenticationLevelRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }

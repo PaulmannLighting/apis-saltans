@@ -9,6 +9,7 @@ crate::zdp_command! {
     MgmtLeaveReq => Mgmt_Leave_req;
     cluster_id: 0x0034;
     group: NetworkManagement;
+    response: crate::MgmtLeaveRsp;
     fields {
         device_address: MacAddr8,
         flags: LeaveReqFlags,

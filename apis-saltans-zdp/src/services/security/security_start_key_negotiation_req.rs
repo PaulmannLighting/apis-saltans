@@ -5,6 +5,7 @@ crate::zdp_command! {
     SecurityStartKeyNegotiationReq => Security_Start_Key_Negotiation_req;
     cluster_id: 0x0040;
     group: Security;
+    response: crate::SecurityStartKeyNegotiationRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }

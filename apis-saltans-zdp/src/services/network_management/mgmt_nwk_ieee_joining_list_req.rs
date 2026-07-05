@@ -4,6 +4,7 @@ crate::zdp_command! {
     MgmtNwkIeeeJoiningListReq => Mgmt_NWK_IEEE_Joining_List_req;
     cluster_id: 0x003A;
     group: NetworkManagement;
+    response: crate::MgmtNwkIeeeJoiningListRsp;
     fields {
         start_index: u8,
     }

@@ -6,6 +6,7 @@ crate::zdp_command! {
     ClearAllBindingsReq => Clear_All_Bindings_req;
     cluster_id: 0x002b;
     group: BindManagement;
+    response: crate::ClearAllBindingsRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }
