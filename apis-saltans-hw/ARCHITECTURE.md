@@ -335,23 +335,23 @@ Fields:
 | Field | Type | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `aps_metadata` | `Metadata` | private | APS-level metadata needed by the NCP driver. |
-| `payload` | `Box<[u8]>` | private | Serialized application payload. |
+| `payload` | `Arc<[u8]>` | private | Serialized application payload. |
 
 Methods:
 
 | Method | Signature summary | Purpose |
 | --- | --- | --- |
-| `new` | `unsafe const fn new(aps_metadata: Metadata, payload: Box<[u8]>) -> Self` | Constructs a frame from metadata and raw payload. Unsafe because the caller must ensure metadata and payload are semantically consistent. |
+| `new` | `unsafe const fn new(aps_metadata: Metadata, payload: Arc<[u8]>) -> Self` | Constructs a frame from metadata and raw payload. Unsafe because the caller must ensure metadata and payload are semantically consistent. |
 | `metadata` | `const fn &self -> &Metadata` | Returns immutable metadata. |
-| `metadata_mut` | `const fn &mut self -> &mut Metadata` | Returns mutable metadata. |
-| `into_parts` | `fn self -> (Metadata, Box<[u8]>)` | Splits the frame into metadata and payload. |
+| `metadata_mut` | `const fn &mut self -> &mut Metadata` | Returns mutable metadata. The current `Metadata` API has no field-level mutators. |
+| `into_parts` | `fn self -> (Metadata, Arc<[u8]>)` | Splits the frame into metadata and payload. |
 
 Trait implementations:
 
 | Implementation | Behavior |
 | --- | --- |
-| `From<apis_saltans_zcl::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZCL frame and uses `Metadata::new(T::ID, None, None)`. |
-| `From<apis_saltans_zdp::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZDP frame and uses `Metadata::new(T::ID, Some(Profile::Network), Some(Endpoint::Data))`. |
+| `From<apis_saltans_zcl::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZCL frame and uses `Metadata::new(T::ID)`. |
+| `From<apis_saltans_zdp::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZDP frame and uses `Metadata::zdp(T::ID)`. |
 
 Transport note:
 - `apis-saltans-hw` treats the serialized payload as opaque bytes after `ToLeStream` conversion
@@ -360,7 +360,7 @@ Transport note:
 
 ### `Metadata`
 
-Defined in `src/frame/metadata.rs`. Carries APS metadata associated with a `Frame`. Metadata is constructed up front and then exposed through getter methods; it no longer provides setters for mutating the cluster ID, profile, or source endpoint in place.
+Defined in `src/frame/metadata.rs`. Carries APS metadata associated with a `Frame`. Metadata is constructed up front and then exposed through getter methods; it no longer provides setters for mutating the cluster ID, profile, or source endpoint in place. Use `new` for cluster-only metadata, `for_cluster` when the cluster ID comes from a `Cluster` implementor, and `zdp` for ZDP metadata with the network profile and data endpoint.
 
 Fields:
 
@@ -374,7 +374,7 @@ Methods:
 
 | Method | Signature summary | Purpose |
 | --- | --- | --- |
-| `new` | `const fn new(cluster_id: u16, profile: Option<Profile>, source_endpoint: Option<Endpoint>) -> Self` | Constructs metadata directly. |
+| `new` | `const fn new(cluster_id: u16) -> Self` | Constructs metadata with only a cluster ID. The profile and source endpoint are unset. |
 | `for_cluster` | `const fn for_cluster<T: Cluster>() -> Self` | Constructs metadata using `T::ID` as the cluster ID and no profile or source endpoint. |
 | `zdp` | `const fn zdp(cluster_id: u16) -> Self` | Constructs ZDP metadata with the network profile and data source endpoint. |
 | `cluster_id` | `const fn &self -> u16` | Returns the cluster ID. |
