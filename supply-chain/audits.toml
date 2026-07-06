@@ -13,6 +13,12 @@ criteria = "safe-to-deploy"
 delta = "0.1.1 -> 0.2.0"
 notes = "AI-assisted delta audit; dependency version updates for bumped workspace crates only"
 
+[[audits.apis-saltans-aps]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.0 -> 0.3.0"
+notes = "AI-assisted delta audit; updates the public apis-saltans-core dependency bound from 0.3 to 0.4 only, with no source changes and no new unsafe code"
+
 [[audits.apis-saltans-coordinator]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -24,6 +30,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.1.3 -> 0.2.0"
 notes = "AI-assisted delta audit; event API, discovery, storage, network state, and ZCL/ZDP transceiver refactors for bumped workspace APIs, with no new unsafe code"
+
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.0 -> 0.3.0"
+notes = "AI-assisted delta audit; read/write attribute APIs now carry Profile, ZCL/ZDP payload metadata uses Cluster profile/manufacturer metadata, workspace dependency bounds were bumped, and no new unsafe code was introduced"
 
 [[audits.apis-saltans-core]]
 who = "Codex AI"
@@ -43,11 +55,23 @@ criteria = "safe-to-deploy"
 delta = "0.2.3 -> 0.3.0"
 notes = "AI-assisted delta audit; analog integer macro refactor, serde conversion updates, cluster/type additions, and no new unsafe code"
 
+[[audits.apis-saltans-core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.4.0"
+notes = "AI-assisted delta audit; Cluster now carries required PROFILE metadata and optional MANUFACTURER_CODE metadata, Profile adds broadcast_endpoint, and no unsafe code was added"
+
 [[audits.apis-saltans-hw]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.1.1 -> 0.2.0"
 notes = "AI-assisted delta audit; public result alias and NCP/frame/message adjustments for bumped workspace APIs, with no new unsafe code"
+
+[[audits.apis-saltans-hw]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.0 -> 0.3.0"
+notes = "AI-assisted delta audit; Frame payload ownership changed to Box<[u8]>, Metadata now stores a concrete Profile and derives cluster/profile from Cluster, obsolete endpoint metadata was removed, dependency bounds were bumped, and no new unsafe code was introduced"
 
 [[audits.apis-saltans-macros]]
 who = "Codex AI"
@@ -61,11 +85,23 @@ criteria = "safe-to-deploy"
 delta = "0.1.1 -> 0.2.0"
 notes = "AI-assisted delta audit; command and attribute macro refactors, expanded implemented ZCL attributes/commands, documentation updates, and no new unsafe code"
 
+[[audits.apis-saltans-zcl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.0 -> 0.3.0"
+notes = "AI-assisted delta audit; command, command-enum, and attribute macros now emit Cluster::PROFILE with a Zigbee Home Automation default, attribute manufacturer metadata moved to Cluster::MANUFACTURER_CODE, dependency bounds were bumped, and no new unsafe code was introduced"
+
 [[audits.apis-saltans-zdp]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.1.2 -> 0.2.0"
 notes = "AI-assisted delta audit; ZDP command/group macro refactors, expanded service command coverage, response wiring, documentation updates, and no new unsafe code"
+
+[[audits.apis-saltans-zdp]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.0 -> 0.3.0"
+notes = "AI-assisted delta audit; ZDP command macros now set the Network profile and generated command/group enums expose profile(), dependency bounds were bumped, and no new unsafe code was introduced"
 
 [[audits.autocfg]]
 who = "Codex AI"
