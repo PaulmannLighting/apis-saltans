@@ -633,6 +633,7 @@ macro_rules! zdp_command {
 
         impl apis_saltans_core::Cluster for $command {
             const ID: u16 = Self::ID;
+            const PROFILE: apis_saltans_core::Profile = apis_saltans_core::Profile::Network;
         }
 
         impl $crate::services::Service for $command {
