@@ -14,7 +14,7 @@ pub use self::api::{
 pub use self::coordinator::Coordinator;
 pub use self::destination::Destination;
 pub use self::error::Error;
-pub use self::event::Event;
+pub use self::event::{Event, Type as EventType};
 pub use self::event_receiver::EventReceiver;
 pub use self::network_manager::{Attributes, Device, Endpoint};
 use self::retry::Retry;
