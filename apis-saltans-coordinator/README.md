@@ -26,6 +26,10 @@ Public API exports:
     - `WriteAttributes`
 - attribute helper alias:
     - `ReadAttributeResult<T>`
+- event types:
+    - `Event`
+    - `EventType`
+    - `EventReceiver`
 - state model types:
     - `State`, `Device`, `Endpoint`, `Attributes`
 - error type:
@@ -85,6 +89,7 @@ Provides queries against coordinator-maintained network state:
 - `get_short_id_from_ieee_address`
 - `short_id_to_address`
 - `ieee_address_to_address`
+- `subscribe_to_incoming_commands`
 - `state` (snapshot of known devices)
 
 ```rust,no_run
@@ -94,6 +99,42 @@ use apis_saltans_coordinator::NetworkManager;
 async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, apis_saltans_coordinator::Error> {
     let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
     api.get_short_id_from_ieee_address(ieee).await
+}
+```
+
+`subscribe_to_incoming_commands` returns a receiver of [`Event`] values. `Event`
+contains the source address, source endpoint, and an [`EventType`]. `EventType`
+is the public alias for the event payload enum and currently distinguishes
+cluster-specific commands from parsed attribute reports:
+
+- `EventType::Cluster(apis_saltans_zcl::Cluster)`
+- `EventType::AttributeReport(Box<[apis_saltans_zcl::Reportable]>)`
+
+Pass an empty device set to subscribe to all known devices, or pass IEEE
+addresses to receive only matching devices.
+
+```rust,no_run
+use std::collections::BTreeSet;
+
+use apis_saltans_coordinator::{EventType, NetworkManager};
+
+async fn receive_events(api: &impl NetworkManager) -> Result<(), apis_saltans_coordinator::Error> {
+    let mut events = api
+        .subscribe_to_incoming_commands(BTreeSet::new(), 16)
+        .await?;
+
+    while let Some(event) = events.recv().await {
+        match event.typ() {
+            EventType::Cluster(command) => {
+                let _ = command;
+            }
+            EventType::AttributeReport(attributes) => {
+                let _ = attributes;
+            }
+        }
+    }
+
+    Ok(())
 }
 ```
 

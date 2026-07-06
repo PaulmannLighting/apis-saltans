@@ -99,6 +99,12 @@ For global attribute operations (`ReadAttributes` / `WriteAttributes`):
 - no coordinator-side normalization of attribute IDs is performed
 - this is required for clusters that compose IDs from a base slot plus a tagged sub-field (for example, Power Configuration battery settings where primary/secondary/tertiary battery banks use different base IDs and the setting selector is encoded in the low bits)
 
+The crate root exports `Event`, `EventType`, and `EventReceiver` for consumers
+that subscribe to inbound commands. `EventType` is an alias for the internal
+`event::Type` enum and is the payload classification returned by `Event::typ()`
+and `Event::into_parts()`. It currently has variants for cluster-specific ZCL
+commands and parsed attribute reports.
+
 ### Mux
 
 Consumes raw hardware `Event`s and routes:
@@ -197,9 +203,13 @@ Handles:
 - add/remove device updates
 - short<->IEEE resolution
 - full state snapshots
-- rediscovery trigger: if an incoming command arrives from an unknown short ID, it resolves IEEE via NCP and sends `discovery::Message::DeviceJoined` to `Discovery`
+- incoming command subscriptions created by `NetworkManager::subscribe_to_incoming_commands`
+- unknown incoming command sources are logged and dropped
 
-`Subscribe` exists in message API but is currently `todo!()` in actor logic.
+Subscription filters are stored as `(BTreeSet<MacAddr8>, Sender<Event>)`. An
+empty device set subscribes to all known devices; otherwise only matching IEEE
+addresses receive the event. The actor drops closed subscriber channels after
+delivery attempts.
 
 ## Key Message Flows
 
@@ -316,20 +326,20 @@ sequenceDiagram
     ZDP-->>API: oneshot response
 ```
 
-## 5) Rediscovery back-channel (unknown command source)
+## 5) Incoming command subscription
 
 ```mermaid
 sequenceDiagram
     participant ZCL as ZCL Actor
     participant NM as NetworkManager
-    participant HW as NCP
-    participant D as Discovery
+    participant API as Subscriber
 
     ZCL->>NM: Command{src_address, payload}
-    alt src_address unknown in NM short-id map
-        NM->>HW: short_id_to_ieee_address(src_address)
-        HW-->>NM: ieee_address
-        NM->>D: DeviceJoined(Address{ieee, short})
+    alt src_address known in network state
+        NM->>NM: build Event{address, endpoint, EventType}
+        NM->>API: send Event to matching subscriber channels
+    else src_address unknown
+        NM->>NM: log and drop command
     end
 ```
 
@@ -371,6 +381,5 @@ As a device moves through the pipeline, its representation is enriched:
 
 ## Notes and Current Gaps
 
-- `NetworkManager::Subscribe` is declared but not yet implemented.
 - Discovery/binding use best-effort async pipelines with retries and logging.
 - ZDP transceiver currently includes coordinator-side handling for `MatchDescReq` and `DeviceAnnce` to support discovery and endpoint matching.

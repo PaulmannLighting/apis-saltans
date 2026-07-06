@@ -25,7 +25,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-coordinator"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
@@ -144,9 +144,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "cc"
-version = "1.2.65"
+version = "1.2.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e228eec9be7c17ccb640b59b36a5cd805ea2a564a4c5e162c2f659fea30d3b96"
+checksum = "f5d6cac793997bd970000024b2934968efe83b382de4fdcf4fcb46b6ee4ad996"
 dependencies = [
  "find-msvc-tools",
  "shlex",
@@ -348,9 +348,9 @@ dependencies = [
 
 [[package]]
 name = "le-stream"
-version = "10.1.2"
+version = "10.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af69bbfb7cf52e825b5ff5a835de3b660258c3fc3d313166404fe02a177b5e8e"
+checksum = "e2e2c83c7e271e6c1af6d50f57de755353342a896a8ab0156e0831b561f2706e"
 dependencies = [
  "heapless",
  "intx",
@@ -360,9 +360,9 @@ dependencies = [
 
 [[package]]
 name = "le-stream-derive"
-version = "1.3.8"
+version = "1.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "939793a71524ed2ddbda55988d0183b88d5ad9907b864e02418a074cc5297337"
+checksum = "b748817591f2bec9f9dde30b044d1bd8cc1f65c4f7f67a3d4738e9b248d723ea"
 dependencies = [
  "proc-macro2",
  "quote",
