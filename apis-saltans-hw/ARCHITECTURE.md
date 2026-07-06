@@ -121,12 +121,10 @@ classDiagram
     class Metadata {
         +new()
         +for_cluster()
+        +zdp()
         +cluster_id()
-        +set_cluster_id()
         +profile()
-        +set_profile()
         +source_endpoint()
-        +set_source_endpoint()
     }
 
     class FoundNetwork
@@ -362,7 +360,7 @@ Transport note:
 
 ### `Metadata`
 
-Defined in `src/frame/metadata.rs`. Carries APS metadata associated with a `Frame`.
+Defined in `src/frame/metadata.rs`. Carries APS metadata associated with a `Frame`. Metadata is constructed up front and then exposed through getter methods; it no longer provides setters for mutating the cluster ID, profile, or source endpoint in place.
 
 Fields:
 
@@ -377,13 +375,11 @@ Methods:
 | Method | Signature summary | Purpose |
 | --- | --- | --- |
 | `new` | `const fn new(cluster_id: u16, profile: Option<Profile>, source_endpoint: Option<Endpoint>) -> Self` | Constructs metadata directly. |
-| `for_cluster` | `const fn for_cluster<T: Cluster>(profile: Option<Profile>, source_endpoint: Option<Endpoint>) -> Self` | Constructs metadata using `T::ID` as the cluster ID. |
+| `for_cluster` | `const fn for_cluster<T: Cluster>() -> Self` | Constructs metadata using `T::ID` as the cluster ID and no profile or source endpoint. |
+| `zdp` | `const fn zdp(cluster_id: u16) -> Self` | Constructs ZDP metadata with the network profile and data source endpoint. |
 | `cluster_id` | `const fn &self -> u16` | Returns the cluster ID. |
-| `set_cluster_id` | `const fn &mut self, cluster_id: u16` | Updates the cluster ID. |
 | `profile` | `const fn &self -> Option<Profile>` | Returns the optional profile. |
-| `set_profile` | `const fn &mut self, profile: Profile` | Sets the profile to `Some(profile)`. |
 | `source_endpoint` | `const fn &self -> Option<Endpoint>` | Returns the optional source endpoint. |
-| `set_source_endpoint` | `const fn &mut self, source: Endpoint` | Sets the source endpoint to `Some(source)`. |
 
 ### `FoundNetwork`
 
