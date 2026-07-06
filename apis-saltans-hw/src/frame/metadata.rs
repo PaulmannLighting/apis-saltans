@@ -19,22 +19,13 @@ impl Metadata {
 
     /// Create new APS metadata for the given cluster type.
     #[must_use]
-    pub const fn for_cluster<T>(profile: Profile) -> Self
+    pub const fn cluster<T>() -> Self
     where
         T: Cluster,
     {
         Self {
             cluster_id: T::ID,
-            profile,
-        }
-    }
-
-    /// Create new APS metadata for a ZDP command.
-    #[must_use]
-    pub const fn zdp(cluster_id: u16) -> Self {
-        Self {
-            cluster_id,
-            profile: Profile::Network,
+            profile: T::PROFILE,
         }
     }
 

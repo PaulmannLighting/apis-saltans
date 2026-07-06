@@ -1,4 +1,4 @@
-use apis_saltans_core::{Application, Cluster};
+use apis_saltans_core::{Application, Cluster, Profile};
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::global::read_attributes::{Command, Response};
 use apis_saltans_zcl::{ParseAttributeError, Readable};
@@ -23,6 +23,7 @@ pub trait ReadAttributes {
         ieee_address: MacAddr8,
         endpoint: Application,
         cluster: u16,
+        profile: Profile,
         manufacturer_code: Option<u16>,
         ids: T,
     ) -> impl Future<Output = Result<Response, Error>> + Send
@@ -49,6 +50,7 @@ pub trait ReadAttributes {
                 ieee_address,
                 endpoint,
                 <T::Item as Cluster>::ID,
+                <T::Item as Cluster>::PROFILE,
                 T::Item::MANUFACTURER_CODE,
                 attributes.into_iter().map(Into::into),
             )
@@ -64,6 +66,7 @@ impl ReadAttributes for Coordinator {
         ieee_address: MacAddr8,
         endpoint: Application,
         cluster: u16,
+        profile: Profile,
         manufacturer_code: Option<u16>,
         ids: T,
     ) -> Result<Response, Error>
@@ -78,6 +81,7 @@ impl ReadAttributes for Coordinator {
                     .ok_or(Error::UnknownDevice(ieee_address))?,
                 endpoint,
                 cluster,
+                profile,
                 manufacturer_code,
                 ids.into_iter().collect(),
             )
@@ -97,6 +101,7 @@ pub trait ReadAttributesInternal {
         short_id: u16,
         endpoint: Application,
         cluster: u16,
+        profile: Profile,
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
     ) -> impl Future<Output = Result<Response, Error>> + Send;
@@ -119,9 +124,16 @@ pub trait ReadAttributesInternal {
         let ids = attributes.into_iter().map(Into::into).collect();
 
         async move {
-            self.read_attributes_raw(short_id, endpoint, T::ID, T::MANUFACTURER_CODE, ids)
-                .await
-                .map(Into::into)
+            self.read_attributes_raw(
+                short_id,
+                endpoint,
+                T::ID,
+                T::PROFILE,
+                T::MANUFACTURER_CODE,
+                ids,
+            )
+            .await
+            .map(Into::into)
         }
     }
 }
@@ -132,6 +144,7 @@ impl ReadAttributesInternal for Sender<Message> {
         short_id: u16,
         endpoint: Application,
         cluster: u16,
+        profile: Profile,
         manufacturer_code: Option<u16>,
         ids: Box<[u16]>,
     ) -> Result<Response, Error> {
@@ -139,8 +152,13 @@ impl ReadAttributesInternal for Sender<Message> {
         // SAFETY: We construct matching metadata from the given cluster ID.
         // Since reading attributes is a global command, we don't need to validate the cluster ID.
         // Hence, the resulting metadata and command are guaranteed to match.
-        let payload =
-            unsafe { Payload::new(Metadata::new(cluster), manufacturer_code, Command::new(ids)) };
+        let payload = unsafe {
+            Payload::new(
+                Metadata::new(cluster, profile),
+                manufacturer_code,
+                Command::new(ids),
+            )
+        };
 
         self.communicate(short_id, endpoint, payload).await
     }

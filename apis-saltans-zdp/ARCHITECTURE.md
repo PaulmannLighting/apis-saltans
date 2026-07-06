@@ -162,6 +162,7 @@ Generated items:
 - `pub enum GroupName` with one variant per command. Each variant stores `Box<CommandPayload>`.
 - Derives `Clone`, `Debug`, `Eq`, `PartialEq`, and `Hash`.
 - `cluster_id(&self) -> u16`, delegated to the contained command payload.
+- `profile(&self) -> Profile`, delegated to the contained command payload.
 - `pub(crate) cluster_ids() -> &'static [u16]`, used by the top-level parser to select the group
   without cloning the input byte iterator.
 - `pub(crate) parse_with_cluster_id(cluster_id, bytes) -> Result<Option<Self>, u16>`, which attempts
@@ -197,6 +198,7 @@ Generated items:
 - Derives `Clone`, `Debug`, `Eq`, `PartialEq`, and `Hash`.
 - `pub(crate) parse_with_cluster_id(cluster_id, bytes) -> Result<Option<Self>, u16>`.
 - `cluster_id(&self) -> u16`, delegated to the contained group enum.
+- `profile(&self) -> Profile`, delegated to the contained group enum.
 - `Display`, delegated to the contained group enum.
 - `From<Group> for Command` for each group.
 - `TryFrom<Command> for Group` for each group.

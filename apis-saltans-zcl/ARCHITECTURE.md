@@ -92,6 +92,7 @@ zcl_command! {
     /// Move to level command.
     MoveToLevel {
         { ClusterId::Level } => Level;
+        profile: Profile::ZigbeeHomeAutomation;
         command_id: 0x00;
         direction: Direction::ClientToServer;
         fields {
@@ -129,6 +130,8 @@ Generated items:
 - A default `new(...) -> Self` constructor unless a `constructor` block is supplied.
 - Inherent getter methods from an optional `getters` block.
 - `apis_saltans_core::Cluster<ClusterId>` for cluster-specific commands.
+  The generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
+  `profile: ProfileVariant;` after the cluster declaration to override it.
 - `Scoped<Scope::Global>` for global commands.
 - `Command` for static command metadata.
 - `CommandDispatch`.
@@ -158,6 +161,7 @@ Typical shape:
 ```rust
 zcl_command_enum! {
     { ClusterId::OnOff } => OnOff;
+    profile: Profile::ZigbeeHomeAutomation;
     Off,
     On,
     Toggle,
@@ -171,6 +175,8 @@ Generated items:
 - `From<Payload> for Command` for each payload.
 - `From<Command> for crate::Cluster`.
 - `apis_saltans_core::Cluster<ClusterId>` for cluster-specific command enums.
+  The generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
+  `profile: ProfileVariant;` after the cluster declaration to override it.
 - `CommandDispatch`, by delegating to the boxed payload.
 - `ToLeStream`, by generating a private iterator enum that dispatches to the payload iterator.
 
@@ -210,6 +216,7 @@ Typical shape:
 ```rust
 zcl_attributes! {
     cluster: ClusterId::OnOff;
+    profile: Profile::ZigbeeHomeAutomation;
 
     /// On/off state.
     OnOff = 0x0000: Bool { R, P, S },
@@ -233,9 +240,13 @@ Generated items:
 - `Reportable`, containing all reportable attribute values.
 - `Scene`, containing all scene-storable attribute values.
 - `Cluster<ClusterId>` impls for all generated enums.
+  The generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
+  `profile: ProfileVariant;` after the cluster declaration to override it.
+  The optional `manufacturer_code:` parameter is emitted as
+  `Cluster::MANUFACTURER_CODE` on these impls.
 - `From<Id> for u16` and `TryFrom<u16> for Id`.
 - `Display for Id`.
-- `Readable for Id`, with optional manufacturer code.
+- `Readable for Id`.
 - `TryFrom<(Id, Type)> for Readable`.
 - `From<Readable> for Type`.
 - `Writable for Writable`.

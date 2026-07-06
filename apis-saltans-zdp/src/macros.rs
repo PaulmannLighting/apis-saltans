@@ -801,6 +801,14 @@ macro_rules! zdp_command_group {
                 }
             }
 
+            /// Returns the profile of the command.
+            #[must_use]
+            pub const fn profile(&self) -> apis_saltans_core::Profile {
+                match self {
+                    $(Self::$command(_) => <$command as apis_saltans_core::Cluster>::PROFILE),*
+                }
+            }
+
             /// Parses a command from the given cluster ID and byte stream.
             pub(crate) fn parse_with_cluster_id<T>(
                 cluster_id: u16,
@@ -935,6 +943,14 @@ macro_rules! zdp_command_enum {
             pub const fn cluster_id(&self) -> u16 {
                 match self {
                     $(Self::$variant(command) => command.cluster_id()),*
+                }
+            }
+
+            /// Return the profile of the command.
+            #[must_use]
+            pub const fn profile(&self) -> apis_saltans_core::Profile {
+                match self {
+                    $(Self::$variant(command) => command.profile()),*
                 }
             }
         }

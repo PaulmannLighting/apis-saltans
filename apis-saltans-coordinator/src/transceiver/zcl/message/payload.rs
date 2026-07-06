@@ -57,15 +57,15 @@ where
 }
 
 impl Payload<Cluster> {
-    /// Create a new frame with no manufacturer code.
+    /// Create a new frame with the command's cluster metadata.
     #[must_use]
     pub fn for_cluster<T>(command: T) -> Self
     where
         T: apis_saltans_core::Cluster + Into<Cluster>,
     {
         Self {
-            metadata: Metadata::for_cluster::<T>(),
-            manufacturer_code: None,
+            metadata: Metadata::cluster::<T>(),
+            manufacturer_code: T::MANUFACTURER_CODE,
             command: command.into(),
         }
     }

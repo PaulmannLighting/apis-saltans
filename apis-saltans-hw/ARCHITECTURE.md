@@ -120,11 +120,9 @@ classDiagram
 
     class Metadata {
         +new()
-        +for_cluster()
-        +zdp()
+        +cluster()
         +cluster_id()
         +profile()
-        +source_endpoint()
     }
 
     class FoundNetwork
@@ -335,23 +333,23 @@ Fields:
 | Field | Type | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `aps_metadata` | `Metadata` | private | APS-level metadata needed by the NCP driver. |
-| `payload` | `Arc<[u8]>` | private | Serialized application payload. |
+| `payload` | `Box<[u8]>` | private | Serialized application payload. |
 
 Methods:
 
 | Method | Signature summary | Purpose |
 | --- | --- | --- |
-| `new` | `unsafe const fn new(aps_metadata: Metadata, payload: Arc<[u8]>) -> Self` | Constructs a frame from metadata and raw payload. Unsafe because the caller must ensure metadata and payload are semantically consistent. |
+| `new` | `unsafe const fn new(aps_metadata: Metadata, payload: Box<[u8]>) -> Self` | Constructs a frame from metadata and raw payload. Unsafe because the caller must ensure metadata and payload are semantically consistent. |
 | `metadata` | `const fn &self -> &Metadata` | Returns immutable metadata. |
 | `metadata_mut` | `const fn &mut self -> &mut Metadata` | Returns mutable metadata. The current `Metadata` API has no field-level mutators. |
-| `into_parts` | `fn self -> (Metadata, Arc<[u8]>)` | Splits the frame into metadata and payload. |
+| `into_parts` | `fn self -> (Metadata, Box<[u8]>)` | Splits the frame into metadata and payload. |
 
 Trait implementations:
 
 | Implementation | Behavior |
 | --- | --- |
-| `From<apis_saltans_zcl::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZCL frame and uses `Metadata::new(T::ID)`. |
-| `From<apis_saltans_zdp::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZDP frame and uses `Metadata::zdp(T::ID)`. |
+| `From<apis_saltans_zcl::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZCL frame and uses `Metadata::cluster::<T>()`. |
+| `From<apis_saltans_zdp::Frame<T>> for Frame where T: apis_saltans_core::Cluster + ToLeStream` | Serializes the ZDP frame and uses `Metadata::cluster::<T>()`. |
 
 Transport note:
 - `apis-saltans-hw` treats the serialized payload as opaque bytes after `ToLeStream` conversion
@@ -360,26 +358,23 @@ Transport note:
 
 ### `Metadata`
 
-Defined in `src/frame/metadata.rs`. Carries APS metadata associated with a `Frame`. Metadata is constructed up front and then exposed through getter methods; it no longer provides setters for mutating the cluster ID, profile, or source endpoint in place. Use `new` for cluster-only metadata, `for_cluster` when the cluster ID comes from a `Cluster` implementor, and `zdp` for ZDP metadata with the network profile and data endpoint.
+Defined in `src/frame/metadata.rs`. Carries APS cluster/profile metadata. Metadata is constructed up front and then exposed through getter methods; it does not provide setters for mutating the cluster ID or profile in place. Use `new` for explicit cluster/profile metadata, or `cluster` when both values come from a `Cluster` implementor.
 
 Fields:
 
 | Field | Type | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `cluster_id` | `u16` | private | APS cluster ID. |
-| `profile` | `Option<apis_saltans_core::Profile>` | private | Optional APS profile ID. |
-| `source_endpoint` | `Option<apis_saltans_core::Endpoint>` | private | Optional APS source endpoint. |
+| `profile` | `apis_saltans_core::Profile` | private | APS profile ID. |
 
 Methods:
 
 | Method | Signature summary | Purpose |
 | --- | --- | --- |
-| `new` | `const fn new(cluster_id: u16) -> Self` | Constructs metadata with only a cluster ID. The profile and source endpoint are unset. |
-| `for_cluster` | `const fn for_cluster<T: Cluster>() -> Self` | Constructs metadata using `T::ID` as the cluster ID and no profile or source endpoint. |
-| `zdp` | `const fn zdp(cluster_id: u16) -> Self` | Constructs ZDP metadata with the network profile and data source endpoint. |
+| `new` | `const fn new(cluster_id: u16, profile: Profile) -> Self` | Constructs metadata with an explicit cluster ID and profile. |
+| `cluster` | `const fn cluster<T: Cluster>() -> Self` | Constructs metadata using `T::ID` as the cluster ID and `T::PROFILE` as the profile. |
 | `cluster_id` | `const fn &self -> u16` | Returns the cluster ID. |
-| `profile` | `const fn &self -> Option<Profile>` | Returns the optional profile. |
-| `source_endpoint` | `const fn &self -> Option<Endpoint>` | Returns the optional source endpoint. |
+| `profile` | `const fn &self -> Profile` | Returns the profile. |
 
 ### `FoundNetwork`
 
@@ -580,5 +575,5 @@ Frame-side flow:
 
 1. Coordinator code builds a `apis_saltans_zcl::Frame<T>` or `apis_saltans_zdp::Frame<T>`.
 2. `Frame::from` serializes the application frame with `ToLeStream`.
-3. `Metadata` records the cluster ID and, for ZDP, network profile/source endpoint defaults.
+3. `Metadata` records the cluster ID and profile. For ZDP, it uses the network profile.
 4. `NcpDriver` implementations receive `Frame` values in `unicast`, `multicast`, or `broadcast` and translate them into backend-specific transmit operations.

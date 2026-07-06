@@ -34,7 +34,7 @@ where
     /// Create a new frame for a ZDP command.
     #[must_use]
     pub const fn zdp(payload: T) -> Self {
-        Self::new(Metadata::zdp(T::ID), payload)
+        Self::new(Metadata::cluster::<T>(), payload)
     }
 }
 
@@ -52,6 +52,9 @@ where
 /// Convert a ZDP command into a frame.
 impl From<Command> for Payload<Command> {
     fn from(command: Command) -> Self {
-        Self::new(Metadata::zdp(command.cluster_id()), command)
+        Self::new(
+            Metadata::new(command.cluster_id(), command.profile()),
+            command,
+        )
     }
 }

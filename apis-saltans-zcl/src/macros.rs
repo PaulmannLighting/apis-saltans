@@ -1,3 +1,14 @@
+macro_rules! zcl_cluster_profile {
+    ([]) => {
+        apis_saltans_core::Profile::ZigbeeHomeAutomation
+    };
+    ([$profile:expr]) => {
+        $profile
+    };
+}
+
+pub(crate) use zcl_cluster_profile;
+
 /// Define a ZCL command payload and implement its common command traits.
 ///
 /// Cluster-specific commands use the cluster ID to implement
@@ -62,6 +73,7 @@ macro_rules! zcl_command {
         $(#[$attr:meta])*
         $command:ident {
             { $cluster_id:expr } => $cluster_variant:ident;
+            $(profile: $profile:expr;)?
             command_id: $command_id:expr;
             direction: $direction:expr;
             $(disable_default_response: $disable_default_response:expr;)?
@@ -76,7 +88,7 @@ macro_rules! zcl_command {
             [unit]
             [$(#[$attr])*]
             [$command]
-            [cluster $cluster_id]
+            [cluster $cluster_id; $($profile)?]
             [$cluster_variant]
             [super::$command]
             [$command_id]
@@ -92,6 +104,7 @@ macro_rules! zcl_command {
         $(#[$attr:meta])*
         $command:ident {
             { $cluster_id:expr } => $cluster_variant:ident;
+            $(profile: $profile:expr;)?
             command_id: $command_id:expr;
             direction: $direction:expr;
             $(disable_default_response: $disable_default_response:expr;)?
@@ -111,7 +124,7 @@ macro_rules! zcl_command {
             [named]
             [$(#[$attr])*]
             [$command]
-            [cluster $cluster_id]
+            [cluster $cluster_id; $($profile)?]
             [$cluster_variant]
             [super::$command]
             [$command_id]
@@ -747,7 +760,7 @@ macro_rules! zcl_command {
     (
         @impls
         $command:ident
-        [cluster $cluster_id:expr]
+        [cluster $cluster_id:expr; $($profile:expr)?]
         [$cluster_variant:ident]
         $try_from:tt
         [$command_id:expr]
@@ -760,6 +773,8 @@ macro_rules! zcl_command {
     ) => {
         impl apis_saltans_core::Cluster<apis_saltans_core::ClusterId> for $command {
             const ID: apis_saltans_core::ClusterId = $cluster_id;
+            const PROFILE: apis_saltans_core::Profile =
+                $crate::macros::zcl_cluster_profile!([$($profile)?]);
         }
 
         $crate::macros::zcl_command! {
@@ -942,13 +957,14 @@ macro_rules! zcl_command_enum {
     (
         $(#[$attr:meta])*
         { $cluster_id:expr } => $cluster_name:ident;
+        $(profile: $profile:expr;)?
         $($command:ident),+ $(,)?
     ) => {
         $crate::macros::zcl_command_enum! {
             @define
             [$(#[$attr])*]
             [$cluster_name]
-            [cluster $cluster_id]
+            [cluster $cluster_id; $($profile)?]
             [$($command($command)),+]
         }
     };
@@ -968,13 +984,14 @@ macro_rules! zcl_command_enum {
     (
         $(#[$attr:meta])*
         { $cluster_id:expr } => $cluster_name:ident;
+        $(profile: $profile:expr;)?
         $($variant:ident($command:ty)),+ $(,)?
     ) => {
         $crate::macros::zcl_command_enum! {
             @define
             [$(#[$attr])*]
             [$cluster_name]
-            [cluster $cluster_id]
+            [cluster $cluster_id; $($profile)?]
             [$($variant($command)),+]
         }
     };
@@ -1108,9 +1125,11 @@ macro_rules! zcl_command_enum {
         }
     };
     (@cluster_impl [global]) => {};
-    (@cluster_impl [cluster $cluster_id:expr]) => {
+    (@cluster_impl [cluster $cluster_id:expr; $($profile:expr)?]) => {
         impl apis_saltans_core::Cluster<apis_saltans_core::ClusterId> for Command {
             const ID: apis_saltans_core::ClusterId = $cluster_id;
+            const PROFILE: apis_saltans_core::Profile =
+                $crate::macros::zcl_cluster_profile!([$($profile)?]);
         }
     };
 }
@@ -1502,6 +1521,7 @@ pub(crate) use zcl_attribute_newtype;
 macro_rules! zcl_attributes {
     (
         cluster: $cluster_id:expr;
+        $(profile: $profile:expr;)?
         manufacturer_code: $manufacturer_code:expr;
         $(
             $(#[$variant_attr:meta])*
@@ -1512,7 +1532,7 @@ macro_rules! zcl_attributes {
     ) => {
         $crate::macros::zcl_attributes! {
             @define
-            [cluster $cluster_id]
+            [cluster $cluster_id; $($profile)?]
             [$manufacturer_code]
             $(
                 $(#[$variant_attr])*
@@ -1524,6 +1544,7 @@ macro_rules! zcl_attributes {
     };
     (
         cluster: $cluster_id:expr;
+        $(profile: $profile:expr;)?
         $(
             $(#[$variant_attr:meta])*
             $variant:ident = $id:tt: $ty:ty {
@@ -1533,7 +1554,7 @@ macro_rules! zcl_attributes {
     ) => {
         $crate::macros::zcl_attributes! {
             @define
-            [cluster $cluster_id]
+            [cluster $cluster_id; $($profile)?]
             []
             $(
                 $(#[$variant_attr])*
@@ -1545,6 +1566,7 @@ macro_rules! zcl_attributes {
     };
     (
         { $cluster_id:expr };
+        $(profile: $profile:expr;)?
         manufacturer_code: $manufacturer_code:expr;
         $(
             $(#[$variant_attr:meta])*
@@ -1555,7 +1577,7 @@ macro_rules! zcl_attributes {
     ) => {
         $crate::macros::zcl_attributes! {
             @define
-            [cluster $cluster_id]
+            [cluster $cluster_id; $($profile)?]
             [$manufacturer_code]
             $(
                 $(#[$variant_attr])*
@@ -1567,6 +1589,7 @@ macro_rules! zcl_attributes {
     };
     (
         { $cluster_id:expr };
+        $(profile: $profile:expr;)?
         $(
             $(#[$variant_attr:meta])*
             $variant:ident = $id:tt: $ty:ty {
@@ -1576,7 +1599,7 @@ macro_rules! zcl_attributes {
     ) => {
         $crate::macros::zcl_attributes! {
             @define
-            [cluster $cluster_id]
+            [cluster $cluster_id; $($profile)?]
             []
             $(
                 $(#[$variant_attr])*
@@ -1643,6 +1666,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_reportable
             $cluster
+            [$($manufacturer_code)?]
             [] []
             [$([$(#[$variant_attr])*] [$variant] [$id] [$ty] [$($access)*];)*]
         }
@@ -1650,6 +1674,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Scene]
             ["Attributes that can be stored in scenes."]
             [S]
@@ -1661,32 +1686,28 @@ macro_rules! zcl_attributes {
     (@manufacturer_code [$manufacturer_code:expr]) => {
         const MANUFACTURER_CODE: Option<u16> = Some($manufacturer_code);
     };
-    (@cluster_impl [cluster $cluster_id:expr] $ty:ident) => {
+    (@cluster_impl [cluster $cluster_id:expr; $($profile:expr)?] [$($manufacturer_code:expr)?] $ty:ident) => {
         impl apis_saltans_core::Cluster<apis_saltans_core::ClusterId> for $ty {
             const ID: apis_saltans_core::ClusterId = $cluster_id;
-        }
-    };
-    (@readable_attribute_impl [cluster $cluster_id:expr] [$($manufacturer_code:expr)?]) => {
-        impl $crate::Readable for Id {
-            type Attribute = Readable;
+            const PROFILE: apis_saltans_core::Profile =
+                $crate::macros::zcl_cluster_profile!([$($profile)?]);
 
             $crate::macros::zcl_attributes! {
                 @manufacturer_code [$($manufacturer_code)?]
             }
         }
     };
-    (@writable_attribute_impl $cluster:tt [$($manufacturer_code:expr)?] []) => {};
+    (@readable_attribute_impl) => {
+        impl $crate::Readable for Id {
+            type Attribute = Readable;
+        }
+    };
+    (@writable_attribute_impl []) => {};
     (
         @writable_attribute_impl
-        [cluster $cluster_id:expr]
-        [$($manufacturer_code:expr)?]
         [$($id_arms:tt)+]
     ) => {
         impl $crate::Writable for Writable {
-            $crate::macros::zcl_attributes! {
-                @manufacturer_code [$($manufacturer_code)?]
-            }
-
             fn id(&self) -> u16 {
                 match self {
                     $($id_arms)+
@@ -1721,19 +1742,19 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @cluster_impl
             $cluster
+            [$($manufacturer_code)?]
             Id
         }
 
         $crate::macros::zcl_attributes! {
             @cluster_impl
             $cluster
+            [$($manufacturer_code)?]
             Readable
         }
 
         $crate::macros::zcl_attributes! {
             @readable_attribute_impl
-            $cluster
-            [$($manufacturer_code)?]
         }
 
         impl From<Id> for u16 {
@@ -1926,13 +1947,12 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @cluster_impl
             $cluster
+            [$($manufacturer_code)?]
             Writable
         }
 
         $crate::macros::zcl_attributes! {
             @writable_attribute_impl
-            $cluster
-            [$($manufacturer_code)?]
             [$($id_arms)*]
         }
 
@@ -2110,6 +2130,7 @@ macro_rules! zcl_attributes {
     (
         @define_reportable
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$($variants:tt)*]
         []
         []
@@ -2124,6 +2145,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @cluster_impl
             $cluster
+            [$($manufacturer_code)?]
             Reportable
         }
 
@@ -2140,6 +2162,7 @@ macro_rules! zcl_attributes {
     (
         @define_reportable
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$($variants:tt)*]
         [$([$try_variant:ident] [$try_id:tt] [$try_ty:ty];)+]
         []
@@ -2154,6 +2177,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @cluster_impl
             $cluster
+            [$($manufacturer_code)?]
             Reportable
         }
 
@@ -2177,6 +2201,7 @@ macro_rules! zcl_attributes {
     (
         @define_reportable
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$($variants:tt)*]
         [$($try_from_arms:tt)*]
         [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
@@ -2184,6 +2209,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_reportable
             $cluster
+            [$($manufacturer_code)?]
             [$($variants)* $($variant_attr)* $variant($ty) = $id,]
             [$($try_from_arms)* [$variant] [$id] [$ty];]
             [$($rest)*]
@@ -2192,6 +2218,7 @@ macro_rules! zcl_attributes {
     (
         @define_reportable
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$($variants:tt)*]
         [$($try_from_arms:tt)*]
         [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, W, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
@@ -2199,6 +2226,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_reportable
             $cluster
+            [$($manufacturer_code)?]
             [$($variants)* $($variant_attr)* $variant($ty) = $id,]
             [$($try_from_arms)* [$variant] [$id] [$ty];]
             [$($rest)*]
@@ -2207,6 +2235,7 @@ macro_rules! zcl_attributes {
     (
         @define_reportable
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$($variants:tt)*]
         [$($try_from_arms:tt)*]
         [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [W, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
@@ -2214,6 +2243,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_reportable
             $cluster
+            [$($manufacturer_code)?]
             [$($variants)* $($variant_attr)* $variant($ty) = $id,]
             [$($try_from_arms)* [$variant] [$id] [$ty];]
             [$($rest)*]
@@ -2222,6 +2252,7 @@ macro_rules! zcl_attributes {
     (
         @define_reportable
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$($variants:tt)*]
         [$($try_from_arms:tt)*]
         [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
@@ -2229,6 +2260,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_reportable
             $cluster
+            [$($manufacturer_code)?]
             [$($variants)* $($variant_attr)* $variant($ty) = $id,]
             [$($try_from_arms)* [$variant] [$id] [$ty];]
             [$($rest)*]
@@ -2237,6 +2269,7 @@ macro_rules! zcl_attributes {
     (
         @define_reportable
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$($variants:tt)*]
         [$($try_from_arms:tt)*]
         [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [$($access:tt)*]; $($rest:tt)*]
@@ -2244,6 +2277,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_reportable
             $cluster
+            [$($manufacturer_code)?]
             [$($variants)*]
             [$($try_from_arms)*]
             [$($rest)*]
@@ -2252,6 +2286,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$enum:ident]
         [$doc:literal]
         [$access:tt]
@@ -2263,12 +2298,14 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @cluster_impl
             $cluster
+            [$($manufacturer_code)?]
             $enum
         }
     };
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Reportable]
         [$doc:literal]
         [P]
@@ -2278,6 +2315,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Reportable]
             [$doc]
             [P]
@@ -2288,6 +2326,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Reportable]
         [$doc:literal]
         [P]
@@ -2297,6 +2336,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Reportable]
             [$doc]
             [P]
@@ -2307,6 +2347,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Scene]
         [$doc:literal]
         [S]
@@ -2316,6 +2357,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Scene]
             [$doc]
             [S]
@@ -2326,6 +2368,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Scene]
         [$doc:literal]
         [S]
@@ -2335,6 +2378,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Scene]
             [$doc]
             [S]
@@ -2345,6 +2389,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Scene]
         [$doc:literal]
         [S]
@@ -2354,6 +2399,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Scene]
             [$doc]
             [S]
@@ -2364,6 +2410,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Reportable]
         [$doc:literal]
         [P]
@@ -2373,6 +2420,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Reportable]
             [$doc]
             [P]
@@ -2383,6 +2431,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Reportable]
         [$doc:literal]
         [P]
@@ -2392,6 +2441,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Reportable]
             [$doc]
             [P]
@@ -2402,6 +2452,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Scene]
         [$doc:literal]
         [S]
@@ -2411,6 +2462,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Scene]
             [$doc]
             [S]
@@ -2421,6 +2473,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [Scene]
         [$doc:literal]
         [S]
@@ -2430,6 +2483,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @define_data_enum
             $cluster
+            [$($manufacturer_code)?]
             [Scene]
             [$doc]
             [S]
@@ -2440,6 +2494,7 @@ macro_rules! zcl_attributes {
     (
         @define_data_enum
         $cluster:tt
+        [$($manufacturer_code:expr)?]
         [$enum:ident]
         [$doc:literal]
         [$access:tt]
@@ -2449,6 +2504,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @data_access
             $cluster
+            [$($manufacturer_code)?]
             [$enum]
             [$doc]
             [$access]
@@ -2461,26 +2517,26 @@ macro_rules! zcl_attributes {
             [$($flags)*]
         }
     };
-    (@data_access $cluster:tt [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] []) => {
-        $crate::macros::zcl_attributes! { @define_data_enum $cluster [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] }
+    (@data_access $cluster:tt [$($manufacturer_code:expr)?] [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] []) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [$($manufacturer_code)?] [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] }
     };
-    (@data_access $cluster:tt [Reportable] [$doc:literal] [P] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Reportable] [$doc] [P] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    (@data_access $cluster:tt [$($manufacturer_code:expr)?] [Reportable] [$doc:literal] [P] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [$($manufacturer_code)?] [Reportable] [$doc] [P] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
     };
-    (@data_access $cluster:tt [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, S $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    (@data_access $cluster:tt [$($manufacturer_code:expr)?] [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, S $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [$($manufacturer_code)?] [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
     };
-    (@data_access $cluster:tt [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P, S $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    (@data_access $cluster:tt [$($manufacturer_code:expr)?] [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [R, P, S $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [$($manufacturer_code)?] [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
     };
-    (@data_access $cluster:tt [Reportable] [$doc:literal] [P] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [P $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Reportable] [$doc] [P] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    (@data_access $cluster:tt [$($manufacturer_code:expr)?] [Reportable] [$doc:literal] [P] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [P $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [$($manufacturer_code)?] [Reportable] [$doc] [P] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
     };
-    (@data_access $cluster:tt [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [S $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @define_data_enum $cluster [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
+    (@data_access $cluster:tt [$($manufacturer_code:expr)?] [Scene] [$doc:literal] [S] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [S $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @define_data_enum $cluster [$($manufacturer_code)?] [Scene] [$doc] [S] [$($variants)* $($variant_attr)* $variant($ty) = $id,] [$($rest)*] }
     };
-    (@data_access $cluster:tt [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [$ignored:tt $(, $($tail:tt)*)?]) => {
-        $crate::macros::zcl_attributes! { @data_access $cluster [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] [$($variant_attr)*] [$variant] [$id] [$ty] [$($($tail)*)?] }
+    (@data_access $cluster:tt [$($manufacturer_code:expr)?] [$enum:ident] [$doc:literal] [$access:tt] [$($variants:tt)*] [$($rest:tt)*] [$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [$ignored:tt $(, $($tail:tt)*)?]) => {
+        $crate::macros::zcl_attributes! { @data_access $cluster [$($manufacturer_code)?] [$enum] [$doc] [$access] [$($variants)*] [$($rest)*] [$($variant_attr)*] [$variant] [$id] [$ty] [$($($tail)*)?] }
     };
     (@emit_id_enum []) => {
         /// IDs of readable attributes.
@@ -2516,8 +2572,8 @@ pub(crate) use zcl_attributes;
 
 #[cfg(test)]
 mod zcl_attributes_macro_tests {
-    use apis_saltans_core::ClusterId;
     use apis_saltans_core::types::{Type, Uint8};
+    use apis_saltans_core::{Cluster, ClusterId, Profile};
 
     #[derive(Clone, Debug, Eq, Hash, PartialEq)]
     pub struct Custom(Uint8);
@@ -2530,6 +2586,7 @@ mod zcl_attributes_macro_tests {
 
     zcl_attributes! {
         cluster: ClusterId::OnOff;
+        profile: Profile::TouchLink;
         manufacturer_code: 0x1234;
 
         /// Read-only test attribute.
@@ -2542,6 +2599,38 @@ mod zcl_attributes_macro_tests {
 
     #[test]
     fn generates_access_specific_enums() {
+        assert_eq!(<Id as Cluster<ClusterId>>::PROFILE, Profile::TouchLink);
+        assert_eq!(
+            <Readable as Cluster<ClusterId>>::PROFILE,
+            Profile::TouchLink
+        );
+        assert_eq!(<Id as Cluster<ClusterId>>::MANUFACTURER_CODE, Some(0x1234));
+        assert_eq!(
+            <Readable as Cluster<ClusterId>>::MANUFACTURER_CODE,
+            Some(0x1234)
+        );
+        assert_eq!(
+            <Writable as Cluster<ClusterId>>::PROFILE,
+            Profile::TouchLink
+        );
+        assert_eq!(
+            <Writable as Cluster<ClusterId>>::MANUFACTURER_CODE,
+            Some(0x1234)
+        );
+        assert_eq!(
+            <Reportable as Cluster<ClusterId>>::PROFILE,
+            Profile::TouchLink
+        );
+        assert_eq!(
+            <Reportable as Cluster<ClusterId>>::MANUFACTURER_CODE,
+            Some(0x1234)
+        );
+        assert_eq!(<Scene as Cluster<ClusterId>>::PROFILE, Profile::TouchLink);
+        assert_eq!(
+            <Scene as Cluster<ClusterId>>::MANUFACTURER_CODE,
+            Some(0x1234)
+        );
+
         let _ = Id::ReadOnly;
         let _ = Id::ClusterRevision;
         let _ = Id::AttributeReportingStatus;
@@ -2556,7 +2645,7 @@ mod zcl_attributes_macro_tests {
     }
 
     mod required_cluster {
-        use super::{ClusterId, Uint8};
+        use super::{ClusterId, Profile, Uint8};
 
         zcl_attributes! {
             cluster: ClusterId::Basic;
@@ -2592,6 +2681,27 @@ mod zcl_attributes_macro_tests {
             assert_cluster::<Readable>();
             assert_cluster::<Reportable>();
             assert_cluster::<Scene>();
+
+            assert_eq!(
+                <Id as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
+                Profile::ZigbeeHomeAutomation
+            );
+            assert_eq!(
+                <Readable as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
+                Profile::ZigbeeHomeAutomation
+            );
+            assert_eq!(
+                <Writable as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
+                Profile::ZigbeeHomeAutomation
+            );
+            assert_eq!(
+                <Reportable as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
+                Profile::ZigbeeHomeAutomation
+            );
+            assert_eq!(
+                <Scene as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
+                Profile::ZigbeeHomeAutomation
+            );
 
             let _ = Id::ReadOnly;
             let _ = Id::ClusterRevision;

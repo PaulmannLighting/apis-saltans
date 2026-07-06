@@ -1,4 +1,4 @@
-use apis_saltans_core::{Application, Cluster};
+use apis_saltans_core::{Application, Cluster, Profile};
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::Writable;
 use apis_saltans_zcl::global::write_attributes::{Command, Record, Response};
@@ -19,6 +19,7 @@ pub trait WriteAttributes {
         ieee_address: MacAddr8,
         endpoint: Application,
         cluster: u16,
+        profile: Profile,
         manufacturer_code: Option<u16>,
         records: Box<[Record]>,
     ) -> impl Future<Output = Result<Response, Error>> + Send;
@@ -52,6 +53,7 @@ pub trait WriteAttributes {
                 ieee_address,
                 endpoint,
                 <T::Item as Cluster>::ID,
+                <T::Item as Cluster>::PROFILE,
                 T::Item::MANUFACTURER_CODE,
                 records,
             )
@@ -67,6 +69,7 @@ impl WriteAttributes for Coordinator {
         ieee_address: MacAddr8,
         endpoint: Application,
         cluster: u16,
+        profile: Profile,
         manufacturer_code: Option<u16>,
         records: Box<[Record]>,
     ) -> Result<Response, Error> {
@@ -76,7 +79,7 @@ impl WriteAttributes for Coordinator {
         // Hence, the resulting metadata and command are guaranteed to match.
         let payload = unsafe {
             Payload::new(
-                Metadata::new(cluster),
+                Metadata::new(cluster, profile),
                 manufacturer_code,
                 Command::new(records),
             )
