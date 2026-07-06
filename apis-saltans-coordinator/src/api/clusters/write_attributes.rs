@@ -52,8 +52,8 @@ pub trait WriteAttributes {
             self.write_attributes_raw(
                 ieee_address,
                 endpoint,
-                <T::Item as Cluster>::ID,
-                <T::Item as Cluster>::PROFILE,
+                T::Item::ID,
+                T::Item::PROFILE,
                 T::Item::MANUFACTURER_CODE,
                 records,
             )
