@@ -25,14 +25,14 @@ impl Metadata {
 
     /// Create new APS metadata for the given cluster type.
     #[must_use]
-    pub const fn for_cluster<T>(profile: Option<Profile>, source_endpoint: Option<Endpoint>) -> Self
+    pub const fn for_cluster<T>() -> Self
     where
         T: Cluster,
     {
         Self {
             cluster_id: T::ID,
-            profile,
-            source_endpoint,
+            profile: None,
+            source_endpoint: None,
         }
     }
 
@@ -52,30 +52,15 @@ impl Metadata {
         self.cluster_id
     }
 
-    /// set the cluster ID.
-    pub const fn set_cluster_id(&mut self, cluster_id: u16) {
-        self.cluster_id = cluster_id;
-    }
-
     /// Return the profile ID.
     #[must_use]
     pub const fn profile(&self) -> Option<Profile> {
         self.profile
     }
 
-    /// Set the profile.
-    pub const fn set_profile(&mut self, profile: Profile) {
-        self.profile = Some(profile);
-    }
-
     /// Return the source endpoint.
     #[must_use]
     pub const fn source_endpoint(&self) -> Option<Endpoint> {
         self.source_endpoint
-    }
-
-    /// Set the source endpoint.
-    pub const fn set_source_endpoint(&mut self, source: Endpoint) {
-        self.source_endpoint = Some(source);
     }
 }

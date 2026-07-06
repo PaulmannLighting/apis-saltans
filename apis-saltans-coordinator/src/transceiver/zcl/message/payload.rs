@@ -64,7 +64,7 @@ impl Payload<Cluster> {
         T: apis_saltans_core::Cluster + Into<Cluster>,
     {
         Self {
-            metadata: Metadata::for_cluster::<T>(None, None),
+            metadata: Metadata::for_cluster::<T>(),
             manufacturer_code: None,
             command: command.into(),
         }
