@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use apis_saltans_core::{Cluster, Endpoint, Profile};
+use apis_saltans_core::Cluster;
 use le_stream::ToLeStream;
 
 pub use self::metadata::Metadata;
@@ -68,10 +68,7 @@ where
         #[expect(unsafe_code)]
         // SAFETY: We ensure that the ApsMetadata contains the correct cluster ID.
         unsafe {
-            Self::new(
-                Metadata::new(T::ID, None, None),
-                frame.to_le_stream().collect(),
-            )
+            Self::new(Metadata::new(T::ID), frame.to_le_stream().collect())
         }
     }
 }
@@ -84,10 +81,7 @@ where
         #[expect(unsafe_code)]
         // SAFETY: We ensure that the ApsMetadata contains the correct cluster ID, profile ID and endpoint.
         unsafe {
-            Self::new(
-                Metadata::new(T::ID, Some(Profile::Network), Some(Endpoint::Data)),
-                frame.to_le_stream().collect(),
-            )
+            Self::new(Metadata::zdp(T::ID), frame.to_le_stream().collect())
         }
     }
 }

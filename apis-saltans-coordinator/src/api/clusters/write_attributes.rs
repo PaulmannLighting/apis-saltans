@@ -76,7 +76,7 @@ impl WriteAttributes for Coordinator {
         // Hence, the resulting metadata and command are guaranteed to match.
         let payload = unsafe {
             Payload::new(
-                Metadata::new(cluster, None, None),
+                Metadata::new(cluster),
                 manufacturer_code,
                 Command::new(records),
             )

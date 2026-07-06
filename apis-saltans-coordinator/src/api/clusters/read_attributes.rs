@@ -139,13 +139,8 @@ impl ReadAttributesInternal for Sender<Message> {
         // SAFETY: We construct matching metadata from the given cluster ID.
         // Since reading attributes is a global command, we don't need to validate the cluster ID.
         // Hence, the resulting metadata and command are guaranteed to match.
-        let payload = unsafe {
-            Payload::new(
-                Metadata::new(cluster, None, None),
-                manufacturer_code,
-                Command::new(ids),
-            )
-        };
+        let payload =
+            unsafe { Payload::new(Metadata::new(cluster), manufacturer_code, Command::new(ids)) };
 
         self.communicate(short_id, endpoint, payload).await
     }
