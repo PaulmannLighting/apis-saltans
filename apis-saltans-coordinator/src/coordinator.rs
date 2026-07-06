@@ -1,7 +1,5 @@
-use std::collections::BTreeMap;
-
 use apis_saltans_core::{Application, ExpectResponse};
-use apis_saltans_hw::{Error, NcpHandle, ParallelUnicastResult, Start};
+use apis_saltans_hw::{Error, NcpHandle, Start};
 use apis_saltans_zcl::Cluster;
 use apis_saltans_zdp::SimpleDescriptor;
 use tokio::sync::mpsc::{Sender, channel};
@@ -97,13 +95,5 @@ impl zcl::Handle for Coordinator {
         T: ExpectResponse<Cluster>,
     {
         self.zcl.communicate(short_id, endpoint, payload)
-    }
-
-    fn parallel_unicast(
-        &self,
-        targets: BTreeMap<u16, Box<[Application]>>,
-        payload: Payload<Cluster>,
-    ) -> impl Future<Output = ParallelUnicastResult> + Send {
-        self.zcl.parallel_unicast(targets, payload)
     }
 }

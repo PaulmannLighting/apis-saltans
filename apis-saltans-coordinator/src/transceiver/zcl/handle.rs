@@ -1,7 +1,4 @@
-use std::collections::BTreeMap;
-
-use apis_saltans_core::{Application, Cluster, Endpoint, ExpectResponse};
-use apis_saltans_hw::ParallelUnicastResult;
+use apis_saltans_core::{Application, Cluster, ExpectResponse};
 use log::trace;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
@@ -37,25 +34,6 @@ pub trait Handle {
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
         T: ExpectResponse<apis_saltans_zcl::Cluster>;
-
-    /// Send a ZCL command to one specific device and endpoint.
-    fn parallel_unicast(
-        &self,
-        targets: BTreeMap<u16, Box<[Application]>>,
-        payload: Payload<apis_saltans_zcl::Cluster>,
-    ) -> impl Future<Output = ParallelUnicastResult> + Send;
-
-    async fn parallel_unicast_static_cluster<T>(
-        &self,
-        targets: BTreeMap<u16, Box<[Application]>>,
-        command: T,
-    ) -> ParallelUnicastResult
-    where
-        T: Cluster + Into<apis_saltans_zcl::Cluster>,
-    {
-        let payload = Payload::for_cluster(command);
-        self.parallel_unicast(targets, payload).await
-    }
 
     /// Send a ZCL command to one specific device and endpoint,
     /// where the command is a native ZCL command belonging to a static cluster.
@@ -113,50 +91,6 @@ pub trait Handle {
                 self.multicast_static_cluster(group_id, 0, 0, command).await
             }
         }
-    }
-
-    async fn send_static_cluster_parallel<T>(
-        &self,
-        destinations: Box<[Destination]>,
-        command: T,
-    ) -> Result<BTreeMap<(u16, Endpoint), Result<u8, Error>>, Error>
-    where
-        Self: NetworkManager,
-        T: Cluster + Into<apis_saltans_zcl::Cluster>,
-    {
-        let mut targets = BTreeMap::new();
-
-        for destination in destinations {
-            if let Destination::Endpoint {
-                ieee_address,
-                endpoint,
-            } = destination
-            {
-                let Ok(Some(short_id)) = self.get_short_id_from_ieee_address(ieee_address).await
-                else {
-                    continue;
-                };
-
-                targets
-                    .entry(short_id)
-                    .or_insert_with(Vec::new)
-                    .push(endpoint);
-            }
-        }
-
-        let result = self
-            .parallel_unicast_static_cluster(
-                targets
-                    .into_iter()
-                    .map(|(short_id, endpoints)| (short_id, endpoints.into_boxed_slice()))
-                    .collect(),
-                command,
-            )
-            .await?;
-        Ok(result
-            .into_iter()
-            .map(|(address, result)| (address, result.map_err(Error::from)))
-            .collect())
     }
 }
 
@@ -227,21 +161,5 @@ impl Handle for Sender<Message> {
                 .try_into()
                 .map_err(|error| Error::InvalidResponseType(format!("{error:?}")))
         }
-    }
-
-    async fn parallel_unicast(
-        &self,
-        targets: BTreeMap<u16, Box<[Application]>>,
-        payload: Payload<apis_saltans_zcl::Cluster>,
-    ) -> ParallelUnicastResult {
-        let (response, result) = channel();
-        trace!("Sending unicast message to {targets:?} with payload: {payload:?}");
-        self.send(Message::ParallelUnicast {
-            targets,
-            payload: payload.into(),
-            response,
-        })
-        .await?;
-        result.await?
     }
 }

@@ -22,3 +22,8 @@ It is to be used to translate hardware-specific events into a common Zigbee `Eve
 This library provides an `Ncp` trait, which is implemented for any handle (sender) to actors that implement the
 `NcpDriver` trait.
 This trait is used on the [coordinator layer](../apis-saltans-coordinator) to send Zigbee messages to the NCP.
+
+Each `Ncp::unicast` call represents one unicast frame to one short ID. The
+hardware abstraction layer does not perform parallel unicast fan-out; callers
+that need to target multiple devices must issue multiple unicast requests or use
+Zigbee multicast/broadcast operations where appropriate.

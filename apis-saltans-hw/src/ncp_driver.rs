@@ -10,7 +10,7 @@ use tokio::task::JoinHandle;
 
 use self::sealed_driver::SealedDriver;
 use crate::message::Message;
-use crate::{Error, FoundNetwork, Frame, NcpHandle, ParallelUnicastResult, ScannedChannel};
+use crate::{Error, FoundNetwork, Frame, NcpHandle, ScannedChannel};
 
 mod sealed_driver;
 
@@ -153,17 +153,6 @@ pub trait NcpDriver {
         radius: u8,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
-
-    /// Send multiple unicasts in parallel without waiting for the stack to confirm any sent frames.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn parallel_unicast(
-        &mut self,
-        targets: BTreeMap<u16, Box<[Endpoint]>>,
-        frame: Frame,
-    ) -> impl Future<Output = ParallelUnicastResult> + Send;
 
     /// Run the network manager actor.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = Self> + Send

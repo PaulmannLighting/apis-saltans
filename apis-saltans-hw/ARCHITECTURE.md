@@ -91,6 +91,8 @@ classDiagram
         +get_ieee_address()
         +get_short_id()
         +unicast()
+        +multicast()
+        +broadcast()
     }
 
     class NcpHandle {
@@ -168,6 +170,12 @@ sequenceDiagram
     A-->>C: oneshot response;
 ```
 
+Each transmit request maps to one actor message and one driver call. The
+hardware abstraction does not expand one request into multiple parallel unicast
+operations. Callers that need to target several devices must issue separate
+`unicast` requests or use `multicast`/`broadcast` where those Zigbee delivery
+modes are appropriate.
+
 ## Module Inventory
 
 ```mermaid
@@ -209,7 +217,9 @@ Methods:
 | `route_request` | `&self, radius: u8 -> Future<Result<(), Error>>` | `Message::RouteRequest` | Issues a route request. |
 | `get_ieee_address` | `&self, short_id: u16 -> Future<Result<MacAddr8, Error>>` | `Message::GetIeeeAddress` | IEEE address for a short ID. |
 | `get_short_id` | `&self, ieee_address: MacAddr8 -> Future<Result<u16, Error>>` | `Message::GetShortId` | Short ID for an IEEE address. |
-| `unicast` | `&self, address: Address, endpoint: Endpoint, frame: Frame -> Future<Result<u8, Error>>` | `Message::Unicast` | Driver-specific transaction or sequence identifier. |
+| `unicast` | `&self, short_id: u16, endpoint: Endpoint, frame: Frame -> Future<Result<u8, Error>>` | `Message::Unicast` | Driver-specific transaction or sequence identifier. |
+| `multicast` | `&self, group_id: u16, hops: u8, radius: u8, frame: Frame -> Future<Result<u8, Error>>` | `Message::Multicast` | Driver-specific transaction or sequence identifier. |
+| `broadcast` | `&self, short_id: u16, radius: u8, frame: Frame -> Future<Result<u8, Error>>` | `Message::Broadcast` | Driver-specific transaction or sequence identifier. |
 
 Implementation behavior:
 
@@ -236,7 +246,7 @@ Required methods:
 | `route_request` | `&mut self, radius: u8 -> Future<Result<(), Error>>` | Requests route discovery with the given radius. |
 | `get_ieee_address` | `&mut self, short_id: u16 -> Future<Result<MacAddr8, Error>>` | Resolves short ID to IEEE address. |
 | `get_short_id` | `&mut self, ieee_address: MacAddr8 -> Future<Result<u16, Error>>` | Resolves IEEE address to short ID. |
-| `unicast` | `&mut self, address: Address, endpoint: Endpoint, frame: Frame -> Future<Result<u8, Error>>` | Sends a unicast frame. |
+| `unicast` | `&mut self, short_id: u16, endpoint: Endpoint, frame: Frame -> Future<Result<u8, Error>>` | Sends one unicast frame to one short ID. |
 | `multicast` | `&mut self, group_id: u16, hops: u8, radius: u8, frame: Frame -> Future<Result<u8, Error>>` | Sends a multicast frame. |
 | `broadcast` | `&mut self, short_id: u16, radius: u8, frame: Frame -> Future<Result<u8, Error>>` | Sends a broadcast frame. `short_id` is currently a raw `u16`; the source notes that a dedicated broadcast address type may be needed. |
 
@@ -271,7 +281,7 @@ Dispatch mapping:
 | `RouteRequest` | `route_request(radius).await` |
 | `GetIeeeAddress` | `get_ieee_address(short_id).await` |
 | `GetShortId` | `get_short_id(ieee_address).await` |
-| `Unicast` | `unicast(address, endpoint, frame).await` |
+| `Unicast` | `unicast(short_id, endpoint, frame).await` |
 | `Multicast` | `multicast(group_id, hops, radius, frame).await` |
 | `Broadcast` | `broadcast(short_id, radius, frame).await` |
 
@@ -518,7 +528,7 @@ Variants:
 | `RouteRequest` | `radius: u8`, `response: oneshot::Sender<Result<(), Error>>` | Request route discovery. |
 | `GetIeeeAddress` | `short_id: u16`, `response: oneshot::Sender<Result<MacAddr8, Error>>` | Resolve short ID to IEEE address. |
 | `GetShortId` | `ieee_address: MacAddr8`, `response: oneshot::Sender<Result<u16, Error>>` | Resolve IEEE address to short ID. |
-| `Unicast` | `address: Address`, `endpoint: Endpoint`, `frame: Frame`, `response: oneshot::Sender<Result<u8, Error>>` | Send unicast frame. |
+| `Unicast` | `short_id: u16`, `endpoint: Endpoint`, `frame: Frame`, `response: oneshot::Sender<Result<u8, Error>>` | Send one unicast frame to one short ID. |
 | `Multicast` | `group_id: u16`, `hops: u8`, `radius: u8`, `frame: Frame`, `response: oneshot::Sender<Result<u8, Error>>` | Send multicast frame. |
 | `Broadcast` | `short_id: u16`, `radius: u8`, `frame: Frame`, `response: oneshot::Sender<Result<u8, Error>>` | Send broadcast frame. |
 

@@ -150,17 +150,6 @@ where
                             error!("Failed to send broadcast command response: {error:?}");
                         });
                 }
-                Message::ParallelUnicast {
-                    targets,
-                    frame,
-                    response,
-                } => {
-                    response
-                        .send(self.parallel_unicast(targets, frame).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send unicast parallel command response: {error:?}");
-                        });
-                }
             }
         }
 

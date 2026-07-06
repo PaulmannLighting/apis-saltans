@@ -7,7 +7,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 
 use crate::message::Message;
-use crate::{Error, FoundNetwork, Frame, ParallelUnicastResult, ScannedChannel};
+use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 
 /// Proxy trait to communicate with Zigbee NCPs which implement [`NcpDriver`](crate::NcpDriver).
 ///
@@ -159,17 +159,6 @@ pub trait Ncp {
         radius: u8,
         frame: Frame,
     ) -> impl Future<Output = Result<u8, Error>> + Send;
-
-    /// Send multiple unicasts in parallel without waiting for the stack to confirm any sent frames.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn parallel_unicast(
-        &mut self,
-        targets: BTreeMap<u16, Box<[Endpoint]>>,
-        frame: Frame,
-    ) -> impl Future<Output = ParallelUnicastResult> + Send;
 }
 
 impl Ncp for Sender<Message> {
@@ -294,21 +283,6 @@ impl Ncp for Sender<Message> {
         self.send(Message::Broadcast {
             short_id,
             radius,
-            frame,
-            response,
-        })
-        .await?;
-        rx.await?
-    }
-
-    async fn parallel_unicast(
-        &mut self,
-        targets: BTreeMap<u16, Box<[Endpoint]>>,
-        frame: Frame,
-    ) -> ParallelUnicastResult {
-        let (response, rx) = channel();
-        self.send(Message::ParallelUnicast {
-            targets,
             frame,
             response,
         })
