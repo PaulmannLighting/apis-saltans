@@ -32,13 +32,6 @@ where
     async fn run(mut self, mut rx: Receiver<Message>) -> Self {
         while let Some(message) = rx.recv().await {
             match message {
-                Message::GetTransactionSeq { response } => {
-                    response
-                        .send(self.next_transaction_seq())
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send get PAN ID command response: {error:?}");
-                        });
-                }
                 Message::GetPanId { response } => {
                     response
                         .send(self.get_pan_id().await)

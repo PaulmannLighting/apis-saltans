@@ -57,7 +57,6 @@ classDiagram
 
     class NcpDriver {
         <<trait>>
-        +next_transaction_seq()
         +get_pan_id()
         +scan_networks()
         +scan_channels()
@@ -81,7 +80,6 @@ classDiagram
 
     class Ncp {
         <<trait>>
-        +next_transaction_seq()
         +get_pan_id()
         +scan_networks()
         +scan_channels()
@@ -208,7 +206,6 @@ Methods:
 
 | Method | Signature summary | Internal message | Response |
 | --- | --- | --- | --- |
-| `next_transaction_seq` | `&self -> Future<Result<u8, Error>>` | `Message::GetTransactionSeq` | Next transaction sequence number. |
 | `get_pan_id` | `&self -> Future<Result<u16, Error>>` | `Message::GetPanId` | Network PAN ID. |
 | `scan_networks` | `&self, channel_mask: u32, duration: u8 -> Future<Result<Vec<FoundNetwork>, Error>>` | `Message::ScanNetworks` | Discovered networks and signal data. |
 | `scan_channels` | `&self, channel_mask: u32, duration: u8 -> Future<Result<Vec<ScannedChannel>, Error>>` | `Message::ScanChannels` | Observed channel RSSI results. |
@@ -237,7 +234,6 @@ Required methods:
 
 | Method | Signature summary | Purpose |
 | --- | --- | --- |
-| `next_transaction_seq` | `&mut self -> u8` | Returns the next transaction sequence number synchronously. |
 | `get_pan_id` | `&mut self -> Future<Result<u16, Error>>` | Reads the current network PAN ID. |
 | `scan_networks` | `&mut self, channel_mask: u32, duration: u8 -> Future<Result<Vec<FoundNetwork>, Error>>` | Performs active/passive network discovery. |
 | `scan_channels` | `&mut self, channel_mask: u32, duration: u8 -> Future<Result<Vec<ScannedChannel>, Error>>` | Measures activity per Zigbee channel. |
@@ -272,7 +268,6 @@ Dispatch mapping:
 
 | `Message` variant | Driver call |
 | --- | --- |
-| `GetTransactionSeq` | `next_transaction_seq()` |
 | `GetPanId` | `get_pan_id().await` |
 | `ScanNetworks` | `scan_networks(channel_mask, duration).await` |
 | `ScanChannels` | `scan_channels(channel_mask, duration).await` |
@@ -519,7 +514,6 @@ Variants:
 
 | Variant | Fields | Purpose |
 | --- | --- | --- |
-| `GetTransactionSeq` | `response: oneshot::Sender<u8>` | Request next transaction sequence number. |
 | `GetPanId` | `response: oneshot::Sender<Result<u16, Error>>` | Request PAN ID. |
 | `ScanNetworks` | `channel_mask: u32`, `duration: u8`, `response: oneshot::Sender<Result<Vec<FoundNetwork>, Error>>` | Request network scan. |
 | `ScanChannels` | `channel_mask: u32`, `duration: u8`, `response: oneshot::Sender<Result<Vec<ScannedChannel>, Error>>` | Request channel scan. |

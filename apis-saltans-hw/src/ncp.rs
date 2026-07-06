@@ -13,13 +13,6 @@ use crate::{Error, FoundNetwork, Frame, ScannedChannel};
 ///
 /// This trait is implemented for `Sender<Message>`, allowing you to communicate with a Zigbee NCP.
 pub trait Ncp {
-    /// Get the next transaction sequence number.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn next_transaction_seq(&self) -> impl Future<Output = Result<u8, Error>> + Send;
-
     /// Get the short ID of the network manager.
     ///
     /// # Errors
@@ -162,12 +155,6 @@ pub trait Ncp {
 }
 
 impl Ncp for Sender<Message> {
-    async fn next_transaction_seq(&self) -> Result<u8, Error> {
-        let (response, rx) = channel();
-        self.send(Message::GetTransactionSeq { response }).await?;
-        Ok(rx.await?)
-    }
-
     async fn get_pan_id(&self) -> Result<u16, Error> {
         let (response, rx) = channel();
         self.send(Message::GetPanId { response }).await?;

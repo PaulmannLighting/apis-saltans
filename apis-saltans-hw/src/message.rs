@@ -14,9 +14,6 @@ mod scanned_channel;
 
 /// Messages exchanged with the NCP driver actor.
 pub enum Message {
-    /// Return the transaction sequence number.
-    GetTransactionSeq { response: Sender<u8> },
-
     /// Return the PAN ID.
     GetPanId {
         response: Sender<Result<u16, Error>>,

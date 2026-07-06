@@ -16,9 +16,6 @@ mod sealed_driver;
 
 /// A common Zigbee NCP driver interface.
 pub trait NcpDriver {
-    /// Get the next transaction sequence number.
-    fn next_transaction_seq(&mut self) -> u8;
-
     /// Get the PAN ID of the network.
     ///
     /// # Errors
