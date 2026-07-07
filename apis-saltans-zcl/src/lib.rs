@@ -8,6 +8,10 @@
 //! are broader and currently cover implemented General, Lighting, Measurement and Sensing, and IAS
 //! clusters. Use [`Reportable::parse`] to construct a typed reportable attribute from a cluster ID,
 //! attribute ID, and raw [`apis_saltans_core::types::Type`].
+//!
+//! Set `ZCL_DISABLE_DEFAULT_RESPONSE=true` in the build environment to make commands that do not
+//! specify their own default-response behavior set the disable-default-response bit in outgoing
+//! frame control fields.
 
 pub use self::attributes::{InvalidType, ParseAttributeError, Readable, Reportable, Writable};
 pub use self::clusters::{Cluster, general, global, ias, lighting, measurement_and_sensing};

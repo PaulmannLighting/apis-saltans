@@ -21,6 +21,13 @@ pub trait Command {
     const PARSE_DIRECTION: ParseDirection = ParseDirection::Single(Self::DIRECTION);
 
     /// Whether to disable the default response for this command.
+    ///
+    /// Commands that do not provide their own value use the compile-time
+    /// `ZCL_DISABLE_DEFAULT_RESPONSE` environment switch. Set that switch to
+    /// `true` while building to set the disable-default-response bit on all
+    /// such outgoing commands. Command implementations generated with an
+    /// explicit `disable_default_response: ...;` value keep that explicit
+    /// value instead.
     #[env_item("ZCL_DISABLE_DEFAULT_RESPONSE")]
     const DISABLE_DEFAULT_RESPONSE: bool = false;
 }

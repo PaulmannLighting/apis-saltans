@@ -145,6 +145,8 @@ Optional sections:
 
 - `derive(...)`: extra derives for the generated struct.
 - `disable_default_response: bool;`: override the default-response behavior.
+  When omitted, the generated `Command` implementation uses the crate-wide
+  compile-time `ZCL_DISABLE_DEFAULT_RESPONSE` switch through the trait default.
 - `response: ResponseType;`: define the expected response.
 - `constructor { ... }`: custom `new` constructor or constructors.
 - `getters { ... }`: custom inherent getters.

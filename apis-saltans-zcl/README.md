@@ -23,6 +23,15 @@ have cluster-specific command dispatch.
 - `std`: enable standard library mode
 - `serde`: enable serde support for supported data types
 
+## Build-Time Configuration
+
+- `ZCL_DISABLE_DEFAULT_RESPONSE=true`: set the default value of
+  `Command::DISABLE_DEFAULT_RESPONSE` for command types that do not provide an
+  explicit `disable_default_response: ...;` override in their `zcl_command!`
+  invocation. Outgoing frames built from those commands set the ZCL frame
+  control disable-default-response bit. Commands with an explicit override keep
+  their configured value.
+
 ## Public API Overview
 
 Top-level re-exports include:

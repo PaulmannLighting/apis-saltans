@@ -14,7 +14,10 @@ pub trait CommandDispatch {
     /// Return the command direction.
     fn direction(&self) -> Direction;
 
-    /// Whether to disable the default response.
+    /// Whether to disable the default response for outgoing command frames.
+    ///
+    /// For commands that do not define this value explicitly, this follows the
+    /// compile-time `ZCL_DISABLE_DEFAULT_RESPONSE` switch.
     fn disable_default_response(&self) -> bool;
 }
 
