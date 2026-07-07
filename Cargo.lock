@@ -106,6 +106,7 @@ dependencies = [
  "bitflags",
  "bytes",
  "chrono",
+ "const_env",
  "either",
  "heapless",
  "le-stream",
