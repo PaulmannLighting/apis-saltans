@@ -144,10 +144,7 @@ impl Mux {
                 let frame = unsafe { Frame::new_unchecked(header, frame) };
 
                 self.zcl
-                    .send(zcl::Message::Received {
-                        source,
-                        frame: frame.into(),
-                    })
+                    .send(zcl::Message::Received { source, frame })
                     .await
                     .unwrap_or_else(|error| {
                         trace!("Failed to send ZCL message: {error}");
@@ -155,10 +152,7 @@ impl Mux {
             }
             ApsPayload::Zdp(frame) => {
                 self.zdp
-                    .send(zdp::Message::Received {
-                        source,
-                        frame: frame.into(),
-                    })
+                    .send(zdp::Message::Received { source, frame })
                     .await
                     .unwrap_or_else(|error| {
                         trace!("Failed to send ZDP message: {error}");

@@ -107,7 +107,7 @@ impl Frame<Bytes> {
     where
         T: TryFrom<Self>,
     {
-        let header = self.header.clone();
+        let header = self.header;
         T::try_from(self).map(|payload| Frame { header, payload })
     }
 }

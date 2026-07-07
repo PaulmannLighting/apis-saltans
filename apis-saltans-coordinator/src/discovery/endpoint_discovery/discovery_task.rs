@@ -58,7 +58,7 @@ impl DiscoveryTask {
 
                     self.loopback
                         .send(Message::Discovered {
-                            address: self.address.clone(),
+                            address: self.address,
                             endpoints: response.into_active_eps().into_iter().collect(),
                         })
                         .await

@@ -75,7 +75,7 @@ impl NodeDescriptorDiscovery {
         };
 
         self.tasks
-            .spawn(DiscoveryTask::new(address.clone(), self.loopback.clone(), zdp).run())
+            .spawn(DiscoveryTask::new(address, self.loopback.clone(), zdp).run())
             .await
             .map_or_else(
                 |error| {

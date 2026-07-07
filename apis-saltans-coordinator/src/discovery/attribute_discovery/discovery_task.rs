@@ -116,7 +116,7 @@ impl DiscoveryTask {
         if let Err(error) = self
             .loopback
             .send(Message::AttributesDiscovered {
-                address: self.address.clone(),
+                address: self.address,
                 application: self.endpoint,
                 results: attributes.into_boxed_slice(),
             })

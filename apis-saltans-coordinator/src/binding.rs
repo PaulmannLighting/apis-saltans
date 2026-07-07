@@ -93,13 +93,12 @@ impl Actor {
             return;
         }
 
-        let address = device.address.clone();
-        let device = self.devices.entry(address.clone()).or_insert(device);
+        let device = self.devices.entry(device.address).or_insert(device);
 
         for (endpoint, cluster) in device.clusters_to_bind(&BIND_OUTPUT_CLUSTERS) {
             self.tasks
                 .spawn(bind_endpoint(
-                    address.clone(),
+                    device.address,
                     endpoint,
                     cluster,
                     self.loopback.clone(),
@@ -136,7 +135,7 @@ impl Actor {
 
         if device.needs_binding(&BIND_OUTPUT_CLUSTERS) {
             trace!("Not all endpoints bound for {address}.");
-            self.devices.insert(device.address.clone(), device);
+            self.devices.insert(device.address, device);
             return;
         }
 

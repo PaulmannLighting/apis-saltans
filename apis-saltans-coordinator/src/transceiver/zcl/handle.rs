@@ -106,7 +106,7 @@ impl Handle for Sender<Message> {
         self.send(Message::Unicast {
             short_id,
             endpoint,
-            payload: payload.into(),
+            payload,
             response,
         })
         .await?;
@@ -128,7 +128,7 @@ impl Handle for Sender<Message> {
             group_id,
             hops,
             radius,
-            payload: payload.into(),
+            payload,
             response,
         })
         .await?;
@@ -145,7 +145,7 @@ impl Handle for Sender<Message> {
         U: ExpectResponse<apis_saltans_zcl::Cluster>,
     {
         let (response, result) = channel();
-        let payload = payload.into_cluster().into();
+        let payload = payload.into_cluster();
 
         async move {
             self.send(Message::Communicate {

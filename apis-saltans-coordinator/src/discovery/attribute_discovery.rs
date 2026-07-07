@@ -91,7 +91,7 @@ impl AttributeDiscovery {
 
         let device = self
             .devices
-            .entry(device.address.clone())
+            .entry(device.address)
             .or_insert_with(|| device.into());
 
         for application in device
@@ -102,13 +102,8 @@ impl AttributeDiscovery {
         {
             self.tasks
                 .spawn(
-                    DiscoveryTask::new(
-                        device.address.clone(),
-                        application,
-                        loopback.clone(),
-                        zcl.clone(),
-                    )
-                    .run(),
+                    DiscoveryTask::new(device.address, application, loopback.clone(), zcl.clone())
+                        .run(),
                 )
                 .await
                 .map_or_else(|error| error!("Failed to spawn task: {error:?}"), drop);

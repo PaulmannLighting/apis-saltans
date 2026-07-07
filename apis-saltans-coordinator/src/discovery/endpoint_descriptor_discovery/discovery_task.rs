@@ -72,7 +72,7 @@ impl DiscoveryTask {
                     );
                     self.loopback
                         .send(Message::DescriptorDiscovered {
-                            address: self.address.clone(),
+                            address: self.address,
                             descriptor: Box::new(descriptor),
                         })
                         .await

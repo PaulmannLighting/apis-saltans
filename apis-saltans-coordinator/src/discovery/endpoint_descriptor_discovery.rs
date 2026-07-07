@@ -79,7 +79,7 @@ impl EndpointDescriptorDiscovery {
 
         let device = self
             .devices
-            .entry(device.address.clone())
+            .entry(device.address)
             .or_insert_with(|| device.into());
 
         let Some(loopback) = self.loopback.upgrade() else {
@@ -95,13 +95,8 @@ impl EndpointDescriptorDiscovery {
         for endpoint in device.endpoints.keys() {
             self.tasks
                 .spawn(
-                    DiscoveryTask::new(
-                        device.address.clone(),
-                        *endpoint,
-                        loopback.clone(),
-                        zdp.clone(),
-                    )
-                    .run(),
+                    DiscoveryTask::new(device.address, *endpoint, loopback.clone(), zdp.clone())
+                        .run(),
                 )
                 .await
                 .map_or_else(

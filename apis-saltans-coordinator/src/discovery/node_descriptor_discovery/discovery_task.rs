@@ -56,7 +56,7 @@ impl DiscoveryTask {
                     info!("Descriptor discovered for {}: {descriptor:?}", self.address);
                     self.loopback
                         .send(Message::DescriptorDiscovered {
-                            address: self.address.clone(),
+                            address: self.address,
                             descriptor: Box::new(descriptor),
                         })
                         .await
