@@ -1,10 +1,9 @@
 use std::collections::BTreeSet;
 
 use apis_saltans_aps::Data;
-use apis_saltans_core::Address;
+use apis_saltans_core::{Address, IeeeAddress};
 use apis_saltans_hw::RouteError;
 use apis_saltans_zcl::{Cluster, Frame};
-use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 
@@ -19,7 +18,7 @@ pub enum Message {
         /// The source addresses of the devices to listen to.
         ///
         /// An empty set means that all devices will be listened to.
-        devices: BTreeSet<MacAddr8>,
+        devices: BTreeSet<IeeeAddress>,
         /// The sender to send the incoming commands to.
         sender: Sender<Event>,
     },
@@ -37,13 +36,13 @@ pub enum Message {
         /// The short ID to resolve.
         short_id: u16,
         /// Response channel to send the resolved IEEE address to.
-        response: oneshot::Sender<Option<MacAddr8>>,
+        response: oneshot::Sender<Option<IeeeAddress>>,
     },
 
     /// A request to resolve an IEEE address to a short ID.
     GetShortIdFromIeeeAddress {
         /// The IEEE address to resolve.
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         /// Response channel to send the resolved IEEE address to.
         response: oneshot::Sender<Option<u16>>,
     },

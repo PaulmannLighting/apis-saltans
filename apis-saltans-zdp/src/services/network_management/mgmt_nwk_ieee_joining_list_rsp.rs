@@ -1,5 +1,4 @@
-use apis_saltans_core::ByteSizedVec;
-use macaddr::MacAddr8;
+use apis_saltans_core::{ByteSizedVec, IeeeAddress};
 
 pub use self::response::{
     JoiningPolicy, MgmtNwkIeeeJoiningListRspEntries, MgmtNwkIeeeJoiningListRspPayload,
@@ -19,7 +18,7 @@ crate::zdp_command! {
         joining_policy: u8,
         ieee_joining_list_total: u8,
         start_index: u8,
-        ieee_joining_list: ByteSizedVec<MacAddr8>,
+        ieee_joining_list: ByteSizedVec<IeeeAddress>,
     }
     constructor {
         /// Creates a new `MgmtNwkIeeeJoiningListRsp`.
@@ -108,7 +107,7 @@ crate::zdp_command! {
                             joining_policy,
                             ieee_joining_list_total,
                             start_index: <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?,
-                            ieee_joining_list: <ByteSizedVec<MacAddr8> as le_stream::FromLeStream>::from_le_stream(&mut bytes)?,
+                            ieee_joining_list: <ByteSizedVec<IeeeAddress> as le_stream::FromLeStream>::from_le_stream(&mut bytes)?,
                         })
                     }
                 } else {
@@ -143,7 +142,7 @@ crate::zdp_command! {
                     if self.ieee_joining_list_total > 0 {
                         bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(self.start_index));
                         bytes.extend(
-                            <ByteSizedVec<MacAddr8> as le_stream::ToLeStream>::to_le_stream(
+                            <ByteSizedVec<IeeeAddress> as le_stream::ToLeStream>::to_le_stream(
                                 self.ieee_joining_list,
                             ),
                         );

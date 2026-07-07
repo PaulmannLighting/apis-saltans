@@ -1,8 +1,7 @@
-use apis_saltans_core::{Application, Cluster, Profile};
+use apis_saltans_core::{Application, Cluster, IeeeAddress, Profile};
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::Writable;
 use apis_saltans_zcl::global::write_attributes::{Command, Record, Response};
-use macaddr::MacAddr8;
 
 use crate::transceiver::zcl::{Handle, Payload};
 use crate::{Coordinator, Error, NetworkManager};
@@ -16,7 +15,7 @@ pub trait WriteAttributes {
     /// Returns an [`Error`] if the communication fails or if the response is not a valid [`Response`].
     fn write_attributes_raw(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         endpoint: Application,
         cluster: u16,
         profile: Profile,
@@ -38,7 +37,7 @@ pub trait WriteAttributes {
     /// Returns an [`Error`] if the communication fails or if the response is not a valid [`Response`].
     fn write_attributes<T>(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         endpoint: Application,
         attributes: T,
     ) -> impl Future<Output = Result<Vec<Result<u16, u16>>, Error>> + Send
@@ -66,7 +65,7 @@ pub trait WriteAttributes {
 impl WriteAttributes for Coordinator {
     async fn write_attributes_raw(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         endpoint: Application,
         cluster: u16,
         profile: Profile,

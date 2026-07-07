@@ -19,15 +19,14 @@ bitflags = "2"
 chrono = "0.4"
 either = "1"
 heapless = "0.9"
-le-stream = { version = "10", features = ["derive", "heapless", "intx", "macaddr"] }
-macaddr = "1"
+le-stream = { version = "10", features = ["derive", "heapless", "intx"] }
 num-derive = "0.4"
 num-traits = "0.2"
 repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1", optional = true }
 
 [features]
-serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "macaddr/serde", "apis-saltans-core/serde"]
+serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "apis-saltans-core/serde"]
 
 [lints]
 workspace = true

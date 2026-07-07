@@ -1,11 +1,10 @@
 use std::collections::BTreeSet;
 
 use apis_saltans_aps::Data;
-use apis_saltans_core::Address;
+use apis_saltans_core::{Address, IeeeAddress};
 use apis_saltans_hw::Ncp;
 use apis_saltans_zcl::{Cluster, Frame};
 use log::{debug, error, info, warn};
-use macaddr::MacAddr8;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 
@@ -21,7 +20,7 @@ mod message;
 pub struct Actor<T> {
     ncp: T,
     storage: Sender<storage::Message>,
-    subscribers: Vec<(BTreeSet<MacAddr8>, Sender<Event>)>,
+    subscribers: Vec<(BTreeSet<IeeeAddress>, Sender<Event>)>,
 }
 
 impl<T> Actor<T>

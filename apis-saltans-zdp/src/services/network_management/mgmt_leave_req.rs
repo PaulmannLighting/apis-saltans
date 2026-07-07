@@ -1,4 +1,4 @@
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 
 pub use self::leave_req_flags::LeaveReqFlags;
 
@@ -11,13 +11,13 @@ crate::zdp_command! {
     group: NetworkManagement;
     response: crate::MgmtLeaveRsp;
     fields {
-        device_address: MacAddr8,
+        device_address: IeeeAddress,
         flags: LeaveReqFlags,
     }
     getters {
         /// Returns the device address.
         #[must_use]
-        pub const fn device_address(&self) -> MacAddr8 {
+        pub const fn device_address(&self) -> IeeeAddress {
             self.device_address
         }
 

@@ -145,7 +145,6 @@ Key dependencies:
 - `apis-saltans-core` (cluster IDs, endpoint/profile primitives, shared traits)
 - `le-stream`
 - `heapless`
-- `macaddr`
 - `bitflags`
 
 ## Related Workspace Crates

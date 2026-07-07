@@ -1,7 +1,6 @@
 use std::io::Result;
 
-use apis_saltans_core::Address;
-use macaddr::MacAddr8;
+use apis_saltans_core::{Address, IeeeAddress};
 use tokio::sync::oneshot::Sender;
 
 use crate::Device;
@@ -51,7 +50,7 @@ pub enum Message {
     /// Return a device given its IEEE address.
     GetByIeeeAddress {
         /// The IEEE address of the device.
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         /// The response channel.
         response: Sender<Result<Option<Device>>>,
     },

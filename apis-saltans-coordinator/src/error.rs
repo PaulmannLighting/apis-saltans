@@ -3,7 +3,7 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use tokio::time::error::Elapsed;
@@ -32,7 +32,7 @@ pub enum Error {
     InvalidResponseType(String),
 
     /// Unknown device.
-    UnknownDevice(MacAddr8),
+    UnknownDevice(IeeeAddress),
 
     /// Invalid application endpoint.
     InvalidApplicationEndpoint(u8),

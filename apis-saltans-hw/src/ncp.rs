@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use apis_saltans_core::{Address, Endpoint};
-use macaddr::MacAddr8;
+use apis_saltans_core::{Address, Endpoint, IeeeAddress};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 
@@ -25,7 +24,7 @@ pub trait Ncp {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_ieee_address(&self) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
+    fn get_ieee_address(&self) -> impl Future<Output = Result<IeeeAddress, Error>> + Send;
 
     /// Return the full address of the coordinator.
     ///
@@ -87,7 +86,9 @@ pub trait Ncp {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_neighbors(&self) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>> + Send;
+    fn get_neighbors(
+        &self,
+    ) -> impl Future<Output = Result<BTreeMap<IeeeAddress, u16>, Error>> + Send;
 
     /// Send a route request with the specified radius.
     ///
@@ -104,7 +105,7 @@ pub trait Ncp {
     fn short_id_to_ieee_address(
         &self,
         short_id: u16,
-    ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
+    ) -> impl Future<Output = Result<IeeeAddress, Error>> + Send;
 
     /// Get the short ID of the device with the specified IEEE address.
     ///
@@ -113,7 +114,7 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn ieee_address_to_short_id(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<u16, Error>> + Send;
 
     /// Send a unicast ZCL command.
@@ -161,7 +162,7 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn get_ieee_address(&self) -> Result<MacAddr8, Error> {
+    async fn get_ieee_address(&self) -> Result<IeeeAddress, Error> {
         let (response, rx) = channel();
         self.send(Message::GetIeeeAddress { response }).await?;
         rx.await?
@@ -204,7 +205,7 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn get_neighbors(&self) -> Result<BTreeMap<MacAddr8, u16>, Error> {
+    async fn get_neighbors(&self) -> Result<BTreeMap<IeeeAddress, u16>, Error> {
         let (response, rx) = channel();
         self.send(Message::GetNeighbors { response }).await?;
         rx.await?
@@ -217,14 +218,14 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn short_id_to_ieee_address(&self, short_id: u16) -> Result<MacAddr8, Error> {
+    async fn short_id_to_ieee_address(&self, short_id: u16) -> Result<IeeeAddress, Error> {
         let (response, rx) = channel();
         self.send(Message::TranslateIeeeAddress { short_id, response })
             .await?;
         rx.await?
     }
 
-    async fn ieee_address_to_short_id(&self, ieee_address: MacAddr8) -> Result<u16, Error> {
+    async fn ieee_address_to_short_id(&self, ieee_address: IeeeAddress) -> Result<u16, Error> {
         let (response, rx) = channel();
         self.send(Message::TranslateShortId {
             ieee_address,

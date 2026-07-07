@@ -1,5 +1,4 @@
-use apis_saltans_core::Endpoint;
-use macaddr::MacAddr8;
+use apis_saltans_core::{Endpoint, IeeeAddress};
 use num_traits::FromPrimitive;
 
 pub use self::address::Address;
@@ -18,7 +17,7 @@ crate::zdp_command! {
     group: BindManagement;
     response: BindRsp;
     fields {
-        src_address: MacAddr8,
+        src_address: IeeeAddress,
         src_endpoint: Endpoint,
         cluster_id: u16,
         dst_addr_mode: u8,
@@ -29,7 +28,7 @@ crate::zdp_command! {
         /// Creates a new `BindReq`.
         #[must_use]
         pub const fn new(
-            src_address: MacAddr8,
+            src_address: IeeeAddress,
             src_endpoint: Endpoint,
             cluster_id: u16,
             destination: Destination,
@@ -54,7 +53,7 @@ crate::zdp_command! {
     getters {
         /// Returns the source address.
         #[must_use]
-        pub const fn src_address(&self) -> MacAddr8 {
+        pub const fn src_address(&self) -> IeeeAddress {
             self.src_address
         }
 
@@ -104,7 +103,7 @@ crate::zdp_command! {
             where
                 T: Iterator<Item = u8>,
             {
-                let src_address = MacAddr8::from_le_stream(&mut bytes)?;
+                let src_address = IeeeAddress::from_le_stream(&mut bytes)?;
                 let src_endpoint = Endpoint::from_le_stream(&mut bytes)?;
                 let cluster_id = u16::from_le_stream(&mut bytes)?;
                 let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
@@ -113,7 +112,7 @@ crate::zdp_command! {
                         (u16::from_le_stream(&mut bytes).map(Address::Group)?, None)
                     }
                     AddressMode::Extended => (
-                        MacAddr8::from_le_stream(&mut bytes).map(Address::Extended)?,
+                        IeeeAddress::from_le_stream(&mut bytes).map(Address::Extended)?,
                         Some(Endpoint::from_le_stream(&mut bytes)?),
                     ),
                 };

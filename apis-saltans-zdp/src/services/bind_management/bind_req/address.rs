@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
+use apis_saltans_core::IeeeAddress;
 use le_stream::ToLeStream;
-use macaddr::MacAddr8;
 
 use self::iterator::AddressLeStream;
 
@@ -11,7 +11,7 @@ pub enum Address {
     /// 16-bit group address.
     Group(u16),
     /// 64-bit extended address.
-    Extended(MacAddr8),
+    Extended(IeeeAddress),
 }
 
 impl Display for Address {
@@ -35,14 +35,14 @@ impl ToLeStream for Address {
 }
 
 mod iterator {
+    use apis_saltans_core::IeeeAddress;
     use le_stream::ToLeStream;
-    use macaddr::MacAddr8;
 
     /// Iterator for little-endian stream of `Address`.
     #[derive(Debug)]
     pub enum AddressLeStream {
         Group(<u16 as ToLeStream>::Iter),
-        Extended(<MacAddr8 as ToLeStream>::Iter),
+        Extended(<IeeeAddress as ToLeStream>::Iter),
     }
 
     impl Iterator for AddressLeStream {

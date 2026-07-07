@@ -1,7 +1,6 @@
 //! Generic API to implement storage of the Zigbee network state.
 
-use apis_saltans_core::Address;
-use macaddr::MacAddr8;
+use apis_saltans_core::{Address, IeeeAddress};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
 
@@ -58,7 +57,7 @@ pub trait Storage {
     /// Returns an [`Error`] if querying to the storage fails.
     fn get_by_ieee_address(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
 
     /// Return a device from the storage given its short ID.
@@ -109,7 +108,10 @@ impl Storage for Sender<Message> {
         Ok(rx.await??)
     }
 
-    async fn get_by_ieee_address(&self, ieee_address: MacAddr8) -> Result<Option<Device>, Error> {
+    async fn get_by_ieee_address(
+        &self,
+        ieee_address: IeeeAddress,
+    ) -> Result<Option<Device>, Error> {
         let (tx, rx) = channel();
         self.send(Message::GetByIeeeAddress {
             ieee_address,

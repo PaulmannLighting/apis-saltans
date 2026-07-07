@@ -210,10 +210,10 @@ Methods:
 | `scan_networks` | `&self, channel_mask: u32, duration: u8 -> Future<Result<Vec<FoundNetwork>, Error>>` | `Message::ScanNetworks` | Discovered networks and signal data. |
 | `scan_channels` | `&self, channel_mask: u32, duration: u8 -> Future<Result<Vec<ScannedChannel>, Error>>` | `Message::ScanChannels` | Observed channel RSSI results. |
 | `allow_joins` | `&self, duration: Duration -> Future<Result<(), Error>>` | `Message::AllowJoins` | Opens joining for `duration`. |
-| `get_neighbors` | `&self -> Future<Result<BTreeMap<MacAddr8, u16>, Error>>` | `Message::GetNeighbors` | Neighbor IEEE-to-short-ID map. |
+| `get_neighbors` | `&self -> Future<Result<BTreeMap<IeeeAddress, u16>, Error>>` | `Message::GetNeighbors` | Neighbor IEEE-to-short-ID map. |
 | `route_request` | `&self, radius: u8 -> Future<Result<(), Error>>` | `Message::RouteRequest` | Issues a route request. |
-| `get_ieee_address` | `&self, short_id: u16 -> Future<Result<MacAddr8, Error>>` | `Message::GetIeeeAddress` | IEEE address for a short ID. |
-| `get_short_id` | `&self, ieee_address: MacAddr8 -> Future<Result<u16, Error>>` | `Message::GetShortId` | Short ID for an IEEE address. |
+| `get_ieee_address` | `&self, short_id: u16 -> Future<Result<IeeeAddress, Error>>` | `Message::GetIeeeAddress` | IEEE address for a short ID. |
+| `get_short_id` | `&self, ieee_address: IeeeAddress -> Future<Result<u16, Error>>` | `Message::GetShortId` | Short ID for an IEEE address. |
 | `unicast` | `&self, short_id: u16, endpoint: Endpoint, frame: Frame -> Future<Result<u8, Error>>` | `Message::Unicast` | Driver-specific transaction or sequence identifier. |
 | `multicast` | `&self, group_id: u16, hops: u8, radius: u8, frame: Frame -> Future<Result<u8, Error>>` | `Message::Multicast` | Driver-specific transaction or sequence identifier. |
 | `broadcast` | `&self, short_id: u16, radius: u8, frame: Frame -> Future<Result<u8, Error>>` | `Message::Broadcast` | Driver-specific transaction or sequence identifier. |
@@ -238,10 +238,10 @@ Required methods:
 | `scan_networks` | `&mut self, channel_mask: u32, duration: u8 -> Future<Result<Vec<FoundNetwork>, Error>>` | Performs active/passive network discovery. |
 | `scan_channels` | `&mut self, channel_mask: u32, duration: u8 -> Future<Result<Vec<ScannedChannel>, Error>>` | Measures activity per Zigbee channel. |
 | `allow_joins` | `&mut self, duration: Duration -> Future<Result<(), Error>>` | Opens permit-join for the provided duration. |
-| `get_neighbors` | `&mut self -> Future<Result<BTreeMap<MacAddr8, u16>, Error>>` | Reads neighbor table data. |
+| `get_neighbors` | `&mut self -> Future<Result<BTreeMap<IeeeAddress, u16>, Error>>` | Reads neighbor table data. |
 | `route_request` | `&mut self, radius: u8 -> Future<Result<(), Error>>` | Requests route discovery with the given radius. |
-| `get_ieee_address` | `&mut self, short_id: u16 -> Future<Result<MacAddr8, Error>>` | Resolves short ID to IEEE address. |
-| `get_short_id` | `&mut self, ieee_address: MacAddr8 -> Future<Result<u16, Error>>` | Resolves IEEE address to short ID. |
+| `get_ieee_address` | `&mut self, short_id: u16 -> Future<Result<IeeeAddress, Error>>` | Resolves short ID to IEEE address. |
+| `get_short_id` | `&mut self, ieee_address: IeeeAddress -> Future<Result<u16, Error>>` | Resolves IEEE address to short ID. |
 | `unicast` | `&mut self, short_id: u16, endpoint: Endpoint, frame: Frame -> Future<Result<u8, Error>>` | Sends one unicast frame to one short ID. |
 | `multicast` | `&mut self, group_id: u16, hops: u8, radius: u8, frame: Frame -> Future<Result<u8, Error>>` | Sends a multicast frame. |
 | `broadcast` | `&mut self, short_id: u16, radius: u8, frame: Frame -> Future<Result<u8, Error>>` | Sends a broadcast frame. `short_id` is currently a raw `u16`; the source notes that a dedicated broadcast address type may be needed. |
@@ -412,7 +412,7 @@ Fields:
 | --- | --- | --- | --- |
 | `channel` | `u8` | private | Zigbee channel. |
 | `pan_id` | `u16` | private | PAN ID. |
-| `ieee_address` | `MacAddr8` | private | Extended PAN ID or network IEEE address as reported by the backend. |
+| `ieee_address` | `IeeeAddress` | private | Extended PAN ID or network IEEE address as reported by the backend. |
 | `allow_joins` | `bool` | private | Whether the network currently permits joins. |
 | `stack_profile` | `u8` | private | Zigbee stack profile. |
 | `nwk_update_id` | `u8` | private | Network update ID. |
@@ -421,10 +421,10 @@ Methods:
 
 | Method | Signature summary | Purpose |
 | --- | --- | --- |
-| `new` | `const fn new(channel: u8, pan_id: u16, ieee_address: MacAddr8, allow_joins: bool, stack_profile: u8, nwk_update_id: u8) -> Self` | Constructs network metadata. |
+| `new` | `const fn new(channel: u8, pan_id: u16, ieee_address: IeeeAddress, allow_joins: bool, stack_profile: u8, nwk_update_id: u8) -> Self` | Constructs network metadata. |
 | `channel` | `const fn &self -> u8` | Returns the channel. |
 | `pan_id` | `const fn &self -> u16` | Returns the PAN ID. |
-| `ieee_address` | `const fn &self -> MacAddr8` | Returns the IEEE address. |
+| `ieee_address` | `const fn &self -> IeeeAddress` | Returns the IEEE address. |
 | `allow_joins` | `const fn &self -> bool` | Returns whether joins are allowed. |
 | `stack_profile` | `const fn &self -> u8` | Returns the stack profile. |
 | `nwk_update_id` | `const fn &self -> u8` | Returns the network update ID. |
@@ -484,9 +484,9 @@ Variants:
 | `NetworkDown` | none | Network is down. |
 | `NetworkOpened` | none | Network has been opened for joining. |
 | `NetworkClosed` | none | Network has been closed for joining. |
-| `DeviceJoined` | `ieee_address: MacAddr8`, `short_id: u16` | A new device joined. |
-| `DeviceRejoined` | `ieee_address: MacAddr8`, `short_id: u16`, `secured: bool` | A device rejoined, with security status. |
-| `DeviceLeft` | `ieee_address: MacAddr8`, `short_id: u16` | A device left. |
+| `DeviceJoined` | `ieee_address: IeeeAddress`, `short_id: u16` | A new device joined. |
+| `DeviceRejoined` | `ieee_address: IeeeAddress`, `short_id: u16`, `secured: bool` | A device rejoined, with security status. |
+| `DeviceLeft` | `ieee_address: IeeeAddress`, `short_id: u16` | A device left. |
 | `MessageReceived` | `src_address: u16`, `aps_frame: Box<apis_saltans_aps::Data<Command>>` | A message was received from a device. |
 
 ### `Command`
@@ -518,10 +518,10 @@ Variants:
 | `ScanNetworks` | `channel_mask: u32`, `duration: u8`, `response: oneshot::Sender<Result<Vec<FoundNetwork>, Error>>` | Request network scan. |
 | `ScanChannels` | `channel_mask: u32`, `duration: u8`, `response: oneshot::Sender<Result<Vec<ScannedChannel>, Error>>` | Request channel scan. |
 | `AllowJoins` | `duration: Duration`, `response: oneshot::Sender<Result<(), Error>>` | Request permit-join. |
-| `GetNeighbors` | `response: oneshot::Sender<Result<BTreeMap<MacAddr8, u16>, Error>>` | Request neighbor table. |
+| `GetNeighbors` | `response: oneshot::Sender<Result<BTreeMap<IeeeAddress, u16>, Error>>` | Request neighbor table. |
 | `RouteRequest` | `radius: u8`, `response: oneshot::Sender<Result<(), Error>>` | Request route discovery. |
-| `GetIeeeAddress` | `short_id: u16`, `response: oneshot::Sender<Result<MacAddr8, Error>>` | Resolve short ID to IEEE address. |
-| `GetShortId` | `ieee_address: MacAddr8`, `response: oneshot::Sender<Result<u16, Error>>` | Resolve IEEE address to short ID. |
+| `GetIeeeAddress` | `short_id: u16`, `response: oneshot::Sender<Result<IeeeAddress, Error>>` | Resolve short ID to IEEE address. |
+| `GetShortId` | `ieee_address: IeeeAddress`, `response: oneshot::Sender<Result<u16, Error>>` | Resolve IEEE address to short ID. |
 | `Unicast` | `short_id: u16`, `endpoint: Endpoint`, `frame: Frame`, `response: oneshot::Sender<Result<u8, Error>>` | Send one unicast frame to one short ID. |
 | `Multicast` | `group_id: u16`, `hops: u8`, `radius: u8`, `frame: Frame`, `response: oneshot::Sender<Result<u8, Error>>` | Send multicast frame. |
 | `Broadcast` | `short_id: u16`, `radius: u8`, `frame: Frame`, `response: oneshot::Sender<Result<u8, Error>>` | Send broadcast frame. |

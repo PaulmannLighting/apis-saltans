@@ -1,6 +1,5 @@
-use apis_saltans_core::ByteSizedVec;
+use apis_saltans_core::{ByteSizedVec, IeeeAddress};
 use heapless::CapacityError;
-use macaddr::MacAddr8;
 
 crate::zdp_command! {
     /// Parent Announcement Service.
@@ -8,12 +7,12 @@ crate::zdp_command! {
     cluster_id: 0x001F;
     group: DeviceAndServiceDiscovery;
     fields {
-        child_info: ByteSizedVec<MacAddr8>,
+        child_info: ByteSizedVec<IeeeAddress>,
     }
     getters {
         /// Returns a reference to the child info.
         #[must_use]
-        pub fn child_info(&self) -> &[MacAddr8] {
+        pub fn child_info(&self) -> &[IeeeAddress] {
             &self.child_info
         }
     }
@@ -36,26 +35,26 @@ crate::zdp_command! {
     }
 
     try_from {
-        impl TryFrom<Box<[MacAddr8]>> for ParentAnnce {
+        impl TryFrom<Box<[IeeeAddress]>> for ParentAnnce {
             type Error = CapacityError;
 
-            fn try_from(value: Box<[MacAddr8]>) -> Result<Self, Self::Error> {
+            fn try_from(value: Box<[IeeeAddress]>) -> Result<Self, Self::Error> {
                 Self::try_from(&*value)
             }
         }
 
-        impl TryFrom<Vec<MacAddr8>> for ParentAnnce {
+        impl TryFrom<Vec<IeeeAddress>> for ParentAnnce {
             type Error = CapacityError;
 
-            fn try_from(value: Vec<MacAddr8>) -> Result<Self, Self::Error> {
+            fn try_from(value: Vec<IeeeAddress>) -> Result<Self, Self::Error> {
                 Self::try_from(value.into_boxed_slice())
             }
         }
 
-        impl TryFrom<&[MacAddr8]> for ParentAnnce {
+        impl TryFrom<&[IeeeAddress]> for ParentAnnce {
             type Error = CapacityError;
 
-            fn try_from(value: &[MacAddr8]) -> Result<Self, Self::Error> {
+            fn try_from(value: &[IeeeAddress]) -> Result<Self, Self::Error> {
                 value.try_into().map(Self::new)
             }
         }

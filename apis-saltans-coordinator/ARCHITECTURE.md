@@ -196,8 +196,8 @@ For endpoints that advertise bindable output clusters (`OnOff`, `Level`):
 ### NetworkManager
 
 In-memory source of truth for known devices:
-- `devices: BTreeMap<MacAddr8, Device>`
-- `short_ids: BTreeMap<u16, MacAddr8>`
+- `devices: BTreeMap<IeeeAddress, Device>`
+- `short_ids: BTreeMap<u16, IeeeAddress>`
 
 Handles:
 - add/remove device updates
@@ -206,7 +206,7 @@ Handles:
 - incoming command subscriptions created by `NetworkManager::subscribe_to_incoming_commands`
 - unknown incoming command sources are logged and dropped
 
-Subscription filters are stored as `(BTreeSet<MacAddr8>, Sender<Event>)`. An
+Subscription filters are stored as `(BTreeSet<IeeeAddress>, Sender<Event>)`. An
 empty device set subscribes to all known devices; otherwise only matching IEEE
 addresses receive the event. The actor drops closed subscriber channels after
 delivery attempts.

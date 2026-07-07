@@ -1,5 +1,5 @@
+use apis_saltans_core::Eui64;
 use apis_saltans_core::types::tlv::{Local, Tlv};
-use macaddr::MacAddr8;
 
 crate::zdp_command! {
     /// Clear All Bindings Request
@@ -18,7 +18,7 @@ crate::zdp_command! {
         }
 
         /// Returns an iterator over all EUI64s in the Clear All Bindings Request.
-        pub fn eui64s(&self) -> impl Iterator<Item = &'_ MacAddr8> {
+        pub fn eui64s(&self) -> impl Iterator<Item = &'_ Eui64> {
             self.tlvs
                 .iter()
                 .filter_map(|tlv| {

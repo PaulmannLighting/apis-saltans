@@ -1,7 +1,6 @@
 use std::num::NonZeroU8;
 
-use apis_saltans_core::ByteSizedVec;
-use macaddr::MacAddr8;
+use apis_saltans_core::{ByteSizedVec, IeeeAddress};
 
 /// ZDO joining policy.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -40,5 +39,5 @@ pub struct MgmtNwkIeeeJoiningListRspEntries {
     /// Starting index of this response segment.
     pub start_index: u8,
     /// IEEE joining addresses in this response segment.
-    pub ieee_joining_list: Box<ByteSizedVec<MacAddr8>>,
+    pub ieee_joining_list: Box<ByteSizedVec<IeeeAddress>>,
 }

@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
-use apis_saltans_core::Address;
-use macaddr::MacAddr8;
+use apis_saltans_core::{Address, IeeeAddress};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
 
@@ -22,7 +21,7 @@ pub trait NetworkManager {
     fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
-    ) -> impl Future<Output = Result<Option<MacAddr8>, Error>> + Send;
+    ) -> impl Future<Output = Result<Option<IeeeAddress>, Error>> + Send;
 
     /// Return the short ID for the given IEEE address.
     ///
@@ -35,7 +34,7 @@ pub trait NetworkManager {
     /// Returns an [`Error`] if the communication with the actor failed.
     fn get_short_id_from_ieee_address(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Option<u16>, Error>> + Send;
 
     /// Resolve the given short ID into an [`Address`].
@@ -72,7 +71,7 @@ pub trait NetworkManager {
     /// Returns an [`Error`] if the communication with the actor failed.
     fn ieee_address_to_address(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Option<Address>, Error>> + Send
     where
         Self: Sync,
@@ -91,7 +90,7 @@ pub trait NetworkManager {
     /// Returns an [`Error`] if the communication with the actor failed.
     fn subscribe_to_incoming_commands(
         &self,
-        device: BTreeSet<MacAddr8>,
+        device: BTreeSet<IeeeAddress>,
         channel_size: usize,
     ) -> impl Future<Output = Result<Receiver<Event>, Error>> + Send;
 
@@ -103,7 +102,7 @@ impl NetworkManager for Sender<Message> {
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
-    ) -> Result<Option<MacAddr8>, Error> {
+    ) -> Result<Option<IeeeAddress>, Error> {
         let (response, result) = channel();
         self.send(Message::GetIeeeAddressFromShortId { short_id, response })
             .await?;
@@ -112,7 +111,7 @@ impl NetworkManager for Sender<Message> {
 
     async fn get_short_id_from_ieee_address(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
     ) -> Result<Option<u16>, Error> {
         let (response, result) = channel();
         self.send(Message::GetShortIdFromIeeeAddress {
@@ -125,7 +124,7 @@ impl NetworkManager for Sender<Message> {
 
     async fn subscribe_to_incoming_commands(
         &self,
-        device: BTreeSet<MacAddr8>,
+        device: BTreeSet<IeeeAddress>,
         channel_size: usize,
     ) -> Result<Receiver<Event>, Error> {
         let (sender, receiver) = tokio::sync::mpsc::channel(channel_size);
@@ -148,7 +147,7 @@ impl NetworkManager for Coordinator {
     async fn get_ieee_address_from_short_id(
         &self,
         short_id: u16,
-    ) -> Result<Option<MacAddr8>, Error> {
+    ) -> Result<Option<IeeeAddress>, Error> {
         self.network_manager
             .get_ieee_address_from_short_id(short_id)
             .await
@@ -156,7 +155,7 @@ impl NetworkManager for Coordinator {
 
     async fn get_short_id_from_ieee_address(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
     ) -> Result<Option<u16>, Error> {
         self.network_manager
             .get_short_id_from_ieee_address(ieee_address)
@@ -165,7 +164,7 @@ impl NetworkManager for Coordinator {
 
     async fn subscribe_to_incoming_commands(
         &self,
-        device: BTreeSet<MacAddr8>,
+        device: BTreeSet<IeeeAddress>,
         channel_size: usize,
     ) -> Result<Receiver<Event>, Error> {
         self.network_manager

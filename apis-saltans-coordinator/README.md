@@ -93,11 +93,11 @@ Provides queries against coordinator-maintained network state:
 - `state` (snapshot of known devices)
 
 ```rust,no_run
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 use apis_saltans_coordinator::NetworkManager;
 
 async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, apis_saltans_coordinator::Error> {
-    let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
+    let ieee = IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7);
     api.get_short_id_from_ieee_address(ieee).await
 }
 ```
@@ -147,12 +147,12 @@ High-level helpers for standard On/Off cluster control:
 - `toggle`
 
 ```rust,no_run
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 use apis_saltans_core::Application;
 use apis_saltans_coordinator::{Destination, OnOff};
 
 async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Error> {
-    let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
+    let ieee = IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7);
     let destination = Destination::Endpoint {
         ieee_address: ieee,
         endpoint: Application::try_from(1).expect("valid endpoint"),
@@ -168,13 +168,13 @@ High-level color control operation:
 - `move_to_xy`
 
 ```rust,no_run
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 use apis_saltans_zcl::Options;
 use apis_saltans_core::{Application, units::Deciseconds};
 use apis_saltans_coordinator::{ColorControl, Destination};
 
 async fn set_xy(api: &impl ColorControl) -> Result<(), apis_saltans_coordinator::Error> {
-    let ieee = MacAddr8::new(0, 1, 2, 3, 4, 5, 6, 7);
+    let ieee = IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7);
     let destination = Destination::Endpoint {
         ieee_address: ieee,
         endpoint: Application::try_from(1).expect("valid endpoint"),
@@ -200,14 +200,14 @@ Two API levels are exposed:
 Typed example with Basic-cluster readable IDs:
 
 ```rust,no_run
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 use apis_saltans_zcl::general::basic::readable::Id as BasicReadableId;
 use apis_saltans_core::Application;
 use apis_saltans_coordinator::{ReadAttributeResult, ReadAttributes};
 
 async fn read_basic(
     api: &impl ReadAttributes,
-    ieee: MacAddr8,
+    ieee: IeeeAddress,
 ) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, apis_saltans_coordinator::Error> {
     api.read_attributes(
         ieee,
@@ -228,7 +228,7 @@ Two API levels are exposed:
 Typed example with Basic writable attributes:
 
 ```rust,no_run
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 use apis_saltans_zcl::general::basic::writable::Attribute as BasicWritable;
 use apis_saltans_core::types::String;
 use apis_saltans_core::Application;
@@ -236,7 +236,7 @@ use apis_saltans_coordinator::WriteAttributes;
 
 async fn write_location(
     api: &impl WriteAttributes,
-    ieee: MacAddr8,
+    ieee: IeeeAddress,
 ) -> Result<(), apis_saltans_coordinator::Error> {
     let location = String::<16>::try_from("Living Room").unwrap();
 

@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use apis_saltans_core::Endpoint;
-use macaddr::MacAddr8;
+use apis_saltans_core::{Endpoint, IeeeAddress};
 use tokio::sync::oneshot::Sender;
 
 pub use self::found_network::{FoundNetwork, Network};
@@ -21,7 +20,7 @@ pub enum Message {
 
     /// Return the IEEE address of the coordinator.
     GetIeeeAddress {
-        response: Sender<Result<MacAddr8, Error>>,
+        response: Sender<Result<IeeeAddress, Error>>,
     },
 
     /// Scan for networks.
@@ -46,7 +45,7 @@ pub enum Message {
 
     /// Get the neighbor table entries.
     GetNeighbors {
-        response: Sender<Result<BTreeMap<MacAddr8, u16>, Error>>,
+        response: Sender<Result<BTreeMap<IeeeAddress, u16>, Error>>,
     },
 
     /// Send a route request.
@@ -58,12 +57,12 @@ pub enum Message {
     /// Return the IEEE address corresponding to a short ID.
     TranslateIeeeAddress {
         short_id: u16,
-        response: Sender<Result<MacAddr8, Error>>,
+        response: Sender<Result<IeeeAddress, Error>>,
     },
 
     /// Return the short ID corresponding to an IEEE address.
     TranslateShortId {
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         response: Sender<Result<u16, Error>>,
     },
 

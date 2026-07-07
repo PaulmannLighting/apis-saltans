@@ -1,5 +1,5 @@
+use apis_saltans_core::IeeeAddress;
 use apis_saltans_core::node::MacCapabilityFlags;
-use macaddr::MacAddr8;
 
 crate::zdp_command! {
     /// Device Announcement Service.
@@ -8,7 +8,7 @@ crate::zdp_command! {
     group: DeviceAndServiceDiscovery;
     fields {
         nwk_addr: u16,
-        ieee_addr: MacAddr8,
+        ieee_addr: IeeeAddress,
         capabilities: MacCapabilityFlags,
     }
     getters {
@@ -20,7 +20,7 @@ crate::zdp_command! {
 
         /// Returns the IEEE address.
         #[must_use]
-        pub const fn ieee_addr(&self) -> MacAddr8 {
+        pub const fn ieee_addr(&self) -> IeeeAddress {
             self.ieee_addr
         }
 

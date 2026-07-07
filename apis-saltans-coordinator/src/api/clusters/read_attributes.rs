@@ -1,8 +1,7 @@
-use apis_saltans_core::{Application, Cluster, Profile};
+use apis_saltans_core::{Application, Cluster, IeeeAddress, Profile};
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::global::read_attributes::{Command, Response};
 use apis_saltans_zcl::{ParseAttributeError, Readable};
-use macaddr::MacAddr8;
 use tokio::sync::mpsc::Sender;
 
 use crate::transceiver::zcl::{Handle, Message, Payload};
@@ -20,7 +19,7 @@ pub trait ReadAttributes {
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
     fn read_attributes_raw<T>(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         endpoint: Application,
         cluster: u16,
         profile: Profile,
@@ -37,7 +36,7 @@ pub trait ReadAttributes {
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
     fn read_attributes<T>(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         endpoint: Application,
         attributes: T,
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T::Item>]>, Error>> + Send
@@ -63,7 +62,7 @@ pub trait ReadAttributes {
 impl ReadAttributes for Coordinator {
     async fn read_attributes_raw<T>(
         &self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
         endpoint: Application,
         cluster: u16,
         profile: Profile,

@@ -1,4 +1,4 @@
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 
 #[cfg_attr(
     feature = "le-stream",
@@ -8,12 +8,12 @@ use macaddr::MacAddr8;
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Sender {
     node_id: u16,
-    ieee_address: Option<MacAddr8>,
+    ieee_address: Option<IeeeAddress>,
 }
 
 impl Sender {
     #[must_use]
-    pub const fn new(node_id: u16, ieee_address: Option<MacAddr8>) -> Self {
+    pub const fn new(node_id: u16, ieee_address: Option<IeeeAddress>) -> Self {
         Self {
             node_id,
             ieee_address,
@@ -26,12 +26,12 @@ impl Sender {
     }
 
     #[must_use]
-    pub const fn ieee_address(&self) -> Option<MacAddr8> {
+    pub const fn ieee_address(&self) -> Option<IeeeAddress> {
         self.ieee_address
     }
 
     #[must_use]
-    pub const fn into_parts(self) -> (u16, Option<MacAddr8>) {
+    pub const fn into_parts(self) -> (u16, Option<IeeeAddress>) {
         (self.node_id, self.ieee_address)
     }
 }

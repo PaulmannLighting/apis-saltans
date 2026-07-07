@@ -3,8 +3,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use apis_saltans_core::Endpoint;
-use macaddr::MacAddr8;
+use apis_saltans_core::{Endpoint, IeeeAddress};
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
 
@@ -28,7 +27,7 @@ pub trait NcpDriver {
     /// # Errors
     ///
     /// Returns an error if the operation fails.
-    fn get_ieee_address(&mut self) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
+    fn get_ieee_address(&mut self) -> impl Future<Output = Result<IeeeAddress, Error>> + Send;
 
     /// Scan for available networks.
     ///
@@ -85,7 +84,7 @@ pub trait NcpDriver {
     /// Returns an error if the operation fails.
     fn get_neighbors(
         &mut self,
-    ) -> impl Future<Output = Result<BTreeMap<MacAddr8, u16>, Error>> + Send;
+    ) -> impl Future<Output = Result<BTreeMap<IeeeAddress, u16>, Error>> + Send;
 
     /// Send a route request.
     ///
@@ -102,7 +101,7 @@ pub trait NcpDriver {
     fn short_id_to_ieee_address(
         &mut self,
         short_id: u16,
-    ) -> impl Future<Output = Result<MacAddr8, Error>> + Send;
+    ) -> impl Future<Output = Result<IeeeAddress, Error>> + Send;
 
     /// Get the short ID of the device with the specified IEEE address.
     ///
@@ -111,7 +110,7 @@ pub trait NcpDriver {
     /// Returns an error if the operation fails.
     fn ieee_address_to_short_id(
         &mut self,
-        ieee_address: MacAddr8,
+        ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<u16, Error>> + Send;
 
     /// Send a unicast message.

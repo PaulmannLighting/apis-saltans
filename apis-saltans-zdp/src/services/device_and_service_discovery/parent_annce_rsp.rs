@@ -1,5 +1,4 @@
-use apis_saltans_core::ByteSizedVec;
-use macaddr::MacAddr8;
+use apis_saltans_core::{ByteSizedVec, IeeeAddress};
 
 use crate::Status;
 
@@ -10,7 +9,7 @@ crate::zdp_command! {
     group: DeviceAndServiceDiscovery;
     fields {
         status: u8,
-        child_info: ByteSizedVec<MacAddr8>,
+        child_info: ByteSizedVec<IeeeAddress>,
     }
     getters {
         /// Return the status of the response.

@@ -1,4 +1,4 @@
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 
 pub use self::response::NwkAddrRspResponse;
 use crate::Status;
@@ -12,7 +12,7 @@ crate::zdp_command! {
     group: DeviceAndServiceDiscovery;
     fields {
         status: u8,
-        ieee_addr_remote_dev: Option<MacAddr8>,
+        ieee_addr_remote_dev: Option<IeeeAddress>,
         nwk_addr_remote_dev: Option<u16>,
         num_assoc_dev: Option<u8>,
         start_index: Option<u8>,
@@ -83,7 +83,7 @@ crate::zdp_command! {
             {
                 let status = <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?;
                 let ieee_addr_remote_dev =
-                    <Option<MacAddr8> as le_stream::FromLeStream>::from_le_stream(&mut bytes)?;
+                    <Option<IeeeAddress> as le_stream::FromLeStream>::from_le_stream(&mut bytes)?;
                 let nwk_addr_remote_dev = if ieee_addr_remote_dev.is_some() {
                     Some(<u16 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?)
                 } else {
@@ -121,7 +121,7 @@ crate::zdp_command! {
                 let mut bytes = Vec::new();
 
                 bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(self.status));
-                bytes.extend(<Option<MacAddr8> as le_stream::ToLeStream>::to_le_stream(
+                bytes.extend(<Option<IeeeAddress> as le_stream::ToLeStream>::to_le_stream(
                     self.ieee_addr_remote_dev,
                 ));
                 bytes.extend(<Option<u16> as le_stream::ToLeStream>::to_le_stream(

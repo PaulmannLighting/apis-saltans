@@ -1,4 +1,4 @@
-use macaddr::MacAddr8;
+use apis_saltans_core::IeeeAddress;
 use num_traits::FromPrimitive;
 
 pub use self::request_type::RequestType;
@@ -12,14 +12,14 @@ crate::zdp_command! {
     group: DeviceAndServiceDiscovery;
     response: crate::NwkAddrRsp;
     fields {
-        ieee_addr: MacAddr8,
+        ieee_addr: IeeeAddress,
         request_type: u8,
         start_index: u8,
     }
     constructor {
         /// Creates a new `NwkAddrReq`.
         #[must_use]
-        pub const fn new(ieee_addr: MacAddr8, request_type: RequestType, start_index: u8) -> Self {
+        pub const fn new(ieee_addr: IeeeAddress, request_type: RequestType, start_index: u8) -> Self {
             Self {
                 ieee_addr,
                 request_type: request_type as u8,
@@ -30,7 +30,7 @@ crate::zdp_command! {
     getters {
         /// Returns the IEEE address.
         #[must_use]
-        pub const fn ieee_addr(&self) -> MacAddr8 {
+        pub const fn ieee_addr(&self) -> IeeeAddress {
             self.ieee_addr
         }
 

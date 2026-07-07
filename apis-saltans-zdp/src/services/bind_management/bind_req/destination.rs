@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
-use apis_saltans_core::Endpoint;
-use macaddr::MacAddr8;
+use apis_saltans_core::{Endpoint, IeeeAddress};
 use repr_discriminant::ReprDiscriminant;
 
 /// Address type for Bind Request.
@@ -15,7 +14,7 @@ pub enum Destination {
     /// 64-bit extended address.
     Extended {
         /// 64-bit MAC address.
-        address: MacAddr8,
+        address: IeeeAddress,
         /// Endpoint on the destination device.
         endpoint: Endpoint,
     } = 0x03,

@@ -35,7 +35,6 @@ dependencies = [
  "const_env",
  "le-stream",
  "log",
- "macaddr",
  "serde",
  "tokio",
  "tokio-task-pool",
@@ -70,7 +69,6 @@ dependencies = [
  "apis-saltans-zdp",
  "le-stream",
  "log",
- "macaddr",
  "tokio",
 ]
 
@@ -87,8 +85,8 @@ dependencies = [
 name = "apis-saltans-nwk"
 version = "0.1.0"
 dependencies = [
+ "apis-saltans-core",
  "le-stream",
- "macaddr",
  "serde",
 ]
 
@@ -104,7 +102,6 @@ dependencies = [
  "either",
  "heapless",
  "le-stream",
- "macaddr",
  "num-derive",
  "num-traits",
  "repr-discriminant",
@@ -120,7 +117,6 @@ dependencies = [
  "bitflags",
  "heapless",
  "le-stream",
- "macaddr",
  "num-derive",
  "num-traits",
  "repr-discriminant",
