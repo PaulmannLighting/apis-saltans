@@ -3,7 +3,6 @@
 use core::convert::Infallible;
 
 use le_stream::{FromLeStream, ToLeStream};
-use macaddr::MacAddr8;
 use repr_discriminant::ReprDiscriminant;
 
 pub use self::analog::{
@@ -20,6 +19,7 @@ pub use self::discrete::{
     UtcTime,
 };
 pub use self::null::{NoData, Unknown};
+use crate::IeeeAddress;
 
 mod analog;
 mod channel_list;
@@ -165,7 +165,7 @@ pub enum Type {
     BacnetObjectId(u32) = 0xea,
 
     /// IEEE Address.
-    IeeeAddress(MacAddr8) = 0xf0,
+    IeeeAddress(IeeeAddress) = 0xf0,
 
     /// 128-bit Key.
     Key128([u8; 16]) = 0xf1,

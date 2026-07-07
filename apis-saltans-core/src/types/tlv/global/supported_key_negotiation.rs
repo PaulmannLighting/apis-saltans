@@ -1,8 +1,8 @@
 use le_stream::{FromLeStream, ToLeStream};
-use macaddr::MacAddr8;
 
 pub use self::key_negotiation_protocols::KeyNegotiationProtocols;
 pub use self::pre_shared_secrets::PreSharedSecrets;
+use crate::Eui64;
 use crate::types::tlv::Tag;
 
 mod key_negotiation_protocols;
@@ -13,7 +13,7 @@ mod pre_shared_secrets;
 pub struct SupportedKeyNegotiation {
     key_negotiation_protocols: KeyNegotiationProtocols,
     pre_shared_secrets: PreSharedSecrets,
-    source_device_eui64: Option<MacAddr8>,
+    source_device_eui64: Option<Eui64>,
 }
 
 impl SupportedKeyNegotiation {
@@ -22,7 +22,7 @@ impl SupportedKeyNegotiation {
     pub const fn new(
         key_negotiation_protocols: KeyNegotiationProtocols,
         pre_shared_secrets: PreSharedSecrets,
-        source_device_eui64: Option<MacAddr8>,
+        source_device_eui64: Option<Eui64>,
     ) -> Self {
         Self {
             key_negotiation_protocols,
@@ -45,7 +45,7 @@ impl SupportedKeyNegotiation {
 
     /// Get the Source Device EUI-64, if present.
     #[must_use]
-    pub const fn source_device_eui64(&self) -> Option<MacAddr8> {
+    pub const fn source_device_eui64(&self) -> Option<Eui64> {
         self.source_device_eui64
     }
 }

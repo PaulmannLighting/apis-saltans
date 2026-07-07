@@ -90,9 +90,9 @@ mod tests {
     use alloc::vec::Vec;
 
     use le_stream::ToLeStream;
-    use macaddr::MacAddr8;
 
     use super::*;
+    use crate::Eui64;
 
     const SUPPORTED_KEY_NEGOTIATION_METHODS: Tlv = Tlv::Global(
         Global::SupportedKeyNegotiationMethods(SupportedKeyNegotiation::new(
@@ -105,7 +105,7 @@ mod tests {
         Global::SupportedKeyNegotiationMethods(SupportedKeyNegotiation::new(
             KeyNegotiationProtocols::STATIC_KEY_REQUEST,
             PreSharedSecrets::INSTALL_CODE_KEY,
-            Some(MacAddr8::new(1, 2, 3, 4, 5, 6, 7, 8)),
+            Some(Eui64::new(1, 2, 3, 4, 5, 6, 7, 8)),
         )),
     );
 

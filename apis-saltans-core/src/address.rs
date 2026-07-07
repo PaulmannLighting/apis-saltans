@@ -2,26 +2,20 @@
 
 use core::fmt::{self, Display};
 
-use macaddr::MacAddr8;
+use crate::IeeeAddress;
 
 /// Zigbee device addressing modes.
-#[cfg_attr(
-    feature = "serde",
-    cfg_eval::cfg_eval,
-    serde_with::serde_as,
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Address {
-    #[cfg_attr(feature = "serde", serde_as(as = "serde_with::DisplayFromStr"))]
-    ieee_address: MacAddr8,
+    ieee_address: IeeeAddress,
     short_id: u16,
 }
 
 impl Address {
     /// Create a new address.
     #[must_use]
-    pub const fn new(ieee_address: MacAddr8, short_id: u16) -> Self {
+    pub const fn new(ieee_address: IeeeAddress, short_id: u16) -> Self {
         Self {
             ieee_address,
             short_id,
@@ -30,7 +24,7 @@ impl Address {
 
     /// Return the IEEE address.
     #[must_use]
-    pub const fn ieee_address(&self) -> MacAddr8 {
+    pub const fn ieee_address(&self) -> IeeeAddress {
         self.ieee_address
     }
 

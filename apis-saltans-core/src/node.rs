@@ -1,10 +1,9 @@
 //! Zigbee network node representation.
 
-use macaddr::MacAddr8;
-
 pub use self::descriptor::{
     Descriptor, DeviceType, Flags, FrequencyBand, LogicalType, MacCapabilityFlags, ServerMask,
 };
+use crate::IeeeAddress;
 
 mod descriptor;
 
@@ -13,14 +12,14 @@ mod descriptor;
 #[derive(Clone, Debug)]
 pub struct Node {
     short_id: u16,
-    ieee_address: MacAddr8,
+    ieee_address: IeeeAddress,
     descriptor: Descriptor,
 }
 
 impl Node {
     /// Create a new Zigbee node.
     #[must_use]
-    pub const fn new(ieee_address: MacAddr8, short_id: u16, descriptor: Descriptor) -> Self {
+    pub const fn new(ieee_address: IeeeAddress, short_id: u16, descriptor: Descriptor) -> Self {
         Self {
             short_id,
             ieee_address,
@@ -36,7 +35,7 @@ impl Node {
 
     /// Return the IEEE address of the node.
     #[must_use]
-    pub const fn ieee_address(&self) -> MacAddr8 {
+    pub const fn ieee_address(&self) -> IeeeAddress {
         self.ieee_address
     }
 
