@@ -338,16 +338,16 @@ Fields:
 | Field | Type | Visibility | Purpose |
 | --- | --- | --- | --- |
 | `aps_metadata` | `Metadata` | private | APS-level metadata needed by the NCP driver. |
-| `payload` | `Box<[u8]>` | private | Serialized application payload. |
+| `payload` | `bytes::Bytes` | private | Serialized application payload. |
 
 Methods:
 
 | Method | Signature summary | Purpose |
 | --- | --- | --- |
-| `new` | `unsafe const fn new(aps_metadata: Metadata, payload: Box<[u8]>) -> Self` | Constructs a frame from metadata and raw payload. Unsafe because the caller must ensure metadata and payload are semantically consistent. |
+| `new` | `unsafe const fn new(aps_metadata: Metadata, payload: bytes::Bytes) -> Self` | Constructs a frame from metadata and raw payload. Unsafe because the caller must ensure metadata and payload are semantically consistent. |
 | `metadata` | `const fn &self -> &Metadata` | Returns immutable metadata. |
 | `metadata_mut` | `const fn &mut self -> &mut Metadata` | Returns mutable metadata. The current `Metadata` API has no field-level mutators. |
-| `into_parts` | `fn self -> (Metadata, Box<[u8]>)` | Splits the frame into metadata and payload. |
+| `into_parts` | `fn self -> (Metadata, bytes::Bytes)` | Splits the frame into metadata and payload. |
 
 Trait implementations:
 
@@ -487,7 +487,7 @@ Variants:
 | `DeviceJoined` | `ieee_address: IeeeAddress`, `short_id: u16` | A new device joined. |
 | `DeviceRejoined` | `ieee_address: IeeeAddress`, `short_id: u16`, `secured: bool` | A device rejoined, with security status. |
 | `DeviceLeft` | `ieee_address: IeeeAddress`, `short_id: u16` | A device left. |
-| `MessageReceived` | `src_address: u16`, `aps_frame: Box<apis_saltans_aps::Data<Command>>` | A message was received from a device. |
+| `MessageReceived` | `apis_saltans_nwk::Envelope<apis_saltans_aps::Data<bytes::Bytes>>` | A raw APS data frame was received from a NWK source. |
 
 ### `Command`
 

@@ -3,8 +3,9 @@ use std::collections::BTreeSet;
 use apis_saltans_aps::Data;
 use apis_saltans_core::{Address, IeeeAddress};
 use apis_saltans_hw::Ncp;
+use apis_saltans_nwk::Source;
 use apis_saltans_zcl::{Cluster, Frame};
-use log::{debug, error, info, warn};
+use log::{debug, error, info, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 
@@ -44,27 +45,18 @@ where
                 Message::SubscribeToIncomingCommands { devices, sender } => {
                     self.subscribers.push((devices, sender));
                 }
-                Message::Command {
-                    src_address,
-                    payload,
-                } => {
-                    self.handle_incoming_command(src_address, *payload).await;
+                Message::Command { source, payload } => {
+                    self.handle_incoming_command(source, payload).await;
                 }
                 Message::GetIeeeAddressFromShortId { short_id, response } => {
                     response
                         .send(
-                            self.devices()
+                            self.storage
+                                .get_by_short_id(short_id)
                                 .await
-                                .unwrap_or_default()
-                                .into_iter()
-                                .find_map(|device| {
-                                    let address = device.address;
-                                    if address.short_id() == short_id {
-                                        Some(address.ieee_address())
-                                    } else {
-                                        None
-                                    }
-                                }),
+                                .ok()
+                                .flatten()
+                                .map(|device| device.address.ieee_address()),
                         )
                         .unwrap_or_else(|error| {
                             error!("Failed to send response: {error:?}");
@@ -76,11 +68,11 @@ where
                 } => {
                     response
                         .send(
-                            self.devices()
+                            self.storage
+                                .get_by_ieee_address(ieee_address)
                                 .await
-                                .unwrap_or_default()
-                                .into_iter()
-                                .find(|device| device.address.ieee_address() == ieee_address)
+                                .ok()
+                                .flatten()
                                 .map(|device| device.address.short_id()),
                         )
                         .unwrap_or_else(|error| {
@@ -126,24 +118,16 @@ where
         Ok(self.storage.devices().await?)
     }
 
-    async fn handle_incoming_command(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
-        let Some(device) = self
-            .storage
-            .get_by_short_id(src_address)
-            .await
-            .inspect_err(|error| error!("{error}"))
-            .ok()
-            .flatten()
-        else {
-            warn!("Received command from unknown short ID: {src_address:04X}");
+    async fn handle_incoming_command(&mut self, source: Source, frame: Data<Frame<Cluster>>) {
+        let Some(address) = self.get_address_from_source(source).await else {
+            warn!("Received command from unknown short ID: {source}");
             return;
         };
 
-        let ieee_address = device.address.ieee_address();
-        let event = Event::new(Address::new(ieee_address, src_address), frame);
+        let event = Event::new(address, frame);
 
         for subscriber in self.subscribers.iter().filter_map(|(devices, sender)| {
-            if devices.is_empty() || devices.contains(&ieee_address) {
+            if devices.is_empty() || devices.contains(&address.ieee_address()) {
                 Some(sender)
             } else {
                 None
@@ -158,6 +142,26 @@ where
         }
 
         self.subscribers.retain(|(_, sender)| !sender.is_closed());
+    }
+
+    async fn get_address_from_source(&self, source: Source) -> Option<Address> {
+        if let Some(ieee_address) = source.ieee_address() {
+            return Some(Address::new(ieee_address, source.node_id()));
+        }
+
+        trace!("NWK source does not supply source IEEE address. Querying storage.");
+        let device = self
+            .storage
+            .get_by_short_id(source.node_id())
+            .await
+            .inspect_err(|error| error!("{error}"))
+            .ok()
+            .flatten()?;
+
+        Some(Address::new(
+            device.address.ieee_address(),
+            source.node_id(),
+        ))
     }
 
     async fn add_device(&self, device: Device) {

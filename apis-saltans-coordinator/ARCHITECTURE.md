@@ -204,6 +204,7 @@ Handles:
 - short<->IEEE resolution
 - full state snapshots
 - incoming command subscriptions created by `NetworkManager::subscribe_to_incoming_commands`
+- incoming command `Source` values are resolved to known device `Address` values before events are published
 - unknown incoming command sources are logged and dropped
 
 Subscription filters are stored as `(BTreeSet<IeeeAddress>, Sender<Event>)`. An
@@ -334,11 +335,11 @@ sequenceDiagram
     participant NM as NetworkManager
     participant API as Subscriber
 
-    ZCL->>NM: Command{src_address, payload}
-    alt src_address known in network state
+    ZCL->>NM: Command{source, payload}
+    alt source resolves to a known address
         NM->>NM: build Event{address, endpoint, EventType}
         NM->>API: send Event to matching subscriber channels
-    else src_address unknown
+    else source unknown
         NM->>NM: log and drop command
     end
 ```

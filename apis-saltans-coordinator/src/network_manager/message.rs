@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use apis_saltans_aps::Data;
 use apis_saltans_core::{Address, IeeeAddress};
 use apis_saltans_hw::RouteError;
+use apis_saltans_nwk::Source;
 use apis_saltans_zcl::{Cluster, Frame};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
@@ -25,10 +26,10 @@ pub enum Message {
 
     /// An incoming ZCL command.
     Command {
-        /// The source address of the command.
-        src_address: u16,
+        /// The NWK source of the command.
+        source: Source,
         /// The payload of the command.
-        payload: Box<Data<Frame<Cluster>>>,
+        payload: Data<Frame<Cluster>>,
     },
 
     /// A request to resolve a short ID to an IEEE address.

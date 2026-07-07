@@ -1,7 +1,9 @@
-use apis_saltans_aps::Transactions;
 use apis_saltans_aps::data::Frame;
+use apis_saltans_aps::{Assembler, Data};
 use apis_saltans_hw::Event;
-use log::{debug, error, trace};
+use apis_saltans_nwk::{Envelope, Source};
+use bytes::Bytes;
+use log::{error, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -15,12 +17,12 @@ pub struct Mux {
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
     network_manager: Sender<network_manager::Message>,
-    transactions: Transactions,
+    transactions: Assembler,
 }
 
 impl Mux {
     /// Create a new multiplexer.
-    pub const fn new(
+    pub fn new(
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
         network_manager: Sender<network_manager::Message>,
@@ -29,7 +31,7 @@ impl Mux {
             zcl,
             zdp,
             network_manager,
-            transactions: Transactions::new(),
+            transactions: Assembler::default(),
         }
     }
 
@@ -105,11 +107,8 @@ impl Mux {
                 .unwrap_or_else(|error| {
                     trace!("Failed to send device left message: {error}");
                 }),
-            Event::MessageReceived {
-                src_address,
-                aps_frame,
-            } => {
-                self.handle_aps_frame(src_address, aps_frame).await;
+            Event::MessageReceived(envelope) => {
+                self.handle_nwk_envelope(envelope).await;
             }
             Event::RouteError(error) => {
                 trace!("{error}");
@@ -123,18 +122,19 @@ impl Mux {
         }
     }
 
-    async fn handle_aps_frame(&mut self, src_address: u16, aps_frame: Frame<Vec<u8>>) {
-        debug!("Received APS frame from {src_address}: {aps_frame:?}");
+    async fn handle_nwk_envelope(&mut self, envelope: Envelope<Data<Bytes>>) {
+        trace!("Received NWK envelope: {envelope:?}");
+        let source = envelope.source();
 
-        if let Some(frame) = self.transactions.add(aps_frame) {
+        if let Some(frame) = self.transactions.add(envelope) {
             match frame.parse() {
-                Ok(frame) => self.forward_received_message(src_address, frame).await,
-                Err(error) => trace!("Failed to parse APS frame: {error}"),
+                Ok(frame) => self.forward_received_message(source, frame).await,
+                Err(error) => warn!("Failed to parse APS frame: {error}"),
             }
         }
     }
 
-    async fn forward_received_message(&self, src_address: u16, aps_frame: Frame<ApsPayload>) {
+    async fn forward_received_message(&self, source: Source, aps_frame: Frame<ApsPayload>) {
         let (header, payload) = aps_frame.into_parts();
 
         match payload {
@@ -145,7 +145,7 @@ impl Mux {
 
                 self.zcl
                     .send(zcl::Message::Received {
-                        src_address,
+                        source,
                         frame: frame.into(),
                     })
                     .await
@@ -156,7 +156,7 @@ impl Mux {
             ApsPayload::Zdp(frame) => {
                 self.zdp
                     .send(zdp::Message::Received {
-                        src_address,
+                        source,
                         frame: frame.into(),
                     })
                     .await

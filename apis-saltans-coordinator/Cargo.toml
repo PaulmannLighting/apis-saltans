@@ -15,8 +15,10 @@ exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 apis-saltans-aps = { version = "0.3", path = "../apis-saltans-aps" }
 apis-saltans-core = { version = "0.4", features = ["serde"], path = "../apis-saltans-core" }
 apis-saltans-hw = { version = "0.5", path = "../apis-saltans-hw" }
+apis-saltans-nwk = { version = "0.1", path = "../apis-saltans-nwk" }
 apis-saltans-zcl = { version = "0.3", features = ["serde"], path = "../apis-saltans-zcl" }
 apis-saltans-zdp = { version = "0.3", features = ["serde"], path = "../apis-saltans-zdp" }
+bytes = "1.12.0"
 const_env = "0.1"
 le-stream = { version = "10", features = ["derive"] }
 log = "0.4"

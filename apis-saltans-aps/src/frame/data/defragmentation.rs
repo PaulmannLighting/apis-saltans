@@ -1,7 +1,7 @@
 //! APS data-frame defragmentation.
 //!
 //! The assembler consumes NWK envelopes carrying raw APS data frames. It uses
-//! the NWK sender and APS counter as the transaction key, buffers payload
+//! the NWK source and APS counter as the transaction key, buffers payload
 //! fragments, and returns the rebuilt APS data frame once all fragments are
 //! present.
 
@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 use std::num::NonZero;
 
 use apis_saltans_nwk::Envelope;
+use bytes::Bytes;
 use log::{trace, warn};
 
 use self::index::Index;
@@ -41,14 +42,14 @@ impl Assembler {
     /// while a transaction is still incomplete or when the incoming frame is
     /// invalid and must be dropped.
     ///
-    /// A transaction is identified by the envelope sender and the APS frame
+    /// A transaction is identified by the envelope source and the APS frame
     /// counter. If a new first fragment arrives for an existing transaction, the
     /// previous transaction is dropped and replaced.
     #[must_use]
-    pub fn add(&mut self, envelope: Envelope<Frame<Box<[u8]>>>) -> Option<Frame<Box<[u8]>>> {
+    pub fn add(&mut self, envelope: Envelope<Frame<Bytes>>) -> Option<Frame<Bytes>> {
         trace!("Received NWK envelope: {envelope:?}");
 
-        let (sender, _metadata, aps) = envelope.into_parts();
+        let (source, _metadata, aps) = envelope.into_parts();
 
         let Some(extended) = aps.header().extended() else {
             trace!("APS frame has no extended header.");
@@ -89,14 +90,14 @@ impl Assembler {
             }
 
             if let Some(previous_transaction) = self.transactions.insert(
-                Index::new(sender, header.counter()),
+                Index::new(source, header.counter()),
                 Transaction::new(blocks, header, payload),
             ) {
                 warn!("Dropping previous transaction: {previous_transaction:?}");
                 return None;
             }
 
-            trace!("Began new transaction for sender: {sender:?}");
+            trace!("Began new transaction for source: {source:?}");
             return None;
         }
 
@@ -113,7 +114,7 @@ impl Assembler {
 
             trace!("APS frame is is block #{index}");
             let (header, payload) = aps.into_parts();
-            let key = Index::new(sender, header.counter());
+            let key = Index::new(source, header.counter());
 
             let Some(transaction) = self.transactions.remove(&key) else {
                 warn!("Dropping follow-up APS frame without existing transaction.");

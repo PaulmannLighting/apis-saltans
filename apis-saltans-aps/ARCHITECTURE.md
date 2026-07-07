@@ -5,11 +5,11 @@ defragmentation for raw APS data payloads.
 
 ```mermaid
 flowchart TD
-    Envelope["NWK Envelope<Data<Box<[u8]>>>"]
-    Assembler["defragmentation::Assembler"]
-    Index["Index<br/>Sender + APS counter"]
+    Envelope["NWK Envelope<Data<Bytes>>"]
+    Assembler["frame::data::defragmentation::Assembler"]
+    Index["Index<br/>Source + APS counter"]
     Transaction["Transaction<br/>header + fragment slots"]
-    Frame["Reassembled Data<Box<[u8]>>"]
+    Frame["Reassembled Data<Bytes>"]
 
     Envelope --> Assembler
     Assembler --> Index
@@ -30,17 +30,18 @@ flowchart TD
 
 ## Defragmentation
 
-`defragmentation::Assembler` owns a map of in-progress transactions. Each
+`frame::data::defragmentation::Assembler` owns a map of in-progress
+transactions. Each
 transaction is keyed by:
 
-- `apis_saltans_nwk::Sender`, because APS counters are sender-scoped;
+- `apis_saltans_nwk::Source`, because APS counters are source-scoped;
 - APS frame counter, because fragments of one APS frame share the counter.
 
 The first fragment stores the original APS data header and opens the payload
 slot vector. Follow-up fragments are inserted by block number. When every slot
 is filled, the transaction concatenates all payload fragments, drops the
 extended header from the saved data header, and returns a rebuilt
-`Data<Box<[u8]>>`.
+`Data<bytes::Bytes>`.
 
 Invalid fragmentation states are intentionally drop-only:
 

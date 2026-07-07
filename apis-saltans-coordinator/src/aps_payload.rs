@@ -1,5 +1,6 @@
 use apis_saltans_aps::data::Frame;
 use apis_saltans_core::Profile;
+use bytes::Bytes;
 
 pub use self::error::ParseApsFrameError;
 
@@ -18,10 +19,10 @@ pub enum ApsPayload {
     Zcl(ZclFrame),
 }
 
-impl TryFrom<Frame<Vec<u8>>> for ApsPayload {
+impl TryFrom<Frame<Bytes>> for ApsPayload {
     type Error = ParseApsFrameError;
 
-    fn try_from(frame: Frame<Vec<u8>>) -> Result<Self, Self::Error> {
+    fn try_from(frame: Frame<Bytes>) -> Result<Self, Self::Error> {
         let profile = match frame.header().profile() {
             Ok(profile) => profile,
             Err(profile_id) => return Err(ParseApsFrameError::InvalidProfile(profile_id)),

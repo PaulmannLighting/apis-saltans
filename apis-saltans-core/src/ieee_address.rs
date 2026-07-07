@@ -1,4 +1,4 @@
-use core::fmt::{Display, Formatter};
+use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
 use core::str::FromStr;
 
 use le_stream::{FromLeStream, ToLeStream};
@@ -41,7 +41,7 @@ impl IeeeAddress {
 }
 
 impl Display for IeeeAddress {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }
@@ -63,6 +63,18 @@ impl FromStr for IeeeAddress {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.parse().map(Self)
+    }
+}
+
+impl LowerHex for IeeeAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl UpperHex for IeeeAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
     }
 }
 
@@ -144,19 +156,15 @@ mod tests {
         }
 
         impl serde::Serializer for StringSerializer {
-            type Error = Error;
             type Ok = String;
-            type SerializeMap = Impossible<String, Error>;
+            type Error = Error;
             type SerializeSeq = Impossible<String, Error>;
-            type SerializeStruct = Impossible<String, Error>;
-            type SerializeStructVariant = Impossible<String, Error>;
             type SerializeTuple = Impossible<String, Error>;
             type SerializeTupleStruct = Impossible<String, Error>;
             type SerializeTupleVariant = Impossible<String, Error>;
-
-            fn serialize_str(self, value: &str) -> Result<Self::Ok, Self::Error> {
-                Ok(value.into())
-            }
+            type SerializeMap = Impossible<String, Error>;
+            type SerializeStruct = Impossible<String, Error>;
+            type SerializeStructVariant = Impossible<String, Error>;
 
             fn serialize_bool(self, _value: bool) -> Result<Self::Ok, Self::Error> {
                 Err(serde::ser::Error::custom("expected a string"))
@@ -212,6 +220,10 @@ mod tests {
 
             fn serialize_char(self, _value: char) -> Result<Self::Ok, Self::Error> {
                 Err(serde::ser::Error::custom("expected a string"))
+            }
+
+            fn serialize_str(self, value: &str) -> Result<Self::Ok, Self::Error> {
+                Ok(value.into())
             }
 
             fn serialize_bytes(self, _value: &[u8]) -> Result<Self::Ok, Self::Error> {

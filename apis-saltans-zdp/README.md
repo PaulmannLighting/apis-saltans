@@ -44,6 +44,7 @@ Key flow:
 
 APIs:
 - `Frame<T>: ToLeStream`
+- `TryFrom<apis_saltans_aps::Data<bytes::Bytes>> for Frame<Command>`
 - `Frame<Command>::parse_with_cluster_id(cluster_id, bytes)`
 - `Command::cluster_id()`
 - `Command: ToLeStream`

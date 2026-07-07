@@ -102,10 +102,12 @@ async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, apis_
 }
 ```
 
-`subscribe_to_incoming_commands` returns a receiver of [`Event`] values. `Event`
-contains the source address, source endpoint, and an [`EventType`]. `EventType`
-is the public alias for the event payload enum and currently distinguishes
-cluster-specific commands from parsed attribute reports:
+`subscribe_to_incoming_commands` returns a receiver of [`Event`] values.
+Incoming APS envelopes carry an `apis_saltans_nwk::Source`; the coordinator
+resolves that source into a known `Address` before publishing an `Event`.
+`Event` contains the resolved source address, source endpoint, and an
+[`EventType`]. `EventType` is the public alias for the event payload enum and
+currently distinguishes cluster-specific commands from parsed attribute reports:
 
 - `EventType::Cluster(apis_saltans_zcl::Cluster)`
 - `EventType::AttributeReport(Box<[apis_saltans_zcl::Reportable]>)`

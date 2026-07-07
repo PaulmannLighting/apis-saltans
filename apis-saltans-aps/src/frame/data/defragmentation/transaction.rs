@@ -1,5 +1,6 @@
 use std::num::NonZero;
 
+use bytes::Bytes;
 use log::warn;
 
 use crate::data::{Frame, Header};
@@ -12,7 +13,7 @@ use crate::data::{Frame, Header};
 #[derive(Debug)]
 pub struct Transaction {
     header: Header,
-    fragments: Vec<Option<Box<[u8]>>>,
+    fragments: Vec<Option<Bytes>>,
 }
 
 impl Transaction {
@@ -21,7 +22,7 @@ impl Transaction {
     /// `length` is the total number of fragments expected for the APS frame.
     /// The first fragment is inserted into slot `0`.
     #[must_use]
-    pub fn new(length: NonZero<u8>, header: Header, first_fragment: Box<[u8]>) -> Self {
+    pub fn new(length: NonZero<u8>, header: Header, first_fragment: Bytes) -> Self {
         let mut fragments = vec![None; length.get().into()];
         fragments[0].replace(first_fragment);
         Self { header, fragments }
@@ -32,7 +33,7 @@ impl Transaction {
     /// If the fragment completes the transaction, the returned frame contains
     /// the concatenated payload and the saved header with its extended header
     /// removed.
-    pub fn insert(mut self, index: u8, fragment: Box<[u8]>) -> InsertResult {
+    pub fn insert(mut self, index: u8, fragment: Bytes) -> InsertResult {
         let Some(slot) = self.fragments.get_mut(usize::from(index)) else {
             return InsertResult::OutOfBounds(index);
         };
@@ -60,7 +61,7 @@ impl Transaction {
 #[derive(Debug)]
 pub enum InsertResult {
     /// All fragments are present and the APS frame has been rebuilt.
-    Complete(Frame<Box<[u8]>>),
+    Complete(Frame<Bytes>),
 
     /// The transaction still needs more fragments.
     Incomplete(Transaction),

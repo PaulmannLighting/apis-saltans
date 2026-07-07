@@ -6,12 +6,12 @@ higher-level crates can attach to decoded payloads.
 
 ```mermaid
 flowchart TD
-    Sender["Sender<br/>NWK address + optional IEEE address"]
+    Source["Source<br/>NWK address + optional IEEE address"]
     Metadata["Metadata<br/>optional frame metadata"]
     Payload["Payload T"]
     Envelope["Envelope<T>"]
 
-    Sender --> Envelope
+    Source --> Envelope
     Metadata --> Envelope
     Payload --> Envelope
 ```
@@ -20,9 +20,9 @@ flowchart TD
 
 | Module | Public type | Responsibility |
 | --- | --- | --- |
-| `sender` | `Sender` | Identifies the NWK sender by short address and optional IEEE address. |
+| `source` | `Source` | Identifies the incoming NWK source by short address and optional IEEE address. |
 | `metadata` | `Metadata` | Stores optional frame metadata provided by a backend. |
-| `envelope` | `Envelope<T>` | Couples a payload with sender and metadata context. |
+| `envelope` | `Envelope<T>` | Couples a payload with source and metadata context. |
 
 ## Serialization
 
@@ -34,5 +34,5 @@ serialization support:
 | `serde` | Derives `serde::Serialize` and `serde::Deserialize`. |
 | `le-stream` | Derives `le_stream::FromLeStream` and `le_stream::ToLeStream`. |
 
-`Sender` uses `apis_saltans_core::IeeeAddress` for IEEE addresses, so callers do
+`Source` uses `apis_saltans_core::IeeeAddress` for IEEE addresses, so callers do
 not depend on the underlying address representation used by core.

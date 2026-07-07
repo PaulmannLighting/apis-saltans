@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 
 use apis_saltans_core::{Address, Endpoint};
 use apis_saltans_hw::{Metadata, Ncp};
+use apis_saltans_nwk::Source;
 use apis_saltans_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
     SimpleDescriptor,
@@ -62,8 +63,8 @@ where
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Received { src_address, frame } => {
-                    self.handle_message_received(src_address, *frame).await;
+                Message::Received { source, frame } => {
+                    self.handle_message_received(source, frame).await;
                 }
                 Message::Communicate {
                     short_id,
@@ -71,7 +72,7 @@ where
                     response,
                 } => {
                     response
-                        .send(self.communicate(short_id, *payload).await)
+                        .send(self.communicate(short_id, payload).await)
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
                         });
@@ -87,15 +88,15 @@ where
         seq
     }
 
-    async fn handle_message_received(&mut self, src_address: u16, frame: Frame<Command>) {
-        trace!("Received ZDP message from {src_address}: {frame:?}");
+    async fn handle_message_received(&mut self, source: Source, frame: Frame<Command>) {
+        trace!("Received ZDP message from {source}: {frame:?}");
         let (seq, command) = frame.into_parts();
 
         if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
             match_desc_req,
         )) = command
         {
-            self.handle_match_desc_req(src_address, seq, *match_desc_req)
+            self.handle_match_desc_req(source, seq, *match_desc_req)
                 .await;
             return;
         }
@@ -189,7 +190,7 @@ where
         }
     }
 
-    async fn handle_match_desc_req(&self, src_address: u16, seq: u8, match_desc_req: MatchDescReq) {
+    async fn handle_match_desc_req(&self, source: Source, seq: u8, match_desc_req: MatchDescReq) {
         let payload = MatchDescRsp::new(
             0x0000,
             Ok(self
@@ -206,7 +207,7 @@ where
         );
 
         if let Err(error) = self
-            .unicast(seq, src_address, Payload::zdp(payload).into_command())
+            .unicast(seq, source.node_id(), Payload::zdp(payload).into_command())
             .await
         {
             error!("Failed to send Match_Desc_rsp: {error:?}");

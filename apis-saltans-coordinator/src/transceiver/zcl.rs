@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use apis_saltans_aps::Data;
 use apis_saltans_core::Application;
 use apis_saltans_hw::{Metadata, Ncp};
+use apis_saltans_nwk::Source;
 use apis_saltans_zcl::{Cluster, CommandDispatch, Frame, Header};
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
@@ -49,8 +50,8 @@ where
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Received { src_address, frame } => {
-                    self.handle_message_received(src_address, *frame).await;
+                Message::Received { source, frame } => {
+                    self.handle_message_received(source, frame).await;
                 }
                 Message::Unicast {
                     short_id,
@@ -61,7 +62,7 @@ where
                     let seq = self.next_seq();
                     response
                         .send(
-                            self.unicast(seq, short_id, endpoint, *payload)
+                            self.unicast(seq, short_id, endpoint, payload)
                                 .await
                                 .map(drop),
                         )
@@ -78,7 +79,7 @@ where
                 } => {
                     response
                         .send(
-                            self.multicast(group_id, hops, radius, *payload)
+                            self.multicast(group_id, hops, radius, payload)
                                 .await
                                 .map(drop),
                         )
@@ -93,7 +94,7 @@ where
                     response,
                 } => {
                     response
-                        .send(self.communicate(short_id, endpoint, *payload).await)
+                        .send(self.communicate(short_id, endpoint, payload).await)
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
                         });
@@ -110,8 +111,8 @@ where
     }
 
     /// Handle a received ZCL message.
-    async fn handle_message_received(&mut self, src_address: u16, frame: Data<Frame<Cluster>>) {
-        trace!("Received ZCL message from {src_address}: {frame:?}");
+    async fn handle_message_received(&mut self, source: Source, frame: Data<Frame<Cluster>>) {
+        trace!("Received ZCL message from {source}: {frame:?}");
         let (aps_header, frame) = frame.into_parts();
         let (header, payload) = frame.into_parts();
 
@@ -136,7 +137,7 @@ where
 
         sender
             .send(network_manager::Message::Command {
-                src_address,
+                source,
                 payload: frame.into(),
             })
             .await

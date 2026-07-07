@@ -1,6 +1,7 @@
 //! APS Data frame definitions.
 
 use apis_saltans_core::Endpoint;
+use bytes::Bytes;
 
 pub use self::defragmentation::Assembler;
 pub use self::header::Header;
@@ -90,10 +91,10 @@ impl<T> From<Unicast<T>> for Frame<T> {
     }
 }
 
-impl Frame<Box<[u8]>> {
+impl Frame<Bytes> {
     /// Return a new frame with the given header and payload.
     #[must_use]
-    pub const fn raw(header: Header, payload: Box<[u8]>) -> Self {
+    pub const fn raw(header: Header, payload: Bytes) -> Self {
         Self { header, payload }
     }
 

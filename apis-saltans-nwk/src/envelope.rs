@@ -1,4 +1,4 @@
-use crate::{Metadata, Sender};
+use crate::{Metadata, Source};
 
 /// A payload together with its network-layer source and metadata.
 ///
@@ -12,7 +12,7 @@ use crate::{Metadata, Sender};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Envelope<T> {
-    source: Sender,
+    source: Source,
     metadata: Metadata,
     payload: T,
 }
@@ -20,7 +20,7 @@ pub struct Envelope<T> {
 impl<T> Envelope<T> {
     /// Create a new envelope.
     #[must_use]
-    pub const fn new(source: Sender, metadata: Metadata, payload: T) -> Self {
+    pub const fn new(source: Source, metadata: Metadata, payload: T) -> Self {
         Self {
             source,
             metadata,
@@ -28,9 +28,9 @@ impl<T> Envelope<T> {
         }
     }
 
-    /// Return the network-layer sender.
+    /// Return the network-layer source.
     #[must_use]
-    pub const fn source(&self) -> Sender {
+    pub const fn source(&self) -> Source {
         self.source
     }
 
@@ -46,9 +46,9 @@ impl<T> Envelope<T> {
         &self.payload
     }
 
-    /// Split the envelope into sender, metadata, and payload.
+    /// Split the envelope into source, metadata, and payload.
     #[must_use]
-    pub fn into_parts(self) -> (Sender, Metadata, T) {
+    pub fn into_parts(self) -> (Source, Metadata, T) {
         (self.source, self.metadata, self.payload)
     }
 }

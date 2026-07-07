@@ -1,4 +1,5 @@
 use apis_saltans_hw::Error;
+use apis_saltans_nwk::Source;
 use apis_saltans_zdp::{Command, Frame};
 use tokio::sync::oneshot::{Receiver, Sender};
 
@@ -11,17 +12,17 @@ mod payload;
 pub enum Message {
     /// A hardware-level event.
     Received {
-        /// The PAN ID of the sender.
-        src_address: u16,
+        /// The source information of the frame.
+        source: Source,
         /// The APS frame.
-        frame: Box<Frame<Command>>,
+        frame: Frame<Command>,
     },
     /// Communicate a unicast with an expected response.
     Communicate {
         /// The destination address.
         short_id: u16,
         /// The payload.
-        command: Box<Command>,
+        command: Command,
         /// The response channel.
         response: Sender<Result<Receiver<Command>, Error>>,
     },

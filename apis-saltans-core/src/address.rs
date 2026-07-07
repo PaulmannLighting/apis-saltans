@@ -6,7 +6,7 @@ use crate::IeeeAddress;
 
 /// Zigbee device addressing modes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Address {
     ieee_address: IeeeAddress,
     short_id: u16,

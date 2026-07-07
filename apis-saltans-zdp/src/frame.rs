@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use apis_saltans_aps::{Data, Destination};
 use apis_saltans_core::Endpoint;
+use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::parse_frame_error::ParseFrameError;
@@ -70,10 +71,10 @@ where
     }
 }
 
-impl TryFrom<Data<Vec<u8>>> for Frame<Command> {
+impl TryFrom<Data<Bytes>> for Frame<Command> {
     type Error = ParseFrameError;
 
-    fn try_from(frame: Data<Vec<u8>>) -> Result<Self, Self::Error> {
+    fn try_from(frame: Data<Bytes>) -> Result<Self, Self::Error> {
         let (header, payload) = frame.into_parts();
 
         if header.source_endpoint() != Endpoint::Data {

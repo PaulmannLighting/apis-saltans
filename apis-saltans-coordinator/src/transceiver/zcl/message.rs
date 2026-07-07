@@ -1,6 +1,7 @@
 use apis_saltans_aps::Data;
 use apis_saltans_core::Application;
 use apis_saltans_hw::Error;
+use apis_saltans_nwk::Source;
 use apis_saltans_zcl::{Cluster, Frame};
 use tokio::sync::oneshot::{Receiver, Sender};
 
@@ -13,10 +14,10 @@ mod payload;
 pub enum Message {
     /// A hardware-level event.
     Received {
-        /// The PAN ID of the sender.
-        src_address: u16,
+        /// The NWK source information of the frame.
+        source: Source,
         /// The APS frame.
-        frame: Box<Data<Frame<Cluster>>>,
+        frame: Data<Frame<Cluster>>,
     },
 
     /// Unicast a message.
@@ -26,7 +27,7 @@ pub enum Message {
         /// The destination endpoint.
         endpoint: Application,
         /// The payload.
-        payload: Box<Payload<Cluster>>,
+        payload: Payload<Cluster>,
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
@@ -40,7 +41,7 @@ pub enum Message {
         /// The multicast radius.
         radius: u8,
         /// The payload.
-        payload: Box<Payload<Cluster>>,
+        payload: Payload<Cluster>,
         /// The response channel.
         response: Sender<Result<(), Error>>,
     },
@@ -52,7 +53,7 @@ pub enum Message {
         /// The destination endpoint.
         endpoint: Application,
         /// The payload.
-        payload: Box<Payload<Cluster>>,
+        payload: Payload<Cluster>,
         /// The response channel.
         response: Sender<Result<Receiver<Cluster>, Error>>,
     },

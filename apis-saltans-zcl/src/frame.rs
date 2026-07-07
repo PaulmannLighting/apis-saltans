@@ -1,6 +1,7 @@
 //! ZCL frame representation.
 
 use apis_saltans_aps::Data;
+use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::header::{Control, Direction, Header, Scope};
@@ -77,12 +78,11 @@ impl Frame<Cluster> {
     }
 }
 
-impl TryFrom<Data<Vec<u8>>> for Frame<Cluster> {
+impl TryFrom<Data<Bytes>> for Frame<Cluster> {
     type Error = ParseFrameError;
 
-    fn try_from(frame: Data<Vec<u8>>) -> Result<Self, Self::Error> {
+    fn try_from(frame: Data<Bytes>) -> Result<Self, Self::Error> {
         let (header, payload) = frame.into_parts();
-
         Self::parse(header.cluster_id(), payload.into_iter())
     }
 }

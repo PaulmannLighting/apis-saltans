@@ -39,14 +39,15 @@ Top-level re-exports are available from `apis-saltans-aps` directly.
 - `frame::command`: APS command frame/header types
 - `frame::acknowledgement`: APS acknowledgment frame and ack format
 - `frame::extended`: extended header fields and fragmentation
-- `defragmentation`: stateful reassembly of fragmented APS data frames
+- `frame::data::defragmentation`: stateful reassembly of fragmented APS data frames
 - `broadcast`: Zigbee network broadcast addresses
 
 ## Defragmentation
 
-`Assembler` consumes `apis_saltans_nwk::Envelope<Data<Box<[u8]>>>` values. It
-uses the NWK sender and APS counter to identify an in-progress fragmented
-transaction.
+`Assembler` consumes `apis_saltans_nwk::Envelope<Data<bytes::Bytes>>` values.
+It uses the NWK source and APS counter to identify an in-progress fragmented
+transaction. `Bytes` keeps raw APS payload handling cheap when frames are passed
+between queues or reassembled from multiple fragments.
 
 Behavior:
 
@@ -58,12 +59,13 @@ Behavior:
 
 ```rust
 use apis_saltans_aps::{Assembler, Data};
-use apis_saltans_nwk::{Envelope, Metadata, Sender};
+use bytes::Bytes;
+use apis_saltans_nwk::Envelope;
 
 fn handle_frame(
     assembler: &mut Assembler,
-    envelope: Envelope<Data<Box<[u8]>>>,
-) -> Option<Data<Box<[u8]>>> {
+    envelope: Envelope<Data<Bytes>>,
+) -> Option<Data<Bytes>> {
     assembler.add(envelope)
 }
 ```
@@ -128,6 +130,7 @@ Some constructors are intentionally marked `unsafe` (for example `new_unchecked`
 
 Primary dependencies:
 - `le-stream`
+- `bytes`
 - `bitflags`
 - `num-traits` / `num-derive`
 

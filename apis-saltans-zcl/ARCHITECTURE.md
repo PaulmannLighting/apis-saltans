@@ -36,7 +36,9 @@ has protocol-specific invariants or parsing rules.
 
 ## Runtime Command Flow
 
-Incoming bytes are parsed through `Frame<Cluster>::parse(cluster_id, bytes)`:
+Incoming raw APS payloads are carried as `apis_saltans_aps::Data<bytes::Bytes>`.
+`TryFrom<Data<Bytes>> for Frame<Cluster>` extracts the APS cluster ID and then
+parses the payload through `Frame<Cluster>::parse(cluster_id, bytes)`:
 
 1. `Frame` parses a ZCL `Header`.
 2. `Cluster::parse_zcl_cluster` checks the frame scope from the header.

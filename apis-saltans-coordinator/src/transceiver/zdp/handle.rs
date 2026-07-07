@@ -33,7 +33,7 @@ where
         U: Cluster + ExpectResponse<Command>,
     {
         let (response, result) = channel();
-        let command = Box::new(command.into());
+        let command = command.into();
 
         async move {
             self.borrow()

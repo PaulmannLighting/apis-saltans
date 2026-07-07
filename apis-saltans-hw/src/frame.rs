@@ -4,8 +4,11 @@
 //! application-layer protocols (ZCL, ZDP) for transmission through the network layer.
 //! Unlike raw APS frames, these types hide implementation details like frame counters
 //! and extended headers, providing a clean interface for coordinator implementations.
+//! Raw payload bytes are stored as [`Bytes`] so frames can be cloned and moved
+//! through queues without copying payload buffers.
 
 use apis_saltans_core::Cluster;
+use bytes::Bytes;
 use le_stream::ToLeStream;
 
 pub use self::metadata::Metadata;
@@ -16,12 +19,12 @@ mod metadata;
 ///
 /// This frame type abstracts over ZCL and ZDP frames, providing a unified
 /// representation for transmission via the network layer. It contains:
-/// - A serialized payload (ZCL or ZDP frame)
+/// - A serialized payload (ZCL or ZDP frame) stored as [`Bytes`]
 /// - Metadata: cluster ID and profile ID
 #[derive(Clone, Debug)]
 pub struct Frame {
     aps_metadata: Metadata,
-    payload: Box<[u8]>,
+    payload: Bytes,
 }
 
 impl Frame {
@@ -32,7 +35,7 @@ impl Frame {
     /// The caller must ensure that the `aps_metadata` and `payload` are valid and consistent with each other.
     #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new(aps_metadata: Metadata, payload: Box<[u8]>) -> Self {
+    pub const unsafe fn new(aps_metadata: Metadata, payload: Bytes) -> Self {
         Self {
             aps_metadata,
             payload,
@@ -53,7 +56,7 @@ impl Frame {
 
     /// Return the cluster ID and payload of the frame.
     #[must_use]
-    pub fn into_parts(self) -> (Metadata, Box<[u8]>) {
+    pub fn into_parts(self) -> (Metadata, Bytes) {
         (self.aps_metadata, self.payload)
     }
 }

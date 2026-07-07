@@ -31,7 +31,10 @@ service group enum is declared with `zdp_command_group!`, and the crate-wide enu
 
 ## Runtime Command Flow
 
-Incoming bytes are parsed through `Frame<Command>::parse_with_cluster_id(cluster_id, bytes)`:
+Incoming raw APS payloads are carried as `apis_saltans_aps::Data<bytes::Bytes>`.
+`TryFrom<Data<Bytes>> for Frame<Command>` validates the APS endpoints, extracts
+the APS cluster ID, and then parses the payload through
+`Frame<Command>::parse_with_cluster_id(cluster_id, bytes)`:
 
 1. `Frame` consumes the first byte as the ZDP transaction sequence number.
 2. The crate-private `Command::parse_with_cluster_id` selects the service group by consulting each

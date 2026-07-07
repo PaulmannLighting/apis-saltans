@@ -1,5 +1,7 @@
-use apis_saltans_aps::data::Frame;
+use apis_saltans_aps::Data;
 use apis_saltans_core::Address;
+use apis_saltans_nwk::Envelope;
+use bytes::Bytes;
 
 pub use self::route_error::RouteError;
 
@@ -34,13 +36,8 @@ pub enum Event {
     /// A device has left the network.
     DeviceLeft(Address),
 
-    /// Message received from a device.
-    MessageReceived {
-        /// The PAN ID of the sender.
-        src_address: u16,
-        /// The APS frame.
-        aps_frame: Frame<Vec<u8>>,
-    },
+    /// Raw APS data frame received from a NWK source.
+    MessageReceived(Envelope<Data<Bytes>>),
 
     /// A routing error.
     RouteError(RouteError),

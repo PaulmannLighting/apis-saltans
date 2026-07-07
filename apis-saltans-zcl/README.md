@@ -49,7 +49,10 @@ A ZCL frame is represented as:
 - `Header`
 - `payload` (`T`)
 
-For parsed runtime payloads, use `Frame<Cluster>` and `Frame::parse(cluster_id, bytes)`.
+For parsed runtime payloads, use `Frame<Cluster>`. Raw APS data arrives as
+`apis_saltans_aps::Data<bytes::Bytes>` and can be converted into a parsed ZCL
+frame; direct byte-stream parsing is available through `Frame::parse(cluster_id,
+bytes)`.
 
 `Header` includes:
 
