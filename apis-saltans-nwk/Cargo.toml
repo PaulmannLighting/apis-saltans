@@ -1,0 +1,16 @@
+[package]
+name = "apis-saltans-nwk"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+le-stream = { version = "10.1.4", features = ["derive", "macaddr"], optional = true }
+macaddr = "1.0.1"
+serde = { version = "1.0.228", features = ["derive"], optional = true }
+
+[lints]
+workspace = true
+
+[features]
+serde = ["dep:serde"]
+le-stream = ["dep:le-stream"]

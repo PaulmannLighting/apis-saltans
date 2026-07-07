@@ -84,6 +84,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "apis-saltans-nwk"
+version = "0.1.0"
+dependencies = [
+ "le-stream",
+ "macaddr",
+ "serde",
+]
+
+[[package]]
 name = "apis-saltans-zcl"
 version = "0.3.0"
 dependencies = [
