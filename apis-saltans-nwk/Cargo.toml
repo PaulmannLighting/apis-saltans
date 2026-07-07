@@ -8,11 +8,11 @@ readme = "README.md"
 keywords = ["zigbee", "network", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-nwk"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
-apis-saltans-core = { version = "0.4", path = "../apis-saltans-core" }
+apis-saltans-core = { version = "0.5", path = "../apis-saltans-core" }
 le-stream = { version = "10.1.4", features = ["derive"], optional = true }
 serde = { version = "1.0.228", features = ["derive"], optional = true }
 
