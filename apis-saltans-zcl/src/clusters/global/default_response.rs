@@ -12,8 +12,8 @@ zcl_command! {
         direction: Direction::ClientToServer;
         disable_default_response: true;
         fields {
-            status: u8,
             command_id: u8,
+            status: u8,
         }
 
         getters {
