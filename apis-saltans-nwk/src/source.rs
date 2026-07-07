@@ -44,39 +44,27 @@ impl Source {
     pub const fn into_parts(self) -> (u16, Option<IeeeAddress>) {
         (self.node_id, self.ieee_address)
     }
+}
 
-    fn format<T, U>(&self, f: &mut Formatter<'_>, node_id_f: T, ieee_address_f: U) -> fmt::Result
-    where
-        T: FnOnce(&u16, &mut Formatter<'_>) -> fmt::Result,
-        U: FnOnce(&IeeeAddress, &mut Formatter<'_>) -> fmt::Result,
-    {
-        node_id_f(&self.node_id, f)?;
-        f.write_str(" (")?;
+macro_rules! impl_fmt_for_source {
+    ($($tr:path),+ $(,)?) => {
+        $(
+            impl $tr for Source {
+                fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+                    <u16 as $tr>::fmt(&self.node_id, f)?;
+                    f.write_str(" (")?;
 
-        if let Some(ieee_address) = self.ieee_address {
-            ieee_address_f(&ieee_address, f)?;
-        } else {
-            f.write_str("N/A")?;
-        }
+                    if let Some(ieee_address) = self.ieee_address {
+                        <IeeeAddress as $tr>::fmt(&ieee_address, f)?;
+                    } else {
+                        f.write_str("N/A")?;
+                    }
 
-        f.write_str(")")
+                    f.write_str(")")
+                }
+            }
+        )+
     }
 }
 
-impl Display for Source {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.format(f, Display::fmt, Display::fmt)
-    }
-}
-
-impl LowerHex for Source {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.format(f, LowerHex::fmt, LowerHex::fmt)
-    }
-}
-
-impl UpperHex for Source {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.format(f, UpperHex::fmt, UpperHex::fmt)
-    }
-}
+impl_fmt_for_source! { Display, UpperHex, LowerHex }
