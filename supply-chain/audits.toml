@@ -19,6 +19,12 @@ criteria = "safe-to-deploy"
 delta = "0.2.0 -> 0.3.0"
 notes = "AI-assisted delta audit; updates the public apis-saltans-core dependency bound from 0.3 to 0.4 only, with no source changes and no new unsafe code"
 
+[[audits.apis-saltans-aps]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.4.0"
+notes = "AI-assisted delta audit; APS defragmentation was reworked around Bytes-backed fragments, NWK Source addressing was adopted, dependency bounds were bumped, docs were updated, and no new unsafe code was introduced"
+
 [[audits.apis-saltans-coordinator]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -42,6 +48,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.3.0 -> 0.3.1"
 notes = "AI-assisted delta audit; coordinator documentation now describes the exported EventType alias and incoming command subscription behavior, with no source-code or unsafe-code changes"
+
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.1 -> 0.6.0"
+notes = "AI-assisted delta audit; coordinator addressing now uses NWK Source and core IEEE-address newtypes, payload buffers use Bytes, ZCL/ZDP response correlation was centralized in an Index key, docs and dependency bounds were updated, and no new unsafe code was introduced"
 
 [[audits.apis-saltans-core]]
 who = "Codex AI"
@@ -67,6 +79,12 @@ criteria = "safe-to-deploy"
 delta = "0.3.0 -> 0.4.0"
 notes = "AI-assisted delta audit; Cluster now carries required PROFILE metadata and optional MANUFACTURER_CODE metadata, Profile adds broadcast_endpoint, and no unsafe code was added"
 
+[[audits.apis-saltans-core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.4.0 -> 0.5.0"
+notes = "AI-assisted delta audit; adds the IeeeAddress newtype and Eui64 alias with le-stream and serde coverage, updates address/TLV usages, and introduces no unsafe code"
+
 [[audits.apis-saltans-hw]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -79,11 +97,23 @@ criteria = "safe-to-deploy"
 delta = "0.2.0 -> 0.3.0"
 notes = "AI-assisted delta audit; Frame payload ownership changed to Box<[u8]>, Metadata now stores a concrete Profile and derives cluster/profile from Cluster, obsolete endpoint metadata was removed, dependency bounds were bumped, and no new unsafe code was introduced"
 
+[[audits.apis-saltans-hw]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.6.0"
+notes = "AI-assisted delta audit; parallel unicasting and transaction-sequence APIs were removed, IEEE/EUI fields were moved to core newtypes, message payload bytes now use Bytes, dependency bounds and docs were updated, and no new unsafe code was introduced"
+
 [[audits.apis-saltans-macros]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.1.0 -> 0.1.1"
 notes = "AI-assisted delta audit; version bump and README only"
+
+[[audits.apis-saltans-nwk]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "0.2.0"
+notes = "AI-assisted audit; reviewed NWK envelope/source metadata types, optional serde and le-stream support, documentation, and workspace integration; no unsafe code or build script is present"
 
 [[audits.apis-saltans-zcl]]
 who = "Codex AI"
@@ -97,6 +127,12 @@ criteria = "safe-to-deploy"
 delta = "0.2.0 -> 0.3.0"
 notes = "AI-assisted delta audit; command, command-enum, and attribute macros now emit Cluster::PROFILE with a Zigbee Home Automation default, attribute manufacturer metadata moved to Cluster::MANUFACTURER_CODE, dependency bounds were bumped, and no new unsafe code was introduced"
 
+[[audits.apis-saltans-zcl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.4.0"
+notes = "AI-assisted delta audit; frame payloads now use Bytes, address fields were moved to core IeeeAddress/Eui64 types, dependency bounds and docs were updated, and no new unsafe code was introduced"
+
 [[audits.apis-saltans-zdp]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -108,6 +144,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.2.0 -> 0.3.0"
 notes = "AI-assisted delta audit; ZDP command macros now set the Network profile and generated command/group enums expose profile(), dependency bounds were bumped, and no new unsafe code was introduced"
+
+[[audits.apis-saltans-zdp]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.0 -> 0.4.0"
+notes = "AI-assisted delta audit; frame payloads now use Bytes, ZDP address fields were moved to core IeeeAddress/Eui64 types, dependency bounds and docs were updated, and no new unsafe code was introduced"
 
 [[audits.autocfg]]
 who = "Codex AI"
@@ -132,6 +174,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "1.5.0"
 notes = "AI-assisted audit"
+
+[[audits.bytes]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "1.12.0"
+notes = "AI-assisted audit; reviewed the locally cached crate source, manifest, and included files. The crate has no build script, exposes Bytes/BytesMut/Buf abstractions, contains expected internal unsafe for zero-copy buffer ownership and BufMut invariants, and introduces no filesystem, network, or process ambient capabilities."
 
 [[audits.cc]]
 who = "Codex AI"
@@ -336,6 +384,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "1.0.22"
 notes = "AI-assisted audit"
+
+[[audits.rustversion]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.0.22 -> 1.0.23"
+notes = "AI-assisted delta audit; local diff updates docs metadata and clippy allowances, and the build script now sets RUSTVERSION=1 when invoking the configured rustc --version so wrappers can return rustc-compatible output. No unsafe-code changes or new ambient capabilities beyond the existing rustc version probe."
 
 [[audits.serde]]
 who = "Codex AI"
