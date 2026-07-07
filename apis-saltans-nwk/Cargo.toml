@@ -1,5 +1,13 @@
 [package]
 name = "apis-saltans-nwk"
+description = "Zigbee network-layer envelope and metadata types."
+authors = ["Richard Neumann <neumann@paulmann.de>"]
+license = "MIT"
+repository = "https://github.com/PaulmannLighting/apis-saltans"
+readme = "README.md"
+keywords = ["zigbee", "network", "library"]
+categories = ["network-programming"]
+documentation = "https://docs.rs/apis-saltans-nwk"
 version = "0.1.0"
 edition = "2024"
 
