@@ -79,15 +79,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "apis-saltans-macros"
-version = "0.2.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "apis-saltans-nwk"
 version = "0.2.0"
 dependencies = [
@@ -98,11 +89,10 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-zcl"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
- "apis-saltans-macros",
  "bitflags",
  "bytes",
  "chrono",
