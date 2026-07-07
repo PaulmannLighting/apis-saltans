@@ -41,4 +41,8 @@ mod status;
 
 pub(crate) use self::macros::{zdp_command, zdp_command_enum, zdp_command_group};
 
+/// Bit mask that marks a ZDP cluster ID as a response cluster.
+///
+/// ZDP response cluster IDs are formed by setting bit 15 on the corresponding
+/// request cluster ID.
 pub const CLUSTER_ID_RESPONSE_MASK: u16 = 0x8000;
