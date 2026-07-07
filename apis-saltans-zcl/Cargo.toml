@@ -7,14 +7,14 @@ repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "ZCL", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-zcl"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
 apis-saltans-aps = { version = "0.4", path = "../apis-saltans-aps" }
 apis-saltans-core = { version = "0.5", path = "../apis-saltans-core" }
-apis-saltans-macros = { version = "0.1", path = "../apis-saltans-macros" }
+apis-saltans-macros = { version = "0.2", path = "../apis-saltans-macros" }
 bitflags = "2"
 bytes = "1"
 chrono = "0.4"

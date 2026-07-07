@@ -27,7 +27,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-coordinator"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
@@ -65,7 +65,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-hw"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
@@ -80,7 +80,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-macros"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -98,7 +98,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-zcl"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",

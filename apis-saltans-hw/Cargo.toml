@@ -7,7 +7,7 @@ repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "hardware", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-hw"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
@@ -15,7 +15,7 @@ exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 apis-saltans-aps = { version = "0.4", path = "../apis-saltans-aps" }
 apis-saltans-core = { version = "0.5", path = "../apis-saltans-core" }
 apis-saltans-nwk = { version = "0.2", path = "../apis-saltans-nwk" }
-apis-saltans-zcl = { version = "0.4", path = "../apis-saltans-zcl" }
+apis-saltans-zcl = { version = "0.5", path = "../apis-saltans-zcl" }
 apis-saltans-zdp = { version = "0.4", path = "../apis-saltans-zdp" }
 bytes = "1.12.0"
 le-stream = { version = "10", features = ["derive"] }
