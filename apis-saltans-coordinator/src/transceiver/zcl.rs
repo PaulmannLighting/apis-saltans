@@ -15,6 +15,7 @@ use tokio::sync::oneshot::{self, Sender, channel};
 
 pub use self::handle::Handle;
 pub use self::message::{Message, Payload};
+use super::index::Index;
 use crate::{MPSC_CHANNEL_SIZE, network_manager};
 
 mod handle;
@@ -25,7 +26,7 @@ mod message;
 pub struct Transceiver<T> {
     ncp: T,
     network_manager: WeakSender<network_manager::Message>,
-    responses: BTreeMap<u8, Sender<Cluster>>,
+    responses: BTreeMap<Index, Sender<Cluster>>,
     seq: u8,
 }
 
@@ -113,10 +114,11 @@ where
     /// Handle a received ZCL message.
     async fn handle_message_received(&mut self, source: Source, frame: Data<Frame<Cluster>>) {
         trace!("Received ZCL message from {source}: {frame:?}");
+        let index = Index::from_received_zcl_frame(source, &frame);
         let (aps_header, frame) = frame.into_parts();
         let (header, payload) = frame.into_parts();
 
-        if let Some(sender) = self.responses.remove(&header.seq()) {
+        if let Some(sender) = self.responses.remove(&index) {
             sender.send(payload).unwrap_or_else(|error| {
                 debug!("Failed to send ZCL response: {error:?}");
             });
@@ -136,10 +138,7 @@ where
             unsafe { Data::new_unchecked(aps_header, Frame::new_unchecked(header, payload)) };
 
         sender
-            .send(network_manager::Message::Command {
-                source,
-                payload: frame.into(),
-            })
+            .send(network_manager::Message::Command { source, frame })
             .await
             .unwrap_or_else(|error| {
                 debug!("Failed to send command: {error:?}");
@@ -225,9 +224,10 @@ where
         frame: Payload<Cluster>,
     ) -> Result<oneshot::Receiver<Cluster>, apis_saltans_hw::Error> {
         let seq = self.next_seq();
+        let index = Index::from_sent_payload(short_id, endpoint, seq, &frame);
         self.unicast(seq, short_id, endpoint, frame).await?;
         let (tx, rx) = channel();
-        self.responses.insert(seq, tx);
+        self.responses.insert(index, tx);
         Ok(rx)
     }
 

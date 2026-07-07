@@ -40,3 +40,5 @@ mod simple_descriptor;
 mod status;
 
 pub(crate) use self::macros::{zdp_command, zdp_command_enum, zdp_command_group};
+
+pub const CLUSTER_ID_RESPONSE_MASK: u16 = 0x8000;

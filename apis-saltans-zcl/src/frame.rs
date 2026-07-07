@@ -32,20 +32,14 @@ impl<T> Frame<T> {
 
     /// Return a reference to the header.
     #[must_use]
-    pub const fn header(&self) -> &Header {
-        &self.header
+    pub const fn header(&self) -> Header {
+        self.header
     }
 
     /// Return a reference to the payload.
     #[must_use]
     pub const fn payload(&self) -> &T {
         &self.payload
-    }
-
-    /// Consume the frame and return its header.
-    #[must_use]
-    pub fn into_header(self) -> Header {
-        self.header
     }
 
     /// Consume the frame and return its payload.

@@ -29,7 +29,7 @@ pub enum Message {
         /// The NWK source of the command.
         source: Source,
         /// The payload of the command.
-        payload: Data<Frame<Cluster>>,
+        frame: Data<Frame<Cluster>>,
     },
 
     /// A request to resolve a short ID to an IEEE address.

@@ -34,6 +34,16 @@ impl<T> Payload<T> {
         }
     }
 
+    #[must_use]
+    pub const fn metadata(&self) -> Metadata {
+        self.metadata
+    }
+
+    #[must_use]
+    pub const fn manufacturer_code(&self) -> Option<u16> {
+        self.manufacturer_code
+    }
+
     /// Consume the frame into its parts.
     #[must_use]
     pub fn into_parts(self) -> (Metadata, Option<u16>, T) {

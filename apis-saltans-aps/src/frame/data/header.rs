@@ -7,7 +7,7 @@ use crate::frame::data::unicast;
 use crate::{Control, DeliveryMode, Destination, Extended, FrameType};
 
 /// A data frame header.
-#[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Header {
     control: Control,
     destination: Destination,

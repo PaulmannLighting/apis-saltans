@@ -1,7 +1,7 @@
 use apis_saltans_core::{Cluster, Profile};
 
 /// APS metadata for a frame.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Metadata {
     cluster_id: u16,
     profile: Profile,

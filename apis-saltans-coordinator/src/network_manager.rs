@@ -45,8 +45,8 @@ where
                 Message::SubscribeToIncomingCommands { devices, sender } => {
                     self.subscribers.push((devices, sender));
                 }
-                Message::Command { source, payload } => {
-                    self.handle_incoming_command(source, payload).await;
+                Message::Command { source, frame } => {
+                    self.handle_incoming_command(source, frame).await;
                 }
                 Message::GetIeeeAddressFromShortId { short_id, response } => {
                     response

@@ -19,13 +19,12 @@ use tokio::sync::oneshot::{Sender, channel};
 pub use self::handle::Handle;
 use self::match_desc_req_ext::MatchDescReqExt;
 pub use self::message::{Message, Payload};
+use super::index::Index;
 use crate::{MPSC_CHANNEL_SIZE, discovery};
 
 mod handle;
 mod match_desc_req_ext;
 mod message;
-
-const CLUSTER_ID_RESPONSE_MASK: u16 = 0x8000;
 
 /// Zigbee transceiver actor.
 #[derive(Debug)]
@@ -33,7 +32,7 @@ pub struct Transceiver<T> {
     ncp: T,
     discovery: WeakSender<discovery::Message>,
     endpoints: Box<[SimpleDescriptor]>,
-    responses: BTreeMap<(u8, u16), Sender<Command>>,
+    responses: BTreeMap<Index, Sender<Command>>,
     seq: u8,
 }
 
@@ -90,6 +89,7 @@ where
 
     async fn handle_message_received(&mut self, source: Source, frame: Frame<Command>) {
         trace!("Received ZDP message from {source}: {frame:?}");
+        let index = Index::from_received_zdp_frame(source, &frame);
         let (seq, command) = frame.into_parts();
 
         if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
@@ -109,7 +109,7 @@ where
             return;
         }
 
-        if let Some(sender) = self.responses.remove(&(seq, command.cluster_id())) {
+        if let Some(sender) = self.responses.remove(&index) {
             debug!(
                 "Answering ZDP request: seq={seq} cluster_id={:#06X}",
                 command.cluster_id()
@@ -166,11 +166,10 @@ where
         command: Command,
     ) -> Result<oneshot::Receiver<Command>, apis_saltans_hw::Error> {
         let seq = self.next_seq();
-        let cluster_id = command.cluster_id();
+        let index = Index::from_sent_command(short_id, seq, &command);
         self.unicast(seq, short_id, command.into()).await?;
         let (tx, rx) = channel();
-        self.responses
-            .insert((seq, cluster_id | CLUSTER_ID_RESPONSE_MASK), tx);
+        self.responses.insert(index, tx);
         Ok(rx)
     }
 
