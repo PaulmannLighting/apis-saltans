@@ -22,9 +22,6 @@ audit-as-crates-io = true
 [policy.apis-saltans-hw]
 audit-as-crates-io = true
 
-[policy.apis-saltans-macros]
-audit-as-crates-io = true
-
 [policy.apis-saltans-nwk]
 audit-as-crates-io = true
 
@@ -48,10 +45,6 @@ criteria = "safe-to-deploy"
 
 [[exemptions.apis-saltans-hw]]
 version = "0.1.1"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-macros]]
-version = "0.1.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.apis-saltans-zcl]]

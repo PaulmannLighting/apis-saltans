@@ -55,6 +55,12 @@ criteria = "safe-to-deploy"
 delta = "0.3.1 -> 0.6.0"
 notes = "AI-assisted delta audit; coordinator addressing now uses NWK Source and core IEEE-address newtypes, payload buffers use Bytes, ZCL/ZDP response correlation was centralized in an Index key, docs and dependency bounds were updated, and no new unsafe code was introduced"
 
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.6.0 -> 0.7.0"
+notes = "AI-assisted delta audit; dependency bounds were updated for the ZCL 0.5 API, with no coordinator source changes and no new unsafe code introduced"
+
 [[audits.apis-saltans-core]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -103,6 +109,12 @@ criteria = "safe-to-deploy"
 delta = "0.3.0 -> 0.6.0"
 notes = "AI-assisted delta audit; parallel unicasting and transaction-sequence APIs were removed, IEEE/EUI fields were moved to core newtypes, message payload bytes now use Bytes, dependency bounds and docs were updated, and no new unsafe code was introduced"
 
+[[audits.apis-saltans-hw]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.6.0 -> 0.7.0"
+notes = "AI-assisted delta audit; dependency bounds were updated for the ZCL 0.5 API, with no hardware crate source changes and no new unsafe code introduced"
+
 [[audits.apis-saltans-macros]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -132,6 +144,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.3.0 -> 0.4.0"
 notes = "AI-assisted delta audit; frame payloads now use Bytes, address fields were moved to core IeeeAddress/Eui64 types, dependency bounds and docs were updated, and no new unsafe code was introduced"
+
+[[audits.apis-saltans-zcl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.4.0 -> 0.5.1"
+notes = "AI-assisted delta audit; implemented additional ZCL global command frames, added parse-direction metadata for bidirectional default-response parsing, moved command-frame parser generation from the procedural macro crate into the declarative zcl_command_enum macro, removed the obsolete macros crate dependency, and introduced no unsafe code"
 
 [[audits.apis-saltans-zdp]]
 who = "Codex AI"
