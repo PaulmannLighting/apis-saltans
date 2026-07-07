@@ -22,6 +22,8 @@ This crate is under active development.
   - `Unicast<T>` (typed unicast variant)
   - `Command<T>` (APS command frame)
   - `Acknowledgement` (APS ACK frame)
+- Defragmentation:
+  - `Assembler` (stateful APS data-frame reassembly)
 - Extended header support:
   - `Extended`
   - `ExtendedControl`
@@ -37,7 +39,34 @@ Top-level re-exports are available from `apis-saltans-aps` directly.
 - `frame::command`: APS command frame/header types
 - `frame::acknowledgement`: APS acknowledgment frame and ack format
 - `frame::extended`: extended header fields and fragmentation
+- `defragmentation`: stateful reassembly of fragmented APS data frames
 - `broadcast`: Zigbee network broadcast addresses
+
+## Defragmentation
+
+`Assembler` consumes `apis_saltans_nwk::Envelope<Data<Box<[u8]>>>` values. It
+uses the NWK sender and APS counter to identify an in-progress fragmented
+transaction.
+
+Behavior:
+
+- unfragmented frames are returned immediately;
+- first fragments start a transaction;
+- follow-up fragments are inserted by block number;
+- completed frames are returned with their extended header removed;
+- invalid frames and out-of-bounds fragments are dropped and return `None`.
+
+```rust
+use apis_saltans_aps::{Assembler, Data};
+use apis_saltans_nwk::{Envelope, Metadata, Sender};
+
+fn handle_frame(
+    assembler: &mut Assembler,
+    envelope: Envelope<Data<Box<[u8]>>>,
+) -> Option<Data<Box<[u8]>>> {
+    assembler.add(envelope)
+}
+```
 
 ## Serialization
 

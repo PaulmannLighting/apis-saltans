@@ -2,11 +2,13 @@
 
 use apis_saltans_core::Endpoint;
 
+pub use self::defragmentation::Assembler;
 pub use self::header::Header;
 pub use self::unicast::Unicast;
 use crate::Extended;
 use crate::frame::destination::Destination;
 
+mod defragmentation;
 mod header;
 mod unicast;
 
@@ -65,6 +67,11 @@ impl<T> Frame<T> {
         &self.payload
     }
 
+    /// Drop the extended header.
+    pub const fn drop_extended(&mut self) {
+        self.header.drop_extended();
+    }
+
     /// Return the header and payload, consuming the frame.
     #[must_use]
     pub fn into_parts(self) -> (Header, T) {
@@ -83,24 +90,11 @@ impl<T> From<Unicast<T>> for Frame<T> {
     }
 }
 
-impl Frame<Vec<u8>> {
+impl Frame<Box<[u8]>> {
     /// Return a new frame with the given header and payload.
     #[must_use]
-    pub const fn raw(header: Header, payload: Vec<u8>) -> Self {
+    pub const fn raw(header: Header, payload: Box<[u8]>) -> Self {
         Self { header, payload }
-    }
-
-    /// Extend the payload with the given data.
-    pub fn extend<T>(&mut self, data: T)
-    where
-        T: IntoIterator<Item = u8>,
-    {
-        self.payload.extend(data);
-    }
-
-    /// Drop the extended header.
-    pub const fn drop_extended(&mut self) {
-        self.header.drop_extended();
     }
 
     /// Parse the frame into a frame with typed payload.
