@@ -14,7 +14,7 @@ mod header;
 mod unicast;
 
 /// An APS Data frame.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Frame<T> {
     header: Header,
     payload: T,
