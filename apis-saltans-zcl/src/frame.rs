@@ -6,6 +6,7 @@ use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::header::{Control, Direction, Header, Scope};
 pub use self::parse_frame_error::ParseFrameError;
+use crate::CommandDispatch;
 use crate::clusters::Cluster;
 
 mod header;
@@ -57,6 +58,19 @@ impl<T> Frame<T> {
 
 /// A parsed ZCL frame.
 impl Frame<Cluster> {
+    #[must_use]
+    pub fn new(seq: u8, manufacturer_code: Option<u16>, payload: Cluster) -> Frame<Cluster> {
+        let header = Header::new(
+            payload.scope(),
+            payload.direction(),
+            payload.disable_default_response(),
+            manufacturer_code,
+            seq,
+            payload.command_id(),
+        );
+        Self { header, payload }
+    }
+
     /// Parse a ZCL frame from a little-endian byte stream.
     ///
     /// # Errors

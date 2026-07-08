@@ -33,9 +33,8 @@ impl Frame {
     /// # Safety
     ///
     /// The caller must ensure that the `aps_metadata` and `payload` are valid and consistent with each other.
-    #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new(aps_metadata: Metadata, payload: Bytes) -> Self {
+    pub const fn new(aps_metadata: Metadata, payload: Bytes) -> Self {
         Self {
             aps_metadata,
             payload,
@@ -66,11 +65,7 @@ where
     T: Cluster + ToLeStream,
 {
     fn from(frame: apis_saltans_zcl::Frame<T>) -> Self {
-        #[expect(unsafe_code)]
-        // SAFETY: We ensure that the APS metadata contains the correct cluster ID and profile ID.
-        unsafe {
-            Self::new(Metadata::cluster::<T>(), frame.to_le_stream().collect())
-        }
+        Self::new(Metadata::cluster::<T>(), frame.to_le_stream().collect())
     }
 }
 
@@ -79,10 +74,6 @@ where
     T: Cluster + ToLeStream,
 {
     fn from(frame: apis_saltans_zdp::Frame<T>) -> Self {
-        #[expect(unsafe_code)]
-        // SAFETY: We ensure that the APS metadata contains the correct cluster ID and profile ID.
-        unsafe {
-            Self::new(Metadata::cluster::<T>(), frame.to_le_stream().collect())
-        }
+        Self::new(Metadata::cluster::<T>(), frame.to_le_stream().collect())
     }
 }
