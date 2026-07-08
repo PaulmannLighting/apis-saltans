@@ -199,6 +199,12 @@ criteria = "safe-to-deploy"
 version = "1.12.0"
 notes = "AI-assisted audit; reviewed the locally cached crate source, manifest, and included files. The crate has no build script, exposes Bytes/BytesMut/Buf abstractions, contains expected internal unsafe for zero-copy buffer ownership and BufMut invariants, and introduces no filesystem, network, or process ambient capabilities."
 
+[[audits.bytes]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.12.0 -> 1.12.1"
+notes = "AI-assisted delta audit; allocation for Shared metadata now uses Box<MaybeUninit<Shared>> before taking ownership of vector buffers, then initializes via ptr.write, fixing panic handling when Box::new panics. Reviewed the changed unsafe initialization path; no new ambient capabilities, filesystem/network/process access, or exploitable unsafe behavior were introduced."
+
 [[audits.cc]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
