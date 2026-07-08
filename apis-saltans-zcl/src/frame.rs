@@ -64,7 +64,7 @@ impl Frame<Cluster> {
     /// direction, default-response behavior, and command ID. The caller supplies
     /// the transaction sequence number and optional manufacturer code.
     #[must_use]
-    pub fn new(seq: u8, manufacturer_code: Option<u16>, payload: Cluster) -> Frame<Cluster> {
+    pub fn new(seq: u8, manufacturer_code: Option<u16>, payload: Cluster) -> Self {
         let header = Header::new(
             payload.scope(),
             payload.direction(),

@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use apis_saltans_core::{Address, Endpoint};
-use apis_saltans_hw::{Metadata, Ncp};
+use apis_saltans_hw::Ncp;
 use apis_saltans_nwk::Source;
 use apis_saltans_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
@@ -137,16 +137,12 @@ where
     ) -> Result<(), apis_saltans_hw::Error> {
         let (metadata, command) = payload.into_parts();
         let zdp_frame = Frame::new(seq, command);
-
-        #[expect(unsafe_code)]
-        // SAFETY: We extracted the metadata and command from the payload above
-        // and created a valid ZDP frame from that command.
-        // Hence, the resulting metadata and payload match.
-        let aps_frame = unsafe { Self::make_aps_frame(metadata, zdp_frame) };
+        let payload = zdp_frame.to_le_stream().collect();
+        let hw_frame = apis_saltans_hw::Frame::new(metadata, payload);
 
         debug!("Sending ZDP message: seq={seq}");
         self.ncp
-            .unicast(short_id, Endpoint::Data, aps_frame)
+            .unicast(short_id, Endpoint::Data, hw_frame)
             .await
             .map(drop)
     }
@@ -171,22 +167,6 @@ where
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
         Ok(rx)
-    }
-
-    /// Create a new APS frame.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the given metadata and payload match.
-    #[expect(unsafe_code)]
-    unsafe fn make_aps_frame(metadata: Metadata, frame: Frame<Command>) -> apis_saltans_hw::Frame {
-        let payload = frame.to_le_stream().collect();
-
-        #[expect(unsafe_code)]
-        // SAFETY: We trust that the caller upholds the safety invariants mentioned above.
-        unsafe {
-            apis_saltans_hw::Frame::new(metadata, payload)
-        }
     }
 
     async fn handle_match_desc_req(&self, source: Source, seq: u8, match_desc_req: MatchDescReq) {
