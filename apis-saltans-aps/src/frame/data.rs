@@ -32,7 +32,7 @@ impl<T> Frame<T> {
         Self { header, payload }
     }
 
-    /// Creates a new APS Data frame .
+    /// Creates a new APS Data frame.
     #[must_use]
     pub fn new(
         destination: Destination,
