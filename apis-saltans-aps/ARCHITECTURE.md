@@ -5,7 +5,7 @@ defragmentation for raw APS data payloads.
 
 ```mermaid
 flowchart TD
-    Envelope["NWK Envelope<Data<Bytes>>"]
+    Envelope["NWK Envelope\<Data\<Bytes\>\>"]
     Assembler["frame::data::defragmentation::Assembler"]
     Index["Index<br/>Source + APS counter"]
     Transaction["Transaction<br/>header + fragment slots"]
@@ -19,14 +19,14 @@ flowchart TD
 
 ## Frame Modules
 
-| Module | Responsibility |
-| --- | --- |
-| `frame::control` | APS frame-control bitfields and delivery mode decoding. |
-| `frame::data` | APS data headers and payload-carrying frame types. |
-| `frame::command` | APS command frame/header structures. |
-| `frame::acknowledgement` | APS acknowledgement frame structures. |
-| `frame::extended` | Extended APS header fields, including fragmentation metadata. |
-| `broadcast` | Well-known Zigbee broadcast addresses. |
+| Module                   | Responsibility                                                |
+|--------------------------|---------------------------------------------------------------|
+| `frame::control`         | APS frame-control bitfields and delivery mode decoding.       |
+| `frame::data`            | APS data headers and payload-carrying frame types.            |
+| `frame::command`         | APS command frame/header structures.                          |
+| `frame::acknowledgement` | APS acknowledgement frame structures.                         |
+| `frame::extended`        | Extended APS header fields, including fragmentation metadata. |
+| `broadcast`              | Well-known Zigbee broadcast addresses.                        |
 
 ## Defragmentation
 
