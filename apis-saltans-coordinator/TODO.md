@@ -1,5 +1,6 @@
 # TODOs
 
+- [ ] Track failed undiscovered devices and retry discovery when device reports.
 - [ ] Implement the Zigbee coordinator layer as scribbled
   under https://excalidraw.com/#json=R8eYU4Ih_4V9bA8V-nlid,bR_cHhjqULNxlNLH64QoLg
 - [x] Implement a thread pool for the actors to prevent DOS when many device join messages are incoming.
