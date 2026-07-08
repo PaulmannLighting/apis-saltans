@@ -112,14 +112,14 @@ where
     }
 
     /// Handle a received ZCL message.
-    async fn handle_message_received(&mut self, source: Source, frame: Data<Frame<Cluster>>) {
-        trace!("Received ZCL message from {source}: {frame:?}");
-        let index = Index::from_received_zcl_frame(source, &frame);
-        let (aps_header, frame) = frame.into_parts();
-        let (header, payload) = frame.into_parts();
+    async fn handle_message_received(&mut self, source: Source, aps_frame: Data<Frame<Cluster>>) {
+        trace!("Received ZCL message from {source}: {aps_frame:?}");
+        let index = Index::from_received_zcl_frame(source, &aps_frame);
 
         if let Some(sender) = self.responses.remove(&index) {
-            sender.send(payload).unwrap_or_else(|error| {
+            let (_, zcl_frame) = aps_frame.into_parts();
+            let (_, cluster) = zcl_frame.into_parts();
+            sender.send(cluster).unwrap_or_else(|error| {
                 debug!("Failed to send ZCL response: {error:?}");
             });
 
@@ -131,14 +131,11 @@ where
             return;
         };
 
-        #[expect(unsafe_code)]
-        // SAFETY: We reconstruct the frame, which we just deconstructed above
-        // without modification of its constituent parts.
-        let frame =
-            unsafe { Data::new_unchecked(aps_header, Frame::new_unchecked(header, payload)) };
-
         sender
-            .send(network_manager::Message::Command { source, frame })
+            .send(network_manager::Message::Command {
+                source,
+                frame: aps_frame,
+            })
             .await
             .unwrap_or_else(|error| {
                 debug!("Failed to send command: {error:?}");
