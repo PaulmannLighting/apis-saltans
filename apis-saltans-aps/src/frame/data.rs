@@ -21,7 +21,7 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
-    /// Creates a new APS Data frame header without any validation.
+    /// Creates a new APS Data frame without any validation.
     ///
     /// # Safety
     ///
