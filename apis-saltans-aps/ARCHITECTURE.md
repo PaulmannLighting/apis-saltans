@@ -5,11 +5,11 @@ defragmentation for raw APS data payloads.
 
 ```mermaid
 flowchart TD
-    Envelope["NWK Envelope\<Data\<Bytes\>\>"]
+    Envelope["NWK Envelope&lt;Data&lt;Bytes&gt;&gt;"]
     Assembler["frame::data::defragmentation::Assembler"]
     Index["Index<br/>Source + APS counter"]
     Transaction["Transaction<br/>header + fragment slots"]
-    Frame["Reassembled Data<Bytes>"]
+    Frame["Reassembled Data&lt;Bytes&gt;"]
 
     Envelope --> Assembler
     Assembler --> Index
