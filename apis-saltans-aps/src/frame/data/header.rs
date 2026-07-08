@@ -4,7 +4,7 @@ use apis_saltans_core::{Endpoint, Profile};
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::frame::data::unicast;
-use crate::{Control, DeliveryMode, Destination, Extended, FrameType};
+use crate::{Control, Destination, Extended, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
@@ -125,33 +125,12 @@ impl FromLeStream for Header {
         T: Iterator<Item = u8>,
     {
         let control = Control::from_le_stream(&mut bytes)?;
-
-        let destination = match control.delivery_mode() {
-            Some(delivery_mode) => match delivery_mode {
-                DeliveryMode::Unicast => {
-                    Destination::Unicast(Endpoint::from_le_stream(&mut bytes)?)
-                }
-                DeliveryMode::Broadcast => {
-                    Destination::Broadcast(Endpoint::from_le_stream(&mut bytes)?)
-                }
-                DeliveryMode::Group => Destination::Group(u16::from_le_stream(&mut bytes)?),
-            },
-            None => return None, // TODO: Do we have a better option to handle the error case here?
-        };
-
+        let destination = control.deserialize_destination(&mut bytes)?;
         let cluster_id = u16::from_le_stream(&mut bytes)?;
         let profile_id = u16::from_le_stream(&mut bytes)?;
         let source_endpoint = Endpoint::from_le_stream(&mut bytes)?;
         let counter = u8::from_le_stream(&mut bytes)?;
-
-        let extended = if control.contains(Control::EXTENDED_HEADER) {
-            Some(Extended::from_le_stream(
-                matches!(control.frame_type(), FrameType::Acknowledgment),
-                &mut bytes,
-            )?)
-        } else {
-            None
-        };
+        let extended = control.deserialize_extended_header(&mut bytes).ok()?;
 
         Some(Self {
             control,

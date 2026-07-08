@@ -52,9 +52,7 @@ impl Extended {
     pub const fn bit_field(&self) -> Option<u8> {
         self.bit_field
     }
-}
 
-impl Extended {
     pub(crate) fn from_le_stream<T>(is_ack: bool, mut bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,

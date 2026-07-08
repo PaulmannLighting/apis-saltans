@@ -1,13 +1,13 @@
 //! APS Command Frame.
 
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::header::Header;
 
 mod header;
 
 /// APS Command Frame.
-#[derive(Clone, Debug, Eq, Hash, PartialEq, ToLeStream)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
 pub struct Frame<T> {
     header: Header,
     payload: T,

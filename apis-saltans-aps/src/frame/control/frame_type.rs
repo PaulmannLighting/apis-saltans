@@ -6,10 +6,13 @@ use num_derive::FromPrimitive;
 pub enum FrameType {
     /// Data frame.
     Data = 0b00,
+
     /// Command frame.
     Command = 0b01,
+
     /// Acknowledgment frame.
     Acknowledgment = 0b10,
+
     /// Inter-PAN APS frame.
     InterPanAps = 0b11,
 }

@@ -1,6 +1,6 @@
 //! APS Acknowledgment Frame.
 
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::ack_fmt::AckFmt;
 use crate::{Control, Extended, FrameType};
@@ -82,5 +82,30 @@ impl Frame {
     #[must_use]
     pub const fn extended(&self) -> Option<Extended> {
         self.extended
+    }
+}
+
+impl FromLeStream for Frame {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let control = Control::from_le_stream(&mut bytes)?;
+
+        let fmt = if control.contains(Control::ACK_FORMAT) {
+            None
+        } else {
+            Some(AckFmt::from_le_stream(&mut bytes)?)
+        };
+
+        let counter = u8::from_le_stream(&mut bytes)?;
+        let extended = control.deserialize_extended_header(&mut bytes).ok()?;
+
+        Some(Self {
+            control,
+            fmt,
+            counter,
+            extended,
+        })
     }
 }

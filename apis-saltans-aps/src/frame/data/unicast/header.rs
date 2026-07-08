@@ -1,7 +1,7 @@
 //! Header definitions for an APS data unicast frame.
 
 use apis_saltans_core::Endpoint;
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 use crate::{Control, DeliveryMode, Extended, FrameType};
 
@@ -95,5 +95,30 @@ impl Header {
     #[must_use]
     pub const fn extended(&self) -> Option<Extended> {
         self.extended
+    }
+}
+
+impl FromLeStream for Header {
+    fn from_le_stream<T>(mut bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        let control = Control::from_le_stream(&mut bytes)?;
+        let dst_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+        let cluster_id = u16::from_le_stream(&mut bytes)?;
+        let profile_id = u16::from_le_stream(&mut bytes)?;
+        let source_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+        let counter = u8::from_le_stream(&mut bytes)?;
+        let extended = control.deserialize_extended_header(&mut bytes).ok()?;
+
+        Some(Self {
+            control,
+            dst_endpoint,
+            cluster_id,
+            profile_id,
+            source_endpoint,
+            counter,
+            extended,
+        })
     }
 }

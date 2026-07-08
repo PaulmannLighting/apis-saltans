@@ -6,8 +6,10 @@ use num_derive::FromPrimitive;
 pub enum Fragmentation {
     /// Frame is not fragmented.
     NotFragmented = 0b00,
+
     /// First fragment of a fragmented frame.
     FirstFragment = 0b01,
+
     /// More fragments to follow.
     MoreFragments = 0b10,
 }

@@ -1,15 +1,13 @@
 //! Distinct type for a unicast frame.
 
-use apis_saltans_core::Endpoint;
-use le_stream::ToLeStream;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::header::Header;
-use crate::Extended;
 
 mod header;
 
 /// An APS unicast frame.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Unicast<T> {
     header: Header,
     payload: T,
@@ -17,32 +15,14 @@ pub struct Unicast<T> {
 
 impl<T> Unicast<T> {
     /// Create a new unicast frame.
-    #[expect(clippy::too_many_arguments)]
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the provided header is consistent with the payload.
+    #[expect(unsafe_code)]
     #[must_use]
-    pub fn new(
-        security: bool,
-        ack_request: bool,
-        dst_endpoint: Endpoint,
-        cluster_id: u16,
-        profile_id: u16,
-        source_endpoint: Endpoint,
-        counter: u8,
-        extended: Option<Extended>,
-        payload: T,
-    ) -> Self {
-        Self {
-            header: Header::new(
-                security,
-                ack_request,
-                dst_endpoint,
-                cluster_id,
-                profile_id,
-                source_endpoint,
-                counter,
-                extended,
-            ),
-            payload,
-        }
+    pub const unsafe fn new(header: Header, payload: T) -> Self {
+        Self { header, payload }
     }
 
     /// Return a reference to the frame's header.

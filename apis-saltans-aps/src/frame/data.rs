@@ -1,6 +1,7 @@
 //! APS Data frame definitions.
 
 use bytes::Bytes;
+use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::defragmentation::Assembler;
 pub use self::header::Header;
@@ -11,7 +12,7 @@ mod header;
 mod unicast;
 
 /// An APS Data frame.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct Frame<T> {
     header: Header,
     payload: T,

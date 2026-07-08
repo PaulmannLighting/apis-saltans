@@ -1,10 +1,11 @@
+use apis_saltans_core::Endpoint;
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 use num_traits::FromPrimitive;
 
 pub use self::delivery_mode::DeliveryMode;
 pub use self::frame_type::FrameType;
-use crate::Destination;
+use crate::{Destination, Extended};
 
 mod delivery_mode;
 mod frame_type;
@@ -18,14 +19,19 @@ bitflags! {
     impl Control: u8 {
         /// Frame type mask.
         const FRAME_TYPE = 0b1100_0000;
+
         /// Delivery mode mask.
         const DELIVERY_MODE = 0b0011_0000;
+
         /// Indicate if the frame is a command frame.
         const ACK_FORMAT = 0b0000_1000;
+
         /// Security provider flag.
         const SECURITY = 0b0000_0100;
+
         /// Acknowledgment request flag.
         const ACK_REQUEST = 0b0000_0010;
+
         /// Extended header flag.
         const EXTENDED_HEADER = 0b0000_0001;
     }
@@ -83,5 +89,39 @@ impl Control {
         } else {
             self.remove(Self::EXTENDED_HEADER);
         }
+    }
+
+    pub(crate) fn deserialize_extended_header<T>(self, mut bytes: T) -> Result<Option<Extended>, ()>
+    where
+        T: Iterator<Item = u8>,
+    {
+        if self.contains(Self::EXTENDED_HEADER) {
+            let Some(extended) = Extended::from_le_stream(
+                matches!(self.frame_type(), FrameType::Acknowledgment),
+                &mut bytes,
+            ) else {
+                return Err(());
+            };
+
+            Ok(Some(extended))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub(crate) fn deserialize_destination<T>(self, mut bytes: T) -> Option<Destination>
+    where
+        T: Iterator<Item = u8>,
+    {
+        self.delivery_mode()
+            .and_then(|delivery_mode| match delivery_mode {
+                DeliveryMode::Unicast => {
+                    Endpoint::from_le_stream(&mut bytes).map(Destination::Unicast)
+                }
+                DeliveryMode::Broadcast => {
+                    Endpoint::from_le_stream(&mut bytes).map(Destination::Broadcast)
+                }
+                DeliveryMode::Group => u16::from_le_stream(&mut bytes).map(Destination::Group),
+            })
     }
 }

@@ -8,14 +8,14 @@
 use std::collections::BTreeMap;
 use std::num::NonZero;
 
-use apis_saltans_nwk::Envelope;
+use apis_saltans_nwk::{Envelope, Source};
 use bytes::Bytes;
 use log::{trace, warn};
 
 use self::index::Index;
 use self::transaction::{InsertResult, Transaction};
-use crate::ExtendedControl;
 use crate::data::Frame;
+use crate::{Extended, ExtendedControl};
 
 mod index;
 mod transaction;
@@ -69,76 +69,94 @@ impl Assembler {
         }
 
         if extended.control().contains(ExtendedControl::FIRST_FRAGMENT) {
-            trace!("APS frame is first fragment.");
-
-            let Some(blocks) = extended.block_number() else {
-                warn!("Dropping invalid APS frame without block number.");
-                return None;
-            };
-
-            let Some(blocks) = NonZero::new(blocks) else {
-                warn!("Dropping invalid APS frame with block number 0.");
-                return None;
-            };
-
-            let (mut header, payload) = aps.into_parts();
-
-            if blocks.get() == 1 {
-                trace!("APS frame contains only 1 block.");
-                header.drop_extended();
-                return Some(Frame::raw(header, payload));
-            }
-
-            if let Some(previous_transaction) = self.transactions.insert(
-                Index::new(source, header.counter()),
-                Transaction::new(blocks, header, payload),
-            ) {
-                warn!("Dropping previous transaction: {previous_transaction:?}");
-                return None;
-            }
-
-            trace!("Began new transaction for source: {source:?}");
-            return None;
+            return self.handle_first_fragment(source, extended, aps);
         }
 
         if extended
             .control()
             .contains(ExtendedControl::FOLLOWUP_FRAGMENT)
         {
-            trace!("APS frame is followup fragment.");
-
-            let Some(index) = extended.block_number() else {
-                warn!("Dropping invalid APS frame without block number.");
-                return None;
-            };
-
-            trace!("APS frame is is block #{index}");
-            let (header, payload) = aps.into_parts();
-            let key = Index::new(source, header.counter());
-
-            let Some(transaction) = self.transactions.remove(&key) else {
-                warn!("Dropping follow-up APS frame without existing transaction.");
-                return None;
-            };
-
-            return match transaction.insert(index, payload) {
-                InsertResult::Complete(frame) => {
-                    trace!("Transaction complete.");
-                    Some(frame)
-                }
-                InsertResult::Incomplete(transaction) => {
-                    trace!("Transaction not yet complete.");
-                    self.transactions.insert(key, transaction);
-                    None
-                }
-                InsertResult::OutOfBounds(index) => {
-                    warn!("Received out of bounds fragment: {index}. Dropping transaction.");
-                    None
-                }
-            };
+            return self.handle_followup_fragment(source, extended, aps);
         }
 
         trace!("APS frame is not a follow-up fragment.");
         Some(aps)
+    }
+
+    fn handle_first_fragment(
+        &mut self,
+        source: Source,
+        extended: Extended,
+        aps: Frame<Bytes>,
+    ) -> Option<Frame<Bytes>> {
+        trace!("APS frame is first fragment.");
+
+        let Some(blocks) = extended.block_number() else {
+            warn!("Dropping invalid APS frame without block number.");
+            return None;
+        };
+
+        let Some(blocks) = NonZero::new(blocks) else {
+            warn!("Dropping invalid APS frame with block number 0.");
+            return None;
+        };
+
+        let (mut header, payload) = aps.into_parts();
+
+        if blocks.get() == 1 {
+            trace!("APS frame contains only 1 block.");
+            header.drop_extended();
+            return Some(Frame::raw(header, payload));
+        }
+
+        if let Some(previous_transaction) = self.transactions.insert(
+            Index::new(source, header.counter()),
+            Transaction::new(blocks, header, payload),
+        ) {
+            warn!("Dropping previous transaction: {previous_transaction:?}");
+            return None;
+        }
+
+        trace!("Began new transaction for source: {source:?}");
+        None
+    }
+
+    fn handle_followup_fragment(
+        &mut self,
+        source: Source,
+        extended: Extended,
+        aps: Frame<Bytes>,
+    ) -> Option<Frame<Bytes>> {
+        trace!("APS frame is followup fragment.");
+
+        let Some(index) = extended.block_number() else {
+            warn!("Dropping invalid APS frame without block number.");
+            return None;
+        };
+
+        trace!("APS frame is is block #{index}");
+        let (header, payload) = aps.into_parts();
+        let key = Index::new(source, header.counter());
+
+        let Some(transaction) = self.transactions.remove(&key) else {
+            warn!("Dropping follow-up APS frame without existing transaction.");
+            return None;
+        };
+
+        match transaction.insert(index, payload) {
+            InsertResult::Complete(frame) => {
+                trace!("Transaction complete.");
+                Some(frame)
+            }
+            InsertResult::Incomplete(transaction) => {
+                trace!("Transaction not yet complete.");
+                self.transactions.insert(key, transaction);
+                None
+            }
+            InsertResult::OutOfBounds(index) => {
+                warn!("Received out of bounds fragment: {index}. Dropping transaction.");
+                None
+            }
+        }
     }
 }

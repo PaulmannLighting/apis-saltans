@@ -58,6 +58,11 @@ impl<T> Frame<T> {
 
 /// A parsed ZCL frame.
 impl Frame<Cluster> {
+    /// Create a parsed ZCL frame for an outgoing cluster command.
+    ///
+    /// The frame header is derived from the payload's command metadata: scope,
+    /// direction, default-response behavior, and command ID. The caller supplies
+    /// the transaction sequence number and optional manufacturer code.
     #[must_use]
     pub fn new(seq: u8, manufacturer_code: Option<u16>, payload: Cluster) -> Frame<Cluster> {
         let header = Header::new(
