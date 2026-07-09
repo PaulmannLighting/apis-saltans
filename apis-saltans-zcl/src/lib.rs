@@ -15,7 +15,7 @@
 
 pub use self::attributes::{InvalidType, ParseAttributeError, Readable, Reportable, Writable};
 pub use self::clusters::{Cluster, general, global, ias, lighting, measurement_and_sensing};
-pub use self::command::{ClientToServer, Command, ParseDirection, Scoped, ServerToClient};
+pub use self::command::{Command, ParseDirection, Scoped};
 pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Scope};
 pub use self::options::Options;
 pub use self::status::Status;

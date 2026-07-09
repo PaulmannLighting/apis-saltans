@@ -7,12 +7,6 @@ pub use self::scoped::Scoped;
 mod parse_direction;
 mod scoped;
 
-/// Marker trait for commands that can be parsed client-to-server.
-pub trait ClientToServer {}
-
-/// Marker trait for commands that can be parsed server-to-client.
-pub trait ServerToClient {}
-
 /// Trait to identify a Zigbee command.
 pub trait Command {
     /// The command identifier.
@@ -46,7 +40,3 @@ where
     const PARSE_DIRECTION: ParseDirection = T::PARSE_DIRECTION;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
 }
-
-impl<T> ClientToServer for Box<T> where T: ClientToServer {}
-
-impl<T> ServerToClient for Box<T> where T: ServerToClient {}
