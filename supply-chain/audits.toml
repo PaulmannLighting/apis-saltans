@@ -137,7 +137,7 @@ notes = "AI-assisted delta audit; command and attribute macro refactors, expande
 who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.2.0 -> 0.3.0"
-notes = "AI-assisted delta audit; command, command-enum, and attribute macros now emit Cluster::PROFILE with a Zigbee Home Automation default, attribute manufacturer metadata moved to Cluster::MANUFACTURER_CODE, dependency bounds were bumped, and no new unsafe code was introduced"
+notes = "AI-assisted delta audit; command, command-enum, and attribute macros now emit Profiled::PROFILE with a Zigbee Home Automation default, manufacturer metadata lives on ZCL command and attribute traits, dependency bounds were bumped, and no new unsafe code was introduced"
 
 [[audits.apis-saltans-zcl]]
 who = "Codex AI"
