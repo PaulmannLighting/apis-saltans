@@ -18,13 +18,16 @@ mod address;
 mod byte_sized_vec;
 mod cluster;
 pub mod constants;
+/// Outbound Zigbee destination types.
 pub mod destination;
 mod direction;
+/// Zigbee endpoint domain types.
 pub mod endpoint;
 mod group_id;
 mod ieee_address;
 pub mod node;
 mod profile;
+/// Zigbee NWK short-address domain types.
 pub mod short_id;
 mod traits;
 pub mod types;

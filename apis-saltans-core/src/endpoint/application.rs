@@ -56,6 +56,8 @@ impl Application {
         Self(id)
     }
 
+    /// Return the raw application endpoint ID.
+    #[must_use]
     pub const fn as_u8(self) -> u8 {
         self.0
     }

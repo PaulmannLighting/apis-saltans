@@ -21,14 +21,50 @@ pub enum Destination {
     Group(GroupId),
 }
 
+/// Device destination with a short address and APS endpoint.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Device {
     device: short_id::Device,
     endpoint: Endpoint,
 }
 
+impl Device {
+    #[must_use]
+    pub const fn new(device: short_id::Device, endpoint: Endpoint) -> Self {
+        Self { device, endpoint }
+    }
+
+    #[must_use]
+    pub const fn device(&self) -> short_id::Device {
+        self.device
+    }
+
+    #[must_use]
+    pub const fn endpoint(&self) -> Endpoint {
+        self.endpoint
+    }
+}
+
+/// Broadcast destination with a broadcast short address and broadcast endpoint.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Broadcast {
     address: short_id::Broadcast,
     endpoint: endpoint::Broadcast,
+}
+
+impl Broadcast {
+    #[must_use]
+    pub const fn new(address: short_id::Broadcast, endpoint: endpoint::Broadcast) -> Self {
+        Self { address, endpoint }
+    }
+
+    #[must_use]
+    pub const fn address(&self) -> short_id::Broadcast {
+        self.address
+    }
+
+    #[must_use]
+    pub const fn endpoint(&self) -> endpoint::Broadcast {
+        self.endpoint
+    }
 }

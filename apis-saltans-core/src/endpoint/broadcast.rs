@@ -2,6 +2,8 @@ use core::fmt::{self, Display, LowerHex, UpperHex};
 
 use crate::{Application, Endpoint};
 
+pub const BROADCAST: u8 = 0xff;
+
 /// Endpoint selector for outgoing broadcast transmissions.
 ///
 /// Zigbee broadcast delivery can target either a normal application endpoint on
@@ -19,6 +21,16 @@ pub enum Broadcast {
     Broadcast,
 }
 
+impl Broadcast {
+    #[must_use]
+    pub const fn as_u8(self) -> u8 {
+        match self {
+            Self::Application(application) => application.as_u8(),
+            Self::Broadcast => BROADCAST,
+        }
+    }
+}
+
 impl Display for Broadcast {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Endpoint::from(*self).fmt(f)
@@ -31,6 +43,12 @@ impl From<Broadcast> for Endpoint {
             Broadcast::Application(application) => Self::Application(application),
             Broadcast::Broadcast => Self::Broadcast,
         }
+    }
+}
+
+impl From<Broadcast> for u8 {
+    fn from(broadcast: Broadcast) -> Self {
+        broadcast.as_u8()
     }
 }
 

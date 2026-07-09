@@ -18,7 +18,6 @@ const INVALID: u16 = 0xFFFE;
 /// This type separates ordinary device addresses from Zigbee's special short
 /// address values, including the coordinator address, reserved range, broadcast
 /// destinations, and the `0xFFFE` invalid or unknown-address sentinel.
-
 #[cfg_attr(
     feature = "serde",
     derive(serde::Deserialize, serde::Serialize),

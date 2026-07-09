@@ -6,7 +6,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use crate::constants::U8_CAPACITY;
 use crate::types::{OctStr, Type};
 
-/// A string type, which can be up to [`OctStr::MAX_SIZE`] bytes long.
+/// A string type, which can be up to [`OctStr::CAPACITY`] bytes long.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 #[repr(transparent)]

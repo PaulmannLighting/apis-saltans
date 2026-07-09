@@ -2,7 +2,7 @@ use core::fmt::{self, Display};
 
 pub use self::application::Application;
 pub use self::broadcast::Broadcast;
-use self::reserved::Reserved;
+pub use self::reserved::Reserved;
 
 mod application;
 mod broadcast;
@@ -28,6 +28,11 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// Create a new `Endpoint` from a raw value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] when the raw value is in the reserved endpoint
+    /// range.
     pub const fn try_new(value: u8) -> Result<Self, Reserved> {
         match value {
             0 => Ok(Self::Data),
@@ -37,6 +42,8 @@ impl Endpoint {
         }
     }
 
+    /// Return the raw endpoint ID.
+    #[must_use]
     pub const fn as_u8(self) -> u8 {
         match self {
             Self::Data => 0,

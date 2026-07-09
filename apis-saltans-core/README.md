@@ -5,9 +5,9 @@ Core Zigbee protocol definitions used by the workspace crates (`apis-saltans-aps
 This crate provides:
 - protocol-level data types (`types::Type`, scalar wrappers, strings, dates/times)
 - Type-Length-Value (TLV) structures (`types::tlv`)
-- core identifiers and enums (`Endpoint`, `Profile`, `Direction`, `ClusterId`)
-- address and node representation (`Address`, `node::Node`, descriptor bitfields)
-- utility traits used across protocol layers (`ExpectResponse`, decisecond conversions)
+- core identifiers and enums (`Endpoint`, `ShortId`, `Profile`, `Direction`, `Cluster`)
+- destination, address, group, and node representation (`Destination`, `Address`, `GroupId`, `node::Node`, descriptor bitfields)
+- utility traits used across protocol layers (`ExpectResponse`, `ClusterSpecific`, `Profiled`)
 
 ## Status
 
@@ -23,7 +23,7 @@ This crate is an actively developed core layer and should be treated as work in 
 
 ## Installation
 
-Add the crate from the workspace or repository path (the crate is currently configured with `publish = false`).
+Add the crate from the workspace or repository path.
 
 ```toml
 [dependencies]
@@ -41,18 +41,26 @@ apis_saltans_core = { path = "../apis-saltans-core", features = ["serde"] }
 
 Top-level re-exports from `apis-saltans-core`:
 - `Address`
-- `Cluster`, `ClusterId`, `Profiled`
+- `ByteSizedVec`
+- `Cluster`, `ClusterSpecific`
+- `Destination`
 - `Direction`
-- `Endpoint`, `Application`, `BroadcastEndpoint`, `Reserved`
-- `Profile`
-- `ExpectResponse`, `FromDeciSeconds`, `IntoDeciSeconds`
-- modules: `constants`, `node`, `types`, `units`
+- `Endpoint`, `Application`
+- `Eui64`, `IeeeAddress`
+- `GroupId`
+- `Profile`, `Profiled`
+- `ShortId`
+- `ExpectResponse`
+- modules: `constants`, `destination`, `endpoint`, `node`, `short_id`, `types`, `units`
 
 Key modules:
 - `types`: Zigbee primitive/composite/discrete types and the tagged `Type` enum
 - `types::tlv`: local/global TLV variants and TLV vectors
 - `node`: node descriptors and capability flags
-- `units`: shared unit wrappers (for example `Mireds`)
+- `short_id`: device, coordinator, and broadcast NWK short-address values
+- `endpoint`: data, application, and broadcast endpoint values
+- `destination`: outbound device, broadcast, and group destinations
+- `units`: shared unit wrappers (`Deciseconds`, `Mireds`, `UnitsPerSecond`)
 
 ## Serialization Model
 
@@ -147,8 +155,8 @@ assert_eq!(u8::from(ep), 1);
 ## Traits
 
 - `ExpectResponse<T>`: associates command/request types with response types.
-- `IntoDeciSeconds`: converts values (for example `core::time::Duration`) into deciseconds.
-- `FromDeciSeconds`: constructs values from deciseconds.
+- `ClusterSpecific<T = u16>`: associates a type with a Zigbee cluster ID.
+- `Profiled`: associates a type with a Zigbee profile.
 
 ## Related Crates In This Workspace
 
