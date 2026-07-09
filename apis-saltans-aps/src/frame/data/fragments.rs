@@ -99,7 +99,7 @@ impl Iterator for Fragments {
 mod tests {
     use std::num::NonZero;
 
-    use apis_saltans_core::Endpoint;
+    use apis_saltans_core::{Application, Endpoint};
     use bytes::Bytes;
 
     use super::{Fragments, SINGLE_BLOCK};
@@ -120,7 +120,7 @@ mod tests {
 
     fn header(extended: Option<Extended>) -> Header {
         Header::new(
-            Destination::Unicast(Endpoint::default()),
+            Destination::Unicast(Application::default()),
             CLUSTER_ID,
             PROFILE_ID,
             Endpoint::default(),

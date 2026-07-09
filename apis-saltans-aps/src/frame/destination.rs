@@ -1,24 +1,25 @@
 use std::fmt::{self, Display};
 
-use apis_saltans_core::{BroadcastEndpoint, Endpoint};
+use apis_saltans_core::GroupId;
+use apis_saltans_core::endpoint::{Application, Broadcast};
 use le_stream::ToLeStream;
 
-use self::iterator::DestinationIterator;
+pub type WeakDestination = Destination<u8, u8, u16>;
 
 /// Represents the destination of an APS frame.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum Destination {
+pub enum Destination<U = Application, B = Broadcast, G = GroupId> {
     /// A unicast endpoint ID.
-    Unicast(Endpoint),
+    Unicast(U),
 
     /// A broadcast endpoint ID.
-    Broadcast(Endpoint),
+    Broadcast(B),
 
     /// A group address.
-    Group(u16),
+    Group(G),
 }
 
-impl Display for Destination {
+impl Display for WeakDestination {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unicast(value) => write!(f, "Unicast({value})"),
@@ -28,39 +29,53 @@ impl Display for Destination {
     }
 }
 
-impl ToLeStream for Destination {
-    type Iter = DestinationIterator;
+impl From<Destination> for WeakDestination {
+    fn from(destination: Destination) -> Self {
+        match destination {
+            Destination::Unicast(device) => Self::Unicast(device.into()),
+            Destination::Broadcast(broadcast) => Self::Broadcast(broadcast.into()),
+            Destination::Group(group_id) => Self::Group(group_id.into()),
+        }
+    }
+}
+
+impl From<apis_saltans_core::Destination> for WeakDestination {
+    fn from(destination: apis_saltans_core::Destination) -> Self {
+        match destination {
+            apis_saltans_core::Destination::Device(device) => {
+                Self::Unicast(device.endpoint().into())
+            }
+            apis_saltans_core::Destination::Broadcast(broadcast) => {
+                Self::Broadcast(broadcast.endpoint().into())
+            }
+            apis_saltans_core::Destination::Group(group_id) => Self::Group(group_id.into()),
+        }
+    }
+}
+
+impl ToLeStream for WeakDestination {
+    type Iter = iterator::DestinationIterator;
 
     fn to_le_stream(self) -> Self::Iter {
         match self {
-            Self::Unicast(value) => value.into(),
-            Self::Broadcast(value) => value.into(),
+            Self::Unicast(value) | Self::Broadcast(value) => value.into(),
             Self::Group(value) => value.into(),
         }
     }
 }
 
 mod iterator {
-    use apis_saltans_core::Endpoint;
     use le_stream::ToLeStream;
-
-    use crate::frame::destination::BroadcastEndpoint;
 
     /// Le-stream iterator
     pub enum DestinationIterator {
-        Endpoint(<Endpoint as ToLeStream>::Iter),
+        Endpoint(<u8 as ToLeStream>::Iter),
         U16(<u16 as ToLeStream>::Iter),
     }
 
-    impl From<Endpoint> for DestinationIterator {
-        fn from(value: Endpoint) -> Self {
+    impl From<u8> for DestinationIterator {
+        fn from(value: u8) -> Self {
             Self::Endpoint(value.to_le_stream())
-        }
-    }
-
-    impl From<BroadcastEndpoint> for DestinationIterator {
-        fn from(value: BroadcastEndpoint) -> Self {
-            Self::Endpoint(Endpoint::from(value).to_le_stream())
         }
     }
 

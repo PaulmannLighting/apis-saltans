@@ -95,17 +95,6 @@ impl Frame<Bytes> {
     }
 }
 
-impl<T> From<Unicast<T>> for Frame<T> {
-    fn from(unicast: Unicast<T>) -> Self {
-        let (header, payload) = unicast.into_parts();
-
-        Self {
-            header: header.into(),
-            payload,
-        }
-    }
-}
-
 impl<T> FromLeStream for Frame<T>
 where
     T: FromLeStream,

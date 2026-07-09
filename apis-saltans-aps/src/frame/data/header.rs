@@ -1,19 +1,20 @@
 //! Header definitions for a generic APS Data frame.
 
+use apis_saltans_core::endpoint::Reserved;
 use apis_saltans_core::{Endpoint, Profile};
 use le_stream::{FromLeStream, ToLeStream};
 
-use crate::frame::data::unicast;
-use crate::{Control, Destination, Extended, Fragmentation, FrameType};
+use crate::frame::destination::{Destination, WeakDestination};
+use crate::{Control, Extended, Fragmentation, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Header {
     control: Control,
-    destination: Destination,
+    destination: WeakDestination,
     cluster_id: u16,
     profile_id: u16,
-    source_endpoint: Endpoint,
+    source_endpoint: u8,
     counter: u8,
     extended: Option<Extended>,
 }
@@ -31,7 +32,7 @@ impl Header {
     ) -> Self {
         let mut control = Control::empty();
         control.set_frame_type(FrameType::Data);
-        control.set_destination(destination);
+        control.set_destination(destination.into());
 
         if extended.is_some() {
             control.insert(Control::EXTENDED_HEADER);
@@ -39,10 +40,10 @@ impl Header {
 
         Self {
             control,
-            destination,
+            destination: destination.into(),
             cluster_id,
             profile_id,
-            source_endpoint,
+            source_endpoint: source_endpoint.into(),
             counter,
             extended,
         }
@@ -56,7 +57,7 @@ impl Header {
 
     /// Return the destination.
     #[must_use]
-    pub const fn destination(&self) -> Destination {
+    pub const fn destination(&self) -> WeakDestination {
         self.destination
     }
 
@@ -82,9 +83,8 @@ impl Header {
     }
 
     /// Return the source endpoint.
-    #[must_use]
-    pub const fn source_endpoint(&self) -> Endpoint {
-        self.source_endpoint
+    pub fn source_endpoint(&self) -> Result<Endpoint, Reserved> {
+        self.source_endpoint.try_into()
     }
 
     /// Return the APS frame counter.
@@ -133,20 +133,6 @@ impl Header {
     }
 }
 
-impl From<unicast::Header> for Header {
-    fn from(header: unicast::Header) -> Self {
-        Self {
-            control: header.control(),
-            destination: Destination::Unicast(header.dst_endpoint()),
-            cluster_id: header.cluster_id(),
-            profile_id: header.profile_id(),
-            source_endpoint: header.source_endpoint(),
-            counter: header.counter(),
-            extended: header.extended(),
-        }
-    }
-}
-
 impl FromLeStream for Header {
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where
@@ -156,7 +142,7 @@ impl FromLeStream for Header {
         let destination = control.deserialize_destination(&mut bytes)?;
         let cluster_id = u16::from_le_stream(&mut bytes)?;
         let profile_id = u16::from_le_stream(&mut bytes)?;
-        let source_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+        let source_endpoint = u8::from_le_stream(&mut bytes)?;
         let counter = u8::from_le_stream(&mut bytes)?;
         let extended = control.deserialize_extended_header(&mut bytes).ok()?;
 
