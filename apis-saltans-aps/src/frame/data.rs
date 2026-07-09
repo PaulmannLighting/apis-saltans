@@ -1,13 +1,19 @@
 //! APS Data frame definitions.
 
+use std::iter::Map;
+use std::num::TryFromIntError;
+use std::slice::Chunks;
+
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::defragmentation::Assembler;
+pub use self::fragmentation::Fragments;
 pub use self::header::Header;
 pub use self::unicast::Unicast;
 
 mod defragmentation;
+mod fragmentation;
 mod header;
 mod unicast;
 
@@ -43,7 +49,7 @@ impl<T> Frame<T> {
     }
 
     /// Drop the extended header.
-    pub const fn drop_extended(&mut self) {
+    pub fn drop_extended(&mut self) {
         self.header.drop_extended();
     }
 
@@ -83,5 +89,9 @@ impl Frame<Bytes> {
     {
         let header = self.header;
         T::try_from(self).map(|payload| Frame { header, payload })
+    }
+
+    pub fn fragment(self, chunk_size: usize) -> Result<Fragments, TryFromIntError> {
+        Fragments::new(self, chunk_size)
     }
 }

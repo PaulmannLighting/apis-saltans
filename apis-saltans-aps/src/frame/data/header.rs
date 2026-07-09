@@ -4,7 +4,7 @@ use apis_saltans_core::{Endpoint, Profile};
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::frame::data::unicast;
-use crate::{Control, Destination, Extended, FrameType};
+use crate::{Control, Destination, Extended, Fragmentation, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
@@ -99,9 +99,29 @@ impl Header {
         self.extended
     }
 
+    pub fn set_extended(&mut self, extended: Extended) -> Option<Extended> {
+        self.control.insert(Control::EXTENDED_HEADER);
+        self.extended.replace(extended)
+    }
+
     /// Drop the extended header.
-    pub const fn drop_extended(&mut self) {
-        self.extended = None;
+    pub fn drop_extended(&mut self) -> Option<Extended> {
+        self.control.remove(Control::EXTENDED_HEADER);
+        self.extended.take()
+    }
+
+    pub fn set_fragmentation(&mut self, fragmentation: Fragmentation) {
+        match fragmentation {
+            Fragmentation::None => {
+                self.drop_extended();
+            }
+            Fragmentation::First { blocks } => {
+                self.set_extended(Extended::first_fragment(blocks));
+            }
+            Fragmentation::Followup { index } => {
+                self.set_extended(Extended::followup_fragment(index));
+            }
+        }
     }
 }
 

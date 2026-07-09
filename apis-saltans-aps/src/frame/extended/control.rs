@@ -1,8 +1,5 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
-use num_traits::FromPrimitive;
-
-use super::fragmentation::Fragmentation;
 
 /// Control field of the extended header.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
@@ -22,13 +19,5 @@ bitflags! {
 
         /// Frame is a follow-up frame of a fragmented transmission.
         const FOLLOWUP_FRAGMENT = 0b1000_0000;
-    }
-}
-
-impl Control {
-    /// Returns the fragmentation field.
-    #[must_use]
-    pub fn fragmentation(self) -> Option<Fragmentation> {
-        Fragmentation::from_u8((self.bits() & Self::FRAGMENTATION.bits()) >> 6)
     }
 }
