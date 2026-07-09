@@ -43,7 +43,7 @@ Top-level re-exports from `apis-saltans-core`:
 - `Address`
 - `Cluster`, `ClusterId`, `ClusterSpecific`
 - `Direction`
-- `Endpoint`, `Application`, `Reserved`
+- `Endpoint`, `Application`, `BroadcastEndpoint`, `Reserved`
 - `Profile`
 - `ExpectResponse`, `FromDeciSeconds`, `IntoDeciSeconds`
 - modules: `constants`, `node`, `types`, `units`
