@@ -9,12 +9,8 @@
 
 #![no_std]
 
-pub use self::destination::Destination;
-pub use self::envelope::Envelope;
-pub use self::metadata::Metadata;
-pub use self::source::Source;
+pub use self::rx::{Envelope, Metadata, Source};
+pub use self::tx::Destination;
 
-mod destination;
-mod envelope;
-mod metadata;
-mod source;
+mod rx;
+mod tx;

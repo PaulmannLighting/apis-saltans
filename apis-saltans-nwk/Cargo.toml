@@ -13,12 +13,11 @@ edition = "2024"
 
 [dependencies]
 apis-saltans-core = { version = "0.5", path = "../apis-saltans-core" }
-le-stream = { version = "10.1.4", features = ["derive"], optional = true }
-serde = { version = "1.0.228", features = ["derive"], optional = true }
+le-stream = { version = "10" }
+serde = { version = "1", features = ["derive"], optional = true }
 
 [lints]
 workspace = true
 
 [features]
 serde = ["dep:serde", "apis-saltans-core/serde"]
-le-stream = ["dep:le-stream"]

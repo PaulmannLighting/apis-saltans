@@ -1,6 +1,48 @@
 use apis_saltans_core::{
-    Broadcast, BroadcastAddress, BroadcastEndpoint, Device, Endpoint, GroupId,
+    BroadcastAddress, BroadcastEndpoint, Cluster, ClusterSpecific, Device, Endpoint, GroupId,
+    Profiled,
 };
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Message<T> {
+    destination: Destination,
+    profile_id: u16,
+    cluster_id: u16,
+    payload: T,
+}
+
+impl<T> Message<T> {
+    pub const fn new(
+        destination: Destination,
+        profile_id: u16,
+        cluster_id: u16,
+        payload: T,
+    ) -> Self {
+        Self {
+            destination,
+            profile_id,
+            cluster_id,
+            payload,
+        }
+    }
+
+    #[must_use]
+    pub fn cluster_specific(destination: Destination, payload: T) -> Self
+    where
+        T: ClusterSpecific + Profiled,
+    {
+        Self::new(destination, T::PROFILE.into(), T::ID, payload)
+    }
+
+    #[must_use]
+    pub fn global(destination: Destination, cluster: Cluster, payload: T) -> Self
+    where
+        T: Profiled,
+    {
+        Self::new(destination, T::PROFILE.into(), cluster.as_u16(), payload)
+    }
+}
 
 /// Zigbee destination used by outgoing NWK transmissions.
 ///
@@ -8,6 +50,7 @@ use apis_saltans_core::{
 /// the APS endpoint that should receive the payload. Group destinations carry
 /// only the group identifier because group membership is endpoint-local on each
 /// receiving node.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Destination {
     /// Send to one device short address and endpoint.
