@@ -1,13 +1,14 @@
 //! ZCL frame representation.
 
 use apis_saltans_aps::Data;
+use apis_saltans_core::{Cluster, Profile};
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::header::{Control, Direction, Header, Scope};
 pub use self::parse_frame_error::ParseFrameError;
-use crate::CommandDispatch;
-use crate::clusters::Cluster;
+use crate::command::Scoped;
+use crate::{Command, ParseDirection};
 
 mod header;
 mod parse_frame_error;
@@ -20,6 +21,36 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
+    pub fn cluster_specific(seq: u8, payload: T) -> Self
+    where
+        T: Cluster + Command + Scoped,
+    {
+        let header = Header::new(
+            T::SCOPE,
+            T::DIRECTION,
+            T::DISABLE_DEFAULT_RESPONSE,
+            T::MANUFACTURER_CODE,
+            seq,
+            <T as Command>::ID,
+        );
+        Self { header, payload }
+    }
+
+    pub fn gobal(seq: u8, payload: T, manufacturer_code: Option<u16>) -> Self
+    where
+        T: Command + Scoped,
+    {
+        let header = Header::new(
+            T::SCOPE,
+            T::DIRECTION,
+            T::DISABLE_DEFAULT_RESPONSE,
+            manufacturer_code,
+            seq,
+            <T as Command>::ID,
+        );
+        Self { header, payload }
+    }
+
     /// Create a new ZCL frame from the given header and payload.
     ///
     /// # Safety
@@ -56,26 +87,34 @@ impl<T> Frame<T> {
     }
 }
 
-/// A parsed ZCL frame.
-impl Frame<Cluster> {
-    /// Create a parsed ZCL frame for an outgoing cluster command.
-    ///
-    /// The frame header is derived from the payload's command metadata: scope,
-    /// direction, default-response behavior, and command ID. The caller supplies
-    /// the transaction sequence number and optional manufacturer code.
-    #[must_use]
-    pub fn new(seq: u8, manufacturer_code: Option<u16>, payload: Cluster) -> Self {
-        let header = Header::new(
-            payload.scope(),
-            payload.direction(),
-            payload.disable_default_response(),
-            manufacturer_code,
-            seq,
-            payload.command_id(),
-        );
-        Self { header, payload }
-    }
+impl<T> Cluster for Frame<T>
+where
+    T: Cluster,
+{
+    const ID: u16 = T::ID;
+    const PROFILE: Profile = T::PROFILE;
+    const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
+}
 
+impl<T> Command for Frame<T>
+where
+    T: Command,
+{
+    const ID: u8 = T::ID;
+    const DIRECTION: Direction = T::DIRECTION;
+    const PARSE_DIRECTION: ParseDirection = T::PARSE_DIRECTION;
+    const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
+}
+
+impl<T> Scoped for Frame<T>
+where
+    T: Scoped,
+{
+    const SCOPE: Scope = T::SCOPE;
+}
+
+/// A parsed ZCL frame.
+impl Frame<crate::Cluster> {
     /// Parse a ZCL frame from a little-endian byte stream.
     ///
     /// # Errors
@@ -86,12 +125,12 @@ impl Frame<Cluster> {
         T: Iterator<Item = u8>,
     {
         let header = Header::from_le_stream(&mut bytes).ok_or(ParseFrameError::MissingHeader)?;
-        let payload = Cluster::parse_zcl_cluster(cluster_id, header, bytes)?;
+        let payload = crate::Cluster::parse_zcl_cluster(cluster_id, header, bytes)?;
         Ok(Self { header, payload })
     }
 }
 
-impl TryFrom<Data<Bytes>> for Frame<Cluster> {
+impl TryFrom<Data<Bytes>> for Frame<crate::Cluster> {
     type Error = ParseFrameError;
 
     fn try_from(frame: Data<Bytes>) -> Result<Self, Self::Error> {

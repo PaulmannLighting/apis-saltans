@@ -1,13 +1,8 @@
 //! Cluster groups.
 
-use std::boxed::Box;
-
-use apis_saltans_core::Direction;
-use le_stream::ToLeStream;
-
 use self::general::{alarms, basic, groups, identify, level, on_off, scenes};
 use self::lighting::color_control;
-use crate::{CommandDispatch, Header, ParseFrameError, Scope};
+use crate::{Header, ParseFrameError, Scope};
 
 pub mod general;
 pub mod global;
@@ -97,119 +92,6 @@ impl Cluster {
                 }
                 invalid_cluster_id => Err(ParseFrameError::InvalidClusterId(invalid_cluster_id)),
             },
-        }
-    }
-}
-
-impl CommandDispatch for Cluster {
-    fn command_id(&self) -> u8 {
-        match self {
-            Self::Global(cmd) => cmd.command_id(),
-            Self::Basic(cmd) => cmd.command_id(),
-            Self::Groups(cmd) => cmd.command_id(),
-            Self::Identify(cmd) => cmd.command_id(),
-            Self::OnOff(cmd) => cmd.command_id(),
-            Self::Level(cmd) => cmd.command_id(),
-            Self::Alarms(cmd) => cmd.command_id(),
-            Self::Scenes(cmd) => cmd.command_id(),
-            Self::ColorControl(cmd) => cmd.command_id(),
-            Self::IasZone(cmd) => cmd.command_id(),
-        }
-    }
-
-    fn scope(&self) -> Scope {
-        match self {
-            Self::Global(cmd) => cmd.scope(),
-            Self::Basic(cmd) => cmd.scope(),
-            Self::Groups(cmd) => cmd.scope(),
-            Self::Identify(cmd) => cmd.scope(),
-            Self::OnOff(cmd) => cmd.scope(),
-            Self::Level(cmd) => cmd.scope(),
-            Self::Alarms(cmd) => cmd.scope(),
-            Self::Scenes(cmd) => cmd.scope(),
-            Self::ColorControl(cmd) => cmd.scope(),
-            Self::IasZone(cmd) => cmd.scope(),
-        }
-    }
-
-    fn direction(&self) -> Direction {
-        match self {
-            Self::Global(cmd) => cmd.direction(),
-            Self::Basic(cmd) => cmd.direction(),
-            Self::Groups(cmd) => cmd.direction(),
-            Self::Identify(cmd) => cmd.direction(),
-            Self::OnOff(cmd) => cmd.direction(),
-            Self::Level(cmd) => cmd.direction(),
-            Self::Alarms(cmd) => cmd.direction(),
-            Self::Scenes(cmd) => cmd.direction(),
-            Self::ColorControl(cmd) => cmd.direction(),
-            Self::IasZone(cmd) => cmd.direction(),
-        }
-    }
-
-    fn disable_default_response(&self) -> bool {
-        match self {
-            Self::Global(cmd) => cmd.disable_default_response(),
-            Self::Basic(cmd) => cmd.disable_default_response(),
-            Self::Groups(cmd) => cmd.disable_default_response(),
-            Self::Identify(cmd) => cmd.disable_default_response(),
-            Self::OnOff(cmd) => cmd.disable_default_response(),
-            Self::Level(cmd) => cmd.disable_default_response(),
-            Self::Alarms(cmd) => cmd.disable_default_response(),
-            Self::Scenes(cmd) => cmd.disable_default_response(),
-            Self::ColorControl(cmd) => cmd.disable_default_response(),
-            Self::IasZone(cmd) => cmd.disable_default_response(),
-        }
-    }
-}
-
-impl ToLeStream for Cluster {
-    type Iter = Iter;
-
-    fn to_le_stream(self) -> Self::Iter {
-        match self {
-            Self::Global(cmd) => Iter::Global(cmd.to_le_stream().into()),
-            Self::Basic(cmd) => Iter::Basic(cmd.to_le_stream()),
-            Self::Groups(cmd) => Iter::Groups(cmd.to_le_stream().into()),
-            Self::Identify(cmd) => Iter::Identify(cmd.to_le_stream()),
-            Self::OnOff(cmd) => Iter::OnOff(cmd.to_le_stream()),
-            Self::Level(cmd) => Iter::Level(cmd.to_le_stream()),
-            Self::Alarms(cmd) => Iter::Alarms(cmd.to_le_stream()),
-            Self::Scenes(cmd) => Iter::Scenes(cmd.to_le_stream()),
-            Self::ColorControl(cmd) => Iter::ColorControl(cmd.to_le_stream()),
-            Self::IasZone(cmd) => Iter::IasZone(cmd.to_le_stream()),
-        }
-    }
-}
-
-pub enum Iter {
-    Global(Box<<global::Command as ToLeStream>::Iter>),
-    Basic(<basic::Command as ToLeStream>::Iter),
-    Groups(Box<<groups::Command as ToLeStream>::Iter>),
-    Identify(<identify::Command as ToLeStream>::Iter),
-    OnOff(<on_off::Command as ToLeStream>::Iter),
-    Level(<level::Command as ToLeStream>::Iter),
-    Alarms(<alarms::Command as ToLeStream>::Iter),
-    Scenes(<scenes::Command as ToLeStream>::Iter),
-    ColorControl(<color_control::Command as ToLeStream>::Iter),
-    IasZone(<ias::zone::Command as ToLeStream>::Iter),
-}
-
-impl Iterator for Iter {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            Self::Global(iter) => iter.next(),
-            Self::Basic(iter) => iter.next(),
-            Self::Groups(iter) => iter.next(),
-            Self::Identify(iter) => iter.next(),
-            Self::OnOff(iter) => iter.next(),
-            Self::Level(iter) => iter.next(),
-            Self::Alarms(iter) => iter.next(),
-            Self::Scenes(iter) => iter.next(),
-            Self::ColorControl(iter) => iter.next(),
-            Self::IasZone(iter) => iter.next(),
         }
     }
 }

@@ -1,11 +1,9 @@
 use apis_saltans_core::Direction;
 use const_env::env_item;
 
-pub use self::command_dispatch::CommandDispatch;
 pub use self::parse_direction::ParseDirection;
 pub use self::scoped::Scoped;
 
-mod command_dispatch;
 mod parse_direction;
 mod scoped;
 
