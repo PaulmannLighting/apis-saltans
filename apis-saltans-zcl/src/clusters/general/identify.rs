@@ -1,9 +1,10 @@
 //! Identify Cluster.
 
+pub use self::attributes::{Id, Readable, Reportable, Writable};
 pub use self::commands::{
     Command, EffectIdentifier, EffectVariant, Identify, IdentifyQuery, IdentifyQueryResponse,
     TriggerEffect,
 };
 
-pub mod attributes;
+mod attributes;
 mod commands;

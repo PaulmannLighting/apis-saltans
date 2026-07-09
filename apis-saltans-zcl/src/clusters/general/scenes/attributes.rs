@@ -4,7 +4,7 @@ use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{Bool, Uint8};
 
 pub use self::types::{CurrentGroup, LastConfiguredBy};
-pub use crate::clusters::general::groups::attributes::NameSupport;
+pub use crate::clusters::general::groups::NameSupport;
 use crate::macros::zcl_attributes;
 
 mod types;

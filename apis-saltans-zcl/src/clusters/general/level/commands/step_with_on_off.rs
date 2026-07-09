@@ -2,7 +2,7 @@ use apis_saltans_core::types::Uint16;
 use apis_saltans_core::units::Deciseconds;
 use apis_saltans_core::{Cluster, Direction};
 
-use crate::general::level::Mode;
+use crate::level::Mode;
 use crate::macros::zcl_command;
 use crate::options::Options;
 

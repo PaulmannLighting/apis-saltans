@@ -1,3 +1,5 @@
 //! Occupancy sensing cluster.
 
-pub mod attributes;
+pub use self::attributes::{Id, Readable, Reportable, Writable};
+
+mod attributes;

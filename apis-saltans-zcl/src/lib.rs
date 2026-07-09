@@ -14,7 +14,15 @@
 //! frame control fields.
 
 pub use self::attributes::{InvalidType, ParseAttributeError, Readable, Reportable, Writable};
-pub use self::clusters::{Cluster, general, global, ias, lighting, measurement_and_sensing};
+pub use self::clusters::general::{
+    alarms, basic, device_temperature_configuration, groups, identify, level, on_off,
+    power_configuration, scenes, time,
+};
+pub use self::clusters::lighting::{ballast_configuration, color_control};
+pub use self::clusters::measurement_and_sensing::{
+    illuminance_level_sensing, illuminance_measurement, occupancy_sensing,
+};
+pub use self::clusters::{Cluster, global, ias};
 pub use self::command::{Command, ParseDirection, Scoped};
 pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Scope};
 pub use self::options::Options;

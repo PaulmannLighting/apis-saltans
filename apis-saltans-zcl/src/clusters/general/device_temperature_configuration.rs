@@ -1,8 +1,9 @@
 //! Device Temperature Configuration Cluster.
 
+pub use self::attributes::{Id, Readable, Reportable, Writable};
 pub use self::device_temp_alarm_mask::DeviceTempAlarmMask;
 pub use self::temperature::Temperature;
 
-pub mod attributes;
+mod attributes;
 mod device_temp_alarm_mask;
 mod temperature;

@@ -2,23 +2,23 @@ use apis_saltans_core::types::Type;
 use apis_saltans_core::{ClusterSpecific, Profiled};
 
 pub use self::errors::{InvalidType, ParseAttributeError};
-use crate::clusters::general::alarms::attributes::Reportable as AlarmsAttributes;
-use crate::clusters::general::basic::attributes::Reportable as BasicAttributes;
-use crate::clusters::general::device_temperature_configuration::attributes::Reportable as DeviceTemperatureConfigurationAttributes;
-use crate::clusters::general::groups::attributes::Reportable as GroupsAttributes;
-use crate::clusters::general::identify::attributes::Reportable as IdentifyAttributes;
-use crate::clusters::general::level::attributes::Reportable as LevelAttributes;
-use crate::clusters::general::on_off::attributes::Reportable as OnOffAttributes;
-use crate::clusters::general::power_configuration::attributes::Reportable as PowerConfigurationAttributes;
-use crate::clusters::general::scenes::attributes::Reportable as ScenesAttributes;
-use crate::clusters::general::time::attributes::Reportable as TimeAttributes;
-use crate::clusters::ias::zone::attributes::Reportable as IasZoneAttributes;
-use crate::clusters::lighting::ballast_configuration::attributes::Reportable as BallastConfigurationAttributes;
-use crate::clusters::lighting::color_control::attributes::Reportable as ColorControlAttributes;
-use crate::clusters::measurement_and_sensing::illuminance_level_sensing::attributes::Reportable as IlluminanceLevelSensingAttributes;
-use crate::clusters::measurement_and_sensing::illuminance_measurement::attributes::Reportable as IlluminanceMeasurementAttributes;
-use crate::clusters::measurement_and_sensing::occupancy_sensing::attributes::Reportable as OccupancySensingAttributes;
+use crate::alarms::Reportable as AlarmsAttributes;
+use crate::ballast_configuration::Reportable as BallastConfigurationAttributes;
+use crate::basic::Reportable as BasicAttributes;
+use crate::color_control::Reportable as ColorControlAttributes;
+use crate::device_temperature_configuration::Reportable as DeviceTemperatureConfigurationAttributes;
 use crate::global::write_attributes::Record;
+use crate::groups::Reportable as GroupsAttributes;
+use crate::ias::zone::Reportable as IasZoneAttributes;
+use crate::identify::Reportable as IdentifyAttributes;
+use crate::illuminance_level_sensing::Reportable as IlluminanceLevelSensingAttributes;
+use crate::illuminance_measurement::Reportable as IlluminanceMeasurementAttributes;
+use crate::level::Reportable as LevelAttributes;
+use crate::occupancy_sensing::Reportable as OccupancySensingAttributes;
+use crate::on_off::Reportable as OnOffAttributes;
+use crate::power_configuration::Reportable as PowerConfigurationAttributes;
+use crate::scenes::Reportable as ScenesAttributes;
+use crate::time::Reportable as TimeAttributes;
 
 mod errors;
 
@@ -164,9 +164,7 @@ mod tests {
 
         assert_eq!(
             attribute,
-            Reportable::Level(general::level::attributes::Reportable::CurrentLevel(
-                Uint8::new(42)
-            ))
+            Reportable::Level(general::level::Reportable::CurrentLevel(Uint8::new(42)))
         );
     }
 

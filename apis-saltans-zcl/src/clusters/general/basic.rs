@@ -1,6 +1,7 @@
 //! Zigbee Cluster Library (ZCL) Basic Cluster.
 
+pub use self::attributes::{Id, Readable, Reportable, Writable};
 pub use self::commands::{Command, ResetToFactoryDefaults};
 
-pub mod attributes;
+mod attributes;
 mod commands;
