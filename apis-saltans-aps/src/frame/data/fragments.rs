@@ -15,15 +15,18 @@ const SINGLE_BLOCK: u8 = 1;
 /// header that identifies whether the chunk is the first or a follow-up
 /// fragment.
 #[derive(Debug)]
-pub struct Fragments {
-    header: Header,
+pub struct Fragments<T> {
+    header: Header<T>,
     payload: Bytes,
     chunk_size: NonZero<usize>,
     blocks: u8,
     index: u8,
 }
 
-impl Fragments {
+impl<T> Fragments<T>
+where
+    T: Copy,
+{
     /// Create a fragment iterator for the given APS data frame.
     ///
     /// # Errors
@@ -31,7 +34,10 @@ impl Fragments {
     /// Returns an error if the number of fragments does not fit into the APS
     /// extended header block count field.
     ///
-    pub fn new(frame: Frame<Bytes>, chunk_size: NonZero<usize>) -> Result<Self, TryFromIntError> {
+    pub fn new(
+        frame: Frame<Bytes, T>,
+        chunk_size: NonZero<usize>,
+    ) -> Result<Self, TryFromIntError> {
         let (header, payload) = frame.into_parts();
         let blocks: u8 = payload.len().div_ceil(chunk_size.get()).try_into()?;
         Ok(Self {
@@ -60,16 +66,19 @@ impl Fragments {
     }
 
     #[must_use]
-    fn header(&self) -> Header {
+    fn header(&self) -> Header<T> {
         let mut header = self.header;
         header.set_fragmentation(self.fragmentation());
         header
     }
 }
 
-impl Iterator for Fragments {
+impl<T> Iterator for Fragments<T>
+where
+    T: Copy,
+{
     /// Fragmented APS data frame yielded by the iterator.
-    type Item = Frame<Bytes>;
+    type Item = Frame<Bytes, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == FIRST_FRAGMENT_INDEX && self.blocks == EMPTY_PAYLOAD_BLOCKS {

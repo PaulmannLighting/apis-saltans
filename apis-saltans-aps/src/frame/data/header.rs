@@ -8,9 +8,9 @@ use crate::{Control, Destination, Extended, Fragmentation, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
-pub struct Header {
+pub struct Header<T = Destination> {
     control: Control,
-    destination: Destination,
+    destination: T,
     cluster_id: u16,
     profile_id: u16,
     source_endpoint: Endpoint,
@@ -18,20 +18,23 @@ pub struct Header {
     extended: Option<Extended>,
 }
 
-impl Header {
+impl<T> Header<T> {
     /// Create a new `Header`.
     #[must_use]
     pub fn new(
-        destination: Destination,
+        destination: T,
         cluster_id: u16,
         profile_id: u16,
         source_endpoint: Endpoint,
         counter: u8,
         extended: Option<Extended>,
-    ) -> Self {
+    ) -> Self
+    where
+        T: Copy + Into<Destination>,
+    {
         let mut control = Control::empty();
         control.set_frame_type(FrameType::Data);
-        control.set_destination(destination);
+        control.set_destination(destination.into());
 
         if extended.is_some() {
             control.insert(Control::EXTENDED_HEADER);
@@ -56,7 +59,10 @@ impl Header {
 
     /// Return the destination.
     #[must_use]
-    pub const fn destination(&self) -> Destination {
+    pub const fn destination(&self) -> T
+    where
+        T: Copy,
+    {
         self.destination
     }
 

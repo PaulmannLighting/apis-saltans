@@ -28,6 +28,16 @@ impl Display for Destination {
     }
 }
 
+impl From<apis_saltans_nwk::Destination> for Destination {
+    fn from(destination: apis_saltans_nwk::Destination) -> Self {
+        match destination {
+            apis_saltans_nwk::Destination::Device { endpoint, .. } => Self::Unicast(endpoint),
+            apis_saltans_nwk::Destination::Group(group_id) => Self::Group(group_id.as_u16()),
+            apis_saltans_nwk::Destination::Broadcast { endpoint, .. } => Self::Broadcast(endpoint),
+        }
+    }
+}
+
 impl ToLeStream for Destination {
     type Iter = DestinationIterator;
 

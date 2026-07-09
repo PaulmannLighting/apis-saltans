@@ -7,6 +7,7 @@ higher-level crates can attach to decoded payloads.
 ```mermaid
 flowchart TD
     Source["Source<br/>NWK address + optional IEEE address"]
+    Destination["Destination<br/>outgoing address + endpoint selector"]
     Metadata["Metadata<br/>optional frame metadata"]
     Payload["Payload T"]
     Envelope["Envelope<T>"]
@@ -20,6 +21,7 @@ flowchart TD
 
 | Module | Public type | Responsibility |
 | --- | --- | --- |
+| `destination` | `Destination` | Describes outgoing unicast, broadcast, and group destinations. |
 | `source` | `Source` | Identifies the incoming NWK source by short address and optional IEEE address. |
 | `metadata` | `Metadata` | Stores optional frame metadata provided by a backend. |
 | `envelope` | `Envelope<T>` | Couples a payload with source and metadata context. |

@@ -5,6 +5,8 @@ Network-layer support types for APIS Saltans.
 This crate defines small `no_std` value types for carrying Zigbee NWK context
 through higher-level crates:
 
+- `Destination` describes outgoing NWK destinations, including unicast device
+  endpoints, broadcast endpoints, and APS groups.
 - `Source` stores the 16-bit NWK address and, when known, the IEEE address of
   the incoming frame source.
 - `Metadata` stores optional per-frame metadata such as last-hop LQI, RSSI,

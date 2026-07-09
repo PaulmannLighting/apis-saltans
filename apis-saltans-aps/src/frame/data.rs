@@ -9,6 +9,7 @@ pub use self::defragmentation::Assembler;
 pub use self::fragments::Fragments;
 pub use self::header::Header;
 pub use self::unicast::Unicast;
+use crate::Destination;
 
 mod defragmentation;
 mod fragments;
@@ -16,13 +17,13 @@ mod header;
 mod unicast;
 
 /// An APS Data frame.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
-pub struct Frame<T> {
-    header: Header,
+#[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
+pub struct Frame<T, D = Destination> {
+    header: Header<D>,
     payload: T,
 }
 
-impl<T> Frame<T> {
+impl<T, D> Frame<T, D> {
     /// Creates a new APS Data frame without any validation.
     ///
     /// # Safety
@@ -30,13 +31,13 @@ impl<T> Frame<T> {
     /// The caller must ensure that the provided header is consistent with the payload.
     #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new_unchecked(header: Header, payload: T) -> Self {
+    pub const unsafe fn new_unchecked(header: Header<D>, payload: T) -> Self {
         Self { header, payload }
     }
 
     /// Return a reference to the header.
     #[must_use]
-    pub const fn header(&self) -> &Header {
+    pub const fn header(&self) -> &Header<D> {
         &self.header
     }
 
@@ -53,7 +54,7 @@ impl<T> Frame<T> {
 
     /// Return the header and payload, consuming the frame.
     #[must_use]
-    pub fn into_parts(self) -> (Header, T) {
+    pub fn into_parts(self) -> (Header<D>, T) {
         (self.header, self.payload)
     }
 }
@@ -69,24 +70,11 @@ impl<T> From<Unicast<T>> for Frame<T> {
     }
 }
 
-impl Frame<Bytes> {
+impl<D> Frame<Bytes, D> {
     /// Return a new frame with the given header and payload.
     #[must_use]
-    pub const fn raw(header: Header, payload: Bytes) -> Self {
+    pub const fn raw(header: Header<D>, payload: Bytes) -> Self {
         Self { header, payload }
-    }
-
-    /// Parse the frame into a frame with typed payload.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the payload cannot be parsed into the given type.
-    pub fn parse<T>(self) -> Result<Frame<T>, T::Error>
-    where
-        T: TryFrom<Self>,
-    {
-        let header = self.header;
-        T::try_from(self).map(|payload| Frame { header, payload })
     }
 
     /// Fragment the frame payload into APS data frames of at most `chunk_size` bytes.
@@ -99,7 +87,39 @@ impl Frame<Bytes> {
     /// Returns an error if the number of fragments does not fit into the APS
     /// extended header block count field.
     ///
-    pub fn fragment(self, chunk_size: NonZero<usize>) -> Result<Fragments, TryFromIntError> {
+    pub fn fragment(self, chunk_size: NonZero<usize>) -> Result<Fragments<D>, TryFromIntError>
+    where
+        D: Copy,
+    {
         Fragments::new(self, chunk_size)
+    }
+}
+
+impl Frame<Bytes> {
+    /// Parse the frame into a frame with typed payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the payload cannot be parsed into the given type.
+    pub fn parse<T>(self) -> Result<Frame<T>, T::Error>
+    where
+        T: TryFrom<Self>,
+    {
+        let header = self.header;
+        T::try_from(self).map(|payload| Frame { header, payload })
+    }
+}
+
+impl<T> FromLeStream for Frame<T>
+where
+    T: FromLeStream,
+{
+    fn from_le_stream<I>(mut bytes: I) -> Option<Self>
+    where
+        I: Iterator<Item = u8>,
+    {
+        let header = Header::from_le_stream(&mut bytes)?;
+        let payload = T::from_le_stream(&mut bytes)?;
+        Some(Self { header, payload })
     }
 }
