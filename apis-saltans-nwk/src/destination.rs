@@ -30,11 +30,5 @@ pub enum Destination {
     ///
     /// The group identifier is carried as the destination address and endpoint
     /// selection is resolved by each receiver's group table.
-    Group(GroupId),
-}
-
-impl From<GroupId> for Destination {
-    fn from(group: GroupId) -> Self {
-        Self::Group(group)
-    }
+    Group { group: GroupId, endpoint: Endpoint },
 }
