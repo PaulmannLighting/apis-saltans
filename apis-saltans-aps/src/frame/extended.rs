@@ -35,6 +35,9 @@ impl Extended {
         }
     }
 
+    /// Create an extended header for the given fragmentation state.
+    ///
+    /// Returns an empty extended header for [`Fragmentation::None`].
     #[must_use]
     pub fn fragment(fragmentation: Fragmentation) -> Self {
         match fragmentation {

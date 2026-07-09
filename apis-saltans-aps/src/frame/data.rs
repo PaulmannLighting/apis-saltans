@@ -1,19 +1,17 @@
 //! APS Data frame definitions.
 
-use std::iter::Map;
 use std::num::TryFromIntError;
-use std::slice::Chunks;
 
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::defragmentation::Assembler;
-pub use self::fragmentation::Fragments;
+pub use self::fragments::Fragments;
 pub use self::header::Header;
 pub use self::unicast::Unicast;
 
 mod defragmentation;
-mod fragmentation;
+mod fragments;
 mod header;
 mod unicast;
 
@@ -91,6 +89,19 @@ impl Frame<Bytes> {
         T::try_from(self).map(|payload| Frame { header, payload })
     }
 
+    /// Fragment the frame payload into APS data frames of at most `chunk_size` bytes.
+    ///
+    /// The returned iterator owns the frame payload and yields frames with extended
+    /// headers that describe the first and follow-up fragments.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the number of fragments does not fit into the APS
+    /// extended header block count field.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `chunk_size` is zero.
     pub fn fragment(self, chunk_size: usize) -> Result<Fragments, TryFromIntError> {
         Fragments::new(self, chunk_size)
     }

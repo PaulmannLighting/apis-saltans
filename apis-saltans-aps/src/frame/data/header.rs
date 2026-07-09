@@ -99,6 +99,9 @@ impl Header {
         self.extended
     }
 
+    /// Set the extended header and mark it as present in the control field.
+    ///
+    /// Returns the previously configured extended header, if one was present.
     pub fn set_extended(&mut self, extended: Extended) -> Option<Extended> {
         self.control.insert(Control::EXTENDED_HEADER);
         self.extended.replace(extended)
@@ -110,6 +113,11 @@ impl Header {
         self.extended.take()
     }
 
+    /// Set or clear the extended header fragmentation information.
+    ///
+    /// Passing [`Fragmentation::None`] removes the extended header. Passing a
+    /// fragment descriptor installs an extended header that marks this data frame
+    /// as the corresponding APS fragment.
     pub fn set_fragmentation(&mut self, fragmentation: Fragmentation) {
         match fragmentation {
             Fragmentation::None => {
