@@ -8,9 +8,9 @@ use crate::{Control, Destination, Extended, Fragmentation, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
-pub struct Header<T = Destination> {
+pub struct Header {
     control: Control,
-    destination: T,
+    destination: Destination,
     cluster_id: u16,
     profile_id: u16,
     source_endpoint: Endpoint,
@@ -18,23 +18,20 @@ pub struct Header<T = Destination> {
     extended: Option<Extended>,
 }
 
-impl<T> Header<T> {
+impl Header {
     /// Create a new `Header`.
     #[must_use]
     pub fn new(
-        destination: T,
+        destination: Destination,
         cluster_id: u16,
         profile_id: u16,
         source_endpoint: Endpoint,
         counter: u8,
         extended: Option<Extended>,
-    ) -> Self
-    where
-        T: Copy + Into<Destination>,
-    {
+    ) -> Self {
         let mut control = Control::empty();
         control.set_frame_type(FrameType::Data);
-        control.set_destination(destination.into());
+        control.set_destination(destination);
 
         if extended.is_some() {
             control.insert(Control::EXTENDED_HEADER);
@@ -59,10 +56,7 @@ impl<T> Header<T> {
 
     /// Return the destination.
     #[must_use]
-    pub const fn destination(&self) -> T
-    where
-        T: Copy,
-    {
+    pub const fn destination(&self) -> Destination {
         self.destination
     }
 
@@ -135,35 +129,6 @@ impl<T> Header<T> {
             Fragmentation::Followup { index } => {
                 self.set_extended(Extended::followup_fragment(index));
             }
-        }
-    }
-
-    /// Convert the header to use the default APS destination representation.
-    ///
-    /// All header fields are preserved, while the destination value is converted
-    /// into [`Destination`].
-    #[must_use]
-    pub fn into_default_dst(self) -> Header<Destination>
-    where
-        T: Into<Destination>,
-    {
-        let Self {
-            control,
-            destination,
-            cluster_id,
-            profile_id,
-            source_endpoint,
-            counter,
-            extended,
-        } = self;
-        Header::<Destination> {
-            control,
-            destination: destination.into(),
-            cluster_id,
-            profile_id,
-            source_endpoint,
-            counter,
-            extended,
         }
     }
 }

@@ -9,7 +9,6 @@ pub use self::defragmentation::Assembler;
 pub use self::fragments::Fragments;
 pub use self::header::Header;
 pub use self::unicast::Unicast;
-use crate::Destination;
 
 mod defragmentation;
 mod fragments;
@@ -18,12 +17,12 @@ mod unicast;
 
 /// An APS Data frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
-pub struct Frame<T, D = Destination> {
-    header: Header<D>,
+pub struct Frame<T> {
+    header: Header,
     payload: T,
 }
 
-impl<T, D> Frame<T, D> {
+impl<T> Frame<T> {
     /// Creates a new APS Data frame without any validation.
     ///
     /// # Safety
@@ -31,13 +30,13 @@ impl<T, D> Frame<T, D> {
     /// The caller must ensure that the provided header is consistent with the payload.
     #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new_unchecked(header: Header<D>, payload: T) -> Self {
+    pub const unsafe fn new_unchecked(header: Header, payload: T) -> Self {
         Self { header, payload }
     }
 
     /// Return a reference to the header.
     #[must_use]
-    pub const fn header(&self) -> &Header<D> {
+    pub const fn header(&self) -> &Header {
         &self.header
     }
 
@@ -54,31 +53,15 @@ impl<T, D> Frame<T, D> {
 
     /// Return the header and payload, consuming the frame.
     #[must_use]
-    pub fn into_parts(self) -> (Header<D>, T) {
+    pub fn into_parts(self) -> (Header, T) {
         (self.header, self.payload)
-    }
-
-    /// Convert the frame to use the default APS destination representation.
-    ///
-    /// This keeps the payload and all header fields unchanged except for the
-    /// destination, which is converted into [`Destination`].
-    #[must_use]
-    pub fn into_default_dst(self) -> Frame<T, Destination>
-    where
-        D: Into<Destination>,
-    {
-        let (header, payload) = self.into_parts();
-        Frame::<T, Destination> {
-            header: header.into_default_dst(),
-            payload,
-        }
     }
 }
 
-impl<D> Frame<Bytes, D> {
+impl Frame<Bytes> {
     /// Return a new frame with the given header and payload.
     #[must_use]
-    pub const fn raw(header: Header<D>, payload: Bytes) -> Self {
+    pub const fn raw(header: Header, payload: Bytes) -> Self {
         Self { header, payload }
     }
 
@@ -92,10 +75,7 @@ impl<D> Frame<Bytes, D> {
     /// Returns an error if the number of fragments does not fit into the APS
     /// extended header block count field.
     ///
-    pub fn fragment(self, chunk_size: NonZero<usize>) -> Result<Fragments<D>, TryFromIntError>
-    where
-        D: Copy,
-    {
+    pub fn fragment(self, chunk_size: NonZero<usize>) -> Result<Fragments, TryFromIntError> {
         Fragments::new(self, chunk_size)
     }
 }

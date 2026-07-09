@@ -12,7 +12,7 @@ pub enum Destination {
     Unicast(Endpoint),
 
     /// A broadcast endpoint ID.
-    Broadcast(BroadcastEndpoint),
+    Broadcast(Endpoint),
 
     /// A group address.
     Group(u16),
@@ -24,16 +24,6 @@ impl Display for Destination {
             Self::Unicast(value) => write!(f, "Unicast({value})"),
             Self::Broadcast(value) => write!(f, "Broadcast({value})"),
             Self::Group(value) => write!(f, "Group({value})"),
-        }
-    }
-}
-
-impl From<apis_saltans_nwk::Destination> for Destination {
-    fn from(destination: apis_saltans_nwk::Destination) -> Self {
-        match destination {
-            apis_saltans_nwk::Destination::Device { endpoint, .. } => Self::Unicast(endpoint),
-            apis_saltans_nwk::Destination::Group(group) => Self::Group(group.as_u16()),
-            apis_saltans_nwk::Destination::Broadcast { endpoint, .. } => Self::Broadcast(endpoint),
         }
     }
 }
