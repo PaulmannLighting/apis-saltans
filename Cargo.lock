@@ -83,7 +83,6 @@ name = "apis-saltans-nwk"
 version = "0.2.0"
 dependencies = [
  "apis-saltans-core",
- "le-stream",
  "serde",
 ]
 
