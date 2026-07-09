@@ -1,11 +1,11 @@
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::macros::zcl_command;
 
 zcl_command! {
     /// Move to the closest frequency command.
     MoveToClosestFrequency {
-        { ClusterId::Level } => Level;
+        { Cluster::Level } => Level;
         command_id: 0x08;
         direction: Direction::ClientToServer;
         derive(Copy);

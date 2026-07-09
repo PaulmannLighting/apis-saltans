@@ -1,5 +1,5 @@
 use apis_saltans_core::types::{String, Uint8, Uint16};
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::Status;
 use crate::clusters::general::scenes::types::ExtensionFieldSets;
@@ -8,7 +8,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Represents an `Enhanced View Scene Response` command.
     EnhancedViewSceneResponse {
-        { ClusterId::Scenes } => Scenes;
+        { Cluster::Scenes } => Scenes;
         command_id: 0x41;
         direction: Direction::ServerToClient;
         disable_default_response: true;

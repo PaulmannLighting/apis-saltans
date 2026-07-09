@@ -1,4 +1,4 @@
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::color_loop_set::ColorLoopSet;
 pub use self::enhanced_move_hue::EnhancedMoveHue;
@@ -43,7 +43,7 @@ mod stop_move_step;
 
 // Enumeration of all commands in the `Color Control` cluster.
 zcl_command_enum! {
-    { ClusterId::ColorControl } => ColorControl;
+    { Cluster::ColorControl } => ColorControl;
     MoveToHue(MoveToHue),
     MoveHue(MoveHue),
     StepHue(StepHue),

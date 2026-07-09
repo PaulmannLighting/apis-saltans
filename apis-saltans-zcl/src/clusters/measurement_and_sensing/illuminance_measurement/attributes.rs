@@ -1,6 +1,6 @@
 //! Attributes of the Illuminance Measurement cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::Uint16;
 
 pub use self::types::{LightSensorType, Lux, ManufacturerSpecific, MeasuredValue};
@@ -9,7 +9,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::IlluminanceMeasurement;
+    cluster: Cluster::IlluminanceMeasurement;
 
     /// The measured illuminance value.
     MeasuredValue = 0x0000: MeasuredValue { R, P },

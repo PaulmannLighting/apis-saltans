@@ -18,6 +18,9 @@ pub trait Command {
     /// The command directions accepted when parsing incoming frames.
     const PARSE_DIRECTION: ParseDirection = ParseDirection::Single(Self::DIRECTION);
 
+    /// The manufacturer code, if any.
+    const MANUFACTURER_CODE: Option<u16> = None;
+
     /// Whether to disable the default response for this command.
     ///
     /// Commands that do not provide their own value use the compile-time
@@ -38,5 +41,6 @@ where
     const ID: u8 = T::ID;
     const DIRECTION: Direction = T::DIRECTION;
     const PARSE_DIRECTION: ParseDirection = T::PARSE_DIRECTION;
+    const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
 }

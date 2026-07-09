@@ -1,7 +1,7 @@
 //! ZCL frame representation.
 
 use apis_saltans_aps::Data;
-use apis_saltans_core::{Cluster, Profile};
+use apis_saltans_core::{ClusterSpecific, Profile, Profiled};
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -28,7 +28,7 @@ impl<T> Frame<T> {
     #[must_use]
     pub fn cluster_specific(seq: u8, payload: T) -> Self
     where
-        T: Cluster + Command + Scoped,
+        T: ClusterSpecific + Command + Scoped,
     {
         let header = Header::new(
             T::SCOPE,
@@ -99,13 +99,18 @@ impl<T> Frame<T> {
     }
 }
 
-impl<T> Cluster for Frame<T>
+impl<T> ClusterSpecific for Frame<T>
 where
-    T: Cluster,
+    T: ClusterSpecific,
 {
     const ID: u16 = T::ID;
+}
+
+impl<T> Profiled for Frame<T>
+where
+    T: Profiled,
+{
     const PROFILE: Profile = T::PROFILE;
-    const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
 }
 
 impl<T> Command for Frame<T>
@@ -115,6 +120,7 @@ where
     const ID: u8 = T::ID;
     const DIRECTION: Direction = T::DIRECTION;
     const PARSE_DIRECTION: ParseDirection = T::PARSE_DIRECTION;
+    const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
 }
 

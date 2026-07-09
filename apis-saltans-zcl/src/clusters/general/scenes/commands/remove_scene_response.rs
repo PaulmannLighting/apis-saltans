@@ -1,5 +1,5 @@
 use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::Status;
 use crate::macros::zcl_command;
@@ -7,7 +7,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Represents a `Remove Scene Response` command.
     RemoveSceneResponse {
-        { ClusterId::Scenes } => Scenes;
+        { Cluster::Scenes } => Scenes;
         command_id: 0x02;
         direction: Direction::ServerToClient;
         disable_default_response: true;

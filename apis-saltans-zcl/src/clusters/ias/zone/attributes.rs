@@ -1,6 +1,6 @@
 //! Attributes of the IAS Zone cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::Uint8;
 
 pub use self::types::{IasCieAddress, ZoneState};
@@ -10,7 +10,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::IasZone;
+    cluster: Cluster::IasZone;
 
     /// The zone state.
     ZoneState = 0x0000: ZoneState { R },

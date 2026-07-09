@@ -1,12 +1,12 @@
 use apis_saltans_core::types::{String, Uint16};
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::macros::zcl_command;
 
 zcl_command! {
     /// Command to add a group to the device's group table if the device is currently identifying.
     AddGroupIfIdentifying {
-        { ClusterId::Groups } => Groups;
+        { Cluster::Groups } => Groups;
         command_id: 0x05;
         direction: Direction::ClientToServer;
         fields {

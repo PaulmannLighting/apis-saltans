@@ -1,6 +1,6 @@
 //! Attributes of the Basic cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{Bool, OctStr, String, Uint8};
 
 pub use self::date_code::{DateCode, ParseError};
@@ -14,7 +14,7 @@ mod date_code;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::Basic;
+    cluster: Cluster::Basic;
 
     /// The ZCL version.
     ZclVersion = 0x0000: Uint8 { R },

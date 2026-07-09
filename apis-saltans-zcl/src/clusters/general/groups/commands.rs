@@ -1,4 +1,4 @@
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::add_group::AddGroup;
 pub use self::add_group_if_identifying::AddGroupIfIdentifying;
@@ -25,7 +25,7 @@ mod view_group_response;
 
 // Available Groups cluster commands.
 zcl_command_enum! {
-    { ClusterId::Groups } => Groups;
+    { Cluster::Groups } => Groups;
     AddGroup(AddGroup),
     ViewGroup(ViewGroup),
     GetGroupMembership(GetGroupMembership),

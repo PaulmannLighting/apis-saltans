@@ -1,6 +1,6 @@
 //! Data structures for the `Move To Hue` command in the `Lighting` cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::Uint16;
 use num_traits::FromPrimitive;
 
@@ -13,7 +13,7 @@ mod direction;
 zcl_command! {
     /// Command to move a light to a specific hue.
     MoveToHue {
-        { ClusterId::ColorControl } => ColorControl;
+        { Cluster::ColorControl } => ColorControl;
         command_id: 0x00;
         direction: apis_saltans_core::Direction::ClientToServer;
         fields {

@@ -1,5 +1,5 @@
 use apis_saltans_core::types::Uint8;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 pub use self::effect::{DelayedAllOff, DyingLight, Effect};
 use crate::macros::zcl_command;
@@ -9,7 +9,7 @@ mod effect;
 zcl_command! {
     /// Switch a device off.
     OffWithEffect {
-        { ClusterId::OnOff } => OnOff;
+        { Cluster::OnOff } => OnOff;
         command_id: 0x40;
         direction: Direction::ClientToServer;
         derive(Copy);

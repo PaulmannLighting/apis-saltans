@@ -12,7 +12,7 @@ pub(crate) use zcl_cluster_profile;
 /// Define a ZCL command payload and implement its common command traits.
 ///
 /// Cluster-specific commands use the cluster ID to implement
-/// [`apis_saltans_core::Cluster`]:
+/// [`apis_saltans_core::ClusterSpecific`]:
 ///
 /// ```ignore
 /// zcl_command! {
@@ -804,8 +804,11 @@ macro_rules! zcl_command {
         $to_le_stream:tt
         [$($custom:item)*]
     ) => {
-        impl apis_saltans_core::Cluster<apis_saltans_core::ClusterId> for $command {
-            const ID: apis_saltans_core::ClusterId = $cluster_id;
+        impl apis_saltans_core::ClusterSpecific<apis_saltans_core::Cluster> for $command {
+            const ID: apis_saltans_core::Cluster = $cluster_id;
+        }
+
+        impl apis_saltans_core::Profiled for $command {
             const PROFILE: apis_saltans_core::Profile =
                 $crate::macros::zcl_cluster_profile!([$($profile)?]);
         }
@@ -1118,8 +1121,11 @@ macro_rules! zcl_command_enum {
     };
     (@cluster_impl [global]) => {};
     (@cluster_impl [cluster $cluster_id:expr; $($profile:expr)?]) => {
-        impl apis_saltans_core::Cluster<apis_saltans_core::ClusterId> for Command {
-            const ID: apis_saltans_core::ClusterId = $cluster_id;
+        impl apis_saltans_core::ClusterSpecific<apis_saltans_core::Cluster> for Command {
+            const ID: apis_saltans_core::Cluster = $cluster_id;
+        }
+
+        impl apis_saltans_core::Profiled for Command {
             const PROFILE: apis_saltans_core::Profile =
                 $crate::macros::zcl_cluster_profile!([$($profile)?]);
         }
@@ -1679,27 +1685,39 @@ macro_rules! zcl_attributes {
         const MANUFACTURER_CODE: Option<u16> = Some($manufacturer_code);
     };
     (@cluster_impl [cluster $cluster_id:expr; $($profile:expr)?] [$($manufacturer_code:expr)?] $ty:ident) => {
-        impl apis_saltans_core::Cluster<apis_saltans_core::ClusterId> for $ty {
-            const ID: apis_saltans_core::ClusterId = $cluster_id;
+        impl apis_saltans_core::ClusterSpecific<apis_saltans_core::Cluster> for $ty {
+            const ID: apis_saltans_core::Cluster = $cluster_id;
+        }
+
+        impl apis_saltans_core::Profiled for $ty {
             const PROFILE: apis_saltans_core::Profile =
                 $crate::macros::zcl_cluster_profile!([$($profile)?]);
-
+        }
+    };
+    (@readable_attribute_impl [$($manufacturer_code:expr)?]) => {
+        impl $crate::Readable for Id {
             $crate::macros::zcl_attributes! {
                 @manufacturer_code [$($manufacturer_code)?]
             }
-        }
-    };
-    (@readable_attribute_impl) => {
-        impl $crate::Readable for Id {
+
             type Attribute = Readable;
         }
     };
-    (@writable_attribute_impl []) => {};
     (
         @writable_attribute_impl
+        [$($manufacturer_code:expr)?]
+        []
+    ) => {};
+    (
+        @writable_attribute_impl
+        [$($manufacturer_code:expr)?]
         [$($id_arms:tt)+]
     ) => {
         impl $crate::Writable for Writable {
+            $crate::macros::zcl_attributes! {
+                @manufacturer_code [$($manufacturer_code)?]
+            }
+
             fn id(&self) -> u16 {
                 match self {
                     $($id_arms)+
@@ -1747,6 +1765,7 @@ macro_rules! zcl_attributes {
 
         $crate::macros::zcl_attributes! {
             @readable_attribute_impl
+            [$($manufacturer_code)?]
         }
 
         impl From<Id> for u16 {
@@ -1945,6 +1964,7 @@ macro_rules! zcl_attributes {
 
         $crate::macros::zcl_attributes! {
             @writable_attribute_impl
+            [$($manufacturer_code)?]
             [$($id_arms)*]
         }
 
@@ -2565,7 +2585,7 @@ pub(crate) use zcl_attributes;
 #[cfg(test)]
 mod zcl_attributes_macro_tests {
     use apis_saltans_core::types::{Type, Uint8};
-    use apis_saltans_core::{Cluster, ClusterId, Profile};
+    use apis_saltans_core::{Cluster, ClusterSpecific, Profile, Profiled};
 
     #[derive(Clone, Debug, Eq, Hash, PartialEq)]
     pub struct Custom(Uint8);
@@ -2577,7 +2597,7 @@ mod zcl_attributes_macro_tests {
     }
 
     zcl_attributes! {
-        cluster: ClusterId::OnOff;
+        cluster: Cluster::OnOff;
         profile: Profile::TouchLink;
         manufacturer_code: 0x1234;
 
@@ -2591,37 +2611,16 @@ mod zcl_attributes_macro_tests {
 
     #[test]
     fn generates_access_specific_enums() {
-        assert_eq!(<Id as Cluster<ClusterId>>::PROFILE, Profile::TouchLink);
+        assert_eq!(<Id as Profiled>::PROFILE, Profile::TouchLink);
+        assert_eq!(<Readable as Profiled>::PROFILE, Profile::TouchLink);
+        assert_eq!(<Id as crate::Readable>::MANUFACTURER_CODE, Some(0x1234));
+        assert_eq!(<Writable as Profiled>::PROFILE, Profile::TouchLink);
         assert_eq!(
-            <Readable as Cluster<ClusterId>>::PROFILE,
-            Profile::TouchLink
-        );
-        assert_eq!(<Id as Cluster<ClusterId>>::MANUFACTURER_CODE, Some(0x1234));
-        assert_eq!(
-            <Readable as Cluster<ClusterId>>::MANUFACTURER_CODE,
+            <Writable as crate::Writable>::MANUFACTURER_CODE,
             Some(0x1234)
         );
-        assert_eq!(
-            <Writable as Cluster<ClusterId>>::PROFILE,
-            Profile::TouchLink
-        );
-        assert_eq!(
-            <Writable as Cluster<ClusterId>>::MANUFACTURER_CODE,
-            Some(0x1234)
-        );
-        assert_eq!(
-            <Reportable as Cluster<ClusterId>>::PROFILE,
-            Profile::TouchLink
-        );
-        assert_eq!(
-            <Reportable as Cluster<ClusterId>>::MANUFACTURER_CODE,
-            Some(0x1234)
-        );
-        assert_eq!(<Scene as Cluster<ClusterId>>::PROFILE, Profile::TouchLink);
-        assert_eq!(
-            <Scene as Cluster<ClusterId>>::MANUFACTURER_CODE,
-            Some(0x1234)
-        );
+        assert_eq!(<Reportable as Profiled>::PROFILE, Profile::TouchLink);
+        assert_eq!(<Scene as Profiled>::PROFILE, Profile::TouchLink);
 
         let _ = Id::ReadOnly;
         let _ = Id::ClusterRevision;
@@ -2637,10 +2636,10 @@ mod zcl_attributes_macro_tests {
     }
 
     mod required_cluster {
-        use super::{ClusterId, Profile, Uint8};
+        use super::{Cluster, Profile, Profiled, Uint8};
 
         zcl_attributes! {
-            cluster: ClusterId::Basic;
+            cluster: Cluster::Basic;
 
             /// Read-only test attribute.
             ReadOnly = 0x0000: Uint8 { R },
@@ -2652,19 +2651,19 @@ mod zcl_attributes_macro_tests {
         fn generates_cluster_bound_impls() {
             fn assert_readable<T>()
             where
-                T: apis_saltans_core::Cluster<ClusterId> + crate::Readable,
+                T: apis_saltans_core::ClusterSpecific<Cluster> + crate::Readable,
             {
             }
 
             fn assert_writable<T>()
             where
-                T: apis_saltans_core::Cluster<ClusterId> + crate::Writable,
+                T: apis_saltans_core::ClusterSpecific<Cluster> + crate::Writable,
             {
             }
 
             fn assert_cluster<T>()
             where
-                T: apis_saltans_core::Cluster<ClusterId>,
+                T: apis_saltans_core::ClusterSpecific<Cluster>,
             {
             }
 
@@ -2674,26 +2673,20 @@ mod zcl_attributes_macro_tests {
             assert_cluster::<Reportable>();
             assert_cluster::<Scene>();
 
+            assert_eq!(<Id as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
             assert_eq!(
-                <Id as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
+                <Readable as Profiled>::PROFILE,
                 Profile::ZigbeeHomeAutomation
             );
             assert_eq!(
-                <Readable as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
+                <Writable as Profiled>::PROFILE,
                 Profile::ZigbeeHomeAutomation
             );
             assert_eq!(
-                <Writable as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
+                <Reportable as Profiled>::PROFILE,
                 Profile::ZigbeeHomeAutomation
             );
-            assert_eq!(
-                <Reportable as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
-                Profile::ZigbeeHomeAutomation
-            );
-            assert_eq!(
-                <Scene as apis_saltans_core::Cluster<ClusterId>>::PROFILE,
-                Profile::ZigbeeHomeAutomation
-            );
+            assert_eq!(<Scene as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
 
             let _ = Id::ReadOnly;
             let _ = Id::ClusterRevision;

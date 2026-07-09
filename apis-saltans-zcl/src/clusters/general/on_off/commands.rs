@@ -1,6 +1,6 @@
 //! Commands for the On/Off cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::off::Off;
 pub use self::off_with_effect::{DelayedAllOff, DyingLight, Effect, OffWithEffect};
@@ -19,7 +19,7 @@ mod toggle;
 
 // Available On/Off cluster commands.
 zcl_command_enum! {
-    { ClusterId::OnOff } => OnOff;
+    { Cluster::OnOff } => OnOff;
     Off(Off),
     On(On),
     Toggle(Toggle),

@@ -1,6 +1,6 @@
 //! Attributes of the Illuminance Level Sensing cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::Uint16;
 
 pub use self::types::LevelStatus;
@@ -10,7 +10,7 @@ pub use crate::measurement_and_sensing::illuminance_measurement::attributes::Lig
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::IlluminanceLevelSensing;
+    cluster: Cluster::IlluminanceLevelSensing;
 
     /// The level status.
     LevelStatus = 0x0000: LevelStatus { R, P },

@@ -1,5 +1,5 @@
 use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use super::StoreSceneResponse;
 use crate::macros::zcl_command;
@@ -7,7 +7,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Represents a `Store Scene` command.
     StoreScene {
-        { ClusterId::Scenes } => Scenes;
+        { Cluster::Scenes } => Scenes;
         command_id: 0x04;
         direction: Direction::ClientToServer;
         response: StoreSceneResponse;

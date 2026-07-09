@@ -1,4 +1,4 @@
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::Options;
 use crate::macros::zcl_command;
@@ -6,7 +6,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Command to stop a move step in a lighting device.
     StopMoveStep {
-        { ClusterId::ColorControl } => ColorControl;
+        { Cluster::ColorControl } => ColorControl;
         command_id: 47;
         direction: Direction::ClientToServer;
         derive(Copy);

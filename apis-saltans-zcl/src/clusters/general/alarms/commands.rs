@@ -1,6 +1,6 @@
 //! Commands of the Alarms cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::alarm::Alarm;
 pub use self::get_alarm::GetAlarm;
@@ -19,7 +19,7 @@ mod reset_all_alarms;
 
 // Commands of the Alarms cluster.
 zcl_command_enum! {
-    { ClusterId::Alarms } => Alarms;
+    { Cluster::Alarms } => Alarms;
     GetAlarm(GetAlarm),
     ResetAlarm(ResetAlarm),
     ResetAllAlarms(ResetAllAlarms),

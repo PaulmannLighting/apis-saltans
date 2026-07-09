@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use num_traits::FromPrimitive;
 
 pub use self::action::{Action, Source};
@@ -18,7 +18,7 @@ mod update;
 zcl_command! {
     /// Activate a light's color loop.
     ColorLoopSet {
-        { ClusterId::ColorControl } => ColorControl;
+        { Cluster::ColorControl } => ColorControl;
         command_id: 0x44;
         direction: apis_saltans_core::Direction::ClientToServer;
         fields {

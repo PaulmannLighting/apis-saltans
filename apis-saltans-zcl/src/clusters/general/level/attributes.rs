@@ -1,6 +1,6 @@
 //! Attributes of the Level Control cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{Uint8, Uint16};
 
 pub use self::types::Options;
@@ -9,7 +9,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::Level;
+    cluster: Cluster::Level;
 
     /// Current level of the device.
     CurrentLevel = 0x0000: Uint8 { R, P },

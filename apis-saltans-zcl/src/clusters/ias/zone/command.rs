@@ -1,4 +1,4 @@
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::enroll_request::EnrollRequest;
 pub use self::enroll_response::EnrollResponse;
@@ -15,7 +15,7 @@ mod status_change;
 
 // IAS Zone cluster commands.
 zcl_command_enum! {
-    { ClusterId::IasZone } => IasZone;
+    { Cluster::IasZone } => IasZone;
     StatusChange(StatusChange),
     EnrollRequest(EnrollRequest),
     EnrollResponse(EnrollResponse),

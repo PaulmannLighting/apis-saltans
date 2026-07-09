@@ -1,11 +1,11 @@
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::macros::zcl_command;
 
 zcl_command! {
     /// Switch a device on.
     On {
-        { ClusterId::OnOff } => OnOff;
+        { Cluster::OnOff } => OnOff;
         command_id: 0x01;
         direction: Direction::ClientToServer;
         fields;

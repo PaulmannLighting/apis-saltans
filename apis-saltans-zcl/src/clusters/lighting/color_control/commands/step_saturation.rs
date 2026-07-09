@@ -1,6 +1,6 @@
 //! Data structures for the `Step Saturation` command in the `Lighting` cluster.
 
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 use num_traits::FromPrimitive;
 
 pub use self::mode::Mode;
@@ -12,7 +12,7 @@ mod mode;
 zcl_command! {
     /// Command to step a light to a specific hue.
     StepSaturation {
-        { ClusterId::ColorControl } => ColorControl;
+        { Cluster::ColorControl } => ColorControl;
         command_id: 0x04;
         direction: Direction::ClientToServer;
         fields {

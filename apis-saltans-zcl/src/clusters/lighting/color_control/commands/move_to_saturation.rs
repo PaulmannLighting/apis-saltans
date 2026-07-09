@@ -1,5 +1,5 @@
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::Options;
 use crate::macros::zcl_command;
@@ -7,7 +7,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Command to move a light to a specific saturation.
     MoveToSaturation {
-        { ClusterId::ColorControl } => ColorControl;
+        { Cluster::ColorControl } => ColorControl;
         command_id: 0x03;
         direction: Direction::ClientToServer;
         fields {

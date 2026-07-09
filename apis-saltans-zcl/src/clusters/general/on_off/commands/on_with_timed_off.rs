@@ -1,6 +1,6 @@
 use apis_saltans_core::types::Uint16;
 use apis_saltans_core::units::Deciseconds;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 pub use self::on_off_control::OnOffControl;
 use crate::macros::zcl_command;
@@ -10,7 +10,7 @@ mod on_off_control;
 zcl_command! {
     /// Command to turn on a device for a specified time, then turn it off after a wait period.
     OnWithTimedOff {
-        { ClusterId::OnOff } => OnOff;
+        { Cluster::OnOff } => OnOff;
         command_id: 0x42;
         direction: Direction::ClientToServer;
         derive(Default);

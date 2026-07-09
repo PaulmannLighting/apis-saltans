@@ -1,6 +1,6 @@
 //! Attributes of the Color Control cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{String, Uint8, Uint16};
 use apis_saltans_core::units::Mireds;
 
@@ -22,7 +22,7 @@ mod options;
 mod startup_color_temperature;
 
 zcl_attributes! {
-    cluster: ClusterId::ColorControl;
+    cluster: Cluster::ColorControl;
 
     /// The current hue of the light.
     CurrentHue = 0x0000: Uint8 { R },

@@ -1,5 +1,5 @@
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 use num_traits::FromPrimitive;
 
 use crate::Options;
@@ -9,7 +9,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Command to step a light's hue in an enhanced way, allowing for more control over the size.
     EnhancedStepHue {
-        { ClusterId::ColorControl } => ColorControl;
+        { Cluster::ColorControl } => ColorControl;
         command_id: 0x42;
         direction: Direction::ClientToServer;
         fields {

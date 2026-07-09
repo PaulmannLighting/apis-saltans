@@ -1,11 +1,11 @@
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::macros::zcl_command;
 
 zcl_command! {
     /// Reset a specific alarm.
     ResetAlarm {
-        { ClusterId::Alarms } => Alarms;
+        { Cluster::Alarms } => Alarms;
         command_id: 0x00;
         direction: Direction::ClientToServer;
         derive(Copy);

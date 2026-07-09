@@ -1,6 +1,6 @@
 //! Attributes of the Device Temperature Configuration cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{Int16, Uint16, Uint24};
 
 pub use self::types::AlarmMask;
@@ -9,7 +9,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::DeviceTemperatureConfiguration;
+    cluster: Cluster::DeviceTemperatureConfiguration;
 
     /// Current temperature in degrees Celsius.
     CurrentTemperature = 0x0000: Int16 { R },

@@ -1,4 +1,4 @@
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::add_scene::AddScene;
 pub use self::add_scene_response::AddSceneResponse;
@@ -43,7 +43,7 @@ mod view_scene_response;
 
 // Available Scenes cluster commands.
 zcl_command_enum! {
-    { ClusterId::Scenes } => Scenes;
+    { Cluster::Scenes } => Scenes;
     AddScene(AddScene),
     ViewScene(ViewScene),
     RemoveScene(RemoveScene),

@@ -1,4 +1,4 @@
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::r#move::Move;
 pub use self::move_to_closest_frequency::MoveToClosestFrequency;
@@ -23,7 +23,7 @@ mod stop_with_on_off;
 
 // Available Level cluster commands.
 zcl_command_enum! {
-    { ClusterId::Level } => Level;
+    { Cluster::Level } => Level;
     MoveToLevel(MoveToLevel),
     Move(Move),
     Step(Step),

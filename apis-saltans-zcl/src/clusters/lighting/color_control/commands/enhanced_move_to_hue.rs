@@ -1,4 +1,4 @@
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::Uint16;
 use num_traits::FromPrimitive;
 
@@ -9,7 +9,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Command to move a light to a specific extended hue with a direction and transition time.
     EnhancedMoveToHue {
-        { ClusterId::ColorControl } => ColorControl;
+        { Cluster::ColorControl } => ColorControl;
         command_id: 0x40;
         direction: apis_saltans_core::Direction::ClientToServer;
         fields {

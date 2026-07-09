@@ -1,4 +1,4 @@
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::macros::zcl_command;
 use crate::options::Options;
@@ -6,7 +6,7 @@ use crate::options::Options;
 zcl_command! {
     /// Stop command.
     StopWithOnOff {
-        { ClusterId::Level } => Level;
+        { Cluster::Level } => Level;
         command_id: 0x07;
         direction: Direction::ClientToServer;
         derive(Default);

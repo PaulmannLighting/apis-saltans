@@ -1,6 +1,6 @@
 //! Attributes of the Scenes cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{Bool, Uint8};
 
 pub use self::types::{CurrentGroup, LastConfiguredBy};
@@ -10,7 +10,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::Scenes;
+    cluster: Cluster::Scenes;
 
     /// Number of scenes currently stored in the device.
     SceneCount = 0x0000: Uint8 { R },

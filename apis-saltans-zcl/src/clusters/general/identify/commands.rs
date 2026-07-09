@@ -1,4 +1,4 @@
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::identify::Identify;
 pub use self::identify_query::IdentifyQuery;
@@ -13,7 +13,7 @@ mod trigger_effect;
 
 // Available Identify cluster commands.
 zcl_command_enum! {
-    { ClusterId::Identify } => Identify;
+    { Cluster::Identify } => Identify;
     Identify(Identify),
     IdentifyQuery(IdentifyQuery),
     TriggerEffect(TriggerEffect),

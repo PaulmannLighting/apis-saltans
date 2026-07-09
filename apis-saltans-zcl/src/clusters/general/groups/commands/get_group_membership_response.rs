@@ -1,5 +1,5 @@
 use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::clusters::general::groups::types::GroupList;
 use crate::macros::zcl_command;
@@ -7,7 +7,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Represents a response to an `GetGroupMembership` command.
     GetGroupMembershipResponse {
-        { ClusterId::Groups } => Groups;
+        { Cluster::Groups } => Groups;
         command_id: 0x02;
         direction: Direction::ServerToClient;
         disable_default_response: true;

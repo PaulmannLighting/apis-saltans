@@ -1,4 +1,4 @@
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;
@@ -10,7 +10,7 @@ mod effect_variant;
 zcl_command! {
     /// Trigger an effect on a device.
     TriggerEffect {
-        { ClusterId::Identify } => Identify;
+        { Cluster::Identify } => Identify;
         command_id: 0x40;
         direction: Direction::ClientToServer;
         derive(Copy);

@@ -1,6 +1,6 @@
 //! Attributes of the Time cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 
 pub use self::types::{
     DstEnd, DstShift, DstStart, LastSetTime, LocalTime, StandardTime, Time, TimeStatus, TimeZone,
@@ -11,7 +11,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::Time;
+    cluster: Cluster::Time;
 
     /// Current time.
     Time = 0x0000: Time { R, W },

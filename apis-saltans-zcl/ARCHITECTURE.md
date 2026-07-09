@@ -132,8 +132,9 @@ Generated items:
 - A default `new(...) -> Self` constructor unless a `constructor` block is supplied.
 - Inherent getter methods from an optional `getters` block.
 - `apis_saltans_core::Cluster<ClusterId>` for cluster-specific commands.
-  The generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
-  `profile: ProfileVariant;` after the cluster declaration to override it.
+- `apis_saltans_core::Profiled` for cluster-specific commands. The generated
+  `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add `profile:
+  ProfileVariant;` after the cluster declaration to override it.
 - `Scoped<Scope::Global>` for global commands.
 - `Command` for static command metadata.
 - `CommandDispatch`.
@@ -179,7 +180,8 @@ Generated items:
 - `From<Payload> for Command` for each payload.
 - `From<Command> for crate::Cluster`.
 - `apis_saltans_core::Cluster<ClusterId>` for cluster-specific command enums.
-  The generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
+- `apis_saltans_core::Profiled` for cluster-specific command enums. The
+  generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
   `profile: ProfileVariant;` after the cluster declaration to override it.
 - `CommandDispatch`, by delegating to the boxed payload.
 - `ToLeStream`, by generating a private iterator enum that dispatches to the payload iterator.
@@ -243,11 +245,12 @@ Generated items:
 - `Writable`, containing all writable attribute values.
 - `Reportable`, containing all reportable attribute values.
 - `Scene`, containing all scene-storable attribute values.
-- `Cluster<ClusterId>` impls for all generated enums.
+- `Cluster<ClusterId>` and `Profiled` impls for all generated enums.
   The generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
   `profile: ProfileVariant;` after the cluster declaration to override it.
   The optional `manufacturer_code:` parameter is emitted as
-  `Cluster::MANUFACTURER_CODE` on these impls.
+  `Readable::MANUFACTURER_CODE` and `Writable::MANUFACTURER_CODE` where
+  applicable.
 - `From<Id> for u16` and `TryFrom<u16> for Id`.
 - `Display for Id`.
 - `Readable for Id`.

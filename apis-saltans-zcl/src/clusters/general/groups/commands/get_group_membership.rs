@@ -1,5 +1,5 @@
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::general::groups::types::GroupList;
 use crate::macros::zcl_command;
@@ -7,7 +7,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Command to request the membership of a device in multiple groups.
     GetGroupMembership {
-        { ClusterId::Groups } => Groups;
+        { Cluster::Groups } => Groups;
         command_id: 0x02;
         direction: Direction::ClientToServer;
         fields {

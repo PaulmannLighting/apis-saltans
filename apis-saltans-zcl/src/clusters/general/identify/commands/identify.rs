@@ -1,14 +1,14 @@
 use core::time::Duration;
 
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::macros::zcl_command;
 
 zcl_command! {
     /// Toggle the identify state of a device.
     Identify {
-        { ClusterId::Identify } => Identify;
+        { Cluster::Identify } => Identify;
         command_id: 0x00;
         direction: Direction::ClientToServer;
         derive(Copy);

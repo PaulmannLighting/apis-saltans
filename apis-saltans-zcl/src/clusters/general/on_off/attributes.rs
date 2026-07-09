@@ -1,6 +1,6 @@
 //! Attributes of the On/Off cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{Bool, Uint16};
 
 pub use self::types::StartUpOnOff;
@@ -9,7 +9,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::OnOff;
+    cluster: Cluster::OnOff;
 
     /// On/Off state of the device.
     OnOff = 0x0000: Bool { R, P, S },

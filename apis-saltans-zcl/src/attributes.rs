@@ -1,5 +1,5 @@
-use apis_saltans_core::Cluster;
 use apis_saltans_core::types::Type;
+use apis_saltans_core::{ClusterSpecific, Profiled};
 
 pub use self::errors::{InvalidType, ParseAttributeError};
 use crate::clusters::general::alarms::attributes::Reportable as AlarmsAttributes;
@@ -23,13 +23,19 @@ use crate::global::write_attributes::Record;
 mod errors;
 
 /// A trait to allow the reading of attributes by their respective IDs in a type-safe manner.
-pub trait Readable: Cluster + TryFrom<u16, Error = u16> + Into<u16> {
+pub trait Readable: ClusterSpecific + Profiled + TryFrom<u16, Error = u16> + Into<u16> {
+    /// The manufacturer code, if any.
+    const MANUFACTURER_CODE: Option<u16> = None;
+
     /// The type of attribute, usually an enum, which is returned from the readable.
     type Attribute: TryFrom<(Self, Type), Error = InvalidType<Self>>;
 }
 
 /// A trait to allow the writing of attribute values in a type-safe manner.
-pub trait Writable: Cluster + Into<Record> {
+pub trait Writable: ClusterSpecific + Profiled + Into<Record> {
+    /// The manufacturer code, if any.
+    const MANUFACTURER_CODE: Option<u16> = None;
+
     /// The ID of the attribute.
     fn id(&self) -> u16;
 }
@@ -90,37 +96,41 @@ impl Reportable {
         }
 
         match cluster_id {
-            <BasicAttributes as Cluster>::ID => parse_cluster!(BasicAttributes, Basic),
-            <PowerConfigurationAttributes as Cluster>::ID => {
+            <BasicAttributes as ClusterSpecific>::ID => parse_cluster!(BasicAttributes, Basic),
+            <PowerConfigurationAttributes as ClusterSpecific>::ID => {
                 parse_cluster!(PowerConfigurationAttributes, PowerConfiguration)
             }
-            <DeviceTemperatureConfigurationAttributes as Cluster>::ID => parse_cluster!(
+            <DeviceTemperatureConfigurationAttributes as ClusterSpecific>::ID => parse_cluster!(
                 DeviceTemperatureConfigurationAttributes,
                 DeviceTemperatureConfiguration
             ),
-            <IdentifyAttributes as Cluster>::ID => parse_cluster!(IdentifyAttributes, Identify),
-            <GroupsAttributes as Cluster>::ID => parse_cluster!(GroupsAttributes, Groups),
-            <ScenesAttributes as Cluster>::ID => parse_cluster!(ScenesAttributes, Scenes),
-            <OnOffAttributes as Cluster>::ID => parse_cluster!(OnOffAttributes, OnOff),
-            <LevelAttributes as Cluster>::ID => parse_cluster!(LevelAttributes, Level),
-            <AlarmsAttributes as Cluster>::ID => parse_cluster!(AlarmsAttributes, Alarms),
-            <TimeAttributes as Cluster>::ID => parse_cluster!(TimeAttributes, Time),
-            <IlluminanceMeasurementAttributes as Cluster>::ID => {
+            <IdentifyAttributes as ClusterSpecific>::ID => {
+                parse_cluster!(IdentifyAttributes, Identify)
+            }
+            <GroupsAttributes as ClusterSpecific>::ID => parse_cluster!(GroupsAttributes, Groups),
+            <ScenesAttributes as ClusterSpecific>::ID => parse_cluster!(ScenesAttributes, Scenes),
+            <OnOffAttributes as ClusterSpecific>::ID => parse_cluster!(OnOffAttributes, OnOff),
+            <LevelAttributes as ClusterSpecific>::ID => parse_cluster!(LevelAttributes, Level),
+            <AlarmsAttributes as ClusterSpecific>::ID => parse_cluster!(AlarmsAttributes, Alarms),
+            <TimeAttributes as ClusterSpecific>::ID => parse_cluster!(TimeAttributes, Time),
+            <IlluminanceMeasurementAttributes as ClusterSpecific>::ID => {
                 parse_cluster!(IlluminanceMeasurementAttributes, IlluminanceMeasurement)
             }
-            <IlluminanceLevelSensingAttributes as Cluster>::ID => {
+            <IlluminanceLevelSensingAttributes as ClusterSpecific>::ID => {
                 parse_cluster!(IlluminanceLevelSensingAttributes, IlluminanceLevelSensing)
             }
-            <OccupancySensingAttributes as Cluster>::ID => {
+            <OccupancySensingAttributes as ClusterSpecific>::ID => {
                 parse_cluster!(OccupancySensingAttributes, OccupancySensing)
             }
-            <BallastConfigurationAttributes as Cluster>::ID => {
+            <BallastConfigurationAttributes as ClusterSpecific>::ID => {
                 parse_cluster!(BallastConfigurationAttributes, BallastConfiguration)
             }
-            <ColorControlAttributes as Cluster>::ID => {
+            <ColorControlAttributes as ClusterSpecific>::ID => {
                 parse_cluster!(ColorControlAttributes, ColorControl)
             }
-            <IasZoneAttributes as Cluster>::ID => parse_cluster!(IasZoneAttributes, IasZone),
+            <IasZoneAttributes as ClusterSpecific>::ID => {
+                parse_cluster!(IasZoneAttributes, IasZone)
+            }
             _ => Err(ParseAttributeError::InvalidId(attribute_id)),
         }
     }
@@ -140,7 +150,7 @@ impl Reportable {
 
 #[cfg(test)]
 mod tests {
-    use apis_saltans_core::ClusterId;
+    use apis_saltans_core::Cluster;
     use apis_saltans_core::types::{Bool, Type, Uint8};
 
     use super::{ParseAttributeError, Reportable};
@@ -148,12 +158,9 @@ mod tests {
 
     #[test]
     fn parses_reportable_attribute() {
-        let attribute = Reportable::parse(
-            ClusterId::Level.as_u16(),
-            0x0000,
-            Type::Uint8(Uint8::new(42)),
-        )
-        .expect("reportable attribute should parse");
+        let attribute =
+            Reportable::parse(Cluster::Level.as_u16(), 0x0000, Type::Uint8(Uint8::new(42)))
+                .expect("reportable attribute should parse");
 
         assert_eq!(
             attribute,
@@ -165,19 +172,15 @@ mod tests {
 
     #[test]
     fn rejects_non_reportable_attribute_id() {
-        let error = Reportable::parse(
-            ClusterId::Level.as_u16(),
-            0x0001,
-            Type::Uint8(Uint8::new(42)),
-        )
-        .expect_err("non-reportable attribute should fail");
+        let error = Reportable::parse(Cluster::Level.as_u16(), 0x0001, Type::Uint8(Uint8::new(42)))
+            .expect_err("non-reportable attribute should fail");
 
         assert_eq!(error, ParseAttributeError::InvalidId(0x0001));
     }
 
     #[test]
     fn rejects_invalid_reportable_attribute_type() {
-        let error = Reportable::parse(ClusterId::Level.as_u16(), 0x0000, Type::Boolean(Bool::TRUE))
+        let error = Reportable::parse(Cluster::Level.as_u16(), 0x0000, Type::Boolean(Bool::TRUE))
             .expect_err("wrong attribute type should fail");
 
         assert!(matches!(error, ParseAttributeError::InvalidType(_)));

@@ -1,5 +1,5 @@
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::ias::zone::Status;
 use crate::macros::zcl_command;
@@ -7,7 +7,7 @@ use crate::macros::zcl_command;
 zcl_command! {
     /// Zone status change attributes.
     StatusChange {
-        { ClusterId::IasZone } => IasZone;
+        { Cluster::IasZone } => IasZone;
         command_id: 0x00;
         direction: Direction::ServerToClient;
         fields {

@@ -1,5 +1,5 @@
 use apis_saltans_core::types::Uint16;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::macros::zcl_command;
 
@@ -7,7 +7,7 @@ zcl_command! {
     /// Command to remove a group from the device's group table.
     #[repr(transparent)]
     RemoveGroup {
-        { ClusterId::Groups } => Groups;
+        { Cluster::Groups } => Groups;
         command_id: 0x03;
         direction: Direction::ClientToServer;
         derive(Copy);

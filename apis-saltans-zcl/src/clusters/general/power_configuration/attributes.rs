@@ -1,6 +1,6 @@
 //! Attributes of the Power Configuration cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{String as ZclString, Uint8, Uint16};
 
 pub use self::types::{BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask};
@@ -9,7 +9,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::PowerConfiguration;
+    cluster: Cluster::PowerConfiguration;
 
     /// The actual RMS or DC voltage currently applied to the device, in units of 100 mV.
     MainsVoltage = 0x0000: Uint16 { R },

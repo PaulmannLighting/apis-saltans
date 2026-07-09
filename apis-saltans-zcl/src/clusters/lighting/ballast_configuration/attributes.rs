@@ -1,6 +1,6 @@
 //! Attributes of the Ballast Configuration cluster.
 
-use apis_saltans_core::ClusterId;
+use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{String as ZclString, Uint8, Uint16, Uint24};
 
 pub use self::types::LampAlarmMode;
@@ -11,7 +11,7 @@ use crate::macros::zcl_attributes;
 mod types;
 
 zcl_attributes! {
-    cluster: ClusterId::BallastConfiguration;
+    cluster: Cluster::BallastConfiguration;
 
     /// Physical minimum level of the ballast.
     PhysicalMinLevel = 0x0000: Level { R },

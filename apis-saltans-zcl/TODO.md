@@ -12,4 +12,4 @@
 - [x] Define a strategy for handling reporting of attributes from different clusters.
 - [ ] <s>Implement serialization of `read_attributes::Response`.</s>
 - [x] <s>Revisit Power Configuration attributes.</s>
-- [x] Remove `MANUFACTURER_CODE` from `Command` trait and make it runtime-changeable.
+- [x] Move `MANUFACTURER_CODE` from the core `Cluster` trait into ZCL command and attribute traits.

@@ -1,4 +1,4 @@
-use apis_saltans_core::Cluster;
+use apis_saltans_core::ClusterSpecific;
 
 use crate::Scope;
 
@@ -10,7 +10,7 @@ pub trait Scoped {
 
 impl<T> Scoped for T
 where
-    T: Cluster,
+    T: ClusterSpecific,
 {
     const SCOPE: Scope = Scope::ClusterSpecific;
 }

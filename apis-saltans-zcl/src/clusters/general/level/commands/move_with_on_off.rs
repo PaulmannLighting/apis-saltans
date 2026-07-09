@@ -1,6 +1,6 @@
 use apis_saltans_core::types::Uint8;
 use apis_saltans_core::units::UnitsPerSecond;
-use apis_saltans_core::{ClusterId, Direction};
+use apis_saltans_core::{Cluster, Direction};
 
 use crate::general::level::Mode;
 use crate::macros::zcl_command;
@@ -9,7 +9,7 @@ use crate::options::Options;
 zcl_command! {
     /// Move with on/off command.
     MoveWithOnOff {
-        { ClusterId::Level } => Level;
+        { Cluster::Level } => Level;
         command_id: 0x05;
         direction: Direction::ClientToServer;
         derive(Copy);
