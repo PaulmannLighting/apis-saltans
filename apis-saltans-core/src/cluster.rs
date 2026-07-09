@@ -1,16 +1,111 @@
-pub use self::cluster_id::ClusterId;
+use core::fmt::{self, Display, LowerHex, UpperHex};
 
-mod cluster_id;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 
 /// Trait to identify a Zigbee cluster.
-pub trait Cluster<T = u16> {
+pub trait ClusterSpecific<T = u16> {
     /// The cluster identifier.
     const ID: T;
 }
 
-impl<T> Cluster<u16> for T
+impl<T> ClusterSpecific<u16> for T
 where
-    T: Cluster<ClusterId>,
+    T: ClusterSpecific<Cluster>,
 {
     const ID: u16 = T::ID.as_u16();
+}
+
+/// Known ZCL cluster identifiers defined in this crate's `clusters` module.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[repr(u16)]
+pub enum Cluster {
+    /// Basic cluster.
+    Basic = 0x0000,
+
+    /// Power configuration cluster.
+    PowerConfiguration = 0x0001,
+
+    /// Device temperature configuration cluster.
+    DeviceTemperatureConfiguration = 0x0002,
+
+    /// Identify cluster.
+    Identify = 0x0003,
+
+    /// Groups cluster.
+    Groups = 0x0004,
+
+    /// Scenes cluster.
+    Scenes = 0x0005,
+
+    /// On/Off cluster.
+    OnOff = 0x0006,
+
+    /// Level control cluster.
+    Level = 0x0008,
+
+    /// Alarms cluster.
+    Alarms = 0x0009,
+
+    /// Time cluster.
+    Time = 0x000A,
+
+    /// Color control cluster.
+    ColorControl = 0x0300,
+
+    /// Ballast configuration cluster.
+    BallastConfiguration = 0x0301,
+
+    /// Illuminance measurement cluster.
+    IlluminanceMeasurement = 0x0400,
+
+    /// Illuminance level sensing cluster.
+    IlluminanceLevelSensing = 0x0401,
+
+    /// Occupancy sensing cluster.
+    OccupancySensing = 0x0406,
+
+    /// IAS Zone cluster.
+    IasZone = 0x0500,
+}
+
+impl Cluster {
+    /// Returns the cluster ID as a `u16`.
+    #[must_use]
+    pub const fn as_u16(self) -> u16 {
+        self as u16
+    }
+}
+
+impl Display for Cluster {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?} ({:#06X})", self, self.as_u16())
+    }
+}
+
+impl LowerHex for Cluster {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        LowerHex::fmt(&self.as_u16(), f)
+    }
+}
+
+impl UpperHex for Cluster {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        UpperHex::fmt(&self.as_u16(), f)
+    }
+}
+
+impl From<Cluster> for u16 {
+    fn from(cluster_id: Cluster) -> Self {
+        cluster_id.as_u16()
+    }
+}
+
+impl TryFrom<u16> for Cluster {
+    type Error = u16;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Self::from_u16(value).ok_or(value)
+    }
 }
