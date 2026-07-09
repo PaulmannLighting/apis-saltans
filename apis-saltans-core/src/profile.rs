@@ -3,6 +3,12 @@ use num_traits::FromPrimitive;
 
 use crate::Endpoint;
 
+/// Trait for types that belong to a Zigbee profile.
+pub trait Profiled {
+    /// The Zigbee profile.
+    const PROFILE: Profile;
+}
+
 /// Defines the Zigbee Profile Identifiers as per the Zigbee specification.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromPrimitive)]

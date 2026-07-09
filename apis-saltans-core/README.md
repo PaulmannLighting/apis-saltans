@@ -41,7 +41,7 @@ apis_saltans_core = { path = "../apis-saltans-core", features = ["serde"] }
 
 Top-level re-exports from `apis-saltans-core`:
 - `Address`
-- `Cluster`, `ClusterId`, `ClusterSpecific`
+- `Cluster`, `ClusterId`, `Profiled`
 - `Direction`
 - `Endpoint`, `Application`, `BroadcastEndpoint`, `Reserved`
 - `Profile`
