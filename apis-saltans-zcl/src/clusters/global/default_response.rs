@@ -2,6 +2,7 @@
 
 use apis_saltans_core::Direction;
 
+use crate::ParseDirection;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -10,7 +11,7 @@ zcl_command! {
         Global;
         command_id: 0x0b;
         direction: Direction::ClientToServer;
-        parse_direction: crate::ParseDirection::Both;
+        parse_direction: ParseDirection::Both;
         disable_default_response: true;
         fields {
             command_id: u8,
@@ -38,6 +39,26 @@ mod tests {
     use super::DefaultResponse;
     use crate::clusters::global;
     use crate::{Cluster, Command, Direction, Frame};
+
+    fn assert_client_to_server<T>()
+    where
+        T: crate::ClientToServer,
+    {
+    }
+
+    fn assert_server_to_client<T>()
+    where
+        T: crate::ServerToClient,
+    {
+    }
+
+    #[test]
+    fn generated_marker_traits_follow_parse_direction() {
+        assert_client_to_server::<global::read_attributes::Command>();
+        assert_server_to_client::<global::read_attributes::Response>();
+        assert_client_to_server::<DefaultResponse>();
+        assert_server_to_client::<DefaultResponse>();
+    }
 
     #[test]
     fn uses_client_to_server_as_outgoing_direction() {

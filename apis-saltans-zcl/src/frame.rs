@@ -21,6 +21,11 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
+    /// Create a cluster-specific ZCL frame for an outgoing command payload.
+    ///
+    /// The frame header is derived from the payload type's scope, direction,
+    /// default-response behavior, manufacturer code, and command ID.
+    #[must_use]
     pub fn cluster_specific(seq: u8, payload: T) -> Self
     where
         T: Cluster + Command + Scoped,
@@ -36,7 +41,14 @@ impl<T> Frame<T> {
         Self { header, payload }
     }
 
-    pub fn gobal(seq: u8, payload: T, manufacturer_code: Option<u16>) -> Self
+    /// Create a global ZCL frame for an outgoing command payload.
+    ///
+    /// The frame header is derived from the payload type's scope, direction,
+    /// default-response behavior, and command ID. The supplied manufacturer
+    /// code is written into the header when the global command is
+    /// manufacturer-specific.
+    #[must_use]
+    pub fn global(seq: u8, payload: T, manufacturer_code: Option<u16>) -> Self
     where
         T: Command + Scoped,
     {
@@ -104,13 +116,6 @@ where
     const DIRECTION: Direction = T::DIRECTION;
     const PARSE_DIRECTION: ParseDirection = T::PARSE_DIRECTION;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
-}
-
-impl<T> Scoped for Frame<T>
-where
-    T: Scoped,
-{
-    const SCOPE: Scope = T::SCOPE;
 }
 
 /// A parsed ZCL frame.

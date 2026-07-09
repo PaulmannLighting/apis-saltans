@@ -75,8 +75,8 @@ macro_rules! zcl_command {
             { $cluster_id:expr } => $cluster_variant:ident;
             $(profile: $profile:expr;)?
             command_id: $command_id:expr;
-            direction: $direction:expr;
-            $(parse_direction: $parse_direction:expr;)?
+            direction: $direction_type:ident::$direction:ident;
+            $(parse_direction: $parse_direction_type:ident::$parse_direction:ident $(($single_direction_type:ident::$single_direction:ident))?;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
             $(derive($($extra_derive:path),* $(,)?);)?
@@ -93,13 +93,20 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [super::$command]
             [$command_id]
-            [$direction]
-            [$($parse_direction)?]
+            [$direction_type::$direction]
+            [$($parse_direction_type::$parse_direction $(($single_direction_type::$single_direction))?)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
             [$($($extra_derive),*)?]
             []
             $($rest)*
+        }
+
+        $crate::macros::zcl_command! {
+            @marker_impls
+            $command
+            [$direction]
+            [$($parse_direction $(($($single_direction)?))?)?]
         }
     };
     (
@@ -108,8 +115,8 @@ macro_rules! zcl_command {
             { $cluster_id:expr } => $cluster_variant:ident;
             $(profile: $profile:expr;)?
             command_id: $command_id:expr;
-            direction: $direction:expr;
-            $(parse_direction: $parse_direction:expr;)?
+            direction: $direction_type:ident::$direction:ident;
+            $(parse_direction: $parse_direction_type:ident::$parse_direction:ident $(($single_direction_type:ident::$single_direction:ident))?;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
             $(derive($($extra_derive:path),* $(,)?);)?
@@ -131,13 +138,20 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [super::$command]
             [$command_id]
-            [$direction]
-            [$($parse_direction)?]
+            [$direction_type::$direction]
+            [$($parse_direction_type::$parse_direction $(($single_direction_type::$single_direction))?)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
             [$($($extra_derive),*)?]
             [$($(#[$field_attr])* $field: $field_ty,)*]
             $($rest)*
+        }
+
+        $crate::macros::zcl_command! {
+            @marker_impls
+            $command
+            [$direction]
+            [$($parse_direction $(($($single_direction)?))?)?]
         }
     };
     (
@@ -145,8 +159,8 @@ macro_rules! zcl_command {
         $command:ident {
             $cluster_variant:ident;
             command_id: $command_id:expr;
-            direction: $direction:expr;
-            $(parse_direction: $parse_direction:expr;)?
+            direction: $direction_type:ident::$direction:ident;
+            $(parse_direction: $parse_direction_type:ident::$parse_direction:ident $(($single_direction_type:ident::$single_direction:ident))?;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
             => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
@@ -164,13 +178,20 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [$try_module::$try_variant_or_module $(::$try_variant)?]
             [$command_id]
-            [$direction]
-            [$($parse_direction)?]
+            [$direction_type::$direction]
+            [$($parse_direction_type::$parse_direction $(($single_direction_type::$single_direction))?)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
             [$($($extra_derive),*)?]
             []
             $($rest)*
+        }
+
+        $crate::macros::zcl_command! {
+            @marker_impls
+            $command
+            [$direction]
+            [$($parse_direction $(($($single_direction)?))?)?]
         }
     };
     (
@@ -178,8 +199,8 @@ macro_rules! zcl_command {
         $command:ident {
             $cluster_variant:ident;
             command_id: $command_id:expr;
-            direction: $direction:expr;
-            $(parse_direction: $parse_direction:expr;)?
+            direction: $direction_type:ident::$direction:ident;
+            $(parse_direction: $parse_direction_type:ident::$parse_direction:ident $(($single_direction_type:ident::$single_direction:ident))?;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
             => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
@@ -202,13 +223,20 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [$try_module::$try_variant_or_module $(::$try_variant)?]
             [$command_id]
-            [$direction]
-            [$($parse_direction)?]
+            [$direction_type::$direction]
+            [$($parse_direction_type::$parse_direction $(($single_direction_type::$single_direction))?)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
             [$($($extra_derive),*)?]
             [$($(#[$field_attr])* $field: $field_ty,)*]
             $($rest)*
+        }
+
+        $crate::macros::zcl_command! {
+            @marker_impls
+            $command
+            [$direction]
+            [$($parse_direction $(($($single_direction)?))?)?]
         }
     };
     (
@@ -216,8 +244,8 @@ macro_rules! zcl_command {
         $command:ident {
             $cluster_variant:ident;
             command_id: $command_id:expr;
-            direction: $direction:expr;
-            $(parse_direction: $parse_direction:expr;)?
+            direction: $direction_type:ident::$direction:ident;
+            $(parse_direction: $parse_direction_type:ident::$parse_direction:ident $(($single_direction_type:ident::$single_direction:ident))?;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
             $(derive($($extra_derive:path),* $(,)?);)?
@@ -234,13 +262,20 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [crate::global::$command]
             [$command_id]
-            [$direction]
-            [$($parse_direction)?]
+            [$direction_type::$direction]
+            [$($parse_direction_type::$parse_direction $(($single_direction_type::$single_direction))?)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
             [$($($extra_derive),*)?]
             []
             $($rest)*
+        }
+
+        $crate::macros::zcl_command! {
+            @marker_impls
+            $command
+            [$direction]
+            [$($parse_direction $(($($single_direction)?))?)?]
         }
     };
     (
@@ -248,8 +283,8 @@ macro_rules! zcl_command {
         $command:ident {
             $cluster_variant:ident;
             command_id: $command_id:expr;
-            direction: $direction:expr;
-            $(parse_direction: $parse_direction:expr;)?
+            direction: $direction_type:ident::$direction:ident;
+            $(parse_direction: $parse_direction_type:ident::$parse_direction:ident $(($single_direction_type:ident::$single_direction:ident))?;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
             $(derive($($extra_derive:path),* $(,)?);)?
@@ -271,13 +306,20 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [crate::global::$command]
             [$command_id]
-            [$direction]
-            [$($parse_direction)?]
+            [$direction_type::$direction]
+            [$($parse_direction_type::$parse_direction $(($single_direction_type::$single_direction))?)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
             [$($($extra_derive),*)?]
             [$($(#[$field_attr])* $field: $field_ty,)*]
             $($rest)*
+        }
+
+        $crate::macros::zcl_command! {
+            @marker_impls
+            $command
+            [$direction]
+            [$($parse_direction $(($($single_direction)?))?)?]
         }
     };
     (
@@ -918,8 +960,49 @@ macro_rules! zcl_command {
         $($custom)*
     };
     (@parse_direction_const []) => {};
-    (@parse_direction_const [$parse_direction:expr]) => {
-        const PARSE_DIRECTION: $crate::ParseDirection = $parse_direction;
+    (@parse_direction_const [$($parse_direction:tt)+]) => {
+        const PARSE_DIRECTION: $crate::ParseDirection = $($parse_direction)+;
+    };
+    (
+        @marker_impls
+        $command:ident
+        [$direction:ident]
+        [Both]
+    ) => {
+        impl $crate::ClientToServer for $command {}
+        impl $crate::ServerToClient for $command {}
+    };
+    (
+        @marker_impls
+        $command:ident
+        [$direction:ident]
+        [Single(ClientToServer)]
+    ) => {
+        impl $crate::ClientToServer for $command {}
+    };
+    (
+        @marker_impls
+        $command:ident
+        [$direction:ident]
+        [Single(ServerToClient)]
+    ) => {
+        impl $crate::ServerToClient for $command {}
+    };
+    (
+        @marker_impls
+        $command:ident
+        [ClientToServer]
+        []
+    ) => {
+        impl $crate::ClientToServer for $command {}
+    };
+    (
+        @marker_impls
+        $command:ident
+        [ServerToClient]
+        []
+    ) => {
+        impl $crate::ServerToClient for $command {}
     };
     (@response_impl $command:ident []) => {};
     (@response_impl $command:ident [$response:ty]) => {
