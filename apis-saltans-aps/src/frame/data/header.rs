@@ -137,6 +137,35 @@ impl<T> Header<T> {
             }
         }
     }
+
+    /// Convert the header to use the default APS destination representation.
+    ///
+    /// All header fields are preserved, while the destination value is converted
+    /// into [`Destination`].
+    #[must_use]
+    pub fn into_default_dst(self) -> Header<Destination>
+    where
+        T: Into<Destination>,
+    {
+        let Self {
+            control,
+            destination,
+            cluster_id,
+            profile_id,
+            source_endpoint,
+            counter,
+            extended,
+        } = self;
+        Header::<Destination> {
+            control,
+            destination: destination.into(),
+            cluster_id,
+            profile_id,
+            source_endpoint,
+            counter,
+            extended,
+        }
+    }
 }
 
 impl From<unicast::Header> for Header {

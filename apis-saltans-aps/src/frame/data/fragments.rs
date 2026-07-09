@@ -2,8 +2,8 @@ use std::num::{NonZero, TryFromIntError};
 
 use bytes::Bytes;
 
-use crate::Fragmentation;
 use crate::data::{Frame, Header};
+use crate::Fragmentation;
 
 const EMPTY_PAYLOAD_BLOCKS: u8 = 0;
 const FIRST_FRAGMENT_INDEX: u8 = 0;

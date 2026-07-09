@@ -57,14 +57,19 @@ impl<T, D> Frame<T, D> {
     pub fn into_parts(self) -> (Header<D>, T) {
         (self.header, self.payload)
     }
-}
 
-impl<T> From<Unicast<T>> for Frame<T> {
-    fn from(unicast: Unicast<T>) -> Self {
-        let (header, payload) = unicast.into_parts();
-
-        Self {
-            header: header.into(),
+    /// Convert the frame to use the default APS destination representation.
+    ///
+    /// This keeps the payload and all header fields unchanged except for the
+    /// destination, which is converted into [`Destination`].
+    #[must_use]
+    pub fn into_default_dst(self) -> Frame<T, Destination>
+    where
+        D: Into<Destination>,
+    {
+        let (header, payload) = self.into_parts();
+        Frame::<T, Destination> {
+            header: header.into_default_dst(),
             payload,
         }
     }
@@ -107,6 +112,17 @@ impl Frame<Bytes> {
     {
         let header = self.header;
         T::try_from(self).map(|payload| Frame { header, payload })
+    }
+}
+
+impl<T> From<Unicast<T>> for Frame<T> {
+    fn from(unicast: Unicast<T>) -> Self {
+        let (header, payload) = unicast.into_parts();
+
+        Self {
+            header: header.into(),
+            payload,
+        }
     }
 }
 
