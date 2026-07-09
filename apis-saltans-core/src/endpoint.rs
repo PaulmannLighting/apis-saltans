@@ -4,9 +4,11 @@ use core::str::FromStr;
 use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::application::Application;
+pub use self::broadcast::Broadcast;
 pub use self::reserved::Reserved;
 
 mod application;
+mod broadcast;
 mod reserved;
 
 /// A Zigbee endpoint ID.
