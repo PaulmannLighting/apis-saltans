@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-use apis_saltans_core::Endpoint;
+use apis_saltans_core::{BroadcastEndpoint, Endpoint};
 use le_stream::ToLeStream;
 
 use self::iterator::DestinationIterator;
@@ -12,7 +12,7 @@ pub enum Destination {
     Unicast(Endpoint),
 
     /// A broadcast endpoint ID.
-    Broadcast(Endpoint),
+    Broadcast(BroadcastEndpoint),
 
     /// A group address.
     Group(u16),
@@ -32,7 +32,7 @@ impl From<apis_saltans_nwk::Destination> for Destination {
     fn from(destination: apis_saltans_nwk::Destination) -> Self {
         match destination {
             apis_saltans_nwk::Destination::Device { endpoint, .. } => Self::Unicast(endpoint),
-            apis_saltans_nwk::Destination::Group { group, .. } => Self::Group(group.as_u16()),
+            apis_saltans_nwk::Destination::Group(group) => Self::Group(group.as_u16()),
             apis_saltans_nwk::Destination::Broadcast { endpoint, .. } => Self::Broadcast(endpoint),
         }
     }
@@ -43,7 +43,8 @@ impl ToLeStream for Destination {
 
     fn to_le_stream(self) -> Self::Iter {
         match self {
-            Self::Unicast(value) | Self::Broadcast(value) => value.into(),
+            Self::Unicast(value) => value.into(),
+            Self::Broadcast(value) => value.into(),
             Self::Group(value) => value.into(),
         }
     }
@@ -52,6 +53,8 @@ impl ToLeStream for Destination {
 mod iterator {
     use apis_saltans_core::Endpoint;
     use le_stream::ToLeStream;
+
+    use crate::frame::destination::BroadcastEndpoint;
 
     /// Le-stream iterator
     pub enum DestinationIterator {
@@ -62,6 +65,12 @@ mod iterator {
     impl From<Endpoint> for DestinationIterator {
         fn from(value: Endpoint) -> Self {
             Self::Endpoint(value.to_le_stream())
+        }
+    }
+
+    impl From<BroadcastEndpoint> for DestinationIterator {
+        fn from(value: BroadcastEndpoint) -> Self {
+            Self::Endpoint(Endpoint::from(value).to_le_stream())
         }
     }
 
