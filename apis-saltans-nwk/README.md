@@ -1,45 +1,27 @@
 # apis-saltans-nwk
 
-Transport-neutral Zigbee NWK context types for APIS Saltans.
+Transport-neutral Zigbee NWK receive context types for APIS Saltans.
 
-This crate defines small `no_std` value types that carry network-layer context
-between the hardware, APS, ZDP, ZCL, and coordinator crates. It does not parse
-or serialize NWK frames. Instead, it provides the shared source, destination,
-metadata, and envelope types used by layers that already have a decoded payload.
+This crate defines small value types that carry network-layer context between
+the hardware, APS, ZDP, ZCL, and coordinator crates. It does not parse or
+serialize NWK frames. Instead, it provides the shared source, metadata, and
+envelope types used by layers that already have a decoded payload.
 
 ## Crate Characteristics
 
-- `#![no_std]`
 - no allocation requirement in the library
 - optional `serde` derives through the `serde` feature
-- optional little-endian stream derives through the `le-stream` feature
-- depends on `apis-saltans-core` for Zigbee address and endpoint domain types
+- depends on `apis-saltans-core` for the Zigbee IEEE address domain type
 
 ## Public API Overview
 
-Top-level re-exports from `apis-saltans-nwk`:
+Top-level public types from `apis-saltans-nwk`:
 
-- `Destination`
 - `Envelope<T>`
 - `Metadata`
 - `Source`
 
 ## Types
-
-### `Destination`
-
-`Destination` describes an outgoing NWK transmission target:
-
-- `Device { device, endpoint }`: one allocated device short address and one APS
-  endpoint.
-- `Broadcast { address, endpoint }`: one Zigbee broadcast receiver set and one
-  APS endpoint selector.
-- `Group { group, endpoint }`: one APS group identifier with the endpoint used
-  by the sender when constructing the APS payload.
-
-The enum stores core address wrappers (`Device`, `Broadcast`, `GroupId`, and
-`Endpoint`) rather than raw integers, so callers validate address classes before
-building outbound frames.
 
 ### `Source`
 
@@ -49,6 +31,12 @@ not always carry enough information to resolve it.
 
 `Source` implements `Display`, `LowerHex`, and `UpperHex` by formatting the
 short address followed by the IEEE address or `N/A`.
+
+Useful methods:
+- `new(node_id, ieee_address)`: constructs source context from raw backend data.
+- `node_id()`: returns the 16-bit NWK short address.
+- `ieee_address()`: returns the optional IEEE address.
+- `into_parts()`: splits the source into both stored fields.
 
 ### `Metadata`
 
@@ -62,17 +50,30 @@ short address followed by the IEEE address or `N/A`.
 Every field is optional because hardware backends and frame paths expose
 different subsets of this data.
 
+Useful methods:
+- `new(...)`: constructs metadata from backend-reported optional values.
+- `last_hop_lqi()`: returns the link quality indicator, if reported.
+- `last_hop_rssi()`: returns the received signal strength, if reported.
+- `binding_index()`: returns the backend binding table index, if reported.
+- `source_route_overhead()`: returns the source-route overhead, if reported.
+
 ### `Envelope<T>`
 
 `Envelope<T>` couples an arbitrary payload with its `Source` and `Metadata`.
 Higher layers use it to retain NWK context without making this crate depend on
 APS, ZDP, ZCL, coordinator, or hardware frame types.
 
+Useful methods:
+- `new(source, metadata, payload)`: constructs an envelope.
+- `source()`: returns the receive-side source context.
+- `metadata()`: returns the receive-side frame metadata.
+- `payload()`: borrows the enclosed payload.
+- `into_parts()`: consumes the envelope and returns all stored fields.
+
 ## Features
 
-- `serde`: derives `Serialize` and `Deserialize` for the public value types.
-- `le-stream`: derives little-endian stream serialization for the public value
-  types.
+- `serde`: derives `Serialize` and `Deserialize` for the public value types and
+  enables `serde` support in `apis-saltans-core`.
 
 ## Example
 

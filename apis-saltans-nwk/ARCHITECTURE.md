@@ -1,9 +1,9 @@
 # apis-saltans-nwk Architecture
 
-`apis-saltans-nwk` contains transport-neutral Zigbee NWK context types. It is a
-boundary crate: hardware-facing code can attach network source and metadata to
-received payloads, while protocol-facing code can describe outbound network
-destinations without depending on a specific radio or NCP backend.
+`apis-saltans-nwk` contains transport-neutral Zigbee NWK receive context types.
+It is a boundary crate: hardware-facing code can attach network source and
+metadata to received payloads without making protocol-facing code depend on a
+specific radio or NCP backend.
 
 The crate intentionally does not parse NWK frames, perform routing, discover
 devices, or dispatch application payloads. Those responsibilities live in the
@@ -17,7 +17,6 @@ flowchart TD
     Payload["Decoded payload T"]
     Envelope["Envelope&lt;T&gt;"]
     HigherLayer["APS / ZDP / ZCL / coordinator"]
-    Destination["Destination<br/>outbound address + endpoint context"]
 
     Backend --> Source
     Backend --> Metadata
@@ -26,17 +25,19 @@ flowchart TD
     Metadata --> Envelope
     Payload --> Envelope
     Envelope --> HigherLayer
-    HigherLayer --> Destination
 ```
 
-## Modules
+## Layout
 
-| Module | Public type | Responsibility |
+The crate currently exposes its public types directly from `src/lib.rs`. The
+receive-side model is small enough that separate modules would add indirection
+without isolating different responsibilities.
+
+| Public type | Responsibility |
 | --- | --- | --- |
-| `destination` | `Destination` | Describes outgoing device, broadcast, and group destinations using core address wrappers. |
-| `source` | `Source` | Identifies the incoming NWK source by short address and optional IEEE address. |
-| `metadata` | `Metadata` | Stores optional backend-provided frame metadata. |
-| `envelope` | `Envelope<T>` | Couples a payload with source and metadata context. |
+| `Envelope<T>` | Couples a payload with source and metadata context. |
+| `Metadata` | Stores optional backend-provided frame metadata. |
+| `Source` | Identifies the incoming NWK source by short address and optional IEEE address. |
 
 ## Data Model
 
@@ -56,46 +57,26 @@ It is generic over `T` so the same wrapper can carry raw APS data, parsed ZDP or
 ZCL messages, coordinator events, or tests' synthetic payloads. The crate does
 not require `T` to implement any protocol trait.
 
-`Destination` is the send-side counterpart. It distinguishes normal device
-unicast, broadcast receiver sets, and APS group destinations while keeping the
-endpoint context needed by the sender.
-
-```mermaid
-flowchart LR
-    Device["Device<br/>Device + Endpoint"]
-    Broadcast["Broadcast<br/>Broadcast + Endpoint"]
-    Group["Group<br/>GroupId + Endpoint"]
-    Destination["Destination"]
-
-    Device --> Destination
-    Broadcast --> Destination
-    Group --> Destination
-```
+The crate deliberately has no send-side destination model. Outbound addressing
+belongs to the core domain types and the higher-level crates that construct
+transmissions.
 
 ## Serialization
 
-The crate is `no_std` by default. Optional features add derive-based
-serialization support:
+Optional features add derive-based serialization support:
 
 | Feature | Effect |
 | --- | --- |
 | `serde` | Derives `serde::Serialize` and `serde::Deserialize`. |
-| `le-stream` | Derives `le_stream::FromLeStream` and `le_stream::ToLeStream`. |
 
 `Source`, `Metadata`, and `Envelope<T>` derive those implementations when the
-features are enabled. `Destination` currently keeps only the standard trait
-derives because outbound destinations are converted by higher layers instead of
-being serialized directly by this crate.
+feature is enabled.
 
 ## Dependency Boundaries
 
-`apis-saltans-nwk` depends on `apis-saltans-core` for shared Zigbee domain
-types:
+`apis-saltans-nwk` depends on `apis-saltans-core` for the shared Zigbee IEEE
+address domain type:
 
-- `Broadcast`
-- `Device`
-- `Endpoint`
-- `GroupId`
 - `IeeeAddress`
 
 The dependency does not point back to APS, ZDP, ZCL, coordinator, or hardware
