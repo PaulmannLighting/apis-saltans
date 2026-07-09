@@ -23,7 +23,6 @@ pub type NcpHandle = Sender<Message>;
 /// A weak handle on the NCP.
 pub type WeakNcpHandle = WeakSender<Message>;
 
-mod aps;
 mod await_event;
 mod bridge;
 mod error;
