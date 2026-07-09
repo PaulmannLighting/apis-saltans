@@ -1,6 +1,6 @@
 //! APS Data frame definitions.
 
-use std::num::TryFromIntError;
+use std::num::{NonZero, TryFromIntError};
 
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
@@ -99,10 +99,7 @@ impl Frame<Bytes> {
     /// Returns an error if the number of fragments does not fit into the APS
     /// extended header block count field.
     ///
-    /// # Panics
-    ///
-    /// Panics if `chunk_size` is zero.
-    pub fn fragment(self, chunk_size: usize) -> Result<Fragments, TryFromIntError> {
+    pub fn fragment(self, chunk_size: NonZero<usize>) -> Result<Fragments, TryFromIntError> {
         Fragments::new(self, chunk_size)
     }
 }
