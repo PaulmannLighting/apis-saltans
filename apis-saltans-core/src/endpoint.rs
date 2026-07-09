@@ -1,11 +1,8 @@
 use core::fmt::{self, Display};
-use core::str::FromStr;
-
-use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::application::Application;
 pub use self::broadcast::Broadcast;
-pub use self::reserved::Reserved;
+use self::reserved::Reserved;
 
 mod application;
 mod broadcast;
@@ -15,7 +12,7 @@ mod reserved;
 #[cfg_attr(
     feature = "serde",
     derive(serde::Deserialize, serde::Serialize),
-    serde(from = "u8", into = "u8")
+    serde(try_from = "u8", into = "u8")
 )]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 pub enum Endpoint {
@@ -25,22 +22,26 @@ pub enum Endpoint {
     /// Application-specific endpoint.
     Application(Application),
 
-    /// Reserved endpoint.
-    Reserved(Reserved),
-
     /// Data interface broadcast endpoint.
     Broadcast,
 }
 
 impl Endpoint {
     /// Create a new `Endpoint` from a raw value.
-    #[must_use]
-    pub const fn new(value: u8) -> Self {
+    pub const fn try_new(value: u8) -> Result<Self, Reserved> {
         match value {
-            0 => Self::Data,
-            Application::MIN_ID..=Application::MAX_ID => Self::Application(Application(value)),
-            Reserved::MIN_ID..=Reserved::MAX_ID => Self::Reserved(Reserved(value)),
-            255 => Self::Broadcast,
+            0 => Ok(Self::Data),
+            Application::MIN_ID..=Application::MAX_ID => Ok(Self::Application(Application(value))),
+            Reserved::MIN_ID..=Reserved::MAX_ID => Err(Reserved(value)),
+            255 => Ok(Self::Broadcast),
+        }
+    }
+
+    pub const fn as_u8(self) -> u8 {
+        match self {
+            Self::Data => 0,
+            Self::Application(application) => application.as_u8(),
+            Self::Broadcast => 255,
         }
     }
 }
@@ -56,15 +57,8 @@ impl Display for Endpoint {
         match self {
             Self::Data => write!(f, "Data (0x00)"),
             Self::Application(app) => write!(f, "Application ({:#04X})", u8::from(*app)),
-            Self::Reserved(res) => write!(f, "Reserved ({:#04X})", u8::from(*res)),
             Self::Broadcast => write!(f, "Broadcast (0xff)"),
         }
-    }
-}
-
-impl From<u8> for Endpoint {
-    fn from(value: u8) -> Self {
-        Self::new(value)
     }
 }
 
@@ -76,36 +70,14 @@ impl From<Application> for Endpoint {
 
 impl From<Endpoint> for u8 {
     fn from(endpoint: Endpoint) -> Self {
-        match endpoint {
-            Endpoint::Data => 0,
-            Endpoint::Application(application) => application.into(),
-            Endpoint::Reserved(reserved) => reserved.into(),
-            Endpoint::Broadcast => 255,
-        }
+        endpoint.as_u8()
     }
 }
 
-impl FromStr for Endpoint {
-    type Err = <u8 as FromStr>::Err;
+impl TryFrom<u8> for Endpoint {
+    type Error = Reserved;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        u8::from_str(s).map(Into::into)
-    }
-}
-
-impl FromLeStream for Endpoint {
-    fn from_le_stream<T>(bytes: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        u8::from_le_stream(bytes).map(Into::into)
-    }
-}
-
-impl ToLeStream for Endpoint {
-    type Iter = <u8 as ToLeStream>::Iter;
-
-    fn to_le_stream(self) -> Self::Iter {
-        u8::from(self).to_le_stream()
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::try_new(value)
     }
 }

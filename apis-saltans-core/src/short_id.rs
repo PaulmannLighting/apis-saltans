@@ -1,6 +1,6 @@
 pub use self::broadcast::Broadcast;
 pub use self::device::Device;
-pub use self::reserved::Reserved;
+use self::reserved::Reserved;
 
 mod broadcast;
 mod device;
@@ -18,6 +18,12 @@ const INVALID: u16 = 0xFFFE;
 /// This type separates ordinary device addresses from Zigbee's special short
 /// address values, including the coordinator address, reserved range, broadcast
 /// destinations, and the `0xFFFE` invalid or unknown-address sentinel.
+
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Deserialize, serde::Serialize),
+    serde(try_from = "u16", into = "u16")
+)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ShortId {
     /// Coordinator short address `0x0000`.
@@ -26,14 +32,8 @@ pub enum ShortId {
     /// Allocated device short address in the normal device range.
     Device(Device),
 
-    /// Reserved short address.
-    Reserved(Reserved),
-
     /// Broadcast short address.
     Broadcast(Broadcast),
-
-    /// Invalid, unknown, or unassigned short address sentinel `0xFFFE`.
-    Invalid,
 }
 
 impl ShortId {
@@ -43,9 +43,7 @@ impl ShortId {
         match self {
             Self::Coordinator => COORDINATOR,
             Self::Device(device) => device.as_u16(),
-            Self::Reserved(reserved) => reserved.as_u16(),
             Self::Broadcast(broadcast) => broadcast.as_u16(),
-            Self::Invalid => INVALID,
         }
     }
 }
@@ -56,35 +54,31 @@ impl From<Device> for ShortId {
     }
 }
 
-impl From<Reserved> for ShortId {
-    fn from(reserved: Reserved) -> Self {
-        Self::Reserved(reserved)
-    }
-}
-
 impl From<Broadcast> for ShortId {
     fn from(broadcast: Broadcast) -> Self {
         Self::Broadcast(broadcast)
     }
 }
 
-impl From<u16> for ShortId {
-    fn from(value: u16) -> Self {
-        match value {
-            COORDINATOR => Self::Coordinator,
-            Device::MIN_VALUE..=Device::MAX_VALUE => Device(value).into(),
-            Reserved::MIN_VALUE..=Reserved::MAX_VALUE => Reserved(value).into(),
-            LOW_POWER_ROUTERS => Broadcast::LowPowerRouters.into(),
-            ROUTERS_AND_COORDINATOR => Broadcast::RoutersAndCoordinator.into(),
-            RX_ON_WHEN_IDLE => Broadcast::RxOnWhenIdle.into(),
-            ALL_DEVICES => Broadcast::AllDevices.into(),
-            INVALID => Self::Invalid,
-        }
-    }
-}
-
 impl From<ShortId> for u16 {
     fn from(id: ShortId) -> Self {
         id.as_u16()
+    }
+}
+
+impl TryFrom<u16> for ShortId {
+    type Error = u16;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            COORDINATOR => Ok(Self::Coordinator),
+            Device::MIN_VALUE..=Device::MAX_VALUE => Ok(Device(value).into()),
+            Reserved::MIN_VALUE..=Reserved::MAX_VALUE => Err(value),
+            LOW_POWER_ROUTERS => Ok(Broadcast::LowPowerRouters.into()),
+            ROUTERS_AND_COORDINATOR => Ok(Broadcast::RoutersAndCoordinator.into()),
+            RX_ON_WHEN_IDLE => Ok(Broadcast::RxOnWhenIdle.into()),
+            ALL_DEVICES => Ok(Broadcast::AllDevices.into()),
+            INVALID => Err(INVALID),
+        }
     }
 }

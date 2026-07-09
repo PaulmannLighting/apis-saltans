@@ -55,6 +55,10 @@ impl Application {
     pub const unsafe fn new_unchecked(id: u8) -> Self {
         Self(id)
     }
+
+    pub const fn as_u8(self) -> u8 {
+        self.0
+    }
 }
 
 impl Default for Application {
