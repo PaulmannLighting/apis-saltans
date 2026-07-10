@@ -18,8 +18,8 @@ channels owned by each message.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
 - `Builder` creates a configured backend from the coordinator endpoint descriptors and prepares
   support tasks.
-- `Builder::init` starts the command side of a backend and returns an `NcpHandle` together with the
-  translated event receiver.
+- `Builder::init` starts the backend and returns its driver together with the translated event
+  receiver.
 - `Driver` is the implementor-facing NCP command API.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
 - `EventTranslator` converts backend-specific event messages into common `Event` values.
@@ -141,10 +141,10 @@ classDiagram
 
     Builder ..|> Backend : requires
     Builder --> Futures : returns
-    Builder --> NcpHandle : init returns
+    Builder --> Driver : init returns
     Builder --> EventTranslator : creates translator
-    Futures --> NcpHandle : ncp future returns
-    Futures --> Event : ncp future returns
+    Futures --> Driver : driver future returns
+    Futures --> Event : driver future returns
     Event --> FullAddress : device membership
     EventTranslator --> Event : emits
     Driver ..> SealedDriver : run/spawn delegate
@@ -173,10 +173,10 @@ sequenceDiagram
     C->>B: start(hw_events);
     B->>T: create translator future;
     B->>B: init(events);
-    B-->>B: NcpHandle and events;
+    B-->>B: driver and events;
     B-->>C: Futures;
     C->>F: spawn dependencies;
-    C->>F: spawn or await ncp;
+    C->>F: spawn or await driver;
 ```
 
 ## Actor Command Flow

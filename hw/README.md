@@ -62,12 +62,12 @@ A backend that implements `Builder` can be started from its hardware event strea
 `Futures` value contains:
 
 - `dependencies`: futures that drive the hardware event bridge and event translator.
-- `ncp`: a future that initializes the command actor and returns the `NcpHandle` plus translated
+- `driver`: a future that initializes the backend driver and returns it plus the translated
   event receiver.
 
-All dependency futures must be spawned, or otherwise polled, before spawning or awaiting `ncp`.
-Starting `ncp` first can leave backend initialization waiting for event infrastructure that is not
-running yet.
+All dependency futures must be spawned, or otherwise polled, before spawning or awaiting `driver`.
+Starting `driver` first can leave backend initialization waiting for event infrastructure that is
+not running yet.
 
 ```rust,ignore
 use apis_saltans_hw::Builder;
@@ -78,7 +78,7 @@ for dependency in futures.dependencies {
     tokio::spawn(dependency);
 }
 
-let (ncp, events) = futures.ncp.await?;
+let (driver, events) = futures.driver.await?;
 ```
 
 The returned `events` receiver is intended to be passed to coordinator startup code. If integration
@@ -99,8 +99,8 @@ Driver crates typically implement:
 
 - `Backend` for the backend's associated hardware event, translator message, and translator type.
 - `Builder` to construct a configured backend from coordinator endpoint descriptors.
-- `Builder::init` to start the command actor and return an `NcpHandle` together with the translated
-  event receiver.
+- `Builder::init` to start the backend and return its driver together with the translated event
+  receiver.
 - `Driver` on the NCP command actor.
 - `EventTranslator` to convert backend events into common `Event` values.
 
@@ -133,7 +133,8 @@ crate-level event model.
 
 `Futures` contains the initialization future and the dependency futures that drive the bridge and
 event translator tasks. Spawn or otherwise poll all dependency futures before spawning or awaiting
-the `ncp` future. Backend-specific startup state remains internal to the `Builder` implementation.
+the `driver` future. Backend-specific startup state remains internal to the `Builder`
+implementation.
 
 ### `Driver`
 

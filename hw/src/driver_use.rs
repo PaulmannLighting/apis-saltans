@@ -13,19 +13,35 @@ type BoxedFuture<T> = Pin<Box<dyn Future<Output = T> + Send>>;
 type InitResult<T> = Result<(T, Receiver<Event>), Error>;
 type InitFuture<T> = BoxedFuture<InitResult<T>>;
 
-/// Constructs and prepares a configured hardware backend.
+/// Builder for configuring a hardware backend and preparing its runtime futures.
+///
+/// Implement this trait for backend-specific builder types. The builder owns any configuration
+/// derived from the coordinator's endpoint descriptors and turns a raw hardware event stream into a
+/// [`Futures`] value. The caller is responsible for polling the returned futures in the documented
+/// order.
 pub trait Builder: Backend + Sized {
     /// Create a driver builder for the endpoints exposed by the coordinator.
+    ///
+    /// The endpoint descriptors describe the local Zigbee endpoints the coordinator will expose.
+    /// Backend implementations can use them to configure NCP endpoint tables, application support
+    /// sub-layer state, or other hardware-specific startup data.
     ///
     /// # Errors
     ///
     /// Returns an error if the backend cannot be configured for the supplied endpoint descriptors.
     fn new(endpoints: &[SimpleDescriptor]) -> Result<Self, Error>;
 
-    /// Initialize the backend command side.
+    /// Initialize the backend and return the driver plus translated event stream.
     ///
-    /// The `events` receiver contains crate-level events produced by the event translator. The
+    /// `events` receives crate-level [`Event`] values produced by the event translator. The
     /// returned receiver is the event stream the caller should pass to coordinator code.
+    ///
+    /// `messages` is a sender connected to the event translator input. Backends can clone this
+    /// sender and pass it to their command driver so driver operations can inject backend-specific
+    /// translator messages when needed.
+    ///
+    /// The returned future must be `Send + 'static` because [`Futures::driver`] stores it as a
+    /// boxed future that callers may spawn on a Tokio runtime.
     ///
     /// # Errors
     ///
@@ -36,11 +52,17 @@ pub trait Builder: Backend + Sized {
         messages: Sender<Self::Message>,
     ) -> impl Future<Output = InitResult<Self::Driver>> + Send + 'static;
 
-    /// Start the backend and prepare the futures needed to run it.
+    /// Prepare the futures needed to run the backend.
     ///
-    /// The returned [`Futures`] separates the backend initialization future from the dependency
-    /// futures that feed it translated events. Spawn or otherwise poll every dependency future
-    /// before spawning or awaiting [`Futures::ncp`].
+    /// This method wires the raw hardware event stream into the backend translator and returns a
+    /// [`Futures`] value containing:
+    ///
+    /// - [`Futures::dependencies`], which bridge and translate hardware events.
+    /// - [`Futures::driver`], which runs [`Self::init`] and yields the initialized driver plus the
+    ///   translated event receiver.
+    ///
+    /// Spawn or otherwise poll every dependency future before spawning or awaiting
+    /// [`Futures::driver`].
     ///
     /// # Errors
     ///
@@ -62,19 +84,28 @@ pub trait Builder: Backend + Sized {
     }
 }
 
-/// Futures required to run a configured hardware backend.
+/// Runtime futures for a configured hardware backend.
 ///
-/// The dependency futures drive the event path into the backend initialization future. Callers must
-/// spawn or otherwise poll all [`Self::dependencies`] before spawning or awaiting [`Self::ncp`].
-/// Starting `ncp` first can leave backend initialization waiting for event infrastructure that is
+/// `Futures` is returned by [`Builder::start`]. It intentionally separates support tasks from the
+/// backend initialization future so the caller can start the event pipeline first.
+///
+/// Polling order matters:
+///
+/// 1. Spawn or otherwise poll every future in [`Self::dependencies`].
+/// 2. Spawn or await [`Self::driver`].
+///
+/// Starting `driver` first can leave backend initialization waiting for event infrastructure that is
 /// not running yet.
 pub struct Futures<T> {
-    /// Future that initializes the command actor and returns the public NCP handle and event stream.
+    /// Future that initializes the backend driver and returns it with the translated event stream.
+    ///
+    /// The returned driver is the backend's [`Backend::Driver`] type. The returned receiver emits
+    /// crate-level [`Event`] values and is intended to be passed to coordinator startup code.
     ///
     /// Spawn or await this only after all [`Self::dependencies`] are already being polled.
     pub driver: InitFuture<T>,
 
-    /// Futures that must be polled before [`Self::ncp`] starts.
+    /// Futures that must be polled before [`Self::driver`] starts.
     ///
     /// These futures keep backend event processing running, including the bridge from raw hardware
     /// events into translator messages and the translator that emits crate-level events.

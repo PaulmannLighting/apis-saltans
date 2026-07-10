@@ -3,6 +3,7 @@ use crate::Driver;
 
 /// Type-level configuration shared by driver-side backend traits.
 pub trait Backend {
+    /// Driver type initialized by the backend builder.
     type Driver: Driver;
 
     /// Hardware-specific event type produced by the driver backend.
