@@ -19,7 +19,12 @@ pub enum Destination<U = Application, B = Broadcast, G = GroupId> {
     Group(G),
 }
 
-impl Display for WeakDestination {
+impl<U, B, G> Display for Destination<U, B, G>
+where
+    U: Display,
+    B: Display,
+    G: Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unicast(value) => write!(f, "Unicast({value})"),
