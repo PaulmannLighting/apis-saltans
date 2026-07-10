@@ -12,19 +12,16 @@ pub use self::api::{
     ReadAttributes, WriteAttributes,
 };
 pub use self::coordinator::Coordinator;
-pub use self::destination::Destination;
 pub use self::error::Error;
 pub use self::event::{Event, Type as EventType};
 pub use self::event_receiver::EventReceiver;
-pub use self::network_manager::{Attributes, Device, Endpoint};
+pub use self::network_manager::{Attributes, Device};
 use self::retry::Retry;
 pub use self::timeout::Timeout;
 
 mod api;
-mod aps_payload;
 mod binding;
 mod coordinator;
-mod destination;
 mod discovery;
 mod error;
 mod event;
