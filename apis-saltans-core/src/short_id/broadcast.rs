@@ -31,3 +31,5 @@ impl From<Broadcast> for u16 {
         broadcast.as_u16()
     }
 }
+
+impl_fmt_via_value!(Broadcast, u16, |value| value.as_u16());

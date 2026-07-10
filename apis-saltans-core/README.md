@@ -62,6 +62,11 @@ Key modules:
 - `destination`: outbound device, broadcast, and group destinations
 - `units`: shared unit wrappers (`Deciseconds`, `Mireds`, `UnitsPerSecond`)
 
+Nested domain helpers:
+- `destination::Device` and `destination::Broadcast`: destination payloads for `Destination`.
+- `endpoint::Broadcast` and `endpoint::Reserved`: endpoint selectors used for broadcast delivery and rejected reserved IDs.
+- `short_id::Device` and `short_id::Broadcast`: validated NWK short-address subranges.
+
 ## Serialization Model
 
 Most types in this crate implement one or more of:
@@ -143,9 +148,10 @@ assert!(matches!(value, Type::Uint16(_)));
 ### Convert Endpoints and Profiles
 
 ```rust
-use apis_saltans_core::{Endpoint, Profile};
+use apis_saltans_core::{Application, Endpoint, Profile};
 
-let ep = Endpoint::from(1u8);
+let application = Application::new(1).expect("valid application endpoint");
+let ep = Endpoint::from(application);
 let profile = Profile::try_from(0x0104).expect("known profile");
 
 assert_eq!(u16::from(profile), 0x0104);

@@ -18,6 +18,8 @@ mod address;
 mod byte_sized_vec;
 mod cluster;
 pub mod constants;
+#[macro_use]
+mod macros;
 /// Outbound Zigbee destination types.
 pub mod destination;
 mod direction;

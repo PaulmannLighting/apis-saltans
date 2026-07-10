@@ -1,5 +1,3 @@
-use core::fmt;
-use core::fmt::{Display, LowerHex, UpperHex};
 use core::ops::RangeInclusive;
 
 /// A Zigbee application endpoint ID.
@@ -69,23 +67,7 @@ impl Default for Application {
     }
 }
 
-impl Display for Application {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
-
-impl UpperHex for Application {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        UpperHex::fmt(&self.0, f)
-    }
-}
-
-impl LowerHex for Application {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        LowerHex::fmt(&self.0, f)
-    }
-}
+impl_fmt_via_value!(Application, u8, |value| value.as_u8());
 
 impl From<Application> for u8 {
     fn from(endpoint: Application) -> Self {

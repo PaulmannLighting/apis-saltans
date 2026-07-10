@@ -24,3 +24,5 @@ impl From<Reserved> for u16 {
         reserved.0
     }
 }
+
+impl_fmt_via_value!(Reserved, u16, |value| value.as_u16());

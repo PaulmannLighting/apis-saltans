@@ -65,11 +65,20 @@ flowchart LR
 ## Routing Metadata
 
 `Endpoint` models the ZDO data endpoint, application endpoints, and the endpoint
-broadcast value. `Destination` models outbound addressing as one of:
+broadcast value. The `endpoint` module also exposes `Application`,
+`endpoint::Broadcast`, and `endpoint::Reserved` to keep accepted endpoint
+subranges distinct.
+
+`Destination` models outbound addressing as one of:
 
 - a device destination,
 - a broadcast destination,
 - a group destination.
+
+The device and broadcast variants wrap `destination::Device` and
+`destination::Broadcast`, which pair the relevant short-address selector with an
+endpoint selector. Group destinations carry only `GroupId` because group
+membership is endpoint-local on receiving nodes.
 
 `Profile` is the Zigbee profile identifier enum. Its `broadcast_endpoint`
 method returns the endpoint value used for profile-level broadcasts. `Cluster`

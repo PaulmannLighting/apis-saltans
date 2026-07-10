@@ -42,3 +42,5 @@ impl TryFrom<u16> for Device {
         Self::new(value).ok_or(value)
     }
 }
+
+impl_fmt_via_value!(Device, u16, |value| value.as_u16());

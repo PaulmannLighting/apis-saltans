@@ -81,3 +81,19 @@ impl TryFrom<u16> for ShortId {
         }
     }
 }
+
+impl_display_and_hex_via_value!(ShortId, u16, |value| value.as_u16(), |value, formatter| {
+    match *value {
+        Self::Coordinator => formatter.write_str("Coordinator (0x0000)"),
+        Self::Device(device) => {
+            formatter.write_str("Device (")?;
+            <Device as core::fmt::UpperHex>::fmt(&device, formatter)?;
+            formatter.write_str(")")
+        }
+        Self::Broadcast(broadcast) => {
+            formatter.write_str("Broadcast (")?;
+            <Broadcast as core::fmt::UpperHex>::fmt(&broadcast, formatter)?;
+            formatter.write_str(")")
+        }
+    }
+});

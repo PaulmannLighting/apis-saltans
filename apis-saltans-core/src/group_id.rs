@@ -41,3 +41,5 @@ impl From<GroupId> for u16 {
         id.as_u16()
     }
 }
+
+impl_fmt_via_value!(GroupId, u16, |value| value.as_u16());

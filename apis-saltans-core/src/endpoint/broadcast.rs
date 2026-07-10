@@ -1,5 +1,3 @@
-use core::fmt::{self, Display, LowerHex, UpperHex};
-
 use crate::{Application, Endpoint};
 
 pub const BROADCAST: u8 = 0xff;
@@ -22,6 +20,7 @@ pub enum Broadcast {
 }
 
 impl Broadcast {
+    /// Return the raw endpoint selector.
     #[must_use]
     pub const fn as_u8(self) -> u8 {
         match self {
@@ -31,11 +30,9 @@ impl Broadcast {
     }
 }
 
-impl Display for Broadcast {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Endpoint::from(*self).fmt(f)
-    }
-}
+impl_display_and_hex_via_value!(Broadcast, u8, |value| value.as_u8(), |value, formatter| {
+    <Endpoint as core::fmt::Display>::fmt(&Endpoint::from(*value), formatter)
+});
 
 impl From<Broadcast> for Endpoint {
     fn from(broadcast: Broadcast) -> Self {
@@ -49,17 +46,5 @@ impl From<Broadcast> for Endpoint {
 impl From<Broadcast> for u8 {
     fn from(broadcast: Broadcast) -> Self {
         broadcast.as_u8()
-    }
-}
-
-impl LowerHex for Broadcast {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Endpoint::from(*self).fmt(f)
-    }
-}
-
-impl UpperHex for Broadcast {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Endpoint::from(*self).fmt(f)
     }
 }

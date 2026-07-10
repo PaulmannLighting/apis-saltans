@@ -1,5 +1,3 @@
-use core::fmt::{self, Display};
-
 pub use self::application::Application;
 pub use self::broadcast::Broadcast;
 pub use self::reserved::Reserved;
@@ -59,15 +57,17 @@ impl Default for Endpoint {
     }
 }
 
-impl Display for Endpoint {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Data => write!(f, "Data (0x00)"),
-            Self::Application(app) => write!(f, "Application ({:#04X})", u8::from(*app)),
-            Self::Broadcast => write!(f, "Broadcast (0xff)"),
+impl_display_and_hex_via_value!(Endpoint, u8, |value| value.as_u8(), |value, formatter| {
+    match *value {
+        Self::Data => formatter.write_str("Data (0x00)"),
+        Self::Application(application) => {
+            formatter.write_str("Application (")?;
+            <Application as core::fmt::UpperHex>::fmt(&application, formatter)?;
+            formatter.write_str(")")
         }
+        Self::Broadcast => formatter.write_str("Broadcast (0xff)"),
     }
-}
+});
 
 impl From<Application> for Endpoint {
     fn from(application: Application) -> Self {

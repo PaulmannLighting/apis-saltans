@@ -1,6 +1,3 @@
-use core::fmt;
-use core::fmt::{Display, LowerHex, UpperHex};
-
 /// A Zigbee reserved endpoint ID.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 #[repr(transparent)]
@@ -14,23 +11,7 @@ impl Reserved {
     pub const MAX_ID: u8 = 254;
 }
 
-impl Display for Reserved {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
-
-impl LowerHex for Reserved {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        LowerHex::fmt(&self.0, f)
-    }
-}
-
-impl UpperHex for Reserved {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        UpperHex::fmt(&self.0, f)
-    }
-}
+impl_fmt_via_value!(Reserved, u8, |value| value.0);
 
 impl From<Reserved> for u8 {
     fn from(endpoint: Reserved) -> Self {
