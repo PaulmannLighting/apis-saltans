@@ -1,4 +1,5 @@
-use crate::{IeeeAddress, ShortId};
+use crate::IeeeAddress;
+use crate::short_id::Device;
 
 /// A Zigbee device address with both long and short address forms.
 ///
@@ -10,13 +11,13 @@ use crate::{IeeeAddress, ShortId};
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct FullAddress {
     ieee_address: IeeeAddress,
-    short_id: ShortId,
+    short_id: Device,
 }
 
 impl FullAddress {
     /// Create a full address from an IEEE address and NWK short address.
     #[must_use]
-    pub const fn new(ieee_address: IeeeAddress, short_id: ShortId) -> Self {
+    pub const fn new(ieee_address: IeeeAddress, short_id: Device) -> Self {
         Self {
             ieee_address,
             short_id,
@@ -31,13 +32,13 @@ impl FullAddress {
 
     /// Return the NWK short-address part.
     #[must_use]
-    pub const fn short_id(&self) -> ShortId {
+    pub const fn short_id(&self) -> Device {
         self.short_id
     }
 
     /// Split the address into its IEEE and NWK short-address parts.
     #[must_use]
-    pub const fn into_parts(self) -> (IeeeAddress, ShortId) {
+    pub const fn into_parts(self) -> (IeeeAddress, Device) {
         (self.ieee_address, self.short_id)
     }
 }
@@ -45,7 +46,7 @@ impl FullAddress {
 impl_fmt_pair!(
     FullAddress,
     IeeeAddress,
-    ShortId,
+    Device,
     |value| (value.ieee_address, value.short_id),
     "/"
 );
@@ -56,10 +57,11 @@ mod tests {
 
     use alloc::format;
 
-    use crate::{FullAddress, IeeeAddress, ShortId, short_id};
+    use crate::short_id::Device;
+    use crate::{FullAddress, IeeeAddress};
 
     const IEEE_ADDRESS: IeeeAddress = IeeeAddress::new(1, 2, 3, 4, 5, 6, 7, 8);
-    const SHORT_ID: ShortId = ShortId::Device(short_id::Device(0x1234));
+    const SHORT_ID: Device = Device(0x1234);
     const ADDRESS: FullAddress = FullAddress::new(IEEE_ADDRESS, SHORT_ID);
 
     #[test]

@@ -5,6 +5,11 @@ use core::num::NonZero;
 /// Valid group identifiers are non-zero values in the normal Zigbee group
 /// address range. The high reserved range is intentionally rejected by
 /// [`Self::new`].
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Deserialize, serde::Serialize),
+    serde(try_from = "u16", into = "u16")
+)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct GroupId(NonZero<u16>);
 
@@ -39,6 +44,14 @@ impl GroupId {
 impl From<GroupId> for u16 {
     fn from(id: GroupId) -> Self {
         id.as_u16()
+    }
+}
+
+impl TryFrom<u16> for GroupId {
+    type Error = u16;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Self::new(value).ok_or(value)
     }
 }
 

@@ -2,6 +2,11 @@
 ///
 /// Device short addresses exclude the coordinator address, the reserved range,
 /// broadcast addresses, and the invalid-address sentinel.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Deserialize, serde::Serialize),
+    serde(try_from = "u16", into = "u16")
+)]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Device(pub(crate) u16);
 

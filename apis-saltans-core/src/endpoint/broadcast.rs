@@ -9,6 +9,11 @@ pub const BROADCAST: u8 = 0xff;
 /// type excludes the ZDO data endpoint and reserved endpoint range, so callers
 /// can express only endpoint values that are meaningful for application-level
 /// broadcast delivery.
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Deserialize, serde::Serialize),
+    serde(try_from = "u8", into = "u8")
+)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Broadcast {
     /// Broadcast to the given application endpoint on each receiving node.
@@ -46,5 +51,16 @@ impl From<Broadcast> for Endpoint {
 impl From<Broadcast> for u8 {
     fn from(broadcast: Broadcast) -> Self {
         broadcast.as_u8()
+    }
+}
+
+impl TryFrom<u8> for Broadcast {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            BROADCAST => Ok(Self::Broadcast),
+            value => Application::try_from(value).map(Self::Application),
+        }
     }
 }

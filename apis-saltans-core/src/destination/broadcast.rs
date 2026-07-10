@@ -2,6 +2,7 @@ use crate::{endpoint, short_id};
 
 /// Broadcast destination with a broadcast short address and broadcast endpoint.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Broadcast {
     address: short_id::Broadcast,
     endpoint: endpoint::Broadcast,

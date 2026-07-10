@@ -1,6 +1,7 @@
 use crate::{Endpoint, short_id};
 
 /// Device destination with a short address and APS endpoint.
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Device {
     device: short_id::Device,

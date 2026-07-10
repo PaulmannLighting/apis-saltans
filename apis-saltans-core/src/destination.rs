@@ -11,6 +11,7 @@ mod device;
 /// the APS endpoint that should receive the payload. Group destinations carry
 /// only the group identifier because group membership is endpoint-local on each
 /// receiving node.
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum Destination {
     /// Send to one device short address and endpoint.
