@@ -12,11 +12,11 @@ version = "0.2.0"
 edition = "2024"
 
 [dependencies]
-apis-saltans-core = { version = "0.5", path = "../core" }
 serde = { version = "1", features = ["derive"], optional = true }
+zb-core.workspace = true
 
 [lints]
 workspace = true
 
 [features]
-serde = ["dep:serde", "apis-saltans-core/serde"]
+serde = ["dep:serde", "zb-core/serde"]

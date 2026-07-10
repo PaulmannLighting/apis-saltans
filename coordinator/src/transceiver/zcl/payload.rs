@@ -1,24 +1,20 @@
 //! General-purpose APS frame.
 
-use apis_saltans_core::{ClusterSpecific, Direction, Profiled};
-use apis_saltans_zcl::{Command, Scope, Scoped};
 use bytes::Bytes;
 use le_stream::ToLeStream;
+use zb_core::{ClusterSpecific, Direction, Profiled};
+use zb_zcl::{Command, Scope, Scoped};
 
 /// A simplified APS frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Payload {
-    aps_metadata: apis_saltans_hw::Metadata,
+    aps_metadata: zb_hw::Metadata,
     zcl_metadata: Metadata,
     payload: Bytes,
 }
 
 impl Payload {
-    pub fn new(
-        aps_metadata: apis_saltans_hw::Metadata,
-        zcl_metadata: Metadata,
-        payload: Bytes,
-    ) -> Self {
+    pub fn new(aps_metadata: zb_hw::Metadata, zcl_metadata: Metadata, payload: Bytes) -> Self {
         Self {
             aps_metadata,
             zcl_metadata,
@@ -26,7 +22,7 @@ impl Payload {
         }
     }
 
-    pub fn into_parts(self) -> (apis_saltans_hw::Metadata, Metadata, Bytes) {
+    pub fn into_parts(self) -> (zb_hw::Metadata, Metadata, Bytes) {
         (self.aps_metadata, self.zcl_metadata, self.payload)
     }
 }
@@ -46,7 +42,7 @@ where
 {
     fn from(payload: T) -> Self {
         Self {
-            aps_metadata: apis_saltans_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
+            aps_metadata: zb_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
             zcl_metadata: Metadata {
                 scope: T::SCOPE,
                 direction: T::DIRECTION,

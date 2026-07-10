@@ -197,7 +197,7 @@ sequenceDiagram
 ```
 
 Each proxy call maps to one internal `Message` and one driver call. Destination-specific delivery
-semantics are represented by `apis_saltans_core::Destination`; the hardware abstraction no longer
+semantics are represented by `zb_core::Destination`; the hardware abstraction no longer
 has separate unicast, multicast, and broadcast actor messages.
 
 ## Module Inventory
@@ -248,8 +248,8 @@ response sender so the actor can return the result of the corresponding driver c
 - `bytes::Bytes`, which contains the serialized application payload.
 
 `Event` is the receive-side model emitted by the event translator. It reports network state changes,
-device join/rejoin/leave notifications carrying `apis_saltans_core::FullAddress`, route errors, and
-raw received APS data as `apis_saltans_nwk::Envelope<apis_saltans_aps::Data<bytes::Bytes>>`.
+device join/rejoin/leave notifications carrying `zb_core::FullAddress`, route errors, and
+raw received APS data as `zb_nwk::Envelope<zb_aps::Data<bytes::Bytes>>`.
 
 Scan commands use `FoundNetwork`, `Network`, and `ScannedChannel` to report network discovery and
 channel activity results without exposing backend-specific scan response formats.

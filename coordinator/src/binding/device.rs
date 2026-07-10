@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 
-use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::{Cluster, Endpoint, FullAddress};
+use zb_core::node::Descriptor;
+use zb_core::{Cluster, Endpoint, FullAddress};
 
 use crate::discovery::OutgoingDevice;
 

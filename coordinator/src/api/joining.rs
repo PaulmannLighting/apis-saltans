@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use apis_saltans_hw::Ncp;
+use zb_hw::Ncp;
 
 use crate::{Coordinator, Error};
 

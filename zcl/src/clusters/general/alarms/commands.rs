@@ -1,6 +1,6 @@
 //! Commands of the Alarms cluster.
 
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::alarm::Alarm;
 pub use self::get_alarm::GetAlarm;

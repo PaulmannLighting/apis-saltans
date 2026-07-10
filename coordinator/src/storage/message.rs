@@ -1,7 +1,7 @@
 use std::io::Result;
 
-use apis_saltans_core::{IeeeAddress, short_id};
 use tokio::sync::oneshot::Sender;
+use zb_core::{IeeeAddress, short_id};
 
 use crate::Device;
 

@@ -32,7 +32,7 @@ service group enum is declared with `zdp_command_group!`, and the crate-wide enu
 
 ## Runtime Command Flow
 
-Incoming raw APS payloads are carried as `apis_saltans_aps::Data<bytes::Bytes>`.
+Incoming raw APS payloads are carried as `zb_aps::Data<bytes::Bytes>`.
 `TryFrom<Data<Bytes>> for Frame<Command>` validates the APS endpoints, extracts
 the APS cluster ID, and then parses the payload through
 `Frame<Command>::parse_with_cluster_id(cluster_id, bytes)`:
@@ -50,7 +50,7 @@ Serialization flows in the reverse direction:
 2. `Command` delegates `ToLeStream` to the contained service group enum.
 3. The service group enum delegates `ToLeStream` to the contained command payload.
 
-Every command payload has a static cluster ID through `apis_saltans_core::Cluster`, and every group
+Every command payload has a static cluster ID through `zb_core::Cluster`, and every group
 and top-level command enum can return the contained command's cluster ID.
 
 ## Service Organization
@@ -133,7 +133,7 @@ Generated items:
   - `NAME: &'static str`
 - A default `const fn new(...) -> Self` constructor unless a `constructor { ... }` block is supplied.
 - Inherent methods from the `getters { ... }` block.
-- `apis_saltans_core::Cluster` for static cluster ID access.
+- `zb_core::Cluster` for static cluster ID access.
 - `Service` for static service-name access.
 - `From<Box<Self>> for Self`, used by enum unboxing conversions.
 - `From<Payload> for crate::Command`.

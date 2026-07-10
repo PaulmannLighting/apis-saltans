@@ -1,7 +1,7 @@
 //! Attributes of the Power Configuration cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::{String as ZclString, Uint8, Uint16};
+use zb_core::Cluster;
+use zb_core::types::{String as ZclString, Uint8, Uint16};
 
 pub use self::types::{BatteryAlarmMask, BatteryAlarmState, BatterySize, MainsAlarmMask};
 use crate::macros::zcl_attributes;

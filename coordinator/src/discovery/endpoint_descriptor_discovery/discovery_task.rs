@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use apis_saltans_core::{Endpoint, FullAddress};
-use apis_saltans_zdp::{SimpleDescReq, Status};
 use const_env::env_item;
 use log::{error, trace, warn};
 use tokio::sync::mpsc::Sender;
+use zb_core::{Endpoint, FullAddress};
+use zb_zdp::{SimpleDescReq, Status};
 
 use super::Message;
 use crate::transceiver::zdp::Handle;

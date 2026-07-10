@@ -39,14 +39,14 @@ Public API exports:
 
 `Coordinator` is started with:
 
-- a hardware backend implementing `apis_saltans_hw::Start`
+- a hardware backend implementing `zb_hw::Start`
 - the local endpoint descriptors to expose on the coordinator
 
 ```rust,no_run
 use apis_saltans_coordinator::Coordinator;
-use apis_saltans_zdp::SimpleDescriptor;
+use zb_zdp::SimpleDescriptor;
 
-async fn init<T: apis_saltans_hw::Start>(hardware: T) -> Result<Coordinator, apis_saltans_hw::Error> {
+async fn init<T: zb_hw::Start>(hardware: T) -> Result<Coordinator, zb_hw::Error> {
     let endpoints: &[SimpleDescriptor] = &[/* your endpoint descriptors here */];
     Coordinator::start(hardware, endpoints).await
 }
@@ -93,7 +93,7 @@ Provides queries against coordinator-maintained network state:
 - `state` (snapshot of known devices)
 
 ```rust,no_run
-use apis_saltans_core::IeeeAddress;
+use zb_core::IeeeAddress;
 use apis_saltans_coordinator::NetworkManager;
 
 async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, apis_saltans_coordinator::Error> {
@@ -103,14 +103,14 @@ async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, apis_
 ```
 
 `subscribe_to_incoming_commands` returns a receiver of [`Event`] values.
-Incoming APS envelopes carry an `apis_saltans_nwk::Source`; the coordinator
+Incoming APS envelopes carry an `zb_nwk::Source`; the coordinator
 resolves that source into a known `Address` before publishing an `Event`.
 `Event` contains the resolved source address, source endpoint, and an
 [`EventType`]. `EventType` is the public alias for the event payload enum and
 currently distinguishes cluster-specific commands from parsed attribute reports:
 
-- `EventType::Cluster(apis_saltans_zcl::Cluster)`
-- `EventType::AttributeReport(Box<[apis_saltans_zcl::Reportable]>)`
+- `EventType::Cluster(zb_zcl::Cluster)`
+- `EventType::AttributeReport(Box<[zb_zcl::Reportable]>)`
 
 Pass an empty device set to subscribe to all known devices, or pass IEEE
 addresses to receive only matching devices.
@@ -149,8 +149,8 @@ High-level helpers for standard On/Off cluster control:
 - `toggle`
 
 ```rust,no_run
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_core::Application;
+use zb_core::IeeeAddress;
+use zb_core::Application;
 use apis_saltans_coordinator::{Destination, OnOff};
 
 async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Error> {
@@ -170,9 +170,9 @@ High-level color control operation:
 - `move_to_xy`
 
 ```rust,no_run
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_zcl::Options;
-use apis_saltans_core::{Application, units::Deciseconds};
+use zb_core::IeeeAddress;
+use zb_zcl::Options;
+use zb_core::{Application, units::Deciseconds};
 use apis_saltans_coordinator::{ColorControl, Destination};
 
 async fn set_xy(api: &impl ColorControl) -> Result<(), apis_saltans_coordinator::Error> {
@@ -197,14 +197,14 @@ async fn set_xy(api: &impl ColorControl) -> Result<(), apis_saltans_coordinator:
 Two API levels are exposed:
 
 - `read_attributes_raw(...)` for direct cluster/id reads
-- `read_attributes<T>(...)` for typed reads using a `apis_saltans_zcl::ReadableAttribute` ID enum
+- `read_attributes<T>(...)` for typed reads using a `zb_zcl::ReadableAttribute` ID enum
 
 Typed example with Basic-cluster readable IDs:
 
 ```rust,no_run
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_zcl::general::basic::readable::Id as BasicReadableId;
-use apis_saltans_core::Application;
+use zb_core::IeeeAddress;
+use zb_zcl::general::basic::readable::Id as BasicReadableId;
+use zb_core::Application;
 use apis_saltans_coordinator::{ReadAttributeResult, ReadAttributes};
 
 async fn read_basic(
@@ -225,15 +225,15 @@ async fn read_basic(
 Two API levels are exposed:
 
 - `write_attributes_raw(...)` for direct record writes
-- `write_attributes<T>(...)` for typed writes via `apis_saltans_zcl::WritableAttribute`
+- `write_attributes<T>(...)` for typed writes via `zb_zcl::WritableAttribute`
 
 Typed example with Basic writable attributes:
 
 ```rust,no_run
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_zcl::general::basic::writable::Attribute as BasicWritable;
-use apis_saltans_core::types::String;
-use apis_saltans_core::Application;
+use zb_core::IeeeAddress;
+use zb_zcl::general::basic::writable::Attribute as BasicWritable;
+use zb_core::types::String;
+use zb_core::Application;
 use apis_saltans_coordinator::WriteAttributes;
 
 async fn write_location(
@@ -264,10 +264,10 @@ State model:
 
 - `State`: persistent snapshot (`devices: Box<[Device]>`)
 - `Device`:
-    - `address: apis_saltans_core::Address`
-    - `endpoints: BTreeMap<apis_saltans_core::Endpoint, apis_saltans_coordinator::Endpoint>`
+    - `address: zb_core::Address`
+    - `endpoints: BTreeMap<zb_core::Endpoint, apis_saltans_coordinator::Endpoint>`
 - `Endpoint`:
-    - `descriptor: apis_saltans_zdp::SimpleDescriptor`
+    - `descriptor: zb_zdp::SimpleDescriptor`
     - `attributes: apis_saltans_coordinator::Attributes`
 - `Attributes`: normalized subset of discovered Basic-cluster metadata (manufacturer/model/version/etc.)
 
@@ -275,7 +275,7 @@ State model:
 
 All high-level API traits return `apis_saltans_coordinator::Error`:
 
-- `Hardware(apis_saltans_hw::Error)`
+- `Hardware(zb_hw::Error)`
 - `SendError`
 - `ReceiveError`
 - `Timeout`

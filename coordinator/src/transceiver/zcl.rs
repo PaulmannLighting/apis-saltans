@@ -2,18 +2,18 @@
 
 use std::collections::BTreeMap;
 
-use apis_saltans_aps::Data;
-use apis_saltans_core::Destination;
-use apis_saltans_core::destination::Device;
-use apis_saltans_hw::Ncp;
-use apis_saltans_nwk::Source;
-use apis_saltans_zcl::{Cluster, Frame, Header};
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot::{self, Sender, channel};
+use zb_aps::Data;
+use zb_core::Destination;
+use zb_core::destination::Device;
+use zb_hw::Ncp;
+use zb_nwk::Source;
+use zb_zcl::{Cluster, Frame, Header};
 
 pub use self::handle::Handle;
 pub use self::message::Message;
@@ -135,7 +135,7 @@ where
         &mut self,
         destination: Destination,
         payload: Payload,
-    ) -> Result<u8, apis_saltans_hw::Error> {
+    ) -> Result<u8, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
         let zcl_seq = zcl_frame.header().seq();
@@ -157,7 +157,7 @@ where
         &mut self,
         destination: Device,
         datagram: Payload,
-    ) -> Result<oneshot::Receiver<Cluster>, apis_saltans_hw::Error> {
+    ) -> Result<oneshot::Receiver<Cluster>, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = datagram.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
         let index = Index::from_zcl_command(
@@ -206,13 +206,10 @@ where
     }
 }
 
-fn make_hw_datagram(
-    metadata: apis_saltans_hw::Metadata,
-    payload: Frame<Bytes>,
-) -> apis_saltans_hw::Datagram {
+fn make_hw_datagram(metadata: zb_hw::Metadata, payload: Frame<Bytes>) -> zb_hw::Datagram {
     #[expect(unsafe_code)]
     // SAFETY: We safely construct the datagram from the correct metadata we destructured above.
     unsafe {
-        apis_saltans_hw::Datagram::new_unchecked(metadata, payload.to_le_stream().collect())
+        zb_hw::Datagram::new_unchecked(metadata, payload.to_le_stream().collect())
     }
 }

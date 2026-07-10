@@ -1,6 +1,6 @@
 macro_rules! zcl_cluster_profile {
     ([]) => {
-        apis_saltans_core::Profile::ZigbeeHomeAutomation
+        zb_core::Profile::ZigbeeHomeAutomation
     };
     ([$profile:expr]) => {
         $profile
@@ -12,7 +12,7 @@ pub(crate) use zcl_cluster_profile;
 /// Define a ZCL command payload and implement its common command traits.
 ///
 /// Cluster-specific commands use the cluster ID to implement
-/// [`apis_saltans_core::ClusterSpecific`]:
+/// [`zb_core::ClusterSpecific`]:
 ///
 /// ```ignore
 /// zcl_command! {
@@ -804,12 +804,12 @@ macro_rules! zcl_command {
         $to_le_stream:tt
         [$($custom:item)*]
     ) => {
-        impl apis_saltans_core::ClusterSpecific<apis_saltans_core::Cluster> for $command {
-            const ID: apis_saltans_core::Cluster = $cluster_id;
+        impl zb_core::ClusterSpecific<zb_core::Cluster> for $command {
+            const ID: zb_core::Cluster = $cluster_id;
         }
 
-        impl apis_saltans_core::Profiled for $command {
-            const PROFILE: apis_saltans_core::Profile =
+        impl zb_core::Profiled for $command {
+            const PROFILE: zb_core::Profile =
                 $crate::macros::zcl_cluster_profile!([$($profile)?]);
         }
 
@@ -926,7 +926,7 @@ macro_rules! zcl_command {
     };
     (@response_impl $command:ident []) => {};
     (@response_impl $command:ident [$response:ty]) => {
-        impl apis_saltans_core::ExpectResponse<$crate::Cluster> for $command {
+        impl zb_core::ExpectResponse<$crate::Cluster> for $command {
             type Response = $response;
         }
     };
@@ -1121,12 +1121,12 @@ macro_rules! zcl_command_enum {
     };
     (@cluster_impl [global]) => {};
     (@cluster_impl [cluster $cluster_id:expr; $($profile:expr)?]) => {
-        impl apis_saltans_core::ClusterSpecific<apis_saltans_core::Cluster> for Command {
-            const ID: apis_saltans_core::Cluster = $cluster_id;
+        impl zb_core::ClusterSpecific<zb_core::Cluster> for Command {
+            const ID: zb_core::Cluster = $cluster_id;
         }
 
-        impl apis_saltans_core::Profiled for Command {
-            const PROFILE: apis_saltans_core::Profile =
+        impl zb_core::Profiled for Command {
+            const PROFILE: zb_core::Profile =
                 $crate::macros::zcl_cluster_profile!([$($profile)?]);
         }
     };
@@ -1247,17 +1247,17 @@ macro_rules! zcl_attribute_newtype {
             }
         }
 
-        impl From<$name> for apis_saltans_core::types::Type {
+        impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
                 Self::$variant(value.bits())
             }
         }
 
-        impl TryFrom<apis_saltans_core::types::Type> for $name {
-            type Error = apis_saltans_core::types::Type;
+        impl TryFrom<zb_core::types::Type> for $name {
+            type Error = zb_core::types::Type;
 
-            fn try_from(value: apis_saltans_core::types::Type) -> Result<Self, Self::Error> {
-                if let apis_saltans_core::types::Type::$variant(value) = value {
+            fn try_from(value: zb_core::types::Type) -> Result<Self, Self::Error> {
+                if let zb_core::types::Type::$variant(value) = value {
                     Ok(Self::from_bits_retain(value))
                 } else {
                     Err(value)
@@ -1342,7 +1342,7 @@ macro_rules! zcl_attribute_newtype {
             }
         }
 
-        impl From<$name> for apis_saltans_core::types::Uint8 {
+        impl From<$name> for zb_core::types::Uint8 {
             fn from(value: $name) -> Self {
                 Self::new(value.into())
             }
@@ -1362,10 +1362,10 @@ macro_rules! zcl_attribute_newtype {
             }
         }
 
-        impl TryFrom<apis_saltans_core::types::Uint8> for $name {
-            type Error = apis_saltans_core::types::Uint8;
+        impl TryFrom<zb_core::types::Uint8> for $name {
+            type Error = zb_core::types::Uint8;
 
-            fn try_from(value: apis_saltans_core::types::Uint8) -> Result<Self, Self::Error> {
+            fn try_from(value: zb_core::types::Uint8) -> Result<Self, Self::Error> {
                 Self::try_from(value.into_inner()).map_err(|_| value)
             }
         }
@@ -1394,26 +1394,26 @@ macro_rules! zcl_attribute_newtype {
         }
     };
     (@enum_from_type [$name:ident] [Enum8]) => {
-        impl From<$name> for apis_saltans_core::types::Type {
+        impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
                 Self::Enum8(value.into())
             }
         }
     };
     (@enum_from_type [$name:ident] [Map8]) => {
-        impl From<$name> for apis_saltans_core::types::Type {
+        impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
                 Self::Map8(value.into())
             }
         }
     };
     (@enum_try_from_type [$name:ident] [Enum8]) => {
-        impl TryFrom<apis_saltans_core::types::Type> for $name {
-            type Error = apis_saltans_core::types::Type;
+        impl TryFrom<zb_core::types::Type> for $name {
+            type Error = zb_core::types::Type;
 
-            fn try_from(value: apis_saltans_core::types::Type) -> Result<Self, Self::Error> {
-                if let apis_saltans_core::types::Type::Enum8(value) = value {
-                    Self::try_from(value).map_err(apis_saltans_core::types::Type::Enum8)
+            fn try_from(value: zb_core::types::Type) -> Result<Self, Self::Error> {
+                if let zb_core::types::Type::Enum8(value) = value {
+                    Self::try_from(value).map_err(zb_core::types::Type::Enum8)
                 } else {
                     Err(value)
                 }
@@ -1421,12 +1421,12 @@ macro_rules! zcl_attribute_newtype {
         }
     };
     (@enum_try_from_type [$name:ident] [Map8]) => {
-        impl TryFrom<apis_saltans_core::types::Type> for $name {
-            type Error = apis_saltans_core::types::Type;
+        impl TryFrom<zb_core::types::Type> for $name {
+            type Error = zb_core::types::Type;
 
-            fn try_from(value: apis_saltans_core::types::Type) -> Result<Self, Self::Error> {
-                if let apis_saltans_core::types::Type::Map8(raw) = value {
-                    raw.try_into().map_err(|_| apis_saltans_core::types::Type::Map8(raw))
+            fn try_from(value: zb_core::types::Type) -> Result<Self, Self::Error> {
+                if let zb_core::types::Type::Map8(raw) = value {
+                    raw.try_into().map_err(|_| zb_core::types::Type::Map8(raw))
                 } else {
                     Err(value)
                 }
@@ -1473,17 +1473,17 @@ macro_rules! zcl_attribute_newtype {
             }
         }
 
-        impl From<$name> for apis_saltans_core::types::Type {
+        impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
                 Self::$variant(value.0)
             }
         }
 
-        impl TryFrom<apis_saltans_core::types::Type> for $name {
-            type Error = apis_saltans_core::types::Type;
+        impl TryFrom<zb_core::types::Type> for $name {
+            type Error = zb_core::types::Type;
 
-            fn try_from(value: apis_saltans_core::types::Type) -> Result<Self, Self::Error> {
-                if let apis_saltans_core::types::Type::$variant(value) = value {
+            fn try_from(value: zb_core::types::Type) -> Result<Self, Self::Error> {
+                if let zb_core::types::Type::$variant(value) = value {
                     Ok(Self(value))
                 } else {
                     Err(value)
@@ -1631,9 +1631,9 @@ macro_rules! zcl_attributes {
             ]
             [
                 /// The revision of the cluster specification that the cluster instance supports.
-                ClusterRevision(apis_saltans_core::types::Uint16) = 0xfffd,
+                ClusterRevision(zb_core::types::Uint16) = 0xfffd,
                 /// The reporting status of the cluster instance.
-                AttributeReportingStatus(apis_saltans_core::types::Uint8) = 0xfffe,
+                AttributeReportingStatus(zb_core::types::Uint8) = 0xfffe,
             ]
             [
                 Id::ClusterRevision => 0xfffd,
@@ -1644,8 +1644,8 @@ macro_rules! zcl_attributes {
                 0xfffe => Ok(Id::AttributeReportingStatus),
             ]
             [
-                (Id::ClusterRevision, typ) => <apis_saltans_core::types::Uint16 as TryFrom<apis_saltans_core::types::Type>>::try_from(typ).map(Readable::ClusterRevision).map_err(Into::into),
-                (Id::AttributeReportingStatus, typ) => <apis_saltans_core::types::Uint8 as TryFrom<apis_saltans_core::types::Type>>::try_from(typ).map(Readable::AttributeReportingStatus).map_err(Into::into),
+                (Id::ClusterRevision, typ) => <zb_core::types::Uint16 as TryFrom<zb_core::types::Type>>::try_from(typ).map(Readable::ClusterRevision).map_err(Into::into),
+                (Id::AttributeReportingStatus, typ) => <zb_core::types::Uint8 as TryFrom<zb_core::types::Type>>::try_from(typ).map(Readable::AttributeReportingStatus).map_err(Into::into),
             ]
             [
                 Readable::ClusterRevision(value) => value.into(),
@@ -1686,12 +1686,12 @@ macro_rules! zcl_attributes {
         const MANUFACTURER_CODE: Option<u16> = Some($manufacturer_code);
     };
     (@cluster_impl [cluster $cluster_id:expr; $($profile:expr)?] [$($manufacturer_code:expr)?] $ty:ident) => {
-        impl apis_saltans_core::ClusterSpecific<apis_saltans_core::Cluster> for $ty {
-            const ID: apis_saltans_core::Cluster = $cluster_id;
+        impl zb_core::ClusterSpecific<zb_core::Cluster> for $ty {
+            const ID: zb_core::Cluster = $cluster_id;
         }
 
-        impl apis_saltans_core::Profiled for $ty {
-            const PROFILE: apis_saltans_core::Profile =
+        impl zb_core::Profiled for $ty {
+            const PROFILE: zb_core::Profile =
                 $crate::macros::zcl_cluster_profile!([$($profile)?]);
         }
     };
@@ -1794,11 +1794,11 @@ macro_rules! zcl_attributes {
             }
         }
 
-        impl TryFrom<(Id, apis_saltans_core::types::Type)> for Readable {
+        impl TryFrom<(Id, zb_core::types::Type)> for Readable {
             type Error = $crate::InvalidType<Id>;
 
             fn try_from(
-                (id, typ): (Id, apis_saltans_core::types::Type),
+                (id, typ): (Id, zb_core::types::Type),
             ) -> Result<Self, Self::Error> {
                 match (id, typ) {
                     $($try_from_readable_arms)*
@@ -1807,7 +1807,7 @@ macro_rules! zcl_attributes {
             }
         }
 
-        impl From<Readable> for apis_saltans_core::types::Type {
+        impl From<Readable> for zb_core::types::Type {
             fn from(attribute: Readable) -> Self {
                 match attribute {
                     $($from_readable_arms)*
@@ -1900,7 +1900,7 @@ macro_rules! zcl_attributes {
             [$($readable_variants)* $($variant_attr)* $variant($ty) = $id,]
             [$($from_id_arms)* Id::$variant => $id,]
             [$($try_from_u16_arms)* $id => Ok(Id::$variant),]
-            [$($try_from_readable_arms)* (Id::$variant, typ) => <$ty as TryFrom<apis_saltans_core::types::Type>>::try_from(typ).map(Readable::$variant).map_err(Into::into),]
+            [$($try_from_readable_arms)* (Id::$variant, typ) => <$ty as TryFrom<zb_core::types::Type>>::try_from(typ).map(Readable::$variant).map_err(Into::into),]
             [$($from_readable_arms)* Readable::$variant(value) => value.into(),]
             [$($rest)*]
         }
@@ -2162,11 +2162,11 @@ macro_rules! zcl_attributes {
             Reportable
         }
 
-        impl TryFrom<(u16, apis_saltans_core::types::Type)> for Reportable {
+        impl TryFrom<(u16, zb_core::types::Type)> for Reportable {
             type Error = $crate::ParseAttributeError<u16>;
 
             fn try_from(
-                (id, _typ): (u16, apis_saltans_core::types::Type),
+                (id, _typ): (u16, zb_core::types::Type),
             ) -> Result<Self, Self::Error> {
                 Err($crate::ParseAttributeError::InvalidId(id))
             }
@@ -2194,15 +2194,15 @@ macro_rules! zcl_attributes {
             Reportable
         }
 
-        impl TryFrom<(u16, apis_saltans_core::types::Type)> for Reportable {
+        impl TryFrom<(u16, zb_core::types::Type)> for Reportable {
             type Error = $crate::ParseAttributeError<u16>;
 
             fn try_from(
-                (id, typ): (u16, apis_saltans_core::types::Type),
+                (id, typ): (u16, zb_core::types::Type),
             ) -> Result<Self, Self::Error> {
                 match id {
                     $(
-                        $try_id => <$try_ty as TryFrom<apis_saltans_core::types::Type>>::try_from(typ)
+                        $try_id => <$try_ty as TryFrom<zb_core::types::Type>>::try_from(typ)
                             .map(Reportable::$try_variant)
                             .map_err(|typ| $crate::InvalidType::new(id, typ).into()),
                     )+
@@ -2587,8 +2587,8 @@ pub(crate) use zcl_attributes;
 
 #[cfg(test)]
 mod zcl_attributes_macro_tests {
-    use apis_saltans_core::types::{Type, Uint8};
-    use apis_saltans_core::{Cluster, Profile, Profiled};
+    use zb_core::types::{Type, Uint8};
+    use zb_core::{Cluster, Profile, Profiled};
 
     #[derive(Clone, Debug, Eq, Hash, PartialEq)]
     pub struct Custom(Uint8);
@@ -2630,7 +2630,7 @@ mod zcl_attributes_macro_tests {
         let _ = Id::AttributeReportingStatus;
         let _ = Readable::ReadOnly(Uint8::new(1));
         let _ = Readable::Writable(Uint8::new(2));
-        let _ = Readable::ClusterRevision(apis_saltans_core::types::Uint16::new(1));
+        let _ = Readable::ClusterRevision(zb_core::types::Uint16::new(1));
         let _ = Readable::AttributeReportingStatus(Uint8::new(0));
         let _ = Writable::Writable(Uint8::new(3));
         let _ = Writable::WriteOnly(Custom(Uint8::new(4)));
@@ -2654,19 +2654,19 @@ mod zcl_attributes_macro_tests {
         fn generates_cluster_bound_impls() {
             fn assert_readable<T>()
             where
-                T: apis_saltans_core::ClusterSpecific<Cluster> + crate::Readable,
+                T: zb_core::ClusterSpecific<Cluster> + crate::Readable,
             {
             }
 
             fn assert_writable<T>()
             where
-                T: apis_saltans_core::ClusterSpecific<Cluster> + crate::Writable,
+                T: zb_core::ClusterSpecific<Cluster> + crate::Writable,
             {
             }
 
             fn assert_cluster<T>()
             where
-                T: apis_saltans_core::ClusterSpecific<Cluster>,
+                T: zb_core::ClusterSpecific<Cluster>,
             {
             }
 
@@ -2695,7 +2695,7 @@ mod zcl_attributes_macro_tests {
             let _ = Id::ClusterRevision;
             let _ = Id::AttributeReportingStatus;
             let _ = Readable::ReadOnly(Uint8::new(1));
-            let _ = Readable::ClusterRevision(apis_saltans_core::types::Uint16::new(1));
+            let _ = Readable::ClusterRevision(zb_core::types::Uint16::new(1));
             let _ = Readable::AttributeReportingStatus(Uint8::new(0));
             let _ = Writable::Writable(Uint8::new(2));
             let _ = Reportable::Writable(Uint8::new(3));

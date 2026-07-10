@@ -1,7 +1,7 @@
 //! Attributes of the Basic cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::{Bool, OctStr, String, Uint8};
+use zb_core::Cluster;
+use zb_core::types::{Bool, OctStr, String, Uint8};
 
 #[allow(unused_imports)]
 pub use self::date_code::{DateCode, ParseError};

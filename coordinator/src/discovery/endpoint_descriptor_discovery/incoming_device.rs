@@ -1,8 +1,8 @@
 use std::collections::BTreeSet;
 use std::fmt::Display;
 
-use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::{Endpoint, FullAddress};
+use zb_core::node::Descriptor;
+use zb_core::{Endpoint, FullAddress};
 
 #[derive(Debug)]
 pub struct IncomingDevice {

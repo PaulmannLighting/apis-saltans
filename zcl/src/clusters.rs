@@ -63,31 +63,31 @@ impl Cluster {
         match typ {
             Scope::Global => global::Command::parse_zcl_frame(header, bytes).map(Self::Global),
             Scope::ClusterSpecific => match cluster_id {
-                <basic::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <basic::Command as zb_core::ClusterSpecific>::ID => {
                     basic::Command::parse_zcl_frame(header, bytes).map(Self::Basic)
                 }
-                <groups::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <groups::Command as zb_core::ClusterSpecific>::ID => {
                     groups::Command::parse_zcl_frame(header, bytes).map(Self::Groups)
                 }
-                <identify::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <identify::Command as zb_core::ClusterSpecific>::ID => {
                     identify::Command::parse_zcl_frame(header, bytes).map(Self::Identify)
                 }
-                <on_off::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <on_off::Command as zb_core::ClusterSpecific>::ID => {
                     on_off::Command::parse_zcl_frame(header, bytes).map(Self::OnOff)
                 }
-                <level::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <level::Command as zb_core::ClusterSpecific>::ID => {
                     level::Command::parse_zcl_frame(header, bytes).map(Self::Level)
                 }
-                <alarms::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <alarms::Command as zb_core::ClusterSpecific>::ID => {
                     alarms::Command::parse_zcl_frame(header, bytes).map(Self::Alarms)
                 }
-                <scenes::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <scenes::Command as zb_core::ClusterSpecific>::ID => {
                     scenes::Command::parse_zcl_frame(header, bytes).map(Self::Scenes)
                 }
-                <color_control::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <color_control::Command as zb_core::ClusterSpecific>::ID => {
                     color_control::Command::parse_zcl_frame(header, bytes).map(Self::ColorControl)
                 }
-                <ias::zone::Command as apis_saltans_core::ClusterSpecific>::ID => {
+                <ias::zone::Command as zb_core::ClusterSpecific>::ID => {
                     ias::zone::Command::parse_zcl_frame(header, bytes).map(Self::IasZone)
                 }
                 invalid_cluster_id => Err(ParseFrameError::InvalidClusterId(invalid_cluster_id)),

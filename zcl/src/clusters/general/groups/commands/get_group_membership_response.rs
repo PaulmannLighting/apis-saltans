@@ -1,5 +1,5 @@
-use apis_saltans_core::types::{Uint8, Uint16};
-use apis_saltans_core::{Cluster, Direction};
+use zb_core::types::{Uint8, Uint16};
+use zb_core::{Cluster, Direction};
 
 use crate::clusters::general::groups::types::GroupList;
 use crate::macros::zcl_command;

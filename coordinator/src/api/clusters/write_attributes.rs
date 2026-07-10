@@ -1,9 +1,9 @@
-use apis_saltans_core::destination::Device;
-use apis_saltans_core::{ClusterSpecific, ExpectResponse};
-use apis_saltans_zcl::global::write_attributes;
-use apis_saltans_zcl::{Cluster, Command, Scoped, Writable};
 use le_stream::ToLeStream;
 use tokio::sync::mpsc::Sender;
+use zb_core::destination::Device;
+use zb_core::{ClusterSpecific, ExpectResponse};
+use zb_zcl::global::write_attributes;
+use zb_zcl::{Cluster, Command, Scoped, Writable};
 
 use crate::transceiver::zcl::{Handle, Message, Metadata, Payload};
 use crate::{Coordinator, Error};
@@ -97,7 +97,7 @@ where
 {
     fn from(request: WriteAttributesRequest<T>) -> Self {
         Self::new(
-            apis_saltans_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
+            zb_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
             Metadata {
                 scope: write_attributes::Command::SCOPE,
                 direction: write_attributes::Command::DIRECTION,

@@ -1,5 +1,5 @@
-use apis_saltans_core::IeeeAddress;
 use either::Either;
+use zb_core::IeeeAddress;
 
 use crate::{Coordinator, Error, NetworkManager, discovery};
 

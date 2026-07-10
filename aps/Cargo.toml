@@ -13,14 +13,14 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-apis-saltans-core = { version = "0.5", path = "../core" }
-apis-saltans-nwk = { version = "0.2", path = "../nwk" }
 bitflags = "2"
 bytes = "1"
 le-stream = { version = "10", features = ["derive"] }
 log = "0.4"
 num-derive = "0.4"
 num-traits = "0.2"
+zb-core.workspace = true
+zb-nwk.workspace = true
 
 [lints]
 workspace = true

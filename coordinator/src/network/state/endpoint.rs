@@ -1,5 +1,5 @@
-use apis_saltans_zdp::SimpleDescriptor;
 use serde::{Deserialize, Serialize};
+use zb_zdp::SimpleDescriptor;
 
 use super::Attributes;
 

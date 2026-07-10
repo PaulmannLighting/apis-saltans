@@ -1,5 +1,5 @@
-use apis_saltans_core::FullAddress;
-use apis_saltans_zdp::SimpleDescriptor;
+use zb_core::FullAddress;
+use zb_zdp::SimpleDescriptor;
 
 use super::IncomingDevice;
 

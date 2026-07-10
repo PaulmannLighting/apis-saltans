@@ -1,6 +1,6 @@
-use apis_saltans_core::types::{Type as ZclType, Uint16};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use zb_core::types::{Type as ZclType, Uint16};
 
 /// Zone types.
 ///

@@ -1,8 +1,8 @@
 //! Header definitions for an APS data unicast frame.
 
-use apis_saltans_core::Endpoint;
-use apis_saltans_core::endpoint::Reserved;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::Endpoint;
+use zb_core::endpoint::Reserved;
 
 use crate::{Control, DeliveryMode, Extended, FrameType};
 

@@ -1,6 +1,6 @@
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::Uint16;
 use num_traits::FromPrimitive;
+use zb_core::Cluster;
+use zb_core::types::Uint16;
 
 use crate::Options;
 use crate::clusters::lighting::color_control::move_to_hue::Direction;
@@ -11,7 +11,7 @@ zcl_command! {
     EnhancedMoveToHue {
         { Cluster::ColorControl } => ColorControl;
         command_id: 0x40;
-        direction: apis_saltans_core::Direction::ClientToServer;
+        direction: zb_core::Direction::ClientToServer;
         fields {
             enhanced_hue: u16,
             direction: u8,

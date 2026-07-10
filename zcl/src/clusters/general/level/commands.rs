@@ -1,4 +1,4 @@
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::r#move::Move;
 pub use self::move_to_closest_frequency::MoveToClosestFrequency;

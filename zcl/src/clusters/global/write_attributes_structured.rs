@@ -2,7 +2,7 @@
 
 use std::boxed::Box;
 
-use apis_saltans_core::Direction;
+use zb_core::Direction;
 
 pub use self::record::Record;
 pub use self::status::Status;

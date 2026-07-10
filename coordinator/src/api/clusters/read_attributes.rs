@@ -1,11 +1,11 @@
 use std::marker::PhantomData;
 
-use apis_saltans_core::destination::Device;
-use apis_saltans_core::{ClusterSpecific, ExpectResponse};
-use apis_saltans_zcl::global::read_attributes;
-use apis_saltans_zcl::{Cluster, Command, ParseAttributeError, Readable, Scoped};
 use le_stream::ToLeStream;
 use tokio::sync::mpsc::Sender;
+use zb_core::destination::Device;
+use zb_core::{ClusterSpecific, ExpectResponse};
+use zb_zcl::global::read_attributes;
+use zb_zcl::{Cluster, Command, ParseAttributeError, Readable, Scoped};
 
 use crate::transceiver::zcl::{Handle, Message, Metadata, Payload};
 use crate::{Coordinator, Error};
@@ -92,7 +92,7 @@ where
 {
     fn from(request: ReadAttributesRequest<T>) -> Self {
         Self::new(
-            apis_saltans_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
+            zb_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
             Metadata {
                 scope: read_attributes::Command::SCOPE,
                 direction: read_attributes::Command::DIRECTION,

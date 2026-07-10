@@ -1,5 +1,5 @@
-use apis_saltans_core::types::Type;
-use apis_saltans_core::{ClusterSpecific, Profiled};
+use zb_core::types::Type;
+use zb_core::{ClusterSpecific, Profiled};
 
 pub use self::errors::{InvalidType, ParseAttributeError};
 use crate::alarms::Reportable as AlarmsAttributes;
@@ -150,8 +150,8 @@ impl Reportable {
 
 #[cfg(test)]
 mod tests {
-    use apis_saltans_core::Cluster;
-    use apis_saltans_core::types::{Bool, Type, Uint8};
+    use zb_core::Cluster;
+    use zb_core::types::{Bool, Type, Uint8};
 
     use super::{ParseAttributeError, Reportable};
     use crate::clusters::general;

@@ -1,4 +1,4 @@
-use apis_saltans_core::ClusterSpecific;
+use zb_core::ClusterSpecific;
 
 use crate::Scope;
 

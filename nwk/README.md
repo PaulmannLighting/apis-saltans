@@ -78,8 +78,8 @@ Useful methods:
 ## Example
 
 ```rust
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_nwk::{Envelope, Metadata, Source};
+use zb_core::IeeeAddress;
+use zb_nwk::{Envelope, Metadata, Source};
 
 let source = Source::new(0x1234, Some(IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7)));
 let metadata = Metadata::new(Some(255), Some(-42), None, Some(0));

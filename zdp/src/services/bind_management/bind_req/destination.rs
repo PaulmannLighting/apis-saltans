@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use apis_saltans_core::{Endpoint, IeeeAddress};
 use repr_discriminant::ReprDiscriminant;
+use zb_core::{Endpoint, IeeeAddress};
 
 /// Address type for Bind Request.
 #[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]

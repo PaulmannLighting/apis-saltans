@@ -1,4 +1,4 @@
-use apis_saltans_core::IeeeAddress;
+use zb_core::IeeeAddress;
 
 pub use self::response::NwkAddrRspResponse;
 use crate::Status;

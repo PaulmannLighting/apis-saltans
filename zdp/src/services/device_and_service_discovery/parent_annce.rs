@@ -1,5 +1,5 @@
-use apis_saltans_core::{ByteSizedVec, IeeeAddress};
 use heapless::CapacityError;
+use zb_core::{ByteSizedVec, IeeeAddress};
 
 crate::zdp_command! {
     /// Parent Announcement Service.

@@ -2,7 +2,7 @@
 
 use std::boxed::Box;
 
-use apis_saltans_core::Direction;
+use zb_core::Direction;
 
 pub use self::attribute_report::AttributeReport;
 use crate::macros::zcl_command;

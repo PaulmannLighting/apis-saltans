@@ -1,5 +1,5 @@
-use apis_saltans_core::ByteSizedVec;
 use le_stream::{Consume, ToLeStream};
+use zb_core::ByteSizedVec;
 
 use crate::{SimpleDescriptor, Status};
 

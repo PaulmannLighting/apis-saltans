@@ -1,8 +1,8 @@
 use std::fmt::{self, Display};
 
-use apis_saltans_core::GroupId;
-use apis_saltans_core::endpoint::{Application, Broadcast};
 use le_stream::ToLeStream;
+use zb_core::GroupId;
+use zb_core::endpoint::{Application, Broadcast};
 
 /// A variant of `Destination` with weaker invariants to allow graceful parsing of APS frames.
 pub type WeakDestination = Destination<u8, u8, u16>;
@@ -45,16 +45,14 @@ impl From<Destination> for WeakDestination {
     }
 }
 
-impl From<apis_saltans_core::Destination> for WeakDestination {
-    fn from(destination: apis_saltans_core::Destination) -> Self {
+impl From<zb_core::Destination> for WeakDestination {
+    fn from(destination: zb_core::Destination) -> Self {
         match destination {
-            apis_saltans_core::Destination::Device(device) => {
-                Self::Unicast(device.endpoint().into())
-            }
-            apis_saltans_core::Destination::Broadcast(broadcast) => {
+            zb_core::Destination::Device(device) => Self::Unicast(device.endpoint().into()),
+            zb_core::Destination::Broadcast(broadcast) => {
                 Self::Broadcast(broadcast.endpoint().into())
             }
-            apis_saltans_core::Destination::Group(group_id) => Self::Group(group_id.into()),
+            zb_core::Destination::Group(group_id) => Self::Group(group_id.into()),
         }
     }
 }

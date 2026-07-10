@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use apis_saltans_core::IeeeAddress;
 use le_stream::ToLeStream;
+use zb_core::IeeeAddress;
 
 use self::iterator::AddressLeStream;
 
@@ -35,8 +35,8 @@ impl ToLeStream for Address {
 }
 
 mod iterator {
-    use apis_saltans_core::IeeeAddress;
     use le_stream::ToLeStream;
+    use zb_core::IeeeAddress;
 
     /// Iterator for little-endian stream of `Address`.
     #[derive(Debug)]

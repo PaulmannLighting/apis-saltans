@@ -27,14 +27,14 @@ Add the crate from the workspace or repository path.
 
 ```toml
 [dependencies]
-apis_saltans_core = { path = "../core" }
+zb-core = { path = "../core" }
 ```
 
 Enable serde support if needed:
 
 ```toml
 [dependencies]
-apis_saltans_core = { path = "../core", features = ["serde"] }
+zb-core = { path = "../core", features = ["serde"] }
 ```
 
 ## Public API Overview
@@ -122,7 +122,7 @@ Useful types:
 
 ```rust
 use le_stream::ToLeStream;
-use apis_saltans_core::types::tlv::{Global, SymmetricPassphrase, Tlv};
+use zb_core::types::tlv::{Global, SymmetricPassphrase, Tlv};
 
 let passphrase = SymmetricPassphrase::new([0xAA; 16]);
 let tlv = Tlv::Global(Global::SymmetricPassphrase(passphrase));
@@ -135,7 +135,7 @@ let bytes = tlv.to_le_stream().collect::<heapless::Vec<u8, 18>>();
 
 ```rust
 use le_stream::FromLeStreamTagged;
-use apis_saltans_core::types::Type;
+use zb_core::types::Type;
 
 let tag = 0x21; // Uint16
 let payload = [0x34, 0x12];
@@ -149,7 +149,7 @@ assert!(matches!(value, Type::Uint16(_)));
 ### Convert Endpoints and Profiles
 
 ```rust
-use apis_saltans_core::{Application, Endpoint, Profile};
+use zb_core::{Application, Endpoint, Profile};
 
 let application = Application::new(1).expect("valid application endpoint");
 let ep = Endpoint::from(application);

@@ -6,10 +6,10 @@ use std::fmt::Display;
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum ParseApsFrameError {
     /// The ZCL frame is invalid.
-    ParseZclFrameError(apis_saltans_zcl::ParseFrameError),
+    ParseZclFrameError(zb_zcl::ParseFrameError),
 
     /// The ZDP frame is invalid.
-    ParseZdpFrameError(apis_saltans_zdp::ParseFrameError),
+    ParseZdpFrameError(zb_zdp::ParseFrameError),
 
     /// The profile ID is invalid.
     InvalidProfile(u16),
@@ -35,14 +35,14 @@ impl Error for ParseApsFrameError {
     }
 }
 
-impl From<apis_saltans_zcl::ParseFrameError> for ParseApsFrameError {
-    fn from(error: apis_saltans_zcl::ParseFrameError) -> Self {
+impl From<zb_zcl::ParseFrameError> for ParseApsFrameError {
+    fn from(error: zb_zcl::ParseFrameError) -> Self {
         Self::ParseZclFrameError(error)
     }
 }
 
-impl From<apis_saltans_zdp::ParseFrameError> for ParseApsFrameError {
-    fn from(error: apis_saltans_zdp::ParseFrameError) -> Self {
+impl From<zb_zdp::ParseFrameError> for ParseApsFrameError {
+    fn from(error: zb_zdp::ParseFrameError) -> Self {
         Self::ParseZdpFrameError(error)
     }
 }

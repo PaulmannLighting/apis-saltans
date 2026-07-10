@@ -1,4 +1,4 @@
-use apis_saltans_core::Direction;
+use zb_core::Direction;
 
 /// Direction matching rule used when parsing incoming command frames.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

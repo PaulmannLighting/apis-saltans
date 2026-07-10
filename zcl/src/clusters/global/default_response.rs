@@ -1,6 +1,6 @@
 //! Default Response Command.
 
-use apis_saltans_core::Direction;
+use zb_core::Direction;
 
 use crate::macros::zcl_command;
 

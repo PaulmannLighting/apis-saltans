@@ -1,4 +1,4 @@
-use apis_saltans_core::ByteSizedVec;
+use zb_core::ByteSizedVec;
 
 pub use self::response::MgmtRtgRspPayload;
 use crate::Status;

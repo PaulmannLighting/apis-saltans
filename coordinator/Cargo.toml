@@ -12,12 +12,6 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = { version = "0.4", path = "../aps" }
-apis-saltans-core = { version = "0.5", features = ["serde"], path = "../core" }
-apis-saltans-hw = { version = "0.7", features = ["coordinator"], path = "../hw" }
-apis-saltans-nwk = { version = "0.2", path = "../nwk" }
-apis-saltans-zcl = { version = "0.5", features = ["serde"], path = "../zcl" }
-apis-saltans-zdp = { version = "0.4", features = ["serde"], path = "../zdp" }
 bytes = "1"
 const_env = "0.1"
 either = "1.16.0"
@@ -26,6 +20,12 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
 tokio-task-pool = "0.1"
+zb-aps.workspace = true
+zb-core = { workspace = true, features = ["serde"] }
+zb-hw = { workspace = true, features = ["coordinator"] }
+zb-nwk.workspace = true
+zb-zcl = { workspace = true, features = ["serde"] }
+zb-zdp = { workspace = true, features = ["serde"] }
 
 [lints]
 workspace = true

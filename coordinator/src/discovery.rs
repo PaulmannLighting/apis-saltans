@@ -1,8 +1,8 @@
-use apis_saltans_hw::{Ncp, WeakNcpHandle};
 pub use attribute_discovery::OutgoingDevice;
 use log::{error, info, trace};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
+use zb_hw::{Ncp, WeakNcpHandle};
 
 use self::attribute_discovery::AttributeDiscovery;
 use self::endpoint_descriptor_discovery::EndpointDescriptorDiscovery;

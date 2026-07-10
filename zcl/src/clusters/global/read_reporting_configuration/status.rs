@@ -1,5 +1,5 @@
-use apis_saltans_core::types::Type;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::types::Type;
 
 /// Attribute reporting configuration record of a Read Reporting Configuration response.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

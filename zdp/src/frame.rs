@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
-use apis_saltans_aps::{Data, Destination};
-use apis_saltans_core::Endpoint;
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_aps::{Data, Destination};
+use zb_core::Endpoint;
 
 pub use self::parse_frame_error::ParseFrameError;
 use crate::Command;

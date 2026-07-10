@@ -1,7 +1,7 @@
-use apis_saltans_aps::Data;
-use apis_saltans_core::endpoint::Reserved;
-use apis_saltans_core::{Endpoint, FullAddress};
-use apis_saltans_zcl::{Cluster, Frame};
+use zb_aps::Data;
+use zb_core::endpoint::Reserved;
+use zb_core::{Endpoint, FullAddress};
+use zb_zcl::{Cluster, Frame};
 
 pub use self::r#type::Type;
 

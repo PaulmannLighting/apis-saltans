@@ -1,4 +1,4 @@
-use apis_saltans_core::types::{Type, Uint8};
+use zb_core::types::{Type, Uint8};
 
 pub use self::manufacturer_specific::ManufacturerSpecific;
 

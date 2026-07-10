@@ -1,4 +1,4 @@
-use apis_saltans_core::{Cluster, Direction};
+use zb_core::{Cluster, Direction};
 
 use crate::macros::zcl_command;
 

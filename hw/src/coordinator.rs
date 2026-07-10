@@ -4,8 +4,8 @@
 
 use std::time::Duration;
 
-use apis_saltans_core::{Destination, IeeeAddress};
 use tokio::sync::oneshot::channel;
+use zb_core::{Destination, IeeeAddress};
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
 use crate::{Error, NcpHandle};

@@ -1,6 +1,6 @@
 //! Attribute value types of the Time cluster.
 
-use apis_saltans_core::types::{Int32, UtcTime};
+use zb_core::types::{Int32, UtcTime};
 
 pub use self::time_status::TimeStatus;
 use crate::macros::zcl_attribute_newtype;

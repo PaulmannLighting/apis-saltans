@@ -1,5 +1,5 @@
-use apis_saltans_core::Endpoint;
-use apis_saltans_core::endpoint::Reserved;
+use zb_core::Endpoint;
+use zb_core::endpoint::Reserved;
 
 use crate::SimpleDescRsp;
 

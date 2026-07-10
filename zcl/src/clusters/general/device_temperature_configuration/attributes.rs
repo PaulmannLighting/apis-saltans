@@ -1,7 +1,7 @@
 //! Attributes of the Device Temperature Configuration cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::{Int16, Uint16, Uint24};
+use zb_core::Cluster;
+use zb_core::types::{Int16, Uint16, Uint24};
 
 pub use self::types::AlarmMask;
 use crate::macros::zcl_attributes;

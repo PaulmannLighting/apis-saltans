@@ -1,8 +1,8 @@
 use std::iter::Chain;
 
-use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::types::tlv::Tlv;
 use le_stream::ToLeStream;
+use zb_core::node::Descriptor;
+use zb_core::types::tlv::Tlv;
 
 use crate::Status;
 
@@ -90,7 +90,7 @@ crate::zdp_command! {
             /// ```
             /// use le_stream::FromLeStream;
             ///
-            /// use apis_saltans_zdp::{Frame, NodeDescRsp};
+            /// use zb_zdp::{Frame, NodeDescRsp};
             ///
             /// let bytes: [u8; _] = [5, 0, 62, 199, 1, 64, 142, 24, 18, 66, 66, 0, 0, 42, 66, 0, 0];
             /// let node_desc_rsp = Frame::<NodeDescRsp>::from_le_stream(bytes.into_iter()).unwrap();

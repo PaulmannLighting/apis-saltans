@@ -1,6 +1,6 @@
-use apis_saltans_core::endpoint::Reserved;
-use apis_saltans_core::{ByteSizedVec, Endpoint, Profile};
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::endpoint::Reserved;
+use zb_core::{ByteSizedVec, Endpoint, Profile};
 
 pub use self::app_flags::AppFlags;
 

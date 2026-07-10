@@ -1,5 +1,5 @@
-use apis_saltans_core::FullAddress;
-use apis_saltans_core::node::MacCapabilityFlags;
+use zb_core::FullAddress;
+use zb_core::node::MacCapabilityFlags;
 
 /// Message sent to the discovery actor.
 #[derive(Debug)]

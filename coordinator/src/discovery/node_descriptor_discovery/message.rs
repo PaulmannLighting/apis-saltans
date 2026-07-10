@@ -1,5 +1,5 @@
-use apis_saltans_core::FullAddress;
-use apis_saltans_core::node::Descriptor;
+use zb_core::FullAddress;
+use zb_core::node::Descriptor;
 
 /// Message sent to the descriptor discovery actor.
 #[derive(Debug)]

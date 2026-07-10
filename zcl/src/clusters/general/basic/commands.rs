@@ -1,6 +1,6 @@
 //! Commands for the Basic cluster.
 
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::reset_to_factory_defaults::ResetToFactoryDefaults;
 use crate::macros::zcl_command_enum;

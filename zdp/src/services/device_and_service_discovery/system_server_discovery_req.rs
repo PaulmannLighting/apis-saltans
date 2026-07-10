@@ -1,4 +1,4 @@
-use apis_saltans_core::node::ServerMask;
+use zb_core::node::ServerMask;
 
 crate::zdp_command! {
     /// System Server Discovery Request

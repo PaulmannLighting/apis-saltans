@@ -9,7 +9,7 @@
 
 use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
 
-use apis_saltans_core::IeeeAddress;
+use zb_core::IeeeAddress;
 
 /// A payload together with its network-layer source and metadata.
 ///

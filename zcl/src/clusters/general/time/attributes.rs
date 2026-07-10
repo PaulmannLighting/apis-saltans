@@ -1,6 +1,6 @@
 //! Attributes of the Time cluster.
 
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::types::{
     DstEnd, DstShift, DstStart, LastSetTime, LocalTime, StandardTime, Time, TimeStatus, TimeZone,

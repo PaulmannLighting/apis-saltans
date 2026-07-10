@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::{Endpoint, FullAddress, IeeeAddress};
-use apis_saltans_zdp::SimpleDescriptor;
+use zb_core::node::Descriptor;
+use zb_core::{Endpoint, FullAddress, IeeeAddress};
+use zb_zdp::SimpleDescriptor;
 
 /// Type alias for a map of devices to their endpoints.
 pub type Devices = BTreeMap<IeeeAddress, OutgoingDevice>;

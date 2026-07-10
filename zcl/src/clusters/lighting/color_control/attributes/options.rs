@@ -1,6 +1,6 @@
-use apis_saltans_core::types::Type;
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::types::Type;
 
 /// Options for the On/Off cluster commands.
 #[cfg_attr(

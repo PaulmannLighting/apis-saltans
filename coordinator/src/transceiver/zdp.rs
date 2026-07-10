@@ -2,20 +2,20 @@
 
 use std::collections::BTreeMap;
 
-use apis_saltans_core::short_id::Device;
-use apis_saltans_core::{Destination, Endpoint, FullAddress, destination};
-use apis_saltans_hw::{Datagram, Ncp};
-use apis_saltans_nwk::Source;
-use apis_saltans_zdp::{
-    Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
-    SimpleDescriptor,
-};
 use le_stream::ToLeStream;
 use log::{debug, error, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Sender, channel};
+use zb_core::short_id::Device;
+use zb_core::{Destination, Endpoint, FullAddress, destination};
+use zb_hw::{Datagram, Ncp};
+use zb_nwk::Source;
+use zb_zdp::{
+    Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
+    SimpleDescriptor,
+};
 
 pub use self::handle::Handle;
 use self::match_desc_req_ext::MatchDescReqExt;
@@ -136,7 +136,7 @@ where
         &mut self,
         device: Device,
         payload: Payload,
-    ) -> Result<oneshot::Receiver<Command>, apis_saltans_hw::Error> {
+    ) -> Result<oneshot::Receiver<Command>, zb_hw::Error> {
         let (metadata, payload) = payload.into_parts();
         let seq = self.next_seq();
         let index = Index::from_zdp_command(device, seq, metadata);
@@ -155,12 +155,7 @@ where
             .await?;
         Ok(rx)
     }
-    async fn respond(
-        &self,
-        seq: u8,
-        device: Device,
-        payload: Payload,
-    ) -> Result<(), apis_saltans_hw::Error> {
+    async fn respond(&self, seq: u8, device: Device, payload: Payload) -> Result<(), zb_hw::Error> {
         let (metadata, payload) = payload.into_parts();
         let zdp_frame = Frame::new(seq, payload);
         #[expect(unsafe_code)]

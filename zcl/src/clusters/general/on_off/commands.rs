@@ -1,6 +1,6 @@
 //! Commands for the On/Off cluster.
 
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::off::Off;
 pub use self::off_with_effect::{DelayedAllOff, DyingLight, Effect, OffWithEffect};

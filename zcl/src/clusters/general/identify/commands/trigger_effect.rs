@@ -1,4 +1,4 @@
-use apis_saltans_core::{Cluster, Direction};
+use zb_core::{Cluster, Direction};
 
 pub use self::effect_identifier::EffectIdentifier;
 pub use self::effect_variant::EffectVariant;

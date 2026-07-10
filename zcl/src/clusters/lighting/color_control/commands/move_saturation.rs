@@ -1,7 +1,7 @@
 //! Data structures for the `Move Saturation` command in the `Lighting` cluster.
 
-use apis_saltans_core::{Cluster, Direction};
 use num_traits::FromPrimitive;
+use zb_core::{Cluster, Direction};
 
 pub use self::mode::Mode;
 use crate::Options;

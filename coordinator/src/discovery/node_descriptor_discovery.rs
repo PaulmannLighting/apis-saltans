@@ -1,7 +1,7 @@
-use apis_saltans_core::FullAddress;
 use log::{error, trace};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
+use zb_core::FullAddress;
 
 pub use self::message::Message;
 use crate::discovery::endpoint_discovery::{self, Device};

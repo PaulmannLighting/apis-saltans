@@ -2,7 +2,7 @@ mod enhanced_update_parameters;
 
 use std::iter::once;
 
-use apis_saltans_core::types::{ChannelList, ConfigurationBitmask};
+use zb_core::types::{ChannelList, ConfigurationBitmask};
 
 pub use self::enhanced_update_parameters::EnhancedNwkUpdateParameters;
 use crate::ScanDuration;

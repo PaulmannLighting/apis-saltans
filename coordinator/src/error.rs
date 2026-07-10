@@ -3,10 +3,10 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-use apis_saltans_core::IeeeAddress;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use tokio::time::error::Elapsed;
+use zb_core::IeeeAddress;
 
 use crate::storage;
 
@@ -14,7 +14,7 @@ use crate::storage;
 #[derive(Debug)]
 pub enum Error {
     /// Hardware error.
-    Hardware(apis_saltans_hw::Error),
+    Hardware(zb_hw::Error),
 
     /// A storage error
     Storage(storage::Error),
@@ -75,8 +75,8 @@ impl std::error::Error for Error {
     }
 }
 
-impl From<apis_saltans_hw::Error> for Error {
-    fn from(error: apis_saltans_hw::Error) -> Self {
+impl From<zb_hw::Error> for Error {
+    fn from(error: zb_hw::Error) -> Self {
         Self::Hardware(error)
     }
 }

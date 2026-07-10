@@ -59,7 +59,7 @@ A ZCL frame is represented as:
 - `payload` (`T`)
 
 For parsed runtime payloads, use `Frame<Cluster>`. Raw APS data arrives as
-`apis_saltans_aps::Data<bytes::Bytes>` and can be converted into a parsed ZCL
+`zb_aps::Data<bytes::Bytes>` and can be converted into a parsed ZCL
 frame; direct byte-stream parsing is available through `Frame::parse(cluster_id,
 bytes)`.
 
@@ -121,7 +121,7 @@ Current attribute modules include:
 - IAS:
     - IAS Zone
 
-For reports, use `apis_saltans_zcl::Reportable::parse(cluster_id, attribute_id, typ)` to map a raw cluster ID,
+For reports, use `zb_zcl::Reportable::parse(cluster_id, attribute_id, typ)` to map a raw cluster ID,
 attribute ID, and ZCL `Type` into the corresponding typed reportable attribute enum.
 
 ## Serialization and Parsing
@@ -140,7 +140,7 @@ attribute ID, and ZCL `Type` into the corresponding typed reportable attribute e
 
 ```rust
 use le_stream::ToLeStream;
-use apis_saltans_zcl::clusters::global::default_response::DefaultResponse;
+use zb_zcl::clusters::global::default_response::DefaultResponse;
 
 let response = DefaultResponse::new(0x00, 0x01);
 let bytes: Vec<u8> = response.to_le_stream().collect();
@@ -150,7 +150,7 @@ assert!(!bytes.is_empty());
 ### Parse a ZCL Frame into a Runtime Cluster Command
 
 ```rust
-use apis_saltans_zcl::Frame;
+use zb_zcl::Frame;
 
 let bytes = vec![0x18, 0x11, 0x0B, 0x00, 0x01];
 let parsed = Frame::parse(0x0006, bytes.into_iter());
@@ -161,7 +161,7 @@ assert!(parsed.is_ok());
 
 The crate provides type-safe patterns for attribute access:
 
-- `Readable`: map attribute IDs and wire `apis_saltans_core::types::Type` values into strongly typed readable attribute
+- `Readable`: map attribute IDs and wire `zb_core::types::Type` values into strongly typed readable attribute
   enums/structs.
 - `Writable`: convert writable attribute values into global write records.
 - `Reportable`: parse reportable attributes across all implemented cluster attribute modules.

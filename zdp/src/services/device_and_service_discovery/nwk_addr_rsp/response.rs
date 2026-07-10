@@ -1,4 +1,4 @@
-use apis_saltans_core::{ByteSizedVec, IeeeAddress};
+use zb_core::{ByteSizedVec, IeeeAddress};
 
 /// Successful Network Address Response payload.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

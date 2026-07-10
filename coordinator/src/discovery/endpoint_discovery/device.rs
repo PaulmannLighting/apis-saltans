@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use apis_saltans_core::FullAddress;
-use apis_saltans_core::node::Descriptor;
+use zb_core::FullAddress;
+use zb_core::node::Descriptor;
 
 #[derive(Debug)]
 pub struct Device {

@@ -1,6 +1,6 @@
 use core::ops::RangeInclusive;
 
-use apis_saltans_core::types::Uint16;
+use zb_core::types::Uint16;
 
 use crate::macros::zcl_attribute_newtype;
 

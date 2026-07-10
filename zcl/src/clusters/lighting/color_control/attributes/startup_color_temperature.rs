@@ -1,5 +1,5 @@
-use apis_saltans_core::types::{Type, Uint16};
-use apis_saltans_core::units::Mireds;
+use zb_core::types::{Type, Uint16};
+use zb_core::units::Mireds;
 
 const PREVIOUS: u16 = 0xffff;
 

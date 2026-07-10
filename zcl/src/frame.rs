@@ -1,8 +1,8 @@
 //! ZCL frame representation.
 
-use apis_saltans_aps::Data;
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_aps::Data;
 
 pub use self::header::{Control, Direction, Header, Scope};
 pub use self::parse_frame_error::ParseFrameError;

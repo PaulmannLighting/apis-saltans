@@ -1,8 +1,8 @@
 //! Header definitions for a generic APS Data frame.
 
-use apis_saltans_core::endpoint::Reserved;
-use apis_saltans_core::{Endpoint, Profile};
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::endpoint::Reserved;
+use zb_core::{Endpoint, Profile};
 
 use crate::frame::destination::{Destination, WeakDestination};
 use crate::{Control, Extended, Fragmentation, FrameType};

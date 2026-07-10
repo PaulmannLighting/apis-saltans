@@ -1,5 +1,5 @@
-use apis_saltans_core::{Application, FullAddress};
-use apis_saltans_zcl::basic::Id;
+use zb_core::{Application, FullAddress};
+use zb_zcl::basic::Id;
 
 use super::IncomingDevice;
 use crate::ReadAttributeResult;

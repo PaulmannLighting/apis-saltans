@@ -1,6 +1,6 @@
 use core::num::NonZero;
 
-use apis_saltans_core::types::{Type, Uint8};
+use zb_core::types::{Type, Uint8};
 
 /// Valid levels for the Ballast Settings Level attribute.
 #[cfg_attr(

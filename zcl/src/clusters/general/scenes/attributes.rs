@@ -1,7 +1,7 @@
 //! Attributes of the Scenes cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::{Bool, Uint8};
+use zb_core::Cluster;
+use zb_core::types::{Bool, Uint8};
 
 pub use self::types::{CurrentGroup, LastConfiguredBy};
 pub use crate::clusters::general::groups::NameSupport;

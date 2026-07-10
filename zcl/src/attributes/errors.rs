@@ -2,7 +2,7 @@ use core::error::Error;
 use core::fmt::{Debug, Display};
 use std::boxed::Box;
 
-use apis_saltans_core::types::Type;
+use zb_core::types::Type;
 
 use crate::Status;
 

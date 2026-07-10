@@ -1,5 +1,5 @@
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_core::node::MacCapabilityFlags;
+use zb_core::IeeeAddress;
+use zb_core::node::MacCapabilityFlags;
 
 crate::zdp_command! {
     /// Device Announcement Service.

@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::{self, Display};
 
-use apis_saltans_aps::Destination;
+use zb_aps::Destination;
 
 /// Errors that can occur when converting an incoming message to a ZDP frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

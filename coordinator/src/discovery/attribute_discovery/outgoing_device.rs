@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::{Application, Cluster, Endpoint, FullAddress, IeeeAddress};
-use apis_saltans_zdp::SimpleDescriptor;
+use zb_core::node::Descriptor;
+use zb_core::{Application, Cluster, Endpoint, FullAddress, IeeeAddress};
+use zb_zdp::SimpleDescriptor;
 
 use super::endpoint_info::EndpointInfo;
 

@@ -1,4 +1,4 @@
-use apis_saltans_core::ByteSizedVec;
+use zb_core::ByteSizedVec;
 
 /// Successful Management LQI Response payload.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

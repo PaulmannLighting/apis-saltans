@@ -1,7 +1,7 @@
 //! Attributes of the Illuminance Level Sensing cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::Uint16;
+use zb_core::Cluster;
+use zb_core::types::Uint16;
 
 pub use self::types::LevelStatus;
 pub use crate::illuminance_measurement::LightSensorType;

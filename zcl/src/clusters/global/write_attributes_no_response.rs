@@ -3,7 +3,7 @@
 use core::ops::Deref;
 use std::boxed::Box;
 
-use apis_saltans_core::Direction;
+use zb_core::Direction;
 
 pub use super::write_attributes::{Record, Response, Status};
 use crate::macros::zcl_command;

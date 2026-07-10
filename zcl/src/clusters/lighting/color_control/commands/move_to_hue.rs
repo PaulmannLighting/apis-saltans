@@ -1,8 +1,8 @@
 //! Data structures for the `Move To Hue` command in the `Lighting` cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::Uint16;
 use num_traits::FromPrimitive;
+use zb_core::Cluster;
+use zb_core::types::Uint16;
 
 pub use self::direction::Direction;
 use crate::Options;
@@ -15,7 +15,7 @@ zcl_command! {
     MoveToHue {
         { Cluster::ColorControl } => ColorControl;
         command_id: 0x00;
-        direction: apis_saltans_core::Direction::ClientToServer;
+        direction: zb_core::Direction::ClientToServer;
         fields {
             hue: u8,
             direction: u8,

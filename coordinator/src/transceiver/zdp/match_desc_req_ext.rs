@@ -1,4 +1,4 @@
-use apis_saltans_zdp::{MatchDescReq, SimpleDescriptor};
+use zb_zdp::{MatchDescReq, SimpleDescriptor};
 
 /// Extension trait for `MatchDescReq`.
 pub trait MatchDescReqExt {

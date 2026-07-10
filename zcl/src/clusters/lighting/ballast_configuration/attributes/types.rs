@@ -1,5 +1,5 @@
-use apis_saltans_core::types::Type;
 use bitflags::bitflags;
+use zb_core::types::Type;
 
 /// Lamp alarm mode attribute.
 #[cfg_attr(

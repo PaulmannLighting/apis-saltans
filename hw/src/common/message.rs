@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use apis_saltans_core::{Destination, IeeeAddress};
 use tokio::sync::oneshot::Sender;
+use zb_core::{Destination, IeeeAddress};
 
 pub use self::found_network::FoundNetwork;
 #[cfg(any(feature = "coordinator", feature = "driver"))]

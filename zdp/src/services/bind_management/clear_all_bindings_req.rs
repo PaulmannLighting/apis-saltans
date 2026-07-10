@@ -1,5 +1,5 @@
-use apis_saltans_core::Eui64;
-use apis_saltans_core::types::tlv::{Local, Tlv};
+use zb_core::Eui64;
+use zb_core::types::tlv::{Local, Tlv};
 
 crate::zdp_command! {
     /// Clear All Bindings Request

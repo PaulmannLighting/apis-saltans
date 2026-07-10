@@ -1,5 +1,5 @@
-use apis_saltans_core::types::Uint8;
 use repr_discriminant::ReprDiscriminant;
+use zb_core::types::Uint8;
 
 pub use self::delayed_all_off::DelayedAllOff;
 pub use self::dying_light::DyingLight;

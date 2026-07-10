@@ -2,8 +2,8 @@
 
 use core::time::Duration;
 
-use apis_saltans_core::Cluster;
 use num_traits::FromPrimitive;
+use zb_core::Cluster;
 
 pub use self::action::{Action, Source};
 pub use self::direction::Direction;
@@ -20,7 +20,7 @@ zcl_command! {
     ColorLoopSet {
         { Cluster::ColorControl } => ColorControl;
         command_id: 0x44;
-        direction: apis_saltans_core::Direction::ClientToServer;
+        direction: zb_core::Direction::ClientToServer;
         fields {
             update: Update,
             action: u8,

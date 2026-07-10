@@ -1,5 +1,5 @@
-use apis_saltans_core::IeeeAddress;
 use num_traits::FromPrimitive;
+use zb_core::IeeeAddress;
 
 pub use self::request_type::RequestType;
 

@@ -182,7 +182,7 @@ For each discovered endpoint:
 ### AttributeDiscovery (AD)
 
 For each application endpoint containing the Basic cluster:
-- reads a fixed attribute set from `apis_saltans_zcl::general::basic`
+- reads a fixed attribute set from `zb_zcl::general::basic`
 - converts read results into coordinator `Attributes`
 - when complete, sends `binding::Message::DeviceDiscovered` directly to `Binding`
 

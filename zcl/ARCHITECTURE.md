@@ -36,7 +36,7 @@ has protocol-specific invariants or parsing rules.
 
 ## Runtime Command Flow
 
-Incoming raw APS payloads are carried as `apis_saltans_aps::Data<bytes::Bytes>`.
+Incoming raw APS payloads are carried as `zb_aps::Data<bytes::Bytes>`.
 `TryFrom<Data<Bytes>> for Frame<Cluster>` extracts the APS cluster ID and then
 parses the payload through `Frame<Cluster>::parse(cluster_id, bytes)`:
 
@@ -70,8 +70,8 @@ generates access-specific enums:
 
 The generated `Id` enum implements the crate's `Readable` trait, and the generated `Writable` enum
 implements the crate's `Writable` trait. `Reportable` additionally implements
-`TryFrom<(u16, apis_saltans_core::types::Type)>`, which is used by the crate-wide
-`apis_saltans_zcl::Reportable::parse`.
+`TryFrom<(u16, zb_core::types::Type)>`, which is used by the crate-wide
+`zb_zcl::Reportable::parse`.
 
 Global readable attributes `ClusterRevision` and `AttributeReportingStatus` are included by
 `zcl_attributes!` in every generated attribute table.
@@ -131,8 +131,8 @@ Generated items:
   supplied.
 - A default `new(...) -> Self` constructor unless a `constructor` block is supplied.
 - Inherent getter methods from an optional `getters` block.
-- `apis_saltans_core::Cluster<ClusterId>` for cluster-specific commands.
-- `apis_saltans_core::Profiled` for cluster-specific commands. The generated
+- `zb_core::Cluster<ClusterId>` for cluster-specific commands.
+- `zb_core::Profiled` for cluster-specific commands. The generated
   `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add `profile:
   ProfileVariant;` after the cluster declaration to override it.
 - `Scoped<Scope::Global>` for global commands.
@@ -179,8 +179,8 @@ Generated items:
 - Derives `Clone`, `Debug`, `Eq`, `PartialEq`, `Hash`, and `ParseZclFrame`.
 - `From<Payload> for Command` for each payload.
 - `From<Command> for crate::Cluster`.
-- `apis_saltans_core::Cluster<ClusterId>` for cluster-specific command enums.
-- `apis_saltans_core::Profiled` for cluster-specific command enums. The
+- `zb_core::Cluster<ClusterId>` for cluster-specific command enums.
+- `zb_core::Profiled` for cluster-specific command enums. The
   generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
   `profile: ProfileVariant;` after the cluster declaration to override it.
 - `CommandDispatch`, by delegating to the boxed payload.
@@ -192,7 +192,7 @@ payload type names differ.
 ### `zcl_attribute_newtype!`
 
 `zcl_attribute_newtype!` generates small attribute value types that convert to and from
-`apis_saltans_core::types::Type`.
+`zb_core::types::Type`.
 
 Supported forms:
 
@@ -260,7 +260,7 @@ Generated items:
 - `From<Writable> for global::write_attributes::Record`.
 - `TryFrom<(u16, Type)> for Reportable`, returning `ParseAttributeError<u16>`.
 
-The type used for an attribute must be convertible from/to `apis_saltans_core::types::Type` as needed
+The type used for an attribute must be convertible from/to `zb_core::types::Type` as needed
 by its access flags. For writable attributes, the type must convert into `Type`; for readable or
 reportable attributes, it must implement `TryFrom<Type>`.
 

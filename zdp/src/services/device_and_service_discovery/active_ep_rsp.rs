@@ -1,5 +1,5 @@
-use apis_saltans_core::endpoint::Reserved;
-use apis_saltans_core::{ByteSizedVec, Endpoint};
+use zb_core::endpoint::Reserved;
+use zb_core::{ByteSizedVec, Endpoint};
 
 use crate::Status;
 

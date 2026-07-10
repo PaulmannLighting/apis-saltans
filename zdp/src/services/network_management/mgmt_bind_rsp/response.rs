@@ -1,4 +1,4 @@
-use apis_saltans_core::ByteSizedVec;
+use zb_core::ByteSizedVec;
 
 /// Successful Management Binding Table Response payload.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

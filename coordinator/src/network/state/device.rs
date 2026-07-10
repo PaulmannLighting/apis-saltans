@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use apis_saltans_core::Endpoint;
-use apis_saltans_core::node::Descriptor;
 use serde::{Deserialize, Serialize};
+use zb_core::Endpoint;
+use zb_core::node::Descriptor;
 
 use super::EndpointInfo;
 

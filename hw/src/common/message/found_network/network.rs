@@ -1,4 +1,4 @@
-use apis_saltans_core::IeeeAddress;
+use zb_core::IeeeAddress;
 
 /// Information about a found network during a network scan.
 #[derive(Clone, Debug, Eq, PartialEq)]

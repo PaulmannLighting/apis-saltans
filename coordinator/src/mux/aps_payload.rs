@@ -1,13 +1,13 @@
-use apis_saltans_aps::data::Frame;
-use apis_saltans_core::Profile;
 use bytes::Bytes;
+use zb_aps::data::Frame;
+use zb_core::Profile;
 
 pub use self::error::ParseApsFrameError;
 
 mod error;
 
-type ZdpFrame = apis_saltans_zdp::Frame<apis_saltans_zdp::Command>;
-type ZclFrame = apis_saltans_zcl::Frame<apis_saltans_zcl::Cluster>;
+type ZdpFrame = zb_zdp::Frame<zb_zdp::Command>;
+type ZclFrame = zb_zcl::Frame<zb_zcl::Cluster>;
 
 /// Commands received on the APS layer.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

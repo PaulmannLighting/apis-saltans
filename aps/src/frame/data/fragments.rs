@@ -99,8 +99,8 @@ impl Iterator for Fragments {
 mod tests {
     use std::num::NonZero;
 
-    use apis_saltans_core::{Application, Endpoint};
     use bytes::Bytes;
+    use zb_core::{Application, Endpoint};
 
     use super::{Fragments, SINGLE_BLOCK};
     use crate::data::{Frame, Header};

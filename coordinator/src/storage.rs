@@ -1,8 +1,8 @@
 //! Generic API to implement storage of the Zigbee network state.
 
-use apis_saltans_core::{IeeeAddress, short_id};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
+use zb_core::{IeeeAddress, short_id};
 
 pub use self::error::Error;
 pub use self::message::Message;

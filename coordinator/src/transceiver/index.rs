@@ -1,11 +1,11 @@
-use apis_saltans_aps::Data;
-use apis_saltans_core::destination::Device;
-use apis_saltans_core::endpoint::Reserved;
-use apis_saltans_core::{Endpoint, short_id};
-use apis_saltans_hw::Metadata;
-use apis_saltans_nwk::Source;
-use apis_saltans_zcl::Cluster;
-use apis_saltans_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
+use zb_aps::Data;
+use zb_core::destination::Device;
+use zb_core::endpoint::Reserved;
+use zb_core::{Endpoint, short_id};
+use zb_hw::Metadata;
+use zb_nwk::Source;
+use zb_zcl::Cluster;
+use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
 
 /// Correlation key for pending transceiver responses.
 ///
@@ -96,10 +96,7 @@ impl Index {
     ///
     /// The incoming frame contributes the APS and ZCL header fields, while the
     /// [`Source`] contributes the remote node id that sent the response.
-    pub fn from_received_zcl_frame(
-        source: Source,
-        frame: &Data<apis_saltans_zcl::Frame<Cluster>>,
-    ) -> Self {
+    pub fn from_received_zcl_frame(source: Source, frame: &Data<zb_zcl::Frame<Cluster>>) -> Self {
         Self::from_aps_and_zcl_headers(source.node_id(), frame.header(), frame.payload().header())
     }
 
@@ -109,10 +106,7 @@ impl Index {
     /// toggled away before indexing so the response matches the key that was
     /// stored for the original request command.
     #[must_use]
-    pub fn from_received_zdp_frame(
-        source: Source,
-        frame: &apis_saltans_zdp::Frame<Command>,
-    ) -> Self {
+    pub fn from_received_zdp_frame(source: Source, frame: &zb_zdp::Frame<Command>) -> Self {
         Self::new(
             source.node_id(),
             Ok(Endpoint::Data),
@@ -126,8 +120,8 @@ impl Index {
     /// Build the ZCL response correlation key from APS and ZCL headers.
     fn from_aps_and_zcl_headers(
         short_id: u16,
-        aps_header: &apis_saltans_aps::data::Header,
-        zcl_header: apis_saltans_zcl::Header,
+        aps_header: &zb_aps::data::Header,
+        zcl_header: zb_zcl::Header,
     ) -> Self {
         Self::new(
             short_id,

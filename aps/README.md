@@ -44,7 +44,7 @@ Top-level re-exports are available from `apis-saltans-aps` directly.
 
 ## Defragmentation
 
-`Assembler` consumes `apis_saltans_nwk::Envelope<Data<bytes::Bytes>>` values.
+`Assembler` consumes `zb_nwk::Envelope<Data<bytes::Bytes>>` values.
 It uses the NWK source and APS counter to identify an in-progress fragmented
 transaction. `Bytes` keeps raw APS payload handling cheap when frames are passed
 between queues or reassembled from multiple fragments.
@@ -58,9 +58,9 @@ Behavior:
 - invalid frames and out-of-bounds fragments are dropped and return `None`.
 
 ```rust
-use apis_saltans_aps::{Assembler, Data};
+use zb_aps::{Assembler, Data};
 use bytes::Bytes;
-use apis_saltans_nwk::Envelope;
+use zb_nwk::Envelope;
 
 fn handle_frame(
     assembler: &mut Assembler,
@@ -85,7 +85,7 @@ Most frame builders produce strongly typed structures first, then serialize via 
 ### Build and Serialize a Unicast APS Data Frame
 
 ```rust
-use apis_saltans_aps::Unicast;
+use zb_aps::Unicast;
 use le_stream::ToLeStream;
 
 let frame = Unicast::new(
@@ -107,7 +107,7 @@ assert!(!bytes.is_empty());
 ### Parse an APS Data Header
 
 ```rust
-use apis_saltans_aps::data::Header;
+use zb_aps::data::Header;
 use le_stream::FromLeStream;
 
 let raw = [

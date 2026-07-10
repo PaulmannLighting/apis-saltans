@@ -1,7 +1,7 @@
 //! Attributes of the On/Off cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::{Bool, Uint16};
+use zb_core::Cluster;
+use zb_core::types::{Bool, Uint16};
 
 pub use self::types::StartUpOnOff;
 use crate::macros::zcl_attributes;

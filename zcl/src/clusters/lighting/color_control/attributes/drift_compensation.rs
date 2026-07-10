@@ -1,6 +1,6 @@
-use apis_saltans_core::types::{Type, Uint8};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use zb_core::types::{Type, Uint8};
 
 /// Mechanism used for compensating color or color intensity drift over time.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

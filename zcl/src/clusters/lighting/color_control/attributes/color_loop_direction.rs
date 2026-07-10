@@ -1,6 +1,6 @@
-use apis_saltans_core::types::{Type, Uint8};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use zb_core::types::{Type, Uint8};
 
 /// Direction of the color loop.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

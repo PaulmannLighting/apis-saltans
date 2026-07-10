@@ -1,4 +1,4 @@
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::add_scene::AddScene;
 pub use self::add_scene_response::AddSceneResponse;

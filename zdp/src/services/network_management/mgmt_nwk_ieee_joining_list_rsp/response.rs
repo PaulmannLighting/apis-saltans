@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use apis_saltans_core::{ByteSizedVec, IeeeAddress};
+use zb_core::{ByteSizedVec, IeeeAddress};
 
 /// ZDO joining policy.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use apis_saltans_core::types::{ChannelList, ChannelsField};
 use repr_discriminant::ReprDiscriminant;
+use zb_core::types::{ChannelList, ChannelsField};
 
 /// Scan Duration enumeration.
 ///

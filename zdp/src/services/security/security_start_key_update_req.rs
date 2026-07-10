@@ -1,4 +1,4 @@
-use apis_saltans_core::types::tlv::Tlv;
+use zb_core::types::tlv::Tlv;
 
 crate::zdp_command! {
     /// Security Start Key Update Request.

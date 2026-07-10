@@ -1,4 +1,4 @@
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::identify::Identify;
 pub use self::identify_query::IdentifyQuery;

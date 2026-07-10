@@ -1,4 +1,4 @@
-use apis_saltans_core::{Cluster, Endpoint, FullAddress};
+use zb_core::{Cluster, Endpoint, FullAddress};
 
 use crate::binding::device::Device;
 

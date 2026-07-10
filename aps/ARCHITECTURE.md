@@ -34,7 +34,7 @@ flowchart TD
 transactions. Each
 transaction is keyed by:
 
-- `apis_saltans_nwk::Source`, because APS counters are source-scoped;
+- `zb_nwk::Source`, because APS counters are source-scoped;
 - APS frame counter, because fragments of one APS frame share the counter.
 
 The first fragment stores the original APS data header and opens the payload

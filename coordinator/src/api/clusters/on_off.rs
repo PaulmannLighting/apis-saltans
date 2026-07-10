@@ -1,5 +1,5 @@
-use apis_saltans_core::Destination;
-use apis_saltans_zcl::on_off::{Effect, Off, OffWithEffect, On, Toggle};
+use zb_core::Destination;
+use zb_zcl::on_off::{Effect, Off, OffWithEffect, On, Toggle};
 
 use crate::transceiver::zcl::Handle;
 use crate::{Coordinator, Error};

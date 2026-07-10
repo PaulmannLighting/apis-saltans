@@ -1,12 +1,12 @@
 use std::time::Duration;
 
-use apis_saltans_core::short_id::Device;
-use apis_saltans_core::types::tlv::FragmentationParameters;
-use apis_saltans_core::{FullAddress, IeeeAddress};
-use apis_saltans_zdp::NodeDescReq;
 use const_env::env_item;
 use log::{error, info, trace, warn};
 use tokio::sync::mpsc::Sender;
+use zb_core::short_id::Device;
+use zb_core::types::tlv::FragmentationParameters;
+use zb_core::{FullAddress, IeeeAddress};
+use zb_zdp::NodeDescReq;
 
 use super::Message;
 use crate::transceiver::zdp::Handle;

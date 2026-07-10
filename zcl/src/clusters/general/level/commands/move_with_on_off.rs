@@ -1,6 +1,6 @@
-use apis_saltans_core::types::Uint8;
-use apis_saltans_core::units::UnitsPerSecond;
-use apis_saltans_core::{Cluster, Direction};
+use zb_core::types::Uint8;
+use zb_core::units::UnitsPerSecond;
+use zb_core::{Cluster, Direction};
 
 use crate::level::Mode;
 use crate::macros::zcl_command;

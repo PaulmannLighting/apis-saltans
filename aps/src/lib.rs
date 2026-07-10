@@ -6,7 +6,7 @@
 //!
 //! APS headers preserve endpoint bytes from incoming frames and expose fallible
 //! endpoint getters. This lets callers distinguish valid
-//! [`Endpoint`](apis_saltans_core::Endpoint) values from reserved endpoint IDs
+//! [`Endpoint`](zb_core::Endpoint) values from reserved endpoint IDs
 //! without losing the original protocol value.
 
 pub use self::broadcast::Broadcast;

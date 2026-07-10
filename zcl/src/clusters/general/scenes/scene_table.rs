@@ -2,9 +2,9 @@ mod scene_table_extension;
 
 use core::str::Utf8Error;
 
-use apis_saltans_core::types::{String, Uint8, Uint16};
 use chrono::Duration;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::types::{String, Uint8, Uint16};
 
 pub use self::scene_table_extension::SceneTableExtension;
 

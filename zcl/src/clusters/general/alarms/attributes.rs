@@ -1,6 +1,6 @@
 //! Attributes of the Alarms cluster.
 
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::alarm_count::AlarmCount;
 use crate::macros::zcl_attributes;

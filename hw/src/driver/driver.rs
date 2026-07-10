@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
-use apis_saltans_core::{Destination, IeeeAddress};
 use tokio::sync::mpsc::{Receiver, channel};
+use zb_core::{Destination, IeeeAddress};
 
 use crate::common::Message;
 use crate::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};

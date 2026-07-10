@@ -44,7 +44,7 @@ Key flow:
 
 APIs:
 - `Frame<T>: ToLeStream`
-- `TryFrom<apis_saltans_aps::Data<bytes::Bytes>> for Frame<Command>`
+- `TryFrom<zb_aps::Data<bytes::Bytes>> for Frame<Command>`
 - `Frame<Command>::parse_with_cluster_id(cluster_id, bytes)`
 - `Command::cluster_id()`
 - `Command: ToLeStream`
@@ -100,7 +100,7 @@ Includes:
 
 ```rust
 use le_stream::ToLeStream;
-use apis_saltans_zdp::{ActiveEpReq, Command, Frame};
+use zb_zdp::{ActiveEpReq, Command, Frame};
 
 let request = ActiveEpReq::new(0x1234);
 let command: Command = request.into();
@@ -113,8 +113,8 @@ assert!(!bytes.is_empty());
 ### Parse a Frame with Known Cluster ID
 
 ```rust
-use apis_saltans_core::Cluster;
-use apis_saltans_zdp::{ActiveEpReq, Frame};
+use zb_core::Cluster;
+use zb_zdp::{ActiveEpReq, Frame};
 
 let raw = vec![0x42, 0x34, 0x12]; // seq + Active_EP_req payload
 let parsed = Frame::parse_with_cluster_id(ActiveEpReq::ID, raw.into_iter());
@@ -123,7 +123,7 @@ assert!(parsed.is_ok());
 
 ## Response Coupling and Typed Constructors
 
-Many request types implement `apis_saltans_core::ExpectResponse<apis_saltans_zdp::Command>`, allowing request/response relationships to be expressed in type signatures (for example, `ActiveEpReq -> ActiveEpRsp`, `BindReq -> BindRsp`).
+Many request types implement `zb_core::ExpectResponse<zb_zdp::Command>`, allowing request/response relationships to be expressed in type signatures (for example, `ActiveEpReq -> ActiveEpRsp`, `BindReq -> BindRsp`).
 
 Several response payloads use helper types to encode status-dependent invariants. For example, address and management
 responses use typed success payloads when the ZDP status is success and preserve raw status codes when the status cannot

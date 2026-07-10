@@ -1,6 +1,6 @@
 //! Attributes of the Groups cluster.
 
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::types::NameSupport;
 use crate::macros::zcl_attributes;

@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use apis_saltans_core::destination::Device;
-use apis_saltans_core::{Application, FullAddress};
-use apis_saltans_zcl::basic::Id;
 use const_env::env_item;
 use log::{debug, error, trace};
 use tokio::sync::mpsc::Sender;
+use zb_core::destination::Device;
+use zb_core::{Application, FullAddress};
+use zb_zcl::basic::Id;
 
 use crate::api::ReadAttributes;
 use crate::discovery::attribute_discovery::Message;

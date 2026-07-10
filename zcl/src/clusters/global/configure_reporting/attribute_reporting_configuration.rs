@@ -1,5 +1,5 @@
-use apis_saltans_core::types::Type;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::types::Type;
 
 /// Configuration for attribute reporting.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

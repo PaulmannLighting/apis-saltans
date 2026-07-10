@@ -1,7 +1,7 @@
 #![cfg(feature = "driver-use")]
 
-use apis_saltans_zdp::SimpleDescriptor;
 use tokio::sync::mpsc::{Receiver, channel};
+use zb_zdp::SimpleDescriptor;
 
 use crate::common::Event;
 use crate::driver::{Backend, EventTranslator, Initialize, bridge};

@@ -1,4 +1,4 @@
-use apis_saltans_core::types::tlv::{FragmentationParameters, Global, Tlv};
+use zb_core::types::tlv::{FragmentationParameters, Global, Tlv};
 
 use crate::NodeDescRsp;
 

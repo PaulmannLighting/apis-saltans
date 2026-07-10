@@ -1,5 +1,5 @@
-use apis_saltans_core::Profile;
 use bytes::Bytes;
+use zb_core::Profile;
 
 /// Serialized application payload plus APS metadata for transmission.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]

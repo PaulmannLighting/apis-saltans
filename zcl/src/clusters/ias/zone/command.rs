@@ -1,4 +1,4 @@
-use apis_saltans_core::Cluster;
+use zb_core::Cluster;
 
 pub use self::enroll_request::EnrollRequest;
 pub use self::enroll_response::EnrollResponse;

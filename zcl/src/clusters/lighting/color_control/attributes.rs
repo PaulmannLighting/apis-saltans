@@ -1,8 +1,8 @@
 //! Attributes of the Color Control cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::{String, Uint8, Uint16};
-use apis_saltans_core::units::Mireds;
+use zb_core::Cluster;
+use zb_core::types::{String, Uint8, Uint16};
+use zb_core::units::Mireds;
 
 pub use self::color_capabilities::ColorCapabilities;
 pub use self::color_loop_direction::ColorLoopDirection;

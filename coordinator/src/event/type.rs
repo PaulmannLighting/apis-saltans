@@ -1,5 +1,5 @@
-use apis_saltans_aps::Data;
-use apis_saltans_zcl::{Cluster, Frame, Reportable, global};
+use zb_aps::Data;
+use zb_zcl::{Cluster, Frame, Reportable, global};
 
 /// An event type.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

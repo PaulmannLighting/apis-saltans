@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use apis_saltans_core::{Endpoint, FullAddress};
+use zb_core::{Endpoint, FullAddress};
 
 use super::Device;
 

@@ -12,27 +12,27 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = { version = "0.4", path = "../aps", optional = true }
-apis-saltans-core = { version = "0.5", path = "../core", optional = true }
-apis-saltans-nwk = { version = "0.2", path = "../nwk", optional = true }
-apis-saltans-zdp = { version = "0.4", path = "../zdp", optional = true }
 bytes = { version = "1.12.0", optional = true }
 tokio = { version = "1", features = ["sync"], optional = true }
+zb-aps = { workspace = true, optional = true }
+zb-core = { workspace = true, optional = true }
+zb-nwk = { workspace = true, optional = true }
+zb-zdp = { workspace = true, optional = true }
 
 [features]
 default = []
 coordinator = [
-    "dep:apis-saltans-aps",
-    "dep:apis-saltans-core",
-    "dep:apis-saltans-nwk",
+    "dep:zb-aps",
+    "dep:zb-core",
+    "dep:zb-nwk",
     "dep:bytes",
     "dep:tokio",
 ]
 driver-use = [
-    "dep:apis-saltans-aps",
-    "dep:apis-saltans-core",
-    "dep:apis-saltans-nwk",
-    "dep:apis-saltans-zdp",
+    "dep:zb-aps",
+    "dep:zb-core",
+    "dep:zb-nwk",
+    "dep:zb-zdp",
     "dep:bytes",
     "dep:tokio"
 ]

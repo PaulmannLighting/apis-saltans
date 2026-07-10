@@ -1,6 +1,6 @@
-use apis_saltans_core::endpoint::Reserved;
-use apis_saltans_core::{Endpoint, IeeeAddress};
 use num_traits::FromPrimitive;
+use zb_core::endpoint::Reserved;
+use zb_core::{Endpoint, IeeeAddress};
 
 pub use self::address::Address;
 pub use self::address_mode::AddressMode;

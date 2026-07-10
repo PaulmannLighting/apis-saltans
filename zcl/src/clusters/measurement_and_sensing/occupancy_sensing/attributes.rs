@@ -1,7 +1,7 @@
 //! Attributes of the Occupancy Sensing cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::{Uint8, Uint16};
+use zb_core::Cluster;
+use zb_core::types::{Uint8, Uint16};
 
 pub use self::types::{Occupancy, SensorBitmap, SensorType};
 use crate::macros::zcl_attributes;

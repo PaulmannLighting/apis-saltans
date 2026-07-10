@@ -1,7 +1,7 @@
 //! Attribute value types of the Scenes cluster.
 
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_core::types::Uint16;
+use zb_core::IeeeAddress;
+use zb_core::types::Uint16;
 
 use crate::macros::zcl_attribute_newtype;
 

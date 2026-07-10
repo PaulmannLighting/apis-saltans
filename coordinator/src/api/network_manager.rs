@@ -1,9 +1,9 @@
 use std::collections::BTreeSet;
 
-use apis_saltans_core::{FullAddress, IeeeAddress, short_id};
 use either::Either;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
+use zb_core::{FullAddress, IeeeAddress, short_id};
 
 use crate::network_manager::Message;
 use crate::{Coordinator, Device, Error, Event};

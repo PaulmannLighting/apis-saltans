@@ -631,12 +631,12 @@ macro_rules! zdp_command {
             $($getter)*
         }
 
-        impl apis_saltans_core::ClusterSpecific for $command {
+        impl zb_core::ClusterSpecific for $command {
             const ID: u16 = Self::ID;
         }
 
-        impl apis_saltans_core::Profiled for $command {
-            const PROFILE: apis_saltans_core::Profile = apis_saltans_core::Profile::Network;
+        impl zb_core::Profiled for $command {
+            const PROFILE: zb_core::Profile = zb_core::Profile::Network;
         }
 
         impl $crate::services::Service for $command {
@@ -741,7 +741,7 @@ macro_rules! zdp_command {
     };
     (@response $command:ident) => {};
     (@response $command:ident $response:ty) => {
-        impl apis_saltans_core::ExpectResponse<$crate::services::Command> for $command {
+        impl zb_core::ExpectResponse<$crate::services::Command> for $command {
             type Response = $response;
         }
     };
@@ -793,22 +793,22 @@ macro_rules! zdp_command_group {
         impl $group {
             /// Returns all cluster IDs supported by this command group.
             pub(crate) const fn cluster_ids() -> &'static [u16] {
-                &[$(<$command as apis_saltans_core::ClusterSpecific>::ID),*]
+                &[$(<$command as zb_core::ClusterSpecific>::ID),*]
             }
 
             /// Returns the cluster ID of the command.
             #[must_use]
             pub const fn cluster_id(&self) -> u16 {
                 match self {
-                    $(Self::$command(_) => <$command as apis_saltans_core::ClusterSpecific>::ID),*
+                    $(Self::$command(_) => <$command as zb_core::ClusterSpecific>::ID),*
                 }
             }
 
             /// Returns the profile of the command.
             #[must_use]
-            pub const fn profile(&self) -> apis_saltans_core::Profile {
+            pub const fn profile(&self) -> zb_core::Profile {
                 match self {
-                    $(Self::$command(_) => <$command as apis_saltans_core::Profiled>::PROFILE),*
+                    $(Self::$command(_) => <$command as zb_core::Profiled>::PROFILE),*
                 }
             }
 
@@ -822,7 +822,7 @@ macro_rules! zdp_command_group {
             {
                 match cluster_id {
                     $(
-                        <$command as apis_saltans_core::ClusterSpecific>::ID => {
+                        <$command as zb_core::ClusterSpecific>::ID => {
                             Ok(<$command as le_stream::FromLeStream>::from_le_stream(bytes)
                                 .map(Self::from))
                         },
@@ -951,7 +951,7 @@ macro_rules! zdp_command_enum {
 
             /// Return the profile of the command.
             #[must_use]
-            pub const fn profile(&self) -> apis_saltans_core::Profile {
+            pub const fn profile(&self) -> zb_core::Profile {
                 match self {
                     $(Self::$variant(command) => command.profile()),*
                 }

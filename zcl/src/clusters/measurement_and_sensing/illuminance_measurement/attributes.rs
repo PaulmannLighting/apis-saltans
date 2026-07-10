@@ -1,7 +1,7 @@
 //! Attributes of the Illuminance Measurement cluster.
 
-use apis_saltans_core::Cluster;
-use apis_saltans_core::types::Uint16;
+use zb_core::Cluster;
+use zb_core::types::Uint16;
 
 #[allow(unused_imports)]
 pub use self::types::{LightSensorType, Lux, ManufacturerSpecific, MeasuredValue};

@@ -1,5 +1,5 @@
-use apis_saltans_core::types::{String, Uint8, Uint16};
-use apis_saltans_core::{Cluster, Direction};
+use zb_core::types::{String, Uint8, Uint16};
+use zb_core::{Cluster, Direction};
 
 use super::EnhancedAddSceneResponse;
 use crate::clusters::general::scenes::types::ExtensionFieldSets;

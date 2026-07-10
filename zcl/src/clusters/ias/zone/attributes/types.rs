@@ -1,7 +1,7 @@
 //! Attribute value types of the IAS Zone cluster.
 
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_core::types::Uint8;
+use zb_core::IeeeAddress;
+use zb_core::types::Uint8;
 
 use crate::macros::zcl_attribute_newtype;
 

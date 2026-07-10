@@ -1,5 +1,5 @@
-use apis_saltans_core::Direction;
 use const_env::env_item;
+use zb_core::Direction;
 
 pub use self::parse_direction::ParseDirection;
 pub use self::scoped::Scoped;
