@@ -1,5 +1,6 @@
 use apis_saltans_aps::Data;
-use apis_saltans_core::Address;
+use apis_saltans_core::IeeeAddress;
+use apis_saltans_core::short_id::Device;
 use apis_saltans_nwk::Envelope;
 use bytes::Bytes;
 
@@ -23,18 +24,24 @@ pub enum Event {
     NetworkClosed,
 
     /// A new device has joined the network.
-    DeviceJoined(Address),
+    DeviceJoined {
+        ieee_address: IeeeAddress,
+        short_id: Device,
+    },
 
     /// A device has rejoined the network.
     DeviceRejoined {
-        /// The address of the joined device.
-        address: Address,
+        ieee_address: IeeeAddress,
+        short_id: Device,
         /// Whether the rejoining was secured.
         secured: bool,
     },
 
     /// A device has left the network.
-    DeviceLeft(Address),
+    DeviceLeft {
+        ieee_address: IeeeAddress,
+        short_id: Device,
+    },
 
     /// Raw APS data frame received from a NWK source.
     MessageReceived(Envelope<Data<Bytes>>),

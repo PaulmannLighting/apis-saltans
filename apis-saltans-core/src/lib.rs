@@ -13,7 +13,6 @@
 
 #![no_std]
 
-pub use self::address::Address;
 pub use self::byte_sized_vec::ByteSizedVec;
 pub use self::cluster::{Cluster, ClusterSpecific};
 pub use self::destination::Destination;
@@ -25,7 +24,6 @@ pub use self::profile::{Profile, Profiled};
 pub use self::short_id::ShortId;
 pub use self::traits::ExpectResponse;
 
-mod address;
 mod byte_sized_vec;
 mod cluster;
 pub mod constants;

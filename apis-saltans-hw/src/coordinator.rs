@@ -4,7 +4,7 @@
 
 use std::time::Duration;
 
-use apis_saltans_core::{Address, Destination, IeeeAddress};
+use apis_saltans_core::{Destination, IeeeAddress};
 use tokio::sync::oneshot::channel;
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
@@ -25,23 +25,6 @@ pub trait Ncp {
     ///
     /// Returns an error if the operation fails.
     fn get_ieee_address(&self) -> impl Future<Output = Result<IeeeAddress, Error>> + Send;
-
-    /// Return the full address of the coordinator.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn get_address(&self) -> impl Future<Output = Result<Address, Error>> + Send
-    where
-        Self: Sync,
-    {
-        async {
-            Ok(Address::new(
-                self.get_ieee_address().await?,
-                self.get_pan_id().await?,
-            ))
-        }
-    }
 
     /// Scan for available networks.
     ///
