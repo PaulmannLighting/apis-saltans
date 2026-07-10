@@ -10,7 +10,7 @@ protocol crates can share.
 
 ```mermaid
 flowchart TD
-    Addressing["Addressing<br/>Address, ShortId, IeeeAddress, GroupId"]
+    Addressing["Addressing<br/>FullAddress, ShortId, IeeeAddress, GroupId"]
     Routing["Routing metadata<br/>Endpoint, Destination, Profile, Cluster"]
     Traits["Type metadata traits<br/>ClusterSpecific, Profiled, ExpectResponse"]
     Values["Zigbee values<br/>types::Type, units"]
@@ -30,7 +30,7 @@ flowchart TD
 
 | Area | Files and modules | Responsibility |
 | --- | --- | --- |
-| Addressing | `address.rs`, `ieee_address.rs`, `short_id.rs`, `group_id.rs` | IEEE addresses, NWK short addresses, and APS group identifiers. |
+| Addressing | `full_address.rs`, `ieee_address.rs`, `short_id.rs`, `group_id.rs` | IEEE addresses, NWK short addresses, complete device addresses, and APS group identifiers. |
 | Routing metadata | `endpoint.rs`, `destination.rs`, `profile.rs`, `cluster.rs`, `direction.rs` | Endpoint, destination, profile, cluster, and command-direction domain values. |
 | Traits | `traits.rs`, `cluster.rs`, `profile.rs` | Cross-crate metadata traits such as `ExpectResponse`, `ClusterSpecific`, and `Profiled`. |
 | Typed values | `types.rs`, `types/*` | Zigbee primitive, discrete, analog, composite, and tagged value representations. |
@@ -45,8 +45,8 @@ separates the coordinator address, allocated device short addresses, and Zigbee
 broadcast short-address values. `GroupId` accepts only non-zero values in the
 valid APS group range.
 
-`Address` combines an IEEE address with a short ID for code paths that track
-both identifiers together.
+`FullAddress` combines an IEEE address with a short ID for code paths that
+track both identifiers together.
 
 ```mermaid
 flowchart LR
@@ -54,12 +54,13 @@ flowchart LR
     Coordinator["Coordinator"]
     Device["short_id::Device"]
     Broadcast["short_id::Broadcast"]
-    Address["Address<br/>IeeeAddress + short id"]
+    FullAddress["FullAddress<br/>IeeeAddress + short id"]
 
     Coordinator --> ShortId
     Device --> ShortId
     Broadcast --> ShortId
-    ShortId --> Address
+    IeeeAddress --> FullAddress
+    ShortId --> FullAddress
 ```
 
 ## Routing Metadata

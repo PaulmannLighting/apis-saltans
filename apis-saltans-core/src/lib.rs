@@ -18,6 +18,7 @@ pub use self::cluster::{Cluster, ClusterSpecific};
 pub use self::destination::Destination;
 pub use self::direction::Direction;
 pub use self::endpoint::{Application, Endpoint};
+pub use self::full_address::FullAddress;
 pub use self::group_id::GroupId;
 pub use self::ieee_address::{Eui64, IeeeAddress};
 pub use self::profile::{Profile, Profiled};
@@ -27,6 +28,7 @@ pub use self::traits::ExpectResponse;
 mod byte_sized_vec;
 mod cluster;
 pub mod constants;
+mod full_address;
 #[macro_use]
 mod macros;
 /// Outbound Zigbee destination types.

@@ -6,7 +6,7 @@ This crate provides:
 - protocol-level data types (`types::Type`, scalar wrappers, strings, dates/times)
 - Type-Length-Value (TLV) structures (`types::tlv`)
 - core identifiers and enums (`Endpoint`, `ShortId`, `Profile`, `Direction`, `Cluster`)
-- destination, address, group, and node representation (`Destination`, `Address`, `GroupId`, `node::Node`, descriptor bitfields)
+- destination, address, group, and node representation (`Destination`, `FullAddress`, `GroupId`, `node::Node`, descriptor bitfields)
 - utility traits used across protocol layers (`ExpectResponse`, `ClusterSpecific`, `Profiled`)
 
 ## Status
@@ -40,13 +40,13 @@ apis_saltans_core = { path = "../apis-saltans-core", features = ["serde"] }
 ## Public API Overview
 
 Top-level re-exports from `apis-saltans-core`:
-- `Address`
 - `ByteSizedVec`
 - `Cluster`, `ClusterSpecific`
 - `Destination`
 - `Direction`
 - `Endpoint`, `Application`
 - `Eui64`, `IeeeAddress`
+- `FullAddress`
 - `GroupId`
 - `Profile`, `Profiled`
 - `ShortId`
@@ -66,6 +66,7 @@ Nested domain helpers:
 - `destination::Device` and `destination::Broadcast`: destination payloads for `Destination`.
 - `endpoint::Broadcast` and `endpoint::Reserved`: endpoint selectors used for broadcast delivery and rejected reserved IDs.
 - `short_id::Device` and `short_id::Broadcast`: validated NWK short-address subranges.
+- `FullAddress`: a resolved pair of IEEE address and NWK short address for one device.
 
 ## Serialization Model
 
