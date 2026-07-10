@@ -13,8 +13,8 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-apis-saltans-core = { version = "0.5", path = "../apis-saltans-core" }
-apis-saltans-nwk = { version = "0.2", path = "../apis-saltans-nwk" }
+apis-saltans-core = { version = "0.5", path = "../core" }
+apis-saltans-nwk = { version = "0.2", path = "../nwk" }
 bitflags = "2"
 bytes = "1"
 le-stream = { version = "10", features = ["derive"] }

@@ -12,7 +12,7 @@ version = "0.2.0"
 edition = "2024"
 
 [dependencies]
-apis-saltans-core = { version = "0.5", path = "../apis-saltans-core" }
+apis-saltans-core = { version = "0.5", path = "../core" }
 serde = { version = "1", features = ["derive"], optional = true }
 
 [lints]

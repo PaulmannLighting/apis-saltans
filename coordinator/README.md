@@ -1,6 +1,6 @@
 # apis-saltans-coordinator
 
-High-level Zigbee coordinator API built on top of [`apis-saltans-hw`](../apis-saltans-hw).
+High-level Zigbee coordinator API built on top of [`apis-saltans-hw`](../hw).
 
 This crate exposes a single coordinator handle (`Coordinator`) plus trait-based APIs for common coordinator operations:
 

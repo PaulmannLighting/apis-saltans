@@ -20,6 +20,12 @@ impl Datagram {
     pub const unsafe fn new_unchecked(metadata: Metadata, payload: Bytes) -> Self {
         Self { metadata, payload }
     }
+
+    /// Return the APS metadata and serialized payload, consuming the datagram.
+    #[must_use]
+    pub fn into_parts(self) -> (Metadata, Bytes) {
+        (self.metadata, self.payload)
+    }
 }
 
 /// APS metadata associated with a serialized application payload.

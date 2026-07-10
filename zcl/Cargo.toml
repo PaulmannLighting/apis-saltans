@@ -12,8 +12,8 @@ edition = "2024"
 exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = { version = "0.4", path = "../apis-saltans-aps" }
-apis-saltans-core = { version = "0.5", path = "../apis-saltans-core" }
+apis-saltans-aps = { version = "0.4", path = "../aps" }
+apis-saltans-core = { version = "0.5", path = "../core" }
 bitflags = "2"
 bytes = "1"
 chrono = "0.4"

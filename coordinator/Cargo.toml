@@ -12,12 +12,12 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = { version = "0.4", path = "../apis-saltans-aps" }
-apis-saltans-core = { version = "0.5", features = ["serde"], path = "../apis-saltans-core" }
-apis-saltans-hw = { version = "0.7", features = ["coordinator"], path = "../apis-saltans-hw" }
-apis-saltans-nwk = { version = "0.2", path = "../apis-saltans-nwk" }
-apis-saltans-zcl = { version = "0.5", features = ["serde"], path = "../apis-saltans-zcl" }
-apis-saltans-zdp = { version = "0.4", features = ["serde"], path = "../apis-saltans-zdp" }
+apis-saltans-aps = { version = "0.4", path = "../aps" }
+apis-saltans-core = { version = "0.5", features = ["serde"], path = "../core" }
+apis-saltans-hw = { version = "0.7", features = ["coordinator"], path = "../hw" }
+apis-saltans-nwk = { version = "0.2", path = "../nwk" }
+apis-saltans-zcl = { version = "0.5", features = ["serde"], path = "../zcl" }
+apis-saltans-zdp = { version = "0.4", features = ["serde"], path = "../zdp" }
 bytes = "1"
 const_env = "0.1"
 either = "1.16.0"

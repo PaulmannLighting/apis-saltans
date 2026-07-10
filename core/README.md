@@ -27,14 +27,14 @@ Add the crate from the workspace or repository path.
 
 ```toml
 [dependencies]
-apis_saltans_core = { path = "../apis-saltans-core" }
+apis_saltans_core = { path = "../core" }
 ```
 
 Enable serde support if needed:
 
 ```toml
 [dependencies]
-apis_saltans_core = { path = "../apis-saltans-core", features = ["serde"] }
+apis_saltans_core = { path = "../core", features = ["serde"] }
 ```
 
 ## Public API Overview

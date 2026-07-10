@@ -15,13 +15,13 @@ This library is a work in progress and is not yet ready for production use.
 
 This workspace contains multiple crates pertaining to the Zigbee protocol stack:
 
-- [`apis-saltans-aps`](apis-saltans-aps): The Zigbee APS layer implementation.
-- [`apis-saltans-nwk`](apis-saltans-nwk): Transport-neutral Zigbee NWK source, destination, metadata, and envelope types.
-- [`apis-saltans-zcl`](apis-saltans-zcl): The Zigbee Cluster Library implementation.
-- [`apis-saltans-zdp`](apis-saltans-zdp): The Zigbee Device Profile implementation.
-- [`apis-saltans-core`](apis-saltans-core): The Zigbee core protocol stack implementation.
-- [`apis-saltans-coordinator`](apis-saltans-coordinator): A Zigbee coordinator API using the actor model.
-- [`apis-saltans-hw`](apis-saltans-hw): A Zigbee hardware abstraction layer.
+- [`apis-saltans-aps`](aps): The Zigbee APS layer implementation.
+- [`apis-saltans-nwk`](nwk): Transport-neutral Zigbee NWK source, destination, metadata, and envelope types.
+- [`apis-saltans-zcl`](zcl): The Zigbee Cluster Library implementation.
+- [`apis-saltans-zdp`](zdp): The Zigbee Device Profile implementation.
+- [`apis-saltans-core`](core): The Zigbee core protocol stack implementation.
+- [`apis-saltans-coordinator`](coordinator): A Zigbee coordinator API using the actor model.
+- [`apis-saltans-hw`](hw): A Zigbee hardware abstraction layer.
 
 ## Legal
 
