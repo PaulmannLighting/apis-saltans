@@ -1,7 +1,10 @@
 use super::event_translator::EventTranslator;
+use crate::Driver;
 
 /// Type-level configuration shared by driver-side backend traits.
 pub trait Backend {
+    type Driver: Driver;
+
     /// Hardware-specific event type produced by the driver backend.
     type HardwareEvent: Send + 'static;
 

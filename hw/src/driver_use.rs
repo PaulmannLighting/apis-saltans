@@ -5,13 +5,13 @@ use std::pin::Pin;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 use zb_zdp::SimpleDescriptor;
 
+use crate::Error;
 use crate::common::Event;
 use crate::driver::{Backend, EventTranslator, bridge};
-use crate::{Error, NcpHandle};
 
 type BoxedFuture<T> = Pin<Box<dyn Future<Output = T> + Send>>;
-type InitResult = Result<(NcpHandle, Receiver<Event>), Error>;
-type InitFuture = BoxedFuture<InitResult>;
+type InitResult<T> = Result<(T, Receiver<Event>), Error>;
+type InitFuture<T> = BoxedFuture<InitResult<T>>;
 
 /// Constructs and prepares a configured hardware backend.
 pub trait Builder: Backend + Sized {
@@ -34,7 +34,7 @@ pub trait Builder: Backend + Sized {
         self,
         events: Receiver<Event>,
         messages: Sender<Self::Message>,
-    ) -> impl Future<Output = InitResult> + Send + 'static;
+    ) -> impl Future<Output = InitResult<Self::Driver>> + Send + 'static;
 
     /// Start the backend and prepare the futures needed to run it.
     ///
@@ -45,14 +45,20 @@ pub trait Builder: Backend + Sized {
     /// # Errors
     ///
     /// Returns an error if the runtime futures cannot be prepared.
-    fn start(self, hw_events: Receiver<Self::HardwareEvent>) -> Result<Futures, Error> {
+    fn start(
+        self,
+        hw_events: Receiver<Self::HardwareEvent>,
+    ) -> Result<Futures<Self::Driver>, Error> {
         let (msg_tx, msg_rx) = channel(hw_events.capacity());
         let (lib_events_tx, events) = channel(hw_events.capacity());
         let br = bridge(hw_events, msg_tx.clone());
         let event_translator = Self::EventTranslator::new(lib_events_tx).run(msg_rx);
-        let ncp: InitFuture = Box::pin(self.init(events, msg_tx));
+        let driver: InitFuture<Self::Driver> = Box::pin(self.init(events, msg_tx));
         let dependencies: Vec<BoxedFuture<()>> = vec![Box::pin(br), Box::pin(event_translator)];
-        Ok(Futures { ncp, dependencies })
+        Ok(Futures {
+            driver,
+            dependencies,
+        })
     }
 }
 
@@ -62,11 +68,11 @@ pub trait Builder: Backend + Sized {
 /// spawn or otherwise poll all [`Self::dependencies`] before spawning or awaiting [`Self::ncp`].
 /// Starting `ncp` first can leave backend initialization waiting for event infrastructure that is
 /// not running yet.
-pub struct Futures {
+pub struct Futures<T> {
     /// Future that initializes the command actor and returns the public NCP handle and event stream.
     ///
     /// Spawn or await this only after all [`Self::dependencies`] are already being polled.
-    pub ncp: InitFuture,
+    pub driver: InitFuture<T>,
 
     /// Futures that must be polled before [`Self::ncp`] starts.
     ///

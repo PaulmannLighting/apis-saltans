@@ -115,7 +115,7 @@ pub trait Driver {
     /// # Returns
     ///
     /// Returns a tuple of the tokio task's join handle and an actor proxy.
-    fn spawn(self, channel_size: usize) -> (NcpHandle, impl Future<Output = Self> + Send)
+    fn run(self, channel_size: usize) -> (NcpHandle, impl Future<Output = Self> + Send)
     where
         Self: Sized + SealedDriver + 'static,
     {
@@ -217,7 +217,7 @@ where
         Self: 'static,
     {
         let (tx, rx) = channel(channel_size);
-        let future = self.run(rx);
+        let future = SealedDriver::run(self, rx);
         (tx, future)
     }
 }
