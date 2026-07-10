@@ -21,10 +21,20 @@ where
     /// # Errors
     ///
     /// Returns an error if driver initialization fails.
-    pub async fn start(self) -> Result<(NcpHandle, Receiver<Event>), Error> {
-        tokio::spawn(self.bridge);
-        tokio::spawn(self.translator);
+    pub async fn start(self) -> Result<StartedHardware<Bridge, Translator>, Error> {
         let ncp = self.builder.init().await?;
-        Ok((ncp, self.events))
+        Ok(StartedHardware {
+            ncp,
+            events: self.events,
+            bridge: self.bridge,
+            translator: self.translator,
+        })
     }
+}
+
+pub struct StartedHardware<Bridge, Translator> {
+    pub ncp: NcpHandle,
+    pub events: Receiver<Event>,
+    pub bridge: Bridge,
+    pub translator: Translator,
 }

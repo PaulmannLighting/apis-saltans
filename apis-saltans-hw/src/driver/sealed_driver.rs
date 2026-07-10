@@ -1,7 +1,4 @@
-use log::{error, trace};
-use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, channel};
-use tokio::task::JoinHandle;
 
 use super::Driver;
 use crate::common::NcpHandle;
@@ -20,7 +17,7 @@ pub trait SealedDriver {
     /// # Returns
     ///
     /// Returns a tuple of the tokio task's join handle and an actor proxy.
-    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, NcpHandle)
+    fn spawn(self, channel_size: usize) -> (NcpHandle, impl Future<Output = Self> + Send)
     where
         Self: Sized + 'static;
 }
@@ -33,18 +30,12 @@ where
         while let Some(message) = rx.recv().await {
             match message {
                 Message::GetPanId { response } => {
-                    response
-                        .send(self.get_pan_id().await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send get PAN ID command response: {error:?}");
-                        });
+                    response.send(self.get_pan_id().await).unwrap_or_else(drop);
                 }
                 Message::GetIeeeAddress { response } => {
                     response
                         .send(self.get_ieee_address().await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send get IEEE address command response: {error:?}");
-                        });
+                        .unwrap_or_else(drop);
                 }
                 Message::ScanNetworks {
                     channel_mask,
@@ -53,9 +44,7 @@ where
                 } => {
                     response
                         .send(self.scan_networks(channel_mask, duration).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send scan networks command response: {error:?}");
-                        });
+                        .unwrap_or_else(drop);
                 }
                 Message::ScanChannels {
                     channel_mask,
@@ -64,30 +53,22 @@ where
                 } => {
                     response
                         .send(self.scan_channels(channel_mask, duration).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send scan channels command response: {error:?}");
-                        });
+                        .unwrap_or_else(drop);
                 }
                 Message::AllowJoins { duration, response } => {
                     response
                         .send(self.allow_joins(duration).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send allow joins command response: {error:?}");
-                        });
+                        .unwrap_or_else(drop);
                 }
                 Message::RouteRequest { radius, response } => {
                     response
                         .send(self.route_request(radius).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send route request command response: {error:?}");
-                        });
+                        .unwrap_or_else(drop);
                 }
                 Message::TranslateIeeeAddress { short_id, response } => {
                     response
                         .send(self.short_id_to_ieee_address(short_id).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send short_id_to_ieee_address command response: {error:?}");
-                        });
+                        .unwrap_or_else(drop);
                 }
                 Message::TranslateShortId {
                     ieee_address,
@@ -95,9 +76,7 @@ where
                 } => {
                     response
                         .send(self.ieee_address_to_short_id(ieee_address).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send ieee_address_to_short_id command response: {error:?}");
-                        });
+                        .unwrap_or_else(drop);
                 }
                 Message::Transmit {
                     destination,
@@ -106,23 +85,20 @@ where
                 } => {
                     response
                         .send(self.transmit(destination, datagram).await)
-                        .unwrap_or_else(|error| {
-                            error!("Failed to send transmit command response: {error:?}");
-                        });
+                        .unwrap_or_else(drop);
                 }
             }
         }
 
-        trace!("Message channel closed, NWK actor exiting.");
         self
     }
 
-    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, NcpHandle)
+    fn spawn(self, channel_size: usize) -> (NcpHandle, impl Future<Output = Self> + Send)
     where
         Self: 'static,
     {
         let (tx, rx) = channel(channel_size);
-        let join_handle = spawn(self.run(rx));
-        (join_handle, tx)
+        let future = self.run(rx);
+        (tx, future)
     }
 }

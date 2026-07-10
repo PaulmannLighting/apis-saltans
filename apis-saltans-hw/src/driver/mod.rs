@@ -5,7 +5,6 @@
 use std::time::Duration;
 
 use apis_saltans_core::{Destination, IeeeAddress};
-use tokio::task::JoinHandle;
 
 pub use self::bridge::bridge;
 pub use self::builder::Builder;
@@ -129,7 +128,7 @@ pub trait Driver {
     /// # Returns
     ///
     /// Returns a tuple of the tokio task's join handle and an actor proxy.
-    fn spawn(self, channel_size: usize) -> (JoinHandle<Self>, NcpHandle)
+    fn spawn(self, channel_size: usize) -> (NcpHandle, impl Future<Output = Self> + Send)
     where
         Self: Sized + SealedDriver + 'static,
     {

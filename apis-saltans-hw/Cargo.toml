@@ -17,8 +17,7 @@ apis-saltans-core = { version = "0.5", path = "../apis-saltans-core", optional =
 apis-saltans-nwk = { version = "0.2", path = "../apis-saltans-nwk", optional = true }
 apis-saltans-zdp = { version = "0.4", path = "../apis-saltans-zdp", optional = true }
 bytes = { version = "1.12.0", optional = true }
-log = { version = "0.4", optional = true }
-tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread"], optional = true }
+tokio = { version = "1", features = ["sync"], optional = true }
 
 [features]
 default = []
@@ -35,7 +34,6 @@ driver = [
     "dep:apis-saltans-nwk",
     "dep:apis-saltans-zdp",
     "dep:bytes",
-    "dep:log",
     "dep:tokio",
 ]
 
