@@ -13,6 +13,53 @@ use crate::{Coordinator, Error};
 /// Result of reading an attribute.
 pub type ReadAttributeResult<T> = Result<<T as Readable>::Attribute, ParseAttributeError<T>>;
 
+/// Trait for reading attributes.
+pub trait ReadAttributes {
+    /// Read attributes from a device.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
+    fn read_attributes<T>(
+        &self,
+        device: Device,
+        attributes: T,
+    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T::Item>]>, Error>> + Send
+    where
+        Self: Sync,
+        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send;
+}
+
+impl ReadAttributes for Sender<Message> {
+    async fn read_attributes<T>(
+        &self,
+        device: Device,
+        ids: T,
+    ) -> Result<Box<[ReadAttributeResult<T::Item>]>, Error>
+    where
+        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
+    {
+        let response = self
+            .communicate(device, ReadAttributesRequest::<T::Item>::new(ids))
+            .await?;
+
+        Ok(response.into())
+    }
+}
+
+impl ReadAttributes for Coordinator {
+    async fn read_attributes<T>(
+        &self,
+        device: Device,
+        ids: T,
+    ) -> Result<Box<[ReadAttributeResult<T::Item>]>, Error>
+    where
+        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
+    {
+        self.zcl.read_attributes(device, ids).await
+    }
+}
+
 /// Global Read Attributes request scoped to one target cluster.
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ReadAttributesRequest<T> {
@@ -76,52 +123,5 @@ where
             },
             request.to_le_stream().collect(),
         )
-    }
-}
-
-/// Trait for reading attributes.
-pub trait ReadAttributes {
-    /// Read attributes from a device.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes<T>(
-        &self,
-        device: Device,
-        attributes: T,
-    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T::Item>]>, Error>> + Send
-    where
-        Self: Sync,
-        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send;
-}
-
-impl ReadAttributes for Sender<Message> {
-    async fn read_attributes<T>(
-        &self,
-        device: Device,
-        ids: T,
-    ) -> Result<Box<[ReadAttributeResult<T::Item>]>, Error>
-    where
-        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
-    {
-        let response = self
-            .communicate(device, ReadAttributesRequest::<T::Item>::new(ids))
-            .await?;
-
-        Ok(response.into())
-    }
-}
-
-impl ReadAttributes for Coordinator {
-    async fn read_attributes<T>(
-        &self,
-        device: Device,
-        ids: T,
-    ) -> Result<Box<[ReadAttributeResult<T::Item>]>, Error>
-    where
-        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
-    {
-        self.zcl.read_attributes(device, ids).await
     }
 }

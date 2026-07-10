@@ -11,6 +11,60 @@ use crate::{Coordinator, Error};
 /// Result of writing an attribute.
 pub type WriteAttributeResult = Result<u16, u16>;
 
+/// Trait to write attributes to a device.
+pub trait WriteAttributes {
+    /// Write attributes to a device.
+    ///
+    /// # Returns
+    ///
+    /// Returns a [`Vec`] of [`Result`]s, where each [`Result`] contains the status of the write operation for each attribute.
+    ///
+    /// - `Ok(id)`: The attribute was successfully written.
+    /// - `Err(id)`: The attribute could not be written.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the communication fails or if the response is not a valid [`Response`].
+    fn write_attributes<T>(
+        &self,
+        device: Device,
+        attributes: T,
+    ) -> impl Future<Output = Result<Vec<WriteAttributeResult>, Error>> + Send
+    where
+        Self: Sync,
+        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send;
+}
+
+impl WriteAttributes for Sender<Message> {
+    async fn write_attributes<T>(
+        &self,
+        device: Device,
+        attributes: T,
+    ) -> Result<Vec<WriteAttributeResult>, Error>
+    where
+        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send,
+    {
+        let response = self
+            .communicate(device, WriteAttributesRequest::<T::Item>::new(attributes))
+            .await?;
+
+        Ok(response.into_iter().map(TryInto::try_into).collect())
+    }
+}
+
+impl WriteAttributes for Coordinator {
+    async fn write_attributes<T>(
+        &self,
+        device: Device,
+        attributes: T,
+    ) -> Result<Vec<WriteAttributeResult>, Error>
+    where
+        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send,
+    {
+        self.zcl.write_attributes(device, attributes).await
+    }
+}
+
 /// Global Write Attributes request scoped to one target cluster.
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct WriteAttributesRequest<T> {
@@ -74,59 +128,5 @@ where
             },
             request.to_le_stream().collect(),
         )
-    }
-}
-
-/// Trait to write attributes to a device.
-pub trait WriteAttributes {
-    /// Write attributes to a device.
-    ///
-    /// # Returns
-    ///
-    /// Returns a [`Vec`] of [`Result`]s, where each [`Result`] contains the status of the write operation for each attribute.
-    ///
-    /// - `Ok(id)`: The attribute was successfully written.
-    /// - `Err(id)`: The attribute could not be written.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if the communication fails or if the response is not a valid [`Response`].
-    fn write_attributes<T>(
-        &self,
-        device: Device,
-        attributes: T,
-    ) -> impl Future<Output = Result<Vec<WriteAttributeResult>, Error>> + Send
-    where
-        Self: Sync,
-        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send;
-}
-
-impl WriteAttributes for Sender<Message> {
-    async fn write_attributes<T>(
-        &self,
-        device: Device,
-        attributes: T,
-    ) -> Result<Vec<WriteAttributeResult>, Error>
-    where
-        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send,
-    {
-        let response = self
-            .communicate(device, WriteAttributesRequest::<T::Item>::new(attributes))
-            .await?;
-
-        Ok(response.into_iter().map(TryInto::try_into).collect())
-    }
-}
-
-impl WriteAttributes for Coordinator {
-    async fn write_attributes<T>(
-        &self,
-        device: Device,
-        attributes: T,
-    ) -> Result<Vec<WriteAttributeResult>, Error>
-    where
-        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send,
-    {
-        self.zcl.write_attributes(device, attributes).await
     }
 }
