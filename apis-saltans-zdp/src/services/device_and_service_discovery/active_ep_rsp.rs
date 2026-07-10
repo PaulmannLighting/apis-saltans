@@ -1,3 +1,4 @@
+use apis_saltans_core::endpoint::Reserved;
 use apis_saltans_core::{ByteSizedVec, Endpoint};
 
 use crate::Status;
@@ -10,7 +11,7 @@ crate::zdp_command! {
     fields {
         status: u8,
         nwk_addr_of_interest: u16,
-        active_eps: ByteSizedVec<Endpoint>,
+        active_eps: ByteSizedVec<u8>,
     }
     constructor {
         /// Creates a new Active Endpoint Response.
@@ -23,7 +24,7 @@ crate::zdp_command! {
                 Ok(active_eps) => Self {
                     status: Status::Success.into(),
                     nwk_addr_of_interest,
-                    active_eps,
+                    active_eps: active_eps.into_iter().map(Into::into).collect(),
                 },
                 Err(status) => Self {
                     status: status.into(),
@@ -50,14 +51,24 @@ crate::zdp_command! {
         }
 
         /// Return the active endpoints.
+        pub fn active_eps(&self) -> impl Iterator<Item = Result<Endpoint, Reserved>> + '_ {
+            self.active_eps.iter().copied().map(TryInto::try_into)
+        }
+
+        /// Return the raw active endpoint IDs.
         #[must_use]
-        pub fn active_eps(&self) -> &[Endpoint] {
+        pub fn active_ep_ids(&self) -> &[u8] {
             &self.active_eps
         }
 
         /// Return the active endpoints, consuming the [`ActiveEpRsp`].
+        pub fn into_active_eps(self) -> impl Iterator<Item = Result<Endpoint, Reserved>> {
+            self.active_eps.into_iter().map(TryInto::try_into)
+        }
+
+        /// Return the raw active endpoint IDs, consuming the [`ActiveEpRsp`].
         #[must_use]
-        pub fn into_active_eps(self) -> ByteSizedVec<Endpoint> {
+        pub fn into_active_ep_ids(self) -> ByteSizedVec<u8> {
             self.active_eps
         }
     }

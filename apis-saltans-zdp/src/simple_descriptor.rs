@@ -1,3 +1,4 @@
+use apis_saltans_core::endpoint::Reserved;
 use apis_saltans_core::{ByteSizedVec, Endpoint, Profile};
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -9,13 +10,13 @@ mod app_flags;
 pub type Clusters = ByteSizedVec<u16>;
 
 /// Type alias for the constituent parts of a simple descriptor.
-type Parts = (Endpoint, u16, u16, u8, Box<[u16]>, Box<[u16]>);
+type Parts = (u8, u16, u16, u8, Box<[u16]>, Box<[u16]>);
 
 /// Simple descriptor.
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct SimpleDescriptor {
-    endpoint: Endpoint,
+    endpoint: u8,
     profile_id: u16,
     device_id: u16,
     app_flags: AppFlags,
@@ -35,7 +36,7 @@ impl SimpleDescriptor {
         output_clusters: Clusters,
     ) -> Self {
         Self {
-            endpoint,
+            endpoint: endpoint.as_u8(),
             profile_id: profile as u16,
             device_id,
             app_flags,
@@ -45,9 +46,12 @@ impl SimpleDescriptor {
     }
 
     /// Return the endpoint.
-    #[must_use]
-    pub const fn endpoint(&self) -> Endpoint {
-        self.endpoint
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] if the raw endpoint value is reserved.
+    pub fn endpoint(&self) -> Result<Endpoint, Reserved> {
+        self.endpoint.try_into()
     }
 
     /// Return the profile ID.

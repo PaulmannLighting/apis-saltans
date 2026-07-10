@@ -2,16 +2,15 @@ use std::error::Error;
 use std::fmt::{self, Display};
 
 use apis_saltans_aps::Destination;
-use apis_saltans_core::Endpoint;
 
 /// Errors that can occur when converting an incoming message to a ZDP frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum ParseFrameError {
     /// The source endpoint is invalid (must be 0 for ZDP commands).
-    SourceEndpoint(Endpoint),
+    SourceEndpoint(u8),
 
     /// The destination endpoint is invalid (must be 0 for ZDP commands).
-    Destination(Destination),
+    Destination(Destination<u8, u8, u16>),
 
     /// The cluster ID could not be parsed into a ZDP frame.
     ClusterId(u16),

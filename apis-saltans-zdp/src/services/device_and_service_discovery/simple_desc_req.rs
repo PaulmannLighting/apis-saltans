@@ -1,4 +1,5 @@
 use apis_saltans_core::Endpoint;
+use apis_saltans_core::endpoint::Reserved;
 
 use crate::SimpleDescRsp;
 
@@ -16,10 +17,10 @@ crate::zdp_command! {
     constructor {
         /// Creates a new `SimpleDescReq`.
         #[must_use]
-        pub fn new(nwk_address_of_interest: u16, endpoint: Endpoint) -> Self {
+        pub const fn new(nwk_address_of_interest: u16, endpoint: Endpoint) -> Self {
             Self {
                 nwk_address_of_interest,
-                endpoint: endpoint.into(),
+                endpoint: endpoint.as_u8(),
             }
         }
     }
@@ -31,9 +32,12 @@ crate::zdp_command! {
         }
 
         /// Returns the endpoint.
-        #[must_use]
-        pub const fn endpoint(self) -> u8 {
-            self.endpoint
+        ///
+        /// # Errors
+        ///
+        /// Returns [`Reserved`] if the raw endpoint value is reserved.
+        pub fn endpoint(self) -> Result<Endpoint, Reserved> {
+            self.endpoint.try_into()
         }
     }
     display {

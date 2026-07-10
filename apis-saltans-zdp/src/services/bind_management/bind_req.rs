@@ -1,3 +1,4 @@
+use apis_saltans_core::endpoint::Reserved;
 use apis_saltans_core::{Endpoint, IeeeAddress};
 use num_traits::FromPrimitive;
 
@@ -18,11 +19,11 @@ crate::zdp_command! {
     response: BindRsp;
     fields {
         src_address: IeeeAddress,
-        src_endpoint: Endpoint,
+        src_endpoint: u8,
         cluster_id: u16,
         dst_addr_mode: u8,
         dst_address: Address,
-        dst_endpoint: Option<Endpoint>,
+        dst_endpoint: Option<u8>,
     }
     constructor {
         /// Creates a new `BindReq`.
@@ -36,13 +37,13 @@ crate::zdp_command! {
             let (dst_address, dst_endpoint) = match destination {
                 Destination::Group(group_addr) => (Address::Group(group_addr), None),
                 Destination::Extended { address, endpoint } => {
-                    (Address::Extended(address), Some(endpoint))
+                    (Address::Extended(address), Some(endpoint.as_u8()))
                 }
             };
 
             Self {
                 src_address,
-                src_endpoint,
+                src_endpoint: src_endpoint.as_u8(),
                 cluster_id,
                 dst_addr_mode: destination.discriminant(),
                 dst_address,
@@ -58,9 +59,12 @@ crate::zdp_command! {
         }
 
         /// Returns the source endpoint.
-        #[must_use]
-        pub const fn src_endpoint(&self) -> Endpoint {
-            self.src_endpoint
+        ///
+        /// # Errors
+        ///
+        /// Returns [`Reserved`] if the raw endpoint value is reserved.
+        pub fn src_endpoint(&self) -> Result<Endpoint, Reserved> {
+            self.src_endpoint.try_into()
         }
 
         /// Returns the cluster ID.
@@ -69,18 +73,27 @@ crate::zdp_command! {
             self.cluster_id
         }
 
+        /// Returns the destination endpoint, if present.
+        pub fn dst_endpoint(&self) -> Option<Result<Endpoint, Reserved>> {
+            self.dst_endpoint.map(TryInto::try_into)
+        }
+
         /// Returns the destination.
         #[expect(clippy::missing_panics_doc)]
-        #[must_use]
-        pub const fn destination(&self) -> Destination {
+        ///
+        /// # Errors
+        ///
+        /// Returns [`Reserved`] if the raw destination endpoint value is reserved.
+        pub fn destination(&self) -> Result<Destination, Reserved> {
             match &self.dst_address {
-                Address::Group(addr) => Destination::Group(*addr),
-                Address::Extended(addr) => Destination::Extended {
+                Address::Group(addr) => Ok(Destination::Group(*addr)),
+                Address::Extended(addr) => Ok(Destination::Extended {
                     address: *addr,
                     endpoint: self
                         .dst_endpoint
-                        .expect("Extended address is guaranteed to have an endpoint"),
-                },
+                        .expect("Extended address is guaranteed to have an endpoint")
+                        .try_into()?,
+                }),
             }
         }
     }
@@ -93,7 +106,7 @@ crate::zdp_command! {
                 self.src_address,
                 self.src_endpoint,
                 self.cluster_id,
-                self.destination(),
+                self.destination().map_err(|_| std::fmt::Error)?,
             )
         }
     }
@@ -104,7 +117,7 @@ crate::zdp_command! {
                 T: Iterator<Item = u8>,
             {
                 let src_address = IeeeAddress::from_le_stream(&mut bytes)?;
-                let src_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+                let src_endpoint = u8::from_le_stream(&mut bytes)?;
                 let cluster_id = u16::from_le_stream(&mut bytes)?;
                 let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
                 let (dst_address, dst_endpoint) = match AddressMode::from_u8(dst_addr_mode)? {
@@ -113,7 +126,7 @@ crate::zdp_command! {
                     }
                     AddressMode::Extended => (
                         IeeeAddress::from_le_stream(&mut bytes).map(Address::Extended)?,
-                        Some(Endpoint::from_le_stream(&mut bytes)?),
+                        Some(u8::from_le_stream(&mut bytes)?),
                     ),
                 };
                 Some(Self {
