@@ -10,7 +10,7 @@ an `NcpHandle` and uses the `Ncp` trait to send commands to the driver actor.
 
 - `driver`: exposes the driver-facing types: `Builder`, `Driver`, `EventTranslator`, `Initialize`,
   `PreparedHardware`, and `bridge`.
-- `coordinator`: exposes the coordinator-facing types: `AwaitEvent`, `Ncp`, and `WeakNcpHandle`.
+- `coordinator`: exposes the coordinator-facing types: `Ncp` and `WeakNcpHandle`.
 - No default features are enabled. Shared data and protocol types such as `Datagram`, `Metadata`,
   `Error`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and `NcpHandle` are always
   exported.

@@ -9,7 +9,7 @@ channels owned by each message.
 
 - The `driver` feature exposes `Builder`, `Initialize`, `Driver`, `PreparedHardware`,
   `EventTranslator`, and `bridge` for hardware backends.
-- The `coordinator` feature exposes `Ncp`, `AwaitEvent`, and `WeakNcpHandle` for coordinator code.
+- The `coordinator` feature exposes `Ncp` and `WeakNcpHandle` for coordinator code.
 - `Builder` creates a backend from the coordinator endpoint descriptors and prepares support tasks.
 - `Initialize` starts the command side of a prepared backend and returns an `NcpHandle`.
 - `Driver` is the implementor-facing NCP command API.
@@ -22,7 +22,6 @@ channels owned by each message.
 
 | Export | Feature | Defined in | Purpose |
 | --- | --- | --- | --- |
-| `AwaitEvent` | `coordinator` | `coordinator/await_event.rs` | Convenience methods for waiting on common network events. |
 | `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
 | `Builder` | `driver` | `driver/builder.rs` | Prepares a hardware backend and its support tasks. |
 | `Datagram` | always | `common/datagram.rs` | Serialized application payload plus APS metadata. |
@@ -33,7 +32,7 @@ channels owned by each message.
 | `FoundNetwork` | always | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
 | `Initialize` | `driver` | `driver/initialize.rs` | Starts the command side of a prepared backend. |
 | `Metadata` | always | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
-| `Ncp` | `coordinator` | `coordinator/ncp.rs` | Caller-side API implemented for `NcpHandle`. |
+| `Ncp` | `coordinator` | `coordinator.rs` | Caller-side API implemented for `NcpHandle`. |
 | `NcpHandle` | always | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
 | `Network` | always | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
 | `PreparedHardware` | `driver` | `driver/prepared_hardware.rs` | Prepared startup bundle containing support tasks and event stream. |
@@ -208,8 +207,6 @@ flowchart TD
     driver --> initialize["driver/initialize.rs"]
     driver --> prepared_hardware["driver/prepared_hardware.rs"]
     driver --> sealed_driver["driver/sealed_driver.rs"]
-    coordinator --> await_event["coordinator/await_event.rs"]
-    coordinator --> ncp["coordinator/ncp.rs"]
 ```
 
 ## Command Protocol
