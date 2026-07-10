@@ -141,10 +141,16 @@ where
             return Some(FullAddress::new(ieee_address, short_id));
         }
 
+        let Ok(short_id) = source.node_id().try_into().inspect_err(|error| {
+            warn!("Received invalid node ID: {error:?}");
+        }) else {
+            return None;
+        };
+
         trace!("NWK source does not supply source IEEE address. Querying storage.");
         let Some(ieee_address) = self
             .storage
-            .get_ieee_address(source.node_id())
+            .get_ieee_address(short_id)
             .await
             .inspect_err(|error| error!("{error}"))
             .ok()

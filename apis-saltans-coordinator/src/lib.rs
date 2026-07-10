@@ -9,7 +9,7 @@ use const_env::env_item;
 
 pub use self::api::{
     ColorControl, Discovery, Joining, Level, NetworkManager, OnOff, ReadAttributeResult,
-    ReadAttributes, WriteAttributes,
+    ReadAttributes, WriteAttributeResult, WriteAttributes,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;

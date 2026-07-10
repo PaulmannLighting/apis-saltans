@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use apis_saltans_core::destination::Device;
 use apis_saltans_core::{Application, FullAddress};
 use apis_saltans_zcl::basic::Id;
 use const_env::env_item;
@@ -63,11 +64,13 @@ impl DiscoveryTask {
             self.address, self.endpoint
         );
 
+        let destination = Device::new(self.address.short_id(), self.endpoint.into());
+
         let mut attributes = Vec::with_capacity(CORE_ATTRIBUTES.len() + EXTENDED_ATTRIBUTES.len());
 
         match self
             .zcl
-            .read_attributes(self.address.ieee_address(), self.endpoint, CORE_ATTRIBUTES)
+            .read_attributes(destination, CORE_ATTRIBUTES)
             .timeout(TIMEOUT)
             .await
         {
@@ -92,11 +95,7 @@ impl DiscoveryTask {
 
         match self
             .zcl
-            .read_attributes(
-                self.address.ieee_address(),
-                self.endpoint,
-                EXTENDED_ATTRIBUTES,
-            )
+            .read_attributes(destination, EXTENDED_ATTRIBUTES)
             .timeout(TIMEOUT)
             .await
         {

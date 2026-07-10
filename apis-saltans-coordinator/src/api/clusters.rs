@@ -4,7 +4,7 @@ pub use self::color_control::ColorControl;
 pub use self::level::Level;
 pub use self::on_off::OnOff;
 pub use self::read_attributes::{ReadAttributeResult, ReadAttributes};
-pub use self::write_attributes::WriteAttributes;
+pub use self::write_attributes::{WriteAttributeResult, WriteAttributes};
 
 mod color_control;
 mod level;
