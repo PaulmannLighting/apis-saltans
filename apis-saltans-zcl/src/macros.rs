@@ -1325,6 +1325,7 @@ macro_rules! zcl_attribute_newtype {
         ]
     ) => {
         $($attr)*
+        #[allow(clippy::enum_variant_names)]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
         #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, num_derive::FromPrimitive)]
         #[repr(u8)]
@@ -2565,11 +2566,13 @@ macro_rules! zcl_attributes {
     };
     (@emit_value_enum [$enum:ident] [$doc:literal] []) => {
         #[doc = $doc]
+        #[allow(dead_code)]
         #[derive(Clone, Debug, Eq, Hash, PartialEq)]
         pub enum $enum {}
     };
     (@emit_value_enum [$enum:ident] [$doc:literal] [$($variants:tt)+]) => {
         #[doc = $doc]
+        #[allow(dead_code)]
         #[allow(clippy::large_enum_variant, variant_size_differences)]
         #[derive(Clone, Debug, Eq, Hash, PartialEq)]
         #[repr(u16)]
@@ -2585,7 +2588,7 @@ pub(crate) use zcl_attributes;
 #[cfg(test)]
 mod zcl_attributes_macro_tests {
     use apis_saltans_core::types::{Type, Uint8};
-    use apis_saltans_core::{Cluster, ClusterSpecific, Profile, Profiled};
+    use apis_saltans_core::{Cluster, Profile, Profiled};
 
     #[derive(Clone, Debug, Eq, Hash, PartialEq)]
     pub struct Custom(Uint8);

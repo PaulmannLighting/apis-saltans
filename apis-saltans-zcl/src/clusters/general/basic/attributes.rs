@@ -3,6 +3,7 @@
 use apis_saltans_core::Cluster;
 use apis_saltans_core::types::{Bool, OctStr, String, Uint8};
 
+#[allow(unused_imports)]
 pub use self::date_code::{DateCode, ParseError};
 pub use self::types::{
     AlarmMask, DisableLocalConfig, GenericDeviceClass, GenericDeviceType, PhysicalEnvironment,

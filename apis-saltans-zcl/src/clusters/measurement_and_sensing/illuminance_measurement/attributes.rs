@@ -3,6 +3,7 @@
 use apis_saltans_core::Cluster;
 use apis_saltans_core::types::Uint16;
 
+#[allow(unused_imports)]
 pub use self::types::{LightSensorType, Lux, ManufacturerSpecific, MeasuredValue};
 use crate::macros::zcl_attributes;
 
