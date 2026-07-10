@@ -28,7 +28,6 @@ pub use self::traits::ExpectResponse;
 mod byte_sized_vec;
 mod cluster;
 pub mod constants;
-mod full_address;
 #[macro_use]
 mod macros;
 /// Outbound Zigbee destination types.
@@ -36,6 +35,7 @@ pub mod destination;
 mod direction;
 /// Zigbee endpoint domain types.
 pub mod endpoint;
+mod full_address;
 mod group_id;
 mod ieee_address;
 pub mod node;

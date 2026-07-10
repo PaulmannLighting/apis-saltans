@@ -41,3 +41,45 @@ impl FullAddress {
         (self.ieee_address, self.short_id)
     }
 }
+
+impl_fmt_pair!(
+    FullAddress,
+    IeeeAddress,
+    ShortId,
+    |value| (value.ieee_address, value.short_id),
+    "/"
+);
+
+#[cfg(test)]
+mod tests {
+    extern crate alloc;
+
+    use alloc::format;
+
+    use crate::{FullAddress, IeeeAddress, ShortId, short_id};
+
+    const IEEE_ADDRESS: IeeeAddress = IeeeAddress::new(1, 2, 3, 4, 5, 6, 7, 8);
+    const SHORT_ID: ShortId = ShortId::Device(short_id::Device(0x1234));
+    const ADDRESS: FullAddress = FullAddress::new(IEEE_ADDRESS, SHORT_ID);
+
+    #[test]
+    fn display_formats_both_parts() {
+        assert_eq!(format!("{ADDRESS}"), format!("{IEEE_ADDRESS}/{SHORT_ID}"));
+    }
+
+    #[test]
+    fn lower_hex_formats_both_parts() {
+        assert_eq!(
+            format!("{ADDRESS:x}"),
+            format!("{IEEE_ADDRESS:x}/{SHORT_ID:x}")
+        );
+    }
+
+    #[test]
+    fn upper_hex_formats_both_parts() {
+        assert_eq!(
+            format!("{ADDRESS:X}"),
+            format!("{IEEE_ADDRESS:X}/{SHORT_ID:X}")
+        );
+    }
+}
