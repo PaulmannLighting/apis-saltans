@@ -26,6 +26,24 @@ pub enum Destination {
     Group(GroupId),
 }
 
+impl From<Device> for Destination {
+    fn from(device: Device) -> Self {
+        Self::Device(device)
+    }
+}
+
+impl From<Broadcast> for Destination {
+    fn from(broadcast: Broadcast) -> Self {
+        Self::Broadcast(broadcast)
+    }
+}
+
+impl From<GroupId> for Destination {
+    fn from(group_id: GroupId) -> Self {
+        Self::Group(group_id)
+    }
+}
+
 impl_fmt_enum! {
     Destination {
         Device(Device) => "Device",
