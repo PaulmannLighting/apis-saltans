@@ -1,7 +1,6 @@
 use apis_saltans_zdp::SimpleDescriptor;
 
 use super::Attributes;
-use crate::Endpoint;
 
 /// Information about an endpoint.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -44,7 +43,7 @@ impl From<SimpleDescriptor> for EndpointInfo {
     }
 }
 
-impl From<EndpointInfo> for Endpoint {
+impl From<EndpointInfo> for crate::EndpointInfo {
     fn from(endpoint_info: EndpointInfo) -> Self {
         Self::new(
             endpoint_info.descriptor,

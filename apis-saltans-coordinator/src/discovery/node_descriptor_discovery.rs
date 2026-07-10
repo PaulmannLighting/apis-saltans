@@ -1,4 +1,4 @@
-use apis_saltans_core::Address;
+use apis_saltans_core::FullAddress;
 use log::{error, trace};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
@@ -68,7 +68,7 @@ impl NodeDescriptorDiscovery {
         }
     }
 
-    async fn start_discovery(&self, address: Address) {
+    async fn start_discovery(&self, address: FullAddress) {
         let Some(zdp) = self.zdp.upgrade() else {
             trace!("Failed to upgrade ZDP sender");
             return;

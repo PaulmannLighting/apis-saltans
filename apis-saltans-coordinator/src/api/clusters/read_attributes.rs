@@ -1,34 +1,17 @@
-use apis_saltans_core::{Application, Cluster, IeeeAddress, Profile};
-use apis_saltans_hw::Metadata;
-use apis_saltans_zcl::global::read_attributes::{Command, Response};
-use apis_saltans_zcl::{ParseAttributeError, Readable};
+use apis_saltans_core::destination::Device;
+use apis_saltans_core::{ClusterSpecific, Direction, ExpectResponse, Profile, Profiled};
+use apis_saltans_zcl::{Cluster, Command, ParseAttributeError, ParseDirection, Readable};
+use le_stream::ToLeStream;
 use tokio::sync::mpsc::Sender;
 
-use crate::transceiver::zcl::{Handle, Message, Payload};
-use crate::{Coordinator, Error, NetworkManager};
+use crate::Error;
+use crate::transceiver::zcl::{Handle, Message};
 
 /// Result of reading an attribute.
 pub type ReadAttributeResult<T> = Result<<T as Readable>::Attribute, ParseAttributeError<T>>;
 
 /// Trait for reading attributes.
 pub trait ReadAttributes {
-    /// Read raw attributes from a device.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes_raw<T>(
-        &self,
-        ieee_address: IeeeAddress,
-        endpoint: Application,
-        cluster: u16,
-        profile: Profile,
-        manufacturer_code: Option<u16>,
-        ids: T,
-    ) -> impl Future<Output = Result<Response, Error>> + Send
-    where
-        T: IntoIterator<Item = u16> + Send;
-
     /// Read attributes from a device.
     ///
     /// # Errors
@@ -36,129 +19,100 @@ pub trait ReadAttributes {
     /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
     fn read_attributes<T>(
         &self,
-        ieee_address: IeeeAddress,
-        endpoint: Application,
+        device: Device,
         attributes: T,
-    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T::Item>]>, Error>> + Send
+    ) -> impl Future<
+        Output = Result<<<T as IntoIterator>::Item as ExpectResponse<Cluster>>::Response, Error>,
+    > + Send
     where
         Self: Sync,
-        T: IntoIterator<Item: Readable, IntoIter: Send> + Send,
-    {
-        async move {
-            self.read_attributes_raw(
-                ieee_address,
-                endpoint,
-                T::Item::ID,
-                T::Item::PROFILE,
-                T::Item::MANUFACTURER_CODE,
-                attributes.into_iter().map(Into::into),
-            )
-            .await
-            .map(Into::into)
-        }
-    }
+        T: IntoIterator<
+                Item: Readable
+                          + Command
+                          + ExpectResponse<Cluster>
+                          + ToLeStream
+                          + Into<Cluster>
+                          + Send,
+                IntoIter: Send,
+            > + Send;
 }
 
-impl ReadAttributes for Coordinator {
-    async fn read_attributes_raw<T>(
+impl ReadAttributes for Sender<Message> {
+    async fn read_attributes<T>(
         &self,
-        ieee_address: IeeeAddress,
-        endpoint: Application,
-        cluster: u16,
-        profile: Profile,
-        manufacturer_code: Option<u16>,
+        device: Device,
         ids: T,
-    ) -> Result<Response, Error>
+    ) -> Result<<<T as IntoIterator>::Item as ExpectResponse<Cluster>>::Response, Error>
     where
-        T: IntoIterator<Item = u16> + Send,
+        T: IntoIterator<
+                Item: Readable
+                          + Command
+                          + ExpectResponse<Cluster>
+                          + ToLeStream
+                          + Into<Cluster>
+                          + Send,
+                IntoIter: Send,
+            > + Send,
     {
-        self.zcl
-            .read_attributes_raw(
-                self.network_manager
-                    .get_short_id_from_ieee_address(ieee_address)
-                    .await?
-                    .ok_or(Error::UnknownDevice(ieee_address))?,
-                endpoint,
-                cluster,
-                profile,
-                manufacturer_code,
-                ids.into_iter().collect(),
-            )
+        self.communicate(device, ReadAttributesRequest::from_iter(ids))
             .await
     }
 }
 
-/// Internal trait for reading attributes using the short ID.
-pub trait ReadAttributesInternal {
-    /// Read raw attributes from a device.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes_raw(
-        &self,
-        short_id: u16,
-        endpoint: Application,
-        cluster: u16,
-        profile: Profile,
-        manufacturer_code: Option<u16>,
-        ids: Box<[u16]>,
-    ) -> impl Future<Output = Result<Response, Error>> + Send;
+struct ReadAttributesRequest<T> {
+    attributes: Box<[T]>,
+}
 
-    /// Read attributes from a device.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [Error] if the communication fails or if the response is not a valid [`Response`].
-    fn read_attributes<T>(
-        &self,
-        short_id: u16,
-        endpoint: Application,
-        attributes: Box<[T]>,
-    ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T>]>, Error>> + Send
+impl<T> FromIterator<T> for ReadAttributesRequest<T> {
+    fn from_iter<I>(iter: I) -> Self
     where
-        Self: Sync,
-        T: Readable,
+        I: IntoIterator<Item = T>,
     {
-        let ids = attributes.into_iter().map(Into::into).collect();
-
-        async move {
-            self.read_attributes_raw(
-                short_id,
-                endpoint,
-                T::ID,
-                T::PROFILE,
-                T::MANUFACTURER_CODE,
-                ids,
-            )
-            .await
-            .map(Into::into)
+        Self {
+            attributes: iter.into_iter().collect(),
         }
     }
 }
 
-impl ReadAttributesInternal for Sender<Message> {
-    async fn read_attributes_raw(
-        &self,
-        short_id: u16,
-        endpoint: Application,
-        cluster: u16,
-        profile: Profile,
-        manufacturer_code: Option<u16>,
-        ids: Box<[u16]>,
-    ) -> Result<Response, Error> {
-        #[expect(unsafe_code)]
-        // SAFETY: We construct matching metadata from the given cluster ID.
-        // Since reading attributes is a global command, we don't need to validate the cluster ID.
-        // Hence, the resulting metadata and command are guaranteed to match.
-        let payload = unsafe {
-            Payload::new(
-                Metadata::new(cluster, profile),
-                manufacturer_code,
-                Command::new(ids),
-            )
-        };
+impl<T> ClusterSpecific for ReadAttributesRequest<T>
+where
+    T: ClusterSpecific,
+{
+    const ID: u16 = T::ID;
+}
 
-        self.communicate(short_id, endpoint, payload).await
+impl<T> Profiled for ReadAttributesRequest<T>
+where
+    T: Profiled,
+{
+    const PROFILE: Profile = T::PROFILE;
+}
+
+impl<T> apis_saltans_zcl::Command for ReadAttributesRequest<T>
+where
+    T: apis_saltans_zcl::Command,
+{
+    const ID: u8 = T::ID;
+    const DIRECTION: Direction = T::DIRECTION;
+    const PARSE_DIRECTION: ParseDirection = T::PARSE_DIRECTION;
+    const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
+    const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;
+}
+
+impl<T, U> ExpectResponse<U> for ReadAttributesRequest<T>
+where
+    T: ExpectResponse<U> + Into<U>,
+{
+    type Response = T::Response;
+}
+
+impl<T> ToLeStream for ReadAttributesRequest<T>
+where
+    T: ToLeStream,
+{
+    type Iter = <Box<[T]> as ToLeStream>::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        self.attributes.to_le_stream()
     }
 }

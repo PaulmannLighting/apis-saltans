@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use apis_saltans_core::{Address, Endpoint};
+use apis_saltans_core::{Endpoint, FullAddress};
 use apis_saltans_zdp::{SimpleDescReq, Status};
 use const_env::env_item;
 use log::{error, trace, warn};
@@ -17,7 +17,7 @@ const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 /// Task to discover a descriptor on a device.
 #[derive(Debug)]
 pub struct DiscoveryTask {
-    address: Address,
+    address: FullAddress,
     endpoint: Endpoint,
     loopback: Sender<Message>,
     zdp: Sender<transceiver::zdp::Message>,
@@ -27,7 +27,7 @@ impl DiscoveryTask {
     /// Create a new instance of `DiscoveryTask`.
     #[must_use]
     pub const fn new(
-        address: Address,
+        address: FullAddress,
         endpoint: Endpoint,
         loopback: Sender<Message>,
         zdp: Sender<transceiver::zdp::Message>,
@@ -50,7 +50,7 @@ impl DiscoveryTask {
 
         match self
             .zdp
-            .communicate(short_id, SimpleDescReq::new(short_id, self.endpoint))
+            .communicate(short_id, SimpleDescReq::new(short_id.into(), self.endpoint))
             .timeout(TIMEOUT)
             .await
         {

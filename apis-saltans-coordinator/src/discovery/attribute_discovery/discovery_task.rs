@@ -1,12 +1,12 @@
 use std::time::Duration;
 
-use apis_saltans_core::{Address, Application};
-use apis_saltans_zcl::general::basic::attributes::Id;
+use apis_saltans_core::{Application, FullAddress};
+use apis_saltans_zcl::basic::Id;
 use const_env::env_item;
 use log::{debug, error, trace};
 use tokio::sync::mpsc::Sender;
 
-use crate::api::ReadAttributesInternal;
+use crate::api::ReadAttributes;
 use crate::discovery::attribute_discovery::Message;
 use crate::{Timeout, transceiver};
 
@@ -33,7 +33,7 @@ const EXTENDED_ATTRIBUTES: [Id; 4] = [
 /// A single discovery task.
 #[derive(Debug)]
 pub struct DiscoveryTask {
-    address: Address,
+    address: FullAddress,
     endpoint: Application,
     loopback: Sender<Message>,
     zcl: Sender<transceiver::zcl::Message>,
@@ -43,7 +43,7 @@ impl DiscoveryTask {
     /// Create a new instance of `DiscoveryTask`.
     #[must_use]
     pub const fn new(
-        address: Address,
+        address: FullAddress,
         endpoint: Application,
         loopback: Sender<Message>,
         zcl: Sender<transceiver::zcl::Message>,
@@ -67,11 +67,7 @@ impl DiscoveryTask {
 
         match self
             .zcl
-            .read_attributes(
-                self.address.short_id(),
-                self.endpoint,
-                CORE_ATTRIBUTES.into(),
-            )
+            .read_attributes(self.address.ieee_address(), self.endpoint, CORE_ATTRIBUTES)
             .timeout(TIMEOUT)
             .await
         {
@@ -97,9 +93,9 @@ impl DiscoveryTask {
         match self
             .zcl
             .read_attributes(
-                self.address.short_id(),
+                self.address.ieee_address(),
                 self.endpoint,
-                EXTENDED_ATTRIBUTES.into(),
+                EXTENDED_ATTRIBUTES,
             )
             .timeout(TIMEOUT)
             .await

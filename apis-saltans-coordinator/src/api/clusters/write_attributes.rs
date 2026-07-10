@@ -1,4 +1,4 @@
-use apis_saltans_core::{Application, Cluster, IeeeAddress, Profile};
+use apis_saltans_core::{Application, ClusterSpecific, IeeeAddress, Profile, Profiled};
 use apis_saltans_hw::Metadata;
 use apis_saltans_zcl::Writable;
 use apis_saltans_zcl::global::write_attributes::{Command, Record, Response};

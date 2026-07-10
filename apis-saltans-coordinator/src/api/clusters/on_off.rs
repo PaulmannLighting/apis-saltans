@@ -1,7 +1,8 @@
-use apis_saltans_zcl::general::on_off::{Effect, Off, OffWithEffect, On, Toggle};
+use apis_saltans_core::Destination;
+use apis_saltans_zcl::on_off::{Effect, Off, OffWithEffect, On, Toggle};
 
 use crate::transceiver::zcl::Handle;
-use crate::{Coordinator, Destination, Error};
+use crate::{Coordinator, Error};
 
 /// Trait for On/Off cluster operations.
 pub trait OnOff {
@@ -40,19 +41,18 @@ pub trait OnOff {
 
 impl OnOff for Coordinator {
     async fn on(&self, destination: Destination) -> Result<(), Error> {
-        self.send_static_cluster(destination, On).await
+        self.transmit(destination, On).await
     }
 
     async fn off(&self, destination: Destination) -> Result<(), Error> {
-        self.send_static_cluster(destination, Off).await
+        self.transmit(destination, Off).await
     }
 
     async fn off_with_effect(&self, destination: Destination, effect: Effect) -> Result<(), Error> {
-        self.send_static_cluster(destination, OffWithEffect::new(effect))
-            .await
+        self.transmit(destination, OffWithEffect::new(effect)).await
     }
 
     async fn toggle(&self, destination: Destination) -> Result<(), Error> {
-        self.send_static_cluster(destination, Toggle).await
+        self.transmit(destination, Toggle).await
     }
 }

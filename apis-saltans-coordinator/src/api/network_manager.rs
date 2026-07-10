@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
-use apis_saltans_core::{Address, IeeeAddress};
+use apis_saltans_core::{FullAddress, IeeeAddress, short_id};
+use either::Either;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
 
@@ -20,7 +21,7 @@ pub trait NetworkManager {
     /// Returns an [`Error`] if the communication with the actor failed.
     fn get_ieee_address_from_short_id(
         &self,
-        short_id: u16,
+        short_id: short_id::Device,
     ) -> impl Future<Output = Result<Option<IeeeAddress>, Error>> + Send;
 
     /// Return the short ID for the given IEEE address.
@@ -35,30 +36,7 @@ pub trait NetworkManager {
     fn get_short_id_from_ieee_address(
         &self,
         ieee_address: IeeeAddress,
-    ) -> impl Future<Output = Result<Option<u16>, Error>> + Send;
-
-    /// Resolve the given short ID into an [`Address`].
-    ///
-    /// # Returns
-    ///
-    /// Returns `Some(address)` if the address is known, `None` otherwise.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if the communication with the actor failed.
-    fn short_id_to_address(
-        &self,
-        short_id: u16,
-    ) -> impl Future<Output = Result<Option<Address>, Error>> + Send
-    where
-        Self: Sync,
-    {
-        async move {
-            self.get_ieee_address_from_short_id(short_id)
-                .await
-                .map(|result| result.map(|ieee_address| Address::new(ieee_address, short_id)))
-        }
-    }
+    ) -> impl Future<Output = Result<Option<short_id::Device>, Error>> + Send;
 
     /// Resolve the given IEEE address into an [`Address`].
     ///
@@ -69,17 +47,27 @@ pub trait NetworkManager {
     /// # Errors
     ///
     /// Returns an [`Error`] if the communication with the actor failed.
-    fn ieee_address_to_address(
+    fn get_full_address(
         &self,
-        ieee_address: IeeeAddress,
-    ) -> impl Future<Output = Result<Option<Address>, Error>> + Send
+        address: Either<IeeeAddress, short_id::Device>,
+    ) -> impl Future<Output = Result<Option<FullAddress>, Error>> + Send
     where
         Self: Sync,
     {
         async move {
-            self.get_short_id_from_ieee_address(ieee_address)
-                .await
-                .map(|result| result.map(|short_id| Address::new(ieee_address, short_id)))
+            match address {
+                Either::Left(ieee_address) => self
+                    .get_short_id_from_ieee_address(ieee_address)
+                    .await
+                    .map(|option| option.map(|short_id| FullAddress::new(ieee_address, short_id))),
+                Either::Right(short_id) => {
+                    self.get_ieee_address_from_short_id(short_id)
+                        .await
+                        .map(|option| {
+                            option.map(|ieee_address| FullAddress::new(ieee_address, short_id))
+                        })
+                }
+            }
         }
     }
 
@@ -101,7 +89,7 @@ pub trait NetworkManager {
 impl NetworkManager for Sender<Message> {
     async fn get_ieee_address_from_short_id(
         &self,
-        short_id: u16,
+        short_id: short_id::Device,
     ) -> Result<Option<IeeeAddress>, Error> {
         let (response, result) = channel();
         self.send(Message::GetIeeeAddressFromShortId { short_id, response })
@@ -112,7 +100,7 @@ impl NetworkManager for Sender<Message> {
     async fn get_short_id_from_ieee_address(
         &self,
         ieee_address: IeeeAddress,
-    ) -> Result<Option<u16>, Error> {
+    ) -> Result<Option<short_id::Device>, Error> {
         let (response, result) = channel();
         self.send(Message::GetShortIdFromIeeeAddress {
             ieee_address,
@@ -146,7 +134,7 @@ impl NetworkManager for Sender<Message> {
 impl NetworkManager for Coordinator {
     async fn get_ieee_address_from_short_id(
         &self,
-        short_id: u16,
+        short_id: short_id::Device,
     ) -> Result<Option<IeeeAddress>, Error> {
         self.network_manager
             .get_ieee_address_from_short_id(short_id)
@@ -156,7 +144,7 @@ impl NetworkManager for Coordinator {
     async fn get_short_id_from_ieee_address(
         &self,
         ieee_address: IeeeAddress,
-    ) -> Result<Option<u16>, Error> {
+    ) -> Result<Option<short_id::Device>, Error> {
         self.network_manager
             .get_short_id_from_ieee_address(ieee_address)
             .await

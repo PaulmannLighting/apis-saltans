@@ -1,12 +1,15 @@
+use std::fmt::Debug;
+
 use apis_saltans_core::destination::Device;
-use apis_saltans_core::{Destination, ExpectResponse};
+use apis_saltans_core::{ClusterSpecific, Destination, ExpectResponse, Profiled};
 use apis_saltans_hw::{Error, Event, NcpHandle};
-use apis_saltans_zcl::Cluster;
+use apis_saltans_zcl::{Cluster, Command};
 use apis_saltans_zdp::SimpleDescriptor;
+use le_stream::ToLeStream;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 use crate::mux::Mux;
-use crate::transceiver::zcl::Datagram;
+use crate::transceiver::zcl::Payload;
 use crate::transceiver::{zcl, zdp};
 use crate::{MPSC_CHANNEL_SIZE, binding, discovery, network_manager, storage};
 
@@ -63,11 +66,10 @@ impl Coordinator {
 }
 
 impl zcl::Handle for Coordinator {
-    async fn transmit(
-        &self,
-        destination: Destination,
-        payload: Datagram,
-    ) -> Result<(), crate::Error> {
+    async fn transmit<T>(&self, destination: Destination, payload: T) -> Result<(), crate::Error>
+    where
+        T: ClusterSpecific + Command + Debug + Profiled + ToLeStream,
+    {
         self.zcl.transmit(destination, payload).await
     }
 
@@ -77,7 +79,7 @@ impl zcl::Handle for Coordinator {
         payload: T,
     ) -> Result<T::Response, crate::Error>
     where
-        T: ExpectResponse<Cluster> + Into<Datagram>,
+        T: ExpectResponse<Cluster> + Into<Payload> + Send,
     {
         self.zcl.communicate(destination, payload).await
     }

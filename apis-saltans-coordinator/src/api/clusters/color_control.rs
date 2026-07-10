@@ -1,9 +1,10 @@
+use apis_saltans_core::Destination;
 use apis_saltans_core::units::Deciseconds;
 use apis_saltans_zcl::Options;
-use apis_saltans_zcl::lighting::color_control::MoveToColor;
+use apis_saltans_zcl::color_control::MoveToColor;
 
 use crate::transceiver::zcl::Handle;
-use crate::{Coordinator, Destination, Error};
+use crate::{Coordinator, Error};
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {
@@ -31,7 +32,7 @@ impl ColorControl for Coordinator {
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(
+        self.transmit(
             destination,
             MoveToColor::new(color_x, color_y, transition_time, options),
         )

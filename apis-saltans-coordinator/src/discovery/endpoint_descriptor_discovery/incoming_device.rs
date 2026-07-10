@@ -2,20 +2,20 @@ use std::collections::BTreeSet;
 use std::fmt::Display;
 
 use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::{Address, Endpoint};
+use apis_saltans_core::{Endpoint, FullAddress};
 
 #[derive(Debug)]
-pub struct Device {
-    pub(crate) address: Address,
+pub struct IncomingDevice {
+    pub(crate) address: FullAddress,
     pub(crate) descriptor: Descriptor,
     pub(crate) endpoints: BTreeSet<Endpoint>,
 }
 
-impl Device {
+impl IncomingDevice {
     /// Create a new instance of `Device`.
     #[must_use]
     pub const fn new(
-        address: Address,
+        address: FullAddress,
         descriptor: Descriptor,
         endpoints: BTreeSet<Endpoint>,
     ) -> Self {
@@ -27,7 +27,7 @@ impl Device {
     }
 }
 
-impl Display for Device {
+impl Display for IncomingDevice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.address.fmt(f)
     }

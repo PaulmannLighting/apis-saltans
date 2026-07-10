@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use apis_saltans_core::Address;
+use apis_saltans_core::FullAddress;
 use apis_saltans_zdp::{ActiveEpReq, Status};
 use const_env::env_item;
 use log::{error, trace, warn};
@@ -17,7 +17,7 @@ const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 /// A single discovery task.
 #[derive(Debug)]
 pub struct DiscoveryTask {
-    address: Address,
+    address: FullAddress,
     zdp: Sender<transceiver::zdp::Message>,
     loopback: Sender<Message>,
 }
@@ -26,7 +26,7 @@ impl DiscoveryTask {
     /// Create a new instance of `DiscoveryTask`.
     #[must_use]
     pub const fn new(
-        address: Address,
+        address: FullAddress,
         zdp: Sender<transceiver::zdp::Message>,
         loopback: Sender<Message>,
     ) -> Self {
@@ -45,7 +45,7 @@ impl DiscoveryTask {
 
         match self
             .zdp
-            .communicate(short_id, ActiveEpReq::new(short_id))
+            .communicate(short_id, ActiveEpReq::new(short_id.into()))
             .timeout(TIMEOUT)
             .await
         {
@@ -59,7 +59,7 @@ impl DiscoveryTask {
                     self.loopback
                         .send(Message::Discovered {
                             address: self.address,
-                            endpoints: response.into_active_eps().into_iter().collect(),
+                            endpoints: response.into_active_eps().filter_map(Result::ok).collect(),
                         })
                         .await
                         .unwrap_or_else(|error| {

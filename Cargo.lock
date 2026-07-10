@@ -37,6 +37,7 @@ dependencies = [
  "apis-saltans-zdp",
  "bytes",
  "const_env",
+ "either",
  "le-stream",
  "log",
  "serde",
@@ -72,7 +73,6 @@ dependencies = [
  "apis-saltans-nwk",
  "apis-saltans-zdp",
  "bytes",
- "log",
  "tokio",
 ]
 
@@ -355,10 +355,11 @@ dependencies = [
 
 [[package]]
 name = "le-stream"
-version = "10.1.4"
+version = "10.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2e2c83c7e271e6c1af6d50f57de755353342a896a8ab0156e0831b561f2706e"
+checksum = "42537ed5e918288237bfa43d0ab3be58d58f74ed1b96983d082a8892da9f5acf"
 dependencies = [
+ "bytes",
  "heapless",
  "intx",
  "le-stream-derive",

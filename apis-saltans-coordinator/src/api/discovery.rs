@@ -1,6 +1,7 @@
-use apis_saltans_core::Address;
+use apis_saltans_core::IeeeAddress;
+use either::Either;
 
-use crate::{Coordinator, Error, discovery};
+use crate::{Coordinator, Error, NetworkManager, discovery};
 
 /// Discovery-related functions.
 pub trait Discovery {
@@ -9,11 +10,17 @@ pub trait Discovery {
     /// # Errors
     ///
     /// Returns an [`Error`] when starting the discovery fails.
-    fn rediscover(&self, address: Address) -> impl Future<Output = Result<(), Error>> + Send;
+    fn rediscover(
+        &self,
+        ieee_address: IeeeAddress,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl Discovery for Coordinator {
-    async fn rediscover(&self, address: Address) -> Result<(), Error> {
+    async fn rediscover(&self, ieee_address: IeeeAddress) -> Result<(), Error> {
+        let Some(address) = self.get_full_address(Either::Left(ieee_address)).await? else {
+            return Err(Error::UnknownDevice(ieee_address));
+        };
         Ok(self
             .discovery_manager
             .send(discovery::Message::AdministrativeDiscovery(address))

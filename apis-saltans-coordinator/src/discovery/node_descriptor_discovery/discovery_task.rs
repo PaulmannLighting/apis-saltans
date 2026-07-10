@@ -1,7 +1,8 @@
 use std::time::Duration;
 
-use apis_saltans_core::Address;
+use apis_saltans_core::short_id::Device;
 use apis_saltans_core::types::tlv::FragmentationParameters;
+use apis_saltans_core::{FullAddress, IeeeAddress};
 use apis_saltans_zdp::NodeDescReq;
 use const_env::env_item;
 use log::{error, info, trace, warn};
@@ -18,7 +19,7 @@ const TIMEOUT: Duration = Duration::from_secs(TIMEOUT_SECS);
 /// Task to discover a descriptor on a device.
 #[derive(Debug)]
 pub struct DiscoveryTask {
-    address: Address,
+    address: FullAddress,
     loopback: Sender<Message>,
     zdp: Sender<transceiver::zdp::Message>,
 }
@@ -27,7 +28,7 @@ impl DiscoveryTask {
     /// Create a new instance of `DiscoveryTask`.
     #[must_use]
     pub const fn new(
-        address: Address,
+        address: FullAddress,
         loopback: Sender<Message>,
         zdp: Sender<transceiver::zdp::Message>,
     ) -> Self {
@@ -42,11 +43,12 @@ impl DiscoveryTask {
     pub async fn run(self) {
         trace!("Starting discovery of descriptor for {}", self.address);
         let short_id = self.address.short_id();
+
         match self
             .zdp
             .communicate(
                 short_id,
-                NodeDescReq::from(FragmentationParameters::new(short_id, None, None)),
+                NodeDescReq::from(FragmentationParameters::new(short_id.into(), None, None)),
             )
             .timeout(TIMEOUT)
             .await

@@ -1,22 +1,22 @@
 use std::collections::BTreeMap;
 
-use apis_saltans_core::Address;
+use apis_saltans_core::FullAddress;
 use apis_saltans_zdp::SimpleDescriptor;
 use log::{error, info, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 
-pub use self::device::Device;
-use self::devices::Devices;
+pub use self::incoming_device::IncomingDevice;
 pub use self::message::Message;
+use self::outgoing_device::Devices;
 use crate::discovery::attribute_discovery;
 use crate::discovery::endpoint_descriptor_discovery::discovery_task::DiscoveryTask;
 use crate::{MPSC_CHANNEL_SIZE, TASK_POOL_SIZE, transceiver};
 
-mod device;
-mod devices;
 mod discovery_task;
+mod incoming_device;
 mod message;
+mod outgoing_device;
 
 /// Actor to discover descriptors on devices.
 #[derive(Debug)]
@@ -62,7 +62,7 @@ impl EndpointDescriptorDiscovery {
                     self.descriptor_discovered(address, *descriptor).await;
                 }
                 Message::DiscoveryFailed(address) => {
-                    if self.devices.remove(&address).is_some() {
+                    if self.devices.remove(&address.ieee_address()).is_some() {
                         trace!("Removed failed discovery of: {address}");
                     }
                 }
@@ -71,15 +71,15 @@ impl EndpointDescriptorDiscovery {
     }
 
     /// Discover the descriptors for the given endpoints.
-    async fn discover(&mut self, device: Device) {
-        if self.devices.contains_key(&device.address) {
+    async fn discover(&mut self, device: IncomingDevice) {
+        if self.devices.contains_key(&device.address.ieee_address()) {
             trace!("Already discovering descriptors for {device}");
             return;
         }
 
         let device = self
             .devices
-            .entry(device.address)
+            .entry(device.address.ieee_address())
             .or_insert_with(|| device.into());
 
         let Some(loopback) = self.loopback.upgrade() else {
@@ -109,20 +109,24 @@ impl EndpointDescriptorDiscovery {
     }
 
     /// Update the descriptor map with the newly discovered descriptors.
-    async fn descriptor_discovered(&mut self, address: Address, descriptor: SimpleDescriptor) {
-        let Some(mut device) = self.devices.remove(&address) else {
+    async fn descriptor_discovered(&mut self, address: FullAddress, descriptor: SimpleDescriptor) {
+        let Some(mut device) = self.devices.remove(&address.ieee_address()) else {
             warn!("Discarding endpoint descriptor for {address} before we discovered them.");
             return;
         };
 
+        let Ok(endpoint) = descriptor.endpoint().inspect_err(|reserved| {
+            warn!("Discarding descriptor with invalid endpoint for {address}: {reserved}")
+        }) else {
+            return;
+        };
+
         trace!("Discovered endpoint descriptor for {address}: {descriptor:?}");
-        device
-            .endpoints
-            .insert(descriptor.endpoint(), Some(descriptor));
+        device.endpoints.insert(endpoint, Some(descriptor));
 
         if device.endpoints.values().any(Option::is_none) {
             trace!("Not all descriptors for {address} discovered.");
-            self.devices.insert(address, device);
+            self.devices.insert(address.ieee_address(), device);
             return;
         }
 
@@ -139,7 +143,11 @@ impl EndpointDescriptorDiscovery {
         trace!("Forwarding descriptors for {address} to attribute discovery: {endpoints:?}");
         self.attribute_discovery
             .send(attribute_discovery::Message::GetAttributes(
-                attribute_discovery::Device::new(device.address, device.descriptor, endpoints),
+                attribute_discovery::IncomingDevice::new(
+                    device.address,
+                    device.descriptor,
+                    endpoints,
+                ),
             ))
             .await
             .unwrap_or_else(|error| error!("Failed to send GetAttributes message: {error:?}"));

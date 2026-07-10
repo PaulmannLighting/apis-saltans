@@ -1,4 +1,4 @@
-use apis_saltans_core::Address;
+use apis_saltans_core::FullAddress;
 use apis_saltans_core::node::MacCapabilityFlags;
 
 /// Message sent to the discovery actor.
@@ -7,11 +7,11 @@ pub enum Message {
     /// A device has been announced.
     DeviceAnnounced {
         /// The address of the device.
-        address: Address,
+        address: FullAddress,
         /// The capabilities of the device.
         capabilities: MacCapabilityFlags,
     },
 
     /// An administrative discovery sent by the network manager.
-    AdministrativeDiscovery(Address),
+    AdministrativeDiscovery(FullAddress),
 }

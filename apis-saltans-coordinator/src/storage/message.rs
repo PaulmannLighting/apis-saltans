@@ -1,6 +1,6 @@
 use std::io::Result;
 
-use apis_saltans_core::{Address, IeeeAddress};
+use apis_saltans_core::{IeeeAddress, short_id};
 use tokio::sync::oneshot::Sender;
 
 use crate::Device;
@@ -24,7 +24,7 @@ pub enum Message {
     /// Remove a device by its address.
     Remove {
         /// The address of the device to remove.
-        address: Address,
+        ieee_address: IeeeAddress,
         /// The response channel.
         ///
         /// Returns the removed device, if any.
@@ -34,7 +34,7 @@ pub enum Message {
     /// Return a device given its short ID.
     GetByShortId {
         /// The short ID of the device.
-        short_id: u16,
+        short_id: short_id::Device,
         /// The response channel.
         response: Sender<Result<Option<Device>>>,
     },
@@ -49,16 +49,16 @@ pub enum Message {
 
     GetShortId {
         ieee_address: IeeeAddress,
-        response: Sender<Result<Option<u16>>>,
+        response: Sender<Result<Option<short_id::Device>>>,
     },
 
     GetIeeeAddress {
-        short_id: u16,
+        short_id: short_id::Device,
         response: Sender<Result<Option<IeeeAddress>>>,
     },
 
     UpdateShortId {
         ieee_address: IeeeAddress,
-        short_id: u16,
+        short_id: short_id::Device,
     },
 }

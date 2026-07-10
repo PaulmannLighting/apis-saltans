@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use apis_saltans_aps::Data;
-use apis_saltans_core::{Address, IeeeAddress};
+use apis_saltans_core::{FullAddress, IeeeAddress};
 use apis_saltans_hw::Ncp;
 use apis_saltans_nwk::Source;
 use apis_saltans_zcl::{Cluster, Frame};
@@ -10,7 +10,7 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 pub use self::message::Message;
-pub use crate::network::{Attributes, Device, Endpoint};
+use crate::network::Device;
 use crate::storage::Storage;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE, storage};
 
@@ -50,14 +50,7 @@ where
                 }
                 Message::GetIeeeAddressFromShortId { short_id, response } => {
                     response
-                        .send(
-                            self.storage
-                                .get_by_short_id(short_id)
-                                .await
-                                .ok()
-                                .flatten()
-                                .map(|device| device.address.ieee_address()),
-                        )
+                        .send(self.storage.get_ieee_address(short_id).await.ok().flatten())
                         .unwrap_or_else(|error| {
                             error!("Failed to send response: {error:?}");
                         });
@@ -67,14 +60,7 @@ where
                     response,
                 } => {
                     response
-                        .send(
-                            self.storage
-                                .get_by_ieee_address(ieee_address)
-                                .await
-                                .ok()
-                                .flatten()
-                                .map(|device| device.address.short_id()),
-                        )
+                        .send(self.storage.get_short_id(ieee_address).await.ok().flatten())
                         .unwrap_or_else(|error| {
                             error!("Failed to send response: {error:?}");
                         });
@@ -144,24 +130,31 @@ where
         self.subscribers.retain(|(_, sender)| !sender.is_closed());
     }
 
-    async fn get_address_from_source(&self, source: Source) -> Option<Address> {
+    async fn get_address_from_source(&self, source: Source) -> Option<FullAddress> {
+        let Ok(short_id) = source.node_id().try_into().inspect_err(|error| {
+            warn!("Received invalid node ID: {error:?}");
+        }) else {
+            return None;
+        };
+
         if let Some(ieee_address) = source.ieee_address() {
-            return Some(Address::new(ieee_address, source.node_id()));
+            return Some(FullAddress::new(ieee_address, short_id));
         }
 
         trace!("NWK source does not supply source IEEE address. Querying storage.");
-        let device = self
+        let Some(ieee_address) = self
             .storage
-            .get_by_short_id(source.node_id())
+            .get_ieee_address(source.node_id())
             .await
             .inspect_err(|error| error!("{error}"))
             .ok()
-            .flatten()?;
+            .flatten()
+        else {
+            warn!("Device {short_id} is not known to storage.");
+            return None;
+        };
 
-        Some(Address::new(
-            device.address.ieee_address(),
-            source.node_id(),
-        ))
+        Some(FullAddress::new(ieee_address, short_id))
     }
 
     async fn add_device(&self, device: Device) {
@@ -181,8 +174,8 @@ where
         });
     }
 
-    async fn remove_device(&self, address: Address) {
-        self.storage.remove(address).await.map_or_else(
+    async fn remove_device(&self, ieee_address: IeeeAddress) {
+        self.storage.remove(ieee_address).await.map_or_else(
             |error| {
                 error!("Failed to remove device: {error:?}");
             },

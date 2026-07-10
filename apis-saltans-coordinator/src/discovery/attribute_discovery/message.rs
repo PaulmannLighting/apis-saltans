@@ -1,19 +1,19 @@
-use apis_saltans_core::{Address, Application};
-use apis_saltans_zcl::general::basic::attributes::Id;
+use apis_saltans_core::{Application, FullAddress};
+use apis_saltans_zcl::basic::Id;
 
-use super::Device;
+use super::IncomingDevice;
 use crate::ReadAttributeResult;
 
 /// Message sent to the attribute discovery actor.
 #[derive(Debug)]
 pub enum Message {
     /// Get the attributes for the given endpoints.
-    GetAttributes(Device),
+    GetAttributes(IncomingDevice),
 
     /// Attributes have been discovered.
     AttributesDiscovered {
         /// The device that has been discovered.
-        address: Address,
+        address: FullAddress,
         /// The application endpoint that has been discovered.
         application: Application,
         /// The attribute results.
@@ -21,5 +21,5 @@ pub enum Message {
     },
 
     /// Discovery of the given device has failed.
-    DiscoveryFailed(Address),
+    DiscoveryFailed(FullAddress),
 }

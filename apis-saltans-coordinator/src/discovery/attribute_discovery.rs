@@ -1,24 +1,25 @@
 use std::collections::BTreeMap;
 
-use apis_saltans_core::{Address, Application, Endpoint};
-use apis_saltans_zcl::general::basic::attributes::Id;
+use apis_saltans_core::{Application, Endpoint, FullAddress};
+use apis_saltans_zcl::basic::Id;
 use log::{error, info, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 
-pub use self::device::Device;
-use self::devices::{Devices, DevicesExt};
 use self::discovery_task::DiscoveryTask;
+pub use self::incoming_device::IncomingDevice;
 pub use self::message::Message;
+pub use self::outgoing_device::OutgoingDevice;
+use self::outgoing_device::{Devices, DevicesExt};
 use crate::{
     Attributes, MPSC_CHANNEL_SIZE, ReadAttributeResult, TASK_POOL_SIZE, binding, transceiver,
 };
 
-mod device;
-mod devices;
 mod discovery_task;
 mod endpoint_info;
+mod incoming_device;
 mod message;
+mod outgoing_device;
 
 /// Actor to discover attributes on devices.
 #[derive(Debug)]
@@ -65,7 +66,7 @@ impl AttributeDiscovery {
                     self.update_attributes(address, application, results).await;
                 }
                 Message::DiscoveryFailed(address) => {
-                    if self.devices.remove(&address).is_some() {
+                    if self.devices.remove(&address.ieee_address()).is_some() {
                         trace!("Removed failed discovery of: {address}");
                     }
                 }
@@ -73,8 +74,8 @@ impl AttributeDiscovery {
         }
     }
 
-    async fn get_attributes(&mut self, device: Device) {
-        if self.devices.contains_key(&device.address) {
+    async fn get_attributes(&mut self, device: IncomingDevice) {
+        if self.devices.contains_key(&device.address.ieee_address()) {
             trace!("Discovery for {device} already in progress.");
             return;
         }
@@ -91,7 +92,7 @@ impl AttributeDiscovery {
 
         let device = self
             .devices
-            .entry(device.address)
+            .entry(device.address.ieee_address())
             .or_insert_with(|| device.into());
 
         for application in device
@@ -112,11 +113,11 @@ impl AttributeDiscovery {
 
     async fn update_attributes(
         &mut self,
-        address: Address,
+        address: FullAddress,
         application: Application,
         results: Box<[ReadAttributeResult<Id>]>,
     ) {
-        let Some(mut device) = self.devices.remove(&address) else {
+        let Some(mut device) = self.devices.remove(&address.ieee_address()) else {
             warn!("Received attributes for unknown device: {address}");
             return;
         };
@@ -126,7 +127,7 @@ impl AttributeDiscovery {
             .get_mut(&Endpoint::Application(application))
         else {
             warn!("Received attributes for unknown endpoint: {address}:{application:#04X}");
-            self.devices.insert(address, device);
+            self.devices.insert(address.ieee_address(), device);
             return;
         };
 
@@ -139,7 +140,7 @@ impl AttributeDiscovery {
             .all(|(_, endpoint_info)| endpoint_info.attributes().is_some())
         {
             trace!("Not all attributes discovered for {address}.");
-            self.devices.insert(address, device);
+            self.devices.insert(address.ieee_address(), device);
             return;
         }
 

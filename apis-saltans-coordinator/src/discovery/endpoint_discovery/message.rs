@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use apis_saltans_core::{Address, Endpoint};
+use apis_saltans_core::{Endpoint, FullAddress};
 
 use super::Device;
 
@@ -13,11 +13,11 @@ pub enum Message {
     /// Endpoints have been discovered.
     Discovered {
         /// The device that has been discovered.
-        address: Address,
+        address: FullAddress,
         /// The endpoints that have been discovered.
         endpoints: BTreeSet<Endpoint>,
     },
 
     /// Discovery of the given device has failed.
-    DiscoveryFailed(Address),
+    DiscoveryFailed(FullAddress),
 }

@@ -1,4 +1,5 @@
 use apis_saltans_hw::{Ncp, WeakNcpHandle};
+pub use attribute_discovery::OutgoingDevice;
 use log::{error, info, trace};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};

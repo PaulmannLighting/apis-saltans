@@ -1,23 +1,23 @@
 use std::collections::BTreeMap;
 
 use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::{Address, Application, ClusterId, Endpoint};
+use apis_saltans_core::{Application, Cluster, Endpoint, FullAddress, IeeeAddress};
 use apis_saltans_zdp::SimpleDescriptor;
 
 use super::endpoint_info::EndpointInfo;
 
 /// Type alias for a map of devices to their endpoints.
-pub type Devices = BTreeMap<Address, Device>;
+pub type Devices = BTreeMap<IeeeAddress, OutgoingDevice>;
 
 #[derive(Debug)]
-pub struct Device {
-    pub address: Address,
+pub struct OutgoingDevice {
+    pub address: FullAddress,
     pub descriptor: Descriptor,
     pub endpoints: BTreeMap<Endpoint, EndpointInfo>,
 }
 
-impl From<super::Device> for Device {
-    fn from(value: super::Device) -> Self {
+impl From<super::IncomingDevice> for OutgoingDevice {
+    fn from(value: super::IncomingDevice) -> Self {
         Self {
             address: value.address,
             descriptor: value.descriptor,
@@ -25,20 +25,6 @@ impl From<super::Device> for Device {
                 .endpoints
                 .into_iter()
                 .map(|(endpoint, simple_descriptor)| (endpoint, simple_descriptor.into()))
-                .collect(),
-        }
-    }
-}
-
-impl From<Device> for crate::Device {
-    fn from(value: Device) -> Self {
-        Self {
-            address: value.address,
-            descriptor: value.descriptor,
-            endpoints: value
-                .endpoints
-                .into_iter()
-                .map(|(endpoint, info)| (endpoint, info.into()))
                 .collect(),
         }
     }
@@ -55,7 +41,7 @@ pub trait DevicesExt<T> {
 impl DevicesExt<SimpleDescriptor> for (Endpoint, SimpleDescriptor) {
     fn application_eps_with_basic_cluster(self) -> Option<(Application, SimpleDescriptor)> {
         if let Endpoint::Application(application) = self.0
-            && self.1.input_clusters().contains(&ClusterId::Basic.into())
+            && self.1.input_clusters().contains(&Cluster::Basic.into())
         {
             Some((application, self.1))
         } else {
@@ -71,7 +57,7 @@ impl<'a> DevicesExt<&'a EndpointInfo> for (&'a Endpoint, &'a EndpointInfo) {
                 .1
                 .descriptor()
                 .input_clusters()
-                .contains(&ClusterId::Basic.into())
+                .contains(&Cluster::Basic.into())
         {
             Some((*application, self.1))
         } else {

@@ -1,17 +1,14 @@
 use std::collections::BTreeMap;
 
+use apis_saltans_core::Endpoint;
 use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::{Address, Endpoint};
 use serde::{Deserialize, Serialize};
 
-use super::Endpoint as EndpointInfo;
+use super::EndpointInfo;
 
 /// A Zigbee network device.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
 pub struct Device {
-    /// The full address of the device.
-    pub address: Address,
-
     /// The device descriptor.
     pub descriptor: Descriptor,
 
@@ -22,13 +19,8 @@ pub struct Device {
 impl Device {
     /// Create a new device.
     #[must_use]
-    pub const fn new(
-        address: Address,
-        descriptor: Descriptor,
-        endpoints: BTreeMap<Endpoint, EndpointInfo>,
-    ) -> Self {
+    pub const fn new(descriptor: Descriptor, endpoints: BTreeMap<Endpoint, EndpointInfo>) -> Self {
         Self {
-            address,
             descriptor,
             endpoints,
         }

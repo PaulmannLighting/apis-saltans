@@ -1,4 +1,4 @@
-use apis_saltans_zcl::general::basic::attributes::{DateCode, Id, PowerSource, Readable};
+use apis_saltans_zcl::basic::{DateCode, Id, PowerSource, Readable};
 use log::{trace, warn};
 use serde::{Deserialize, Serialize};
 

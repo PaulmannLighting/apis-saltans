@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use apis_saltans_aps::Data;
-use apis_saltans_core::{Address, IeeeAddress};
+use apis_saltans_core::{FullAddress, IeeeAddress, short_id};
 use apis_saltans_hw::RouteError;
 use apis_saltans_nwk::Source;
 use apis_saltans_zcl::{Cluster, Frame};
@@ -35,7 +35,7 @@ pub enum Message {
     /// A request to resolve a short ID to an IEEE address.
     GetIeeeAddressFromShortId {
         /// The short ID to resolve.
-        short_id: u16,
+        short_id: short_id::Device,
         /// Response channel to send the resolved IEEE address to.
         response: oneshot::Sender<Option<IeeeAddress>>,
     },
@@ -45,13 +45,13 @@ pub enum Message {
         /// The IEEE address to resolve.
         ieee_address: IeeeAddress,
         /// Response channel to send the resolved IEEE address to.
-        response: oneshot::Sender<Option<u16>>,
+        response: oneshot::Sender<Option<short_id::Device>>,
     },
 
     /// A device joined the network.
     DeviceJoined {
         /// The address of the device.
-        address: Address,
+        address: FullAddress,
         /// Whether the rejoin was secured.
         secured: Option<bool>,
     },
@@ -60,7 +60,7 @@ pub enum Message {
     NewDevice(Device),
 
     /// Remove a device from the network.
-    RemoveDevice(Address),
+    RemoveDevice(IeeeAddress),
 
     /// A routing error.
     RouteError(RouteError),

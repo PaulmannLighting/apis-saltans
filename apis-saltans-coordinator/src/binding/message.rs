@@ -1,6 +1,6 @@
-use apis_saltans_core::{Address, ClusterId, Endpoint};
+use apis_saltans_core::{Cluster, Endpoint, FullAddress};
 
-use crate::Device;
+use crate::binding::device::Device;
 
 /// Messages received by the binding management actor.
 #[derive(Debug)]
@@ -11,10 +11,10 @@ pub enum Message {
     /// Signal that an endpoint has been bound to a cluster.
     EndpointBound {
         /// The address of the device that the endpoint belongs to.
-        address: Address,
+        address: FullAddress,
         /// The endpoint that has been bound.
         endpoint: Endpoint,
         /// The cluster that has been bound.
-        cluster: ClusterId,
+        cluster: Cluster,
     },
 }

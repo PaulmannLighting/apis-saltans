@@ -15,7 +15,7 @@ pub use self::coordinator::Coordinator;
 pub use self::error::Error;
 pub use self::event::{Event, Type as EventType};
 pub use self::event_receiver::EventReceiver;
-pub use self::network_manager::{Attributes, Device};
+pub use self::network::{Attributes, Device, EndpointInfo};
 use self::retry::Retry;
 pub use self::timeout::Timeout;
 

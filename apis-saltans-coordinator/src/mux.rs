@@ -7,9 +7,11 @@ use log::{error, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 
-use crate::aps_payload::ApsPayload;
+use self::aps_payload::ApsPayload;
 use crate::network_manager;
 use crate::transceiver::{zcl, zdp};
+
+mod aps_payload;
 
 /// Event multiplexer.
 #[derive(Debug)]
@@ -102,7 +104,9 @@ impl Mux {
             }
             Event::DeviceLeft(address) => self
                 .network_manager
-                .send(network_manager::Message::RemoveDevice(address))
+                .send(network_manager::Message::RemoveDevice(
+                    address.ieee_address(),
+                ))
                 .await
                 .unwrap_or_else(|error| {
                     trace!("Failed to send device left message: {error}");

@@ -14,13 +14,14 @@ exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 [dependencies]
 apis-saltans-aps = { version = "0.4", path = "../apis-saltans-aps" }
 apis-saltans-core = { version = "0.5", features = ["serde"], path = "../apis-saltans-core" }
-apis-saltans-hw = { version = "0.7", path = "../apis-saltans-hw" }
+apis-saltans-hw = { version = "0.7", features = ["coordinator"], path = "../apis-saltans-hw" }
 apis-saltans-nwk = { version = "0.2", path = "../apis-saltans-nwk" }
 apis-saltans-zcl = { version = "0.5", features = ["serde"], path = "../apis-saltans-zcl" }
 apis-saltans-zdp = { version = "0.4", features = ["serde"], path = "../apis-saltans-zdp" }
 bytes = "1"
 const_env = "0.1"
-le-stream = { version = "10", features = ["derive"] }
+either = "1.16.0"
+le-stream = { version = "10", features = ["derive", "bytes"] }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }

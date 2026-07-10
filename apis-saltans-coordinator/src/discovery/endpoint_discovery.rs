@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use apis_saltans_core::Address;
+use apis_saltans_core::IeeeAddress;
 use log::{error, info, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
@@ -23,7 +23,7 @@ pub struct EndpointDiscovery {
     zdp: WeakSender<transceiver::zdp::Message>,
     descriptor_discovery: Sender<endpoint_descriptor_discovery::Message>,
     tasks: Pool,
-    devices: BTreeMap<Address, Device>,
+    devices: BTreeMap<IeeeAddress, Device>,
 }
 
 impl EndpointDiscovery {
@@ -55,7 +55,7 @@ impl EndpointDiscovery {
                     self.discover_endpoints(device).await;
                 }
                 Message::Discovered { address, endpoints } => {
-                    let Some(device) = self.devices.remove(&address) else {
+                    let Some(device) = self.devices.remove(&address.ieee_address()) else {
                         warn!("Received Discovered message for unknown device: {address}");
                         continue;
                     };
@@ -63,7 +63,7 @@ impl EndpointDiscovery {
                     info!("Endpoints discovered: {address}: {endpoints:?}");
                     self.descriptor_discovery
                         .send(endpoint_descriptor_discovery::Message::Discover(
-                            endpoint_descriptor_discovery::Device::new(
+                            endpoint_descriptor_discovery::IncomingDevice::new(
                                 device.address,
                                 device.descriptor,
                                 endpoints,
@@ -75,7 +75,7 @@ impl EndpointDiscovery {
                         });
                 }
                 Message::DiscoveryFailed(address) => {
-                    if self.devices.remove(&address).is_none() {
+                    if self.devices.remove(&address.ieee_address()).is_none() {
                         warn!("Received DiscoveryFailed message for unknown device: {address}");
                     }
                 }
@@ -85,7 +85,7 @@ impl EndpointDiscovery {
 
     /// Discover endpoints on the given device in a separate task.
     async fn discover_endpoints(&mut self, device: Device) {
-        if self.devices.contains_key(&device.address) {
+        if self.devices.contains_key(&device.address.ieee_address()) {
             trace!("Already discovering endpoints for {device}");
             return;
         }
@@ -95,7 +95,10 @@ impl EndpointDiscovery {
             return;
         };
 
-        let device = self.devices.entry(device.address).or_insert(device);
+        let device = self
+            .devices
+            .entry(device.address.ieee_address())
+            .or_insert(device);
 
         self.tasks
             .spawn(DiscoveryTask::new(device.address, zdp, self.loopback.clone()).run())

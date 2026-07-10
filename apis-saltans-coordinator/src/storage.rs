@@ -1,6 +1,6 @@
 //! Generic API to implement storage of the Zigbee network state.
 
-use apis_saltans_core::{Address, IeeeAddress};
+use apis_saltans_core::{IeeeAddress, short_id};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
 
@@ -37,7 +37,7 @@ pub trait Storage {
     /// Returns an [`Error`] if writing to the storage fails.
     fn remove(
         &self,
-        address: Address,
+        ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
 
     /// Return a device from the storage given its short ID.
@@ -47,7 +47,7 @@ pub trait Storage {
     /// Returns an [`Error`] if querying to the storage fails.
     fn get_by_short_id(
         &self,
-        short_id: u16,
+        short_id: short_id::Device,
     ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
 
     /// Return a device from the storage given its IEEE address.
@@ -63,17 +63,17 @@ pub trait Storage {
     fn get_short_id(
         &self,
         ieee_address: IeeeAddress,
-    ) -> impl Future<Output = Result<Option<u16>, Error>> + Send;
+    ) -> impl Future<Output = Result<Option<short_id::Device>, Error>> + Send;
 
     fn get_ieee_address(
         &self,
-        short_id: u16,
+        short_id: short_id::Device,
     ) -> impl Future<Output = Result<Option<IeeeAddress>, Error>> + Send;
 
     fn update_short_id(
         &self,
         ieee_address: IeeeAddress,
-        short_id: u16,
+        short_id: short_id::Device,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
@@ -94,17 +94,17 @@ impl Storage for Sender<Message> {
         Ok(rx.await??)
     }
 
-    async fn remove(&self, address: Address) -> Result<Option<Device>, Error> {
+    async fn remove(&self, ieee_address: IeeeAddress) -> Result<Option<Device>, Error> {
         let (tx, rx) = channel();
         self.send(Message::Remove {
-            address,
+            ieee_address,
             response: tx,
         })
         .await?;
         Ok(rx.await??)
     }
 
-    async fn get_by_short_id(&self, short_id: u16) -> Result<Option<Device>, Error> {
+    async fn get_by_short_id(&self, short_id: short_id::Device) -> Result<Option<Device>, Error> {
         let (tx, rx) = channel();
         self.send(Message::GetByShortId {
             short_id,
@@ -127,7 +127,10 @@ impl Storage for Sender<Message> {
         Ok(rx.await??)
     }
 
-    async fn get_short_id(&self, ieee_address: IeeeAddress) -> Result<Option<u16>, Error> {
+    async fn get_short_id(
+        &self,
+        ieee_address: IeeeAddress,
+    ) -> Result<Option<short_id::Device>, Error> {
         let (tx, rx) = channel();
         self.send(Message::GetShortId {
             ieee_address,
@@ -137,7 +140,10 @@ impl Storage for Sender<Message> {
         Ok(rx.await??)
     }
 
-    async fn get_ieee_address(&self, short_id: u16) -> Result<Option<IeeeAddress>, Error> {
+    async fn get_ieee_address(
+        &self,
+        short_id: short_id::Device,
+    ) -> Result<Option<IeeeAddress>, Error> {
         let (tx, rx) = channel();
         self.send(Message::GetIeeeAddress {
             short_id,
@@ -147,7 +153,11 @@ impl Storage for Sender<Message> {
         Ok(rx.await??)
     }
 
-    async fn update_short_id(&self, ieee_address: IeeeAddress, short_id: u16) -> Result<(), Error> {
+    async fn update_short_id(
+        &self,
+        ieee_address: IeeeAddress,
+        short_id: short_id::Device,
+    ) -> Result<(), Error> {
         self.send(Message::UpdateShortId {
             ieee_address,
             short_id,

@@ -1,11 +1,10 @@
+use apis_saltans_core::short_id::Device;
 use apis_saltans_hw::Error;
 use apis_saltans_nwk::Source;
 use apis_saltans_zdp::{Command, Frame};
 use tokio::sync::oneshot::{Receiver, Sender};
 
-pub use self::payload::Payload;
-
-mod payload;
+use super::Payload;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -19,10 +18,9 @@ pub enum Message {
     },
     /// Communicate a unicast with an expected response.
     Communicate {
-        /// The destination address.
-        short_id: u16,
+        device: Device,
         /// The payload.
-        command: Command,
+        payload: Payload,
         /// The response channel.
         response: Sender<Result<Receiver<Command>, Error>>,
     },

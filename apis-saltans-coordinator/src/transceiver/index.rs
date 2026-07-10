@@ -1,10 +1,11 @@
 use apis_saltans_aps::Data;
-use apis_saltans_core::{Application, Endpoint};
+use apis_saltans_core::destination::Device;
+use apis_saltans_core::endpoint::Reserved;
+use apis_saltans_core::{Endpoint, short_id};
+use apis_saltans_hw::Metadata;
 use apis_saltans_nwk::Source;
 use apis_saltans_zcl::Cluster;
 use apis_saltans_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
-
-use crate::transceiver::zcl::Payload;
 
 /// Correlation key for pending transceiver responses.
 ///
@@ -18,7 +19,7 @@ pub struct Index {
     /// The network short address of the remote node.
     short_id: u16,
     /// The endpoint used for the request/response exchange.
-    endpoint: Endpoint,
+    endpoint: Result<Endpoint, Reserved>,
     /// The request cluster id used for response matching.
     cluster_id: u16,
     /// The application profile id used for the exchange.
@@ -35,7 +36,7 @@ impl Index {
     #[must_use]
     pub const fn new(
         short_id: u16,
-        endpoint: Endpoint,
+        endpoint: Result<Endpoint, Reserved>,
         cluster_id: u16,
         profile_id: u16,
         manufacturer_code: Option<u16>,
@@ -58,18 +59,18 @@ impl Index {
     /// responses can then be matched by reconstructing the same key from their
     /// APS and ZCL headers.
     #[must_use]
-    pub fn from_sent_payload<T>(
-        short_id: u16,
-        endpoint: Application,
+    pub fn from_zcl_command(
+        destination: Device,
         seq: u8,
-        payload: &Payload<T>,
+        metadata: Metadata,
+        manufacturer_code: Option<u16>,
     ) -> Self {
         Self::new(
-            short_id,
-            endpoint.into(),
-            payload.metadata().cluster_id(),
-            payload.metadata().profile().into(),
-            payload.manufacturer_code(),
+            destination.device().into(),
+            Ok(destination.endpoint()),
+            metadata.cluster_id(),
+            metadata.profile().into(),
+            manufacturer_code,
             seq,
         )
     }
@@ -80,12 +81,12 @@ impl Index {
     /// manufacturer code, so the key is built from the command id, profile, and
     /// transaction sequence number.
     #[must_use]
-    pub fn from_sent_command(short_id: u16, seq: u8, command: &Command) -> Self {
+    pub fn from_zdp_command(device: short_id::Device, seq: u8, metadata: Metadata) -> Self {
         Self::new(
-            short_id,
-            Endpoint::Data,
-            command.cluster_id(),
-            command.profile().into(),
+            device.into(),
+            Ok(Endpoint::Data),
+            metadata.cluster_id(),
+            metadata.profile().into(),
             None,
             seq,
         )
@@ -95,8 +96,7 @@ impl Index {
     ///
     /// The incoming frame contributes the APS and ZCL header fields, while the
     /// [`Source`] contributes the remote node id that sent the response.
-    #[must_use]
-    pub const fn from_received_zcl_frame(
+    pub fn from_received_zcl_frame(
         source: Source,
         frame: &Data<apis_saltans_zcl::Frame<Cluster>>,
     ) -> Self {
@@ -115,7 +115,7 @@ impl Index {
     ) -> Self {
         Self::new(
             source.node_id(),
-            Endpoint::Data,
+            Ok(Endpoint::Data),
             frame.data().cluster_id() ^ CLUSTER_ID_RESPONSE_MASK,
             frame.data().profile().into(),
             None,
@@ -124,8 +124,7 @@ impl Index {
     }
 
     /// Build the ZCL response correlation key from APS and ZCL headers.
-    #[must_use]
-    const fn from_aps_and_zcl_headers(
+    fn from_aps_and_zcl_headers(
         short_id: u16,
         aps_header: &apis_saltans_aps::data::Header,
         zcl_header: apis_saltans_zcl::Header,

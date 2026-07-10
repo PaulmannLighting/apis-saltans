@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use apis_saltans_core::{Address, ClusterId, Endpoint};
+use apis_saltans_core::{Cluster, Endpoint, FullAddress, IeeeAddress};
 use apis_saltans_hw::{Ncp, WeakNcpHandle};
 use apis_saltans_zdp::{BindReq, Destination, Status};
 use log::{error, info, trace, warn};
@@ -8,7 +8,7 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender, channel};
 use tokio_task_pool::Pool;
 
-pub use self::device::Device;
+use self::device::Device;
 pub use self::message::Message;
 use crate::transceiver::zdp::Handle;
 use crate::{MPSC_CHANNEL_SIZE, RETRY, TASK_POOL_SIZE, network_manager, transceiver};
@@ -17,7 +17,7 @@ mod device;
 mod message;
 
 /// The output clusters that the coordinator binds to.
-const BIND_OUTPUT_CLUSTERS: [ClusterId; 2] = [ClusterId::OnOff, ClusterId::Level];
+const BIND_OUTPUT_CLUSTERS: [Cluster; 2] = [Cluster::OnOff, Cluster::Level];
 
 /// The binding management actor.
 #[derive(Debug)]
@@ -27,7 +27,7 @@ pub struct Actor {
     zdp: WeakSender<transceiver::zdp::Message>,
     network_manager: WeakSender<network_manager::Message>,
     ncp: WeakNcpHandle,
-    devices: BTreeMap<Address, Device>,
+    devices: BTreeMap<IeeeAddress, Device>,
     tasks: Pool,
 }
 
@@ -70,7 +70,7 @@ impl Actor {
         while let Some(message) = self.inbox.recv().await {
             match message {
                 Message::DeviceDiscovered(device) => {
-                    self.bind_device_endpoints((*device).into()).await;
+                    self.bind_device_endpoints(*device).await;
                 }
                 Message::EndpointBound {
                     address,
@@ -93,7 +93,10 @@ impl Actor {
             return;
         }
 
-        let device = self.devices.entry(device.address).or_insert(device);
+        let device = self
+            .devices
+            .entry(device.address.ieee_address())
+            .or_insert(device);
 
         for (endpoint, cluster) in device.clusters_to_bind(&BIND_OUTPUT_CLUSTERS) {
             self.tasks
@@ -117,11 +120,11 @@ impl Actor {
 
     async fn update_bound_endpoints(
         &mut self,
-        address: Address,
+        address: FullAddress,
         endpoint: Endpoint,
-        cluster: ClusterId,
+        cluster: Cluster,
     ) {
-        let Some(mut device) = self.devices.remove(&address) else {
+        let Some(mut device) = self.devices.remove(&address.ieee_address()) else {
             trace!("No device found for {address}.");
             return;
         };
@@ -135,7 +138,7 @@ impl Actor {
 
         if device.needs_binding(&BIND_OUTPUT_CLUSTERS) {
             trace!("Not all endpoints bound for {address}.");
-            self.devices.insert(device.address, device);
+            self.devices.insert(address.ieee_address(), device);
             return;
         }
 
@@ -161,15 +164,14 @@ impl Actor {
 
 /// Run the binding loop.
 async fn bind_endpoint(
-    address: Address,
+    address: FullAddress,
     endpoint: Endpoint,
-    cluster: ClusterId,
+    cluster: Cluster,
     loopback: WeakSender<Message>,
     zdp: WeakSender<transceiver::zdp::Message>,
     ncp: WeakNcpHandle,
 ) {
     trace!("Binding {address}:{endpoint} to cluster {cluster}.");
-    let short_id = address.short_id();
     let mut retries = 0;
 
     while RETRY.retry(&mut retries).await {
@@ -191,7 +193,7 @@ async fn bind_endpoint(
 
         match zdp
             .communicate(
-                short_id,
+                address.short_id(),
                 BindReq::new(
                     address.ieee_address(),
                     endpoint,

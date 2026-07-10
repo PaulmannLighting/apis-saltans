@@ -5,12 +5,12 @@ use super::Attributes;
 
 /// Information about an endpoint.
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Deserialize, Serialize)]
-pub struct Endpoint {
+pub struct EndpointInfo {
     descriptor: SimpleDescriptor,
     attributes: Attributes,
 }
 
-impl Endpoint {
+impl EndpointInfo {
     /// Create a new instance of `Endpoint`.
     #[must_use]
     pub const fn new(descriptor: SimpleDescriptor, attributes: Attributes) -> Self {

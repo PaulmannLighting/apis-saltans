@@ -1,12 +1,13 @@
+use apis_saltans_core::Destination;
 use apis_saltans_core::units::{Deciseconds, UnitsPerSecond};
 use apis_saltans_zcl::Options;
-use apis_saltans_zcl::general::level::{
+use apis_saltans_zcl::level::{
     Mode, Move, MoveToClosestFrequency, MoveToLevel, MoveToLevelWithOnOff, MoveWithOnOff, Step,
     StepWithOnOff, Stop, StopWithOnOff,
 };
 
 use crate::transceiver::zcl::Handle;
-use crate::{Coordinator, Destination, Error};
+use crate::{Coordinator, Error};
 
 /// Trait for the Level cluster.
 pub trait Level {
@@ -128,7 +129,7 @@ impl Level for Coordinator {
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(
+        self.transmit(
             destination,
             MoveToLevel::new(level, transition_time, options),
         )
@@ -141,8 +142,7 @@ impl Level for Coordinator {
         mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(destination, Move::new(mode, options))
-            .await
+        self.transmit(destination, Move::new(mode, options)).await
     }
 
     async fn step(
@@ -152,13 +152,12 @@ impl Level for Coordinator {
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(destination, Step::new(mode, transition_time, options))
+        self.transmit(destination, Step::new(mode, transition_time, options))
             .await
     }
 
     async fn stop(&self, destination: Destination, options: Options) -> Result<(), Error> {
-        self.send_static_cluster(destination, Stop::new(options))
-            .await
+        self.transmit(destination, Stop::new(options)).await
     }
 
     async fn move_to_level_with_on_off(
@@ -168,7 +167,7 @@ impl Level for Coordinator {
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(
+        self.transmit(
             destination,
             MoveToLevelWithOnOff::new(level, transition_time, options),
         )
@@ -181,7 +180,7 @@ impl Level for Coordinator {
         mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(destination, MoveWithOnOff::new(mode, options))
+        self.transmit(destination, MoveWithOnOff::new(mode, options))
             .await
     }
 
@@ -192,7 +191,7 @@ impl Level for Coordinator {
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(
+        self.transmit(
             destination,
             StepWithOnOff::new(mode, transition_time, options),
         )
@@ -204,7 +203,7 @@ impl Level for Coordinator {
         destination: Destination,
         options: Options,
     ) -> Result<(), Error> {
-        self.send_static_cluster(destination, StopWithOnOff::new(options))
+        self.transmit(destination, StopWithOnOff::new(options))
             .await
     }
 
@@ -213,7 +212,7 @@ impl Level for Coordinator {
         destination: Destination,
         frequency: u16,
     ) -> Result<(), Error> {
-        self.send_static_cluster(destination, MoveToClosestFrequency::new(frequency))
+        self.transmit(destination, MoveToClosestFrequency::new(frequency))
             .await
     }
 }

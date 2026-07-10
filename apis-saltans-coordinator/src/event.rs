@@ -1,5 +1,6 @@
 use apis_saltans_aps::Data;
-use apis_saltans_core::{Address, Endpoint};
+use apis_saltans_core::endpoint::Reserved;
+use apis_saltans_core::{Endpoint, FullAddress};
 use apis_saltans_zcl::{Cluster, Frame};
 
 pub use self::r#type::Type;
@@ -9,15 +10,14 @@ mod r#type;
 /// A generic Zigbee event.
 #[derive(Clone, Debug)]
 pub struct Event {
-    src_address: Address,
-    src_endpoint: Endpoint,
+    src_address: FullAddress,
+    src_endpoint: Result<Endpoint, Reserved>,
     typ: Type,
 }
 
 impl Event {
     /// Create a new event.
-    #[must_use]
-    pub(crate) fn new(src_address: Address, aps: Data<Frame<Cluster>>) -> Self {
+    pub(crate) fn new(src_address: FullAddress, aps: Data<Frame<Cluster>>) -> Self {
         Self {
             src_address,
             src_endpoint: aps.header().source_endpoint(),
@@ -25,15 +25,13 @@ impl Event {
         }
     }
 
-    /// Return the source address of the event.
     #[must_use]
-    pub const fn src_address(&self) -> &Address {
-        &self.src_address
+    pub const fn src_address(&self) -> FullAddress {
+        self.src_address
     }
 
     /// Return the source endpoint of the event.
-    #[must_use]
-    pub const fn src_endpoint(&self) -> Endpoint {
+    pub const fn src_endpoint(&self) -> Result<Endpoint, Reserved> {
         self.src_endpoint
     }
 
@@ -45,7 +43,7 @@ impl Event {
 
     /// Return the parts of the event.
     #[must_use]
-    pub fn into_parts(self) -> (Address, Endpoint, Type) {
-        (self.src_address, self.src_endpoint, self.typ)
+    pub fn into_type(self) -> Type {
+        self.typ
     }
 }

@@ -25,7 +25,8 @@ service group enum is declared with `zdp_command_group!`, and the crate-wide enu
 - `src/services/<group>.rs` defines the group enum with `zdp_command_group!` and re-exports its
   payload modules.
 - `src/services/<group>/<command>.rs` defines one service request, response, or notification payload.
-- `src/simple_descriptor.rs` and `src/simple_descriptor/` model the Simple Descriptor payload.
+- `src/simple_descriptor.rs` and `src/simple_descriptor/` model the Simple Descriptor payload,
+  including raw endpoint/profile IDs, application flags, and input/output cluster lists.
 - `src/status.rs` and `src/status/` model ZDP status values and display helpers.
 - `src/macros.rs` contains the crate-local declarative macros used by the service modules.
 
@@ -71,6 +72,20 @@ layered:
 Status-dependent responses often use helper payload types. For example, address and management
 responses carry a typed success payload for successful status codes and preserve the raw status code
 when conversion to the crate's `Status` enum fails.
+
+## Simple Descriptor Model
+
+`SimpleDescriptor` represents the ZDP descriptor for one application endpoint. The wire payload
+contains an endpoint ID, profile ID, device ID, application flags, input clusters, and output
+clusters.
+
+The descriptor keeps endpoint and profile identifiers in their raw integer form. This preserves
+descriptor bytes that contain a reserved endpoint value or a profile unknown to `apis-saltans-core`.
+Callers can use `endpoint()` and `profile()` when they need validated `Endpoint` and `Profile`
+values; those methods return the rejected raw value through their error types.
+
+`AppFlags` owns the descriptor flags byte. The application version is stored in the high nibble and
+is exposed through `SimpleDescriptor::version()`.
 
 ## Macro Conventions
 

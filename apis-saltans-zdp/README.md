@@ -131,14 +131,15 @@ be converted into the crate's `Status` enum.
 
 ## Simple Descriptor Support
 
-`SimpleDescriptor` provides typed handling for:
-- endpoint
-- profile ID / profile conversion
-- device ID
-- app flags (version extraction)
-- input/output cluster lists
+`SimpleDescriptor` models the ZDP Simple Descriptor payload for one endpoint. It stores:
+- the raw endpoint ID, with `endpoint()` for fallible conversion to `Endpoint`
+- the raw profile ID, with `profile()` for fallible conversion to `Profile`
+- the application device ID
+- application flags, including version extraction through `version()`
+- byte-sized input and output cluster lists
 
-This makes it suitable for descriptor transport and higher-level endpoint capability indexing.
+The raw endpoint and profile IDs are preserved so descriptor responses can be transported even when
+they contain a reserved endpoint value or a profile unknown to this crate.
 
 ## Dependencies
 

@@ -3,10 +3,12 @@
 use std::collections::BTreeMap;
 
 use apis_saltans_aps::Data;
-use apis_saltans_core::Application;
+use apis_saltans_core::Destination;
+use apis_saltans_core::destination::Device;
 use apis_saltans_hw::Ncp;
 use apis_saltans_nwk::Source;
-use apis_saltans_zcl::{Cluster, Frame};
+use apis_saltans_zcl::{Cluster, Frame, Header};
+use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
 use tokio::spawn;
@@ -14,12 +16,14 @@ use tokio::sync::mpsc::{Receiver, WeakSender};
 use tokio::sync::oneshot::{self, Sender, channel};
 
 pub use self::handle::Handle;
-pub use self::message::{Message, Payload};
+pub use self::message::Message;
+pub use self::payload::{Metadata, Payload};
 use super::index::Index;
 use crate::{MPSC_CHANNEL_SIZE, network_manager};
 
 mod handle;
 mod message;
+mod payload;
 
 /// Zigbee transceiver actor.
 #[derive(Debug)]
@@ -54,48 +58,24 @@ where
                 Message::Received { source, frame } => {
                     self.handle_message_received(source, frame).await;
                 }
-                Message::Unicast {
-                    short_id,
-                    endpoint,
-                    payload,
-                    response,
-                } => {
-                    let seq = self.next_seq();
-                    response
-                        .send(
-                            self.unicast(seq, short_id, endpoint, payload)
-                                .await
-                                .map(drop),
-                        )
-                        .unwrap_or_else(|error| {
-                            debug!("Failed to send unicast response: {error:?}");
-                        });
-                }
-                Message::Multicast {
-                    group_id,
-                    hops,
-                    radius,
+                Message::Transmit {
+                    destination,
                     payload,
                     response,
                 } => {
                     response
-                        .send(
-                            self.multicast(group_id, hops, radius, payload)
-                                .await
-                                .map(drop),
-                        )
+                        .send(self.transmit(destination, payload).await.map(drop))
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
                         });
                 }
                 Message::Communicate {
-                    short_id,
-                    endpoint,
+                    destination,
                     payload,
                     response,
                 } => {
                     response
-                        .send(self.communicate(short_id, endpoint, payload).await)
+                        .send(self.communicate(destination, payload).await)
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
                         });
@@ -151,50 +131,17 @@ where
     /// # Errors
     ///
     /// Returns an error if the unicast message could not be sent.
-    async fn unicast(
-        &self,
-        seq: u8,
-        short_id: u16,
-        endpoint: Application,
-        frame: Payload<Cluster>,
-    ) -> Result<u8, apis_saltans_hw::Error> {
-        let (metadata, manufacturer_code, command) = frame.into_parts();
-        let zcl_frame = Frame::new(seq, manufacturer_code, command);
-        let payload = zcl_frame.to_le_stream().collect();
-        let hw_frame = apis_saltans_hw::Frame::new(metadata, payload);
-
-        self.ncp
-            .unicast(short_id, endpoint.into(), hw_frame)
-            .await
-            .map(|_| seq)
-    }
-
-    /// Send a ZCL multicast message.
-    ///
-    /// # Returns
-    ///
-    /// Returns the ZCL sequence number.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the message could not be sent.
-    async fn multicast(
+    async fn transmit(
         &mut self,
-        group_id: u16,
-        hops: u8,
-        radius: u8,
-        frame: Payload<Cluster>,
+        destination: Destination,
+        payload: Payload,
     ) -> Result<u8, apis_saltans_hw::Error> {
-        let (metadata, manufacturer_code, command) = frame.into_parts();
-        let seq = self.next_seq();
-        let zcl_frame = Frame::new(seq, manufacturer_code, command);
-        let payload = zcl_frame.to_le_stream().collect();
-        let hw_frame = apis_saltans_hw::Frame::new(metadata, payload);
-
-        self.ncp
-            .multicast(group_id, hops, radius, hw_frame)
-            .await
-            .map(|_| seq)
+        let (aps_metadata, zcl_metadata, command) = payload.into_parts();
+        let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
+        let zcl_seq = zcl_frame.header().seq();
+        let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
+        self.ncp.transmit(destination, hw_datagram).await?;
+        Ok(zcl_seq)
     }
 
     /// Send a ZCL unicast message with back-channel communication.
@@ -208,16 +155,39 @@ where
     /// Returns an error if the unicast message could not be sent.
     async fn communicate(
         &mut self,
-        short_id: u16,
-        endpoint: Application,
-        frame: Payload<Cluster>,
+        destination: Device,
+        datagram: Payload,
     ) -> Result<oneshot::Receiver<Cluster>, apis_saltans_hw::Error> {
-        let seq = self.next_seq();
-        let index = Index::from_sent_payload(short_id, endpoint, seq, &frame);
-        self.unicast(seq, short_id, endpoint, frame).await?;
+        let (aps_metadata, zcl_metadata, command) = datagram.into_parts();
+        let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
+        let index = Index::from_zcl_command(
+            destination,
+            zcl_frame.header().seq(),
+            aps_metadata,
+            zcl_metadata.manufacturer_code,
+        );
+        let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
+        self.ncp.transmit(destination.into(), hw_datagram).await?;
         Ok(rx)
+    }
+
+    fn make_zcl_frame(&mut self, metadata: Metadata, command: Bytes) -> Frame<Bytes> {
+        let header = Header::new(
+            metadata.scope,
+            metadata.direction,
+            metadata.disable_default_response,
+            metadata.manufacturer_code,
+            self.next_seq(),
+            metadata.command_id,
+        );
+        #[expect(unsafe_code)]
+        // SAFETY: We safely construct the frame from the correct metadata
+        // with a freshly incremented sequence number.
+        unsafe {
+            Frame::new_unchecked(header, command)
+        }
     }
 }
 
@@ -233,5 +203,16 @@ where
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
         spawn(Self::new(ncp, network_manager).run(zcl_rx));
         zcl_tx
+    }
+}
+
+fn make_hw_datagram(
+    metadata: apis_saltans_hw::Metadata,
+    payload: Frame<Bytes>,
+) -> apis_saltans_hw::Datagram {
+    #[expect(unsafe_code)]
+    // SAFETY: We safely construct the datagram from the correct metadata we destructured above.
+    unsafe {
+        apis_saltans_hw::Datagram::new_unchecked(metadata, payload.to_le_stream().collect())
     }
 }

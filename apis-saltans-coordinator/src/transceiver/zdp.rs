@@ -2,8 +2,9 @@
 
 use std::collections::BTreeMap;
 
-use apis_saltans_core::{Address, Endpoint};
-use apis_saltans_hw::Ncp;
+use apis_saltans_core::short_id::Device;
+use apis_saltans_core::{Destination, Endpoint, FullAddress, destination};
+use apis_saltans_hw::{Datagram, Ncp};
 use apis_saltans_nwk::Source;
 use apis_saltans_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
@@ -18,13 +19,15 @@ use tokio::sync::oneshot::{Sender, channel};
 
 pub use self::handle::Handle;
 use self::match_desc_req_ext::MatchDescReqExt;
-pub use self::message::{Message, Payload};
+pub use self::message::Message;
+pub use self::payload::Payload;
 use super::index::Index;
 use crate::{MPSC_CHANNEL_SIZE, discovery};
 
 mod handle;
 mod match_desc_req_ext;
 mod message;
+mod payload;
 
 /// Zigbee transceiver actor.
 #[derive(Debug)]
@@ -66,12 +69,12 @@ where
                     self.handle_message_received(source, frame).await;
                 }
                 Message::Communicate {
-                    short_id,
-                    command: payload,
+                    device,
+                    payload,
                     response,
                 } => {
                     response
-                        .send(self.communicate(short_id, payload).await)
+                        .send(self.communicate(device, payload).await)
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
                         });
@@ -120,33 +123,6 @@ where
         }
     }
 
-    /// Send a ZDP unicast message.
-    ///
-    /// # Returns
-    ///
-    /// Returns the ZDP sequence number.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the unicast message could not be sent.
-    async fn unicast(
-        &self,
-        seq: u8,
-        short_id: u16,
-        payload: Payload<Command>,
-    ) -> Result<(), apis_saltans_hw::Error> {
-        let (metadata, command) = payload.into_parts();
-        let zdp_frame = Frame::new(seq, command);
-        let payload = zdp_frame.to_le_stream().collect();
-        let hw_frame = apis_saltans_hw::Frame::new(metadata, payload);
-
-        debug!("Sending ZDP message: seq={seq}");
-        self.ncp
-            .unicast(short_id, Endpoint::Data, hw_frame)
-            .await
-            .map(drop)
-    }
-
     /// Send a ZDP unicast message with back-channel communication.
     ///
     /// # Returns
@@ -158,15 +134,45 @@ where
     /// Returns an error if the unicast message could not be sent.
     async fn communicate(
         &mut self,
-        short_id: u16,
-        command: Command,
+        device: Device,
+        payload: Payload,
     ) -> Result<oneshot::Receiver<Command>, apis_saltans_hw::Error> {
+        let (metadata, payload) = payload.into_parts();
         let seq = self.next_seq();
-        let index = Index::from_sent_command(short_id, seq, &command);
-        self.unicast(seq, short_id, command.into()).await?;
+        let index = Index::from_zdp_command(device, seq, metadata);
+        let zdp_frame = Frame::new(seq, payload);
+        #[expect(unsafe_code)]
+        // SAFETY: We construct the datagram from the unchanged metadata and correct ZDP payload.
+        let hw_datagram =
+            unsafe { Datagram::new_unchecked(metadata, zdp_frame.to_le_stream().collect()) };
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
+        self.ncp
+            .transmit(
+                Destination::Device(destination::Device::new(device, Endpoint::Data)),
+                hw_datagram,
+            )
+            .await?;
         Ok(rx)
+    }
+    async fn respond(
+        &self,
+        seq: u8,
+        device: Device,
+        payload: Payload,
+    ) -> Result<(), apis_saltans_hw::Error> {
+        let (metadata, payload) = payload.into_parts();
+        let zdp_frame = Frame::new(seq, payload);
+        #[expect(unsafe_code)]
+        // SAFETY: We construct the datagram from the unchanged metadata and correct ZDP payload.
+        let hw_datagram =
+            unsafe { Datagram::new_unchecked(metadata, zdp_frame.to_le_stream().collect()) };
+        self.ncp
+            .transmit(
+                Destination::Device(destination::Device::new(device, Endpoint::Data)),
+                hw_datagram,
+            )
+            .await
     }
 
     async fn handle_match_desc_req(&self, source: Source, seq: u8, match_desc_req: MatchDescReq) {
@@ -177,7 +183,7 @@ where
                 .iter()
                 .filter_map(|endpoint| {
                     if match_desc_req.matches(endpoint) {
-                        Some(u8::from(endpoint.endpoint()))
+                        Some(endpoint.endpoint_id())
                     } else {
                         None
                     }
@@ -185,10 +191,13 @@ where
                 .collect()),
         );
 
-        if let Err(error) = self
-            .unicast(seq, source.node_id(), Payload::zdp(payload).into_command())
-            .await
-        {
+        let Ok(node_id) = source.node_id().try_into().inspect_err(|error| {
+            warn!("Invalid node ID: {error:?}");
+        }) else {
+            return;
+        };
+
+        if let Err(error) = self.respond(seq, node_id, Payload::from(payload)).await {
             error!("Failed to send Match_Desc_rsp: {error:?}");
         }
     }
@@ -199,9 +208,15 @@ where
             return;
         };
 
+        let Ok(short_id) = device_annce.nwk_addr().try_into().inspect_err(|error| {
+            warn!("Invalid node ID: {error:?}");
+        }) else {
+            return;
+        };
+
         discovery
             .send(discovery::Message::DeviceAnnounced {
-                address: Address::new(device_annce.ieee_addr(), device_annce.nwk_addr()),
+                address: FullAddress::new(device_annce.ieee_addr(), short_id),
                 capabilities: device_annce.capabilities(),
             })
             .await

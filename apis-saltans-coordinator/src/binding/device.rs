@@ -2,12 +2,14 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 
 use apis_saltans_core::node::Descriptor;
-use apis_saltans_core::{Address, ClusterId, Endpoint};
+use apis_saltans_core::{Cluster, Endpoint, FullAddress};
+
+use crate::discovery::OutgoingDevice;
 
 /// Device information.
 #[derive(Debug)]
 pub struct Device {
-    pub address: Address,
+    pub address: FullAddress,
     pub descriptor: Descriptor,
     pub endpoints: BTreeMap<Endpoint, EndpointInfo>,
 }
@@ -16,8 +18,8 @@ impl Device {
     /// Yield clusters of endpoints that still need binding.
     pub fn clusters_to_bind(
         &self,
-        clusters: &[ClusterId],
-    ) -> impl Iterator<Item = (Endpoint, ClusterId)> {
+        clusters: &[Cluster],
+    ) -> impl Iterator<Item = (Endpoint, Cluster)> {
         self.endpoints.iter().flat_map(|(endpoint, info)| {
             info.clusters_to_bind(clusters)
                 .map(|cluster| (*endpoint, cluster))
@@ -26,7 +28,7 @@ impl Device {
 
     /// Return true if any of the clusters still need binding.
     #[must_use]
-    pub fn needs_binding(&self, clusters: &[ClusterId]) -> bool {
+    pub fn needs_binding(&self, clusters: &[Cluster]) -> bool {
         self.clusters_to_bind(clusters).next().is_some()
     }
 }
@@ -37,29 +39,36 @@ impl Display for Device {
     }
 }
 
-impl From<crate::Device> for Device {
-    fn from(value: crate::Device) -> Self {
+impl From<OutgoingDevice> for Device {
+    fn from(device: OutgoingDevice) -> Self {
         Self {
-            address: value.address,
-            descriptor: value.descriptor,
-            endpoints: value
+            address: device.address,
+            descriptor: device.descriptor,
+            endpoints: device
                 .endpoints
                 .into_iter()
-                .map(|(endpoint, info)| (endpoint, info.into()))
+                .map(|(k, v)| {
+                    (
+                        k,
+                        EndpointInfo {
+                            info: v.into(),
+                            bound_clusters: BTreeSet::new(),
+                        },
+                    )
+                })
                 .collect(),
         }
     }
 }
 
 impl From<Device> for crate::Device {
-    fn from(value: Device) -> Self {
+    fn from(device: Device) -> Self {
         Self {
-            address: value.address,
-            descriptor: value.descriptor,
-            endpoints: value
+            descriptor: device.descriptor,
+            endpoints: device
                 .endpoints
                 .into_iter()
-                .map(|(endpoint, info)| (endpoint, info.into()))
+                .map(|(k, v)| (k, v.info))
                 .collect(),
         }
     }
@@ -67,13 +76,13 @@ impl From<Device> for crate::Device {
 
 #[derive(Debug)]
 pub struct EndpointInfo {
-    pub info: crate::Endpoint,
-    pub bound_clusters: BTreeSet<ClusterId>,
+    pub info: crate::EndpointInfo,
+    pub bound_clusters: BTreeSet<Cluster>,
 }
 
 impl EndpointInfo {
     /// Yield clusters that still need binding.
-    pub fn clusters_to_bind(&self, clusters: &[ClusterId]) -> impl Iterator<Item = ClusterId> {
+    pub fn clusters_to_bind(&self, clusters: &[Cluster]) -> impl Iterator<Item = Cluster> {
         clusters
             .iter()
             .copied()
@@ -88,13 +97,13 @@ impl EndpointInfo {
 
     /// Return true if any of the clusters still need binding.
     #[must_use]
-    pub fn needs_binding(&self, clusters: &[ClusterId]) -> bool {
+    pub fn needs_binding(&self, clusters: &[Cluster]) -> bool {
         self.clusters_to_bind(clusters).next().is_some()
     }
 }
 
-impl From<crate::Endpoint> for EndpointInfo {
-    fn from(value: crate::Endpoint) -> Self {
+impl From<crate::EndpointInfo> for EndpointInfo {
+    fn from(value: crate::EndpointInfo) -> Self {
         Self {
             info: value,
             bound_clusters: BTreeSet::new(),
@@ -102,7 +111,7 @@ impl From<crate::Endpoint> for EndpointInfo {
     }
 }
 
-impl From<EndpointInfo> for crate::Endpoint {
+impl From<EndpointInfo> for crate::EndpointInfo {
     fn from(value: EndpointInfo) -> Self {
         value.info
     }
