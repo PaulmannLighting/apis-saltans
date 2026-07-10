@@ -4,6 +4,7 @@ use apis_saltans_core::GroupId;
 use apis_saltans_core::endpoint::{Application, Broadcast};
 use le_stream::ToLeStream;
 
+/// A variant of `Destination` with weaker invariants to allow graceful parsing of APS frames.
 pub type WeakDestination = Destination<u8, u8, u16>;
 
 /// Represents the destination of an APS frame.
