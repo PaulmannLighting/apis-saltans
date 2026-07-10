@@ -17,8 +17,12 @@ pub use self::coordinator::*;
 pub use self::driver::{Backend, Driver, EventTranslator, Initialize, bridge};
 #[cfg(feature = "driver-use")]
 pub use self::driver_use::{Builder, StartedHardware};
+#[cfg(feature = "driver")]
+pub use self::reexports::{aps, core, nwk, zdp};
 
 mod common;
 mod coordinator;
 mod driver;
 mod driver_use;
+#[cfg(feature = "driver")]
+pub mod reexports;
