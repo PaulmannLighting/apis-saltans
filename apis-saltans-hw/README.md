@@ -59,7 +59,7 @@ plus the serialized application payload.
 ### `EventTranslator`
 
 `EventTranslator` converts hardware-specific event messages into common `Event` values such as
-network state changes, device joins/leaves, route errors, and received APS data.
+network state changes, device joins/leaves with `FullAddress`, route errors, and received APS data.
 
 ### `Ncp`
 

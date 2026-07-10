@@ -126,6 +126,7 @@ classDiagram
     class StartedHardware
     class Message
     class Event
+    class FullAddress
     class Datagram
     class Metadata
     class FoundNetwork
@@ -139,6 +140,7 @@ classDiagram
     Builder --> EventTranslator : creates translator
     StartedHardware --> NcpHandle : contains
     StartedHardware --> Event : receives
+    Event --> FullAddress : device membership
     Initialize --> NcpHandle : returns
     EventTranslator --> Event : emits
     Driver ..> SealedDriver : run/spawn delegate
@@ -246,8 +248,8 @@ response sender so the actor can return the result of the corresponding driver c
 - `bytes::Bytes`, which contains the serialized application payload.
 
 `Event` is the receive-side model emitted by the event translator. It reports network state changes,
-device join/leave notifications, route errors, and raw received APS data as
-`apis_saltans_nwk::Envelope<apis_saltans_aps::Data<bytes::Bytes>>`.
+device join/rejoin/leave notifications carrying `apis_saltans_core::FullAddress`, route errors, and
+raw received APS data as `apis_saltans_nwk::Envelope<apis_saltans_aps::Data<bytes::Bytes>>`.
 
 Scan commands use `FoundNetwork`, `Network`, and `ScannedChannel` to report network discovery and
 channel activity results without exposing backend-specific scan response formats.

@@ -1,6 +1,5 @@
 use apis_saltans_aps::Data;
-use apis_saltans_core::IeeeAddress;
-use apis_saltans_core::short_id::Device;
+use apis_saltans_core::FullAddress;
 use apis_saltans_nwk::Envelope;
 use bytes::Bytes;
 
@@ -8,7 +7,10 @@ pub use self::route_error::RouteError;
 
 mod route_error;
 
-/// Events that can occur on the hardware layer.
+/// Events emitted by the hardware layer.
+///
+/// Device membership events carry a [`FullAddress`] so consumers receive both
+/// the IEEE address and the current NWK short address for the affected device.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Event {
     /// The network is up and running.
@@ -24,24 +26,19 @@ pub enum Event {
     NetworkClosed,
 
     /// A new device has joined the network.
-    DeviceJoined {
-        ieee_address: IeeeAddress,
-        short_id: Device,
-    },
+    DeviceJoined(FullAddress),
 
-    /// A device has rejoined the network.
+    /// A known device has rejoined the network.
     DeviceRejoined {
-        ieee_address: IeeeAddress,
-        short_id: Device,
+        /// Complete address of the rejoining device.
+        address: FullAddress,
+
         /// Whether the rejoining was secured.
         secured: bool,
     },
 
     /// A device has left the network.
-    DeviceLeft {
-        ieee_address: IeeeAddress,
-        short_id: Device,
-    },
+    DeviceLeft(FullAddress),
 
     /// Raw APS data frame received from a NWK source.
     MessageReceived(Envelope<Data<Bytes>>),
