@@ -63,6 +63,11 @@ impl Header {
     }
 
     /// Return the destination endpoint ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] if the stored endpoint byte is in the reserved
+    /// endpoint range.
     pub fn dst_endpoint(&self) -> Result<Endpoint, Reserved> {
         self.dst_endpoint.try_into()
     }
@@ -80,6 +85,11 @@ impl Header {
     }
 
     /// Return the source endpoint ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] if the stored endpoint byte is in the reserved
+    /// endpoint range.
     pub fn source_endpoint(&self) -> Result<Endpoint, Reserved> {
         self.source_endpoint.try_into()
     }

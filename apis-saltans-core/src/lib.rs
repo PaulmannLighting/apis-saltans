@@ -1,4 +1,15 @@
-//! Zigbee library.
+//! Shared Zigbee protocol value types.
+//!
+//! This crate contains the small domain types used across the APIS Saltans
+//! workspace: IEEE addresses, NWK short addresses, APS endpoints and
+//! destinations, profile and cluster identifiers, node descriptors, ZCL value
+//! types, TLVs, and protocol unit wrappers.
+//!
+//! Address-like values encode Zigbee invariants where practical. For example,
+//! [`Endpoint`] separates the ZDO data endpoint, application endpoints, the
+//! broadcast endpoint, and the reserved endpoint range. APIs that deserialize
+//! raw protocol bytes can keep those bytes losslessly and expose fallible
+//! getters when a reserved value must be reported to callers.
 
 #![no_std]
 

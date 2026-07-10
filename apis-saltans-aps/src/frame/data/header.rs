@@ -83,6 +83,11 @@ impl Header {
     }
 
     /// Return the source endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] if the stored endpoint byte is in the reserved
+    /// endpoint range.
     pub fn source_endpoint(&self) -> Result<Endpoint, Reserved> {
         self.source_endpoint.try_into()
     }
