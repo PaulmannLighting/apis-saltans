@@ -1,4 +1,4 @@
-use crate::{Error, NcpHandle};
+use crate::common::{Error, NcpHandle};
 
 /// Starts the command side of a prepared NCP driver.
 pub trait Initialize {

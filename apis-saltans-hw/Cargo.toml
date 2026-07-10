@@ -12,13 +12,32 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-apis-saltans-aps = { version = "0.4", path = "../apis-saltans-aps" }
-apis-saltans-core = { version = "0.5", path = "../apis-saltans-core" }
-apis-saltans-nwk = { version = "0.2", path = "../apis-saltans-nwk" }
-apis-saltans-zdp = { version = "0.4", path = "../apis-saltans-zdp" }
-bytes = "1.12.0"
-log = "0.4"
-tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread"] }
+apis-saltans-aps = { version = "0.4", path = "../apis-saltans-aps", optional = true }
+apis-saltans-core = { version = "0.5", path = "../apis-saltans-core", optional = true }
+apis-saltans-nwk = { version = "0.2", path = "../apis-saltans-nwk", optional = true }
+apis-saltans-zdp = { version = "0.4", path = "../apis-saltans-zdp", optional = true }
+bytes = { version = "1.12.0", optional = true }
+log = { version = "0.4", optional = true }
+tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread"], optional = true }
+
+[features]
+default = []
+coordinator = [
+    "dep:apis-saltans-aps",
+    "dep:apis-saltans-core",
+    "dep:apis-saltans-nwk",
+    "dep:bytes",
+    "dep:tokio",
+]
+driver = [
+    "dep:apis-saltans-aps",
+    "dep:apis-saltans-core",
+    "dep:apis-saltans-nwk",
+    "dep:apis-saltans-zdp",
+    "dep:bytes",
+    "dep:log",
+    "dep:tokio",
+]
 
 [lints]
 workspace = true

@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::{Receiver, Sender};
 
-use crate::Event;
+use crate::common::Event;
 
 /// Trait to implement to translate hardware events into Zigbee events.
 pub trait EventTranslator {

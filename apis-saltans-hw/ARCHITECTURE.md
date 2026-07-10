@@ -7,39 +7,44 @@ channels owned by each message.
 
 ## Boundaries
 
+- The `driver` feature exposes `Builder`, `Initialize`, `Driver`, `PreparedHardware`,
+  `EventTranslator`, and `bridge` for hardware backends.
+- The `coordinator` feature exposes `Ncp`, `AwaitEvent`, and `WeakNcpHandle` for coordinator code.
 - `Builder` creates a backend from the coordinator endpoint descriptors and prepares support tasks.
 - `Initialize` starts the command side of a prepared backend and returns an `NcpHandle`.
 - `Driver` is the implementor-facing NCP command API.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
 - `EventTranslator` converts backend-specific event messages into common `Event` values.
 - `Datagram` carries serialized application payload bytes together with APS `Metadata`.
+- Shared data and protocol types are not feature-gated.
 
 ## Public Re-Exports
 
-| Export | Defined in | Purpose |
-| --- | --- | --- |
-| `AwaitEvent` | `await_event.rs` | Convenience methods for waiting on common network events. |
-| `bridge` | `bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
-| `Builder` | `builder.rs` | Prepares a hardware backend and its support tasks. |
-| `Datagram` | `datagram.rs` | Serialized application payload plus APS metadata. |
-| `Driver` | `driver.rs` | Driver-side command API implemented by hardware backends. |
-| `Error` | `error.rs` | Common crate error type. |
-| `Event` | `event.rs` | Common hardware-layer event model. |
-| `EventTranslator` | `event_translator.rs` | Converts backend event messages into `Event` values. |
-| `FoundNetwork` | `message/found_network.rs` | Network scan result plus last-hop signal quality. |
-| `Initialize` | `initialize.rs` | Starts the command side of a prepared backend. |
-| `Metadata` | `datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
-| `Ncp` | `ncp.rs` | Caller-side API implemented for `NcpHandle`. |
-| `NcpHandle` | `lib.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
-| `Network` | `message/found_network/network.rs` | Basic network information discovered during scans. |
-| `PreparedHardware` | `prepared_hardware.rs` | Prepared startup bundle containing support tasks and event stream. |
-| `ScannedChannel` | `message/scanned_channel.rs` | Channel scan result. |
+| Export | Feature | Defined in | Purpose |
+| --- | --- | --- | --- |
+| `AwaitEvent` | `coordinator` | `coordinator/await_event.rs` | Convenience methods for waiting on common network events. |
+| `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
+| `Builder` | `driver` | `driver/builder.rs` | Prepares a hardware backend and its support tasks. |
+| `Datagram` | always | `common/datagram.rs` | Serialized application payload plus APS metadata. |
+| `Driver` | `driver` | `driver/mod.rs` | Driver-side command API implemented by hardware backends. |
+| `Error` | always | `common/error.rs` | Common crate error type. |
+| `Event` | always | `common/event.rs` | Common hardware-layer event model. |
+| `EventTranslator` | `driver` | `driver/event_translator.rs` | Converts backend event messages into `Event` values. |
+| `FoundNetwork` | always | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
+| `Initialize` | `driver` | `driver/initialize.rs` | Starts the command side of a prepared backend. |
+| `Metadata` | always | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
+| `Ncp` | `coordinator` | `coordinator/ncp.rs` | Caller-side API implemented for `NcpHandle`. |
+| `NcpHandle` | always | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
+| `Network` | always | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
+| `PreparedHardware` | `driver` | `driver/prepared_hardware.rs` | Prepared startup bundle containing support tasks and event stream. |
+| `ScannedChannel` | always | `common/message/scanned_channel.rs` | Channel scan result. |
+| `WeakNcpHandle` | `coordinator` | `coordinator.rs` | Weak sender handle for components that should not keep the actor alive. |
 
 Internal modules define additional items used by the public API but not directly exported:
 
 | Item | Defined in | Purpose |
 | --- | --- | --- |
-| `Message` | `message.rs` | Internal actor command protocol between `NcpHandle` and the driver actor. |
+| `Message` | `common/message.rs` | Internal actor command protocol between `NcpHandle` and the driver actor. |
 | `SealedDriver` | `driver/sealed_driver.rs` | Blanket-implemented actor runtime for every `Driver + Send + 'static`. |
 
 ## Component Relationships
@@ -186,23 +191,25 @@ has separate unicast, multicast, and broadcast actor messages.
 
 ```mermaid
 flowchart TD
-    lib["lib.rs"] --> await_event["await_event.rs"]
-    lib --> bridge["bridge.rs"]
-    lib --> builder["builder.rs"]
-    lib --> datagram["datagram.rs"]
-    lib --> driver["driver.rs"]
+    lib["lib.rs"] --> common["common.rs"]
+    lib --> driver["driver/mod.rs"]
+    lib --> coordinator["coordinator.rs"]
+    common --> datagram["common/datagram.rs"]
+    common --> error["common/error.rs"]
+    common --> event["common/event.rs"]
+    event --> route_error["common/event/route_error.rs"]
+    common --> message["common/message.rs"]
+    message --> found_network["common/message/found_network.rs"]
+    found_network --> network["common/message/found_network/network.rs"]
+    message --> scanned_channel["common/message/scanned_channel.rs"]
+    driver --> bridge["driver/bridge.rs"]
+    driver --> builder["driver/builder.rs"]
+    driver --> event_translator["driver/event_translator.rs"]
+    driver --> initialize["driver/initialize.rs"]
+    driver --> prepared_hardware["driver/prepared_hardware.rs"]
     driver --> sealed_driver["driver/sealed_driver.rs"]
-    lib --> error["error.rs"]
-    lib --> event["event.rs"]
-    event --> route_error["event/route_error.rs"]
-    lib --> event_translator["event_translator.rs"]
-    lib --> initialize["initialize.rs"]
-    lib --> message["message.rs"]
-    message --> found_network["message/found_network.rs"]
-    found_network --> network["message/found_network/network.rs"]
-    message --> scanned_channel["message/scanned_channel.rs"]
-    lib --> ncp["ncp.rs"]
-    lib --> prepared_hardware["prepared_hardware.rs"]
+    coordinator --> await_event["coordinator/await_event.rs"]
+    coordinator --> ncp["coordinator/ncp.rs"]
 ```
 
 ## Command Protocol

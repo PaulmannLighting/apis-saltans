@@ -1,15 +1,25 @@
+#![cfg(feature = "driver")]
+
 //! An interface for communicating with a Zigbee NCP (Network Co-Processor) device.
 
 use std::time::Duration;
 
 use apis_saltans_core::{Destination, IeeeAddress};
-use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
 
+pub use self::bridge::bridge;
+pub use self::builder::Builder;
+pub use self::event_translator::EventTranslator;
+pub use self::initialize::Initialize;
+pub use self::prepared_hardware::PreparedHardware;
 use self::sealed_driver::SealedDriver;
-use crate::message::Message;
-use crate::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
+use crate::common::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
 
+mod bridge;
+mod builder;
+mod event_translator;
+mod initialize;
+mod prepared_hardware;
 mod sealed_driver;
 
 /// A common Zigbee NCP driver interface.
@@ -113,14 +123,6 @@ pub trait Driver {
         destination: Destination,
         datagram: Datagram,
     ) -> impl Future<Output = Result<(), Error>> + Send;
-
-    /// Run the network manager actor.
-    fn run(self, rx: Receiver<Message>) -> impl Future<Output = Self> + Send
-    where
-        Self: Sized + SealedDriver,
-    {
-        SealedDriver::run(self, rx)
-    }
 
     /// Spawn the actor in a tokio task.
     ///

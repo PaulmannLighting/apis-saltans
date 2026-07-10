@@ -2,9 +2,18 @@
 
 Hardware abstraction traits and data types for Zigbee network co-processor (NCP) drivers.
 
-This crate separates coordinator logic from concrete hardware backends. A backend implements
-`Builder`, `Initialize`, `Driver`, and `EventTranslator`; coordinator code receives an `NcpHandle`
-and uses the `Ncp` trait to send commands to the driver actor.
+This crate separates coordinator logic from concrete hardware backends. A backend implements the
+driver API (`Builder`, `Initialize`, `Driver`, and `EventTranslator`); coordinator code receives
+an `NcpHandle` and uses the `Ncp` trait to send commands to the driver actor.
+
+## Features
+
+- `driver`: exposes the driver-facing types: `Builder`, `Driver`, `EventTranslator`, `Initialize`,
+  `PreparedHardware`, and `bridge`.
+- `coordinator`: exposes the coordinator-facing types: `AwaitEvent`, `Ncp`, and `WeakNcpHandle`.
+- No default features are enabled. Shared data and protocol types such as `Datagram`, `Metadata`,
+  `Error`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and `NcpHandle` are always
+  exported.
 
 ## Main Traits
 

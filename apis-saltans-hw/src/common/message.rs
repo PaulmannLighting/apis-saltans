@@ -5,12 +5,13 @@ use tokio::sync::oneshot::Sender;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
-use crate::{Datagram, Error};
+use super::{Datagram, Error};
 
 mod found_network;
 mod scanned_channel;
 
 /// Messages exchanged with the NCP driver actor.
+#[cfg_attr(not(feature = "driver"), allow(dead_code))]
 pub enum Message {
     /// Return the PAN ID.
     GetPanId {

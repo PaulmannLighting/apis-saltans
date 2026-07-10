@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Receiver;
 
-use crate::Event;
+use crate::common::Event;
 
 /// Trait for waiting on Zigbee network events.
 pub trait AwaitEvent {

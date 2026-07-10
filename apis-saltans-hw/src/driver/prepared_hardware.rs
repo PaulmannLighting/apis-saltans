@@ -1,7 +1,7 @@
 use tokio::sync::mpsc::Receiver;
 
-use crate::initialize::Initialize;
-use crate::{Error, Event, NcpHandle};
+use super::Initialize;
+use crate::common::{Error, Event, NcpHandle};
 
 /// Prepared driver tasks that have not yet been started.
 pub struct PreparedHardware<Builder, Bridge, Translator> {

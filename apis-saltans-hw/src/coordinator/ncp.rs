@@ -1,15 +1,12 @@
 use std::time::Duration;
 
 use apis_saltans_core::{Address, Destination, IeeeAddress};
-use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 
-use crate::message::Message;
-use crate::{Datagram, Error, FoundNetwork, ScannedChannel};
+use crate::common::message::Message;
+use crate::common::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
 
 /// Proxy trait for sending commands to a Zigbee NCP driver actor.
-///
-/// This trait is implemented for `Sender<Message>`, allowing you to communicate with a Zigbee NCP.
 pub trait Ncp {
     /// Get the short ID of the network manager.
     ///
@@ -119,7 +116,7 @@ pub trait Ncp {
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
-impl Ncp for Sender<Message> {
+impl Ncp for NcpHandle {
     async fn get_pan_id(&self) -> Result<u16, Error> {
         let (response, rx) = channel();
         self.send(Message::GetPanId { response }).await?;

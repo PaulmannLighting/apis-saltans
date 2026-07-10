@@ -1,7 +1,8 @@
 use apis_saltans_zdp::SimpleDescriptor;
 use tokio::sync::mpsc::{Receiver, channel};
 
-use crate::{Error, EventTranslator, PreparedHardware, bridge};
+use super::{EventTranslator, PreparedHardware, bridge};
+use crate::common::Error;
 
 /// Constructs and wires a hardware driver from endpoint descriptors.
 pub trait Builder: Sized {
