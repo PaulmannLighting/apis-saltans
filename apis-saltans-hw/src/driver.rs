@@ -1,20 +1,19 @@
 //! An interface for communicating with a Zigbee NCP (Network Co-Processor) device.
 
-use std::collections::BTreeMap;
 use std::time::Duration;
 
-use apis_saltans_core::{Endpoint, IeeeAddress};
+use apis_saltans_core::{Destination, IeeeAddress};
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
 
 use self::sealed_driver::SealedDriver;
 use crate::message::Message;
-use crate::{Error, FoundNetwork, Frame, NcpHandle, ScannedChannel};
+use crate::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
 
 mod sealed_driver;
 
 /// A common Zigbee NCP driver interface.
-pub trait NcpDriver {
+pub trait Driver {
     /// Get the PAN ID of the network.
     ///
     /// # Errors
@@ -77,15 +76,6 @@ pub trait NcpDriver {
         duration: Duration,
     ) -> impl Future<Output = Result<Duration, Error>> + Send;
 
-    /// Get the list of neighbor devices.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn get_neighbors(
-        &mut self,
-    ) -> impl Future<Output = Result<BTreeMap<IeeeAddress, u16>, Error>> + Send;
-
     /// Send a route request.
     ///
     /// # Errors
@@ -113,42 +103,16 @@ pub trait NcpDriver {
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<u16, Error>> + Send;
 
-    /// Send a unicast message.
+    /// Transmit an application datagram to the specified destination.
     ///
     /// # Errors
     ///
-    /// Returns an error if the operation fails.
-    fn unicast(
+    /// Returns an error if the datagram cannot be transmitted.
+    fn transmit(
         &mut self,
-        address: u16,
-        endpoint: Endpoint,
-        frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>> + Send;
-
-    /// Send a multicast message.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn multicast(
-        &mut self,
-        group_id: u16,
-        hops: u8,
-        radius: u8,
-        frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>> + Send;
-
-    /// Send a broadcast message.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn broadcast(
-        &mut self,
-        short_id: u16,
-        radius: u8,
-        frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>> + Send;
+        destination: Destination,
+        datagram: Datagram,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Run the network manager actor.
     fn run(self, rx: Receiver<Message>) -> impl Future<Output = Self> + Send

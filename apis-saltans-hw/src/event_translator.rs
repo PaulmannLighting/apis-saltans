@@ -4,12 +4,12 @@ use crate::Event;
 
 /// Trait to implement to translate hardware events into Zigbee events.
 pub trait EventTranslator {
-    /// The input message type to be translated into an [`Event`].
-    type Input;
+    /// Hardware-specific message type consumed by this translator.
+    type Message;
 
-    /// Create a new event translator.
+    /// Create a translator that emits common hardware events to `output`.
     fn new(output: Sender<Event>) -> Self;
 
-    /// Run the event translator.
-    fn run(self, input: Receiver<Self::Input>) -> impl Future<Output = ()> + Send;
+    /// Run the translator until the input channel closes.
+    fn run(self, inbox: Receiver<Self::Message>) -> impl Future<Output = ()> + Send;
 }

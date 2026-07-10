@@ -1,14 +1,13 @@
-use std::collections::BTreeMap;
 use std::time::Duration;
 
-use apis_saltans_core::{Address, Endpoint, IeeeAddress};
+use apis_saltans_core::{Address, Destination, IeeeAddress};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 
 use crate::message::Message;
-use crate::{Error, FoundNetwork, Frame, ScannedChannel};
+use crate::{Datagram, Error, FoundNetwork, ScannedChannel};
 
-/// Proxy trait to communicate with Zigbee NCPs which implement [`NcpDriver`](crate::NcpDriver).
+/// Proxy trait for sending commands to a Zigbee NCP driver actor.
 ///
 /// This trait is implemented for `Sender<Message>`, allowing you to communicate with a Zigbee NCP.
 pub trait Ncp {
@@ -81,15 +80,6 @@ pub trait Ncp {
         duration: Duration,
     ) -> impl Future<Output = Result<Duration, Error>> + Send;
 
-    /// Get the list of neighbor devices.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn get_neighbors(
-        &self,
-    ) -> impl Future<Output = Result<BTreeMap<IeeeAddress, u16>, Error>> + Send;
-
     /// Send a route request with the specified radius.
     ///
     /// # Errors
@@ -117,42 +107,16 @@ pub trait Ncp {
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<u16, Error>> + Send;
 
-    /// Send a unicast ZCL command.
+    /// Transmit a serialized application datagram to a destination.
     ///
     /// # Errors
     ///
-    /// Returns an error if the operation fails.
-    fn unicast(
+    /// Returns an error if the actor is unavailable or the driver fails to transmit the datagram.
+    fn transmit(
         &self,
-        short_id: u16,
-        endpoint: Endpoint,
-        frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>> + Send;
-
-    /// Send a multicast ZCL command.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn multicast(
-        &self,
-        group_id: u16,
-        hops: u8,
-        radius: u8,
-        frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>> + Send;
-
-    /// Send a broadcast ZCL command.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails.
-    fn broadcast(
-        &self,
-        short_id: u16,
-        radius: u8,
-        frame: Frame,
-    ) -> impl Future<Output = Result<u8, Error>> + Send;
+        destination: Destination,
+        datagram: Datagram,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl Ncp for Sender<Message> {
@@ -205,12 +169,6 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn get_neighbors(&self) -> Result<BTreeMap<IeeeAddress, u16>, Error> {
-        let (response, rx) = channel();
-        self.send(Message::GetNeighbors { response }).await?;
-        rx.await?
-    }
-
     async fn route_request(&self, radius: u8) -> Result<(), Error> {
         let (response, rx) = channel();
         self.send(Message::RouteRequest { radius, response })
@@ -235,43 +193,11 @@ impl Ncp for Sender<Message> {
         rx.await?
     }
 
-    async fn unicast(&self, short_id: u16, endpoint: Endpoint, frame: Frame) -> Result<u8, Error> {
+    async fn transmit(&self, destination: Destination, datagram: Datagram) -> Result<(), Error> {
         let (response, rx) = channel();
-        self.send(Message::Unicast {
-            short_id,
-            endpoint,
-            frame,
-            response,
-        })
-        .await?;
-        rx.await?
-    }
-
-    async fn multicast(
-        &self,
-        group_id: u16,
-        hops: u8,
-        radius: u8,
-        frame: Frame,
-    ) -> Result<u8, Error> {
-        let (response, rx) = channel();
-        self.send(Message::Multicast {
-            group_id,
-            hops,
-            radius,
-            frame,
-            response,
-        })
-        .await?;
-        rx.await?
-    }
-
-    async fn broadcast(&self, short_id: u16, radius: u8, frame: Frame) -> Result<u8, Error> {
-        let (response, rx) = channel();
-        self.send(Message::Broadcast {
-            short_id,
-            radius,
-            frame,
+        self.send(Message::Transmit {
+            destination,
+            datagram,
             response,
         })
         .await?;

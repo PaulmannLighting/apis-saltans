@@ -70,10 +70,8 @@ dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
  "apis-saltans-nwk",
- "apis-saltans-zcl",
  "apis-saltans-zdp",
  "bytes",
- "le-stream",
  "log",
  "tokio",
 ]

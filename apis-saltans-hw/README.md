@@ -1,29 +1,43 @@
 # apis-saltans-hw
 
-An abstraction layer for Zigbee hardware.
+Hardware abstraction traits and data types for Zigbee network co-processor (NCP) drivers.
 
-## Usage
+This crate separates coordinator logic from concrete hardware backends. A backend implements
+`Builder`, `Initialize`, `Driver`, and `EventTranslator`; coordinator code receives an `NcpHandle`
+and uses the `Ncp` trait to send commands to the driver actor.
 
-This library provides a hardware abstraction layer to implement drivers for Zigbee hardware.
-Therefor the library exports two main traits to be implemented by the hardware library:
+## Main Traits
 
-### NcpDriver
+### `Builder`
 
-The `NcpDriver` trait is used to implement a driver for a Zigbee network co-processor (NCP).
-It provides methods to send and receive Zigbee messages as well as some other methods to manage the Zigbee network
+`Builder` constructs a hardware backend from the endpoint descriptors exposed by the coordinator.
+It also prepares the bridge and event translator tasks that connect hardware-specific event streams
+to the crate-level event model.
 
-### EventTranslator
+### `Initialize`
 
-The `EventTranslator` trait is used to implement a translator for Zigbee events.
-It is to be used to translate hardware-specific events into a common Zigbee `Event` data structure.
+`Initialize` starts the command side of a prepared backend and returns an `NcpHandle`.
+
+### `Driver`
+
+`Driver` is the implementor-facing command API. The sealed actor runtime receives internal
+`Message` values and dispatches them to the corresponding `Driver` methods.
+
+Transmission uses one method:
+
+```rust
+transmit(destination, datagram)
+```
+
+The `Destination` describes the APS target, and the `Datagram` contains APS profile/cluster metadata
+plus the serialized application payload.
+
+### `EventTranslator`
+
+`EventTranslator` converts hardware-specific event messages into common `Event` values such as
+network state changes, device joins/leaves, route errors, and received APS data.
 
 ### `Ncp`
 
-This library provides an `Ncp` trait, which is implemented for any handle (sender) to actors that implement the
-`NcpDriver` trait.
-This trait is used on the [coordinator layer](../apis-saltans-coordinator) to send Zigbee messages to the NCP.
-
-Each `Ncp::unicast` call represents one unicast frame to one short ID. The
-hardware abstraction layer does not perform parallel unicast fan-out; callers
-that need to target multiple devices must issue multiple unicast requests or use
-Zigbee multicast/broadcast operations where appropriate.
+`Ncp` is the caller-facing proxy trait implemented for `NcpHandle`. It sends commands to the driver
+actor through a Tokio MPSC channel and waits for the one-shot response associated with each command.
