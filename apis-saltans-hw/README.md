@@ -8,8 +8,10 @@ receives an `NcpHandle` and uses the `Ncp` trait to send commands to the driver 
 
 ## Features
 
-- `driver`: exposes the driver-facing types: `Backend`, `Builder`, `Driver`, `EventTranslator`,
-  `Initialize`, `PreparedHardware`, and `bridge`.
+- `driver-use`: exposes the driver-side types needed to start and use hardware:
+  `NcpHandle`, `Builder`, and `StartedHardware`.
+- `driver`: includes `driver-use` and additionally exposes the implementor-facing types:
+  `Backend`, `Driver`, `EventTranslator`, `Initialize`, and `bridge`.
 - `coordinator`: exposes the coordinator-facing types: `Ncp` and `WeakNcpHandle`.
 - No default features are enabled. Shared data and protocol types such as `Datagram`, `Metadata`,
   `Error`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and `NcpHandle` are exported when
@@ -27,6 +29,11 @@ receives an `NcpHandle` and uses the `Ncp` trait to send commands to the driver 
 `Builder` constructs a configured backend from the endpoint descriptors exposed by the coordinator.
 It relies on the associated types from `Backend` when preparing the bridge and event translator
 tasks that connect hardware-specific event streams to the crate-level event model.
+
+### `StartedHardware`
+
+`StartedHardware` contains the `NcpHandle`, the translated event stream, and the futures that drive
+the bridge and event translator tasks. The intermediate prepared state is intentionally opaque.
 
 ### `Initialize`
 

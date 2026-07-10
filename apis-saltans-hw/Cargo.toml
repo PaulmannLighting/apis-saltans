@@ -28,13 +28,16 @@ coordinator = [
     "dep:bytes",
     "dep:tokio",
 ]
-driver = [
+driver-use = [
     "dep:apis-saltans-aps",
     "dep:apis-saltans-core",
     "dep:apis-saltans-nwk",
     "dep:apis-saltans-zdp",
     "dep:bytes",
-    "dep:tokio",
+    "dep:tokio"
+]
+driver = [
+    "driver-use"
 ]
 
 [lints]

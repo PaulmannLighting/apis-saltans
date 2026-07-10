@@ -1,4 +1,4 @@
-use crate::EventTranslator;
+use super::event_translator::EventTranslator;
 
 /// Type-level configuration shared by driver-side backend traits.
 pub trait Backend {

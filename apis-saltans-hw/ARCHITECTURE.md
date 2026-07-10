@@ -7,8 +7,10 @@ channels owned by each message.
 
 ## Boundaries
 
-- The `driver` feature exposes `Backend`, `Builder`, `Initialize`, `Driver`, `PreparedHardware`,
-  `EventTranslator`, and `bridge` for hardware backends.
+- The `driver-use` feature exposes `NcpHandle`, `Builder`, and `StartedHardware` for code that
+  starts and uses a hardware backend.
+- The `driver` feature includes `driver-use` and additionally exposes `Backend`, `Initialize`,
+  `Driver`, `EventTranslator`, and `bridge` for hardware backend implementations.
 - The `coordinator` feature exposes `Ncp` and `WeakNcpHandle` for coordinator code.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
 - `Builder` creates a configured backend from the coordinator endpoint descriptors and prepares
@@ -26,20 +28,20 @@ channels owned by each message.
 | --- | --- | --- | --- |
 | `Backend` | `driver` | `driver/backend.rs` | Defines backend-specific event and translator types. |
 | `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
-| `Builder` | `driver` | `driver/builder.rs` | Constructs and prepares a configured hardware backend. |
-| `Datagram` | `driver` or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
+| `Builder` | `driver-use` | `driver/builder.rs` | Constructs and prepares a configured hardware backend. |
+| `Datagram` | `driver-use`, `driver`, or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
 | `Driver` | `driver` | `driver/mod.rs` | Driver-side command API implemented by hardware backends. |
-| `Error` | `driver` or `coordinator` | `common/error.rs` | Common crate error type. |
-| `Event` | `driver` or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
+| `Error` | `driver-use`, `driver`, or `coordinator` | `common/error.rs` | Common crate error type. |
+| `Event` | `driver-use`, `driver`, or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
 | `EventTranslator` | `driver` | `driver/event_translator.rs` | Converts backend event messages into `Event` values. |
-| `FoundNetwork` | `driver` or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
+| `FoundNetwork` | `driver-use`, `driver`, or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
 | `Initialize` | `driver` | `driver/initialize.rs` | Starts the command side of a prepared backend. |
-| `Metadata` | `driver` or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
+| `Metadata` | `driver-use`, `driver`, or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
 | `Ncp` | `coordinator` | `coordinator.rs` | Caller-side API implemented for `NcpHandle`. |
-| `NcpHandle` | `driver` or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
-| `Network` | `driver` or `coordinator` | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
-| `PreparedHardware` | `driver` | `driver/prepared_hardware.rs` | Prepared startup bundle containing support tasks and event stream. |
-| `ScannedChannel` | `driver` or `coordinator` | `common/message/scanned_channel.rs` | Channel scan result. |
+| `NcpHandle` | `driver-use`, `driver`, or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
+| `Network` | `driver-use`, `driver`, or `coordinator` | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
+| `StartedHardware` | `driver-use` | `driver/prepared_hardware.rs` | Started hardware support tasks and public handles. |
+| `ScannedChannel` | `driver-use`, `driver`, or `coordinator` | `common/message/scanned_channel.rs` | Channel scan result. |
 | `WeakNcpHandle` | `coordinator` | `coordinator.rs` | Weak sender handle for components that should not keep the actor alive. |
 
 Internal modules define additional items used by the public API but not directly exported:
