@@ -9,14 +9,111 @@ the driver actor.
 
 ## Features
 
-- `driver-use`: exposes the driver-side types needed to start and use hardware:
-  `NcpHandle`, `Builder`, and `StartedHardware`.
-- `driver`: includes `driver-use` and additionally exposes the implementor-facing types:
-  `Backend`, `Driver`, `EventTranslator`, `Initialize`, and `bridge`.
-- `coordinator`: exposes the coordinator-facing types: `Ncp` and `WeakNcpHandle`.
-- No default features are enabled. Shared data and protocol types such as `Datagram`, `Metadata`,
-  `Error`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and `NcpHandle` are exported when
-  `driver-use`, `driver`, or `coordinator` is enabled.
+No default features are enabled. Pick the feature that matches the role of the crate that depends on
+`apis-saltans-hw`.
+
+| Feature | Intended user | Public API |
+| --- | --- | --- |
+| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
+| `driver-use` | Code that starts an existing hardware backend but does not implement one. | `Builder`, `StartedHardware`, `NcpHandle`, `WeakNcpHandle`, `Error`, and `RouteError`. |
+| `driver` | Hardware backend crates. | Everything from `driver-use`, plus `Backend`, `Driver`, `EventTranslator`, `Initialize`, `bridge`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+
+`driver` includes `driver-use`, so backend crates usually enable only `driver`. Application crates
+that only need to construct a backend should enable `driver-use`, while coordinator crates should
+enable `coordinator`.
+
+### Using the Coordinator API
+
+Enable `coordinator` when your code receives an `NcpHandle` from startup code and needs to send
+commands to the NCP actor.
+
+```toml
+[dependencies]
+apis-saltans-hw = { version = "0.7", features = ["coordinator"] }
+```
+
+Import the `Ncp` trait to make the handle methods available:
+
+```rust,no_run
+use std::time::Duration;
+
+use apis_saltans_hw::{Ncp, NcpHandle};
+
+async fn permit_joining(ncp: &NcpHandle) -> Result<Duration, apis_saltans_hw::Error> {
+    ncp.allow_joins(Duration::from_secs(60)).await
+}
+```
+
+Use this feature for command-side operations such as reading the coordinator IEEE address, scanning
+networks, allowing joins, resolving addresses, requesting routes, and transmitting serialized
+`Datagram` values to `zb_core::Destination` targets.
+
+### Starting an Existing Driver
+
+Enable `driver-use` when your code owns a concrete backend type and needs to configure and start it.
+This is the feature for integration code that wires a hardware crate into the coordinator runtime.
+
+```toml
+[dependencies]
+apis-saltans-hw = { version = "0.7", features = ["driver-use"] }
+```
+
+A backend that implements `Builder` can be started from its hardware event stream. The returned
+`StartedHardware` contains:
+
+- `ncp`: the command handle passed to coordinator code.
+- `events`: translated hardware events consumed by coordinator code.
+- `bridge`: a future that forwards raw hardware events into the backend translator.
+- `translator`: a future that emits crate-level `Event` values.
+
+The `bridge` and `translator` futures must be polled, usually by spawning them on the runtime:
+
+```rust,ignore
+use apis_saltans_hw::Builder;
+
+let started = MyBackend::new(endpoints)?.start(hw_events).await?;
+let ncp = started.ncp.clone();
+let events = started.events;
+
+tokio::spawn(started.bridge);
+tokio::spawn(started.translator);
+```
+
+`StartedHardware::events` is intended to be passed to coordinator startup code. If integration code
+also needs to name or inspect event payload types directly, enable `coordinator` or `driver` as well
+so `Event` and its related data types are re-exported at the crate root.
+
+If you need to name implementor traits such as `Initialize` in generic bounds, enable `driver`
+instead of `driver-use`; those traits are intentionally part of the implementor-facing API.
+
+### Implementing a Driver
+
+Enable `driver` in hardware backend crates. It includes the startup API and exposes the traits used
+to implement a backend:
+
+```toml
+[dependencies]
+apis-saltans-hw = { version = "0.7", features = ["driver"] }
+```
+
+Driver crates typically implement:
+
+- `Backend` for the backend's associated hardware event, translator message, and translator type.
+- `Builder` to construct a configured backend from coordinator endpoint descriptors.
+- `Initialize` to start the command actor and return an `NcpHandle`.
+- `Driver` on the NCP command actor.
+- `EventTranslator` to convert backend events into common `Event` values.
+
+The `driver` feature also exposes protocol crate re-export modules:
+
+```rust
+use apis_saltans_hw::{aps, core, nwk, zdp};
+```
+
+These modules re-export `zb-aps`, `zb-core`, `zb-nwk`, and `zb-zdp` respectively. They are a
+convenience for driver crates: public APIs can refer to the protocol types through
+`apis_saltans_hw::core::...`, `apis_saltans_hw::aps::...`, and the other re-export modules instead
+of adding direct dependencies on every protocol crate.
 
 ## Main Traits
 

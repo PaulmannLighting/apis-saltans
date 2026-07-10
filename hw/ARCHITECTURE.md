@@ -8,10 +8,13 @@ channels owned by each message.
 ## Boundaries
 
 - The `driver-use` feature exposes `NcpHandle`, `Builder`, and `StartedHardware` for code that
-  starts and uses a hardware backend.
+  starts and uses an existing hardware backend. It also exposes `Error`, `RouteError`, and
+  `WeakNcpHandle` because startup code needs the command handle and common error surface.
 - The `driver` feature includes `driver-use` and additionally exposes `Backend`, `Initialize`,
-  `Driver`, `EventTranslator`, and `bridge` for hardware backend implementations.
-- The `coordinator` feature exposes `Ncp` and `WeakNcpHandle` for coordinator code.
+  `Driver`, `EventTranslator`, `bridge`, driver-side data types, and protocol crate re-export
+  modules for hardware backend implementations.
+- The `coordinator` feature exposes `Ncp`, `NcpHandle`, `WeakNcpHandle`, common error types, and
+  coordinator-side data/event types for coordinator code.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
 - `Builder` creates a configured backend from the coordinator endpoint descriptors and prepares
   support tasks.
@@ -20,8 +23,10 @@ channels owned by each message.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
 - `EventTranslator` converts backend-specific event messages into common `Event` values.
 - `Datagram` carries serialized application payload bytes together with APS `Metadata`.
-- Shared data and protocol types are exported when `driver-use`, `driver`, or `coordinator` is
-  enabled.
+- `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel` are exported by
+  `coordinator` and `driver`.
+- `Error`, `RouteError`, `NcpHandle`, and `WeakNcpHandle` are exported by `coordinator` and
+  `driver-use`; because `driver` includes `driver-use`, driver crates receive them too.
 
 ## Public Re-Exports
 
@@ -30,20 +35,25 @@ channels owned by each message.
 | `Backend` | `driver` | `driver/backend.rs` | Defines backend-specific event and translator types. |
 | `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
 | `Builder` | `driver-use` | `driver_use.rs` | Constructs and starts a configured hardware backend. |
-| `Datagram` | `driver-use`, `driver`, or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
+| `Datagram` | `driver` or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
 | `Driver` | `driver` | `driver/driver.rs` | Driver-side command API implemented by hardware backends. |
-| `Error` | `driver-use`, `driver`, or `coordinator` | `common/error.rs` | Common crate error type. |
-| `Event` | `driver-use`, `driver`, or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
+| `Error` | `driver-use`, `driver`, or `coordinator` | `common/error.rs` | Common crate error type. `driver` receives this through `driver-use`. |
+| `Event` | `driver` or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
 | `EventTranslator` | `driver` | `driver/event_translator.rs` | Converts backend event messages into `Event` values. |
-| `FoundNetwork` | `driver-use`, `driver`, or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
+| `FoundNetwork` | `driver` or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
 | `Initialize` | `driver` | `driver/initialize.rs` | Starts the command side of a backend. |
-| `Metadata` | `driver-use`, `driver`, or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
+| `Metadata` | `driver` or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
 | `Ncp` | `coordinator` | `coordinator.rs` | Caller-side API implemented for `NcpHandle`. |
 | `NcpHandle` | `driver-use`, `driver`, or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
-| `Network` | `driver-use`, `driver`, or `coordinator` | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
+| `Network` | `driver` or `coordinator` | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
+| `RouteError` | `driver-use`, `driver`, or `coordinator` | `common/event/route_error.rs` | Route error payload used in translated hardware events. |
 | `StartedHardware` | `driver-use` | `driver_use.rs` | Started hardware support tasks and public handles. |
-| `ScannedChannel` | `driver-use`, `driver`, or `coordinator` | `common/message/scanned_channel.rs` | Channel scan result. |
-| `WeakNcpHandle` | `coordinator` | `coordinator.rs` | Weak sender handle for components that should not keep the actor alive. |
+| `ScannedChannel` | `driver` or `coordinator` | `common/message/scanned_channel.rs` | Channel scan result. |
+| `WeakNcpHandle` | `driver-use`, `driver`, or `coordinator` | `common/message.rs` | Weak sender handle for components that should not keep the actor alive. |
+| `aps` | `driver` | `reexports.rs` | Re-export of `zb-aps` for driver crates. |
+| `core` | `driver` | `reexports.rs` | Re-export of `zb-core` for driver crates. |
+| `nwk` | `driver` | `reexports.rs` | Re-export of `zb-nwk` for driver crates. |
+| `zdp` | `driver` | `reexports.rs` | Re-export of `zb-zdp` for driver crates. |
 
 Internal modules define additional items used by the public API but not directly exported:
 
