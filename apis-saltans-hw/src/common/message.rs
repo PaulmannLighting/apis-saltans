@@ -3,15 +3,22 @@ use std::time::Duration;
 use apis_saltans_core::{Destination, IeeeAddress};
 use tokio::sync::oneshot::Sender;
 
-pub use self::found_network::{FoundNetwork, Network};
+pub use self::found_network::FoundNetwork;
+#[cfg(any(feature = "coordinator", feature = "driver"))]
+pub use self::found_network::Network;
 pub use self::scanned_channel::ScannedChannel;
-use super::{Datagram, Error};
+use crate::common::{Datagram, Error};
 
 mod found_network;
 mod scanned_channel;
 
+/// A handle on the NCP.
+pub type NcpHandle = tokio::sync::mpsc::Sender<Message>;
+
+/// A weak handle on the NCP.
+pub type WeakNcpHandle = tokio::sync::mpsc::WeakSender<Message>;
+
 /// Messages exchanged with the NCP driver actor.
-#[cfg_attr(not(feature = "driver"), allow(dead_code))]
 pub enum Message {
     /// Return the PAN ID.
     GetPanId {

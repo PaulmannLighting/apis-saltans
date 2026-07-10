@@ -3,8 +3,9 @@
 use apis_saltans_zdp::SimpleDescriptor;
 use tokio::sync::mpsc::{Receiver, channel};
 
-use crate::common::{Error, Event, NcpHandle};
+use crate::common::Event;
 use crate::driver::{Backend, EventTranslator, Initialize, bridge};
+use crate::{Error, NcpHandle};
 
 /// Constructs and prepares a configured hardware backend.
 pub trait Builder: Backend + Sized {
@@ -15,6 +16,14 @@ pub trait Builder: Backend + Sized {
     /// Returns an error if the backend cannot be configured for the supplied endpoint descriptors.
     fn new(endpoints: &[SimpleDescriptor]) -> Result<Self, Error>;
 
+    /// Start the backend and prepare the support futures used to drive hardware events.
+    ///
+    /// The returned [`StartedHardware`] contains the command handle, translated event receiver, and
+    /// futures that must be polled by the caller to keep the hardware event path running.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if backend initialization fails.
     fn start(
         self,
         hw_events: Receiver<Self::HardwareEvent>,

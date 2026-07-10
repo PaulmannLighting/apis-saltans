@@ -3,8 +3,9 @@
 Hardware abstraction traits and data types for Zigbee network co-processor (NCP) drivers.
 
 This crate separates coordinator logic from concrete hardware backends. A backend implements the
-driver API (`Backend`, `Builder`, `Initialize`, `Driver`, and `EventTranslator`); coordinator code
-receives an `NcpHandle` and uses the `Ncp` trait to send commands to the driver actor.
+implementor API (`Backend`, `Initialize`, `Driver`, and `EventTranslator`) and the startup API
+(`Builder`); coordinator code receives an `NcpHandle` and uses the `Ncp` trait to send commands to
+the driver actor.
 
 ## Features
 
@@ -15,7 +16,7 @@ receives an `NcpHandle` and uses the `Ncp` trait to send commands to the driver 
 - `coordinator`: exposes the coordinator-facing types: `Ncp` and `WeakNcpHandle`.
 - No default features are enabled. Shared data and protocol types such as `Datagram`, `Metadata`,
   `Error`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and `NcpHandle` are exported when
-  either public API feature is enabled.
+  `driver-use`, `driver`, or `coordinator` is enabled.
 
 ## Main Traits
 
@@ -26,18 +27,20 @@ receives an `NcpHandle` and uses the `Ncp` trait to send commands to the driver 
 
 ### `Builder`
 
-`Builder` constructs a configured backend from the endpoint descriptors exposed by the coordinator.
-It relies on the associated types from `Backend` when preparing the bridge and event translator
-tasks that connect hardware-specific event streams to the crate-level event model.
+`Builder` constructs a configured backend from the endpoint descriptors exposed by the coordinator
+and starts it from a hardware event stream. It relies on the associated types from `Backend` when
+creating the bridge and event translator futures that connect hardware-specific events to the
+crate-level event model.
 
 ### `StartedHardware`
 
 `StartedHardware` contains the `NcpHandle`, the translated event stream, and the futures that drive
-the bridge and event translator tasks. The intermediate prepared state is intentionally opaque.
+the bridge and event translator tasks. Backend-specific startup state remains internal to the
+`Builder` implementation.
 
 ### `Initialize`
 
-`Initialize` starts the command side of a prepared backend and returns an `NcpHandle`.
+`Initialize` starts the command side of a backend and returns an `NcpHandle`.
 
 ### `Driver`
 

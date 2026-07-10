@@ -1,6 +1,6 @@
 #![cfg(feature = "driver-use")]
 
-//! An interface for communicating with a Zigbee NCP (Network Co-Processor) device.
+//! Implementor-facing traits and helpers for Zigbee NCP driver backends.
 
 #[cfg(feature = "driver")]
 pub use driver::Driver;

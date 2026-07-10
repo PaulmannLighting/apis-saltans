@@ -5,7 +5,7 @@ use std::time::Duration;
 use apis_saltans_core::{Destination, IeeeAddress};
 use tokio::sync::mpsc::{Receiver, channel};
 
-use crate::common::message::Message;
+use crate::common::Message;
 use crate::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
 
 /// A common Zigbee NCP driver interface.

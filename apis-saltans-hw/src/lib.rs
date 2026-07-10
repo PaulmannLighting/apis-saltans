@@ -1,15 +1,16 @@
 //! Zigbee hardware abstraction API.
 //!
 //! This crate defines the boundary between coordinator-level logic and concrete Zigbee network
-//! co-processor (NCP) drivers. The `driver` feature exposes implementor-facing traits for hardware
-//! backends, while the `coordinator` feature exposes caller-facing handle extensions for
-//! coordinator code. Shared data, events, errors, and the internal actor message protocol are always
-//! compiled.
+//! co-processor (NCP) drivers. The `driver-use` feature exposes the types needed to construct and
+//! run an existing backend. The `driver` feature includes `driver-use` and adds implementor-facing
+//! traits for hardware backends. The `coordinator` feature exposes caller-facing handle extensions
+//! for coordinator code. Shared data, events, and errors are exported when at least one public API
+//! feature is enabled.
 
-#[cfg(any(feature = "coordinator", feature = "driver", feature = "driver-use"))]
-pub use self::common::{
-    Datagram, Error, Event, FoundNetwork, Metadata, NcpHandle, Network, RouteError, ScannedChannel,
-};
+#[cfg(any(feature = "coordinator", feature = "driver"))]
+pub use self::common::{Datagram, Event, FoundNetwork, Metadata, Network, ScannedChannel};
+#[cfg(any(feature = "coordinator", feature = "driver-use"))]
+pub use self::common::{Error, NcpHandle, RouteError, WeakNcpHandle};
 #[cfg(feature = "coordinator")]
 pub use self::coordinator::*;
 #[cfg(feature = "driver")]

@@ -7,11 +7,8 @@ use std::time::Duration;
 use apis_saltans_core::{Address, Destination, IeeeAddress};
 use tokio::sync::oneshot::channel;
 
-use crate::common::message::Message;
-use crate::common::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
-
-/// A weak handle on the NCP.
-pub type WeakNcpHandle = tokio::sync::mpsc::WeakSender<Message>;
+use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
+use crate::{Error, NcpHandle};
 
 /// Proxy trait for sending commands to a Zigbee NCP driver actor.
 pub trait Ncp {

@@ -41,13 +41,13 @@ impl Metadata {
 
     /// Return the APS profile.
     #[must_use]
-    pub const fn profile(&self) -> Profile {
+    pub const fn profile(self) -> Profile {
         self.profile
     }
 
     /// Return the APS cluster ID.
     #[must_use]
-    pub const fn cluster_id(&self) -> u16 {
+    pub const fn cluster_id(self) -> u16 {
         self.cluster_id
     }
 }
