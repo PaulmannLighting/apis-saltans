@@ -34,13 +34,13 @@ impl ReadAttributes for Sender<Message> {
     async fn read_attributes<T>(
         &self,
         device: Device,
-        ids: T,
+        attributes: T,
     ) -> Result<Box<[ReadAttributeResult<T::Item>]>, Error>
     where
         T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
     {
         let response = self
-            .communicate(device, ReadAttributesRequest::new(ids))
+            .communicate(device, ReadAttributesRequest::new(attributes))
             .await?;
 
         Ok(response.into())
@@ -51,12 +51,12 @@ impl ReadAttributes for Coordinator {
     async fn read_attributes<T>(
         &self,
         device: Device,
-        ids: T,
+        attributes: T,
     ) -> Result<Box<[ReadAttributeResult<T::Item>]>, Error>
     where
         T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
     {
-        self.zcl.read_attributes(device, ids).await
+        self.zcl.read_attributes(device, attributes).await
     }
 }
 
