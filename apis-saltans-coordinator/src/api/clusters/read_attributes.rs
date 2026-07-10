@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
 use apis_saltans_core::destination::Device;
-use apis_saltans_core::{ClusterSpecific, Direction, ExpectResponse};
+use apis_saltans_core::{ClusterSpecific, ExpectResponse};
 use apis_saltans_zcl::global::read_attributes;
-use apis_saltans_zcl::{Cluster, Command, ParseAttributeError, Readable, Scope, Scoped};
+use apis_saltans_zcl::{Cluster, Command, ParseAttributeError, Readable, Scoped};
 use le_stream::ToLeStream;
 use tokio::sync::mpsc::Sender;
 
@@ -40,7 +40,7 @@ impl ReadAttributes for Sender<Message> {
         T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
     {
         let response = self
-            .communicate(device, ReadAttributesRequest::<T::Item>::new(ids))
+            .communicate(device, ReadAttributesRequest::new(ids))
             .await?;
 
         Ok(response.into())
@@ -82,27 +82,6 @@ where
     }
 }
 
-impl<T> Command for ReadAttributesRequest<T> {
-    const ID: u8 = <read_attributes::Command as Command>::ID;
-    const DIRECTION: Direction = <read_attributes::Command as Command>::DIRECTION;
-    const PARSE_DIRECTION: apis_saltans_zcl::ParseDirection =
-        <read_attributes::Command as Command>::PARSE_DIRECTION;
-    const DISABLE_DEFAULT_RESPONSE: bool =
-        <read_attributes::Command as Command>::DISABLE_DEFAULT_RESPONSE;
-}
-
-impl<T> Scoped for ReadAttributesRequest<T> {
-    const SCOPE: Scope = Scope::Global;
-}
-
-impl<T> ToLeStream for ReadAttributesRequest<T> {
-    type Iter = <read_attributes::Command as ToLeStream>::Iter;
-
-    fn to_le_stream(self) -> Self::Iter {
-        read_attributes::Command::new(self.attribute_ids).to_le_stream()
-    }
-}
-
 impl<T> ExpectResponse<Cluster> for ReadAttributesRequest<T> {
     type Response = read_attributes::Response;
 }
@@ -115,13 +94,15 @@ where
         Self::new(
             apis_saltans_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
             Metadata {
-                scope: ReadAttributesRequest::<T>::SCOPE,
-                direction: ReadAttributesRequest::<T>::DIRECTION,
-                disable_default_response: ReadAttributesRequest::<T>::DISABLE_DEFAULT_RESPONSE,
+                scope: read_attributes::Command::SCOPE,
+                direction: read_attributes::Command::DIRECTION,
+                disable_default_response: read_attributes::Command::DISABLE_DEFAULT_RESPONSE,
                 manufacturer_code: T::MANUFACTURER_CODE,
-                command_id: ReadAttributesRequest::<T>::ID,
+                command_id: read_attributes::Command::ID,
             },
-            request.to_le_stream().collect(),
+            read_attributes::Command::new(request.attribute_ids)
+                .to_le_stream()
+                .collect(),
         )
     }
 }
