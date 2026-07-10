@@ -31,14 +31,6 @@ pub enum Message {
         response: Sender<Result<Option<Device>>>,
     },
 
-    /// Return a device given its full address.
-    GetByAddress {
-        /// The full address of the device.
-        address: Address,
-        /// The response channel.
-        response: Sender<Result<Option<Device>>>,
-    },
-
     /// Return a device given its short ID.
     GetByShortId {
         /// The short ID of the device.
@@ -53,5 +45,20 @@ pub enum Message {
         ieee_address: IeeeAddress,
         /// The response channel.
         response: Sender<Result<Option<Device>>>,
+    },
+
+    GetShortId {
+        ieee_address: IeeeAddress,
+        response: Sender<Result<Option<u16>>>,
+    },
+
+    GetIeeeAddress {
+        short_id: u16,
+        response: Sender<Result<Option<IeeeAddress>>>,
+    },
+
+    UpdateShortId {
+        ieee_address: IeeeAddress,
+        short_id: u16,
     },
 }

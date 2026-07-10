@@ -40,14 +40,14 @@ pub trait Storage {
         address: Address,
     ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
 
-    /// Return a device from the storage given its full address.
+    /// Return a device from the storage given its short ID.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if querying to the storage fails.
-    fn get_by_address(
+    fn get_by_short_id(
         &self,
-        address: Address,
+        short_id: u16,
     ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
 
     /// Return a device from the storage given its IEEE address.
@@ -60,15 +60,21 @@ pub trait Storage {
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
 
-    /// Return a device from the storage given its short ID.
-    ///
-    /// # Errors
-    ///
-    /// Returns an [`Error`] if querying to the storage fails.
-    fn get_by_short_id(
+    fn get_short_id(
+        &self,
+        ieee_address: IeeeAddress,
+    ) -> impl Future<Output = Result<Option<u16>, Error>> + Send;
+
+    fn get_ieee_address(
         &self,
         short_id: u16,
-    ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
+    ) -> impl Future<Output = Result<Option<IeeeAddress>, Error>> + Send;
+
+    fn update_short_id(
+        &self,
+        ieee_address: IeeeAddress,
+        short_id: u16,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl Storage for Sender<Message> {
@@ -98,10 +104,10 @@ impl Storage for Sender<Message> {
         Ok(rx.await??)
     }
 
-    async fn get_by_address(&self, address: Address) -> Result<Option<Device>, Error> {
+    async fn get_by_short_id(&self, short_id: u16) -> Result<Option<Device>, Error> {
         let (tx, rx) = channel();
-        self.send(Message::GetByAddress {
-            address,
+        self.send(Message::GetByShortId {
+            short_id,
             response: tx,
         })
         .await?;
@@ -121,13 +127,32 @@ impl Storage for Sender<Message> {
         Ok(rx.await??)
     }
 
-    async fn get_by_short_id(&self, short_id: u16) -> Result<Option<Device>, Error> {
+    async fn get_short_id(&self, ieee_address: IeeeAddress) -> Result<Option<u16>, Error> {
         let (tx, rx) = channel();
-        self.send(Message::GetByShortId {
+        self.send(Message::GetShortId {
+            ieee_address,
+            response: tx,
+        })
+        .await?;
+        Ok(rx.await??)
+    }
+
+    async fn get_ieee_address(&self, short_id: u16) -> Result<Option<IeeeAddress>, Error> {
+        let (tx, rx) = channel();
+        self.send(Message::GetIeeeAddress {
             short_id,
             response: tx,
         })
         .await?;
         Ok(rx.await??)
+    }
+
+    async fn update_short_id(&self, ieee_address: IeeeAddress, short_id: u16) -> Result<(), Error> {
+        self.send(Message::UpdateShortId {
+            ieee_address,
+            short_id,
+        })
+        .await?;
+        Ok(())
     }
 }
