@@ -7,10 +7,12 @@ channels owned by each message.
 
 ## Boundaries
 
-- The `driver` feature exposes `Builder`, `Initialize`, `Driver`, `PreparedHardware`,
+- The `driver` feature exposes `Backend`, `Builder`, `Initialize`, `Driver`, `PreparedHardware`,
   `EventTranslator`, and `bridge` for hardware backends.
 - The `coordinator` feature exposes `Ncp` and `WeakNcpHandle` for coordinator code.
-- `Builder` creates a backend from the coordinator endpoint descriptors and prepares support tasks.
+- `Backend` defines the hardware-specific event, translator message, and translator types.
+- `Builder` creates a configured backend from the coordinator endpoint descriptors and prepares
+  support tasks.
 - `Initialize` starts the command side of a prepared backend and returns an `NcpHandle`.
 - `Driver` is the implementor-facing NCP command API.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
@@ -22,21 +24,22 @@ channels owned by each message.
 
 | Export | Feature | Defined in | Purpose |
 | --- | --- | --- | --- |
+| `Backend` | `driver` | `driver/backend.rs` | Defines backend-specific event and translator types. |
 | `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
-| `Builder` | `driver` | `driver/builder.rs` | Prepares a hardware backend and its support tasks. |
-| `Datagram` | always | `common/datagram.rs` | Serialized application payload plus APS metadata. |
+| `Builder` | `driver` | `driver/builder.rs` | Constructs and prepares a configured hardware backend. |
+| `Datagram` | `driver` or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
 | `Driver` | `driver` | `driver/mod.rs` | Driver-side command API implemented by hardware backends. |
-| `Error` | always | `common/error.rs` | Common crate error type. |
-| `Event` | always | `common/event.rs` | Common hardware-layer event model. |
+| `Error` | `driver` or `coordinator` | `common/error.rs` | Common crate error type. |
+| `Event` | `driver` or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
 | `EventTranslator` | `driver` | `driver/event_translator.rs` | Converts backend event messages into `Event` values. |
-| `FoundNetwork` | always | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
+| `FoundNetwork` | `driver` or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
 | `Initialize` | `driver` | `driver/initialize.rs` | Starts the command side of a prepared backend. |
-| `Metadata` | always | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
+| `Metadata` | `driver` or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
 | `Ncp` | `coordinator` | `coordinator.rs` | Caller-side API implemented for `NcpHandle`. |
-| `NcpHandle` | always | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
-| `Network` | always | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
+| `NcpHandle` | `driver` or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
+| `Network` | `driver` or `coordinator` | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
 | `PreparedHardware` | `driver` | `driver/prepared_hardware.rs` | Prepared startup bundle containing support tasks and event stream. |
-| `ScannedChannel` | always | `common/message/scanned_channel.rs` | Channel scan result. |
+| `ScannedChannel` | `driver` or `coordinator` | `common/message/scanned_channel.rs` | Channel scan result. |
 | `WeakNcpHandle` | `coordinator` | `coordinator.rs` | Weak sender handle for components that should not keep the actor alive. |
 
 Internal modules define additional items used by the public API but not directly exported:
@@ -52,11 +55,15 @@ Internal modules define additional items used by the public API but not directly
 classDiagram
     direction LR
 
-    class Builder {
+    class Backend {
         <<trait>>
         type HardwareEvent
         type Message
         type EventTranslator
+    }
+
+    class Builder {
+        <<trait>>
         +new()
         +prepare()
     }
@@ -123,6 +130,7 @@ classDiagram
     class ScannedChannel
     class Error
 
+    Builder ..|> Backend : requires
     Builder --> PreparedHardware : prepares
     PreparedHardware --> Initialize : starts
     PreparedHardware --> EventTranslator : spawns
@@ -201,6 +209,7 @@ flowchart TD
     message --> found_network["common/message/found_network.rs"]
     found_network --> network["common/message/found_network/network.rs"]
     message --> scanned_channel["common/message/scanned_channel.rs"]
+    driver --> backend["driver/backend.rs"]
     driver --> bridge["driver/bridge.rs"]
     driver --> builder["driver/builder.rs"]
     driver --> event_translator["driver/event_translator.rs"]

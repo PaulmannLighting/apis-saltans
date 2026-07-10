@@ -3,25 +3,30 @@
 Hardware abstraction traits and data types for Zigbee network co-processor (NCP) drivers.
 
 This crate separates coordinator logic from concrete hardware backends. A backend implements the
-driver API (`Builder`, `Initialize`, `Driver`, and `EventTranslator`); coordinator code receives
-an `NcpHandle` and uses the `Ncp` trait to send commands to the driver actor.
+driver API (`Backend`, `Builder`, `Initialize`, `Driver`, and `EventTranslator`); coordinator code
+receives an `NcpHandle` and uses the `Ncp` trait to send commands to the driver actor.
 
 ## Features
 
-- `driver`: exposes the driver-facing types: `Builder`, `Driver`, `EventTranslator`, `Initialize`,
-  `PreparedHardware`, and `bridge`.
+- `driver`: exposes the driver-facing types: `Backend`, `Builder`, `Driver`, `EventTranslator`,
+  `Initialize`, `PreparedHardware`, and `bridge`.
 - `coordinator`: exposes the coordinator-facing types: `Ncp` and `WeakNcpHandle`.
 - No default features are enabled. Shared data and protocol types such as `Datagram`, `Metadata`,
-  `Error`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and `NcpHandle` are always
-  exported.
+  `Error`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and `NcpHandle` are exported when
+  either public API feature is enabled.
 
 ## Main Traits
 
+### `Backend`
+
+`Backend` defines the hardware-specific event type, the translator input message type, and the
+`EventTranslator` implementation used by the backend.
+
 ### `Builder`
 
-`Builder` constructs a hardware backend from the endpoint descriptors exposed by the coordinator.
-It also prepares the bridge and event translator tasks that connect hardware-specific event streams
-to the crate-level event model.
+`Builder` constructs a configured backend from the endpoint descriptors exposed by the coordinator.
+It relies on the associated types from `Backend` when preparing the bridge and event translator
+tasks that connect hardware-specific event streams to the crate-level event model.
 
 ### `Initialize`
 

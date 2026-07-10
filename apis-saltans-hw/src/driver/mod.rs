@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use apis_saltans_core::{Destination, IeeeAddress};
 
+pub use self::backend::Backend;
 pub use self::bridge::bridge;
 pub use self::builder::Builder;
 pub use self::event_translator::EventTranslator;
@@ -14,6 +15,7 @@ pub use self::prepared_hardware::PreparedHardware;
 use self::sealed_driver::SealedDriver;
 use crate::common::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
 
+mod backend;
 mod bridge;
 mod builder;
 mod event_translator;

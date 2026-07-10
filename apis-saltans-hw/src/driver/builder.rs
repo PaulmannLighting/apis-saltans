@@ -2,19 +2,11 @@ use apis_saltans_zdp::SimpleDescriptor;
 use tokio::sync::mpsc::{Receiver, channel};
 
 use super::{EventTranslator, PreparedHardware, bridge};
+use crate::Backend;
 use crate::common::Error;
 
-/// Constructs and wires a hardware driver from endpoint descriptors.
-pub trait Builder: Sized {
-    /// Hardware-specific event type produced by the driver backend.
-    type HardwareEvent: Send + 'static;
-
-    /// Message type consumed by the hardware event translator.
-    type Message: From<Self::HardwareEvent> + Send + 'static;
-
-    /// Translator that converts backend messages into crate-level events.
-    type EventTranslator: EventTranslator<Message = Self::Message> + 'static;
-
+/// Constructs and prepares a configured hardware backend.
+pub trait Builder: Backend + Sized {
     /// Create a driver builder for the endpoints exposed by the coordinator.
     ///
     /// # Errors
