@@ -10,20 +10,24 @@ use zb_zcl::{Command, Scope, Scoped};
 pub struct Payload {
     aps_metadata: zb_hw::Metadata,
     zcl_metadata: Metadata,
-    payload: Bytes,
+    bytes: Bytes,
 }
 
 impl Payload {
-    pub fn new(aps_metadata: zb_hw::Metadata, zcl_metadata: Metadata, payload: Bytes) -> Self {
+    pub const fn new(
+        aps_metadata: zb_hw::Metadata,
+        zcl_metadata: Metadata,
+        payload: Bytes,
+    ) -> Self {
         Self {
             aps_metadata,
             zcl_metadata,
-            payload,
+            bytes: payload,
         }
     }
 
     pub fn into_parts(self) -> (zb_hw::Metadata, Metadata, Bytes) {
-        (self.aps_metadata, self.zcl_metadata, self.payload)
+        (self.aps_metadata, self.zcl_metadata, self.bytes)
     }
 }
 
@@ -50,7 +54,7 @@ where
                 manufacturer_code: T::MANUFACTURER_CODE,
                 command_id: <T as Command>::ID,
             },
-            payload: payload.to_le_stream().collect(),
+            bytes: payload.to_le_stream().collect(),
         }
     }
 }

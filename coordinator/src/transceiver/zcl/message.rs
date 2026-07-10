@@ -6,7 +6,7 @@ use zb_hw::Error;
 use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame};
 
-pub use super::{Metadata, Payload};
+pub use super::Payload;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]

@@ -28,6 +28,10 @@ impl Coordinator {
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
+    #[expect(
+        clippy::unused_async,
+        reason = "keep the public startup API asynchronous for callers in async initialization code"
+    )]
     pub async fn start(
         ncp: NcpHandle,
         events: Receiver<Event>,

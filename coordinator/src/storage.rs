@@ -60,16 +60,31 @@ pub trait Storage {
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
 
+    /// Return the current short ID for an IEEE address.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if querying the storage fails.
     fn get_short_id(
         &self,
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Option<short_id::Device>, Error>> + Send;
 
+    /// Return the current IEEE address for a short ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if querying the storage fails.
     fn get_ieee_address(
         &self,
         short_id: short_id::Device,
     ) -> impl Future<Output = Result<Option<IeeeAddress>, Error>> + Send;
 
+    /// Update the short ID associated with an IEEE address.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if writing to the storage fails.
     fn update_short_id(
         &self,
         ieee_address: IeeeAddress,

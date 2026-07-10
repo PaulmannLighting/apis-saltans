@@ -116,7 +116,7 @@ impl EndpointDescriptorDiscovery {
         };
 
         let Ok(endpoint) = descriptor.endpoint().inspect_err(|reserved| {
-            warn!("Discarding descriptor with invalid endpoint for {address}: {reserved}")
+            warn!("Discarding descriptor with invalid endpoint for {address}: {reserved}");
         }) else {
             return;
         };

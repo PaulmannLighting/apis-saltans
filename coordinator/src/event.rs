@@ -25,12 +25,17 @@ impl Event {
         }
     }
 
+    /// Return the source address of the event.
     #[must_use]
     pub const fn src_address(&self) -> FullAddress {
         self.src_address
     }
 
     /// Return the source endpoint of the event.
+    ///
+    /// # Errors
+    ///
+    /// Returns the reserved endpoint value if the source endpoint is not a valid endpoint.
     pub const fn src_endpoint(&self) -> Result<Endpoint, Reserved> {
         self.src_endpoint
     }

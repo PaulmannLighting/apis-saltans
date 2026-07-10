@@ -47,18 +47,27 @@ pub enum Message {
         response: Sender<Result<Option<Device>>>,
     },
 
+    /// Return the short ID associated with an IEEE address.
     GetShortId {
+        /// The IEEE address to look up.
         ieee_address: IeeeAddress,
+        /// The response channel.
         response: Sender<Result<Option<short_id::Device>>>,
     },
 
+    /// Return the IEEE address associated with a short ID.
     GetIeeeAddress {
+        /// The short ID to look up.
         short_id: short_id::Device,
+        /// The response channel.
         response: Sender<Result<Option<IeeeAddress>>>,
     },
 
+    /// Update the short ID associated with an IEEE address.
     UpdateShortId {
+        /// The IEEE address to update.
         ieee_address: IeeeAddress,
+        /// The new short ID.
         short_id: short_id::Device,
     },
 }
