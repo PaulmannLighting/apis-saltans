@@ -1,11 +1,12 @@
-use apis_saltans_core::{Application, ExpectResponse};
-use apis_saltans_hw::{Error, NcpHandle, Start};
+use apis_saltans_core::destination::Device;
+use apis_saltans_core::{Destination, ExpectResponse};
+use apis_saltans_hw::{Error, Event, NcpHandle};
 use apis_saltans_zcl::Cluster;
 use apis_saltans_zdp::SimpleDescriptor;
-use tokio::sync::mpsc::{Sender, channel};
+use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 use crate::mux::Mux;
-use crate::transceiver::zcl::Payload;
+use crate::transceiver::zcl::Datagram;
 use crate::transceiver::{zcl, zdp};
 use crate::{MPSC_CHANNEL_SIZE, binding, discovery, network_manager, storage};
 
@@ -24,16 +25,12 @@ impl Coordinator {
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
-    pub async fn start<T>(
-        hardware: T,
+    pub async fn start(
+        ncp: NcpHandle,
+        events: Receiver<Event>,
         storage: Sender<storage::Message>,
         endpoints: &[SimpleDescriptor],
-    ) -> Result<Self, Error>
-    where
-        T: Start,
-    {
-        let (ncp, events) = hardware.start(endpoints).await?;
-
+    ) -> Result<Self, Error> {
         let (discovery_tx, discovery_rx) = channel(MPSC_CHANNEL_SIZE);
         let network_manager = network_manager::Actor::spawn(ncp.clone(), storage);
 
@@ -66,34 +63,22 @@ impl Coordinator {
 }
 
 impl zcl::Handle for Coordinator {
-    async fn unicast(
+    async fn transmit(
         &self,
-        short_id: u16,
-        endpoint: Application,
-        payload: Payload<Cluster>,
+        destination: Destination,
+        payload: Datagram,
     ) -> Result<(), crate::Error> {
-        self.zcl.unicast(short_id, endpoint, payload).await
+        self.zcl.transmit(destination, payload).await
     }
 
-    async fn multicast(
+    async fn communicate<T>(
         &self,
-        group_id: u16,
-        hops: u8,
-        radius: u8,
-        payload: Payload<Cluster>,
-    ) -> Result<(), crate::Error> {
-        self.zcl.multicast(group_id, hops, radius, payload).await
-    }
-
-    fn communicate<T>(
-        &self,
-        short_id: u16,
-        endpoint: Application,
-        payload: Payload<T>,
-    ) -> impl Future<Output = Result<T::Response, crate::Error>> + Send
+        destination: Device,
+        payload: T,
+    ) -> Result<T::Response, crate::Error>
     where
-        T: ExpectResponse<Cluster>,
+        T: ExpectResponse<Cluster> + Into<Datagram>,
     {
-        self.zcl.communicate(short_id, endpoint, payload)
+        self.zcl.communicate(destination, payload).await
     }
 }
