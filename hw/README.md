@@ -3,7 +3,7 @@
 Hardware abstraction traits and data types for Zigbee network co-processor (NCP) drivers.
 
 This crate separates coordinator logic from concrete hardware backends. A backend implements the
-implementor API (`Backend`, `Initialize`, `Driver`, and `EventTranslator`) and the startup API
+implementor API (`Backend`, `Driver`, and `EventTranslator`) and the startup API
 (`Builder`); coordinator code receives an `NcpHandle` and uses the `Ncp` trait to send commands to
 the driver actor.
 
@@ -16,7 +16,7 @@ No default features are enabled. Pick the feature that matches the role of the c
 | --- | --- | --- |
 | `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
 | `driver-use` | Code that starts an existing hardware backend but does not implement one. | `Builder`, `StartedHardware`, `NcpHandle`, `WeakNcpHandle`, `Error`, and `RouteError`. |
-| `driver` | Hardware backend crates. | Everything from `driver-use`, plus `Backend`, `Driver`, `EventTranslator`, `Initialize`, `bridge`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+| `driver` | Hardware backend crates. | Everything from `driver-use`, plus `Backend`, `Driver`, `EventTranslator`, `bridge`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
 
 `driver` includes `driver-use`, so backend crates usually enable only `driver`. Application crates
 that only need to construct a backend should enable `driver-use`, while coordinator crates should
@@ -83,9 +83,6 @@ tokio::spawn(started.translator);
 also needs to name or inspect event payload types directly, enable `coordinator` or `driver` as well
 so `Event` and its related data types are re-exported at the crate root.
 
-If you need to name implementor traits such as `Initialize` in generic bounds, enable `driver`
-instead of `driver-use`; those traits are intentionally part of the implementor-facing API.
-
 ### Implementing a Driver
 
 Enable `driver` in hardware backend crates. It includes the startup API and exposes the traits used
@@ -100,7 +97,8 @@ Driver crates typically implement:
 
 - `Backend` for the backend's associated hardware event, translator message, and translator type.
 - `Builder` to construct a configured backend from coordinator endpoint descriptors.
-- `Initialize` to start the command actor and return an `NcpHandle`.
+- `Builder::init` to start the command actor and return an `NcpHandle` together with the translated
+  event receiver.
 - `Driver` on the NCP command actor.
 - `EventTranslator` to convert backend events into common `Event` values.
 
@@ -134,10 +132,6 @@ crate-level event model.
 `StartedHardware` contains the `NcpHandle`, the translated event stream, and the futures that drive
 the bridge and event translator tasks. Backend-specific startup state remains internal to the
 `Builder` implementation.
-
-### `Initialize`
-
-`Initialize` starts the command side of a backend and returns an `NcpHandle`.
 
 ### `Driver`
 

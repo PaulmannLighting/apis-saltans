@@ -10,15 +10,16 @@ channels owned by each message.
 - The `driver-use` feature exposes `NcpHandle`, `Builder`, and `StartedHardware` for code that
   starts and uses an existing hardware backend. It also exposes `Error`, `RouteError`, and
   `WeakNcpHandle` because startup code needs the command handle and common error surface.
-- The `driver` feature includes `driver-use` and additionally exposes `Backend`, `Initialize`,
-  `Driver`, `EventTranslator`, `bridge`, driver-side data types, and protocol crate re-export
-  modules for hardware backend implementations.
+- The `driver` feature includes `driver-use` and additionally exposes `Backend`, `Driver`,
+  `EventTranslator`, `bridge`, driver-side data types, and protocol crate re-export modules for
+  hardware backend implementations.
 - The `coordinator` feature exposes `Ncp`, `NcpHandle`, `WeakNcpHandle`, common error types, and
   coordinator-side data/event types for coordinator code.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
 - `Builder` creates a configured backend from the coordinator endpoint descriptors and prepares
   support tasks.
-- `Initialize` starts the command side of a backend and returns an `NcpHandle`.
+- `Builder::init` starts the command side of a backend and returns an `NcpHandle` together with the
+  translated event receiver.
 - `Driver` is the implementor-facing NCP command API.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
 - `EventTranslator` converts backend-specific event messages into common `Event` values.
@@ -41,7 +42,6 @@ channels owned by each message.
 | `Event` | `driver` or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
 | `EventTranslator` | `driver` | `driver/event_translator.rs` | Converts backend event messages into `Event` values. |
 | `FoundNetwork` | `driver` or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
-| `Initialize` | `driver` | `driver/initialize.rs` | Starts the command side of a backend. |
 | `Metadata` | `driver` or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
 | `Ncp` | `coordinator` | `coordinator.rs` | Caller-side API implemented for `NcpHandle`. |
 | `NcpHandle` | `driver-use`, `driver`, or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
@@ -79,11 +79,6 @@ classDiagram
         <<trait>>
         +new()
         +start()
-    }
-
-    class Initialize {
-        <<trait>>
-        +init()
     }
 
     class Driver {
@@ -146,12 +141,11 @@ classDiagram
 
     Builder ..|> Backend : requires
     Builder --> StartedHardware : returns
-    Builder --> Initialize : starts
+    Builder --> NcpHandle : init returns
     Builder --> EventTranslator : creates translator
     StartedHardware --> NcpHandle : contains
     StartedHardware --> Event : receives
     Event --> FullAddress : device membership
-    Initialize --> NcpHandle : returns
     EventTranslator --> Event : emits
     Driver ..> SealedDriver : run/spawn delegate
     SealedDriver --> Message : receives
@@ -178,8 +172,8 @@ sequenceDiagram
     C->>B: new(endpoints);
     C->>B: start(hw_events);
     B->>T: create translator future;
-    B->>D: init();
-    D-->>B: NcpHandle;
+    B->>B: init(events);
+    B-->>B: NcpHandle and events;
     B-->>C: StartedHardware;
     C->>S: poll bridge and translator futures;
 ```
