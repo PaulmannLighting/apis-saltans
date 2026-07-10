@@ -7,9 +7,9 @@ channels owned by each message.
 
 ## Boundaries
 
-- The `driver-use` feature exposes `NcpHandle`, `Builder`, and `StartedHardware` for code that
-  starts and uses an existing hardware backend. It also exposes `Error`, `RouteError`, and
-  `WeakNcpHandle` because startup code needs the command handle and common error surface.
+- The `driver-use` feature exposes `NcpHandle`, `Builder`, and `Futures` for code that starts and
+  uses an existing hardware backend. It also exposes `Error`, `RouteError`, and `WeakNcpHandle`
+  because startup code needs the command handle and common error surface.
 - The `driver` feature includes `driver-use` and additionally exposes `Backend`, `Driver`,
   `EventTranslator`, `bridge`, driver-side data types, and protocol crate re-export modules for
   hardware backend implementations.
@@ -47,7 +47,7 @@ channels owned by each message.
 | `NcpHandle` | `driver-use`, `driver`, or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
 | `Network` | `driver` or `coordinator` | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
 | `RouteError` | `driver-use`, `driver`, or `coordinator` | `common/event/route_error.rs` | Route error payload used in translated hardware events. |
-| `StartedHardware` | `driver-use` | `driver_use.rs` | Started hardware support tasks and public handles. |
+| `Futures` | `driver-use` | `driver_use.rs` | Runtime futures for starting and driving a hardware backend. |
 | `ScannedChannel` | `driver` or `coordinator` | `common/message/scanned_channel.rs` | Channel scan result. |
 | `WeakNcpHandle` | `driver-use`, `driver`, or `coordinator` | `common/message.rs` | Weak sender handle for components that should not keep the actor alive. |
 | `aps` | `driver` | `reexports.rs` | Re-export of `zb-aps` for driver crates. |
@@ -128,7 +128,7 @@ classDiagram
         +run()
     }
 
-    class StartedHardware
+    class Futures
     class Message
     class Event
     class FullAddress
@@ -140,11 +140,11 @@ classDiagram
     class Error
 
     Builder ..|> Backend : requires
-    Builder --> StartedHardware : returns
+    Builder --> Futures : returns
     Builder --> NcpHandle : init returns
     Builder --> EventTranslator : creates translator
-    StartedHardware --> NcpHandle : contains
-    StartedHardware --> Event : receives
+    Futures --> NcpHandle : ncp future returns
+    Futures --> Event : ncp future returns
     Event --> FullAddress : device membership
     EventTranslator --> Event : emits
     Driver ..> SealedDriver : run/spawn delegate
@@ -165,7 +165,7 @@ classDiagram
 sequenceDiagram
     participant C as Coordinator;
     participant B as Builder;
-    participant S as StartedHardware;
+    participant F as Futures;
     participant T as EventTranslator;
     participant D as Driver;
 
@@ -174,8 +174,9 @@ sequenceDiagram
     B->>T: create translator future;
     B->>B: init(events);
     B-->>B: NcpHandle and events;
-    B-->>C: StartedHardware;
-    C->>S: poll bridge and translator futures;
+    B-->>C: Futures;
+    C->>F: spawn dependencies;
+    C->>F: spawn or await ncp;
 ```
 
 ## Actor Command Flow

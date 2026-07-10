@@ -15,7 +15,7 @@ No default features are enabled. Pick the feature that matches the role of the c
 | Feature | Intended user | Public API |
 | --- | --- | --- |
 | `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
-| `driver-use` | Code that starts an existing hardware backend but does not implement one. | `Builder`, `StartedHardware`, `NcpHandle`, `WeakNcpHandle`, `Error`, and `RouteError`. |
+| `driver-use` | Code that starts an existing hardware backend but does not implement one. | `Builder`, `Futures`, `NcpHandle`, `WeakNcpHandle`, `Error`, and `RouteError`. |
 | `driver` | Hardware backend crates. | Everything from `driver-use`, plus `Backend`, `Driver`, `EventTranslator`, `bridge`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
 
 `driver` includes `driver-use`, so backend crates usually enable only `driver`. Application crates
@@ -59,29 +59,31 @@ apis-saltans-hw = { version = "0.7", features = ["driver-use"] }
 ```
 
 A backend that implements `Builder` can be started from its hardware event stream. The returned
-`StartedHardware` contains:
+`Futures` value contains:
 
-- `ncp`: the command handle passed to coordinator code.
-- `events`: translated hardware events consumed by coordinator code.
-- `bridge`: a future that forwards raw hardware events into the backend translator.
-- `translator`: a future that emits crate-level `Event` values.
+- `dependencies`: futures that drive the hardware event bridge and event translator.
+- `ncp`: a future that initializes the command actor and returns the `NcpHandle` plus translated
+  event receiver.
 
-The `bridge` and `translator` futures must be polled, usually by spawning them on the runtime:
+All dependency futures must be spawned, or otherwise polled, before spawning or awaiting `ncp`.
+Starting `ncp` first can leave backend initialization waiting for event infrastructure that is not
+running yet.
 
 ```rust,ignore
 use apis_saltans_hw::Builder;
 
-let started = MyBackend::new(endpoints)?.start(hw_events).await?;
-let ncp = started.ncp.clone();
-let events = started.events;
+let futures = MyBackend::new(endpoints)?.start(hw_events)?;
 
-tokio::spawn(started.bridge);
-tokio::spawn(started.translator);
+for dependency in futures.dependencies {
+    tokio::spawn(dependency);
+}
+
+let (ncp, events) = futures.ncp.await?;
 ```
 
-`StartedHardware::events` is intended to be passed to coordinator startup code. If integration code
-also needs to name or inspect event payload types directly, enable `coordinator` or `driver` as well
-so `Event` and its related data types are re-exported at the crate root.
+The returned `events` receiver is intended to be passed to coordinator startup code. If integration
+code also needs to name or inspect event payload types directly, enable `coordinator` or `driver` as
+well so `Event` and its related data types are re-exported at the crate root.
 
 ### Implementing a Driver
 
@@ -127,11 +129,11 @@ and starts it from a hardware event stream. It relies on the associated types fr
 creating the bridge and event translator futures that connect hardware-specific events to the
 crate-level event model.
 
-### `StartedHardware`
+### `Futures`
 
-`StartedHardware` contains the `NcpHandle`, the translated event stream, and the futures that drive
-the bridge and event translator tasks. Backend-specific startup state remains internal to the
-`Builder` implementation.
+`Futures` contains the initialization future and the dependency futures that drive the bridge and
+event translator tasks. Spawn or otherwise poll all dependency futures before spawning or awaiting
+the `ncp` future. Backend-specific startup state remains internal to the `Builder` implementation.
 
 ### `Driver`
 

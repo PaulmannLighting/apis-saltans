@@ -2,7 +2,7 @@
 
 use std::pin::Pin;
 
-use tokio::sync::mpsc::{Receiver, channel};
+use tokio::sync::mpsc::{Receiver, Sender, channel};
 use zb_zdp::SimpleDescriptor;
 
 use crate::common::Event;
@@ -30,32 +30,47 @@ pub trait Builder: Backend + Sized {
     /// # Errors
     ///
     /// Returns an error if backend initialization fails.
-    fn init(self, events: Receiver<Event>) -> impl Future<Output = InitResult> + Send + 'static;
+    fn init(
+        self,
+        events: Receiver<Event>,
+        messages: Sender<Self::Message>,
+    ) -> impl Future<Output = InitResult> + Send + 'static;
 
-    /// Start the backend and prepare the support futures used to drive hardware events.
+    /// Start the backend and prepare the futures needed to run it.
     ///
-    /// The returned [`Futures`] contains the command handle, translated event receiver, and
-    /// futures that must be polled by the caller to keep the hardware event path running.
+    /// The returned [`Futures`] separates the backend initialization future from the dependency
+    /// futures that feed it translated events. Spawn or otherwise poll every dependency future
+    /// before spawning or awaiting [`Futures::ncp`].
     ///
     /// # Errors
     ///
-    /// Returns an error if backend initialization fails.
+    /// Returns an error if the runtime futures cannot be prepared.
     fn start(self, hw_events: Receiver<Self::HardwareEvent>) -> Result<Futures, Error> {
         let (msg_tx, msg_rx) = channel(hw_events.capacity());
         let (lib_events_tx, events) = channel(hw_events.capacity());
-        let br = bridge(hw_events, msg_tx);
+        let br = bridge(hw_events, msg_tx.clone());
         let event_translator = Self::EventTranslator::new(lib_events_tx).run(msg_rx);
-        let ncp: InitFuture = Box::pin(self.init(events));
+        let ncp: InitFuture = Box::pin(self.init(events, msg_tx));
         let dependencies: Vec<BoxedFuture<()>> = vec![Box::pin(br), Box::pin(event_translator)];
         Ok(Futures { ncp, dependencies })
     }
 }
 
-/// Running hardware support tasks and public handles.
+/// Futures required to run a configured hardware backend.
+///
+/// The dependency futures drive the event path into the backend initialization future. Callers must
+/// spawn or otherwise poll all [`Self::dependencies`] before spawning or awaiting [`Self::ncp`].
+/// Starting `ncp` first can leave backend initialization waiting for event infrastructure that is
+/// not running yet.
 pub struct Futures {
     /// Future that initializes the command actor and returns the public NCP handle and event stream.
+    ///
+    /// Spawn or await this only after all [`Self::dependencies`] are already being polled.
     pub ncp: InitFuture,
 
-    /// Futures that must be polled to keep backend event processing running.
+    /// Futures that must be polled before [`Self::ncp`] starts.
+    ///
+    /// These futures keep backend event processing running, including the bridge from raw hardware
+    /// events into translator messages and the translator that emits crate-level events.
     pub dependencies: Vec<BoxedFuture<()>>,
 }
