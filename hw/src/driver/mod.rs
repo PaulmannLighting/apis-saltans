@@ -1,8 +1,7 @@
-#![cfg(feature = "driver-use")]
+#![cfg(feature = "driver")]
 
 //! Implementor-facing traits and helpers for Zigbee NCP driver backends.
 
-#[cfg(feature = "driver")]
 pub use driver::Driver;
 
 pub use self::backend::Backend;

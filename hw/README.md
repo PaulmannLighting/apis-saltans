@@ -58,25 +58,26 @@ This is the feature for integration code that wires a hardware crate into the co
 apis-saltans-hw = { version = "0.7", features = ["driver-use"] }
 ```
 
-A backend that implements `Builder` can be started from its hardware event stream. The returned
-`Futures` value contains:
+A backend that implements `Builder` can prepare its runtime futures from the coordinator endpoint
+descriptors and an internal channel buffer size. The returned `Futures` value contains:
 
-- `dependencies`: futures that drive the hardware event bridge and event translator.
+- `event_translator`: a future that converts backend-specific messages into crate-level events.
 - `driver`: a future that initializes the backend driver and returns it plus the translated
   event receiver.
 
-All dependency futures must be spawned, or otherwise polled, before spawning or awaiting `driver`.
-Starting `driver` first can leave backend initialization waiting for event infrastructure that is
-not running yet.
+The event translator must be spawned, or otherwise polled, before spawning or awaiting `driver`.
+Starting `driver` first can leave backend initialization waiting for event infrastructure that is not
+running yet.
 
 ```rust,ignore
 use apis_saltans_hw::Builder;
 
-let futures = MyBackend::new(endpoints)?.start(hw_events)?;
+const HARDWARE_EVENT_BUFFER: usize = 64;
 
-for dependency in futures.dependencies {
-    tokio::spawn(dependency);
-}
+let backend = MyBackend::new(/* backend-specific configuration */)?;
+let futures = backend.start(endpoints, HARDWARE_EVENT_BUFFER)?;
+
+tokio::spawn(futures.event_translator);
 
 let (driver, events) = futures.driver.await?;
 ```
@@ -98,9 +99,9 @@ apis-saltans-hw = { version = "0.7", features = ["driver"] }
 Driver crates typically implement:
 
 - `Backend` for the backend's associated hardware event, translator message, and translator type.
-- `Builder` to construct a configured backend from coordinator endpoint descriptors.
-- `Builder::init` to start the backend and return its driver together with the translated event
-  receiver.
+- `Builder` to prepare runtime futures from a configured backend.
+- `Builder::init` to start the backend with the coordinator endpoint descriptors and return its
+  driver together with the translated event receiver.
 - `Driver` on the NCP command actor.
 - `EventTranslator` to convert backend events into common `Event` values.
 
@@ -124,17 +125,18 @@ of adding direct dependencies on every protocol crate.
 
 ### `Builder`
 
-`Builder` constructs a configured backend from the endpoint descriptors exposed by the coordinator
-and starts it from a hardware event stream. It relies on the associated types from `Backend` when
-creating the bridge and event translator futures that connect hardware-specific events to the
+`Builder` starts an already configured backend from coordinator endpoint descriptors and a channel
+buffer size. Endpoint descriptors are passed into `start` and forwarded to `init`; implementations
+can use them during startup without storing them in the builder. The buffer controls the event
+translator input and output channel capacity. The trait relies on the associated types from
+`Backend` when creating the event translator future that connects hardware-specific messages to the
 crate-level event model.
 
 ### `Futures`
 
-`Futures` contains the initialization future and the dependency futures that drive the bridge and
-event translator tasks. Spawn or otherwise poll all dependency futures before spawning or awaiting
-the `driver` future. Backend-specific startup state remains internal to the `Builder`
-implementation.
+`Futures` contains the driver initialization future and the event translator future. Spawn or
+otherwise poll `event_translator` before spawning or awaiting the `driver` future. Backend-specific
+startup state remains internal to the `Builder` implementation.
 
 ### `Driver`
 

@@ -16,10 +16,11 @@ channels owned by each message.
 - The `coordinator` feature exposes `Ncp`, `NcpHandle`, `WeakNcpHandle`, common error types, and
   coordinator-side data/event types for coordinator code.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
-- `Builder` creates a configured backend from the coordinator endpoint descriptors and prepares
-  support tasks.
-- `Builder::init` starts the backend and returns its driver together with the translated event
-  receiver.
+- `Builder` prepares support tasks for an already configured backend. Coordinator endpoint
+  descriptors and a channel buffer size are passed to `Builder::start`; the descriptors are
+  forwarded to `Builder::init` and do not need to be stored in the builder.
+- `Builder::init` starts the backend with the coordinator endpoint descriptors and returns its
+  driver together with the translated event receiver.
 - `Driver` is the implementor-facing NCP command API.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
 - `EventTranslator` converts backend-specific event messages into common `Event` values.
@@ -35,7 +36,7 @@ channels owned by each message.
 | --- | --- | --- | --- |
 | `Backend` | `driver` | `driver/backend.rs` | Defines backend-specific event and translator types. |
 | `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
-| `Builder` | `driver-use` | `driver_use.rs` | Constructs and starts a configured hardware backend. |
+| `Builder` | `driver-use` | `driver_use.rs` | Prepares runtime futures for a configured hardware backend. |
 | `Datagram` | `driver` or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
 | `Driver` | `driver` | `driver/driver.rs` | Driver-side command API implemented by hardware backends. |
 | `Error` | `driver-use`, `driver`, or `coordinator` | `common/error.rs` | Common crate error type. `driver` receives this through `driver-use`. |
@@ -77,7 +78,6 @@ classDiagram
 
     class Builder {
         <<trait>>
-        +new()
         +start()
     }
 
@@ -169,13 +169,13 @@ sequenceDiagram
     participant T as EventTranslator;
     participant D as Driver;
 
-    C->>B: new(endpoints);
-    C->>B: start(hw_events);
+    C->>B: construct backend;
+    C->>B: start(endpoints, buffer);
     B->>T: create translator future;
-    B->>B: init(events);
+    B->>B: init(endpoints, events);
     B-->>B: driver and events;
     B-->>C: Futures;
-    C->>F: spawn dependencies;
+    C->>F: spawn event_translator;
     C->>F: spawn or await driver;
 ```
 

@@ -3,9 +3,7 @@ use std::time::Duration;
 use tokio::sync::oneshot::Sender;
 use zb_core::{Destination, IeeeAddress};
 
-pub use self::found_network::FoundNetwork;
-#[cfg(any(feature = "coordinator", feature = "driver"))]
-pub use self::found_network::Network;
+pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
 use crate::common::{Datagram, Error};
 

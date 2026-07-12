@@ -28,16 +28,13 @@ coordinator = [
     "dep:bytes",
     "dep:tokio",
 ]
-driver-use = [
+driver = [
     "dep:zb-aps",
     "dep:zb-core",
     "dep:zb-nwk",
     "dep:zb-zdp",
     "dep:bytes",
     "dep:tokio"
-]
-driver = [
-    "driver-use"
 ]
 
 [lints]
