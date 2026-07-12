@@ -3,9 +3,8 @@
 Hardware abstraction traits and data types for Zigbee network co-processor (NCP) drivers.
 
 This crate separates coordinator logic from concrete hardware backends. A backend implements the
-implementor API (`Backend`, `Driver`, and `EventTranslator`) and the startup API
-(`Builder`); coordinator code receives an `NcpHandle` and uses the `Ncp` trait to send commands to
-the driver actor.
+implementor API (`Backend`, `Driver`, and `EventTranslator`); coordinator code receives an
+`NcpHandle` and uses the `Ncp` trait to send commands to the driver actor.
 
 ## Features
 
@@ -15,12 +14,9 @@ No default features are enabled. Pick the feature that matches the role of the c
 | Feature | Intended user | Public API |
 | --- | --- | --- |
 | `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
-| `driver-use` | Code that starts an existing hardware backend but does not implement one. | `Builder`, `Futures`, `NcpHandle`, `WeakNcpHandle`, `Error`, and `RouteError`. |
-| `driver` | Hardware backend crates. | Everything from `driver-use`, plus `Backend`, `Driver`, `EventTranslator`, `bridge`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+| `driver` | Hardware backend crates. | `Backend`, `Driver`, `EventTranslator`, `bridge`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
 
-`driver` includes `driver-use`, so backend crates usually enable only `driver`. Application crates
-that only need to construct a backend should enable `driver-use`, while coordinator crates should
-enable `coordinator`.
+Backend crates should enable `driver`. Coordinator crates should enable `coordinator`.
 
 ### Using the Coordinator API
 
@@ -48,48 +44,10 @@ Use this feature for command-side operations such as reading the coordinator IEE
 networks, allowing joins, resolving addresses, requesting routes, and transmitting serialized
 `Datagram` values to `zb_core::Destination` targets.
 
-### Starting an Existing Driver
-
-Enable `driver-use` when your code owns a concrete backend type and needs to configure and start it.
-This is the feature for integration code that wires a hardware crate into the coordinator runtime.
-
-```toml
-[dependencies]
-apis-saltans-hw = { version = "0.7", features = ["driver-use"] }
-```
-
-A backend that implements `Builder` can prepare its runtime futures from the coordinator endpoint
-descriptors and an internal channel buffer size. The returned `Futures` value contains:
-
-- `event_translator`: a future that converts backend-specific messages into crate-level events.
-- `driver`: a future that initializes the backend driver and returns it plus the translated
-  event receiver.
-
-The event translator must be spawned, or otherwise polled, before spawning or awaiting `driver`.
-Starting `driver` first can leave backend initialization waiting for event infrastructure that is not
-running yet.
-
-```rust,ignore
-use apis_saltans_hw::Builder;
-
-const HARDWARE_EVENT_BUFFER: usize = 64;
-
-let backend = MyBackend::new(/* backend-specific configuration */)?;
-let futures = backend.start(endpoints, HARDWARE_EVENT_BUFFER)?;
-
-tokio::spawn(futures.event_translator);
-
-let (driver, events) = futures.driver.await?;
-```
-
-The returned `events` receiver is intended to be passed to coordinator startup code. If integration
-code also needs to name or inspect event payload types directly, enable `coordinator` or `driver` as
-well so `Event` and its related data types are re-exported at the crate root.
-
 ### Implementing a Driver
 
-Enable `driver` in hardware backend crates. It includes the startup API and exposes the traits used
-to implement a backend:
+Enable `driver` in hardware backend crates. It exposes the traits and common data types used to
+implement a backend:
 
 ```toml
 [dependencies]
@@ -99,11 +57,12 @@ apis-saltans-hw = { version = "0.7", features = ["driver"] }
 Driver crates typically implement:
 
 - `Backend` for the backend's associated hardware event, translator message, and translator type.
-- `Builder` to prepare runtime futures from a configured backend.
-- `Builder::init` to start the backend with the coordinator endpoint descriptors and return its
-  driver together with the translated event receiver.
 - `Driver` on the NCP command actor.
 - `EventTranslator` to convert backend events into common `Event` values.
+
+Backend startup is owned by the backend crate. It should initialize the concrete driver, run the
+event translator, and pass the resulting `NcpHandle` plus translated `Event` receiver to coordinator
+startup code.
 
 The `driver` feature also exposes protocol crate re-export modules:
 
@@ -122,21 +81,6 @@ of adding direct dependencies on every protocol crate.
 
 `Backend` defines the hardware-specific event type, the translator input message type, and the
 `EventTranslator` implementation used by the backend.
-
-### `Builder`
-
-`Builder` starts an already configured backend from coordinator endpoint descriptors and a channel
-buffer size. Endpoint descriptors are passed into `start` and forwarded to `init`; implementations
-can use them during startup without storing them in the builder. The buffer controls the event
-translator input and output channel capacity. The trait relies on the associated types from
-`Backend` when creating the event translator future that connects hardware-specific messages to the
-crate-level event model.
-
-### `Futures`
-
-`Futures` contains the driver initialization future and the event translator future. Spawn or
-otherwise poll `event_translator` before spawning or awaiting the `driver` future. Backend-specific
-startup state remains internal to the `Builder` implementation.
 
 ### `Driver`
 

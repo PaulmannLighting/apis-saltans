@@ -13,7 +13,9 @@ This document explains how the coordinator is implemented internally, with a foc
 - subsystems communicate via `tokio::sync::mpsc` and `oneshot`
 - long-running or per-device work is offloaded to bounded task pools (`tokio-task-pool`)
 
-At startup, `Coordinator::start(...)` wires the full graph and returns a lightweight API handle containing key senders and the NCP handle.
+At startup, `Coordinator::start(...)` receives a running hardware `NcpHandle`, a hardware event
+receiver, a storage actor sender, and local endpoint descriptors. It wires the full graph and
+returns a lightweight API handle containing key senders and the NCP handle.
 
 ## Actor Topology
 
@@ -73,8 +75,8 @@ flowchart TD
 ## Startup and Wiring
 
 `Coordinator::start(...)` performs these steps:
-1. Starts hardware via `Start::start(...)` and receives `(NcpHandle, Receiver<Event>)`.
-2. Starts `NetworkManager` with initial persistent `State`.
+1. Receives the already running hardware `NcpHandle` and translated hardware event receiver.
+2. Starts `NetworkManager` with the provided storage actor sender.
 3. Starts `ZCL` and `ZDP` transceivers.
 4. Starts `Binding` actor with weak links to `ZDP` and `NetworkManager`, and a weak `NCP` handle.
 5. Starts `Discovery` with weak links to `ZCL` and `ZDP`, and a strong sender to `Binding`.

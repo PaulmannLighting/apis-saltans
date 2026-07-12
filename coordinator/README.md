@@ -39,16 +39,24 @@ Public API exports:
 
 `Coordinator` is started with:
 
-- a hardware backend implementing `zb_hw::Start`
+- an `NcpHandle` for a running hardware driver actor
+- a receiver for translated hardware `Event` values
+- a storage actor sender
 - the local endpoint descriptors to expose on the coordinator
 
 ```rust,no_run
 use apis_saltans_coordinator::Coordinator;
+use tokio::sync::mpsc::Sender;
+use zb_hw::{Event, NcpHandle};
 use zb_zdp::SimpleDescriptor;
 
-async fn init<T: zb_hw::Start>(hardware: T) -> Result<Coordinator, zb_hw::Error> {
+async fn init(
+    ncp: NcpHandle,
+    events: tokio::sync::mpsc::Receiver<Event>,
+    storage: Sender<apis_saltans_coordinator::storage::Message>,
+) -> Result<Coordinator, zb_hw::Error> {
     let endpoints: &[SimpleDescriptor] = &[/* your endpoint descriptors here */];
-    Coordinator::start(hardware, endpoints).await
+    Coordinator::start(ncp, events, storage, endpoints).await
 }
 ```
 

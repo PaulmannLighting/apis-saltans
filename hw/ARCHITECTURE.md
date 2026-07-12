@@ -7,20 +7,12 @@ channels owned by each message.
 
 ## Boundaries
 
-- The `driver-use` feature exposes `NcpHandle`, `Builder`, and `Futures` for code that starts and
-  uses an existing hardware backend. It also exposes `Error`, `RouteError`, and `WeakNcpHandle`
-  because startup code needs the command handle and common error surface.
-- The `driver` feature includes `driver-use` and additionally exposes `Backend`, `Driver`,
-  `EventTranslator`, `bridge`, driver-side data types, and protocol crate re-export modules for
-  hardware backend implementations.
+- The `driver` feature exposes `Backend`, `Driver`, `EventTranslator`, `bridge`, shared
+  coordinator/driver data types, command handles, common error types, and protocol crate re-export
+  modules for hardware backend implementations.
 - The `coordinator` feature exposes `Ncp`, `NcpHandle`, `WeakNcpHandle`, common error types, and
   coordinator-side data/event types for coordinator code.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
-- `Builder` prepares support tasks for an already configured backend. Coordinator endpoint
-  descriptors and a channel buffer size are passed to `Builder::start`; the descriptors are
-  forwarded to `Builder::init` and do not need to be stored in the builder.
-- `Builder::init` starts the backend with the coordinator endpoint descriptors and returns its
-  driver together with the translated event receiver.
 - `Driver` is the implementor-facing NCP command API.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
 - `EventTranslator` converts backend-specific event messages into common `Event` values.
@@ -28,7 +20,7 @@ channels owned by each message.
 - `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel` are exported by
   `coordinator` and `driver`.
 - `Error`, `RouteError`, `NcpHandle`, and `WeakNcpHandle` are exported by `coordinator` and
-  `driver-use`; because `driver` includes `driver-use`, driver crates receive them too.
+  `driver`.
 
 ## Public Re-Exports
 
@@ -36,21 +28,19 @@ channels owned by each message.
 | --- | --- | --- | --- |
 | `Backend` | `driver` | `driver/backend.rs` | Defines backend-specific event and translator types. |
 | `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
-| `Builder` | `driver-use` | `driver_use.rs` | Prepares runtime futures for a configured hardware backend. |
 | `Datagram` | `driver` or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
 | `Driver` | `driver` | `driver/driver.rs` | Driver-side command API implemented by hardware backends. |
-| `Error` | `driver-use`, `driver`, or `coordinator` | `common/error.rs` | Common crate error type. `driver` receives this through `driver-use`. |
+| `Error` | `driver` or `coordinator` | `common/error.rs` | Common crate error type. |
 | `Event` | `driver` or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
 | `EventTranslator` | `driver` | `driver/event_translator.rs` | Converts backend event messages into `Event` values. |
 | `FoundNetwork` | `driver` or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
 | `Metadata` | `driver` or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
 | `Ncp` | `coordinator` | `coordinator.rs` | Caller-side API implemented for `NcpHandle`. |
-| `NcpHandle` | `driver-use`, `driver`, or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
+| `NcpHandle` | `driver` or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
 | `Network` | `driver` or `coordinator` | `common/message/found_network/network.rs` | Basic network information discovered during scans. |
-| `RouteError` | `driver-use`, `driver`, or `coordinator` | `common/event/route_error.rs` | Route error payload used in translated hardware events. |
-| `Futures` | `driver-use` | `driver_use.rs` | Runtime futures for starting and driving a hardware backend. |
+| `RouteError` | `driver` or `coordinator` | `common/event/route_error.rs` | Route error payload used in translated hardware events. |
 | `ScannedChannel` | `driver` or `coordinator` | `common/message/scanned_channel.rs` | Channel scan result. |
-| `WeakNcpHandle` | `driver-use`, `driver`, or `coordinator` | `common/message.rs` | Weak sender handle for components that should not keep the actor alive. |
+| `WeakNcpHandle` | `driver` or `coordinator` | `common/message.rs` | Weak sender handle for components that should not keep the actor alive. |
 | `aps` | `driver` | `reexports.rs` | Re-export of `zb-aps` for driver crates. |
 | `core` | `driver` | `reexports.rs` | Re-export of `zb-core` for driver crates. |
 | `nwk` | `driver` | `reexports.rs` | Re-export of `zb-nwk` for driver crates. |
@@ -74,11 +64,6 @@ classDiagram
         type HardwareEvent
         type Message
         type EventTranslator
-    }
-
-    class Builder {
-        <<trait>>
-        +start()
     }
 
     class Driver {
@@ -128,7 +113,6 @@ classDiagram
         +run()
     }
 
-    class Futures
     class Message
     class Event
     class FullAddress
@@ -139,12 +123,8 @@ classDiagram
     class ScannedChannel
     class Error
 
-    Builder ..|> Backend : requires
-    Builder --> Futures : returns
-    Builder --> Driver : init returns
-    Builder --> EventTranslator : creates translator
-    Futures --> Driver : driver future returns
-    Futures --> Event : driver future returns
+    Backend --> Driver : associated type
+    Backend --> EventTranslator : associated type
     Event --> FullAddress : device membership
     EventTranslator --> Event : emits
     Driver ..> SealedDriver : run/spawn delegate
@@ -159,25 +139,25 @@ classDiagram
     FoundNetwork --> Network : contains
 ```
 
-## Startup Flow
+## Driver Runtime Flow
 
 ```mermaid
 sequenceDiagram
-    participant C as Coordinator;
-    participant B as Builder;
-    participant F as Futures;
+    participant I as Integration;
     participant T as EventTranslator;
     participant D as Driver;
+    participant H as NcpHandle;
 
-    C->>B: construct backend;
-    C->>B: start(endpoints, buffer);
-    B->>T: create translator future;
-    B->>B: init(endpoints, events);
-    B-->>B: driver and events;
-    B-->>C: Futures;
-    C->>F: spawn event_translator;
-    C->>F: spawn or await driver;
+    I->>D: construct concrete driver;
+    I->>T: construct translator with Event sender;
+    I->>D: run(channel_size);
+    D-->>I: NcpHandle and driver actor future;
+    I->>T: run(translator inbox);
+    I->>H: pass handle to coordinator startup;
 ```
+
+Backend crates own concrete startup and transport wiring. The `hw` crate supplies the common driver
+actor, event model, and translator traits, but does not define a separate startup feature.
 
 ## Actor Command Flow
 
@@ -211,8 +191,8 @@ has separate unicast, multicast, and broadcast actor messages.
 flowchart TD
     lib["lib.rs"] --> common["common.rs"]
     lib --> driver["driver/mod.rs"]
-    lib --> driver_use["driver_use.rs"]
     lib --> coordinator["coordinator.rs"]
+    lib --> reexports["reexports.rs"]
     common --> datagram["common/datagram.rs"]
     common --> error["common/error.rs"]
     common --> event["common/event.rs"]
@@ -225,7 +205,6 @@ flowchart TD
     driver --> bridge["driver/bridge.rs"]
     driver --> driver_impl["driver/driver.rs"]
     driver --> event_translator["driver/event_translator.rs"]
-    driver --> initialize["driver/initialize.rs"]
 ```
 
 ## Command Protocol
