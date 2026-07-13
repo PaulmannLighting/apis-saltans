@@ -58,6 +58,14 @@ impl From<Deciseconds> for Duration {
     }
 }
 
+impl TryFrom<u16> for Deciseconds {
+    type Error = u16;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        Self::new(Uint16::new(value)).ok_or(value)
+    }
+}
+
 impl TryFrom<Uint16> for Deciseconds {
     type Error = Uint16;
 
