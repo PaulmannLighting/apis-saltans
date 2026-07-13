@@ -12,7 +12,7 @@ const MILLIS_PER_DECISECOND: u64 = 100;
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    //serde(try_from = "Uint16", into = "Uint16")
+    serde(try_from = "Uint16", into = "Uint16")
 )]
 #[derive(
     Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash, FromLeStream, ToLeStream,
