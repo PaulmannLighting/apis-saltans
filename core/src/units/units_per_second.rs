@@ -10,6 +10,12 @@ use crate::types::Uint8;
 pub struct UnitsPerSecond(Uint8);
 
 impl UnitsPerSecond {
+    /// The minimum valid rate of zero units per second.
+    pub const MIN: Self = Self(Uint8::MIN);
+
+    /// The maximum valid rate, immediately below the reserved [`Uint8::NONE`] value.
+    pub const MAX: Self = Self(Uint8::MAX);
+
     /// Create a new units per second value.
     #[must_use]
     pub fn new(units_per_second: u8) -> Option<Self> {
