@@ -173,14 +173,15 @@ async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Err
 
 ### 4) Color Control Cluster Commands (`ColorControl`)
 
-High-level color control operation:
+High-level color control operations:
 
 - `move_to_xy`
+- `move_to_color_temperature`
 
 ```rust,no_run
 use zb_core::IeeeAddress;
 use zb_zcl::Options;
-use zb_core::{Application, units::Deciseconds};
+use zb_core::{Application, units::{Deciseconds, Mireds}};
 use apis_saltans_coordinator::{ColorControl, Destination};
 
 async fn set_xy(api: &impl ColorControl) -> Result<(), apis_saltans_coordinator::Error> {
@@ -193,7 +194,26 @@ async fn set_xy(api: &impl ColorControl) -> Result<(), apis_saltans_coordinator:
         destination,
         30_000,
         30_000,
-        Deciseconds::from(10),
+        Deciseconds::new(10).expect("valid transition time"),
+        Options::empty(),
+    )
+    .await
+}
+
+async fn set_color_temperature(
+    api: &impl ColorControl,
+) -> Result<(), apis_saltans_coordinator::Error> {
+    let ieee = IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7);
+    let destination = Destination::Endpoint {
+        ieee_address: ieee,
+        endpoint: Application::try_from(1).expect("valid endpoint"),
+    };
+    let color_temperature = Mireds::try_from(250).expect("valid color temperature");
+
+    api.move_to_color_temperature(
+        destination,
+        color_temperature,
+        Deciseconds::new(10).expect("valid transition time"),
         Options::empty(),
     )
     .await
