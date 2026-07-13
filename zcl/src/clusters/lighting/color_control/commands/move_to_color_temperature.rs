@@ -1,4 +1,5 @@
 use zb_core::types::Uint16;
+use zb_core::units::{Deciseconds, Mireds};
 use zb_core::{Cluster, Direction};
 
 use crate::Options;
@@ -16,17 +17,36 @@ zcl_command! {
             options: Options,
         }
 
+        constructor {
+            /// Create a new `MoveToColorTemperature` command.
+            #[must_use]
+            pub fn new(
+                mireds: Mireds,
+                transition_time: Deciseconds,
+                options: Options,
+            ) -> Self {
+                Self {
+                    mireds: mireds.into(),
+                    transition_time: transition_time.into(),
+                    options,
+                }
+            }
+        }
+
         getters {
             /// Return the color temperature in mireds.
-            #[must_use]
-            pub const fn mireds(&self) -> u16 {
-                self.mireds
+            ///
+            /// # Errors
+            ///
+            /// Returns the raw value if it is not a valid [`Mireds`] value.
+            pub fn mireds(&self) -> Result<Mireds, u16> {
+                self.mireds.try_into()
             }
 
             /// Return the transition time, if any, in deciseconds.
             #[must_use]
-            pub fn transition_time(&self) -> Option<u16> {
-                self.transition_time.into()
+            pub fn transition_time(&self) -> Option<Deciseconds> {
+                Deciseconds::new(self.transition_time)
             }
 
             /// Return the options for this command.
