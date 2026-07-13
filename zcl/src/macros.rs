@@ -2180,6 +2180,7 @@ macro_rules! zcl_attributes {
 
         $crate::macros::zcl_attributes! {
             @emit_types_enum
+            [$($manufacturer_code)?]
             [$($variants)*]
         }
 
@@ -2224,6 +2225,7 @@ macro_rules! zcl_attributes {
 
         $crate::macros::zcl_attributes! {
             @emit_types_enum
+            [$($manufacturer_code)?]
             [$($variants)*]
         }
 
@@ -2611,21 +2613,28 @@ macro_rules! zcl_attributes {
             $($variants)+
         }
     };
-    (@emit_types_enum []) => {
+    (@emit_types_enum [$($manufacturer_code:expr)?] []) => {
         /// ZCL wire types associated with reportable attributes.
         #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
         pub enum Types {}
 
-        impl Types {
-            /// Return the associated ZCL data type ID.
-            #[must_use]
-            pub const fn id(self) -> u8 {
-                match self { }
+        impl $crate::Reportable for Types {
+            $crate::macros::zcl_attributes! {
+                @manufacturer_code [$($manufacturer_code)?]
+            }
+
+            fn attribute_id(self) -> u16 {
+                match self {}
+            }
+
+            fn type_id(self) -> u8 {
+                match self {}
             }
         }
     };
     (
         @emit_types_enum
+        [$($manufacturer_code:expr)?]
         [
             $(
                 $(#[$variant_attr:meta])*
@@ -2643,11 +2652,23 @@ macro_rules! zcl_attributes {
             )+
         }
 
-        impl Types {
-            /// Return the associated ZCL data type ID.
+        impl $crate::Reportable for Types {
+            $crate::macros::zcl_attributes! {
+                @manufacturer_code [$($manufacturer_code)?]
+            }
+
             #[allow(unused_doc_comments)]
-            #[must_use]
-            pub const fn id(&self) -> u8 {
+            fn attribute_id(self) -> u16 {
+                match self {
+                    $(
+                        $(#[$variant_attr])*
+                        Self::$variant(_) => $id,
+                    )+
+                }
+            }
+
+            #[allow(unused_doc_comments)]
+            fn type_id(self) -> u8 {
                 match self {
                     $(
                         $(#[$variant_attr])*
@@ -2717,6 +2738,10 @@ mod zcl_attributes_macro_tests {
         );
         assert_eq!(<Reportable as Profiled>::PROFILE, Profile::TouchLink);
         assert_eq!(<Types as Profiled>::PROFILE, Profile::TouchLink);
+        assert_eq!(
+            <Types as crate::Reportable>::MANUFACTURER_CODE,
+            Some(0x1234)
+        );
         assert_eq!(<Scene as Profiled>::PROFILE, Profile::TouchLink);
 
         let _ = Id::ReadOnly;
@@ -2729,8 +2754,14 @@ mod zcl_attributes_macro_tests {
         let _ = Writable::Writable(Uint8::new(3));
         let _ = Writable::WriteOnly(Custom(Uint8::new(4)));
         let _ = Reportable::Writable(Uint8::new(5));
-        const TYPE_ID: u8 = Types::Writable(Type::Uint8(Uint8::new(5))).id();
-        assert_eq!(TYPE_ID, 0x20);
+        assert_eq!(
+            crate::Reportable::attribute_id(Types::Writable(Type::Uint8(Uint8::new(5)))),
+            0x0001
+        );
+        assert_eq!(
+            crate::Reportable::type_id(Types::Writable(Type::Uint8(Uint8::new(5)))),
+            0x20
+        );
         let _ = Scene::Writable(Uint8::new(6));
     }
 
@@ -2766,11 +2797,18 @@ mod zcl_attributes_macro_tests {
             {
             }
 
+            fn assert_reportable<T>()
+            where
+                T: crate::Reportable,
+            {
+            }
+
             assert_readable::<Id>();
             assert_writable::<Writable>();
             assert_cluster::<Readable>();
             assert_cluster::<Reportable>();
             assert_cluster::<Types>();
+            assert_reportable::<Types>();
             assert_cluster::<Scene>();
 
             assert_eq!(<Id as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
@@ -2787,6 +2825,7 @@ mod zcl_attributes_macro_tests {
                 Profile::ZigbeeHomeAutomation
             );
             assert_eq!(<Types as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
+            assert_eq!(<Types as crate::Reportable>::MANUFACTURER_CODE, None);
             assert_eq!(<Scene as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
 
             let _ = Id::ReadOnly;
@@ -2797,7 +2836,10 @@ mod zcl_attributes_macro_tests {
             let _ = Readable::AttributeReportingStatus(Uint8::new(0));
             let _ = Writable::Writable(Uint8::new(2));
             let _ = Reportable::Writable(Uint8::new(3));
-            assert_eq!(Types::Writable(Type::Uint8(Uint8::new(3))).id(), 0x20);
+            assert_eq!(
+                crate::Reportable::type_id(Types::Writable(Type::Uint8(Uint8::new(3)))),
+                0x20
+            );
             let _ = Scene::Writable(Uint8::new(4));
         }
     }

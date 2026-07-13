@@ -27,7 +27,7 @@ has protocol-specific invariants or parsing rules.
   - `attributes.rs` plus `attributes/` submodules for generated attribute enums and attribute value
     types.
   - Additional local domain types when the ZCL payload has stronger invariants than a raw core type.
-- `src/attributes.rs` defines the attribute traits and the crate-wide `Reportable` enum that can parse
+- `src/attributes.rs` defines the attribute traits and the crate-wide `AttributeReport` enum that can parse
   reportable attributes across implemented cluster attribute modules.
 - `src/status.rs` contains ZCL status values.
 - `src/options.rs` contains the shared ZCL command option mask type.
@@ -70,10 +70,11 @@ generates access-specific enums:
   the contained wire type's `u8` discriminant.
 - `Scene`: scene-storable attribute values.
 
-The generated `Id` enum implements the crate's `Readable` trait, and the generated `Writable` enum
-implements the crate's `Writable` trait. `Reportable` additionally implements
+The generated `Id` enum implements the crate's `Readable` trait, the generated `Writable` enum
+implements the crate's `Writable` trait, and `Types` implements the crate's `Reportable` trait.
+The generated `Reportable` value enum additionally implements
 `TryFrom<(u16, zb_core::types::Type)>`, which is used by the crate-wide
-`zb_zcl::Reportable::parse`.
+`zb_zcl::AttributeReport::parse`.
 
 Global readable attributes `ClusterRevision` and `AttributeReportingStatus` are included by
 `zcl_attributes!` in every generated attribute table.
@@ -248,15 +249,15 @@ Generated items:
 - `Readable`, containing all readable attribute values plus global readable attributes.
 - `Writable`, containing all writable attribute values.
 - `Reportable`, containing all reportable attribute values.
-- `Types`, containing the same variants as `Reportable`, with each attribute ID as its `u16` discriminant and a public
-  const `id` method that returns the contained ZCL wire type's `u8` discriminant.
+- `Types`, containing the same variants as `Reportable`, with each attribute ID as its `u16` discriminant and an
+  implementation of the crate's `Reportable` trait that returns the attribute and wire type IDs.
 - `Scene`, containing all scene-storable attribute values.
 - `Cluster<ClusterId>` and `Profiled` impls for all generated enums.
   The generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add
   `profile: ProfileVariant;` after the cluster declaration to override it.
   The optional `manufacturer_code:` parameter is emitted as
-  `Readable::MANUFACTURER_CODE` and `Writable::MANUFACTURER_CODE` where
-  applicable.
+  `Readable::MANUFACTURER_CODE`, `Writable::MANUFACTURER_CODE`, and
+  `Reportable::MANUFACTURER_CODE` where applicable.
 - `From<Id> for u16` and `TryFrom<u16> for Id`.
 - `Display for Id`.
 - `Readable for Id`.
@@ -279,7 +280,7 @@ reportable attributes, it must implement `TryFrom<Type>`.
 5. Add `attributes.rs` and attribute value types as needed.
 6. Generate attributes with `zcl_attributes!`.
 7. If any attribute is reportable and should be parsed globally, add the cluster's `Reportable` enum
-   to the crate-wide `Reportable` enum in `src/attributes.rs`.
+   to the crate-wide `AttributeReport` enum in `src/attributes.rs`.
 
 ## Implementation Boundaries
 

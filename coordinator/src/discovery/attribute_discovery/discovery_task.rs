@@ -70,7 +70,7 @@ impl DiscoveryTask {
 
         match self
             .zcl
-            .read_attributes(destination, CORE_ATTRIBUTES)
+            .read(destination, CORE_ATTRIBUTES)
             .timeout(TIMEOUT)
             .await
         {
@@ -95,7 +95,7 @@ impl DiscoveryTask {
 
         match self
             .zcl
-            .read_attributes(destination, EXTENDED_ATTRIBUTES)
+            .read(destination, EXTENDED_ATTRIBUTES)
             .timeout(TIMEOUT)
             .await
         {

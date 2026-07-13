@@ -116,7 +116,7 @@ resolves that source into a known `Address` before publishing an `Event`.
 currently distinguishes cluster-specific commands from parsed attribute reports:
 
 - `EventType::Cluster(zb_zcl::Cluster)`
-- `EventType::AttributeReport(Box<[zb_zcl::Reportable]>)`
+- `EventType::AttributeReport(Box<[zb_zcl::AttributeReport]>)`
 
 Pass an empty device set to subscribe to all known devices, or pass IEEE
 addresses to receive only matching devices.
@@ -224,10 +224,7 @@ The `Attributes` trait groups typed attribute reads and writes.
 
 #### Reads
 
-Two API levels are exposed:
-
-- `read_attributes_raw(...)` for direct cluster/id reads
-- `read_attributes<T>(...)` for typed reads using a `zb_zcl::ReadableAttribute` ID enum
+Use `read<T>(...)` for typed reads with a `zb_zcl::Readable` attribute ID enum.
 
 Typed example with Basic-cluster readable IDs:
 
@@ -241,7 +238,7 @@ async fn read_basic(
     api: &impl Attributes,
     ieee: IeeeAddress,
 ) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, apis_saltans_coordinator::Error> {
-    api.read_attributes(
+    api.read(
         ieee,
         Application::try_from(1).expect("valid endpoint"),
         vec![BasicReadableId::ModelIdentifier, BasicReadableId::ManufacturerName].into_boxed_slice(),
@@ -252,10 +249,7 @@ async fn read_basic(
 
 #### Writes
 
-Two API levels are exposed:
-
-- `write_attributes_raw(...)` for direct record writes
-- `write_attributes<T>(...)` for typed writes via `zb_zcl::WritableAttribute`
+Use `write<T>(...)` for typed writes with `zb_zcl::Writable` attributes.
 
 Typed example with Basic writable attributes:
 
@@ -273,7 +267,7 @@ async fn write_location(
     let location = String::<16>::try_from("Living Room").unwrap();
 
     let result = api
-        .write_attributes(
+        .write(
             ieee,
             Application::try_from(1).expect("valid endpoint"),
             vec![BasicWritable::LocationDescription(location)].into_boxed_slice(),

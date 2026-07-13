@@ -1,5 +1,5 @@
 use zb_aps::Data;
-use zb_zcl::{Cluster, Frame, Reportable, global};
+use zb_zcl::{AttributeReport, Cluster, Frame, global};
 
 /// An event type.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -8,7 +8,7 @@ pub enum Type {
     Cluster(Cluster),
 
     /// An attribute report.
-    AttributeReport(Box<[Reportable]>),
+    AttributeReport(Box<[AttributeReport]>),
 }
 
 impl From<Data<Frame<Cluster>>> for Type {
@@ -22,7 +22,7 @@ impl From<Data<Frame<Cluster>>> for Type {
                     .into_reports()
                     .into_iter()
                     .filter_map(|report| {
-                        Reportable::parse(
+                        AttributeReport::parse(
                             aps_header.cluster_id(),
                             report.attribute_id(),
                             report.into_data(),

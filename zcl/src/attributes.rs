@@ -40,9 +40,21 @@ pub trait Writable: ClusterSpecific + Profiled + Into<Record> {
     fn id(&self) -> u16;
 }
 
+/// A trait for reportable attribute identifiers and their ZCL wire types.
+pub trait Reportable: ClusterSpecific + Profiled {
+    /// The manufacturer code, if any.
+    const MANUFACTURER_CODE: Option<u16> = None;
+
+    /// Return the attribute ID.
+    fn attribute_id(self) -> u16;
+
+    /// Return the ZCL data type ID.
+    fn type_id(self) -> u8;
+}
+
 /// Reportable attributes of all implemented ZCL clusters.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub enum Reportable {
+pub enum AttributeReport {
     /// Reportable attributes of the Basic cluster.
     Basic(BasicAttributes),
     /// Reportable attributes of the Power Configuration cluster.
@@ -77,7 +89,7 @@ pub enum Reportable {
     IasZone(IasZoneAttributes),
 }
 
-impl Reportable {
+impl AttributeReport {
     /// Parse a reportable attribute from a cluster ID, attribute ID, and ZCL type.
     ///
     /// # Errors
@@ -153,33 +165,35 @@ mod tests {
     use zb_core::Cluster;
     use zb_core::types::{Bool, Type, Uint8};
 
-    use super::{ParseAttributeError, Reportable};
+    use super::{AttributeReport, ParseAttributeError};
     use crate::clusters::general;
 
     #[test]
     fn parses_reportable_attribute() {
         let attribute =
-            Reportable::parse(Cluster::Level.as_u16(), 0x0000, Type::Uint8(Uint8::new(42)))
+            AttributeReport::parse(Cluster::Level.as_u16(), 0x0000, Type::Uint8(Uint8::new(42)))
                 .expect("reportable attribute should parse");
 
         assert_eq!(
             attribute,
-            Reportable::Level(general::level::Reportable::CurrentLevel(Uint8::new(42)))
+            AttributeReport::Level(general::level::Reportable::CurrentLevel(Uint8::new(42)))
         );
     }
 
     #[test]
     fn rejects_non_reportable_attribute_id() {
-        let error = Reportable::parse(Cluster::Level.as_u16(), 0x0001, Type::Uint8(Uint8::new(42)))
-            .expect_err("non-reportable attribute should fail");
+        let error =
+            AttributeReport::parse(Cluster::Level.as_u16(), 0x0001, Type::Uint8(Uint8::new(42)))
+                .expect_err("non-reportable attribute should fail");
 
         assert_eq!(error, ParseAttributeError::InvalidId(0x0001));
     }
 
     #[test]
     fn rejects_invalid_reportable_attribute_type() {
-        let error = Reportable::parse(Cluster::Level.as_u16(), 0x0000, Type::Boolean(Bool::TRUE))
-            .expect_err("wrong attribute type should fail");
+        let error =
+            AttributeReport::parse(Cluster::Level.as_u16(), 0x0000, Type::Boolean(Bool::TRUE))
+                .expect_err("wrong attribute type should fail");
 
         assert!(matches!(error, ParseAttributeError::InvalidType(_)));
     }

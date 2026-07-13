@@ -23,7 +23,7 @@ pub trait Attributes {
     /// # Errors
     ///
     /// Returns an [Error] if communication fails or the response is invalid.
-    fn read_attributes<T>(
+    fn read<T>(
         &self,
         device: Device,
         attributes: T,
@@ -39,7 +39,7 @@ pub trait Attributes {
     /// # Errors
     ///
     /// Returns an [`Error`] if communication fails or the response is invalid.
-    fn write_attributes<T>(
+    fn write<T>(
         &self,
         device: Device,
         attributes: T,
@@ -50,7 +50,7 @@ pub trait Attributes {
 }
 
 impl Attributes for Sender<Message> {
-    async fn read_attributes<T>(
+    async fn read<T>(
         &self,
         device: Device,
         attributes: T,
@@ -65,7 +65,7 @@ impl Attributes for Sender<Message> {
         Ok(response.into())
     }
 
-    async fn write_attributes<T>(
+    async fn write<T>(
         &self,
         device: Device,
         attributes: T,
@@ -82,7 +82,7 @@ impl Attributes for Sender<Message> {
 }
 
 impl Attributes for Coordinator {
-    async fn read_attributes<T>(
+    async fn read<T>(
         &self,
         device: Device,
         attributes: T,
@@ -90,10 +90,10 @@ impl Attributes for Coordinator {
     where
         T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
     {
-        self.zcl.read_attributes(device, attributes).await
+        self.zcl.read(device, attributes).await
     }
 
-    async fn write_attributes<T>(
+    async fn write<T>(
         &self,
         device: Device,
         attributes: T,
@@ -101,6 +101,6 @@ impl Attributes for Coordinator {
     where
         T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send,
     {
-        self.zcl.write_attributes(device, attributes).await
+        self.zcl.write(device, attributes).await
     }
 }

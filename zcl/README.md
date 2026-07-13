@@ -46,7 +46,7 @@ Top-level re-exports include:
     - cluster modules: `general`, `global`, `ias`, `lighting`, `measurement_and_sensing`
 - Attributes:
     - `Readable`, `Writable`
-    - global `Reportable` enum with `Reportable::parse(cluster_id, attribute_id, typ)`
+    - global `AttributeReport` enum with `AttributeReport::parse(cluster_id, attribute_id, typ)`
     - `ParseAttributeError`, `InvalidType`
 - Common:
     - `Status`, `Options`
@@ -96,8 +96,8 @@ The repository also contains additional cluster and attribute modules that are n
 
 Implemented attribute modules generate typed `Id`, `Readable`, `Writable`, `Reportable`, `Types`, and `Scene` enums
 according to the access flags present for each attribute. `Types` associates reportable attribute names with their ZCL
-wire types; its variants use the attribute IDs as `u16` discriminants, while `Types::id` returns the associated wire
-type's `u8` ID. The global readable attributes `ClusterRevision` and
+wire types; its variants use the attribute IDs as `u16` discriminants, while its `Reportable` implementation returns
+the attribute and wire type IDs. The global readable attributes `ClusterRevision` and
 `AttributeReportingStatus` are included in every cluster attribute module.
 
 Current attribute modules include:
@@ -123,7 +123,7 @@ Current attribute modules include:
 - IAS:
     - IAS Zone
 
-For reports, use `zb_zcl::Reportable::parse(cluster_id, attribute_id, typ)` to map a raw cluster ID,
+For reports, use `zb_zcl::AttributeReport::parse(cluster_id, attribute_id, typ)` to map a raw cluster ID,
 attribute ID, and ZCL `Type` into the corresponding typed reportable attribute enum.
 
 ## Serialization and Parsing
@@ -166,7 +166,8 @@ The crate provides type-safe patterns for attribute access:
 - `Readable`: map attribute IDs and wire `zb_core::types::Type` values into strongly typed readable attribute
   enums/structs.
 - `Writable`: convert writable attribute values into global write records.
-- `Reportable`: parse reportable attributes across all implemented cluster attribute modules.
+- `Reportable`: retrieve the attribute and ZCL data type IDs from generated `Types` enums.
+- `AttributeReport`: parse reported values across all implemented cluster attribute modules.
 - `Types`: associate a reportable attribute with its ZCL wire type and retrieve the wire type ID.
 
 This is intended to keep attribute handling explicit and strongly typed across clusters.
