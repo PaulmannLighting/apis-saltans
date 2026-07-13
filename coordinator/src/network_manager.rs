@@ -72,9 +72,9 @@ where
                         debug!("Device joined the network: {address}");
                     }
                 }
-                Message::NewDevice(device) => {
-                    info!("New device: {device:?}");
-                    self.add_device(device).await;
+                Message::NewDevice { address, device } => {
+                    info!("New device {address}: {device:?}");
+                    self.add_device(address, device).await;
                 }
                 Message::RemoveDevice(address) => {
                     self.remove_device(address).await;
@@ -163,8 +163,8 @@ where
         Some(FullAddress::new(ieee_address, short_id))
     }
 
-    async fn add_device(&self, device: Device) {
-        self.storage.add(device).await.map_or_else(
+    async fn add_device(&self, address: FullAddress, device: Device) {
+        self.storage.add(address, device).await.map_or_else(
             |error| {
                 error!("Failed to store device: {error:?}");
             },

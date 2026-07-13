@@ -57,7 +57,12 @@ pub enum Message {
     },
 
     /// Add a new device to the network.
-    NewDevice(Device),
+    NewDevice {
+        /// The address of the device.
+        address: FullAddress,
+        /// The device that was added.
+        device: Device,
+    },
 
     /// Remove a device from the network.
     RemoveDevice(IeeeAddress),

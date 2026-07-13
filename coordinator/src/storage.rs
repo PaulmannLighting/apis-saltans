@@ -2,7 +2,7 @@
 
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
-use zb_core::{IeeeAddress, short_id};
+use zb_core::{FullAddress, IeeeAddress, short_id};
 
 pub use self::error::Error;
 pub use self::message::Message;
@@ -28,7 +28,11 @@ pub trait Storage {
     /// # Errors
     ///
     /// Returns an [`Error`] if writing to the storage fails.
-    fn add(&self, device: Device) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
+    fn add(
+        &self,
+        address: FullAddress,
+        device: Device,
+    ) -> impl Future<Output = Result<Option<Device>, Error>> + Send;
 
     /// Removes a device from the storage.
     ///
@@ -99,9 +103,10 @@ impl Storage for Sender<Message> {
         Ok(rx.await??)
     }
 
-    async fn add(&self, device: Device) -> Result<Option<Device>, Error> {
+    async fn add(&self, address: FullAddress, device: Device) -> Result<Option<Device>, Error> {
         let (tx, rx) = channel();
         self.send(Message::Add {
+            address,
             device,
             response: tx,
         })

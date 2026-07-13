@@ -154,7 +154,10 @@ impl Actor {
 
         trace!("Forwarding device {device} to network manager.");
         network_manager
-            .send(network_manager::Message::NewDevice(device.into()))
+            .send(network_manager::Message::NewDevice {
+                address: device.address,
+                device: device.into(),
+            })
             .await
             .unwrap_or_else(|error| {
                 error!("Failed to send new device message: {error:?}");

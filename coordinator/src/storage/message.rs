@@ -1,7 +1,7 @@
 use std::io::Result;
 
 use tokio::sync::oneshot::Sender;
-use zb_core::{IeeeAddress, short_id};
+use zb_core::{FullAddress, IeeeAddress, short_id};
 
 use crate::Device;
 
@@ -13,6 +13,8 @@ pub enum Message {
 
     /// Add a device.
     Add {
+        /// The full address of the device
+        address: FullAddress,
         /// The device to add.
         device: Device,
         /// The response channel.
