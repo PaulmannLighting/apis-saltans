@@ -98,6 +98,8 @@ Implements user-facing traits (`OnOff`, `ColorControl`, `Attributes`, `Joining`,
 
 For global attribute operations (`Attributes`):
 - the coordinator forwards raw attribute IDs produced by the ZCL attribute type (`ReadableAttribute` / `WritableAttribute`)
+- configure-reporting requests derive their manufacturer code, profile ID, cluster ID, attribute ID, and data type ID
+  from a generated ZCL `Types` value implementing `Reportable`
 - no coordinator-side normalization of attribute IDs is performed
 - this is required for clusters that compose IDs from a base slot plus a tagged sub-field (for example, Power Configuration battery settings where primary/secondary/tertiary battery banks use different base IDs and the setting selector is encoded in the low bits)
 

@@ -1,12 +1,16 @@
 use tokio::sync::mpsc::Sender;
 use zb_core::destination::Device;
-use zb_zcl::{ParseAttributeError, Readable, Writable};
+use zb_core::types::Type;
+use zb_zcl::global::configure_reporting;
+use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
 
+use self::configure_reporting_request::ConfigureReportingRequest;
 use self::read_attributes_request::ReadAttributesRequest;
 use self::write_attributes_request::WriteAttributesRequest;
 use crate::transceiver::zcl::{Handle, Message};
 use crate::{Coordinator, Error};
 
+mod configure_reporting_request;
 mod read_attributes_request;
 mod write_attributes_request;
 
@@ -16,8 +20,25 @@ pub type ReadAttributeResult<T> = Result<<T as Readable>::Attribute, ParseAttrib
 /// Result of writing an attribute.
 pub type WriteAttributeResult = Result<u16, u16>;
 
-/// Trait for reading and writing attributes.
+/// Trait for configuring, reading, and writing attributes.
 pub trait Attributes {
+    /// Configure a device to send reports for attributes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if communication fails or the response is invalid.
+    fn configure_reporting<T>(
+        &self,
+        device: Device,
+        attributes: T,
+        minimum_reporting_interval: u16,
+        maximum_reporting_interval: u16,
+        reportable_change: Option<Type>,
+    ) -> impl Future<Output = Result<configure_reporting::Response, Error>> + Send
+    where
+        Self: Sync,
+        T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send;
+
     /// Read attributes from a device.
     ///
     /// # Errors
@@ -50,6 +71,29 @@ pub trait Attributes {
 }
 
 impl Attributes for Sender<Message> {
+    async fn configure_reporting<T>(
+        &self,
+        device: Device,
+        attributes: T,
+        minimum_reporting_interval: u16,
+        maximum_reporting_interval: u16,
+        reportable_change: Option<Type>,
+    ) -> Result<configure_reporting::Response, Error>
+    where
+        T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send,
+    {
+        self.communicate(
+            device,
+            ConfigureReportingRequest::new(
+                attributes,
+                minimum_reporting_interval,
+                maximum_reporting_interval,
+                reportable_change.as_ref(),
+            ),
+        )
+        .await
+    }
+
     async fn read<T>(
         &self,
         device: Device,
@@ -82,6 +126,28 @@ impl Attributes for Sender<Message> {
 }
 
 impl Attributes for Coordinator {
+    async fn configure_reporting<T>(
+        &self,
+        device: Device,
+        attributes: T,
+        minimum_reporting_interval: u16,
+        maximum_reporting_interval: u16,
+        reportable_change: Option<Type>,
+    ) -> Result<configure_reporting::Response, Error>
+    where
+        T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send,
+    {
+        self.zcl
+            .configure_reporting(
+                device,
+                attributes,
+                minimum_reporting_interval,
+                maximum_reporting_interval,
+                reportable_change,
+            )
+            .await
+    }
+
     async fn read<T>(
         &self,
         device: Device,

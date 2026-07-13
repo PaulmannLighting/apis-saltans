@@ -222,6 +222,11 @@ async fn set_color_temperature(
 
 The `Attributes` trait groups typed attribute reads and writes.
 
+Use `configure_reporting(...)` to configure a node to send attribute reports. Its iterable of
+reportable attribute descriptors supplies the manufacturer code, profile ID, cluster ID, attribute
+IDs, and ZCL data type IDs; callers additionally provide the target device, reporting intervals,
+and optional reportable-change value.
+
 #### Reads
 
 Use `read<T>(...)` for typed reads with a `zb_zcl::Readable` attribute ID enum.

@@ -2623,12 +2623,12 @@ macro_rules! zcl_attributes {
                 @manufacturer_code [$($manufacturer_code)?]
             }
 
-            fn attribute_id(self) -> u16 {
-                match self {}
+            fn attribute_id(&self) -> u16 {
+                panic!("an empty Types enum cannot be instantiated")
             }
 
-            fn type_id(self) -> u8 {
-                match self {}
+            fn type_id(&self) -> u8 {
+                panic!("an empty Types enum cannot be instantiated")
             }
         }
     };
@@ -2658,7 +2658,7 @@ macro_rules! zcl_attributes {
             }
 
             #[allow(unused_doc_comments)]
-            fn attribute_id(self) -> u16 {
+            fn attribute_id(&self) -> u16 {
                 match self {
                     $(
                         $(#[$variant_attr])*
@@ -2668,7 +2668,7 @@ macro_rules! zcl_attributes {
             }
 
             #[allow(unused_doc_comments)]
-            fn type_id(self) -> u8 {
+            fn type_id(&self) -> u8 {
                 match self {
                     $(
                         $(#[$variant_attr])*
@@ -2755,11 +2755,11 @@ mod zcl_attributes_macro_tests {
         let _ = Writable::WriteOnly(Custom(Uint8::new(4)));
         let _ = Reportable::Writable(Uint8::new(5));
         assert_eq!(
-            crate::Reportable::attribute_id(Types::Writable(Type::Uint8(Uint8::new(5)))),
+            crate::Reportable::attribute_id(&Types::Writable(Type::Uint8(Uint8::new(5)))),
             0x0001
         );
         assert_eq!(
-            crate::Reportable::type_id(Types::Writable(Type::Uint8(Uint8::new(5)))),
+            crate::Reportable::type_id(&Types::Writable(Type::Uint8(Uint8::new(5)))),
             0x20
         );
         let _ = Scene::Writable(Uint8::new(6));
@@ -2837,7 +2837,7 @@ mod zcl_attributes_macro_tests {
             let _ = Writable::Writable(Uint8::new(2));
             let _ = Reportable::Writable(Uint8::new(3));
             assert_eq!(
-                crate::Reportable::type_id(Types::Writable(Type::Uint8(Uint8::new(3)))),
+                crate::Reportable::type_id(&Types::Writable(Type::Uint8(Uint8::new(3)))),
                 0x20
             );
             let _ = Scene::Writable(Uint8::new(4));

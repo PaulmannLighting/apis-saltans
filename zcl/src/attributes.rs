@@ -46,10 +46,10 @@ pub trait Reportable: ClusterSpecific + Profiled {
     const MANUFACTURER_CODE: Option<u16> = None;
 
     /// Return the attribute ID.
-    fn attribute_id(self) -> u16;
+    fn attribute_id(&self) -> u16;
 
     /// Return the ZCL data type ID.
-    fn type_id(self) -> u8;
+    fn type_id(&self) -> u8;
 }
 
 /// Reportable attributes of all implemented ZCL clusters.
