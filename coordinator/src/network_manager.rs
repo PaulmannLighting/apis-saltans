@@ -41,6 +41,7 @@ where
     /// Run the actor.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         // TODO: Inform sub-actors about currently not fully discovered devices.
+        // Pass in desired state to sub-actor where applicable.
 
         while let Some(message) = messages.recv().await {
             match message {
