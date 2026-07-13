@@ -7,7 +7,7 @@ use zb_core::destination::Device;
 use zb_core::{Application, FullAddress};
 use zb_zcl::basic::Id;
 
-use crate::api::ReadAttributes;
+use crate::api::Attributes;
 use crate::discovery::attribute_discovery::Message;
 use crate::{Timeout, transceiver};
 

@@ -22,8 +22,7 @@ Public API exports:
     - `OnOff`
     - `ColorControl`
     - `Level`
-    - `ReadAttributes`
-    - `WriteAttributes`
+    - `Attributes`
 - attribute helper alias:
     - `ReadAttributeResult<T>`
 - event types:
@@ -31,7 +30,7 @@ Public API exports:
     - `EventType`
     - `EventReceiver`
 - state model types:
-    - `State`, `Device`, `Endpoint`, `Attributes`
+    - `Device`, `EndpointInfo`, `DeviceAttributes`
 - error type:
     - `Error`
 
@@ -69,8 +68,7 @@ Import the traits you use so extension methods become available.
 
 ```rust,no_run
 use apis_saltans_coordinator::{
-    ColorControl, Coordinator, Joining, Level, NetworkManager, OnOff, ReadAttributes,
-    WriteAttributes,
+    Attributes, ColorControl, Coordinator, Joining, Level, NetworkManager, OnOff,
 };
 ```
 
@@ -220,7 +218,11 @@ async fn set_color_temperature(
 }
 ```
 
-### 5) Generic Attribute Reads (`ReadAttributes`)
+### 5) Generic Attribute Access (`Attributes`)
+
+The `Attributes` trait groups typed attribute reads and writes.
+
+#### Reads
 
 Two API levels are exposed:
 
@@ -233,10 +235,10 @@ Typed example with Basic-cluster readable IDs:
 use zb_core::IeeeAddress;
 use zb_zcl::general::basic::readable::Id as BasicReadableId;
 use zb_core::Application;
-use apis_saltans_coordinator::{ReadAttributeResult, ReadAttributes};
+use apis_saltans_coordinator::{Attributes, ReadAttributeResult};
 
 async fn read_basic(
-    api: &impl ReadAttributes,
+    api: &impl Attributes,
     ieee: IeeeAddress,
 ) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, apis_saltans_coordinator::Error> {
     api.read_attributes(
@@ -248,7 +250,7 @@ async fn read_basic(
 }
 ```
 
-### 6) Generic Attribute Writes (`WriteAttributes`)
+#### Writes
 
 Two API levels are exposed:
 
@@ -262,10 +264,10 @@ use zb_core::IeeeAddress;
 use zb_zcl::general::basic::writable::Attribute as BasicWritable;
 use zb_core::types::String;
 use zb_core::Application;
-use apis_saltans_coordinator::WriteAttributes;
+use apis_saltans_coordinator::Attributes;
 
 async fn write_location(
-    api: &impl WriteAttributes,
+    api: &impl Attributes,
     ieee: IeeeAddress,
 ) -> Result<(), apis_saltans_coordinator::Error> {
     let location = String::<16>::try_from("Living Room").unwrap();
@@ -296,8 +298,8 @@ State model:
     - `endpoints: BTreeMap<zb_core::Endpoint, apis_saltans_coordinator::Endpoint>`
 - `Endpoint`:
     - `descriptor: zb_zdp::SimpleDescriptor`
-    - `attributes: apis_saltans_coordinator::Attributes`
-- `Attributes`: normalized subset of discovered Basic-cluster metadata (manufacturer/model/version/etc.)
+    - `attributes: apis_saltans_coordinator::DeviceAttributes`
+- `DeviceAttributes`: normalized subset of discovered Basic-cluster metadata (manufacturer/model/version/etc.)
 
 ## Error Model
 

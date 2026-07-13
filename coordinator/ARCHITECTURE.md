@@ -94,9 +94,9 @@ Holds:
 - sender to `ZCL` actor
 - sender to `NetworkManager`
 
-Implements user-facing traits (`OnOff`, `ColorControl`, `ReadAttributes`, `WriteAttributes`, `Joining`, `NetworkManager`) by forwarding requests to actors and composing responses.
+Implements user-facing traits (`OnOff`, `ColorControl`, `Attributes`, `Joining`, `NetworkManager`) by forwarding requests to actors and composing responses.
 
-For global attribute operations (`ReadAttributes` / `WriteAttributes`):
+For global attribute operations (`Attributes`):
 - the coordinator forwards raw attribute IDs produced by the ZCL attribute type (`ReadableAttribute` / `WritableAttribute`)
 - no coordinator-side normalization of attribute IDs is performed
 - this is required for clusters that compose IDs from a base slot plus a tagged sub-field (for example, Power Configuration battery settings where primary/secondary/tertiary battery banks use different base IDs and the setting selector is encoded in the low bits)
@@ -185,7 +185,7 @@ For each discovered endpoint:
 
 For each application endpoint containing the Basic cluster:
 - reads a fixed attribute set from `zb_zcl::general::basic`
-- converts read results into coordinator `Attributes`
+- converts read results into coordinator `DeviceAttributes`
 - when complete, sends `binding::Message::DeviceDiscovered` directly to `Binding`
 
 ### Binding

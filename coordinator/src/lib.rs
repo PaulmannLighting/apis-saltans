@@ -8,14 +8,14 @@ use core::time::Duration;
 use const_env::env_item;
 
 pub use self::api::{
-    ColorControl, Discovery, Joining, Level, NetworkManager, OnOff, ReadAttributeResult,
-    ReadAttributes, WriteAttributeResult, WriteAttributes,
+    Attributes, ColorControl, Discovery, Joining, Level, NetworkManager, OnOff,
+    ReadAttributeResult, WriteAttributeResult,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
 pub use self::event::{Event, Type as EventType};
 pub use self::event_receiver::EventReceiver;
-pub use self::network::{Attributes, Device, EndpointInfo};
+pub use self::network::{Device, DeviceAttributes, EndpointInfo};
 use self::retry::Retry;
 pub use self::timeout::Timeout;
 

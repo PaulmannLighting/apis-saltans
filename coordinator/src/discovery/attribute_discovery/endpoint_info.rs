@@ -1,12 +1,12 @@
 use zb_zdp::SimpleDescriptor;
 
-use super::Attributes;
+use super::DeviceAttributes;
 
 /// Information about an endpoint.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EndpointInfo {
     descriptor: SimpleDescriptor,
-    attributes: Option<Attributes>,
+    attributes: Option<DeviceAttributes>,
 }
 
 impl EndpointInfo {
@@ -18,18 +18,21 @@ impl EndpointInfo {
 
     /// Get the attributes.
     #[must_use]
-    pub const fn attributes(&self) -> Option<&Attributes> {
+    pub const fn attributes(&self) -> Option<&DeviceAttributes> {
         self.attributes.as_ref()
     }
 
     /// Set the attributes.
-    pub const fn set_attributes(&mut self, attributes: Attributes) -> Option<Attributes> {
+    pub const fn set_attributes(
+        &mut self,
+        attributes: DeviceAttributes,
+    ) -> Option<DeviceAttributes> {
         self.attributes.replace(attributes)
     }
 
     /// Consume the endpoint info, returning the descriptor and attributes.
     #[must_use]
-    pub fn into_parts(self) -> (SimpleDescriptor, Option<Attributes>) {
+    pub fn into_parts(self) -> (SimpleDescriptor, Option<DeviceAttributes>) {
         (self.descriptor, self.attributes)
     }
 }

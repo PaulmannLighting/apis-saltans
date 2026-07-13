@@ -4,9 +4,9 @@ use zb_zcl::basic::{DateCode, Id, PowerSource, Readable};
 
 use crate::ReadAttributeResult;
 
-/// The attributes we want to discover.
+/// Discovered attributes describing a device.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash, Deserialize, Serialize)]
-pub struct Attributes {
+pub struct DeviceAttributes {
     zcl_version: Option<u8>,
     application_version: Option<u8>,
     stack_version: Option<u8>,
@@ -19,7 +19,7 @@ pub struct Attributes {
     sw_build_id: Option<String>,
 }
 
-impl Attributes {
+impl DeviceAttributes {
     /// Return the ZCL version of the device.
     #[must_use]
     pub const fn zcl_version(&self) -> Option<u8> {
@@ -134,7 +134,7 @@ impl Attributes {
     }
 }
 
-impl From<Box<[ReadAttributeResult<Id>]>> for Attributes {
+impl From<Box<[ReadAttributeResult<Id>]>> for DeviceAttributes {
     fn from(attributes: Box<[ReadAttributeResult<Id>]>) -> Self {
         let mut instance = Self::default();
 

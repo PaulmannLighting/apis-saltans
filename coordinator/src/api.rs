@@ -1,8 +1,7 @@
 //! Zigbee API.
 
 pub use self::clusters::{
-    ColorControl, Level, OnOff, ReadAttributeResult, ReadAttributes, WriteAttributeResult,
-    WriteAttributes,
+    Attributes, ColorControl, Level, OnOff, ReadAttributeResult, WriteAttributeResult,
 };
 pub use self::discovery::Discovery;
 pub use self::joining::Joining;

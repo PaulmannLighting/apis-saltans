@@ -1,5 +1,5 @@
 //! Network state.
 
-pub use state::{Attributes, Device, EndpointInfo};
+pub use state::{Device, DeviceAttributes, EndpointInfo};
 
 mod state;

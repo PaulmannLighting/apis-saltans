@@ -12,7 +12,7 @@ pub use self::message::Message;
 pub use self::outgoing_device::OutgoingDevice;
 use self::outgoing_device::{Devices, DevicesExt};
 use crate::{
-    Attributes, MPSC_CHANNEL_SIZE, ReadAttributeResult, TASK_POOL_SIZE, binding, transceiver,
+    DeviceAttributes, MPSC_CHANNEL_SIZE, ReadAttributeResult, TASK_POOL_SIZE, binding, transceiver,
 };
 
 mod discovery_task;
