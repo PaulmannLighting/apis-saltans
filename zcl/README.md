@@ -94,8 +94,10 @@ The repository also contains additional cluster and attribute modules that are n
 
 ## Attribute Coverage
 
-Implemented attribute modules generate typed `Id`, `Readable`, `Writable`, `Reportable`, and `Scene` enums according to
-the access flags present for each attribute. The global readable attributes `ClusterRevision` and
+Implemented attribute modules generate typed `Id`, `Readable`, `Writable`, `Reportable`, `Types`, and `Scene` enums
+according to the access flags present for each attribute. `Types` associates reportable attribute names with their ZCL
+wire types; its variants use the attribute IDs as `u16` discriminants, while `Types::id` returns the associated wire
+type's `u8` ID. The global readable attributes `ClusterRevision` and
 `AttributeReportingStatus` are included in every cluster attribute module.
 
 Current attribute modules include:
@@ -165,6 +167,7 @@ The crate provides type-safe patterns for attribute access:
   enums/structs.
 - `Writable`: convert writable attribute values into global write records.
 - `Reportable`: parse reportable attributes across all implemented cluster attribute modules.
+- `Types`: associate a reportable attribute with its ZCL wire type and retrieve the wire type ID.
 
 This is intended to keep attribute handling explicit and strongly typed across clusters.
 

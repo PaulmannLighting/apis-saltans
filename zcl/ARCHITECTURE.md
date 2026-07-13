@@ -66,6 +66,8 @@ generates access-specific enums:
 - `Readable`: readable attribute values.
 - `Writable`: writable attribute values.
 - `Reportable`: reportable attribute values.
+- `Types`: reportable attribute wire types, using the attribute ID as each variant's `u16` discriminant and exposing
+  the contained wire type's `u8` discriminant.
 - `Scene`: scene-storable attribute values.
 
 The generated `Id` enum implements the crate's `Readable` trait, and the generated `Writable` enum
@@ -246,6 +248,8 @@ Generated items:
 - `Readable`, containing all readable attribute values plus global readable attributes.
 - `Writable`, containing all writable attribute values.
 - `Reportable`, containing all reportable attribute values.
+- `Types`, containing the same variants as `Reportable`, with each attribute ID as its `u16` discriminant and a public
+  const `id` method that returns the contained ZCL wire type's `u8` discriminant.
 - `Scene`, containing all scene-storable attribute values.
 - `Cluster<ClusterId>` and `Profiled` impls for all generated enums.
   The generated `PROFILE` defaults to `Profile::ZigbeeHomeAutomation`; add

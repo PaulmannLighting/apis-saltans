@@ -1522,7 +1522,8 @@ pub(crate) use zcl_attribute_newtype;
 ///
 /// The macro generates fixed enum names in the invocation module:
 /// `Id` for readable attribute IDs, plus `Readable`, `Writable`,
-/// `Reportable`, and `Scene` for access-specific attribute values. The
+/// `Reportable`, and `Scene` for access-specific attribute values. `Types`
+/// associates reportable attributes with their ZCL wire types. The
 /// cluster ID is required and is used to implement `Cluster` for the generated
 /// enums. The global readable attributes `ClusterRevision` and
 /// `AttributeReportingStatus` are always included.
@@ -2178,10 +2179,22 @@ macro_rules! zcl_attributes {
         }
 
         $crate::macros::zcl_attributes! {
+            @emit_types_enum
+            [$($variants)*]
+        }
+
+        $crate::macros::zcl_attributes! {
             @cluster_impl
             $cluster
             [$($manufacturer_code)?]
             Reportable
+        }
+
+        $crate::macros::zcl_attributes! {
+            @cluster_impl
+            $cluster
+            [$($manufacturer_code)?]
+            Types
         }
 
         impl TryFrom<(u16, zb_core::types::Type)> for Reportable {
@@ -2210,10 +2223,22 @@ macro_rules! zcl_attributes {
         }
 
         $crate::macros::zcl_attributes! {
+            @emit_types_enum
+            [$($variants)*]
+        }
+
+        $crate::macros::zcl_attributes! {
             @cluster_impl
             $cluster
             [$($manufacturer_code)?]
             Reportable
+        }
+
+        $crate::macros::zcl_attributes! {
+            @cluster_impl
+            $cluster
+            [$($manufacturer_code)?]
+            Types
         }
 
         impl TryFrom<(u16, zb_core::types::Type)> for Reportable {
@@ -2586,6 +2611,52 @@ macro_rules! zcl_attributes {
             $($variants)+
         }
     };
+    (@emit_types_enum []) => {
+        /// ZCL wire types associated with reportable attributes.
+        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        pub enum Types {}
+
+        impl Types {
+            /// Return the associated ZCL data type ID.
+            #[must_use]
+            pub const fn id(self) -> u8 {
+                match self { }
+            }
+        }
+    };
+    (
+        @emit_types_enum
+        [
+            $(
+                $(#[$variant_attr:meta])*
+                $variant:ident($ty:ty) = $id:tt,
+            )+
+        ]
+    ) => {
+        /// ZCL wire types associated with reportable attributes.
+        #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        #[repr(u16)]
+        pub enum Types {
+            $(
+                $(#[$variant_attr])*
+                $variant(zb_core::types::Type) = $id,
+            )+
+        }
+
+        impl Types {
+            /// Return the associated ZCL data type ID.
+            #[allow(unused_doc_comments)]
+            #[must_use]
+            pub const fn id(&self) -> u8 {
+                match self {
+                    $(
+                        $(#[$variant_attr])*
+                        Self::$variant(typ) => typ.discriminant(),
+                    )+
+                }
+            }
+        }
+    };
     (@emit_value_enum [$enum:ident] [$doc:literal] []) => {
         #[doc = $doc]
         #[allow(dead_code)]
@@ -2645,6 +2716,7 @@ mod zcl_attributes_macro_tests {
             Some(0x1234)
         );
         assert_eq!(<Reportable as Profiled>::PROFILE, Profile::TouchLink);
+        assert_eq!(<Types as Profiled>::PROFILE, Profile::TouchLink);
         assert_eq!(<Scene as Profiled>::PROFILE, Profile::TouchLink);
 
         let _ = Id::ReadOnly;
@@ -2657,11 +2729,13 @@ mod zcl_attributes_macro_tests {
         let _ = Writable::Writable(Uint8::new(3));
         let _ = Writable::WriteOnly(Custom(Uint8::new(4)));
         let _ = Reportable::Writable(Uint8::new(5));
+        const TYPE_ID: u8 = Types::Writable(Type::Uint8(Uint8::new(5))).id();
+        assert_eq!(TYPE_ID, 0x20);
         let _ = Scene::Writable(Uint8::new(6));
     }
 
     mod required_cluster {
-        use super::{Cluster, Profile, Profiled, Uint8};
+        use super::{Cluster, Profile, Profiled, Type, Uint8};
 
         zcl_attributes! {
             cluster: Cluster::Basic;
@@ -2696,6 +2770,7 @@ mod zcl_attributes_macro_tests {
             assert_writable::<Writable>();
             assert_cluster::<Readable>();
             assert_cluster::<Reportable>();
+            assert_cluster::<Types>();
             assert_cluster::<Scene>();
 
             assert_eq!(<Id as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
@@ -2711,6 +2786,7 @@ mod zcl_attributes_macro_tests {
                 <Reportable as Profiled>::PROFILE,
                 Profile::ZigbeeHomeAutomation
             );
+            assert_eq!(<Types as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
             assert_eq!(<Scene as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
 
             let _ = Id::ReadOnly;
@@ -2721,6 +2797,7 @@ mod zcl_attributes_macro_tests {
             let _ = Readable::AttributeReportingStatus(Uint8::new(0));
             let _ = Writable::Writable(Uint8::new(2));
             let _ = Reportable::Writable(Uint8::new(3));
+            assert_eq!(Types::Writable(Type::Uint8(Uint8::new(3))).id(), 0x20);
             let _ = Scene::Writable(Uint8::new(4));
         }
     }
