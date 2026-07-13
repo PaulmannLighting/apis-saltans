@@ -228,6 +228,24 @@ macro_rules! analog_integer {
             }
         }
 
+        impl core::fmt::Display for $name {
+            fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                <$inner as core::fmt::Display>::fmt(&self.0, formatter)
+            }
+        }
+
+        impl core::fmt::LowerHex for $name {
+            fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                <$inner as core::fmt::LowerHex>::fmt(&self.0, formatter)
+            }
+        }
+
+        impl core::fmt::UpperHex for $name {
+            fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                <$inner as core::fmt::UpperHex>::fmt(&self.0, formatter)
+            }
+        }
+
         impl From<$name> for Option<$inner> {
             fn from(value: $name) -> Self {
                 value.as_option()
@@ -504,5 +522,45 @@ analog_integers! {
 
         /// The `64-bit unsigned integer` type, short `uint64`.
         Uint64(u64, 0xffff_ffff_ffff_ffff);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate alloc;
+
+    use alloc::format;
+    use core::fmt::{Display, LowerHex, UpperHex};
+
+    use intx::U24;
+
+    use super::{Int16, Uint24};
+
+    const SIGNED_INNER: i16 = -42;
+    const UNSIGNED_INNER_BYTES: [u8; 3] = [0x12, 0x34, 0x56];
+
+    fn assert_delegated_formatting<Wrapper, Inner>(wrapper: &Wrapper, inner: &Inner)
+    where
+        Wrapper: Display + LowerHex + UpperHex,
+        Inner: Display + LowerHex + UpperHex,
+    {
+        assert_eq!(format!("{wrapper:+08}"), format!("{inner:+08}"));
+        assert_eq!(format!("{wrapper:#010x}"), format!("{inner:#010x}"));
+        assert_eq!(format!("{wrapper:#010X}"), format!("{inner:#010X}"));
+    }
+
+    #[test]
+    fn aligned_integer_formatting_delegates_to_inner_type() {
+        let wrapper = Int16::new(SIGNED_INNER);
+
+        assert_delegated_formatting(&wrapper, &SIGNED_INNER);
+    }
+
+    #[test]
+    fn unaligned_integer_formatting_delegates_to_inner_type() {
+        let inner = U24::from_ne_bytes(UNSIGNED_INNER_BYTES);
+        let wrapper = Uint24::new(inner);
+
+        assert_delegated_formatting(&wrapper, &inner);
     }
 }
