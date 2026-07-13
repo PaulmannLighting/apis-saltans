@@ -173,11 +173,13 @@ impl Storage for Sender<Message> {
         ieee_address: IeeeAddress,
         short_id: short_id::Device,
     ) -> Result<(), Error> {
+        let (tx, rx) = channel();
         self.send(Message::UpdateShortId {
             ieee_address,
             short_id,
+            response: tx,
         })
         .await?;
-        Ok(())
+        Ok(rx.await??)
     }
 }

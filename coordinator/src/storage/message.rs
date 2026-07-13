@@ -69,5 +69,8 @@ pub enum Message {
         ieee_address: IeeeAddress,
         /// The new short ID.
         short_id: short_id::Device,
+
+        /// The result of the command.
+        response: Sender<Result<()>>,
     },
 }
