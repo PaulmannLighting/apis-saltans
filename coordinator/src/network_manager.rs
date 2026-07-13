@@ -194,14 +194,12 @@ where
             },
         );
     }
-}
 
-impl<T> Actor<T>
-where
-    T: Ncp + Send + Sync + 'static,
-{
     /// Start the network manager.
-    pub fn spawn(ncp: T, storage: Sender<storage::Message>) -> Sender<Message> {
+    pub fn spawn(ncp: T, storage: Sender<storage::Message>) -> Sender<Message>
+    where
+        Self: 'static,
+    {
         let (tx, rx) = channel(MPSC_CHANNEL_SIZE);
         spawn(Self::new(ncp, storage).run(rx));
         tx
