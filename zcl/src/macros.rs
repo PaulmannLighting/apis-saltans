@@ -33,7 +33,8 @@ pub(crate) use zcl_cluster_profile;
 /// `getters` section can contain accessor methods. Optional `from_le_stream`
 /// and `to_le_stream` sections replace the respective derive, and the final
 /// `impl` section can contain custom inherent or trait implementations for the
-/// type:
+/// type. Use `conversions: manual;` for a command that needs custom conversions
+/// to and from [`crate::Cluster`]:
 ///
 /// ```ignore
 /// zcl_command! {
@@ -69,6 +70,77 @@ pub(crate) use zcl_cluster_profile;
 /// }
 /// ```
 macro_rules! zcl_command {
+    (
+        $(#[$attr:meta])*
+        $command:ident {
+            $cluster_variant:ident;
+            command_id: $command_id:expr;
+            direction: $direction:expr;
+            $(parse_direction: $parse_direction:expr;)?
+            $(disable_default_response: $disable_default_response:expr;)?
+            $(response: $response:ty;)?
+            conversions: manual;
+            $(derive($($extra_derive:path),* $(,)?);)?
+            fields;
+            $($rest:tt)*
+        }
+    ) => {
+        $crate::macros::zcl_command! {
+            @parse_constructor
+            [unit]
+            [$(#[$attr])*]
+            [$command]
+            [global]
+            [$cluster_variant]
+            [manual]
+            [$command_id]
+            [$direction]
+            [$($parse_direction)?]
+            [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
+            [$($response)?]
+            [$($($extra_derive),*)?]
+            []
+            $($rest)*
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        $command:ident {
+            $cluster_variant:ident;
+            command_id: $command_id:expr;
+            direction: $direction:expr;
+            $(parse_direction: $parse_direction:expr;)?
+            $(disable_default_response: $disable_default_response:expr;)?
+            $(response: $response:ty;)?
+            conversions: manual;
+            $(derive($($extra_derive:path),* $(,)?);)?
+            fields {
+                $(
+                    $(#[$field_attr:meta])*
+                    $field:ident: $field_ty:ty
+                ),* $(,)?
+            }
+            $($rest:tt)*
+        }
+    ) => {
+        $crate::macros::zcl_command! {
+            @parse_constructor
+            [named]
+            [$(#[$attr])*]
+            [$command]
+            [global]
+            [$cluster_variant]
+            [manual]
+            [$command_id]
+            [$direction]
+            [$($parse_direction)?]
+            [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
+            [$($response)?]
+            [$($($extra_derive),*)?]
+            [$($(#[$field_attr])* $field: $field_ty,)*]
+            $($rest)*
+        }
+    };
     (
         $(#[$attr:meta])*
         $command:ident {
@@ -930,6 +1002,7 @@ macro_rules! zcl_command {
             type Response = $response;
         }
     };
+    (@from_cluster $command:ident [$cluster_variant:ident] [manual]) => {};
     (
         @from_cluster
         $command:ident
@@ -956,6 +1029,7 @@ macro_rules! zcl_command {
             }
         }
     };
+    (@try_from_cluster $command:ident [$cluster_variant:ident] [manual]) => {};
     (
         @try_from_cluster
         $command:ident
