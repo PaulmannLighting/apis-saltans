@@ -23,7 +23,7 @@ pub use self::clusters::measurement_and_sensing::{
     illuminance_level_sensing, illuminance_measurement, occupancy_sensing,
 };
 pub use self::clusters::{Cluster, global, ias};
-pub use self::command::{Command, ParseDirection, Scoped};
+pub use self::command::{Command, Directed, ParseDirection, Scoped};
 pub use self::frame::{Control, Direction, Frame, Header, ParseFrameError, Scope};
 pub use self::options::Options;
 pub use self::status::Status;

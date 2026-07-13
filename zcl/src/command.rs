@@ -1,9 +1,10 @@
 use const_env::env_item;
-use zb_core::Direction;
 
+pub use self::directed::Directed;
 pub use self::parse_direction::ParseDirection;
 pub use self::scoped::Scoped;
 
+mod directed;
 mod parse_direction;
 mod scoped;
 
@@ -12,11 +13,10 @@ pub trait Command {
     /// The command identifier.
     const ID: u8;
 
-    /// The command direction.
-    const DIRECTION: Direction;
-
     /// The command directions accepted when parsing incoming frames.
-    const PARSE_DIRECTION: ParseDirection = ParseDirection::Single(Self::DIRECTION);
+    ///
+    /// Commands without a more specific parsing rule accept both directions.
+    const PARSE_DIRECTION: ParseDirection = ParseDirection::Both;
 
     /// The manufacturer code, if any.
     const MANUFACTURER_CODE: Option<u16> = None;
@@ -39,7 +39,6 @@ where
     T: Command,
 {
     const ID: u8 = T::ID;
-    const DIRECTION: Direction = T::DIRECTION;
     const PARSE_DIRECTION: ParseDirection = T::PARSE_DIRECTION;
     const MANUFACTURER_CODE: Option<u16> = T::MANUFACTURER_CODE;
     const DISABLE_DEFAULT_RESPONSE: bool = T::DISABLE_DEFAULT_RESPONSE;

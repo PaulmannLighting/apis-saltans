@@ -29,12 +29,14 @@ pub(crate) use zcl_cluster_profile;
 /// Global commands omit the cluster ID and implement [`crate::command::Scoped`]
 /// with [`crate::Scope::Global`] instead. If the global command enum variant
 /// differs from the generated type name, pass that variant explicitly. A
+/// `direction` declaration implements [`crate::Directed`] and makes that
+/// direction the default parsing direction. Commands accepted in both
+/// directions can omit `direction` and specify `parse_direction` explicitly. A
 /// `constructor` section can override the generated `new` constructor, and a
 /// `getters` section can contain accessor methods. Optional `from_le_stream`
 /// and `to_le_stream` sections replace the respective derive, and the final
 /// `impl` section can contain custom inherent or trait implementations for the
-/// type. Use `conversions: manual;` for a command that needs custom conversions
-/// to and from [`crate::Cluster`]:
+/// type:
 ///
 /// ```ignore
 /// zcl_command! {
@@ -73,81 +75,10 @@ macro_rules! zcl_command {
     (
         $(#[$attr:meta])*
         $command:ident {
-            $cluster_variant:ident;
-            command_id: $command_id:expr;
-            direction: $direction:expr;
-            $(parse_direction: $parse_direction:expr;)?
-            $(disable_default_response: $disable_default_response:expr;)?
-            $(response: $response:ty;)?
-            conversions: manual;
-            $(derive($($extra_derive:path),* $(,)?);)?
-            fields;
-            $($rest:tt)*
-        }
-    ) => {
-        $crate::macros::zcl_command! {
-            @parse_constructor
-            [unit]
-            [$(#[$attr])*]
-            [$command]
-            [global]
-            [$cluster_variant]
-            [manual]
-            [$command_id]
-            [$direction]
-            [$($parse_direction)?]
-            [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
-            [$($response)?]
-            [$($($extra_derive),*)?]
-            []
-            $($rest)*
-        }
-    };
-    (
-        $(#[$attr:meta])*
-        $command:ident {
-            $cluster_variant:ident;
-            command_id: $command_id:expr;
-            direction: $direction:expr;
-            $(parse_direction: $parse_direction:expr;)?
-            $(disable_default_response: $disable_default_response:expr;)?
-            $(response: $response:ty;)?
-            conversions: manual;
-            $(derive($($extra_derive:path),* $(,)?);)?
-            fields {
-                $(
-                    $(#[$field_attr:meta])*
-                    $field:ident: $field_ty:ty
-                ),* $(,)?
-            }
-            $($rest:tt)*
-        }
-    ) => {
-        $crate::macros::zcl_command! {
-            @parse_constructor
-            [named]
-            [$(#[$attr])*]
-            [$command]
-            [global]
-            [$cluster_variant]
-            [manual]
-            [$command_id]
-            [$direction]
-            [$($parse_direction)?]
-            [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
-            [$($response)?]
-            [$($($extra_derive),*)?]
-            [$($(#[$field_attr])* $field: $field_ty,)*]
-            $($rest)*
-        }
-    };
-    (
-        $(#[$attr:meta])*
-        $command:ident {
             { $cluster_id:expr } => $cluster_variant:ident;
             $(profile: $profile:expr;)?
             command_id: $command_id:expr;
-            direction: $direction:expr;
+            $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
@@ -165,7 +96,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [super::$command]
             [$command_id]
-            [$direction]
+            [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
@@ -180,7 +111,7 @@ macro_rules! zcl_command {
             { $cluster_id:expr } => $cluster_variant:ident;
             $(profile: $profile:expr;)?
             command_id: $command_id:expr;
-            direction: $direction:expr;
+            $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
@@ -203,7 +134,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [super::$command]
             [$command_id]
-            [$direction]
+            [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
@@ -217,7 +148,7 @@ macro_rules! zcl_command {
         $command:ident {
             $cluster_variant:ident;
             command_id: $command_id:expr;
-            direction: $direction:expr;
+            $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
@@ -236,7 +167,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [$try_module::$try_variant_or_module $(::$try_variant)?]
             [$command_id]
-            [$direction]
+            [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
@@ -250,7 +181,7 @@ macro_rules! zcl_command {
         $command:ident {
             $cluster_variant:ident;
             command_id: $command_id:expr;
-            direction: $direction:expr;
+            $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
@@ -274,7 +205,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [$try_module::$try_variant_or_module $(::$try_variant)?]
             [$command_id]
-            [$direction]
+            [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
@@ -288,7 +219,7 @@ macro_rules! zcl_command {
         $command:ident {
             $cluster_variant:ident;
             command_id: $command_id:expr;
-            direction: $direction:expr;
+            $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
@@ -306,7 +237,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [crate::global::$command]
             [$command_id]
-            [$direction]
+            [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
@@ -320,7 +251,7 @@ macro_rules! zcl_command {
         $command:ident {
             $cluster_variant:ident;
             command_id: $command_id:expr;
-            direction: $direction:expr;
+            $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
             $(response: $response:ty;)?
@@ -343,7 +274,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             [crate::global::$command]
             [$command_id]
-            [$direction]
+            [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
             [$($response)?]
@@ -684,7 +615,7 @@ macro_rules! zcl_command {
         [$cluster_variant:ident]
         $try_from:tt
         [$command_id:expr]
-        [$direction:expr]
+        [$($direction:expr)?]
         $parse_direction:tt
         [$($disable_default_response:tt)*]
         [$($response:tt)*]
@@ -732,7 +663,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             $try_from
             [$command_id]
-            [$direction]
+            [$($direction)?]
             $parse_direction
             [$($disable_default_response)*]
             [$($response)*]
@@ -751,7 +682,7 @@ macro_rules! zcl_command {
         [$cluster_variant:ident]
         $try_from:tt
         [$command_id:expr]
-        [$direction:expr]
+        [$($direction:expr)?]
         $parse_direction:tt
         [$($disable_default_response:tt)*]
         [$($response:tt)*]
@@ -803,7 +734,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             $try_from
             [$command_id]
-            [$direction]
+            [$($direction)?]
             $parse_direction
             [$($disable_default_response)*]
             [$($response)*]
@@ -868,7 +799,7 @@ macro_rules! zcl_command {
         [$cluster_variant:ident]
         $try_from:tt
         [$command_id:expr]
-        [$direction:expr]
+        [$($direction:expr)?]
         $parse_direction:tt
         [$($disable_default_response:tt)*]
         [$($response:tt)*]
@@ -891,7 +822,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             $try_from
             [$command_id]
-            [$direction]
+            [$($direction)?]
             $parse_direction
             [$($disable_default_response)*]
             [$($response)*]
@@ -907,7 +838,7 @@ macro_rules! zcl_command {
         [$cluster_variant:ident]
         $try_from:tt
         [$command_id:expr]
-        [$direction:expr]
+        [$($direction:expr)?]
         $parse_direction:tt
         [$($disable_default_response:tt)*]
         [$($response:tt)*]
@@ -925,7 +856,7 @@ macro_rules! zcl_command {
             [$cluster_variant]
             $try_from
             [$command_id]
-            [$direction]
+            [$($direction)?]
             $parse_direction
             [$($disable_default_response)*]
             [$($response)*]
@@ -940,7 +871,7 @@ macro_rules! zcl_command {
         [$cluster_variant:ident]
         $try_from:tt
         [$command_id:expr]
-        [$direction:expr]
+        [$($direction:expr)?]
         $parse_direction:tt
         [$($disable_default_response:tt)*]
         [$($response:tt)*]
@@ -950,12 +881,18 @@ macro_rules! zcl_command {
     ) => {
         impl $crate::Command for $command {
             const ID: u8 = $command_id;
-            const DIRECTION: $crate::Direction = $direction;
             $crate::macros::zcl_command! {
                 @parse_direction_const
+                [$($direction)?]
                 $parse_direction
             }
             $($disable_default_response)*
+        }
+
+        $crate::macros::zcl_command! {
+            @directed_impl
+            $command
+            [$($direction)?]
         }
 
         $crate::macros::zcl_command! {
@@ -992,8 +929,21 @@ macro_rules! zcl_command {
 
         $($custom)*
     };
-    (@parse_direction_const []) => {};
-    (@parse_direction_const [$parse_direction:expr]) => {
+    (@directed_impl $command:ident []) => {};
+    (@directed_impl $command:ident [$direction:expr]) => {
+        impl $crate::Directed for $command {
+            const DIRECTION: $crate::Direction = $direction;
+        }
+    };
+    (@parse_direction_const [] []) => {};
+    (@parse_direction_const [$direction:expr] []) => {
+        const PARSE_DIRECTION: $crate::ParseDirection =
+            $crate::ParseDirection::Single($direction);
+    };
+    (@parse_direction_const [] [$parse_direction:expr]) => {
+        const PARSE_DIRECTION: $crate::ParseDirection = $parse_direction;
+    };
+    (@parse_direction_const [$direction:expr] [$parse_direction:expr]) => {
         const PARSE_DIRECTION: $crate::ParseDirection = $parse_direction;
     };
     (@response_impl $command:ident []) => {};
@@ -1002,7 +952,6 @@ macro_rules! zcl_command {
             type Response = $response;
         }
     };
-    (@from_cluster $command:ident [$cluster_variant:ident] [manual]) => {};
     (
         @from_cluster
         $command:ident
@@ -1029,7 +978,6 @@ macro_rules! zcl_command {
             }
         }
     };
-    (@try_from_cluster $command:ident [$cluster_variant:ident] [manual]) => {};
     (
         @try_from_cluster
         $command:ident

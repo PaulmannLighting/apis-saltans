@@ -5,7 +5,7 @@ use tokio::sync::mpsc::{Receiver, Sender, channel};
 use zb_core::destination::Device;
 use zb_core::{ClusterSpecific, Destination, ExpectResponse, Profiled};
 use zb_hw::{Error, Event, NcpHandle};
-use zb_zcl::{Cluster, Command};
+use zb_zcl::{Cluster, Command, Directed};
 use zb_zdp::SimpleDescriptor;
 
 use crate::mux::Mux;
@@ -72,7 +72,7 @@ impl Coordinator {
 impl zcl::Handle for Coordinator {
     async fn transmit<T>(&self, destination: Destination, payload: T) -> Result<(), crate::Error>
     where
-        T: ClusterSpecific + Command + Debug + Profiled + ToLeStream,
+        T: ClusterSpecific + Command + Debug + Directed + Profiled + ToLeStream,
     {
         self.zcl.transmit(destination, payload).await
     }

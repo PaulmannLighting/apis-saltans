@@ -3,7 +3,7 @@
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use zb_core::{ClusterSpecific, Direction, Profiled};
-use zb_zcl::{Command, Scope, Scoped};
+use zb_zcl::{Command, Directed, Scope, Scoped};
 
 /// A simplified APS frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -42,7 +42,7 @@ pub struct Metadata {
 
 impl<T> From<T> for Payload
 where
-    T: ClusterSpecific + Command + Profiled + ToLeStream,
+    T: ClusterSpecific + Command + Directed + Profiled + ToLeStream,
 {
     fn from(payload: T) -> Self {
         Self {

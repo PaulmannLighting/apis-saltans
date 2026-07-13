@@ -95,7 +95,7 @@ where
             zb_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
             Metadata {
                 scope: read_attributes::Command::SCOPE,
-                direction: read_attributes::Command::DIRECTION,
+                direction: <read_attributes::Command as zb_zcl::Directed>::DIRECTION,
                 disable_default_response: read_attributes::Command::DISABLE_DEFAULT_RESPONSE,
                 manufacturer_code: T::MANUFACTURER_CODE,
                 command_id: read_attributes::Command::ID,

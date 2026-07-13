@@ -1,7 +1,5 @@
 //! Default Response Command.
 
-use zb_core::Direction;
-
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -9,7 +7,6 @@ zcl_command! {
     DefaultResponse {
         Global;
         command_id: 0x0b;
-        direction: Direction::ClientToServer;
         parse_direction: crate::ParseDirection::Both;
         disable_default_response: true;
         fields {
@@ -35,14 +32,8 @@ zcl_command! {
 
 #[cfg(test)]
 mod tests {
-    use super::DefaultResponse;
     use crate::clusters::global;
-    use crate::{Cluster, Command, Direction, Frame};
-
-    #[test]
-    fn uses_client_to_server_as_outgoing_direction() {
-        assert_eq!(DefaultResponse::DIRECTION, Direction::ClientToServer);
-    }
+    use crate::{Cluster, Frame};
 
     #[test]
     fn parses_server_to_client_default_response() {

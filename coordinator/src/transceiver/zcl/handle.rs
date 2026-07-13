@@ -6,7 +6,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zb_core::destination::Device;
 use zb_core::{ClusterSpecific, Destination, ExpectResponse, Profiled};
-use zb_zcl::{Cluster, Command};
+use zb_zcl::{Cluster, Command, Directed};
 
 use super::Message;
 use super::message::Payload;
@@ -18,7 +18,7 @@ pub trait Handle {
     /// where the command is a native ZCL command belonging to a static cluster.
     async fn transmit<T>(&self, destination: Destination, payload: T) -> Result<(), Error>
     where
-        T: ClusterSpecific + Command + Debug + Profiled + ToLeStream;
+        T: ClusterSpecific + Command + Debug + Directed + Profiled + ToLeStream;
 
     /// Communicate with a ZCL device's endpoint.
     fn communicate<T>(
@@ -33,7 +33,7 @@ pub trait Handle {
 impl Handle for Sender<Message> {
     async fn transmit<T>(&self, destination: Destination, payload: T) -> Result<(), Error>
     where
-        T: ClusterSpecific + Command + Debug + Profiled + ToLeStream,
+        T: ClusterSpecific + Command + Debug + Directed + Profiled + ToLeStream,
     {
         let (response, result) = channel();
         trace!("Sending unicast message to {destination} with payload: {payload:?}");

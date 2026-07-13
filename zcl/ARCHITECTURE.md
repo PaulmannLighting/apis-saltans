@@ -14,8 +14,8 @@ has protocol-specific invariants or parsing rules.
 - `src/frame.rs` and `src/frame/` define ZCL frame headers, frame parsing, frame serialization, and
   parse errors.
 - `src/command.rs` and `src/command/` define command traits:
-  - `Command` for static command ID, direction, and default-response behavior.
-  - `CommandDispatch` for runtime dispatch through enum containers.
+  - `Command` for static command ID, accepted parsing directions, and default-response behavior.
+  - `Directed` for commands with a single outgoing frame direction.
   - `Scoped` for global command scope.
 - `src/clusters.rs` defines the runtime `Cluster` enum. This is the top-level command container used
   by `Frame<Cluster>::parse`.
@@ -137,7 +137,9 @@ Generated items:
   ProfileVariant;` after the cluster declaration to override it.
 - `Scoped<Scope::Global>` for global commands.
 - `Command` for static command metadata.
-- `CommandDispatch`.
+- `Directed` when `direction: Direction;` is supplied. Omitting `direction` leaves the generated
+  type without an outgoing direction and defaults command parsing to both directions unless an
+  explicit `parse_direction` is supplied.
 - `ExpectResponse<crate::Cluster>` when `response: Type;` is supplied.
 - `From<CommandPayload> for crate::Cluster`.
 - `TryFrom<crate::Cluster> for CommandPayload`.
