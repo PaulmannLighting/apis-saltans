@@ -22,8 +22,12 @@ pub struct Deciseconds(Uint16);
 impl Deciseconds {
     /// Create a new deciseconds value.
     #[must_use]
-    pub fn new(deciseconds: u16) -> Option<Self> {
-        deciseconds.try_into().map(Self).ok()
+    pub fn new(deciseconds: Uint16) -> Option<Self> {
+        if deciseconds == Uint16::NONE {
+            None
+        } else {
+            Some(Self(deciseconds))
+        }
     }
 
     /// Get the inner value.
@@ -33,15 +37,32 @@ impl Deciseconds {
     }
 }
 
+impl From<Deciseconds> for Uint16 {
+    fn from(value: Deciseconds) -> Self {
+        value.0
+    }
+}
+
+impl From<Deciseconds> for u16 {
+    fn from(value: Deciseconds) -> Self {
+        value.0.into_inner()
+    }
+}
+
+impl From<Deciseconds> for Duration {
+    fn from(value: Deciseconds) -> Self {
+        Self::from_millis(
+            u64::from(u16::try_from(value.0).expect("Inner value is guaranteed to not be NONE."))
+                * MILLIS_PER_DECISECOND,
+        )
+    }
+}
+
 impl TryFrom<Uint16> for Deciseconds {
     type Error = Uint16;
 
     fn try_from(value: Uint16) -> Result<Self, Self::Error> {
-        if value == Uint16::NONE {
-            Err(value)
-        } else {
-            Ok(Self(value))
-        }
+        Self::new(value).ok_or(value)
     }
 }
 
@@ -54,14 +75,5 @@ impl TryFrom<Duration> for Deciseconds {
             .try_into()
             .map_err(|()| duration)
             .map(Self)
-    }
-}
-
-impl From<Deciseconds> for Duration {
-    fn from(value: Deciseconds) -> Self {
-        Self::from_millis(
-            u64::from(u16::try_from(value.0).expect("Inner value is guaranteed to not be NONE."))
-                * MILLIS_PER_DECISECOND,
-        )
     }
 }
