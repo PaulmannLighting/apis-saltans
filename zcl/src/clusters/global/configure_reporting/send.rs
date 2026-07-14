@@ -25,6 +25,10 @@ pub struct AttributeReportingConfiguration {
 
 impl AttributeReportingConfiguration {
     /// Creates a configuration for an attribute that the target device shall report.
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the constructor intentionally accepts a reportable attribute by value"
+    )]
     #[must_use]
     pub fn new<T>(
         attribute: T,
