@@ -114,7 +114,7 @@ where
     }
 
     async fn handle_incoming_command(&mut self, source: Source, frame: Data<Frame<Cluster>>) {
-        let Some(address) = self.get_address_from_source(source).await else {
+        let Some(address) = self.get_full_address(source).await else {
             warn!("Received command from unknown short ID: {source}");
             return;
         };
@@ -122,7 +122,7 @@ where
         self.mux_event(Event::Zcl(Zcl::new(address, frame))).await;
     }
 
-    async fn get_address_from_source(&self, source: Source) -> Option<FullAddress> {
+    async fn get_full_address(&self, source: Source) -> Option<FullAddress> {
         let Ok(short_id) = source.node_id().try_into().inspect_err(|error| {
             warn!("Received invalid node ID: {error:?}");
         }) else {
