@@ -10,6 +10,10 @@ use zb_core::types::Type;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct LampAlarmMode(u8);
 
+impl zb_core::TypeId for LampAlarmMode {
+    const ID: u8 = <u8 as zb_core::TypeId>::ID;
+}
+
 bitflags! {
     impl LampAlarmMode: u8 {
         /// Alarm when the lamp burn hours trip point is reached.

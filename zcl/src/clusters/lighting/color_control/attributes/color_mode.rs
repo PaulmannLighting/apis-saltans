@@ -15,6 +15,10 @@ pub enum ColorMode {
     ColorTemperature = 0x02,
 }
 
+impl zb_core::TypeId for ColorMode {
+    const ID: u8 = <Enum8 as zb_core::TypeId>::ID;
+}
+
 impl TryFrom<u8> for ColorMode {
     type Error = u8;
 

@@ -17,6 +17,10 @@ pub enum EnhancedColorMode {
     EnhancedCurrentHueAndSaturation = 0x03,
 }
 
+impl zb_core::TypeId for EnhancedColorMode {
+    const ID: u8 = <Enum8 as zb_core::TypeId>::ID;
+}
+
 impl TryFrom<u8> for EnhancedColorMode {
     type Error = u8;
 

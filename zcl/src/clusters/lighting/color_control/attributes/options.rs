@@ -12,6 +12,10 @@ use zb_core::types::Type;
 #[repr(transparent)]
 pub struct Options(u8);
 
+impl zb_core::TypeId for Options {
+    const ID: u8 = <u8 as zb_core::TypeId>::ID;
+}
+
 bitflags! {
     impl Options: u8 {
         /// Execute command if, in the On/Off cluster, the OnOff attribute is `0x00` (`FALSE`).

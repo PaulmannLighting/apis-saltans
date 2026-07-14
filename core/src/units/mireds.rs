@@ -1,5 +1,6 @@
 use le_stream::{FromLeStream, ToLeStream};
 
+use crate::TypeId;
 use crate::types::{Type, Uint16};
 
 /// A color temperature expressed in mireds (micro reciprocal degrees).
@@ -13,6 +14,10 @@ use crate::types::{Type, Uint16};
 )]
 #[repr(transparent)]
 pub struct Mireds(u16);
+
+impl TypeId for Mireds {
+    const ID: u8 = Uint16::ID;
+}
 
 impl Mireds {
     /// The minimum valid raw mired value.

@@ -6,6 +6,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::Direction;
 use zb_core::types::Type;
 
+use crate::Reportable;
 use crate::macros::zcl_command;
 
 const DIRECTION: Direction = Direction::ClientToServer;
@@ -25,17 +26,19 @@ pub struct AttributeReportingConfiguration {
 impl AttributeReportingConfiguration {
     /// Creates a configuration for an attribute that the target device shall report.
     #[must_use]
-    pub const fn new(
-        attribute_id: u16,
-        attribute_data_type: u8,
+    pub fn new<T>(
+        attribute: T,
         minimum_reporting_interval: u16,
         maximum_reporting_interval: u16,
         reportable_change: Option<Type>,
-    ) -> Self {
+    ) -> Self
+    where
+        T: Reportable,
+    {
         Self {
             direction: DIRECTION as u8,
-            attribute_id,
-            attribute_data_type,
+            attribute_id: attribute.attribute_id(),
+            attribute_data_type: attribute.type_id(),
             minimum_reporting_interval,
             maximum_reporting_interval,
             reportable_change,

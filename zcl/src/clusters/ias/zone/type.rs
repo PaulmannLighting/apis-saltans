@@ -57,6 +57,10 @@ pub enum Type {
     Invalid = 0xffff,
 }
 
+impl zb_core::TypeId for Type {
+    const ID: u8 = <Enum16 as zb_core::TypeId>::ID;
+}
+
 impl From<Type> for u16 {
     fn from(value: Type) -> Self {
         value as Self

@@ -1269,6 +1269,13 @@ macro_rules! zcl_attribute_newtype {
             }
         }
 
+        $crate::macros::zcl_attribute_newtype! {
+            @type_id_impl
+            [$name]
+            [$inner]
+            [$variant]
+        }
+
         impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
                 Self::$variant(value.bits().into())
@@ -1373,6 +1380,14 @@ macro_rules! zcl_attribute_newtype {
         $crate::macros::zcl_attribute_newtype! {
             @enum_from_type
             [$name]
+            [$type_variant]
+        }
+
+
+        $crate::macros::zcl_attribute_newtype! {
+            @type_id_impl
+            [$name]
+            [u8]
             [$type_variant]
         }
 
@@ -1496,6 +1511,14 @@ macro_rules! zcl_attribute_newtype {
             }
         }
 
+
+        $crate::macros::zcl_attribute_newtype! {
+            @type_id_impl
+            [$name]
+            [$inner]
+            [$variant]
+        }
+
         impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
                 Self::$variant(value.0.into())
@@ -1512,6 +1535,31 @@ macro_rules! zcl_attribute_newtype {
                     Err(value)
                 }
             }
+        }
+    };
+    (@type_id_impl [$name:ident] [$inner:ty] [Enum8]) => {
+        impl zb_core::TypeId for $name {
+            const ID: u8 = <zb_core::types::Enum8 as zb_core::TypeId>::ID;
+        }
+    };
+    (@type_id_impl [$name:ident] [$inner:ty] [Map8]) => {
+        impl zb_core::TypeId for $name {
+            const ID: u8 = <u8 as zb_core::TypeId>::ID;
+        }
+    };
+    (@type_id_impl [$name:ident] [$inner:ty] [Map16]) => {
+        impl zb_core::TypeId for $name {
+            const ID: u8 = <zb_core::types::Map16 as zb_core::TypeId>::ID;
+        }
+    };
+    (@type_id_impl [$name:ident] [$inner:ty] [Map32]) => {
+        impl zb_core::TypeId for $name {
+            const ID: u8 = <zb_core::types::Map32 as zb_core::TypeId>::ID;
+        }
+    };
+    (@type_id_impl [$name:ident] [$inner:ty] [$variant:ident]) => {
+        impl zb_core::TypeId for $name {
+            const ID: u8 = <$inner as zb_core::TypeId>::ID;
         }
     };
 }
@@ -1704,6 +1752,16 @@ macro_rules! zcl_attributes {
             []
             [$([$(#[$variant_attr])*] [$variant] [$id] [$ty] [$($access)*];)*]
         }
+
+        const _: () = {
+            const fn assert_type_id<T>()
+            where
+                T: zb_core::TypeId,
+            {
+            }
+
+            $(let _ = assert_type_id::<$ty>;)*
+        };
     };
     (@manufacturer_code []) => {};
     (@manufacturer_code [$manufacturer_code:expr]) => {
@@ -2708,6 +2766,10 @@ mod zcl_attributes_macro_tests {
     #[derive(Clone, Debug, Eq, Hash, PartialEq)]
     pub struct Custom(Uint8);
 
+    impl zb_core::TypeId for Custom {
+        const ID: u8 = <Uint8 as zb_core::TypeId>::ID;
+    }
+
     impl From<Custom> for Type {
         fn from(value: Custom) -> Self {
             value.0.into()
@@ -2744,6 +2806,10 @@ mod zcl_attributes_macro_tests {
             Some(0x1234)
         );
         assert_eq!(<Scene as Profiled>::PROFILE, Profile::TouchLink);
+        assert_eq!(
+            <Custom as zb_core::TypeId>::ID,
+            <Uint8 as zb_core::TypeId>::ID
+        );
 
         let _ = Id::ReadOnly;
         let _ = Id::ClusterRevision;

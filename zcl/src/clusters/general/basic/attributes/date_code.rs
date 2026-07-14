@@ -23,6 +23,10 @@ pub struct DateCode {
     custom: CustomString,
 }
 
+impl zb_core::TypeId for DateCode {
+    const ID: u8 = <String as zb_core::TypeId>::ID;
+}
+
 impl DateCode {
     /// Create a new `DateCode`.
     #[must_use]

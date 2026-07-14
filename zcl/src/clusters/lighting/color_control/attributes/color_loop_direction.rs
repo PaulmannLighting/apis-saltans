@@ -13,6 +13,10 @@ pub enum ColorLoopDirection {
     Decrement = 0x01,
 }
 
+impl zb_core::TypeId for ColorLoopDirection {
+    const ID: u8 = <Enum8 as zb_core::TypeId>::ID;
+}
+
 impl TryFrom<u8> for ColorLoopDirection {
     type Error = u8;
 

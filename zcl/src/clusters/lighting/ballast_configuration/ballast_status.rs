@@ -10,6 +10,10 @@ use zb_core::types::Type;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct BallastStatus(u8);
 
+impl zb_core::TypeId for BallastStatus {
+    const ID: u8 = <u8 as zb_core::TypeId>::ID;
+}
+
 bitflags! {
     impl BallastStatus: u8 {
         /// Flag, indicating that the ballast is not fully operational.

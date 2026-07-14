@@ -14,6 +14,10 @@ use zb_core::types::Type;
 #[repr(transparent)]
 pub struct ColorCapabilities(u16);
 
+impl zb_core::TypeId for ColorCapabilities {
+    const ID: u8 = <zb_core::types::Map16 as zb_core::TypeId>::ID;
+}
+
 bitflags! {
     impl ColorCapabilities: u16 {
         /// Indicates that the device supports huw and saturation.

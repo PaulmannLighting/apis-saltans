@@ -40,12 +40,15 @@ zcl_command! {
 mod tests {
     use le_stream::{FromLeStream, ToLeStream};
     use zb_core::Direction;
+    use zb_core::types::{Bool, Type};
 
     use super::{Receive, Send, receive, send};
     use crate::Directed;
+    use crate::clusters::general::on_off::SendReport;
 
-    const ATTRIBUTE_ID: u16 = 0x1234;
-    const ATTRIBUTE_DATA_TYPE: u8 = 0x20;
+    const SEND_ATTRIBUTE_ID: u16 = 0x0000;
+    const SEND_ATTRIBUTE_DATA_TYPE: u8 = 0x10;
+    const RECEIVE_ATTRIBUTE_ID: u16 = 0x1234;
     const MINIMUM_REPORTING_INTERVAL: u16 = 0x0102;
     const MAXIMUM_REPORTING_INTERVAL: u16 = 0x0304;
     const TIMEOUT_PERIOD: u16 = 0x0506;
@@ -63,8 +66,7 @@ mod tests {
     #[test]
     fn serializes_and_parses_send_command() {
         let attribute = send::AttributeReportingConfiguration::new(
-            ATTRIBUTE_ID,
-            ATTRIBUTE_DATA_TYPE,
+            SendReport::OnOff(Type::Boolean(Bool::TRUE)),
             MINIMUM_REPORTING_INTERVAL,
             MAXIMUM_REPORTING_INTERVAL,
             None,
@@ -72,8 +74,8 @@ mod tests {
         let command = Send::new(Box::new([attribute]));
         let bytes: Vec<_> = command.clone().to_le_stream().collect();
         let mut expected = vec![Direction::ClientToServer as u8];
-        expected.extend(ATTRIBUTE_ID.to_le_bytes());
-        expected.push(ATTRIBUTE_DATA_TYPE);
+        expected.extend(SEND_ATTRIBUTE_ID.to_le_bytes());
+        expected.push(SEND_ATTRIBUTE_DATA_TYPE);
         expected.extend(MINIMUM_REPORTING_INTERVAL.to_le_bytes());
         expected.extend(MAXIMUM_REPORTING_INTERVAL.to_le_bytes());
 
@@ -83,11 +85,12 @@ mod tests {
 
     #[test]
     fn serializes_and_parses_receive_command() {
-        let attribute = receive::AttributeReportingConfiguration::new(ATTRIBUTE_ID, TIMEOUT_PERIOD);
+        let attribute =
+            receive::AttributeReportingConfiguration::new(RECEIVE_ATTRIBUTE_ID, TIMEOUT_PERIOD);
         let command = Receive::new(Box::new([attribute]));
         let bytes: Vec<_> = command.clone().to_le_stream().collect();
         let mut expected = vec![Direction::ServerToClient as u8];
-        expected.extend(ATTRIBUTE_ID.to_le_bytes());
+        expected.extend(RECEIVE_ATTRIBUTE_ID.to_le_bytes());
         expected.extend(TIMEOUT_PERIOD.to_le_bytes());
 
         assert_eq!(bytes, expected);

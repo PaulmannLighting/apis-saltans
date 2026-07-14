@@ -17,6 +17,10 @@ pub enum LightSensorType {
     Unknown,
 }
 
+impl zb_core::TypeId for LightSensorType {
+    const ID: u8 = <Enum8 as zb_core::TypeId>::ID;
+}
+
 impl LightSensorType {
     /// Return the raw value of the light sensor type.
     #[must_use]

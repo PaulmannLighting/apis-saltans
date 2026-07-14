@@ -9,6 +9,10 @@ use zb_core::types::Type;
 )]
 pub struct Status(u16);
 
+impl zb_core::TypeId for Status {
+    const ID: u8 = <zb_core::types::Map16 as zb_core::TypeId>::ID;
+}
+
 bitflags! {
     impl Status: u16 {
         /// 1 – opened or alarmed, 0 – closed or not alarmed

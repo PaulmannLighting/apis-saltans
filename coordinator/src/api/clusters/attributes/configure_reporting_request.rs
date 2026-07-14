@@ -33,8 +33,7 @@ where
                 .into_iter()
                 .map(|attribute| {
                     configure_reporting::send::AttributeReportingConfiguration::new(
-                        attribute.attribute_id(),
-                        attribute.type_id(),
+                        attribute,
                         minimum_reporting_interval,
                         maximum_reporting_interval,
                         reportable_change.cloned(),

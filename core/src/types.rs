@@ -305,8 +305,14 @@ impl_zigbee_type!(0x2e => Int56);
 impl_zigbee_type!(0x2f => Int64);
 impl_zigbee_type!(0x30 => Enum8);
 impl_zigbee_type!(0x31 => Enum16);
-impl_zigbee_type!(0x41 => OctStr);
-impl_zigbee_type!(0x42 => String);
+impl<const CAPACITY: usize> TypeId for OctStr<CAPACITY> {
+    const ID: u8 = 0x41;
+}
+
+impl<const CAPACITY: usize> TypeId for String<CAPACITY> {
+    const ID: u8 = 0x42;
+}
+
 impl_zigbee_type!(0xe0 => TimeOfDay);
 impl_zigbee_type!(0xe1 => Date);
 impl_zigbee_type!(0xe2 => UtcTime);

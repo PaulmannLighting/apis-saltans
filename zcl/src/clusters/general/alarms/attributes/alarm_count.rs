@@ -14,6 +14,10 @@ const MAX: u16 = 0x00ff;
 )]
 pub struct AlarmCount(Uint16);
 
+impl zb_core::TypeId for AlarmCount {
+    const ID: u8 = <Uint16 as zb_core::TypeId>::ID;
+}
+
 impl AlarmCount {
     /// Create a new `AlarmCount`.
     #[must_use]

@@ -13,6 +13,10 @@ pub enum StartupColorTemperature {
     Previous,
 }
 
+impl zb_core::TypeId for StartupColorTemperature {
+    const ID: u8 = <Uint16 as zb_core::TypeId>::ID;
+}
+
 impl From<StartupColorTemperature> for u16 {
     fn from(value: StartupColorTemperature) -> Self {
         match value {
