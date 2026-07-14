@@ -10,8 +10,8 @@ N/A
 
 ## Robustness
 
-- [ ] Split read and write attributes into separate enums.
-- [ ] Enforce correct types on write and allow lax input on read.
+- [x] Split read and write attributes into separate enums.
+- [x] Enforce correct types on write and allow lax input on read.
 
 ## Correctness
 
