@@ -144,3 +144,25 @@ impl Attributes for Coordinator {
         self.zcl.write(device, attributes).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use zb_core::types::Uint16;
+    use zb_zcl::color_control::SendReport;
+    use zb_zcl::{Analog, Reportable};
+
+    fn assert_configure_reporting<T>(_: T)
+    where
+        T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send,
+    {
+    }
+
+    #[test]
+    fn test_color_reporting() {
+        let requests = [
+            SendReport::CurrentX(Analog::new(0, 0, Uint16::MIN)),
+            SendReport::CurrentY(Analog::new(0, 0, Uint16::MAX)),
+        ];
+        assert_configure_reporting(requests);
+    }
+}
