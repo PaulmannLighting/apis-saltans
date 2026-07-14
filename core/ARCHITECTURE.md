@@ -12,7 +12,7 @@ protocol crates can share.
 flowchart TD
     Addressing["Addressing<br/>FullAddress, ShortId, IeeeAddress, GroupId"]
     Routing["Routing metadata<br/>Endpoint, Destination, Profile, Cluster"]
-    Traits["Type metadata traits<br/>ClusterSpecific, Profiled, ExpectResponse"]
+    Traits["Type metadata traits<br/>ClusterSpecific, Profiled, ExpectResponse, TypeId"]
     Values["Zigbee values<br/>types::Type, units"]
     Tlv["TLVs<br/>types::tlv"]
     Node["Node model<br/>node::Node, descriptor"]
@@ -32,7 +32,7 @@ flowchart TD
 | --- | --- | --- |
 | Addressing | `full_address.rs`, `ieee_address.rs`, `short_id.rs`, `group_id.rs` | IEEE addresses, NWK short addresses, complete device addresses, and APS group identifiers. |
 | Routing metadata | `endpoint.rs`, `destination.rs`, `profile.rs`, `cluster.rs`, `direction.rs` | Endpoint, destination, profile, cluster, and command-direction domain values. |
-| Traits | `traits.rs`, `cluster.rs`, `profile.rs` | Cross-crate metadata traits such as `ExpectResponse`, `ClusterSpecific`, and `Profiled`. |
+| Traits | `traits.rs`, `cluster.rs`, `profile.rs` | Cross-crate metadata traits such as `ExpectResponse`, `ClusterSpecific`, `Profiled`, and `TypeId`. |
 | Typed values | `types.rs`, `types/*` | Zigbee primitive, discrete, analog, composite, and tagged value representations. |
 | TLVs | `types/tlv.rs`, `types/tlv/*` | Local, global, and encapsulated TLV representations. |
 | Nodes | `node.rs`, `node/descriptor.rs`, `node/descriptor/*` | Node descriptors and descriptor bitfields. |
@@ -95,6 +95,11 @@ without making profile metadata part of the cluster trait.
 `types::Type` is the tagged Zigbee value enum. It wraps null values, discrete
 byte blocks, booleans, dates, times, analog integers, strings, identifiers, and
 other scalar values used by ZCL and ZDP payloads.
+
+Each payload type implements `TypeId` to expose the tag as an `ID` constant.
+When two variants share an underlying representation but have different tags,
+transparent newtypes keep their type-level IDs unambiguous without changing the
+serialized bytes.
 
 TLV support is under `types::tlv`. `Tlv<L, G>` distinguishes local and global
 tag ranges, while the concrete local and global enums provide typed payloads

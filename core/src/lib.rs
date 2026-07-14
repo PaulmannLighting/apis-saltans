@@ -23,7 +23,7 @@ pub use self::group_id::GroupId;
 pub use self::ieee_address::{Eui64, IeeeAddress};
 pub use self::profile::{Profile, Profiled};
 pub use self::short_id::ShortId;
-pub use self::traits::ExpectResponse;
+pub use self::traits::{ExpectResponse, TypeId};
 
 mod byte_sized_vec;
 mod cluster;

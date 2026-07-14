@@ -1271,7 +1271,7 @@ macro_rules! zcl_attribute_newtype {
 
         impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
-                Self::$variant(value.bits())
+                Self::$variant(value.bits().into())
             }
         }
 
@@ -1280,7 +1280,7 @@ macro_rules! zcl_attribute_newtype {
 
             fn try_from(value: zb_core::types::Type) -> Result<Self, Self::Error> {
                 if let zb_core::types::Type::$variant(value) = value {
-                    Ok(Self::from_bits_retain(value))
+                    Ok(Self::from_bits_retain(value.into()))
                 } else {
                     Err(value)
                 }
@@ -1418,7 +1418,7 @@ macro_rules! zcl_attribute_newtype {
     (@enum_from_type [$name:ident] [Enum8]) => {
         impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
-                Self::Enum8(value.into())
+                Self::Enum8(zb_core::types::Enum8::new(value.into()))
             }
         }
     };
@@ -1435,7 +1435,8 @@ macro_rules! zcl_attribute_newtype {
 
             fn try_from(value: zb_core::types::Type) -> Result<Self, Self::Error> {
                 if let zb_core::types::Type::Enum8(value) = value {
-                    Self::try_from(value).map_err(zb_core::types::Type::Enum8)
+                    Self::try_from(value.into_inner())
+                        .map_err(|value| zb_core::types::Type::Enum8(value.into()))
                 } else {
                     Err(value)
                 }
@@ -1497,7 +1498,7 @@ macro_rules! zcl_attribute_newtype {
 
         impl From<$name> for zb_core::types::Type {
             fn from(value: $name) -> Self {
-                Self::$variant(value.0)
+                Self::$variant(value.0.into())
             }
         }
 
@@ -1506,7 +1507,7 @@ macro_rules! zcl_attribute_newtype {
 
             fn try_from(value: zb_core::types::Type) -> Result<Self, Self::Error> {
                 if let zb_core::types::Type::$variant(value) = value {
-                    Ok(Self(value))
+                    Ok(Self(value.into()))
                 } else {
                     Err(value)
                 }

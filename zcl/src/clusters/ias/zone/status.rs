@@ -45,7 +45,7 @@ bitflags! {
 
 impl From<Status> for Type {
     fn from(value: Status) -> Self {
-        Self::Map16(value.bits())
+        Self::Map16(value.bits().into())
     }
 }
 
@@ -54,7 +54,7 @@ impl TryFrom<Type> for Status {
 
     fn try_from(value: Type) -> Result<Self, Self::Error> {
         if let Type::Map16(value) = value {
-            Ok(Self::from_bits_retain(value))
+            Ok(Self::from_bits_retain(value.into_inner()))
         } else {
             Err(value)
         }

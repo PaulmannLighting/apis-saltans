@@ -492,10 +492,10 @@ analog_integers! {
     }
     unsigned {
         /// The `8-bit unsigned integer` type, short `uint8`.
-        Uint8(u8, 0xff) alias [Enum8];
+        Uint8(u8, 0xff);
 
         /// The `16-bit unsigned integer` type, short `uint16`.
-        Uint16(u16, 0xffff) alias [Enum16];
+        Uint16(u16, 0xffff);
 
         /// The `24-bit unsigned integer` type, short `uint24`.
         Uint24(U24, U24::from_ne_bytes([0xff, 0xff, 0xff]), u32);

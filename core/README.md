@@ -7,7 +7,7 @@ This crate provides:
 - Type-Length-Value (TLV) structures (`types::tlv`)
 - core identifiers and enums (`Endpoint`, `ShortId`, `Profile`, `Direction`, `Cluster`)
 - destination, address, group, and node representation (`Destination`, `FullAddress`, `GroupId`, `node::Node`, descriptor bitfields)
-- utility traits used across protocol layers (`ExpectResponse`, `ClusterSpecific`, `Profiled`)
+- utility traits used across protocol layers (`ExpectResponse`, `ClusterSpecific`, `Profiled`, `TypeId`)
 
 ## Status
 
@@ -50,7 +50,7 @@ Top-level re-exports from `apis-saltans-core`:
 - `GroupId`
 - `Profile`, `Profiled`
 - `ShortId`
-- `ExpectResponse`
+- `ExpectResponse`, `TypeId`
 - modules: `constants`, `destination`, `endpoint`, `node`, `short_id`, `types`, `units`
 
 Key modules:
@@ -87,6 +87,9 @@ Most types in this crate implement one or more of:
 - protocol identifiers (`ClusterId`, `AttributeId`, `BacnetObjectId`, `IeeeAddress`, `Key128`)
 
 `Type` supports round-tripping by tag via `FromLeStreamTagged` and bytes via `ToLeStream`.
+Its payload types implement `TypeId`, whose `ID` constant is the corresponding
+Zigbee data type tag. Payloads with otherwise identical representations use distinct
+transparent newtypes, such as `Uint8` and `Enum8`.
 
 ## TLV Encoding Notes
 
@@ -164,6 +167,7 @@ assert_eq!(u8::from(ep), 1);
 - `ExpectResponse<T>`: associates command/request types with response types.
 - `ClusterSpecific<T = u16>`: associates a type with a Zigbee cluster ID.
 - `Profiled`: associates a type with a Zigbee profile.
+- `TypeId`: associates a value type with its Zigbee data type ID.
 
 ## Related Crates In This Workspace
 

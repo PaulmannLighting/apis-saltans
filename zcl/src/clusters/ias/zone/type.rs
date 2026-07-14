@@ -1,6 +1,6 @@
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
-use zb_core::types::{Type as ZclType, Uint16};
+use zb_core::types::{Enum16, Type as ZclType, Uint16};
 
 /// Zone types.
 ///
@@ -65,7 +65,7 @@ impl From<Type> for u16 {
 
 impl From<Type> for ZclType {
     fn from(value: Type) -> Self {
-        Self::Enum16(Uint16::new(value.into()))
+        Self::Enum16(Enum16::new(Uint16::new(value.into())))
     }
 }
 
@@ -90,7 +90,7 @@ impl TryFrom<ZclType> for Type {
 
     fn try_from(value: ZclType) -> Result<Self, Self::Error> {
         if let ZclType::Enum16(value) = value {
-            Self::try_from(value).map_err(ZclType::Enum16)
+            Self::try_from(value.into_inner()).map_err(|value| ZclType::Enum16(value.into()))
         } else {
             Err(value)
         }

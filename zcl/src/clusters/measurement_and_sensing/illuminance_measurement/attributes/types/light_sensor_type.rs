@@ -1,4 +1,4 @@
-use zb_core::types::{Type, Uint8};
+use zb_core::types::{Enum8, Type, Uint8};
 
 pub use self::manufacturer_specific::ManufacturerSpecific;
 
@@ -38,7 +38,7 @@ impl From<LightSensorType> for u8 {
 
 impl From<LightSensorType> for Type {
     fn from(value: LightSensorType) -> Self {
-        Self::Enum8(Uint8::new(value.into()))
+        Self::Enum8(Enum8::new(Uint8::new(value.into())))
     }
 }
 
@@ -71,7 +71,7 @@ impl TryFrom<Type> for LightSensorType {
 
     fn try_from(value: Type) -> Result<Self, Self::Error> {
         if let Type::Enum8(value) = value {
-            Self::try_from(value).map_err(Type::Enum8)
+            Self::try_from(value.into_inner()).map_err(|value| Type::Enum8(value.into()))
         } else {
             Err(value)
         }
