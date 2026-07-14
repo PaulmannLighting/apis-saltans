@@ -4,7 +4,10 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::Event;
 
-/// Newtype wrapper around a receiver of [`Event`]s.
+/// A receiver for coordinator [`Event`]s.
+///
+/// This wrapper dereferences to Tokio's [`Receiver<Event>`], so methods such as
+/// [`Receiver::recv`] are available directly.
 #[derive(Debug)]
 pub struct EventReceiver {
     inner: Receiver<Event>,

@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use log::{debug, error, info, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
@@ -10,6 +8,7 @@ use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame};
 
 pub use self::message::Message;
+use crate::event::Zcl;
 use crate::network::Device;
 use crate::storage::Storage;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE, storage};
@@ -21,7 +20,7 @@ mod message;
 pub struct Actor<T> {
     ncp: T,
     storage: Sender<storage::Message>,
-    subscribers: Vec<(BTreeSet<IeeeAddress>, Sender<Event>)>,
+    subscribers: Vec<Sender<Event>>,
 }
 
 impl<T> Actor<T>
@@ -45,8 +44,8 @@ where
 
         while let Some(message) = messages.recv().await {
             match message {
-                Message::SubscribeToIncomingCommands { devices, sender } => {
-                    self.subscribers.push((devices, sender));
+                Message::Subscribe(sender) => {
+                    self.subscribers.push(sender);
                 }
                 Message::Command { source, frame } => {
                     self.handle_incoming_command(source, frame).await;
@@ -113,24 +112,7 @@ where
             return;
         };
 
-        let event = Event::new(address, frame);
-
-        for subscriber in self.subscribers.iter().filter_map(|(devices, sender)| {
-            if devices.is_empty() || devices.contains(&address.ieee_address()) {
-                Some(sender)
-            } else {
-                None
-            }
-        }) {
-            subscriber
-                .send(event.clone())
-                .await
-                .unwrap_or_else(|error| {
-                    debug!("Failed to send command to subscriber: {error:?}");
-                });
-        }
-
-        self.subscribers.retain(|(_, sender)| !sender.is_closed());
+        self.mux_event(Event::Zcl(Zcl::new(address, frame))).await;
     }
 
     async fn get_address_from_source(&self, source: Source) -> Option<FullAddress> {
@@ -194,6 +176,19 @@ where
                 }
             },
         );
+    }
+
+    async fn mux_event(&mut self, event: Event) {
+        for subscriber in &self.subscribers {
+            subscriber
+                .send(event.clone())
+                .await
+                .unwrap_or_else(|error| {
+                    debug!("Failed to send command to subscriber: {error:?}");
+                });
+        }
+
+        self.subscribers.retain(|sender| !sender.is_closed());
     }
 
     /// Start the network manager.

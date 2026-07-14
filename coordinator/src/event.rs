@@ -1,54 +1,24 @@
-use zb_aps::Data;
-use zb_core::endpoint::Reserved;
-use zb_core::{Endpoint, FullAddress};
-use zb_zcl::{Cluster, Frame};
+use zb_core::FullAddress;
 
-pub use self::r#type::Type;
+pub use self::zcl::Zcl;
 
-mod r#type;
+mod zcl;
 
-/// A generic Zigbee event.
+/// An event published by the coordinator.
+///
+/// Subscribe with [`crate::NetworkManager::subscribe`] to receive events published by the network
+/// manager.
 #[derive(Clone, Debug)]
-pub struct Event {
-    src_address: FullAddress,
-    src_endpoint: Result<Endpoint, Reserved>,
-    typ: Type,
-}
+pub enum Event {
+    /// A device joined the network.
+    DeviceJoined(FullAddress),
 
-impl Event {
-    /// Create a new event.
-    pub(crate) fn new(src_address: FullAddress, aps: Data<Frame<Cluster>>) -> Self {
-        Self {
-            src_address,
-            src_endpoint: aps.header().source_endpoint(),
-            typ: aps.into(),
-        }
-    }
+    /// A device left the network.
+    DeviceLeft(FullAddress),
 
-    /// Return the source address of the event.
-    #[must_use]
-    pub const fn src_address(&self) -> FullAddress {
-        self.src_address
-    }
+    /// A device announced itself on the network.
+    DeviceAnnounced(FullAddress),
 
-    /// Return the source endpoint of the event.
-    ///
-    /// # Errors
-    ///
-    /// Returns the reserved endpoint value if the source endpoint is not a valid endpoint.
-    pub const fn src_endpoint(&self) -> Result<Endpoint, Reserved> {
-        self.src_endpoint
-    }
-
-    /// Return the type of event.
-    #[must_use]
-    pub const fn typ(&self) -> &Type {
-        &self.typ
-    }
-
-    /// Return the parts of the event.
-    #[must_use]
-    pub fn into_type(self) -> Type {
-        self.typ
-    }
+    /// An unsolicited ZCL command was received.
+    Zcl(Zcl),
 }

@@ -2,6 +2,9 @@
 //!
 //! This library provides a fully abstracted interface to expose an interface to communicate with
 //! a Zigbee transceiver regardless of the underlying hardware.
+//!
+//! Use [`NetworkManager::subscribe`] to receive coordinator [`Event`] values. Unsolicited ZCL
+//! commands are represented by [`Event::Zcl`] and expose their resolved source through [`Zcl`].
 
 use core::time::Duration;
 
@@ -13,7 +16,7 @@ pub use self::api::{
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
-pub use self::event::{Event, Type as EventType};
+pub use self::event::{Event, Zcl};
 pub use self::event_receiver::EventReceiver;
 pub use self::network::{Device, DeviceAttributes, EndpointInfo};
 use self::retry::Retry;

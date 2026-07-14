@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use either::Either;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
@@ -38,7 +36,7 @@ pub trait NetworkManager {
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Option<short_id::Device>, Error>> + Send;
 
-    /// Resolve the given IEEE address into an [`Address`].
+    /// Resolve an IEEE address or short ID into a [`FullAddress`].
     ///
     /// # Returns
     ///
@@ -71,14 +69,20 @@ pub trait NetworkManager {
         }
     }
 
-    /// Subscribes to a stream of incoming commands.
+    /// Subscribes to all coordinator events using a bounded channel.
+    ///
+    /// The returned receiver closes when the network manager stops. Dropping the receiver removes
+    /// the subscription after the next delivery attempt.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `channel_size` is zero.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if the communication with the actor failed.
-    fn subscribe_to_incoming_commands(
+    fn subscribe(
         &self,
-        device: BTreeSet<IeeeAddress>,
         channel_size: usize,
     ) -> impl Future<Output = Result<Receiver<Event>, Error>> + Send;
 
@@ -110,17 +114,9 @@ impl NetworkManager for Sender<Message> {
         Ok(result.await?)
     }
 
-    async fn subscribe_to_incoming_commands(
-        &self,
-        device: BTreeSet<IeeeAddress>,
-        channel_size: usize,
-    ) -> Result<Receiver<Event>, Error> {
+    async fn subscribe(&self, channel_size: usize) -> Result<Receiver<Event>, Error> {
         let (sender, receiver) = tokio::sync::mpsc::channel(channel_size);
-        self.send(Message::SubscribeToIncomingCommands {
-            devices: device,
-            sender,
-        })
-        .await?;
+        self.send(Message::Subscribe(sender)).await?;
         Ok(receiver)
     }
 
@@ -150,14 +146,8 @@ impl NetworkManager for Coordinator {
             .await
     }
 
-    async fn subscribe_to_incoming_commands(
-        &self,
-        device: BTreeSet<IeeeAddress>,
-        channel_size: usize,
-    ) -> Result<Receiver<Event>, Error> {
-        self.network_manager
-            .subscribe_to_incoming_commands(device, channel_size)
-            .await
+    async fn subscribe(&self, channel_size: usize) -> Result<Receiver<Event>, Error> {
+        self.network_manager.subscribe(channel_size).await
     }
 
     async fn devices(&self) -> Result<Box<[Device]>, Error> {

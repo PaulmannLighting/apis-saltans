@@ -27,7 +27,7 @@ Public API exports:
     - `ReadAttributeResult<T>`
 - event types:
     - `Event`
-    - `EventType`
+    - `Zcl`
     - `EventReceiver`
 - state model types:
     - `Device`, `EndpointInfo`, `DeviceAttributes`
@@ -93,10 +93,9 @@ Provides queries against coordinator-maintained network state:
 
 - `get_ieee_address_from_short_id`
 - `get_short_id_from_ieee_address`
-- `short_id_to_address`
-- `ieee_address_to_address`
-- `subscribe_to_incoming_commands`
-- `state` (snapshot of known devices)
+- `get_full_address`
+- `subscribe`
+- `devices`
 
 ```rust,no_run
 use zb_core::IeeeAddress;
@@ -108,36 +107,51 @@ async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, apis_
 }
 ```
 
-`subscribe_to_incoming_commands` returns a receiver of [`Event`] values.
-Incoming APS envelopes carry an `zb_nwk::Source`; the coordinator
-resolves that source into a known `Address` before publishing an `Event`.
-`Event` contains the resolved source address, source endpoint, and an
-[`EventType`]. `EventType` is the public alias for the event payload enum and
-currently distinguishes cluster-specific commands from parsed attribute reports:
+### Event subscriptions
 
-- `EventType::Cluster(zb_zcl::Cluster)`
-- `EventType::AttributeReport(Box<[zb_zcl::AttributeReport]>)`
+`NetworkManager::subscribe(channel_size)` creates a bounded Tokio channel and returns its
+receiver. Every subscriber receives the coordinator events published after it subscribes; the API
+does not apply per-device filtering. Dropping the receiver closes the subscription, which the
+network manager removes after a delivery attempt. `channel_size` must be greater than zero.
 
-Pass an empty device set to subscribe to all known devices, or pass IEEE
-addresses to receive only matching devices.
+`subscribe` returns `tokio::sync::mpsc::Receiver<Event>` directly. The separately exported
+`EventReceiver` newtype wraps the same receiver type and dereferences to it, exposing methods such
+as `recv()`.
+
+`Event` currently models device lifecycle notifications and unsolicited ZCL commands:
+
+- `Event::DeviceJoined(FullAddress)`
+- `Event::DeviceLeft(FullAddress)`
+- `Event::DeviceAnnounced(FullAddress)`
+- `Event::Zcl(Zcl)`
+
+For a ZCL event, `Zcl::src_address()` returns the resolved IEEE and short address,
+`Zcl::src_endpoint()` returns the source endpoint or its reserved raw value, and
+`Zcl::into_command()` returns the parsed `zb_zcl::Cluster` command. Incoming commands whose source
+cannot be resolved are logged and are not published.
 
 ```rust,no_run
-use std::collections::BTreeSet;
-
-use apis_saltans_coordinator::{EventType, NetworkManager};
+use apis_saltans_coordinator::{Event, NetworkManager};
 
 async fn receive_events(api: &impl NetworkManager) -> Result<(), apis_saltans_coordinator::Error> {
-    let mut events = api
-        .subscribe_to_incoming_commands(BTreeSet::new(), 16)
-        .await?;
+    let mut events = api.subscribe(16).await?;
 
     while let Some(event) = events.recv().await {
-        match event.typ() {
-            EventType::Cluster(command) => {
-                let _ = command;
+        match event {
+            Event::DeviceJoined(address) => {
+                println!("device joined: {address}");
             }
-            EventType::AttributeReport(attributes) => {
-                let _ = attributes;
+            Event::DeviceLeft(address) => {
+                println!("device left: {address}");
+            }
+            Event::DeviceAnnounced(address) => {
+                println!("device announced: {address}");
+            }
+            Event::Zcl(event) => {
+                let source = event.src_address();
+                let endpoint = event.src_endpoint();
+                let command = event.into_command();
+                println!("ZCL command from {source} endpoint {endpoint:?}: {command:?}");
             }
         }
     }

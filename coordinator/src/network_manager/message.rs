@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zb_aps::Data;
@@ -14,15 +12,8 @@ use crate::Event;
 /// Messages received by the network management actor.
 #[derive(Debug)]
 pub enum Message {
-    /// Subscribe to incoming ZCL commands.
-    SubscribeToIncomingCommands {
-        /// The source addresses of the devices to listen to.
-        ///
-        /// An empty set means that all devices will be listened to.
-        devices: BTreeSet<IeeeAddress>,
-        /// The sender to send the incoming commands to.
-        sender: Sender<Event>,
-    },
+    /// Subscribe to events.
+    Subscribe(Sender<Event>),
 
     /// An incoming ZCL command.
     Command {

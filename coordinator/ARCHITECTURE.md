@@ -23,6 +23,7 @@ returns a lightweight API handle containing key senders and the NCP handle.
 flowchart TD
     HW[zigbee hw NCP and event stream]
     C[Coordinator handle]
+    S[Event subscribers]
 
     M[Mux actor]
     ZCL[ZCL transceiver actor]
@@ -70,6 +71,7 @@ flowchart TD
     C -->|api call| ZCL
     C -->|state query| NM
     C -->|allow joining| HW
+    NM -->|bounded Event streams| S
 ```
 
 ## Startup and Wiring
@@ -103,11 +105,10 @@ For global attribute operations (`Attributes`):
 - no coordinator-side normalization of attribute IDs is performed
 - this is required for clusters that compose IDs from a base slot plus a tagged sub-field (for example, Power Configuration battery settings where primary/secondary/tertiary battery banks use different base IDs and the setting selector is encoded in the low bits)
 
-The crate root exports `Event`, `EventType`, and `EventReceiver` for consumers
-that subscribe to inbound commands. `EventType` is an alias for the internal
-`event::Type` enum and is the payload classification returned by `Event::typ()`
-and `Event::into_parts()`. It currently has variants for cluster-specific ZCL
-commands and parsed attribute reports.
+The crate root exports `Event`, `Zcl`, and `EventReceiver` for consumers of the coordinator event
+stream. `Event` is an enum containing device lifecycle events and `Event::Zcl(Zcl)`. A `Zcl` event
+owns the resolved source address, the source endpoint result, and the parsed `zb_zcl::Cluster`
+command.
 
 ### Mux
 
@@ -207,14 +208,14 @@ Handles:
 - add/remove device updates
 - short<->IEEE resolution
 - full state snapshots
-- incoming command subscriptions created by `NetworkManager::subscribe_to_incoming_commands`
+- event subscriptions created by `NetworkManager::subscribe(channel_size)`
 - incoming command `Source` values are resolved to known device `Address` values before events are published
 - unknown incoming command sources are logged and dropped
 
-Subscription filters are stored as `(BTreeSet<IeeeAddress>, Sender<Event>)`. An
-empty device set subscribes to all known devices; otherwise only matching IEEE
-addresses receive the event. The actor drops closed subscriber channels after
-delivery attempts.
+Subscriptions are stored as `Sender<Event>` values. Each event is cloned to every active
+subscriber; there is no per-device filtering. The caller-provided channel size bounds each
+subscriber's queue and therefore applies backpressure while an event is delivered. The actor drops
+closed subscriber channels after delivery attempts.
 
 ## Key Message Flows
 
@@ -331,18 +332,21 @@ sequenceDiagram
     ZDP-->>API: oneshot response
 ```
 
-## 5) Incoming command subscription
+## 5) Coordinator event subscription
 
 ```mermaid
 sequenceDiagram
+    participant Caller as API caller
     participant ZCL as ZCL Actor
     participant NM as NetworkManager
     participant API as Subscriber
 
+    Caller->>NM: subscribe(channel_size)
+    NM-->>Caller: Receiver&lt;Event&gt;
     ZCL->>NM: Command{source, payload}
     alt source resolves to a known address
-        NM->>NM: build Event{address, endpoint, EventType}
-        NM->>API: send Event to matching subscriber channels
+        NM->>NM: build Event::Zcl(Zcl{address, endpoint, command})
+        NM->>API: clone Event to every subscriber channel
     else source unknown
         NM->>NM: log and drop command
     end
