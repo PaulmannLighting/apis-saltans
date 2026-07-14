@@ -75,7 +75,7 @@ where
 mod tests {
     use zb_core::types::{Bool, Type};
     use zb_core::{Cluster, Direction, Profile};
-    use zb_zcl::on_off::Types;
+    use zb_zcl::on_off::SendReport;
 
     use super::ConfigureReportingRequest;
     use crate::transceiver::zcl::Payload;
@@ -89,8 +89,8 @@ mod tests {
     fn derives_request_metadata_and_attribute_ids_from_reportable() {
         let request = ConfigureReportingRequest::new(
             [
-                Types::OnOff(Type::Boolean(Bool::TRUE)),
-                Types::OnOff(Type::Boolean(Bool::FALSE)),
+                SendReport::OnOff(Type::Boolean(Bool::TRUE)),
+                SendReport::OnOff(Type::Boolean(Bool::FALSE)),
             ],
             MINIMUM_REPORTING_INTERVAL,
             MAXIMUM_REPORTING_INTERVAL,

@@ -1,6 +1,6 @@
 //! Level Control Cluster.
 
-pub use self::attributes::{Id, Readable, Reportable, Types, Writable};
+pub use self::attributes::{Id, Readable, Reportable, SendReport, Writable};
 pub use self::commands::{
     Command, Move, MoveToClosestFrequency, MoveToLevel, MoveToLevelWithOnOff, MoveWithOnOff, Step,
     StepWithOnOff, Stop, StopWithOnOff,

@@ -1522,7 +1522,7 @@ pub(crate) use zcl_attribute_newtype;
 ///
 /// The macro generates fixed enum names in the invocation module:
 /// `Id` for readable attribute IDs, plus `Readable`, `Writable`,
-/// `Reportable`, and `Scene` for access-specific attribute values. `Types`
+/// `Reportable`, and `Scene` for access-specific attribute values. `SendReport`
 /// associates reportable attributes with their ZCL wire types. The
 /// cluster ID is required and is used to implement `Cluster` for the generated
 /// enums. The global readable attributes `ClusterRevision` and
@@ -2179,7 +2179,7 @@ macro_rules! zcl_attributes {
         }
 
         $crate::macros::zcl_attributes! {
-            @emit_types_enum
+            @emit_send_report_enum
             [$($manufacturer_code)?]
             [$($variants)*]
         }
@@ -2195,7 +2195,7 @@ macro_rules! zcl_attributes {
             @cluster_impl
             $cluster
             [$($manufacturer_code)?]
-            Types
+            SendReport
         }
 
         impl TryFrom<(u16, zb_core::types::Type)> for Reportable {
@@ -2224,7 +2224,7 @@ macro_rules! zcl_attributes {
         }
 
         $crate::macros::zcl_attributes! {
-            @emit_types_enum
+            @emit_send_report_enum
             [$($manufacturer_code)?]
             [$($variants)*]
         }
@@ -2240,7 +2240,7 @@ macro_rules! zcl_attributes {
             @cluster_impl
             $cluster
             [$($manufacturer_code)?]
-            Types
+            SendReport
         }
 
         impl TryFrom<(u16, zb_core::types::Type)> for Reportable {
@@ -2613,27 +2613,27 @@ macro_rules! zcl_attributes {
             $($variants)+
         }
     };
-    (@emit_types_enum [$($manufacturer_code:expr)?] []) => {
+    (@emit_send_report_enum [$($manufacturer_code:expr)?] []) => {
         /// ZCL wire types associated with reportable attributes.
         #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-        pub enum Types {}
+        pub enum SendReport {}
 
-        impl $crate::Reportable for Types {
+        impl $crate::Reportable for SendReport {
             $crate::macros::zcl_attributes! {
                 @manufacturer_code [$($manufacturer_code)?]
             }
 
             fn attribute_id(&self) -> u16 {
-                panic!("an empty Types enum cannot be instantiated")
+                panic!("an empty SendReport enum cannot be instantiated")
             }
 
             fn type_id(&self) -> u8 {
-                panic!("an empty Types enum cannot be instantiated")
+                panic!("an empty SendReport enum cannot be instantiated")
             }
         }
     };
     (
-        @emit_types_enum
+        @emit_send_report_enum
         [$($manufacturer_code:expr)?]
         [
             $(
@@ -2645,14 +2645,14 @@ macro_rules! zcl_attributes {
         /// ZCL wire types associated with reportable attributes.
         #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
         #[repr(u16)]
-        pub enum Types {
+        pub enum SendReport {
             $(
                 $(#[$variant_attr])*
                 $variant(zb_core::types::Type) = $id,
             )+
         }
 
-        impl $crate::Reportable for Types {
+        impl $crate::Reportable for SendReport {
             $crate::macros::zcl_attributes! {
                 @manufacturer_code [$($manufacturer_code)?]
             }
@@ -2737,9 +2737,9 @@ mod zcl_attributes_macro_tests {
             Some(0x1234)
         );
         assert_eq!(<Reportable as Profiled>::PROFILE, Profile::TouchLink);
-        assert_eq!(<Types as Profiled>::PROFILE, Profile::TouchLink);
+        assert_eq!(<SendReport as Profiled>::PROFILE, Profile::TouchLink);
         assert_eq!(
-            <Types as crate::Reportable>::MANUFACTURER_CODE,
+            <SendReport as crate::Reportable>::MANUFACTURER_CODE,
             Some(0x1234)
         );
         assert_eq!(<Scene as Profiled>::PROFILE, Profile::TouchLink);
@@ -2755,11 +2755,11 @@ mod zcl_attributes_macro_tests {
         let _ = Writable::WriteOnly(Custom(Uint8::new(4)));
         let _ = Reportable::Writable(Uint8::new(5));
         assert_eq!(
-            crate::Reportable::attribute_id(&Types::Writable(Type::Uint8(Uint8::new(5)))),
+            crate::Reportable::attribute_id(&SendReport::Writable(Type::Uint8(Uint8::new(5)))),
             0x0001
         );
         assert_eq!(
-            crate::Reportable::type_id(&Types::Writable(Type::Uint8(Uint8::new(5)))),
+            crate::Reportable::type_id(&SendReport::Writable(Type::Uint8(Uint8::new(5)))),
             0x20
         );
         let _ = Scene::Writable(Uint8::new(6));
@@ -2807,8 +2807,8 @@ mod zcl_attributes_macro_tests {
             assert_writable::<Writable>();
             assert_cluster::<Readable>();
             assert_cluster::<Reportable>();
-            assert_cluster::<Types>();
-            assert_reportable::<Types>();
+            assert_cluster::<SendReport>();
+            assert_reportable::<SendReport>();
             assert_cluster::<Scene>();
 
             assert_eq!(<Id as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
@@ -2824,8 +2824,11 @@ mod zcl_attributes_macro_tests {
                 <Reportable as Profiled>::PROFILE,
                 Profile::ZigbeeHomeAutomation
             );
-            assert_eq!(<Types as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
-            assert_eq!(<Types as crate::Reportable>::MANUFACTURER_CODE, None);
+            assert_eq!(
+                <SendReport as Profiled>::PROFILE,
+                Profile::ZigbeeHomeAutomation
+            );
+            assert_eq!(<SendReport as crate::Reportable>::MANUFACTURER_CODE, None);
             assert_eq!(<Scene as Profiled>::PROFILE, Profile::ZigbeeHomeAutomation);
 
             let _ = Id::ReadOnly;
@@ -2837,7 +2840,7 @@ mod zcl_attributes_macro_tests {
             let _ = Writable::Writable(Uint8::new(2));
             let _ = Reportable::Writable(Uint8::new(3));
             assert_eq!(
-                crate::Reportable::type_id(&Types::Writable(Type::Uint8(Uint8::new(3)))),
+                crate::Reportable::type_id(&SendReport::Writable(Type::Uint8(Uint8::new(3)))),
                 0x20
             );
             let _ = Scene::Writable(Uint8::new(4));

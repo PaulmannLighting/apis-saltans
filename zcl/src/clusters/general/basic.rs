@@ -2,7 +2,7 @@
 
 pub use self::attributes::{
     AlarmMask, DateCode, DisableLocalConfig, GenericDeviceClass, GenericDeviceType, Id, ParseError,
-    PhysicalEnvironment, PowerSource, Readable, Reportable, Types, Writable,
+    PhysicalEnvironment, PowerSource, Readable, Reportable, SendReport, Writable,
 };
 pub use self::commands::{Command, ResetToFactoryDefaults};
 

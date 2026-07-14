@@ -94,10 +94,10 @@ The repository also contains additional cluster and attribute modules that are n
 
 ## Attribute Coverage
 
-Implemented attribute modules generate typed `Id`, `Readable`, `Writable`, `Reportable`, `Types`, and `Scene` enums
-according to the access flags present for each attribute. `Types` associates reportable attribute names with their ZCL
-wire types; its variants use the attribute IDs as `u16` discriminants, while its `Reportable` implementation returns
-the attribute and wire type IDs. The global readable attributes `ClusterRevision` and
+Implemented attribute modules generate typed `Id`, `Readable`, `Writable`, `Reportable`, `SendReport`, and `Scene`
+enums according to the access flags present for each attribute. `SendReport` associates reportable attribute names with
+their ZCL wire types; its variants use the attribute IDs as `u16` discriminants, while its `Reportable` implementation
+returns the attribute and wire type IDs. The global readable attributes `ClusterRevision` and
 `AttributeReportingStatus` are included in every cluster attribute module.
 
 Current attribute modules include:
@@ -166,9 +166,9 @@ The crate provides type-safe patterns for attribute access:
 - `Readable`: map attribute IDs and wire `zb_core::types::Type` values into strongly typed readable attribute
   enums/structs.
 - `Writable`: convert writable attribute values into global write records.
-- `Reportable`: retrieve the attribute and ZCL data type IDs from generated `Types` enums.
+- `Reportable`: retrieve the attribute and ZCL data type IDs from generated `SendReport` enums.
 - `AttributeReport`: parse reported values across all implemented cluster attribute modules.
-- `Types`: associate a reportable attribute with its ZCL wire type and retrieve the wire type ID.
+- `SendReport`: associate a reportable attribute with its ZCL wire type and retrieve the wire type ID.
 
 This is intended to keep attribute handling explicit and strongly typed across clusters.
 

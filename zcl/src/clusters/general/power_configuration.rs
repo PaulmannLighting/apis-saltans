@@ -2,7 +2,7 @@
 
 pub use self::attributes::{
     BatteryAlarmMask, BatteryAlarmState, BatterySize, Id, MainsAlarmMask, Readable, Reportable,
-    Types, Writable,
+    SendReport, Writable,
 };
 pub use self::battery_alarm::BatteryAlarm;
 

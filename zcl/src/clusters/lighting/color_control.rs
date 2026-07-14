@@ -1,6 +1,6 @@
 //! The `Color Control` cluster provides control over the color of a light source.
 
-pub use self::attributes::{Id, Readable, Reportable, Types, Writable};
+pub use self::attributes::{Id, Readable, Reportable, SendReport, Writable};
 pub use self::commands::{
     ColorLoopSet, Command, EnhancedMoveHue, EnhancedMoveToHue, EnhancedMoveToHueAndSaturation,
     EnhancedStepHue, MoveColor, MoveColorTemperature, MoveHue, MoveSaturation, MoveToColor,

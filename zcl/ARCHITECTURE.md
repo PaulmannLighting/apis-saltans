@@ -66,12 +66,12 @@ generates access-specific enums:
 - `Readable`: readable attribute values.
 - `Writable`: writable attribute values.
 - `Reportable`: reportable attribute values.
-- `Types`: reportable attribute wire types, using the attribute ID as each variant's `u16` discriminant and exposing
+- `SendReport`: reportable attribute wire types, using the attribute ID as each variant's `u16` discriminant and exposing
   the contained wire type's `u8` discriminant.
 - `Scene`: scene-storable attribute values.
 
 The generated `Id` enum implements the crate's `Readable` trait, the generated `Writable` enum
-implements the crate's `Writable` trait, and `Types` implements the crate's `Reportable` trait.
+implements the crate's `Writable` trait, and `SendReport` implements the crate's `Reportable` trait.
 The generated `Reportable` value enum additionally implements
 `TryFrom<(u16, zb_core::types::Type)>`, which is used by the crate-wide
 `zb_zcl::AttributeReport::parse`.
@@ -249,7 +249,7 @@ Generated items:
 - `Readable`, containing all readable attribute values plus global readable attributes.
 - `Writable`, containing all writable attribute values.
 - `Reportable`, containing all reportable attribute values.
-- `Types`, containing the same variants as `Reportable`, with each attribute ID as its `u16` discriminant and an
+- `SendReport`, containing the same variants as `Reportable`, with each attribute ID as its `u16` discriminant and an
   implementation of the crate's `Reportable` trait that returns the attribute and wire type IDs.
 - `Scene`, containing all scene-storable attribute values.
 - `Cluster<ClusterId>` and `Profiled` impls for all generated enums.

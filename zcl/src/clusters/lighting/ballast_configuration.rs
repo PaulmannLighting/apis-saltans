@@ -1,6 +1,6 @@
 //! Ballast Configuration Cluster.
 
-pub use self::attributes::{Id, Readable, Reportable, Types, Writable};
+pub use self::attributes::{Id, Readable, Reportable, SendReport, Writable};
 pub use self::ballast_configuration_attribute::BallastConfigurationAttribute;
 pub use self::ballast_information_attribute::BallastInformationAttribute;
 pub use self::ballast_settings_attribute::BallastSettingsAttribute;
