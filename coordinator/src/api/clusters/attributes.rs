@@ -75,7 +75,7 @@ impl Attributes for Sender<Message> {
     where
         T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send,
     {
-        self.communicate(device, ConfigureReportingRequest::new(attributes))
+        self.communicate(device, ConfigureReportingRequest(attributes))
             .await
     }
 
@@ -88,7 +88,7 @@ impl Attributes for Sender<Message> {
         T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
     {
         let response = self
-            .communicate(device, ReadAttributesRequest::new(attributes))
+            .communicate(device, ReadAttributesRequest(attributes))
             .await?;
 
         Ok(response.into())
@@ -103,7 +103,7 @@ impl Attributes for Sender<Message> {
         T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send,
     {
         let response = self
-            .communicate(device, WriteAttributesRequest::new(attributes))
+            .communicate(device, WriteAttributesRequest(attributes))
             .await?;
 
         Ok(response.into_iter().map(TryInto::try_into).collect())

@@ -1,7 +1,5 @@
-use std::marker::PhantomData;
-
 use le_stream::ToLeStream;
-use zb_core::ExpectResponse;
+use zb_core::{ClusterSpecific, ExpectResponse, Profiled};
 use zb_zcl::global::configure_reporting;
 use zb_zcl::{Cluster, Command, Reportable, Scoped};
 
@@ -9,25 +7,7 @@ use crate::transceiver::zcl::{Metadata, Payload};
 
 /// Global Configure Reporting request scoped to one target cluster.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(super) struct ConfigureReportingRequest<T> {
-    configurations: Box<[configure_reporting::send::AttributeReportingConfiguration]>,
-    attribute: PhantomData<T>,
-}
-
-impl<T> ConfigureReportingRequest<T>
-where
-    T: Reportable,
-{
-    pub(super) fn new<I>(attributes: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-    {
-        Self {
-            configurations: attributes.into_iter().map(Into::into).collect(),
-            attribute: PhantomData,
-        }
-    }
-}
+pub struct ConfigureReportingRequest<T>(pub T);
 
 impl<T> ExpectResponse<Cluster> for ConfigureReportingRequest<T> {
     type Response = configure_reporting::Response;
@@ -35,19 +15,22 @@ impl<T> ExpectResponse<Cluster> for ConfigureReportingRequest<T> {
 
 impl<T> From<ConfigureReportingRequest<T>> for Payload
 where
-    T: Reportable,
+    T: IntoIterator<Item: Reportable>,
 {
     fn from(request: ConfigureReportingRequest<T>) -> Self {
         Self::new(
-            zb_hw::Metadata::new(T::PROFILE, T::ID),
+            zb_hw::Metadata::new(
+                <T::Item as Profiled>::PROFILE,
+                <T::Item as ClusterSpecific>::ID,
+            ),
             Metadata {
                 scope: configure_reporting::Send::SCOPE,
                 direction: <configure_reporting::Send as zb_zcl::Directed>::DIRECTION,
                 disable_default_response: configure_reporting::Send::DISABLE_DEFAULT_RESPONSE,
-                manufacturer_code: T::MANUFACTURER_CODE,
+                manufacturer_code: <T::Item as Reportable>::MANUFACTURER_CODE,
                 command_id: configure_reporting::Send::ID,
             },
-            configure_reporting::Send::new(request.configurations)
+            configure_reporting::Send::new(request.0.into_iter().map(Into::into).collect())
                 .to_le_stream()
                 .collect(),
         )
@@ -71,7 +54,7 @@ mod tests {
 
     #[test]
     fn derives_request_metadata_and_attribute_ids_from_reportable() {
-        let request = ConfigureReportingRequest::new([
+        let request = ConfigureReportingRequest([
             SendReport::OnOff(Discrete::<Bool>::new(
                 MINIMUM_REPORTING_INTERVAL,
                 MAXIMUM_REPORTING_INTERVAL,
