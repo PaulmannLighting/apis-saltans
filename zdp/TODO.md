@@ -4,6 +4,3 @@
 
 - [ ] Implement `SceneTableExtension` de-/serialization.
 - [ ] Tighten invariants on `IeeeAddrRsp`.
-- [x] Implement `FromLeStream` and `ToLeStream` manually for `IeeeAddrRsp`.
-- [x] Search for types with length prefixes for container elements and an appropriate prefixed type or implement
-  de-/serialization manually.
