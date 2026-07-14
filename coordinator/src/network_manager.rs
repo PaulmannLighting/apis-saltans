@@ -73,6 +73,13 @@ where
                     } else {
                         debug!("Device joined the network: {address}");
                     }
+
+                    self.storage
+                        .update_short_id(address.ieee_address(), address.short_id())
+                        .await
+                        .unwrap_or_else(|error| {
+                            error!("Failed to update the network: {error:?}");
+                        });
                 }
                 Message::NewDevice { address, device } => {
                     info!("New device {address}: {device:?}");
