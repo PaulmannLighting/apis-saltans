@@ -2,11 +2,11 @@
 
 use std::boxed::Box;
 
+use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
-use zb_core::Direction;
-use zb_core::types::Type;
+use zb_core::{Direction, TypeId};
 
-use crate::Reportable;
+use crate::attributes::{Analog, Discrete};
 use crate::macros::zcl_command;
 
 const DIRECTION: Direction = Direction::ClientToServer;
@@ -20,63 +20,40 @@ pub struct AttributeReportingConfiguration {
     attribute_data_type: u8,
     minimum_reporting_interval: u16,
     maximum_reporting_interval: u16,
-    reportable_change: Option<Type>,
+    reportable_change: Bytes,
 }
 
 impl AttributeReportingConfiguration {
-    /// Creates a configuration for an attribute that the target device shall report.
-    #[expect(
-        clippy::needless_pass_by_value,
-        reason = "the constructor intentionally accepts a reportable attribute by value"
-    )]
+    /// Creates a reporting configuration for an analog attribute.
     #[must_use]
-    pub fn new<T>(
-        attribute: T,
-        minimum_reporting_interval: u16,
-        maximum_reporting_interval: u16,
-        reportable_change: Option<Type>,
-    ) -> Self
+    pub(crate) fn analog<T>(attribute_id: u16, analog: Analog<T>) -> Self
     where
-        T: Reportable,
+        T: TypeId + ToLeStream,
     {
         Self {
             direction: DIRECTION as u8,
-            attribute_id: attribute.attribute_id(),
-            attribute_data_type: attribute.type_id(),
-            minimum_reporting_interval,
-            maximum_reporting_interval,
-            reportable_change,
+            attribute_id,
+            attribute_data_type: T::ID,
+            minimum_reporting_interval: analog.minimum_reporting_interval,
+            maximum_reporting_interval: analog.maximum_reporting_interval,
+            reportable_change: analog.reportable_change.to_le_stream().collect(),
         }
     }
 
-    /// Returns the attribute ID.
+    /// Creates a reporting configuration for a discrete attribute.
     #[must_use]
-    pub const fn attribute_id(&self) -> u16 {
-        self.attribute_id
-    }
-
-    /// Returns the attribute data type.
-    #[must_use]
-    pub const fn attribute_data_type(&self) -> u8 {
-        self.attribute_data_type
-    }
-
-    /// Returns the minimum reporting interval.
-    #[must_use]
-    pub const fn minimum_reporting_interval(&self) -> u16 {
-        self.minimum_reporting_interval
-    }
-
-    /// Returns the maximum reporting interval.
-    #[must_use]
-    pub const fn maximum_reporting_interval(&self) -> u16 {
-        self.maximum_reporting_interval
-    }
-
-    /// Returns the reportable change for an analog attribute.
-    #[must_use]
-    pub const fn reportable_change(&self) -> Option<&Type> {
-        self.reportable_change.as_ref()
+    pub(crate) const fn discrete<T>(attribute_id: u16, discrete: &Discrete<T>) -> Self
+    where
+        T: TypeId,
+    {
+        Self {
+            direction: DIRECTION as u8,
+            attribute_id,
+            attribute_data_type: T::ID,
+            minimum_reporting_interval: discrete.minimum_reporting_interval,
+            maximum_reporting_interval: discrete.maximum_reporting_interval,
+            reportable_change: Bytes::new(),
+        }
     }
 }
 

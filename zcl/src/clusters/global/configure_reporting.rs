@@ -40,13 +40,14 @@ zcl_command! {
 mod tests {
     use le_stream::{FromLeStream, ToLeStream};
     use zb_core::Direction;
-    use zb_core::types::{Bool, Type};
+    use zb_core::types::{Bool, Uint16};
 
-    use super::{Receive, Send, receive, send};
-    use crate::Directed;
-    use crate::clusters::general::on_off::SendReport;
+    use super::{Receive, Send, receive};
+    use crate::clusters::general::{level, on_off};
+    use crate::{Analog, Directed, Discrete};
 
     const SEND_ATTRIBUTE_ID: u16 = 0x0000;
+    const ANALOG_SEND_ATTRIBUTE_ID: u16 = 0x0004;
     const SEND_ATTRIBUTE_DATA_TYPE: u8 = 0x10;
     const RECEIVE_ATTRIBUTE_ID: u16 = 0x1234;
     const MINIMUM_REPORTING_INTERVAL: u16 = 0x0102;
@@ -65,12 +66,11 @@ mod tests {
 
     #[test]
     fn serializes_and_parses_send_command() {
-        let attribute = send::AttributeReportingConfiguration::new(
-            SendReport::OnOff(Type::Boolean(Bool::TRUE)),
+        let attribute = on_off::SendReport::OnOff(Discrete::<Bool>::new(
             MINIMUM_REPORTING_INTERVAL,
             MAXIMUM_REPORTING_INTERVAL,
-            None,
-        );
+        ))
+        .into();
         let command = Send::new(Box::new([attribute]));
         let bytes: Vec<_> = command.clone().to_le_stream().collect();
         let mut expected = vec![Direction::ClientToServer as u8];
@@ -81,6 +81,28 @@ mod tests {
 
         assert_eq!(bytes, expected);
         assert_eq!(Send::from_le_stream(bytes.into_iter()), Some(command));
+    }
+
+    #[test]
+    fn serializes_analog_reportable_change() {
+        const REPORTABLE_CHANGE: u16 = 0x0506;
+
+        let attribute = level::SendReport::CurrentFrequency(Analog::new(
+            MINIMUM_REPORTING_INTERVAL,
+            MAXIMUM_REPORTING_INTERVAL,
+            Uint16::new(REPORTABLE_CHANGE),
+        ))
+        .into();
+        let command = Send::new(Box::new([attribute]));
+        let bytes: Vec<_> = command.to_le_stream().collect();
+        let mut expected = vec![Direction::ClientToServer as u8];
+        expected.extend(ANALOG_SEND_ATTRIBUTE_ID.to_le_bytes());
+        expected.push(<Uint16 as zb_core::TypeId>::ID);
+        expected.extend(MINIMUM_REPORTING_INTERVAL.to_le_bytes());
+        expected.extend(MAXIMUM_REPORTING_INTERVAL.to_le_bytes());
+        expected.extend(REPORTABLE_CHANGE.to_le_bytes());
+
+        assert_eq!(bytes, expected);
     }
 
     #[test]

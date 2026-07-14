@@ -18,7 +18,7 @@ chrono = "0.4"
 const_env = "0.1.5"
 either = "1"
 heapless = "0.9"
-le-stream = { version = "10", features = ["derive", "heapless", "intx"] }
+le-stream = { version = "10", features = ["derive", "heapless", "intx", "bytes"] }
 num-derive = "0.4"
 num-traits = "0.2"
 repr-discriminant = { version = "3", features = ["derive"] }
@@ -27,7 +27,7 @@ zb-aps.workspace = true
 zb-core.workspace = true
 
 [features]
-serde = ["dep:serde", "serde/derive", "chrono/serde", "heapless/serde", "zb-core/serde"]
+serde = ["dep:serde", "serde/derive", "bytes/serde", "chrono/serde", "heapless/serde", "zb-core/serde"]
 
 [lints]
 workspace = true

@@ -1,12 +1,15 @@
 use zb_core::types::Type;
 use zb_core::{ClusterSpecific, Profiled};
 
+pub use self::analog::Analog;
+pub use self::discrete::Discrete;
 pub use self::errors::{InvalidType, ParseAttributeError};
 use crate::alarms::Reportable as AlarmsAttributes;
 use crate::ballast_configuration::Reportable as BallastConfigurationAttributes;
 use crate::basic::Reportable as BasicAttributes;
 use crate::color_control::Reportable as ColorControlAttributes;
 use crate::device_temperature_configuration::Reportable as DeviceTemperatureConfigurationAttributes;
+use crate::global::configure_reporting;
 use crate::global::write_attributes::Record;
 use crate::groups::Reportable as GroupsAttributes;
 use crate::ias::zone::Reportable as IasZoneAttributes;
@@ -20,6 +23,8 @@ use crate::power_configuration::Reportable as PowerConfigurationAttributes;
 use crate::scenes::Reportable as ScenesAttributes;
 use crate::time::Reportable as TimeAttributes;
 
+mod analog;
+mod discrete;
 mod errors;
 
 /// A trait to allow the reading of attributes by their respective IDs in a type-safe manner.
@@ -41,7 +46,9 @@ pub trait Writable: ClusterSpecific + Profiled + Into<Record> {
 }
 
 /// A trait for reportable attribute identifiers and their ZCL wire types.
-pub trait Reportable: ClusterSpecific + Profiled {
+pub trait Reportable:
+    ClusterSpecific + Profiled + Into<configure_reporting::send::AttributeReportingConfiguration>
+{
     /// The manufacturer code, if any.
     const MANUFACTURER_CODE: Option<u16> = None;
 

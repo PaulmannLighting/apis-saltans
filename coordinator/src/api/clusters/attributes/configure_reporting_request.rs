@@ -2,7 +2,6 @@ use std::marker::PhantomData;
 
 use le_stream::ToLeStream;
 use zb_core::ExpectResponse;
-use zb_core::types::Type;
 use zb_zcl::global::configure_reporting;
 use zb_zcl::{Cluster, Command, Reportable, Scoped};
 
@@ -19,27 +18,12 @@ impl<T> ConfigureReportingRequest<T>
 where
     T: Reportable,
 {
-    pub(super) fn new<I>(
-        attributes: I,
-        minimum_reporting_interval: u16,
-        maximum_reporting_interval: u16,
-        reportable_change: Option<&Type>,
-    ) -> Self
+    pub(super) fn new<I>(attributes: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
         Self {
-            configurations: attributes
-                .into_iter()
-                .map(|attribute| {
-                    configure_reporting::send::AttributeReportingConfiguration::new(
-                        attribute,
-                        minimum_reporting_interval,
-                        maximum_reporting_interval,
-                        reportable_change.cloned(),
-                    )
-                })
-                .collect(),
+            configurations: attributes.into_iter().map(Into::into).collect(),
             attribute: PhantomData,
         }
     }
@@ -72,8 +56,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use zb_core::types::{Bool, Type};
+    use zb_core::types::Bool;
     use zb_core::{Cluster, Direction, Profile};
+    use zb_zcl::Discrete;
     use zb_zcl::on_off::SendReport;
 
     use super::ConfigureReportingRequest;
@@ -86,30 +71,16 @@ mod tests {
 
     #[test]
     fn derives_request_metadata_and_attribute_ids_from_reportable() {
-        let request = ConfigureReportingRequest::new(
-            [
-                SendReport::OnOff(Type::Boolean(Bool::TRUE)),
-                SendReport::OnOff(Type::Boolean(Bool::FALSE)),
-            ],
-            MINIMUM_REPORTING_INTERVAL,
-            MAXIMUM_REPORTING_INTERVAL,
-            None,
-        );
-        let configurations = &request.configurations;
-
-        assert_eq!(configurations.len(), 2);
-        for configuration in configurations {
-            assert_eq!(configuration.attribute_id(), ATTRIBUTE_ID);
-            assert_eq!(configuration.attribute_data_type(), TYPE_ID);
-            assert_eq!(
-                configuration.minimum_reporting_interval(),
-                MINIMUM_REPORTING_INTERVAL
-            );
-            assert_eq!(
-                configuration.maximum_reporting_interval(),
-                MAXIMUM_REPORTING_INTERVAL
-            );
-        }
+        let request = ConfigureReportingRequest::new([
+            SendReport::OnOff(Discrete::<Bool>::new(
+                MINIMUM_REPORTING_INTERVAL,
+                MAXIMUM_REPORTING_INTERVAL,
+            )),
+            SendReport::OnOff(Discrete::<Bool>::new(
+                MINIMUM_REPORTING_INTERVAL,
+                MAXIMUM_REPORTING_INTERVAL,
+            )),
+        ]);
 
         let (aps, zcl, bytes) = Payload::from(request).into_parts();
         let mut record = vec![Direction::ClientToServer as u8];

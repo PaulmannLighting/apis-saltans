@@ -15,6 +15,7 @@ zcl_attribute_newtype! {
 }
 
 zcl_attribute_newtype! {
+    #[derive(le_stream::FromLeStream, le_stream::ToLeStream)]
     /// Measured value of a sensor.
     pub struct MeasuredValue(Uint16) => Uint16;
 }

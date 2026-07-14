@@ -14,7 +14,8 @@
 //! frame control fields.
 
 pub use self::attributes::{
-    AttributeReport, InvalidType, ParseAttributeError, Readable, Reportable, Writable,
+    Analog, AttributeReport, Discrete, InvalidType, ParseAttributeError, Readable, Reportable,
+    Writable,
 };
 pub use self::clusters::general::{
     alarms, basic, device_temperature_configuration, groups, identify, level, on_off,

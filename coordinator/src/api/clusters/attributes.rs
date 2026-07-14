@@ -1,6 +1,5 @@
 use tokio::sync::mpsc::Sender;
 use zb_core::destination::Device;
-use zb_core::types::Type;
 use zb_zcl::global::configure_reporting;
 use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
 
@@ -31,9 +30,6 @@ pub trait Attributes {
         &self,
         device: Device,
         attributes: T,
-        minimum_reporting_interval: u16,
-        maximum_reporting_interval: u16,
-        reportable_change: Option<Type>,
     ) -> impl Future<Output = Result<configure_reporting::Response, Error>> + Send
     where
         Self: Sync,
@@ -75,23 +71,12 @@ impl Attributes for Sender<Message> {
         &self,
         device: Device,
         attributes: T,
-        minimum_reporting_interval: u16,
-        maximum_reporting_interval: u16,
-        reportable_change: Option<Type>,
     ) -> Result<configure_reporting::Response, Error>
     where
         T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send,
     {
-        self.communicate(
-            device,
-            ConfigureReportingRequest::new(
-                attributes,
-                minimum_reporting_interval,
-                maximum_reporting_interval,
-                reportable_change.as_ref(),
-            ),
-        )
-        .await
+        self.communicate(device, ConfigureReportingRequest::new(attributes))
+            .await
     }
 
     async fn read<T>(
@@ -130,22 +115,11 @@ impl Attributes for Coordinator {
         &self,
         device: Device,
         attributes: T,
-        minimum_reporting_interval: u16,
-        maximum_reporting_interval: u16,
-        reportable_change: Option<Type>,
     ) -> Result<configure_reporting::Response, Error>
     where
         T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send,
     {
-        self.zcl
-            .configure_reporting(
-                device,
-                attributes,
-                minimum_reporting_interval,
-                maximum_reporting_interval,
-                reportable_change,
-            )
-            .await
+        self.zcl.configure_reporting(device, attributes).await
     }
 
     async fn read<T>(
