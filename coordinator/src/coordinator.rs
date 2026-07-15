@@ -27,15 +27,9 @@ impl Coordinator {
         events_out: Sender<Event>,
         endpoints: &[SimpleDescriptor],
     ) -> Result<Self, Error> {
-        let zcl_tx = zcl::Transceiver::spawn(ncp.clone(), events_out.clone());
-        let zdp_tx = zdp::Transceiver::spawn(ncp.clone(), events_out.clone(), endpoints);
-
-        Mux::spawn(hw_events, events_out, zcl_tx.clone(), zdp_tx.clone());
-
-        Ok(Self {
-            ncp,
-            zcl: zcl_tx,
-            zdp: zdp_tx,
-        })
+        let zcl = zcl::Transceiver::spawn(ncp.clone(), events_out.clone());
+        let zdp = zdp::Transceiver::spawn(ncp.clone(), events_out.clone(), endpoints);
+        Mux::spawn(hw_events, events_out, zcl.clone(), zdp.clone());
+        Ok(Self { ncp, zcl, zdp })
     }
 }
