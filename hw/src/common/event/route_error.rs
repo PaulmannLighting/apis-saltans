@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fmt::Display;
 
 /// Route errors.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum RouteError {
     /// A source address routing error.
