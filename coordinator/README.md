@@ -276,8 +276,27 @@ async fn bind_cluster(
 }
 ```
 
-Use `bind_all(...)` when you already have an endpoint-to-clusters map and want a per-endpoint
-result map.
+Use `bind_to_self(...)` when a remote endpoint should report to the coordinator's default
+application endpoint. The helper reads the coordinator IEEE address through `LocalNode` and builds
+the ZDP extended destination for you.
+
+```rust,no_run
+use apis_saltans_coordinator::Binding;
+use zb_core::{Cluster, Endpoint, FullAddress};
+
+async fn bind_to_coordinator(
+    api: &(impl Binding + apis_saltans_coordinator::LocalNode),
+    address: FullAddress,
+    source_endpoint: Endpoint,
+    cluster: Cluster,
+) -> Result<(), apis_saltans_coordinator::Error> {
+    api.bind_to_self(address, source_endpoint, cluster).await
+}
+```
+
+Use `bind_all(...)` and `bind_all_to_self(...)` when you already have an endpoint-to-clusters map
+and want a per-endpoint result map. `bind_all_to_self(...)` resolves the coordinator IEEE address
+once and returns that error for every endpoint if resolution fails.
 
 ## ZCL Cluster Helpers
 

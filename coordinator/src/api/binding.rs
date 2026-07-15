@@ -50,6 +50,15 @@ pub trait Binding {
         }
     }
 
+    /// Bind one source endpoint and cluster to the local coordinator endpoint.
+    ///
+    /// The destination is built from [`LocalNode::get_ieee_address`] and the default application
+    /// endpoint. This is a convenience helper for common device-to-coordinator reporting bindings.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if reading the local IEEE address fails, the ZDP request fails, the
+    /// response is invalid, or the response carries a non-success ZDP status.
     fn bind_to_self(
         &self,
         address: FullAddress,
@@ -73,6 +82,11 @@ pub trait Binding {
         }
     }
 
+    /// Bind multiple endpoint/cluster pairs to the local coordinator endpoint.
+    ///
+    /// The destination is built once from [`LocalNode::get_ieee_address`] and the default
+    /// application endpoint. The returned map contains one result per source endpoint. If reading
+    /// the local IEEE address fails, each endpoint is returned with the same error.
     fn bind_all_to_self(
         &self,
         address: FullAddress,

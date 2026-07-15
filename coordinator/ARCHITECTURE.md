@@ -169,7 +169,8 @@ flowchart TD
 This layering keeps policy outside the crate. A user-owned discovery workflow can listen for
 `Device::Joined` or `Device::Announced`, call `Node::descriptor`, call `Endpoints::endpoints`, call
 `Endpoints::descriptors`, optionally read attributes through `Attributes`, and then decide whether
-to call `Binding::bind` or `Binding::bind_all`.
+to call `Binding::bind`, `Binding::bind_to_self`, `Binding::bind_all`, or
+`Binding::bind_all_to_self`.
 
 ## Key Message Flows
 
@@ -263,7 +264,7 @@ sequenceDiagram
     end
 
     opt application wants bindings
-        APP->>API: Binding::bind(address, endpoint, cluster, destination)
+        APP->>API: Binding::bind or Binding::bind_to_self
         API->>ZDP: BindReq
         ZDP-->>API: BindRsp
     end
