@@ -5,7 +5,14 @@ use zb_zdp::{BindReq, Destination, Status};
 
 use crate::{Error, Zdp};
 
+/// Trait for sending ZDP bind requests.
 pub trait Binding {
+    /// Bind one source endpoint and cluster to the given destination.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the ZDP request fails, times out, returns an invalid response, or
+    /// completes with a non-success ZDP status.
     fn bind(
         &self,
         address: FullAddress,
@@ -14,6 +21,10 @@ pub trait Binding {
         destination: Destination,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
+    /// Bind multiple endpoint/cluster pairs to the same destination.
+    ///
+    /// The returned map contains one result per source endpoint. If an endpoint has multiple
+    /// clusters, the last cluster result for that endpoint is stored.
     fn bind_all(
         &self,
         address: FullAddress,

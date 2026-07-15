@@ -3,8 +3,9 @@
 //! This library provides a fully abstracted interface to expose an interface to communicate with
 //! a Zigbee transceiver regardless of the underlying hardware.
 //!
-//! Use [`NetworkManager::subscribe`] to receive coordinator [`Event`] values. Unsolicited ZCL
-//! commands are represented by [`Event::Zcl`] and expose their resolved source through [`Zdp`].
+//! The application supplies a `tokio::sync::mpsc::Sender<Event>` at startup to receive coordinator
+//! [`Event`] values. Discovery, binding, address resolution, and persistence are application-owned
+//! workflows built from the public [`Node`], [`Endpoints`], [`Binding`], [`Zcl`], and [`Zdp`] traits.
 
 use const_env::env_item;
 

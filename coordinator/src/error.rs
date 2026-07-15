@@ -35,8 +35,10 @@ pub enum Error {
     /// Invalid rate.
     DurationOutOfBounds(Duration),
 
+    /// ZCL status error, preserving unknown raw status bytes.
     Zcl(Result<zb_zcl::Status, u8>),
 
+    /// ZDP status error, preserving unknown raw status bytes.
     Zdp(Result<zb_zdp::Status, u8>),
 }
 

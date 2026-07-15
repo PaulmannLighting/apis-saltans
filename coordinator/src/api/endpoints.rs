@@ -7,18 +7,36 @@ use zb_zdp::{ActiveEpReq, SimpleDescReq, SimpleDescriptor, Status};
 use crate::Error;
 use crate::api::Zdp;
 
+/// Trait for discovering active endpoints and simple descriptors.
 pub trait Endpoints {
+    /// Read the active application endpoints from a device.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if communication fails, the response is invalid, or the ZDP status is
+    /// not successful.
     fn endpoints(
         &self,
         device: Device,
     ) -> impl Future<Output = Result<BTreeSet<Endpoint>, Error>> + Send;
 
+    /// Read a simple descriptor for one endpoint.
+    ///
+    /// A successful response without a descriptor is returned as `Ok(None)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if communication fails, the response is invalid, or the ZDP status is
+    /// not successful.
     fn descriptor(
         &self,
         device: Device,
         endpoint: Endpoint,
     ) -> impl Future<Output = Result<Option<SimpleDescriptor>, Error>> + Send;
 
+    /// Read simple descriptors for a set of endpoints.
+    ///
+    /// Each endpoint receives its own result so callers can keep partial discovery results.
     fn descriptors(
         &self,
         device: Device,

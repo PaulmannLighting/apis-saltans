@@ -2,12 +2,10 @@
 
 High-level Zigbee coordinator API built on top of [`apis-saltans-hw`](../hw).
 
-This crate exposes a single coordinator handle (`Coordinator`) plus trait-based APIs for common coordinator operations:
-
-- network joining control
-- device state lookup/resolution
-- high-level cluster commands (On/Off, Color Control)
-- generic attribute read/write operations
+This crate starts the coordinator-side transport actors and exposes small traits for Zigbee
+operations. It no longer owns device discovery state or binding policy. Applications receive
+network events, decide what discovery and binding work they need, and call the provided traits to
+perform the individual ZDP/ZCL operations.
 
 For the internal actor graph and message routing details, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -15,216 +13,257 @@ For the internal actor graph and message routing details, see [ARCHITECTURE.md](
 
 Public API exports:
 
-- `Coordinator`
-- traits:
-    - `Joining`
-    - `NetworkManager`
-    - `OnOff`
-    - `ColorControl`
-    - `Level`
-    - `Attributes`
-- attribute helper alias:
-    - `ReadAttributeResult<T>`
+- coordinator handle:
+  - `Coordinator`
+- low-level transport traits:
+  - `Zcl`
+  - `Zdp`
+- composed ZDP traits:
+  - `Node`
+  - `Endpoints`
+  - `Binding`
+- cluster traits:
+  - `OnOff`
+  - `ColorControl`
+  - `Level`
+  - `Attributes`
+- joining control:
+  - `Joining`
+- attribute helper aliases:
+  - `ReadAttributeResult<T>`
+  - `WriteAttributeResult`
 - event types:
-    - `Event`
-    - `Zcl`
-    - `EventReceiver`
-- state model types:
-    - `Device`, `EndpointInfo`, `DeviceAttributes`
+  - `Event`
+  - `Network`
+  - `NetworkError`
+  - `Device`
 - error type:
-    - `Error`
+  - `Error`
 
 ## Coordinator Lifecycle
 
-`Coordinator` is started with:
+`Coordinator::start(...)` is synchronous and starts three internal tasks:
+
+- the ZCL transceiver
+- the ZDP transceiver
+- the hardware-event mux
+
+It takes:
 
 - an `NcpHandle` for a running hardware driver actor
-- a receiver for translated hardware `Event` values
-- a storage actor sender
-- the local endpoint descriptors to expose on the coordinator
+- a receiver for translated hardware `zb_hw::Event` values
+- a sender for outbound coordinator `Event` values
+- the local endpoint descriptors that the coordinator should advertise through ZDP match
+  descriptor handling
 
 ```rust,no_run
-use apis_saltans_coordinator::Coordinator;
-use tokio::sync::mpsc::Sender;
-use zb_hw::{Event, NcpHandle};
+use apis_saltans_coordinator::{Coordinator, Event};
+use tokio::sync::mpsc::{Receiver, Sender};
+use zb_hw::NcpHandle;
 use zb_zdp::SimpleDescriptor;
 
-async fn init(
+fn init(
     ncp: NcpHandle,
-    events: tokio::sync::mpsc::Receiver<Event>,
-    storage: Sender<apis_saltans_coordinator::storage::Message>,
+    hw_events: Receiver<zb_hw::Event>,
+    app_events: Sender<Event>,
+    endpoints: &[SimpleDescriptor],
 ) -> Result<Coordinator, zb_hw::Error> {
-    let endpoints: &[SimpleDescriptor] = &[/* your endpoint descriptors here */];
-    Coordinator::start(ncp, events, storage, endpoints).await
+    Coordinator::start(ncp, hw_events, app_events, endpoints)
 }
 ```
 
-To load persisted devices after startup, call `NetworkManager::load(...)` on the coordinator.
+The crate does not persist a device table and does not resolve IEEE addresses for you. Store the
+`FullAddress` values received in `Event::Device` if your application needs a device registry.
 
 ## Trait-Based API
 
-The library intentionally uses traits to group functionality.
-Import the traits you use so extension methods become available.
+The API is intentionally trait-based. Import the traits you use so extension methods are available
+on `Coordinator`.
 
 ```rust,no_run
 use apis_saltans_coordinator::{
-    Attributes, ColorControl, Coordinator, Joining, Level, NetworkManager, OnOff,
+    Attributes, Binding, ColorControl, Coordinator, Endpoints, Joining, Level, Node, OnOff, Zcl,
+    Zdp,
 };
 ```
 
-### 1) Joining Control (`Joining`)
+The `Coordinator` implements `Zcl`, `Zdp`, and `Joining` directly. The other traits have blanket
+implementations over those low-level traits, so they are available on the coordinator without a
+separate manager object.
 
-Allows opening the network for joins:
+## Events
+
+The application supplies the event channel when starting the coordinator. Events are pushed to that
+channel directly; there is no subscription API or internal network-manager fan-out.
+
+```rust,no_run
+use apis_saltans_coordinator::{Device, Event, Network};
+
+async fn receive_events(mut events: tokio::sync::mpsc::Receiver<Event>) {
+    while let Some(event) = events.recv().await {
+        match event {
+            Event::Network(Network::Up) => println!("network up"),
+            Event::Network(Network::Down) => println!("network down"),
+            Event::Network(Network::Opened) => println!("network opened"),
+            Event::Network(Network::Closed) => println!("network closed"),
+            Event::Network(Network::Error(error)) => println!("network error: {error:?}"),
+            Event::Device(Device::Joined(address)) => println!("joined: {address}"),
+            Event::Device(Device::Rejoined { address, secured }) => {
+                println!("rejoined: {address}, secured={secured}");
+            }
+            Event::Device(Device::Left(address)) => println!("left: {address}"),
+            Event::Device(Device::Announced(address)) => println!("announced: {address}"),
+            Event::Zcl { src_address, aps_frame } => {
+                println!("unsolicited ZCL from {src_address}: {aps_frame:?}");
+            }
+            Event::Zdp { src_address, aps_frame } => {
+                println!("unsolicited ZDP from {src_address}: {aps_frame:?}");
+            }
+        }
+    }
+}
+```
+
+`Event::Zcl` and `Event::Zdp` are emitted only for inbound frames that do not match an outstanding
+request. Request/response traffic is consumed by the relevant `communicate(...)` call.
+
+## Joining Control
+
+`Joining` opens the network for joins through the hardware stack.
 
 ```rust,no_run
 use std::time::Duration;
 use apis_saltans_coordinator::Joining;
 
-async fn allow_joins(coordinator: &impl Joining) -> Result<Duration, apis_saltans_coordinator::Error> {
-    coordinator.allow_joining(Duration::from_secs(60)).await
+async fn allow_joins(api: &impl Joining) -> Result<Duration, apis_saltans_coordinator::Error> {
+    api.allow_joining(Duration::from_secs(60)).await
 }
 ```
 
-Returns the effective duration accepted by the hardware stack.
+The return value is the effective duration accepted by the hardware.
 
-### 2) Device/Address Resolution (`NetworkManager`)
+## Discovery Building Blocks
 
-Provides queries against coordinator-maintained network state:
+Discovery is application-owned. The coordinator provides reusable operations for the standard ZDP
+steps, and your application chooses when to run them, how to retry them, and what state to persist.
 
-- `get_ieee_address_from_short_id`
-- `get_short_id_from_ieee_address`
-- `get_full_address`
-- `subscribe`
-- `devices`
+### Node Descriptor
 
 ```rust,no_run
-use zb_core::IeeeAddress;
-use apis_saltans_coordinator::NetworkManager;
+use apis_saltans_coordinator::Node;
+use zb_core::short_id::Device;
 
-async fn resolve_example(api: &impl NetworkManager) -> Result<Option<u16>, apis_saltans_coordinator::Error> {
-    let ieee = IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7);
-    api.get_short_id_from_ieee_address(ieee).await
+async fn read_node_descriptor(
+    api: &impl Node,
+    short_id: Device,
+) -> Result<zb_core::node::Descriptor, apis_saltans_coordinator::Error> {
+    api.descriptor(short_id, None).await
 }
 ```
 
-### Event subscriptions
-
-`NetworkManager::subscribe(channel_size)` creates a bounded Tokio channel and returns its
-receiver. Every subscriber receives the coordinator events published after it subscribes; the API
-does not apply per-device filtering. Dropping the receiver closes the subscription, which the
-network manager removes after a delivery attempt. `channel_size` must be greater than zero.
-
-`subscribe` returns `tokio::sync::mpsc::Receiver<Event>` directly. The separately exported
-`EventReceiver` newtype wraps the same receiver type and dereferences to it, exposing methods such
-as `recv()`.
-
-`Event` currently models device lifecycle notifications and unsolicited ZCL commands:
-
-- `Event::DeviceJoined(FullAddress)`
-- `Event::DeviceLeft(FullAddress)`
-- `Event::DeviceAnnounced(FullAddress)`
-- `Event::Zcl(Zcl)`
-
-For a ZCL event, `Zcl::src_address()` returns the resolved IEEE and short address,
-`Zcl::src_endpoint()` returns the source endpoint or its reserved raw value, and
-`Zcl::into_command()` returns the parsed `zb_zcl::Cluster` command. Incoming commands whose source
-cannot be resolved are logged and are not published.
+### Active Endpoints and Simple Descriptors
 
 ```rust,no_run
-use apis_saltans_coordinator::{Event, NetworkManager};
+use apis_saltans_coordinator::Endpoints;
+use std::collections::BTreeMap;
+use zb_core::Endpoint;
+use zb_core::short_id::Device;
+use zb_zdp::SimpleDescriptor;
 
-async fn receive_events(api: &impl NetworkManager) -> Result<(), apis_saltans_coordinator::Error> {
-    let mut events = api.subscribe(16).await?;
-
-    while let Some(event) = events.recv().await {
-        match event {
-            Event::DeviceJoined(address) => {
-                println!("device joined: {address}");
-            }
-            Event::DeviceLeft(address) => {
-                println!("device left: {address}");
-            }
-            Event::DeviceAnnounced(address) => {
-                println!("device announced: {address}");
-            }
-            Event::Zcl(event) => {
-                let source = event.src_address();
-                let endpoint = event.src_endpoint();
-                let command = event.into_command();
-                println!("ZCL command from {source} endpoint {endpoint:?}: {command:?}");
-            }
-        }
-    }
-
-    Ok(())
+async fn read_endpoint_descriptors(
+    api: &impl Endpoints,
+    short_id: Device,
+) -> Result<BTreeMap<Endpoint, Result<Option<SimpleDescriptor>, apis_saltans_coordinator::Error>>, apis_saltans_coordinator::Error> {
+    let endpoints = api.endpoints(short_id).await?;
+    Ok(api.descriptors(short_id, endpoints).await)
 }
 ```
 
-### 3) On/Off Cluster Commands (`OnOff`)
+`descriptor(...)` returns `Ok(None)` when the response is successful but contains no descriptor.
+Non-success ZDP statuses are returned as `Error::Zdp(...)`.
 
-High-level helpers for standard On/Off cluster control:
+### Binding
 
-- `on`
-- `off`
-- `toggle`
+`Binding` sends ZDP `BindReq` commands. The crate does not decide which clusters should be bound or
+when a device is fully integrated.
 
 ```rust,no_run
-use zb_core::IeeeAddress;
-use zb_core::Application;
-use apis_saltans_coordinator::{Destination, OnOff};
+use apis_saltans_coordinator::Binding;
+use zb_core::{Cluster, Endpoint, FullAddress};
+use zb_zdp::Destination;
+
+async fn bind_cluster(
+    api: &impl Binding,
+    address: FullAddress,
+    source_endpoint: Endpoint,
+    cluster: Cluster,
+    destination: Destination,
+) -> Result<(), apis_saltans_coordinator::Error> {
+    api.bind(address, source_endpoint, cluster, destination).await
+}
+```
+
+Use `bind_all(...)` when you already have an endpoint-to-clusters map and want a per-endpoint
+result map.
+
+## ZCL Cluster Helpers
+
+Cluster helper traits build standard ZCL commands and send them through the `Zcl` transport.
+Commands that do not expect an application-level response use `transmit(...)`.
+
+### On/Off
+
+```rust,no_run
+use apis_saltans_coordinator::OnOff;
+use zb_core::destination::Device as DeviceDestination;
+use zb_core::short_id::Device;
+use zb_core::{Application, Destination};
 
 async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Error> {
-    let ieee = IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7);
-    let destination = Destination::Endpoint {
-        ieee_address: ieee,
-        endpoint: Application::try_from(1).expect("valid endpoint"),
-    };
+    let short_id = Device::try_from(0x1234).expect("valid short address");
+    let endpoint = Application::try_from(1).expect("valid endpoint");
+    let destination = Destination::from(DeviceDestination::new(short_id, endpoint.into()));
+
     api.on(destination).await
 }
 ```
 
-### 4) Color Control Cluster Commands (`ColorControl`)
+The `OnOff` trait provides `on`, `off`, `off_with_effect`, and `toggle`.
 
-High-level color control operations:
+### Level
 
-- `move_to_xy`
-- `move_to_color_temperature`
+`Level` provides the standard level-control commands:
+
+- `move_to_level`
+- `move`
+- `step`
+- `stop`
+- `move_to_level_with_on_off`
+- `move_with_on_off`
+- `step_with_on_off`
+- `stop_with_on_off`
+- `move_to_closest_frequency`
+
+### Color Control
 
 ```rust,no_run
-use zb_core::IeeeAddress;
+use apis_saltans_coordinator::ColorControl;
+use zb_core::destination::Device as DeviceDestination;
+use zb_core::short_id::Device;
+use zb_core::units::{Deciseconds, Mireds};
+use zb_core::{Application, Destination};
 use zb_zcl::Options;
-use zb_core::{Application, units::{Deciseconds, Mireds}};
-use apis_saltans_coordinator::{ColorControl, Destination};
-
-async fn set_xy(api: &impl ColorControl) -> Result<(), apis_saltans_coordinator::Error> {
-    let ieee = IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7);
-    let destination = Destination::Endpoint {
-        ieee_address: ieee,
-        endpoint: Application::try_from(1).expect("valid endpoint"),
-    };
-    api.move_to_xy(
-        destination,
-        30_000,
-        30_000,
-        Deciseconds::new(10).expect("valid transition time"),
-        Options::empty(),
-    )
-    .await
-}
 
 async fn set_color_temperature(
     api: &impl ColorControl,
 ) -> Result<(), apis_saltans_coordinator::Error> {
-    let ieee = IeeeAddress::new(0, 1, 2, 3, 4, 5, 6, 7);
-    let destination = Destination::Endpoint {
-        ieee_address: ieee,
-        endpoint: Application::try_from(1).expect("valid endpoint"),
-    };
-    let color_temperature = Mireds::try_from(250).expect("valid color temperature");
+    let short_id = Device::try_from(0x1234).expect("valid short address");
+    let endpoint = Application::try_from(1).expect("valid endpoint");
+    let destination = Destination::from(DeviceDestination::new(short_id, endpoint.into()));
 
     api.move_to_color_temperature(
         destination,
-        color_temperature,
+        Mireds::try_from(250).expect("valid color temperature"),
         Deciseconds::new(10).expect("valid transition time"),
         Options::empty(),
     )
@@ -232,106 +271,107 @@ async fn set_color_temperature(
 }
 ```
 
-### 5) Generic Attribute Access (`Attributes`)
+`ColorControl` provides `move_to_xy` and `move_to_color_temperature`.
 
-The `Attributes` trait groups typed attribute reads and writes.
+## Generic Attribute Access
 
-Use `configure_reporting(...)` to configure a node to send attribute reports. Its iterable of
-reportable attribute descriptors supplies the manufacturer code, profile ID, cluster ID, attribute
-IDs, and ZCL data type IDs; callers additionally provide the target device, reporting intervals,
-and optional reportable-change value.
+`Attributes` provides typed ZCL global attribute operations.
 
-#### Reads
+The target is a `zb_core::destination::Device`, which contains the short address and endpoint.
+Build or look this up from your own discovery state before calling the trait.
 
-Use `read<T>(...)` for typed reads with a `zb_zcl::Readable` attribute ID enum.
-
-Typed example with Basic-cluster readable IDs:
+### Reads
 
 ```rust,no_run
-use zb_core::IeeeAddress;
-use zb_zcl::general::basic::readable::Id as BasicReadableId;
-use zb_core::Application;
 use apis_saltans_coordinator::{Attributes, ReadAttributeResult};
+use zb_core::destination::Device as DeviceDestination;
+use zb_core::short_id::Device;
+use zb_core::Application;
+use zb_zcl::general::basic::readable::Id as BasicReadableId;
 
 async fn read_basic(
     api: &impl Attributes,
-    ieee: IeeeAddress,
+    short_id: Device,
 ) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, apis_saltans_coordinator::Error> {
+    let endpoint = Application::try_from(1).expect("valid endpoint");
+    let device = DeviceDestination::new(short_id, endpoint.into());
+
     api.read(
-        ieee,
-        Application::try_from(1).expect("valid endpoint"),
-        vec![BasicReadableId::ModelIdentifier, BasicReadableId::ManufacturerName].into_boxed_slice(),
+        device,
+        [
+            BasicReadableId::ModelIdentifier,
+            BasicReadableId::ManufacturerName,
+        ],
     )
     .await
 }
 ```
 
-#### Writes
-
-Use `write<T>(...)` for typed writes with `zb_zcl::Writable` attributes.
-
-Typed example with Basic writable attributes:
+### Writes
 
 ```rust,no_run
-use zb_core::IeeeAddress;
-use zb_zcl::general::basic::writable::Attribute as BasicWritable;
+use apis_saltans_coordinator::Attributes;
+use zb_core::destination::Device as DeviceDestination;
+use zb_core::short_id::Device;
 use zb_core::types::String;
 use zb_core::Application;
-use apis_saltans_coordinator::Attributes;
+use zb_zcl::general::basic::writable::Attribute as BasicWritable;
 
 async fn write_location(
     api: &impl Attributes,
-    ieee: IeeeAddress,
+    short_id: Device,
 ) -> Result<(), apis_saltans_coordinator::Error> {
-    let location = String::<16>::try_from("Living Room").unwrap();
+    let endpoint = Application::try_from(1).expect("valid endpoint");
+    let device = DeviceDestination::new(short_id, endpoint.into());
+    let location = String::<16>::try_from("Living Room").expect("fits");
 
     let result = api
-        .write(
-            ieee,
-            Application::try_from(1).expect("valid endpoint"),
-            vec![BasicWritable::LocationDescription(location)].into_boxed_slice(),
-        )
+        .write(device, [BasicWritable::LocationDescription(location)])
         .await?;
 
-    // result: Vec<Result<ok_attr_id, failed_attr_id>>
-    let _ = result;
+    let _per_attribute_status = result;
     Ok(())
 }
 ```
 
-## Coordinator State Types
+### Reporting
 
-`NetworkManager::state()` returns a map of known devices keyed by IEEE address.
+Use `configure_reporting(...)` with generated ZCL `Reportable` values. The ZCL attribute value
+supplies cluster/profile/manufacturer and data type metadata; the coordinator only transports the
+request.
 
-State model:
+## Raw Transports
 
-- `State`: persistent snapshot (`devices: Box<[Device]>`)
-- `Device`:
-    - `address: zb_core::Address`
-    - `endpoints: BTreeMap<zb_core::Endpoint, apis_saltans_coordinator::Endpoint>`
-- `Endpoint`:
-    - `descriptor: zb_zdp::SimpleDescriptor`
-    - `attributes: apis_saltans_coordinator::DeviceAttributes`
-- `DeviceAttributes`: normalized subset of discovered Basic-cluster metadata (manufacturer/model/version/etc.)
+Use `Zcl::transmit(...)` for native cluster commands that do not expect a response, and
+`Zcl::communicate(...)` for commands implementing `ExpectResponse<zb_zcl::Cluster>`.
+
+Use `Zdp::communicate(...)` for ZDP requests implementing `ExpectResponse<zb_zdp::Command>`.
+The composed traits above are thin wrappers over these raw transports.
 
 ## Error Model
 
-All high-level API traits return `apis_saltans_coordinator::Error`:
+Most APIs return `apis_saltans_coordinator::Error`:
 
 - `Hardware(zb_hw::Error)`
 - `SendError`
-- `ReceiveError`
-- `Timeout`
-- `InvalidResponseType`
-- `UnknownDevice`
+- `ReceiveError(RecvError)`
+- `Timeout(Elapsed)`
+- `InvalidResponseType(String)`
+- `UnknownDevice(IeeeAddress)`
+- `InvalidApplicationEndpoint(u8)`
+- `DurationOutOfBounds(Duration)`
+- `Zcl(Result<zb_zcl::Status, u8>)`
+- `Zdp(Result<zb_zdp::Status, u8>)`
 
-This keeps trait APIs consistent while preserving underlying failure causes.
+ZCL and ZDP status responses preserve known status enums and raw unknown status bytes.
 
-## Runtime Configuration (Environment)
+## Runtime Configuration
 
-Behavior is configurable via environment variables:
+Behavior is configurable through environment variables:
 
-- `ZIGBEE_COORDINATOR_MAX_RETRIES`
-- `ZIGBEE_COORDINATOR_RETRY_DELAY_SECS`
-- `ZIGBEE_COORDINATOR_TASK_POOL_SIZE`
 - `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`
+- `ZIGBEE_COORDINATOR_ZCL_RESPONSE_TIMEOUT_SECS`
+- `ZIGBEE_COORDINATOR_ZDP_RESPONSE_TIMEOUT_SECS`
+
+Retry behavior for discovery or binding is intentionally not configured here anymore. Applications
+that build discovery or binding workflows should apply their own retry and persistence policy.

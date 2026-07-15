@@ -6,7 +6,16 @@ use zb_zdp::NodeDescReq;
 use crate::Error;
 use crate::api::Zdp;
 
+/// Trait for reading ZDP node descriptor information.
 pub trait Node {
+    /// Read the node descriptor for a device.
+    ///
+    /// If `fragmentation` is `None`, a default fragmentation request is built for `device`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if communication fails, the response is invalid, or the descriptor
+    /// response carries a non-success status.
     fn descriptor(
         &self,
         device: Device,
