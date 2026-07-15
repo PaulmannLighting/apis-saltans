@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use zb_core::{Cluster, Endpoint, FullAddress};
+use zb_core::{Application, Cluster, Endpoint, FullAddress};
 use zb_zdp::{BindReq, Destination, Status};
 
-use crate::{Error, Zdp};
+use crate::{Error, LocalNode, Zdp};
 
 /// Trait for sending ZDP bind requests.
 pub trait Binding {
@@ -47,6 +47,60 @@ pub trait Binding {
             }
 
             results
+        }
+    }
+
+    fn bind_to_self(
+        &self,
+        address: FullAddress,
+        src_endpoint: Endpoint,
+        cluster: Cluster,
+    ) -> impl Future<Output = Result<(), Error>> + Send
+    where
+        Self: LocalNode + Sync,
+    {
+        async move {
+            self.bind(
+                address,
+                src_endpoint,
+                cluster,
+                Destination::Extended {
+                    address: self.get_ieee_address().await?,
+                    endpoint: Application::default().into(),
+                },
+            )
+            .await
+        }
+    }
+
+    fn bind_all_to_self(
+        &self,
+        address: FullAddress,
+        src_endpoint_clusters: BTreeMap<Endpoint, Box<[Cluster]>>,
+    ) -> impl Future<Output = BTreeMap<Endpoint, Result<(), Error>>> + Send
+    where
+        Self: LocalNode + Sync,
+    {
+        async move {
+            let dst_address = match self.get_ieee_address().await {
+                Ok(ieee_address) => ieee_address,
+                Err(error) => {
+                    return src_endpoint_clusters
+                        .into_keys()
+                        .map(|endpoint| (endpoint, Err(error.clone())))
+                        .collect();
+                }
+            };
+
+            self.bind_all(
+                address,
+                src_endpoint_clusters,
+                Destination::Extended {
+                    address: dst_address,
+                    endpoint: Application::default().into(),
+                },
+            )
+            .await
         }
     }
 }

@@ -5,7 +5,7 @@ use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 
 /// A generic error type for Zigbee hardware drivers.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Error {
     /// An implementation-specific error occurred.
     Implementation(Arc<dyn std::error::Error + Send + Sync>),

@@ -18,7 +18,6 @@ pub use self::api::{
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
 pub use self::event::{Device, Event, Network, NetworkError};
-pub use self::timeout::Timeout;
 
 mod api;
 mod coordinator;
@@ -26,7 +25,6 @@ mod error;
 mod event;
 mod index;
 mod mux;
-mod timeout;
 mod zcl;
 mod zdp;
 
