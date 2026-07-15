@@ -1,4 +1,5 @@
-use std::fmt::{Display, LowerHex, UpperHex};
+use std::error::Error;
+use std::fmt::{Display, Formatter, LowerHex, UpperHex};
 
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
@@ -13,40 +14,58 @@ mod displayable;
 pub enum Status {
     /// Operation was successful.
     Success = 0x00,
+
     /// Invalid request type.
     InvalidRequestType = 0x80,
+
     /// Device not found.
     DeviceNotFound = 0x81,
+
     /// Invalid endpoint.
     InvalidEndpoint = 0x82,
+
     /// Device is not active.
     NotActive = 0x83,
+
     /// Operation not supported.
     NotSupported = 0x84,
+
     /// Operation timed out.
     Timeout = 0x85,
+
     /// No match found.
     NoMatch = 0x86,
+
     /// No entry found.
     NoEntry = 0x88,
+
     /// No descriptor found.
     NoDescriptor = 0x89,
+
     /// Insufficient space.
     InsufficientSpace = 0x8A,
+
     /// Operation not permitted.
     NotPermitted = 0x8B,
+
     /// Table is full.
     TableFull = 0x8C,
+
     /// Not authorized.
     NotAuthorized = 0x8D,
+
     /// Device binding table is full.
     DeviceBindingTableFull = 0x8E,
+
     /// Invalid index.
     InvalidIndex = 0x8F,
+
     /// Frame too large.
     FrameTooLarge = 0x90,
+
     /// Bad key negotiation method.
     BadKeyNegotiationMethod = 0x91,
+
     /// Temporary failure.
     TemporaryFailure = 0x92,
 }
@@ -80,19 +99,21 @@ impl Status {
 }
 
 impl Display for Status {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
     }
 }
 
+impl Error for Status {}
+
 impl UpperHex for Status {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         UpperHex::fmt(&(*self as u8), f)
     }
 }
 
 impl LowerHex for Status {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         LowerHex::fmt(&(*self as u8), f)
     }
 }
