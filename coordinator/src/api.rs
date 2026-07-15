@@ -5,7 +5,7 @@ pub use self::binding::Binding;
 pub use self::clusters::{
     Attributes, ColorControl, Level, OnOff, ReadAttributeResult, WriteAttributeResult,
 };
-pub use self::endpoints::Endpoints;
+pub use self::endpoints::{Endpoints, SimpleDescriptor};
 pub use self::joining::Joining;
 pub use self::local_node::LocalNode;
 pub use self::node::Node;

@@ -247,13 +247,16 @@ async fn read_endpoint_descriptors(
     api: &impl Endpoints,
     short_id: Device,
 ) -> Result<BTreeMap<Endpoint, Result<Option<SimpleDescriptor>, apis_saltans_coordinator::Error>>, apis_saltans_coordinator::Error> {
-    let endpoints = api.endpoints(short_id).await?;
-    Ok(api.descriptors(short_id, endpoints).await)
+    api.descriptors(short_id).await
 }
 ```
 
 `descriptor(...)` returns `Ok(None)` when the response is successful but contains no descriptor.
 Non-success ZDP statuses are returned as `Error::Zdp(...)`.
+
+`descriptors(...)` first calls `endpoints(...)`. If active endpoint discovery fails, the outer
+`Result` is `Err(...)`. If endpoint discovery succeeds, the returned map contains one descriptor
+result per endpoint, so callers can keep partial results from endpoints that succeeded.
 
 ### Binding
 
