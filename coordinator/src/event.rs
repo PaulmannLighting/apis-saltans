@@ -1,24 +1,27 @@
-use zb_core::FullAddress;
+use zb_aps::Data;
+use zb_core::ShortId;
+use zb_zcl::Cluster;
+use zb_zdp::Command;
 
-pub use self::zcl::Zcl;
+pub use self::device::Device;
+pub use self::network::{Error as NetworkError, Network};
 
-mod zcl;
+mod device;
+mod network;
 
-/// An event published by the coordinator.
-///
-/// Subscribe with [`crate::NetworkManager::subscribe`] to receive events published by the network
-/// manager.
 #[derive(Clone, Debug)]
 pub enum Event {
-    /// A device joined the network.
-    DeviceJoined(FullAddress),
+    Network(Network),
 
-    /// A device left the network.
-    DeviceLeft(FullAddress),
+    Device(Device),
 
-    /// A device announced itself on the network.
-    DeviceAnnounced(FullAddress),
+    Zcl {
+        src_address: ShortId,
+        aps_frame: Data<zb_zcl::Frame<Cluster>>,
+    },
 
-    /// An unsolicited ZCL command was received.
-    Zcl(Zcl),
+    Zdp {
+        src_address: ShortId,
+        aps_frame: Data<zb_zdp::Frame<Command>>,
+    },
 }

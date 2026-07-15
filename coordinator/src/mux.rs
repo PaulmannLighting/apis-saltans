@@ -1,133 +1,129 @@
 use bytes::Bytes;
-use log::{error, trace, warn};
+use log::{trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::data::Frame;
 use zb_aps::{Assembler, Data};
-use zb_hw::Event;
+use zb_hw::Event as HardwareEvent;
 use zb_nwk::{Envelope, Source};
 
 use self::aps_payload::ApsPayload;
-use crate::network_manager;
-use crate::transceiver::{zcl, zdp};
+use crate::{Device, Event as ApplicationEvent, Network, NetworkError, zcl, zdp};
 
 mod aps_payload;
 
 /// Event multiplexer.
 #[derive(Debug)]
 pub struct Mux {
+    events: Sender<ApplicationEvent>,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
-    network_manager: Sender<network_manager::Message>,
     transactions: Assembler,
 }
 
 impl Mux {
     /// Create a new multiplexer.
     pub fn new(
+        events: Sender<ApplicationEvent>,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
-        network_manager: Sender<network_manager::Message>,
     ) -> Self {
         Self {
+            events,
             zcl,
             zdp,
-            network_manager,
             transactions: Assembler::default(),
         }
     }
 
     /// Start the multiplexer.
     pub fn spawn(
-        events: Receiver<Event>,
+        hw_events: Receiver<HardwareEvent>,
+        events_out: Sender<ApplicationEvent>,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
-        network_manager: Sender<network_manager::Message>,
     ) {
-        spawn(Self::new(zcl_tx, zdp_tx, network_manager).run(events));
+        spawn(Self::new(events_out, zcl_tx, zdp_tx).run(hw_events));
     }
 
     /// Run the multiplexer.
-    pub async fn run(mut self, mut messages: Receiver<Event>) {
+    pub async fn run(mut self, mut messages: Receiver<HardwareEvent>) {
         while let Some(event) = messages.recv().await {
             self.multiplex(event).await;
         }
     }
 
-    async fn multiplex(&mut self, event: Event) {
+    async fn multiplex(&mut self, event: HardwareEvent) {
         match event {
-            Event::NetworkUp => {
+            HardwareEvent::NetworkUp => {
                 trace!("Network is up");
+                self.events
+                    .send(ApplicationEvent::Network(Network::Up))
+                    .await
+                    .unwrap_or_else(drop);
             }
-            Event::NetworkDown => {
+            HardwareEvent::NetworkDown => {
                 trace!("Network is down");
+                self.events
+                    .send(ApplicationEvent::Network(Network::Down))
+                    .await
+                    .unwrap_or_else(drop);
             }
-            Event::NetworkOpened => {
+            HardwareEvent::NetworkOpened => {
                 trace!("Network has been opened");
-                self.network_manager
-                    .send(network_manager::Message::NetworkOpened)
+                self.events
+                    .send(ApplicationEvent::Network(Network::Opened))
                     .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send network opened message: {error}");
-                    });
+                    .unwrap_or_else(drop);
             }
-            Event::NetworkClosed => {
+            HardwareEvent::NetworkClosed => {
                 trace!("Network has been closed");
-                self.network_manager
-                    .send(network_manager::Message::NetworkClosed)
+                self.events
+                    .send(ApplicationEvent::Network(Network::Closed))
                     .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send network closed message: {error}");
-                    });
+                    .unwrap_or_else(drop);
             }
-            Event::DeviceJoined(address) => {
-                self.network_manager
-                    .send(network_manager::Message::DeviceJoined {
+            HardwareEvent::DeviceJoined(address) => {
+                trace!("Device joined: {address}");
+                self.events
+                    .send(ApplicationEvent::Device(Device::Joined(address)))
+                    .await
+                    .unwrap_or_else(drop);
+            }
+            HardwareEvent::DeviceRejoined { address, secured } => {
+                trace!("Device joined: {address} (secured: {secured})");
+                self.events
+                    .send(ApplicationEvent::Device(Device::Rejoined {
                         address,
-                        secured: None,
-                    })
+                        secured,
+                    }))
                     .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send device joined message: {error}");
-                    });
+                    .unwrap_or_else(drop);
             }
-            Event::DeviceRejoined { address, secured } => {
-                self.network_manager
-                    .send(network_manager::Message::DeviceJoined {
-                        address,
-                        secured: Some(secured),
-                    })
+            HardwareEvent::DeviceLeft(address) => {
+                trace!("Device left: {address}");
+                self.events
+                    .send(ApplicationEvent::Device(Device::Left(address)))
                     .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send device rejoined message: {error}");
-                    });
+                    .unwrap_or_else(drop);
             }
-            Event::DeviceLeft(address) => self
-                .network_manager
-                .send(network_manager::Message::RemoveDevice(
-                    address.ieee_address(),
-                ))
-                .await
-                .unwrap_or_else(|error| {
-                    trace!("Failed to send device left message: {error}");
-                }),
-            Event::MessageReceived(envelope) => {
+            HardwareEvent::MessageReceived(envelope) => {
+                trace!("Message received: {envelope:?}");
                 self.handle_nwk_envelope(envelope).await;
             }
-            Event::RouteError(error) => {
-                trace!("{error}");
-                self.network_manager
-                    .send(network_manager::Message::RouteError(error))
+            HardwareEvent::RouteError(error) => {
+                trace!("Route error: {error}");
+                self.events
+                    .send(ApplicationEvent::Network(Network::Error(
+                        NetworkError::Route(error),
+                    )))
                     .await
-                    .unwrap_or_else(|error| {
-                        error!("Failed to send route error message: {error}");
-                    });
+                    .unwrap_or_else(drop);
             }
         }
     }
 
     async fn handle_nwk_envelope(&mut self, envelope: Envelope<Data<Bytes>>) {
-        trace!("Received NWK envelope: {envelope:?}");
         let source = envelope.source();
 
         if let Some(frame) = self.transactions.add(envelope) {
@@ -144,7 +140,7 @@ impl Mux {
         match payload {
             ApsPayload::Zcl(frame) => {
                 #[expect(unsafe_code)]
-                // SAFETY: We reconstructed the frame from its original parts above.
+                // SAFETY: We reconstruct the frame from its original parts.
                 let frame = unsafe { Frame::new_unchecked(header, frame) };
 
                 self.zcl
@@ -155,6 +151,10 @@ impl Mux {
                     });
             }
             ApsPayload::Zdp(frame) => {
+                #[expect(unsafe_code)]
+                // SAFETY: We reconstruct the frame from its original parts.
+                let frame = unsafe { Frame::new_unchecked(header, frame) };
+
                 self.zdp
                     .send(zdp::Message::Received { source, frame })
                     .await

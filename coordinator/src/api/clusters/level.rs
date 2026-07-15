@@ -6,8 +6,8 @@ use zb_zcl::level::{
     StepWithOnOff, Stop, StopWithOnOff,
 };
 
-use crate::transceiver::zcl::Handle;
-use crate::{Coordinator, Error};
+use crate::Error;
+use crate::api::Zcl;
 
 /// Trait for the Level cluster.
 pub trait Level {
@@ -121,7 +121,10 @@ pub trait Level {
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
-impl Level for Coordinator {
+impl<T> Level for T
+where
+    T: Zcl + Sync,
+{
     async fn move_to_level(
         &self,
         destination: Destination,

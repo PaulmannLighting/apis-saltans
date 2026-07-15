@@ -1,13 +1,19 @@
 //! Zigbee API.
 
+pub use self::binding::Binding;
 pub use self::clusters::{
     Attributes, ColorControl, Level, OnOff, ReadAttributeResult, WriteAttributeResult,
 };
-pub use self::discovery::Discovery;
+pub use self::endpoints::Endpoints;
 pub use self::joining::Joining;
-pub use self::network_manager::NetworkManager;
+pub use self::node::Node;
+pub use self::zcl::Zcl;
+pub use self::zdp::Zdp;
 
+mod binding;
 mod clusters;
-mod discovery;
+mod endpoints;
 mod joining;
-mod network_manager;
+mod node;
+mod zcl;
+mod zdp;

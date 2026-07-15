@@ -1,8 +1,8 @@
 use zb_core::Destination;
 use zb_zcl::on_off::{Effect, Off, OffWithEffect, On, Toggle};
 
-use crate::transceiver::zcl::Handle;
-use crate::{Coordinator, Error};
+use crate::Error;
+use crate::api::Zcl;
 
 /// Trait for On/Off cluster operations.
 pub trait OnOff {
@@ -39,7 +39,10 @@ pub trait OnOff {
     fn toggle(&self, destination: Destination) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
-impl OnOff for Coordinator {
+impl<T> OnOff for T
+where
+    T: Zcl + Sync,
+{
     async fn on(&self, destination: Destination) -> Result<(), Error> {
         self.transmit(destination, On).await
     }

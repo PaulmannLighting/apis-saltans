@@ -1,4 +1,5 @@
 use tokio::sync::oneshot::{Receiver, Sender};
+use zb_aps::Data;
 use zb_core::short_id::Device;
 use zb_hw::Error;
 use zb_nwk::Source;
@@ -14,7 +15,7 @@ pub enum Message {
         /// The source information of the frame.
         source: Source,
         /// The APS frame.
-        frame: Frame<Command>,
+        frame: Data<Frame<Command>>,
     },
     /// Communicate a unicast with an expected response.
     Communicate {

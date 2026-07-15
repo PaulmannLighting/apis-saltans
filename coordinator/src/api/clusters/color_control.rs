@@ -3,8 +3,8 @@ use zb_core::units::{Deciseconds, Mireds};
 use zb_zcl::Options;
 use zb_zcl::color_control::{MoveToColor, MoveToColorTemperature};
 
-use crate::transceiver::zcl::Handle;
-use crate::{Coordinator, Error};
+use crate::Error;
+use crate::api::Zcl;
 
 /// Trait for Color Control cluster operations.
 pub trait ColorControl {
@@ -36,7 +36,10 @@ pub trait ColorControl {
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
-impl ColorControl for Coordinator {
+impl<T> ColorControl for T
+where
+    T: Zcl + Sync,
+{
     async fn move_to_xy(
         &self,
         destination: Destination,

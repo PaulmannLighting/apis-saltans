@@ -37,12 +37,10 @@ dependencies = [
  "apis-saltans-zdp",
  "bytes",
  "const_env",
- "either",
  "le-stream",
  "log",
  "serde",
  "tokio",
- "tokio-task-pool",
 ]
 
 [[package]]
@@ -73,6 +71,7 @@ dependencies = [
  "apis-saltans-nwk",
  "apis-saltans-zdp",
  "bytes",
+ "serde",
  "tokio",
 ]
 
@@ -555,9 +554,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "syn"
-version = "2.0.118"
+version = "2.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b9ae57f904213ebb649ce6895b8a66c66f0203b9319718f69a5612a065b1422"
+checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -571,15 +570,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
 dependencies = [
  "pin-project-lite",
-]
-
-[[package]]
-name = "tokio-task-pool"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd1cc4999dd379a2d021b96baec016cd8597373d6b4c4915393ad836b06acda3"
-dependencies = [
- "tokio",
 ]
 
 [[package]]

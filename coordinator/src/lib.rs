@@ -4,51 +4,28 @@
 //! a Zigbee transceiver regardless of the underlying hardware.
 //!
 //! Use [`NetworkManager::subscribe`] to receive coordinator [`Event`] values. Unsolicited ZCL
-//! commands are represented by [`Event::Zcl`] and expose their resolved source through [`Zcl`].
-
-use core::time::Duration;
+//! commands are represented by [`Event::Zcl`] and expose their resolved source through [`Zdp`].
 
 use const_env::env_item;
 
 pub use self::api::{
-    Attributes, ColorControl, Discovery, Joining, Level, NetworkManager, OnOff,
-    ReadAttributeResult, WriteAttributeResult,
+    Attributes, Binding, ColorControl, Endpoints, Joining, Level, Node, OnOff, ReadAttributeResult,
+    WriteAttributeResult, Zcl, Zdp,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;
-pub use self::event::{Event, Zcl};
-pub use self::event_receiver::EventReceiver;
-pub use self::network::{Device, DeviceAttributes, EndpointInfo};
-use self::retry::Retry;
+pub use self::event::{Device, Event, Network, NetworkError};
 pub use self::timeout::Timeout;
 
 mod api;
-mod binding;
 mod coordinator;
-mod discovery;
 mod error;
 mod event;
-mod event_receiver;
+mod index;
 mod mux;
-mod network;
-mod network_manager;
-mod retry;
-pub mod storage;
 mod timeout;
-mod transceiver;
-
-/// The maximum number of times to retry a Zigbee command.
-#[env_item("ZIGBEE_COORDINATOR_MAX_RETRIES")]
-const MAX_RETRIES: usize = 3;
-
-/// The delay between retries, in seconds.
-#[env_item("ZIGBEE_COORDINATOR_RETRY_DELAY_SECS")]
-const RETRY_DELAY_SECS: u64 = 30;
-const RETRY: Retry = Retry::new(MAX_RETRIES, Duration::from_secs(RETRY_DELAY_SECS));
-
-/// The delay between retries, in seconds.
-#[env_item("ZIGBEE_COORDINATOR_TASK_POOL_SIZE")]
-const TASK_POOL_SIZE: usize = 16;
+mod zcl;
+mod zdp;
 
 /// The delay between retries, in seconds.
 #[env_item("ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE")]

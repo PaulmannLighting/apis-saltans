@@ -8,16 +8,11 @@ use tokio::sync::oneshot::error::RecvError;
 use tokio::time::error::Elapsed;
 use zb_core::IeeeAddress;
 
-use crate::storage;
-
 /// Errors that can occur in the coordinator-API.
 #[derive(Debug)]
 pub enum Error {
     /// Hardware error.
     Hardware(zb_hw::Error),
-
-    /// A storage error
-    Storage(storage::Error),
 
     /// Transmission through the channel failed.
     SendError,
@@ -39,13 +34,16 @@ pub enum Error {
 
     /// Invalid rate.
     DurationOutOfBounds(Duration),
+
+    Zcl(Result<zb_zcl::Status, u8>),
+
+    Zdp(Result<zb_zdp::Status, u8>),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Hardware(error) => write!(f, "Hardware error: {error}"),
-            Self::Storage(error) => write!(f, "Storage error: {error}"),
             Self::SendError => write!(f, "Sending failed"),
             Self::ReceiveError(error) => write!(f, "Receiving failed: {error}"),
             Self::Timeout(error) => write!(f, "Timeout: {error}"),
@@ -55,6 +53,14 @@ impl Display for Error {
                 write!(f, "Invalid application endpoint: {endpoint:#04X}")
             }
             Self::DurationOutOfBounds(rate) => write!(f, "Invalid dimming rate: {rate:?}"),
+            Self::Zcl(error) => match error {
+                Ok(status) => write!(f, "ZCL error: {status}"),
+                Err(raw) => write!(f, "ZCL error: {raw:#04x}"),
+            },
+            Self::Zdp(error) => match error {
+                Ok(status) => write!(f, "ZDP error: {status}"),
+                Err(raw) => write!(f, "ZDP error: {raw:#04x}"),
+            },
         }
     }
 }
@@ -63,14 +69,15 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Hardware(error) => Some(error),
-            Self::Storage(error) => Some(error),
             Self::ReceiveError(error) => Some(error),
             Self::Timeout(error) => Some(error),
             Self::SendError
             | Self::InvalidResponseType(_)
             | Self::UnknownDevice(_)
             | Self::InvalidApplicationEndpoint(_)
-            | Self::DurationOutOfBounds(_) => None,
+            | Self::DurationOutOfBounds(_)
+            | Self::Zcl(_)
+            | Self::Zdp(_) => None,
         }
     }
 }
@@ -99,8 +106,14 @@ impl From<Elapsed> for Error {
     }
 }
 
-impl From<storage::Error> for Error {
-    fn from(error: storage::Error) -> Self {
-        Self::Storage(error)
+impl From<Result<zb_zcl::Status, u8>> for Error {
+    fn from(status: Result<zb_zcl::Status, u8>) -> Self {
+        Self::Zcl(status)
+    }
+}
+
+impl From<Result<zb_zdp::Status, u8>> for Error {
+    fn from(error: Result<zb_zdp::Status, u8>) -> Self {
+        Self::Zdp(error)
     }
 }

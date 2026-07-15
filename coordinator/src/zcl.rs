@@ -6,8 +6,8 @@ use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, WeakSender};
-use tokio::sync::oneshot::{self, Sender, channel};
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::oneshot::{self, channel};
 use zb_aps::Data;
 use zb_core::Destination;
 use zb_core::destination::Device;
@@ -15,13 +15,11 @@ use zb_hw::Ncp;
 use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame, Header};
 
-pub use self::handle::Handle;
 pub use self::message::Message;
 pub use self::payload::{Metadata, Payload};
 use super::index::Index;
-use crate::{MPSC_CHANNEL_SIZE, network_manager};
+use crate::{Event, MPSC_CHANNEL_SIZE};
 
-mod handle;
 mod message;
 mod payload;
 
@@ -29,18 +27,18 @@ mod payload;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
-    network_manager: WeakSender<network_manager::Message>,
-    responses: BTreeMap<Index, Sender<Cluster>>,
+    events: Sender<Event>,
+    responses: BTreeMap<Index, oneshot::Sender<Cluster>>,
     seq: u8,
 }
 
 impl<T> Transceiver<T> {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T, network_manager: WeakSender<network_manager::Message>) -> Self {
+    pub const fn new(ncp: T, events: Sender<Event>) -> Self {
         Self {
             ncp,
-            network_manager,
+            events,
             responses: BTreeMap::new(),
             seq: 0,
         }
@@ -106,15 +104,16 @@ where
             return;
         }
 
-        let Some(sender) = self.network_manager.upgrade() else {
-            warn!("Network manager actor has been dropped");
+        let Ok(short_id) = source.node_id().try_into().inspect_err(|error| {
+            warn!("Discarding message from invalid source: {source}: {error:?}");
+        }) else {
             return;
         };
 
-        sender
-            .send(network_manager::Message::Command {
-                source,
-                frame: aps_frame,
+        self.events
+            .send(Event::Zcl {
+                src_address: short_id,
+                aps_frame,
             })
             .await
             .unwrap_or_else(|error| {
@@ -196,19 +195,16 @@ where
     T: Ncp + Send + Sync + 'static,
 {
     /// Start the ZCL transceiver.
-    pub fn spawn(
-        ncp: T,
-        network_manager: WeakSender<network_manager::Message>,
-    ) -> tokio::sync::mpsc::Sender<Message> {
+    pub fn spawn(ncp: T, events: Sender<Event>) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, network_manager).run(zcl_rx));
+        spawn(Self::new(ncp, events).run(zcl_rx));
         zcl_tx
     }
 }
 
 fn make_hw_datagram(metadata: zb_hw::Metadata, payload: Frame<Bytes>) -> zb_hw::Datagram {
     #[expect(unsafe_code)]
-    // SAFETY: We safely construct the datagram from the correct metadata we destructured above.
+    // SAFETY: We safely construct the datagram from the correct metadata we destructured before.
     unsafe {
         zb_hw::Datagram::new_unchecked(metadata, payload.to_le_stream().collect())
     }

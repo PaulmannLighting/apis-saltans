@@ -3,7 +3,7 @@ use zb_core::{ClusterSpecific, ExpectResponse, Profiled};
 use zb_zcl::global::read_attributes;
 use zb_zcl::{Cluster, Command, Readable, Scoped};
 
-use crate::transceiver::zcl::{Metadata, Payload};
+use crate::zcl::{Metadata, Payload};
 
 /// Global Read Attributes request scoped to one target cluster.
 #[derive(Clone, Debug, Eq, PartialEq)]

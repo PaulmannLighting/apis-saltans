@@ -14,15 +14,13 @@ exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 [dependencies]
 bytes = "1"
 const_env = "0.1"
-either = "1.16.0"
 le-stream = { version = "10", features = ["derive", "bytes"] }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
-tokio-task-pool = "0.1"
 zb-aps.workspace = true
 zb-core = { workspace = true, features = ["serde"] }
-zb-hw = { workspace = true, features = ["coordinator"] }
+zb-hw = { workspace = true, features = ["coordinator", "serde"] }
 zb-nwk.workspace = true
 zb-zcl = { workspace = true, features = ["serde"] }
 zb-zdp = { workspace = true, features = ["serde"] }

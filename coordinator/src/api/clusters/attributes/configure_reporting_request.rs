@@ -3,7 +3,7 @@ use zb_core::{ClusterSpecific, ExpectResponse, Profiled};
 use zb_zcl::global::configure_reporting;
 use zb_zcl::{Cluster, Command, Reportable, Scoped};
 
-use crate::transceiver::zcl::{Metadata, Payload};
+use crate::zcl::{Metadata, Payload};
 
 /// Global Configure Reporting request scoped to one target cluster.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -45,7 +45,7 @@ mod tests {
     use zb_zcl::on_off::SendReport;
 
     use super::ConfigureReportingRequest;
-    use crate::transceiver::zcl::Payload;
+    use crate::zcl::Payload;
 
     const ATTRIBUTE_ID: u16 = 0x0000;
     const TYPE_ID: u8 = 0x10;

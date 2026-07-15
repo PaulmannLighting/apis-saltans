@@ -1,4 +1,3 @@
-use tokio::sync::mpsc::Sender;
 use zb_core::destination::Device;
 use zb_zcl::global::configure_reporting;
 use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
@@ -6,8 +5,8 @@ use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
 use self::configure_reporting_request::ConfigureReportingRequest;
 use self::read_attributes_request::ReadAttributesRequest;
 use self::write_attributes_request::WriteAttributesRequest;
-use crate::transceiver::zcl::{Handle, Message};
-use crate::{Coordinator, Error};
+use crate::Error;
+use crate::api::zcl::Zcl;
 
 mod configure_reporting_request;
 mod read_attributes_request;
@@ -47,7 +46,7 @@ pub trait Attributes {
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T::Item>]>, Error>> + Send
     where
         Self: Sync,
-        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send;
+        T: IntoIterator<Item: Readable> + Send;
 
     /// Write attributes to a device.
     ///
@@ -63,85 +62,53 @@ pub trait Attributes {
     ) -> impl Future<Output = Result<Vec<WriteAttributeResult>, Error>> + Send
     where
         Self: Sync,
-        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send;
+        T: IntoIterator<Item: Writable> + Send;
 }
 
-impl Attributes for Sender<Message> {
-    async fn configure_reporting<T>(
+impl<T> Attributes for T
+where
+    T: Zcl,
+{
+    async fn configure_reporting<U>(
         &self,
         device: Device,
-        attributes: T,
+        attributes: U,
     ) -> Result<configure_reporting::Response, Error>
     where
-        T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send,
+        U: IntoIterator<Item: Reportable>,
     {
         self.communicate(device, ConfigureReportingRequest(attributes))
             .await
     }
 
-    async fn read<T>(
+    async fn read<U>(
         &self,
         device: Device,
-        attributes: T,
-    ) -> Result<Box<[ReadAttributeResult<T::Item>]>, Error>
+        attributes: U,
+    ) -> Result<Box<[ReadAttributeResult<U::Item>]>, Error>
     where
-        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
+        U: IntoIterator<Item: Readable> + Send,
     {
-        let response = self
+        Ok(self
             .communicate(device, ReadAttributesRequest(attributes))
-            .await?;
-
-        Ok(response.into())
+            .await?
+            .into())
     }
 
-    async fn write<T>(
+    async fn write<U>(
         &self,
         device: Device,
-        attributes: T,
+        attributes: U,
     ) -> Result<Vec<WriteAttributeResult>, Error>
     where
-        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send,
+        U: IntoIterator<Item: Writable> + Send,
     {
-        let response = self
+        Ok(self
             .communicate(device, WriteAttributesRequest(attributes))
-            .await?;
-
-        Ok(response.into_iter().map(TryInto::try_into).collect())
-    }
-}
-
-impl Attributes for Coordinator {
-    async fn configure_reporting<T>(
-        &self,
-        device: Device,
-        attributes: T,
-    ) -> Result<configure_reporting::Response, Error>
-    where
-        T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send,
-    {
-        self.zcl.configure_reporting(device, attributes).await
-    }
-
-    async fn read<T>(
-        &self,
-        device: Device,
-        attributes: T,
-    ) -> Result<Box<[ReadAttributeResult<T::Item>]>, Error>
-    where
-        T: IntoIterator<Item: Readable + Send, IntoIter: Send> + Send,
-    {
-        self.zcl.read(device, attributes).await
-    }
-
-    async fn write<T>(
-        &self,
-        device: Device,
-        attributes: T,
-    ) -> Result<Vec<WriteAttributeResult>, Error>
-    where
-        T: IntoIterator<Item: Writable + Send, IntoIter: Send> + Send,
-    {
-        self.zcl.write(device, attributes).await
+            .await?
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect())
     }
 }
 
