@@ -28,6 +28,7 @@ channels owned by each message.
 | --- | --- | --- | --- |
 | `Backend` | `driver` | `driver/backend.rs` | Defines backend-specific event and translator types. |
 | `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
+| `Clusters` | `driver` or `coordinator` | `common/clusters.rs` | Input and output cluster sets advertised by one local application endpoint. |
 | `Datagram` | `driver` or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
 | `Driver` | `driver` | `driver/driver.rs` | Driver-side command API implemented by hardware backends. |
 | `Error` | `driver` or `coordinator` | `common/error.rs` | Common crate error type. |
@@ -68,6 +69,7 @@ classDiagram
 
     class Driver {
         <<trait>>
+        +get_endpoints()
         +get_pan_id()
         +get_ieee_address()
         +scan_networks()
@@ -89,9 +91,9 @@ classDiagram
 
     class Ncp {
         <<trait>>
+        +get_endpoints()
         +get_pan_id()
         +get_ieee_address()
-        +get_address()
         +scan_networks()
         +scan_channels()
         +allow_joins()
@@ -114,6 +116,7 @@ classDiagram
     }
 
     class Message
+    class Clusters
     class Event
     class FullAddress
     class Datagram
@@ -132,6 +135,7 @@ classDiagram
     SealedDriver --> NcpHandle : creates
     NcpHandle ..|> Ncp : Sender<Message> impl
     Ncp --> Message : sends
+    Message --> Clusters : endpoint response
     Message --> Datagram : carries TX payload
     Datagram --> Metadata : contains
     Message --> FoundNetwork : scan response
@@ -214,6 +218,7 @@ response sender so the actor can return the result of the corresponding driver c
 
 | `Ncp` method | `Message` variant | `Driver` method |
 | --- | --- | --- |
+| `get_endpoints` | `GetEndpoints` | `get_endpoints` |
 | `get_pan_id` | `GetPanId` | `get_pan_id` |
 | `get_ieee_address` | `GetIeeeAddress` | `get_ieee_address` |
 | `scan_networks` | `ScanNetworks` | `scan_networks` |
@@ -225,6 +230,10 @@ response sender so the actor can return the result of the corresponding driver c
 | `transmit` | `Transmit` | `transmit` |
 
 ## Data Model
+
+`Clusters` is the local endpoint cluster summary returned by `get_endpoints`. The outer map is
+keyed by `zb_core::Application` endpoint ID, and each `Clusters` value contains input and output
+`zb_core::Cluster` sets for that endpoint.
 
 `Datagram` is the transmit payload passed to the driver. It contains:
 
@@ -246,4 +255,4 @@ channel activity results without exposing backend-specific scan response formats
 - `DriverSend` means the actor command channel was closed.
 - `DriverRecv` means the one-shot response channel was closed.
 - `NotImplemented` represents unsupported backend features.
-- `NoEndpoints` represents startup without endpoint descriptors.
+- `NoEndpoints` represents startup without endpoint cluster information.

@@ -13,8 +13,8 @@ No default features are enabled. Pick the feature that matches the role of the c
 
 | Feature | Intended user | Public API |
 | --- | --- | --- |
-| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
-| `driver` | Hardware backend crates. | `Backend`, `Driver`, `EventTranslator`, `bridge`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
+| `driver` | Hardware backend crates. | `Backend`, `Driver`, `EventTranslator`, `bridge`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
 
 Backend crates should enable `driver`. Coordinator crates should enable `coordinator`.
 
@@ -41,8 +41,8 @@ async fn permit_joining(ncp: &NcpHandle) -> Result<Duration, apis_saltans_hw::Er
 ```
 
 Use this feature for command-side operations such as reading the coordinator IEEE address, scanning
-networks, allowing joins, resolving addresses, requesting routes, and transmitting serialized
-`Datagram` values to `zb_core::Destination` targets.
+networks, reading local endpoint cluster sets, allowing joins, resolving addresses, requesting
+routes, and transmitting serialized `Datagram` values to `zb_core::Destination` targets.
 
 ### Implementing a Driver
 
@@ -96,6 +96,16 @@ transmit(destination, datagram)
 The `Destination` describes the APS target, and the `Datagram` contains APS profile/cluster metadata
 plus the serialized application payload.
 
+Local endpoint cluster discovery uses:
+
+```rust
+get_endpoints()
+```
+
+It returns a map keyed by `zb_core::Application` endpoint ID with `Clusters` values. Each `Clusters`
+value contains the input and output `zb_core::Cluster` sets the driver has registered on that local
+application endpoint.
+
 ### `EventTranslator`
 
 `EventTranslator` converts hardware-specific event messages into common `Event` values such as
@@ -105,3 +115,24 @@ network state changes, device joins/leaves with `FullAddress`, route errors, and
 
 `Ncp` is the caller-facing proxy trait implemented for `NcpHandle`. It sends commands to the driver
 actor through a Tokio MPSC channel and waits for the one-shot response associated with each command.
+`get_endpoints()` returns the same local endpoint cluster map exposed by the driver.
+
+### `Clusters`
+
+`Clusters` describes the input and output cluster IDs advertised by one local application endpoint.
+It is used as the value in the `get_endpoints()` map:
+
+```rust,no_run
+use std::collections::BTreeMap;
+
+use apis_saltans_hw::{Clusters, Ncp, NcpHandle};
+use zb_core::Application;
+
+async fn local_clusters(
+    ncp: &NcpHandle,
+) -> Result<BTreeMap<Application, Clusters>, apis_saltans_hw::Error> {
+    ncp.get_endpoints().await
+}
+```
+
+Use `Clusters::input()` and `Clusters::output()` to inspect the endpoint's cluster sets.

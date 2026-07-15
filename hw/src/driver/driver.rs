@@ -1,13 +1,27 @@
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::mpsc::{Receiver, channel};
-use zb_core::{Destination, IeeeAddress};
+use zb_core::{Application, Destination, IeeeAddress};
 
 use crate::common::Message;
-use crate::{Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
+use crate::{Clusters, Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
 
 /// A common Zigbee NCP driver interface.
 pub trait Driver {
+    /// Return the local endpoint cluster sets registered with the NCP.
+    ///
+    /// The returned map is keyed by application endpoint ID. Driver implementations should report
+    /// the input and output clusters that each local coordinator endpoint exposes to the Zigbee
+    /// network.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if endpoint cluster information cannot be read or is not available.
+    fn get_endpoints(
+        &self,
+    ) -> impl Future<Output = Result<BTreeMap<Application, Clusters>, Error>> + Send;
+
     /// Get the PAN ID of the network.
     ///
     /// # Errors
@@ -146,6 +160,11 @@ where
     async fn run(mut self, mut rx: Receiver<Message>) -> Self {
         while let Some(message) = rx.recv().await {
             match message {
+                Message::GetEndpoints { response } => {
+                    response
+                        .send(self.get_endpoints().await)
+                        .unwrap_or_else(drop);
+                }
                 Message::GetPanId { response } => {
                     response.send(self.get_pan_id().await).unwrap_or_else(drop);
                 }

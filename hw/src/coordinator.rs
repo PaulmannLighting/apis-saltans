@@ -2,16 +2,31 @@
 
 //! Coordinator-facing hardware abstraction API.
 
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::oneshot::channel;
-use zb_core::{Destination, IeeeAddress};
+use zb_core::{Application, Destination, IeeeAddress};
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
-use crate::{Error, NcpHandle};
+use crate::{Clusters, Error, NcpHandle};
 
 /// Proxy trait for sending commands to a Zigbee NCP driver actor.
 pub trait Ncp {
+    /// Return the local endpoint cluster sets registered with the NCP.
+    ///
+    /// The returned map is keyed by application endpoint ID and each value contains the endpoint's
+    /// input and output cluster sets. Callers can use these cluster sets to advertise the
+    /// coordinator's local application endpoints or to build higher-level endpoint descriptors.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the driver actor is unavailable or the backend cannot provide endpoint
+    /// cluster information.
+    fn get_endpoints(
+        &self,
+    ) -> impl Future<Output = Result<BTreeMap<Application, Clusters>, Error>> + Send;
+
     /// Get the short ID of the network manager.
     ///
     /// # Errors
@@ -104,6 +119,12 @@ pub trait Ncp {
 }
 
 impl Ncp for NcpHandle {
+    async fn get_endpoints(&self) -> Result<BTreeMap<Application, Clusters>, Error> {
+        let (response, rx) = channel();
+        self.send(Message::GetEndpoints { response }).await?;
+        rx.await?
+    }
+
     async fn get_pan_id(&self) -> Result<u16, Error> {
         let (response, rx) = channel();
         self.send(Message::GetPanId { response }).await?;
