@@ -5,12 +5,14 @@
 //!
 //! The application supplies a `tokio::sync::mpsc::Sender<Event>` at startup to receive coordinator
 //! [`Event`] values. Discovery, binding, address resolution, and persistence are application-owned
-//! workflows built from the public [`Node`], [`Endpoints`], [`Binding`], [`Zcl`], and [`Zdp`] traits.
+//! workflows built from traits such as [`Node`], [`Endpoints`], [`Binding`],
+//! [`AddressTranslation`], [`Zcl`], and [`Zdp`].
 
 use const_env::env_item;
 
 pub use self::api::{
-    Attributes, Binding, ColorControl, Endpoints, Joining, Level, Node, OnOff, ReadAttributeResult,
+    AddressTranslation, Attributes, Binding, ColorControl, Endpoints, FoundNetwork, Joining, Level,
+    LocalNode, Node, OnOff, ReadAttributeResult, Routing, ScannedChannel, Scanning,
     WriteAttributeResult, Zcl, Zdp,
 };
 pub use self::coordinator::Coordinator;

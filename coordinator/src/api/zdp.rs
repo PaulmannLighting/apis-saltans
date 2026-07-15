@@ -8,9 +8,17 @@ use zb_zdp::Command;
 use crate::zdp::{Message, Payload};
 use crate::{Coordinator, Error};
 
-/// Handle trait on the ZDP transceiver.
+/// Trait for sending ZDP requests.
+///
+/// `Coordinator` implements this trait directly. The `Node`, `Endpoints`, and `Binding` traits are
+/// convenience wrappers over this raw ZDP transport.
 pub trait Zdp {
-    /// Communicate a unicast with an expected response.
+    /// Send a ZDP request to a device and wait for its typed response.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the request cannot be queued, the hardware transmission fails, the
+    /// response times out, or the response cannot be converted into `T::Response`.
     fn communicate<T>(
         &self,
         device: Device,

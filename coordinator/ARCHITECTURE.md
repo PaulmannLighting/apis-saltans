@@ -87,6 +87,7 @@ Actor inboxes are bounded MPSC channels sized by `ZIGBEE_COORDINATOR_MPSC_CHANNE
 It implements:
 
 - `Joining` directly through the hardware NCP
+- `AddressTranslation`, `LocalNode`, `Routing`, and `Scanning` directly through the hardware NCP
 - `Zcl` by forwarding to the ZCL transceiver sender
 - `Zdp` by forwarding to the ZDP transceiver sender
 
@@ -149,6 +150,7 @@ The public API is intentionally layered.
 flowchart TD
     COORD[Coordinator]
     JOIN[Joining]
+    HWHELPERS[AddressTranslation LocalNode Routing Scanning]
     ZCL[Zcl]
     ZDP[Zdp]
     CLUSTERS[OnOff ColorControl Level Attributes]
@@ -156,6 +158,7 @@ flowchart TD
     BIND[Binding]
 
     COORD --> JOIN
+    COORD --> HWHELPERS
     COORD --> ZCL
     COORD --> ZDP
     ZCL --> CLUSTERS

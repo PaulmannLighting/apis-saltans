@@ -9,10 +9,19 @@ use zb_zcl::{Cluster, Command, Directed};
 use crate::zcl::{Message, Payload};
 use crate::{Coordinator, Error};
 
-/// Handle trait on the ZCL transceiver.
+/// Trait for sending ZCL commands.
+///
+/// `Coordinator` implements this trait directly. The higher-level cluster traits (`OnOff`,
+/// `ColorControl`, `Level`, and `Attributes`) are built on top of it.
 pub trait Zcl {
-    /// Send a ZCL command to a group of devices,
-    /// where the command is a native ZCL command belonging to a static cluster.
+    /// Send a ZCL command without waiting for an application-level response.
+    ///
+    /// Use this for cluster commands that are transmitted as commands or group/broadcast messages.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the command cannot be queued for the ZCL transceiver or the
+    /// hardware transmission fails.
     fn transmit<T>(
         &self,
         destination: Destination,
@@ -21,7 +30,12 @@ pub trait Zcl {
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream;
 
-    /// Communicate with a ZCL device's endpoint.
+    /// Send a ZCL command to a device endpoint and wait for its typed response.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if the command cannot be queued, the hardware transmission fails, the
+    /// response times out, or the response cannot be converted into `T::Response`.
     fn communicate<T>(
         &self,
         destination: Device,

@@ -29,9 +29,17 @@ Public API exports:
   - `Attributes`
 - joining control:
   - `Joining`
+- hardware/NCP helper traits:
+  - `AddressTranslation`
+  - `LocalNode`
+  - `Routing`
+  - `Scanning`
 - attribute helper aliases:
   - `ReadAttributeResult<T>`
   - `WriteAttributeResult`
+- scan result types:
+  - `FoundNetwork`
+  - `ScannedChannel`
 - event types:
   - `Event`
   - `Network`
@@ -72,8 +80,9 @@ fn init(
 }
 ```
 
-The crate does not persist a device table and does not resolve IEEE addresses for you. Store the
-`FullAddress` values received in `Event::Device` if your application needs a device registry.
+The crate does not persist a device table. Store the `FullAddress` values received in
+`Event::Device` if your application needs a device registry. The `AddressTranslation` trait can ask
+the NCP to resolve addresses, but persistence and cache policy remain application-owned.
 
 ## Trait-Based API
 
@@ -82,13 +91,14 @@ on `Coordinator`.
 
 ```rust,no_run
 use apis_saltans_coordinator::{
-    Attributes, Binding, ColorControl, Coordinator, Endpoints, Joining, Level, Node, OnOff, Zcl,
-    Zdp,
+    AddressTranslation, Attributes, Binding, ColorControl, Coordinator, Endpoints, Joining, Level,
+    LocalNode, Node, OnOff, Routing, Scanning, Zcl, Zdp,
 };
 ```
 
-The `Coordinator` implements `Zcl`, `Zdp`, and `Joining` directly. The other traits have blanket
-implementations over those low-level traits, so they are available on the coordinator without a
+The `Coordinator` implements `Zcl`, `Zdp`, `Joining`, `AddressTranslation`, `LocalNode`, `Routing`,
+and `Scanning` directly. Discovery, binding, cluster, and attribute traits are blanket
+implementations over the raw ZCL/ZDP traits, so they are available on the coordinator without a
 separate manager object.
 
 ## Events
@@ -141,6 +151,69 @@ async fn allow_joins(api: &impl Joining) -> Result<Duration, apis_saltans_coordi
 ```
 
 The return value is the effective duration accepted by the hardware.
+
+## Hardware Helpers
+
+These traits expose NCP operations that are useful when building application-owned coordinator
+services.
+
+### Local Node
+
+```rust,no_run
+use apis_saltans_coordinator::LocalNode;
+use zb_core::IeeeAddress;
+
+async fn local_info(api: &impl LocalNode) -> Result<(u16, IeeeAddress), apis_saltans_coordinator::Error> {
+    let pan_id = api.get_pan_id().await?;
+    let ieee = api.get_ieee_address().await?;
+    Ok((pan_id, ieee))
+}
+```
+
+### Address Translation
+
+```rust,no_run
+use apis_saltans_coordinator::AddressTranslation;
+use zb_core::IeeeAddress;
+
+async fn refresh_short_id(
+    api: &impl AddressTranslation,
+    ieee: IeeeAddress,
+) -> Result<u16, apis_saltans_coordinator::Error> {
+    api.ieee_address_to_short_id(ieee).await
+}
+```
+
+Use this to consult the NCP's address table. Applications should still decide whether and how to
+cache the result.
+
+### Scanning
+
+```rust,no_run
+use apis_saltans_coordinator::{FoundNetwork, Scanning};
+
+async fn scan(api: &impl Scanning) -> Result<Vec<FoundNetwork>, apis_saltans_coordinator::Error> {
+    const ALL_CHANNELS: u32 = 0x07fff800;
+    const DEFAULT_DURATION: u8 = 5;
+
+    api.scan_networks(ALL_CHANNELS, DEFAULT_DURATION).await
+}
+```
+
+`scan_networks(...)` returns discovered networks. `scan_channels(...)` returns channel scan
+observations.
+
+### Routing
+
+```rust,no_run
+use apis_saltans_coordinator::Routing;
+
+async fn request_routes(api: &impl Routing) -> Result<(), apis_saltans_coordinator::Error> {
+    const DEFAULT_RADIUS: u8 = 30;
+
+    api.route_request(DEFAULT_RADIUS).await
+}
+```
 
 ## Discovery Building Blocks
 
