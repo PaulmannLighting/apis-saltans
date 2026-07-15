@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use zb_core::{Application, Cluster, Endpoint, FullAddress};
 use zb_zdp::{BindReq, Destination, Status};
@@ -28,7 +28,7 @@ pub trait Binding {
     fn bind_all(
         &self,
         address: FullAddress,
-        src_endpoint_clusters: BTreeMap<Endpoint, Box<[Cluster]>>,
+        src_endpoint_clusters: BTreeMap<Endpoint, BTreeSet<Cluster>>,
         destination: Destination,
     ) -> impl Future<Output = BTreeMap<Endpoint, Result<(), Error>>> + Send
     where
@@ -90,7 +90,7 @@ pub trait Binding {
     fn bind_all_to_self(
         &self,
         address: FullAddress,
-        src_endpoint_clusters: BTreeMap<Endpoint, Box<[Cluster]>>,
+        src_endpoint_clusters: BTreeMap<Endpoint, BTreeSet<Cluster>>,
     ) -> impl Future<Output = BTreeMap<Endpoint, Result<(), Error>>> + Send
     where
         Self: LocalNode + Sync,
