@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use zb_core::{Application, Cluster, Endpoint, FullAddress};
+use zb_core::{Cluster, Endpoint, FullAddress};
 use zb_zdp::{BindReq, Destination, Status};
 
 use crate::{Error, LocalNode, Zdp};
@@ -50,71 +50,64 @@ pub trait Binding {
         }
     }
 
-    /// Bind one source endpoint and cluster to the local coordinator endpoint.
+    /// Bind matching remote endpoint output clusters to local coordinator endpoints.
     ///
-    /// The destination is built from [`LocalNode::get_ieee_address`] and the default application
-    /// endpoint. This is a convenience helper for common device-to-coordinator reporting bindings.
+    /// This method reads the coordinator IEEE address and local endpoint cluster sets through
+    /// [`LocalNode`]. For each local endpoint, it intersects that endpoint's input clusters with
+    /// every remote source endpoint's output clusters, then sends ZDP bind requests for the
+    /// matching clusters only.
     ///
-    /// # Errors
+    /// The outer `Result` represents local coordinator lookup failures, such as failing to read the
+    /// coordinator IEEE address or local endpoint cluster sets. The returned map contains per-source
+    /// endpoint bind results for requests that were attempted.
     ///
-    /// Returns an [`Error`] if reading the local IEEE address fails, the ZDP request fails, the
-    /// response is invalid, or the response carries a non-success ZDP status.
-    fn bind_to_self(
-        &self,
-        address: FullAddress,
-        src_endpoint: Endpoint,
-        cluster: Cluster,
-    ) -> impl Future<Output = Result<(), Error>> + Send
-    where
-        Self: LocalNode + Sync,
-    {
-        async move {
-            self.bind(
-                address,
-                src_endpoint,
-                cluster,
-                Destination::Extended {
-                    address: self.get_ieee_address().await?,
-                    endpoint: Application::default().into(),
-                },
-            )
-            .await
-        }
-    }
-
-    /// Bind multiple endpoint/cluster pairs to the local coordinator endpoint.
-    ///
-    /// The destination is built once from [`LocalNode::get_ieee_address`] and the default
-    /// application endpoint. The returned map contains one result per source endpoint. If reading
-    /// the local IEEE address fails, each endpoint is returned with the same error.
+    /// If several local endpoints can receive clusters from the same remote source endpoint, later
+    /// local endpoint results overwrite earlier results for that source endpoint in the returned
+    /// map.
     fn bind_all_to_self(
         &self,
         address: FullAddress,
         src_endpoint_clusters: BTreeMap<Endpoint, BTreeSet<Cluster>>,
-    ) -> impl Future<Output = BTreeMap<Endpoint, Result<(), Error>>> + Send
+    ) -> impl Future<Output = Result<BTreeMap<Endpoint, Result<(), Error>>, Error>> + Send
     where
         Self: LocalNode + Sync,
     {
         async move {
-            let dst_address = match self.get_ieee_address().await {
-                Ok(ieee_address) => ieee_address,
-                Err(error) => {
-                    return src_endpoint_clusters
-                        .into_keys()
-                        .map(|endpoint| (endpoint, Err(error.clone())))
-                        .collect();
-                }
-            };
+            let mut results = BTreeMap::new();
+            let dst_address = self.get_ieee_address().await?;
 
-            self.bind_all(
-                address,
-                src_endpoint_clusters,
-                Destination::Extended {
-                    address: dst_address,
-                    endpoint: Application::default().into(),
-                },
-            )
-            .await
+            for (dst_endpoint, input_clusters) in self
+                .get_endpoints()
+                .await?
+                .into_iter()
+                .map(|(endpoint, clusters)| (endpoint, clusters.input().clone()))
+            {
+                let mut endpoint_clusters_to_bind = BTreeMap::new();
+
+                for (src_endpoint, output_clusters) in &src_endpoint_clusters {
+                    endpoint_clusters_to_bind.insert(
+                        *src_endpoint,
+                        input_clusters
+                            .intersection(output_clusters)
+                            .copied()
+                            .collect(),
+                    );
+                }
+
+                results.extend(
+                    self.bind_all(
+                        address,
+                        endpoint_clusters_to_bind,
+                        Destination::Extended {
+                            address: dst_address,
+                            endpoint: dst_endpoint.into(),
+                        },
+                    )
+                    .await,
+                );
+            }
+
+            Ok(results)
         }
     }
 }

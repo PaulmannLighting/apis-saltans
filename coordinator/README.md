@@ -279,27 +279,33 @@ async fn bind_cluster(
 }
 ```
 
-Use `bind_to_self(...)` when a remote endpoint should report to the coordinator's default
-application endpoint. The helper reads the coordinator IEEE address through `LocalNode` and builds
-the ZDP extended destination for you.
+Use `bind_all_to_self(...)` when remote endpoint output clusters should be bound to matching local
+coordinator endpoints. The helper reads the coordinator IEEE address and local endpoint cluster sets
+through `LocalNode`, intersects each local endpoint's input clusters with each remote endpoint's
+output clusters, and sends bind requests for matching clusters only.
 
 ```rust,no_run
+use std::collections::{BTreeMap, BTreeSet};
+
 use apis_saltans_coordinator::Binding;
 use zb_core::{Cluster, Endpoint, FullAddress};
 
-async fn bind_to_coordinator(
+async fn bind_matching_clusters_to_coordinator(
     api: &(impl Binding + apis_saltans_coordinator::LocalNode),
     address: FullAddress,
-    source_endpoint: Endpoint,
-    cluster: Cluster,
-) -> Result<(), apis_saltans_coordinator::Error> {
-    api.bind_to_self(address, source_endpoint, cluster).await
+    source_endpoint_clusters: BTreeMap<Endpoint, BTreeSet<Cluster>>,
+) -> Result<BTreeMap<Endpoint, Result<(), apis_saltans_coordinator::Error>>, apis_saltans_coordinator::Error> {
+    api.bind_all_to_self(address, source_endpoint_clusters).await
 }
 ```
 
-Use `bind_all(...)` and `bind_all_to_self(...)` when you already have an endpoint-to-clusters map
-and want a per-endpoint result map. `bind_all_to_self(...)` resolves the coordinator IEEE address
-once and returns that error for every endpoint if resolution fails.
+The outer `Result` reports local coordinator lookup failures. The returned map contains per-source
+endpoint bind results for requests that were attempted. If multiple local endpoints can receive
+clusters from the same remote source endpoint, later local endpoint results overwrite earlier
+results for that source endpoint in the returned map.
+
+Use `bind_all(...)` when you already know the exact ZDP binding destination and want to bind an
+endpoint-to-clusters map to that destination.
 
 ## ZCL Cluster Helpers
 
