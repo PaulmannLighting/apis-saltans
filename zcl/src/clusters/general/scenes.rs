@@ -1,6 +1,8 @@
 //! Scenes cluster.
 
-pub use self::attributes::{CurrentGroup, Id, Readable, Reportable, SendReport, Writable};
+pub use self::attributes::{
+    CurrentGroup, Id, LastConfiguredBy, Readable, Reportable, SendReport, Writable,
+};
 pub use self::commands::Command;
 pub use self::scene_table::{SceneTable, SceneTableExtension};
 
