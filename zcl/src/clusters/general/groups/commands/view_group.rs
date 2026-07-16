@@ -1,6 +1,7 @@
 use zb_core::types::Uint16;
 use zb_core::{Cluster, Direction};
 
+use super::ViewGroupResponse;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -9,6 +10,7 @@ zcl_command! {
         { Cluster::Groups } => Groups;
         command_id: 0x01;
         direction: Direction::ClientToServer;
+        response: ViewGroupResponse;
         derive(Copy);
         fields {
             /// The identifier of the group to view.

@@ -1,5 +1,6 @@
 use zb_core::{Cluster, Direction};
 
+use super::GetAlarmResponse;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -8,6 +9,7 @@ zcl_command! {
         { Cluster::Alarms } => Alarms;
         command_id: 0x02;
         direction: Direction::ClientToServer;
+        response: GetAlarmResponse;
         derive(Default);
         fields;
     }

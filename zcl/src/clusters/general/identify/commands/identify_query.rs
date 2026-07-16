@@ -1,5 +1,6 @@
 use zb_core::{Cluster, Direction};
 
+use super::IdentifyQueryResponse;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -9,6 +10,7 @@ zcl_command! {
         { Cluster::Identify } => Identify;
         command_id: 0x01;
         direction: Direction::ClientToServer;
+        response: IdentifyQueryResponse;
         derive(Default);
         fields;
     }

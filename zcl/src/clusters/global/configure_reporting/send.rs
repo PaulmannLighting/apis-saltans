@@ -63,6 +63,7 @@ zcl_command! {
         Global;
         command_id: super::COMMAND_ID;
         direction: DIRECTION;
+        response: super::Response;
         => crate::global::ConfigureReportingSend;
         fields {
             attributes: Box<[AttributeReportingConfiguration]>,
