@@ -12,8 +12,8 @@ use const_env::env_item;
 
 pub use self::api::{
     AddressTranslation, Attributes, Binding, Clusters, ColorControl, Endpoints, FoundNetwork,
-    Joining, Level, LocalNode, Node, OnOff, ReadAttributeResult, Routing, ScannedChannel, Scanning,
-    SimpleDescriptor, WriteAttributeResult, Zcl, Zdp,
+    Groups, Joining, Level, LocalNode, Node, OnOff, ReadAttributeResult, Routing, ScannedChannel,
+    Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, Zdp,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::Error;

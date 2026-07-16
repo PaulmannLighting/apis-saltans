@@ -1,8 +1,9 @@
 use core::str::Utf8Error;
 
 use zb_core::types::{String, Uint16};
-use zb_core::{Cluster, Direction};
+use zb_core::{Cluster, Direction, GroupId};
 
+use super::AddGroupResponse;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -11,11 +12,23 @@ zcl_command! {
         { Cluster::Groups } => Groups;
         command_id: 0x00;
         direction: Direction::ClientToServer;
+        response: AddGroupResponse;
         fields {
             /// The identifier of the group to be added.
             group_id: Uint16,
             /// The name of the group to be added, if supported.
             group_name: String,
+        }
+
+        constructor {
+            /// Creates a new command payload.
+            #[must_use]
+            pub const fn new(group_id: GroupId, group_name: String) -> Self {
+                Self {
+                    group_id: Uint16::new(group_id.as_u16()),
+                    group_name,
+                }
+            }
         }
 
         getters {

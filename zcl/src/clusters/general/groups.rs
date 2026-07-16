@@ -6,6 +6,7 @@ pub use self::commands::{
     GetGroupMembershipResponse, RemoveAllGroups, RemoveGroup, RemoveGroupResponse, ViewGroup,
     ViewGroupResponse,
 };
+pub use self::types::Capacity;
 
 mod attributes;
 mod commands;

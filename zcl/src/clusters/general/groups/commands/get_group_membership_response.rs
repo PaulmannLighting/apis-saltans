@@ -1,7 +1,7 @@
 use zb_core::types::{Uint8, Uint16};
 use zb_core::{Cluster, Direction};
 
-use crate::clusters::general::groups::types::GroupList;
+use crate::clusters::general::groups::types::{Capacity, GroupList};
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -19,8 +19,8 @@ zcl_command! {
         getters {
             /// Return the remaining capacity of the group table.
             #[must_use]
-            pub const fn capacity(&self) -> Uint8 {
-                self.capacity
+            pub const fn capacity(&self) -> Option<Capacity> {
+                Capacity::from_uint8(self.capacity)
             }
 
             /// Return the groups in the group table.

@@ -1,6 +1,7 @@
 use zb_core::types::Uint16;
 use zb_core::{Cluster, Direction};
 
+use super::GetGroupMembershipResponse;
 use crate::groups::types::GroupList;
 use crate::macros::zcl_command;
 
@@ -10,6 +11,8 @@ zcl_command! {
         { Cluster::Groups } => Groups;
         command_id: 0x02;
         direction: Direction::ClientToServer;
+        response: GetGroupMembershipResponse;
+        derive(Default);
         fields {
             groups: GroupList,
         }
