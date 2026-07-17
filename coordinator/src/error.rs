@@ -3,11 +3,14 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-pub use optional::Optional;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use zb_core::IeeeAddress;
 
+pub use self::map_status::MapStatus;
+pub use self::optional::Optional;
+
+mod map_status;
 mod optional;
 
 /// Errors that can occur in the coordinator-API.
