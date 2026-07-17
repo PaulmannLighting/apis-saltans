@@ -3,10 +3,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use zb_core::Endpoint;
 use zb_core::short_id::Device;
 pub use zb_zdp::SimpleDescriptor;
-use zb_zdp::{ActiveEpReq, SimpleDescReq, Status};
+use zb_zdp::{ActiveEpReq, SimpleDescReq};
 
-use crate::Error;
 use crate::api::Zdp;
+use crate::{Error, StatusExt};
 
 /// Trait for discovering active endpoints and simple descriptors.
 pub trait Endpoints {
@@ -73,13 +73,10 @@ where
             .communicate(device, ActiveEpReq::new(device.into()))
             .await?;
 
-        let status = response.status();
-
-        if Ok(Status::Success) == status {
-            return Ok(response.into_active_eps().filter_map(Result::ok).collect());
-        }
-
-        Err(status.into())
+        response
+            .status()
+            .ensure_success()
+            .map(|()| response.into_active_eps().filter_map(Result::ok).collect())
     }
 
     async fn descriptor(
@@ -91,12 +88,9 @@ where
             .communicate(device, SimpleDescReq::new(device.into(), endpoint))
             .await?;
 
-        let status = response.status();
-
-        if status == Ok(Status::Success) {
-            return Ok(response.into_descriptor());
-        }
-
-        Err(status.into())
+        response
+            .status()
+            .ensure_success()
+            .map(|()| response.into_descriptor())
     }
 }

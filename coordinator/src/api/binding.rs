@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use zb_core::{Cluster, Endpoint, FullAddress};
-use zb_zdp::{BindReq, Destination, Status};
+use zb_zdp::{BindReq, Destination};
 
-use crate::{Error, LocalNode, Zdp};
+use crate::{Error, LocalNode, StatusExt, Zdp};
 
 /// Trait for sending ZDP bind requests.
 pub trait Binding {
@@ -135,12 +135,6 @@ where
             )
             .await?;
 
-        let status = response.status();
-
-        if Ok(Status::Success) == status {
-            return Ok(());
-        }
-
-        Err(status.into())
+        response.status().ensure_success()
     }
 }

@@ -1,7 +1,6 @@
 use zb_core::GroupId;
 use zb_core::destination::Device;
 use zb_core::types::{String, Uint16};
-use zb_zcl::Status;
 use zb_zcl::groups::{AddGroup, GetGroupMembership, GetGroupMembershipResponse, RemoveGroup};
 
 use crate::{Error, StatusExt, Zcl};
@@ -65,13 +64,10 @@ where
             .communicate(device, AddGroup::new(group_id, name.unwrap_or_default()))
             .await?;
 
-        let status = response.status();
-
-        if Ok(Status::Success) == status {
-            Ok(response.group_id())
-        } else {
-            Err(status.into())
-        }
+        response
+            .status()
+            .ensure_success()
+            .map(|()| response.group_id())
     }
 
     async fn remove(&self, device: Device, group_id: GroupId) -> Result<Uint16, Error> {
