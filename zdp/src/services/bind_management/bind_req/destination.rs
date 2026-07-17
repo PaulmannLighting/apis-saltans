@@ -4,7 +4,7 @@ use repr_discriminant::ReprDiscriminant;
 use zb_core::{Endpoint, IeeeAddress};
 
 /// Address type for Bind Request.
-#[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]
+#[expect(variant_size_differences)]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ReprDiscriminant)]
 #[repr(u8)]
 pub enum Destination {
