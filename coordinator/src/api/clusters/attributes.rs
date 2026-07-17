@@ -76,7 +76,7 @@ pub trait Attributes {
 
 impl<T> Attributes for T
 where
-    T: Zcl,
+    T: Zcl + Sync,
 {
     async fn configure_reporting<U>(
         &self,
