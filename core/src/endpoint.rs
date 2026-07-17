@@ -1,10 +1,11 @@
 pub use self::application::Application;
-pub use self::broadcast::Broadcast;
 pub use self::reserved::Reserved;
 
 mod application;
-mod broadcast;
 mod reserved;
+
+const DATA: u8 = 0x00;
+const BROADCAST: u8 = 0xff;
 
 /// A Zigbee endpoint ID.
 #[cfg_attr(
@@ -33,10 +34,10 @@ impl Endpoint {
     /// range.
     pub const fn try_new(value: u8) -> Result<Self, Reserved> {
         match value {
-            0 => Ok(Self::Data),
+            DATA => Ok(Self::Data),
             Application::MIN_ID..=Application::MAX_ID => Ok(Self::Application(Application(value))),
             Reserved::MIN_ID..=Reserved::MAX_ID => Err(Reserved(value)),
-            255 => Ok(Self::Broadcast),
+            BROADCAST => Ok(Self::Broadcast),
         }
     }
 
@@ -44,9 +45,9 @@ impl Endpoint {
     #[must_use]
     pub const fn as_u8(self) -> u8 {
         match self {
-            Self::Data => 0,
+            Self::Data => DATA,
             Self::Application(application) => application.as_u8(),
-            Self::Broadcast => 255,
+            Self::Broadcast => BROADCAST,
         }
     }
 }
