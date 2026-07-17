@@ -2683,11 +2683,11 @@ macro_rules! zcl_attributes {
             }
 
             fn attribute_id(&self) -> u16 {
-                panic!("an empty SendReport enum cannot be instantiated")
+                unreachable!("an empty SendReport enum cannot be instantiated")
             }
 
             fn type_id(&self) -> u8 {
-                panic!("an empty SendReport enum cannot be instantiated")
+                unreachable!("an empty SendReport enum cannot be instantiated")
             }
         }
 
