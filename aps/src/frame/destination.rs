@@ -1,28 +1,27 @@
 use std::fmt::{self, Display};
 
 use le_stream::ToLeStream;
-use zb_core::GroupId;
-use zb_core::endpoint::Application;
+use zb_core::{Endpoint, GroupId};
 
 /// A variant of `Destination` with weaker invariants to allow graceful parsing of APS frames.
 pub type WeakDestination = Destination<u8, u16>;
 
 /// Represents the destination of an APS frame.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum Destination<A = Application, G = GroupId> {
+pub enum Destination<E = Endpoint, G = GroupId> {
     /// A unicast endpoint ID.
-    Unicast(A),
+    Unicast(E),
 
     /// A broadcast endpoint ID.
-    Broadcast(A),
+    Broadcast(E),
 
     /// A group address.
     Group(G),
 }
 
-impl<A, G> Display for Destination<A, G>
+impl<E, G> Display for Destination<E, G>
 where
-    A: Display,
+    E: Display,
     G: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
