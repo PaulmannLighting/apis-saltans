@@ -14,6 +14,11 @@ pub trait Optional<T> {
     /// ZCL `NotFound` and ZDP `NoEntry`, `NoMatch`, and `NoDescriptor` are
     /// treated as absent values. Successful results become `Ok(Some(value))`;
     /// every other error is returned unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns the original [`Error`] if it does not represent an absent Zigbee
+    /// resource.
     fn optional(self) -> Result<Option<T>, Error>;
 }
 

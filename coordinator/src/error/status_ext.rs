@@ -16,6 +16,12 @@ pub trait StatusExt {
     /// depending on the status protocol. For fallibly parsed statuses, unknown
     /// raw status bytes are preserved in the returned error. Callers can use
     /// [`Result::map`] on the returned value to attach a success payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Zcl`] or [`Error::Zdp`] when the status is not
+    /// `Success` or when fallible status parsing produced an unknown raw status
+    /// byte.
     fn ensure_success(self) -> Result<(), Error>;
 }
 
