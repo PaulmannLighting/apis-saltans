@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::{self, Display};
 
-use zb_aps::Destination;
+use zb_aps::WeakDestination;
 
 /// Errors that can occur when converting an incoming message to a ZDP frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -10,7 +10,7 @@ pub enum ParseFrameError {
     SourceEndpoint(u8),
 
     /// The destination endpoint is invalid (must be 0 for ZDP commands).
-    Destination(Destination<u8, u8, u16>),
+    Destination(WeakDestination),
 
     /// The cluster ID could not be parsed into a ZDP frame.
     ClusterId(u16),

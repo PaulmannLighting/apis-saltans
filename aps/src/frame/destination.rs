@@ -5,25 +5,24 @@ use zb_core::GroupId;
 use zb_core::endpoint::Application;
 
 /// A variant of `Destination` with weaker invariants to allow graceful parsing of APS frames.
-pub type WeakDestination = Destination<u8, u8, u16>;
+pub type WeakDestination = Destination<u8, u16>;
 
 /// Represents the destination of an APS frame.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum Destination<U = Application, B = Application, G = GroupId> {
+pub enum Destination<A = Application, G = GroupId> {
     /// A unicast endpoint ID.
-    Unicast(U),
+    Unicast(A),
 
     /// A broadcast endpoint ID.
-    Broadcast(B),
+    Broadcast(A),
 
     /// A group address.
     Group(G),
 }
 
-impl<U, B, G> Display for Destination<U, B, G>
+impl<A, G> Display for Destination<A, G>
 where
-    U: Display,
-    B: Display,
+    A: Display,
     G: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
