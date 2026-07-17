@@ -3,9 +3,12 @@
 use std::fmt::Display;
 use std::time::Duration;
 
+pub use optional::Optional;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use zb_core::IeeeAddress;
+
+mod optional;
 
 /// Errors that can occur in the coordinator-API.
 #[derive(Clone, Debug)]

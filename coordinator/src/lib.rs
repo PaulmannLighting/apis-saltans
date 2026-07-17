@@ -16,7 +16,7 @@ pub use self::api::{
     Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, Zdp,
 };
 pub use self::coordinator::Coordinator;
-pub use self::error::Error;
+pub use self::error::{Error, Optional};
 pub use self::event::{Device, Event, Network, NetworkError};
 
 mod api;
