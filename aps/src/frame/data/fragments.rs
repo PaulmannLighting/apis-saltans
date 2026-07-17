@@ -120,7 +120,7 @@ mod tests {
 
     fn header(extended: Option<Extended>) -> Header {
         Header::new(
-            Destination::Unicast(Application::default()),
+            Destination::Unicast(Application::default().into()),
             CLUSTER_ID,
             PROFILE_ID,
             Endpoint::default(),
