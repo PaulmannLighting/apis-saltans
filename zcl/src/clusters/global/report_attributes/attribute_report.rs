@@ -2,7 +2,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::types::Type;
 
 /// Attribute report.
-#[allow(clippy::unsafe_derive_deserialize)]
+#[expect(clippy::unsafe_derive_deserialize)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream, ToLeStream)]
 pub struct AttributeReport {
