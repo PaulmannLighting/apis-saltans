@@ -87,7 +87,7 @@ where
 
     async fn handle_message_received(&mut self, source: Source, frame: Data<Frame<Command>>) {
         trace!("Received ZDP message from {source}: {frame:?}");
-        let (aps_header, zdp_frame) = frame.into_parts();
+        let (_, zdp_frame) = frame.into_parts();
         let index = Index::from_received_zdp_frame(source, &zdp_frame);
         let (seq, command) = zdp_frame.into_parts();
 
@@ -119,23 +119,7 @@ where
             return;
         }
 
-        let Ok(src_address) = source.node_id().try_into() else {
-            warn!("Invalid ZDP node ID: {source}");
-            return;
-        };
-
-        let zdp_frame = Frame::new(seq, command);
-        #[expect(unsafe_code)]
-        // SAFETY: We reconstruct the frame from its original parts above.
-        let aps_frame = unsafe { Data::new_unchecked(aps_header, zdp_frame) };
-
-        self.events
-            .send(Event::Zdp {
-                src_address,
-                aps_frame,
-            })
-            .await
-            .unwrap_or_else(drop);
+        warn!("Unexpected ZDP response: {command:?}");
     }
 
     /// Send a ZDP unicast message with back-channel communication.
