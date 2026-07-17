@@ -4,7 +4,7 @@ use zb_core::types::{String, Uint16};
 use zb_zcl::Status;
 use zb_zcl::groups::{AddGroup, GetGroupMembership, GetGroupMembershipResponse, RemoveGroup};
 
-use crate::{Error, MapStatus, Zcl};
+use crate::{Error, StatusExt, Zcl};
 
 /// Trait for Groups cluster operations.
 pub trait Groups {
@@ -76,6 +76,9 @@ where
 
     async fn remove(&self, device: Device, group_id: GroupId) -> Result<Uint16, Error> {
         let response = self.communicate(device, RemoveGroup::new(group_id)).await?;
-        response.status().map_success(|| response.group_id())
+        response
+            .status()
+            .ensure_success()
+            .map(|()| response.group_id())
     }
 }

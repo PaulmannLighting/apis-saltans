@@ -7,11 +7,11 @@ use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use zb_core::IeeeAddress;
 
-pub use self::map_status::MapStatus;
 pub use self::optional::Optional;
+pub use self::status_ext::StatusExt;
 
-mod map_status;
 mod optional;
+mod status_ext;
 
 /// Errors that can occur in the coordinator-API.
 #[derive(Clone, Debug)]
