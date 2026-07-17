@@ -43,7 +43,7 @@ pub trait Groups {
         &self,
         device: Device,
         group_id: GroupId,
-    ) -> impl Future<Output = Result<Uint16, Error>> + Send;
+    ) -> impl Future<Output = Result<Option<Uint16>, Error>> + Send;
 }
 
 impl<T> Groups for T
@@ -74,15 +74,13 @@ where
         }
     }
 
-    async fn remove(&self, device: Device, group_id: GroupId) -> Result<Uint16, Error> {
+    async fn remove(&self, device: Device, group_id: GroupId) -> Result<Option<Uint16>, Error> {
         let response = self.communicate(device, RemoveGroup::new(group_id)).await?;
 
-        let status = response.status();
-
-        if Ok(Status::Success) == status {
-            Ok(response.group_id())
-        } else {
-            Err(status.into())
+        match response.status() {
+            Ok(Status::Success) => Ok(Some(response.group_id())),
+            Ok(Status::NotFound) => Ok(None),
+            other => Err(other.into()),
         }
     }
 }
