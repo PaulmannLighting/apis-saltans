@@ -105,7 +105,6 @@ pub enum Message {
     SendReply {
         node_id: u16,
         aps_header: Header,
-        metadata: Metadata,
         response: Sender<Result<(), Error>>,
     },
 }

@@ -128,7 +128,6 @@ pub trait Driver {
         &mut self,
         node_id: u16,
         aps_header: Header,
-        metadata: Metadata,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Spawn the actor in a tokio task.
@@ -235,10 +234,9 @@ where
                 Message::SendReply {
                     node_id,
                     aps_header,
-                    metadata,
                     response,
                 } => response
-                    .send(self.send_reply(node_id, aps_header, metadata).await)
+                    .send(self.send_reply(node_id, aps_header).await)
                     .unwrap_or_else(drop),
             }
         }

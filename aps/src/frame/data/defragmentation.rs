@@ -46,14 +46,14 @@ impl Assembler {
     /// counter. If a new first fragment arrives for an existing transaction, the
     /// previous transaction is dropped and replaced.
     #[must_use]
-    pub fn add(&mut self, envelope: Envelope<Frame<Bytes>>) -> Option<Frame<Bytes>> {
+    pub fn add(&mut self, envelope: Envelope<Frame<Bytes>>) -> Option<(Frame<Bytes>, bool)> {
         trace!("Received NWK envelope: {envelope:?}");
 
         let (source, _metadata, aps) = envelope.into_parts();
 
         let Some(extended) = aps.header().extended() else {
             trace!("APS frame has no extended header.");
-            return Some(aps);
+            return Some((aps, false));
         };
 
         trace!("APS frame has extended header: {extended:?}");
@@ -69,18 +69,22 @@ impl Assembler {
         }
 
         if extended.control().contains(ExtendedControl::FIRST_FRAGMENT) {
-            return self.handle_first_fragment(source, extended, aps);
+            return self
+                .handle_first_fragment(source, extended, aps)
+                .map(|frame| (frame, true));
         }
 
         if extended
             .control()
             .contains(ExtendedControl::FOLLOWUP_FRAGMENT)
         {
-            return self.handle_followup_fragment(source, extended, aps);
+            return self
+                .handle_followup_fragment(source, extended, aps)
+                .map(|frame| (frame, true));
         }
 
         trace!("APS frame is not a follow-up fragment.");
-        Some(aps)
+        Some((aps, false))
     }
 
     fn handle_first_fragment(

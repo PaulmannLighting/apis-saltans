@@ -123,7 +123,6 @@ pub trait Ncp {
         &self,
         node_id: u16,
         aps_header: Header,
-        metadata: Metadata,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
@@ -218,17 +217,11 @@ impl Ncp for NcpHandle {
         rx.await?
     }
 
-    async fn send_reply(
-        &self,
-        node_id: u16,
-        aps_header: Header,
-        metadata: Metadata,
-    ) -> Result<(), Error> {
+    async fn send_reply(&self, node_id: u16, aps_header: Header) -> Result<(), Error> {
         let (response, rx) = channel();
         self.send(Message::SendReply {
             node_id,
             aps_header,
-            metadata,
             response,
         })
         .await?;
