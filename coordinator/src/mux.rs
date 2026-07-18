@@ -1,10 +1,10 @@
 use bytes::Bytes;
-use log::{error, trace, warn};
+use log::{trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::data::Frame;
 use zb_aps::{Assembler, Data};
-use zb_hw::{Event as HardwareEvent, Ncp, NcpHandle};
+use zb_hw::Event as HardwareEvent;
 use zb_nwk::{Envelope, Source};
 
 use self::aps_payload::ApsPayload;
@@ -15,7 +15,6 @@ mod aps_payload;
 /// Event multiplexer.
 #[derive(Debug)]
 pub struct Mux {
-    ncp: NcpHandle,
     events: Sender<ApplicationEvent>,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
@@ -25,13 +24,11 @@ pub struct Mux {
 impl Mux {
     /// Create a new multiplexer.
     pub fn new(
-        ncp: NcpHandle,
         events: Sender<ApplicationEvent>,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
     ) -> Self {
         Self {
-            ncp,
             events,
             zcl,
             zdp,
@@ -41,13 +38,12 @@ impl Mux {
 
     /// Start the multiplexer.
     pub fn spawn(
-        ncp: NcpHandle,
         hw_events: Receiver<HardwareEvent>,
         events_out: Sender<ApplicationEvent>,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
     ) {
-        spawn(Self::new(ncp, events_out, zcl_tx, zdp_tx).run(hw_events));
+        spawn(Self::new(events_out, zcl_tx, zdp_tx).run(hw_events));
     }
 
     /// Run the multiplexer.
