@@ -14,6 +14,8 @@ pub struct Payload {
 }
 
 impl Payload {
+    /// Create a ZCL payload with its APS and ZCL transmission metadata.
+    #[must_use]
     pub const fn new(
         aps_metadata: zb_hw::Metadata,
         zcl_metadata: Metadata,
@@ -26,11 +28,14 @@ impl Payload {
         }
     }
 
+    /// Split the payload into APS metadata, ZCL metadata, and serialized bytes.
+    #[must_use]
     pub fn into_parts(self) -> (zb_hw::Metadata, Metadata, Bytes) {
         (self.aps_metadata, self.zcl_metadata, self.bytes)
     }
 }
 
+/// Metadata needed to construct a ZCL header for an outgoing command.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct Metadata {
     pub(crate) scope: Scope,

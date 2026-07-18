@@ -70,7 +70,7 @@ impl Zcl for Sender<Message> {
 
     fn communicate<T>(
         &self,
-        destination: Device,
+        device: Device,
         payload: T,
     ) -> impl Future<Output = Result<T::Response, Error>> + Send
     where
@@ -81,7 +81,7 @@ impl Zcl for Sender<Message> {
 
         async move {
             self.send(Message::Communicate {
-                destination,
+                device,
                 payload,
                 response,
             })

@@ -21,7 +21,9 @@ pub enum Message {
 
     /// Unicast a message.
     Transmit {
+        /// APS destination for the outgoing frame.
         destination: Destination,
+        /// ZCL payload and its transmission metadata.
         payload: Payload,
         /// The response channel.
         response: Sender<Result<(), Error>>,
@@ -29,7 +31,9 @@ pub enum Message {
 
     /// Communicate a unicast with an expected response.
     Communicate {
-        destination: Device,
+        /// Remote device expected to answer the command.
+        device: Device,
+        /// ZCL payload and its transmission metadata.
         payload: Payload,
         /// The response channel.
         response: Sender<Result<Receiver<Cluster>, Error>>,

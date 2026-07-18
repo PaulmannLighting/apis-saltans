@@ -2,6 +2,7 @@
 
 pub use self::network::Network;
 
+/// Network configuration returned by a scan.
 pub mod network;
 
 /// A found network with additional link quality information.

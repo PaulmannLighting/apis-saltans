@@ -231,6 +231,7 @@ where
             });
     }
 
+    /// Respond to a node-descriptor request addressed to this coordinator.
     async fn handle_node_desc_req(&self, source: Source, seq: u8, node_desc_req: NodeDescReq) {
         let coordinator_address = ShortId::Coordinator.as_u16();
 
@@ -256,6 +257,7 @@ where
     }
 }
 
+/// Build the descriptor advertised for the local coordinator.
 fn coordinator_node_descriptor() -> NodeDescriptor {
     let mut flags = Flags::default();
     flags.set_logical_type(LogicalType::Coordinator);

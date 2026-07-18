@@ -68,12 +68,12 @@ where
                         });
                 }
                 Message::Communicate {
-                    destination,
+                    device,
                     payload,
                     response,
                 } => {
                     response
-                        .send(self.communicate(destination, payload).await)
+                        .send(self.communicate(device, payload).await)
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
                         });
@@ -154,13 +154,13 @@ where
     /// Returns an error if the unicast message could not be sent.
     async fn communicate(
         &mut self,
-        destination: Device,
+        device: Device,
         datagram: Payload,
     ) -> Result<oneshot::Receiver<Cluster>, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = datagram.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
         let index = Index::from_zcl_command(
-            destination,
+            device,
             zcl_frame.header().seq(),
             aps_metadata,
             zcl_metadata.manufacturer_code,
@@ -168,7 +168,7 @@ where
         let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
-        self.ncp.transmit(destination.into(), hw_datagram).await?;
+        self.ncp.transmit(device.into(), hw_datagram).await?;
         Ok(rx)
     }
 
