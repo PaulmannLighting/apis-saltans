@@ -1,10 +1,10 @@
 use bytes::Bytes;
-use log::{trace, warn};
+use log::{error, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::data::Frame;
 use zb_aps::{Assembler, Data};
-use zb_hw::Event as HardwareEvent;
+use zb_hw::{Event as HardwareEvent, Ncp, NcpHandle};
 use zb_nwk::{Envelope, Source};
 
 use self::aps_payload::ApsPayload;
@@ -15,6 +15,7 @@ mod aps_payload;
 /// Event multiplexer.
 #[derive(Debug)]
 pub struct Mux {
+    ncp: NcpHandle,
     events: Sender<ApplicationEvent>,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
@@ -24,11 +25,13 @@ pub struct Mux {
 impl Mux {
     /// Create a new multiplexer.
     pub fn new(
+        ncp: NcpHandle,
         events: Sender<ApplicationEvent>,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
     ) -> Self {
         Self {
+            ncp,
             events,
             zcl,
             zdp,
@@ -38,12 +41,13 @@ impl Mux {
 
     /// Start the multiplexer.
     pub fn spawn(
+        ncp: NcpHandle,
         hw_events: Receiver<HardwareEvent>,
         events_out: Sender<ApplicationEvent>,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
     ) {
-        spawn(Self::new(events_out, zcl_tx, zdp_tx).run(hw_events));
+        spawn(Self::new(ncp, events_out, zcl_tx, zdp_tx).run(hw_events));
     }
 
     /// Run the multiplexer.
@@ -137,12 +141,21 @@ impl Mux {
 
     async fn handle_nwk_envelope(&mut self, envelope: Envelope<Data<Bytes>>) {
         let source = envelope.source();
+        let header = envelope.payload().header();
+        let metadata = envelope.metadata();
 
         if let Some(frame) = self.transactions.add(envelope) {
             match frame.parse() {
                 Ok(frame) => self.forward_received_message(source, frame).await,
                 Err(error) => warn!("Failed to parse APS frame: {error}"),
             }
+        } else {
+            self.ncp
+                .send_reply(source.node_id(), header, metadata)
+                .await
+                .unwrap_or_else(|error| {
+                    error!("Failed to send response to fragmented frame: {error}");
+                })
         }
     }
 

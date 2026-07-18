@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use log::info;
 use zb_core::{Cluster, Endpoint, FullAddress};
 use zb_zdp::{BindReq, Destination};
 
@@ -38,6 +39,7 @@ pub trait Binding {
             let mut results = BTreeMap::new();
 
             for (endpoint, clusters) in src_endpoint_clusters {
+                info!("BINDING ENDPOINT {endpoint} with {clusters:?}");
                 for cluster in clusters {
                     results.insert(
                         endpoint,
@@ -74,16 +76,22 @@ pub trait Binding {
     {
         async move {
             let mut results = BTreeMap::new();
+            info!("GETTING LOCAL IEEE ADDRESS...");
             let dst_address = self.get_ieee_address().await?;
+            info!("LOCAL IEEE ADDRESS: {dst_address}");
 
+            info!("GETTING LOCAL ENDPOINTS...");
             for (dst_endpoint, input_clusters) in self
                 .get_endpoints()
                 .await?
                 .into_iter()
                 .map(|(endpoint, clusters)| (endpoint, clusters.input().clone()))
             {
+                info!("LOCAL ENDPOINT: {dst_endpoint}, input clusters: {input_clusters:?}");
                 let mut endpoint_clusters_to_bind = BTreeMap::new();
+                info!("ENDPOINTS TO BIND: {endpoint_clusters_to_bind:?}");
 
+                info!("BINDING CLUSTERS: {src_endpoint_clusters:?}");
                 for (src_endpoint, output_clusters) in &src_endpoint_clusters {
                     endpoint_clusters_to_bind.insert(
                         *src_endpoint,
@@ -94,6 +102,9 @@ pub trait Binding {
                     );
                 }
 
+                info!(
+                    "BINDING: {address} ({endpoint_clusters_to_bind:?} to {dst_address}:{dst_endpoint})"
+                );
                 results.extend(
                     self.bind_all(
                         address,
@@ -105,8 +116,11 @@ pub trait Binding {
                     )
                     .await,
                 );
+
+                info!("ENDPOINT BOUND: {dst_endpoint}");
             }
 
+            info!("BINDING COMPLETE");
             Ok(results)
         }
     }
@@ -123,6 +137,7 @@ where
         cluster: Cluster,
         destination: Destination,
     ) -> Result<(), Error> {
+        info!("MAKING BIND CALL: {address}:{endpoint} ({cluster:?}) -> {destination}");
         let response = self
             .communicate(
                 address.short_id(),
@@ -135,6 +150,7 @@ where
             )
             .await?;
 
+        info!("ENSURING SUCCESS...");
         response.status().ensure_success()
     }
 }

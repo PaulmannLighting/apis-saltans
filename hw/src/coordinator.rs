@@ -6,7 +6,9 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::oneshot::channel;
+use zb_aps::data::Header;
 use zb_core::{Application, Destination, IeeeAddress};
+use zb_nwk::Metadata;
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
 use crate::{Clusters, Error, NcpHandle};
@@ -116,6 +118,13 @@ pub trait Ncp {
         destination: Destination,
         datagram: Datagram,
     ) -> impl Future<Output = Result<(), Error>> + Send;
+
+    fn send_reply(
+        &self,
+        node_id: u16,
+        aps_header: Header,
+        metadata: Metadata,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl Ncp for NcpHandle {
@@ -203,6 +212,23 @@ impl Ncp for NcpHandle {
         self.send(Message::Transmit {
             destination,
             datagram,
+            response,
+        })
+        .await?;
+        rx.await?
+    }
+
+    async fn send_reply(
+        &self,
+        node_id: u16,
+        aps_header: Header,
+        metadata: Metadata,
+    ) -> Result<(), Error> {
+        let (response, rx) = channel();
+        self.send(Message::SendReply {
+            node_id,
+            aps_header,
+            metadata,
             response,
         })
         .await?;

@@ -36,8 +36,8 @@ impl<T> Frame<T> {
 
     /// Return a reference to the header.
     #[must_use]
-    pub const fn header(&self) -> &Header {
-        &self.header
+    pub const fn header(&self) -> Header {
+        self.header
     }
 
     /// Return a reference to the payload.

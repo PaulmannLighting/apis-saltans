@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::mpsc::{Receiver, channel};
+use zb_aps::data::Header;
 use zb_core::{Application, Destination, IeeeAddress};
+use zb_nwk::Metadata;
 
 use crate::common::Message;
 use crate::{Clusters, Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
@@ -122,6 +124,13 @@ pub trait Driver {
         datagram: Datagram,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
+    fn send_reply(
+        &mut self,
+        node_id: u16,
+        aps_header: Header,
+        metadata: Metadata,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
+
     /// Spawn the actor in a tokio task.
     ///
     /// # Returns
@@ -223,6 +232,14 @@ where
                         .send(self.transmit(destination, datagram).await)
                         .unwrap_or_else(drop);
                 }
+                Message::SendReply {
+                    node_id,
+                    aps_header,
+                    metadata,
+                    response,
+                } => response
+                    .send(self.send_reply(node_id, aps_header, metadata).await)
+                    .unwrap_or_else(drop),
             }
         }
 

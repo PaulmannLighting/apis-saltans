@@ -120,7 +120,7 @@ impl Index {
     /// Build the ZCL response correlation key from APS and ZCL headers.
     fn from_aps_and_zcl_headers(
         short_id: u16,
-        aps_header: &zb_aps::data::Header,
+        aps_header: zb_aps::data::Header,
         zcl_header: zb_zcl::Header,
     ) -> Self {
         Self::new(

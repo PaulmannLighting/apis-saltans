@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::oneshot::Sender;
+use zb_aps::data::Header;
 use zb_core::{Application, Destination, IeeeAddress};
+use zb_nwk::Metadata;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
@@ -97,6 +99,13 @@ pub enum Message {
         /// Serialized payload and APS metadata to transmit.
         datagram: Datagram,
         /// One-shot channel used to return success or driver error.
+        response: Sender<Result<(), Error>>,
+    },
+
+    SendReply {
+        node_id: u16,
+        aps_header: Header,
+        metadata: Metadata,
         response: Sender<Result<(), Error>>,
     },
 }
