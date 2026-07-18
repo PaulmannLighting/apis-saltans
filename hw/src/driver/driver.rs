@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::mpsc::{Receiver, channel};
-use zb_aps::data::Header;
 use zb_core::{Application, Destination, IeeeAddress};
 
 use crate::common::Message;
@@ -123,17 +122,6 @@ pub trait Driver {
         datagram: Datagram,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
-    /// Send a reply derived from an incoming APS header to a NWK node.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the driver cannot send the reply.
-    fn send_reply(
-        &mut self,
-        node_id: u16,
-        aps_header: Header,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
-
     /// Spawn the actor in a tokio task.
     ///
     /// # Returns
@@ -235,13 +223,6 @@ where
                         .send(self.transmit(destination, datagram).await)
                         .unwrap_or_else(drop);
                 }
-                Message::SendReply {
-                    node_id,
-                    aps_header,
-                    response,
-                } => response
-                    .send(self.send_reply(node_id, aps_header).await)
-                    .unwrap_or_else(drop),
             }
         }
 

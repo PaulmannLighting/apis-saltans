@@ -140,26 +140,13 @@ impl Mux {
     }
 
     async fn handle_nwk_envelope(&mut self, envelope: Envelope<Data<Bytes>>) {
-        let mut need_to_send_reply = true;
         let source = envelope.source();
-        let header = envelope.payload().header();
 
-        if let Some((frame, was_fragmented)) = self.transactions.add(envelope) {
-            need_to_send_reply = was_fragmented;
-
+        if let Some(frame) = self.transactions.add(envelope) {
             match frame.parse() {
                 Ok(frame) => self.forward_received_message(source, frame).await,
                 Err(error) => warn!("Failed to parse APS frame: {error}"),
             }
-        }
-
-        if need_to_send_reply {
-            self.ncp
-                .send_reply(source.node_id(), header)
-                .await
-                .unwrap_or_else(|error| {
-                    error!("Failed to send response to fragmented frame: {error}");
-                });
         }
     }
 

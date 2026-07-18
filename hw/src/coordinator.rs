@@ -6,7 +6,6 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::oneshot::channel;
-use zb_aps::data::Header;
 use zb_core::{Application, Destination, IeeeAddress};
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
@@ -117,17 +116,6 @@ pub trait Ncp {
         destination: Destination,
         datagram: Datagram,
     ) -> impl Future<Output = Result<(), Error>> + Send;
-
-    /// Send a reply derived from an incoming APS header to a NWK node.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the actor is unavailable or the driver cannot send the reply.
-    fn send_reply(
-        &self,
-        node_id: u16,
-        aps_header: Header,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl Ncp for NcpHandle {
@@ -215,17 +203,6 @@ impl Ncp for NcpHandle {
         self.send(Message::Transmit {
             destination,
             datagram,
-            response,
-        })
-        .await?;
-        rx.await?
-    }
-
-    async fn send_reply(&self, node_id: u16, aps_header: Header) -> Result<(), Error> {
-        let (response, rx) = channel();
-        self.send(Message::SendReply {
-            node_id,
-            aps_header,
             response,
         })
         .await?;
