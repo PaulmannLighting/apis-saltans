@@ -109,6 +109,8 @@ impl Assembler {
             return Some(Frame::raw(header, payload));
         }
 
+        trace!("Transaction size is: {}", blocks.get());
+
         if let Some(previous_transaction) = self.transactions.insert(
             Index::new(source, header.counter()),
             Transaction::new(blocks, header, payload),
