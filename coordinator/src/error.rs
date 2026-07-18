@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
+use tokio::time::error::Elapsed;
 use zb_core::IeeeAddress;
 
 pub use self::optional::Optional;
@@ -14,7 +15,7 @@ mod optional;
 mod status_ext;
 
 /// Errors that can occur in the coordinator-API.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum Error {
     /// Hardware error.
     Hardware(zb_hw::Error),
@@ -42,6 +43,9 @@ pub enum Error {
 
     /// ZDP status error, preserving unknown raw status bytes.
     Zdp(Result<zb_zdp::Status, u8>),
+
+    /// A request exceeded its allotted response time.
+    Timeout(Elapsed),
 }
 
 impl Display for Error {
@@ -64,6 +68,7 @@ impl Display for Error {
                 Ok(status) => write!(f, "ZDP error: {status}"),
                 Err(raw) => write!(f, "ZDP error: {raw:#04x}"),
             },
+            Self::Timeout(elapsed) => write!(f, "Timeout: {elapsed:?}"),
         }
     }
 }
@@ -73,6 +78,7 @@ impl std::error::Error for Error {
         match self {
             Self::Hardware(error) => Some(error),
             Self::ReceiveError(error) => Some(error),
+            Self::Timeout(error) => Some(error),
             Self::SendError
             | Self::InvalidResponseType(_)
             | Self::UnknownDevice(_)
@@ -111,5 +117,11 @@ impl From<Result<zb_zcl::Status, u8>> for Error {
 impl From<Result<zb_zdp::Status, u8>> for Error {
     fn from(error: Result<zb_zdp::Status, u8>) -> Self {
         Self::Zdp(error)
+    }
+}
+
+impl From<Elapsed> for Error {
+    fn from(elapsed: Elapsed) -> Self {
+        Self::Timeout(elapsed)
     }
 }
