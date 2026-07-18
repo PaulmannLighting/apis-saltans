@@ -8,7 +8,6 @@ use std::time::Duration;
 use tokio::sync::oneshot::channel;
 use zb_aps::data::Header;
 use zb_core::{Application, Destination, IeeeAddress};
-use zb_nwk::Metadata;
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
 use crate::{Clusters, Error, NcpHandle};
@@ -119,6 +118,11 @@ pub trait Ncp {
         datagram: Datagram,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
+    /// Send a reply derived from an incoming APS header to a NWK node.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the actor is unavailable or the driver cannot send the reply.
     fn send_reply(
         &self,
         node_id: u16,

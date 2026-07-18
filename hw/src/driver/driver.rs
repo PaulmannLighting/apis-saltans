@@ -4,7 +4,6 @@ use std::time::Duration;
 use tokio::sync::mpsc::{Receiver, channel};
 use zb_aps::data::Header;
 use zb_core::{Application, Destination, IeeeAddress};
-use zb_nwk::Metadata;
 
 use crate::common::Message;
 use crate::{Clusters, Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
@@ -124,6 +123,11 @@ pub trait Driver {
         datagram: Datagram,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
+    /// Send a reply derived from an incoming APS header to a NWK node.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the driver cannot send the reply.
     fn send_reply(
         &mut self,
         node_id: u16,

@@ -4,7 +4,6 @@ use std::time::Duration;
 use tokio::sync::oneshot::Sender;
 use zb_aps::data::Header;
 use zb_core::{Application, Destination, IeeeAddress};
-use zb_nwk::Metadata;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
@@ -102,9 +101,13 @@ pub enum Message {
         response: Sender<Result<(), Error>>,
     },
 
+    /// Send a reply derived from an incoming APS header.
     SendReply {
+        /// NWK address of the node that receives the reply.
         node_id: u16,
+        /// Header of the APS frame being answered.
         aps_header: Header,
+        /// One-shot channel used to return success or driver error.
         response: Sender<Result<(), Error>>,
     },
 }
