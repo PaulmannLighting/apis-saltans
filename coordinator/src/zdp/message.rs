@@ -17,6 +17,13 @@ pub enum Message {
         /// The APS frame.
         frame: Data<Frame<Command>>,
     },
+
+    /// The network has been opened for new joins.
+    NetworkOpened,
+
+    /// The network has been closed for new joins.
+    NetworkClosed,
+
     /// Communicate a unicast with an expected response.
     Communicate {
         device: Device,

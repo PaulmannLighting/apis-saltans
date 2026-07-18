@@ -18,7 +18,7 @@ use zb_hw::{Datagram, Ncp};
 use zb_nwk::Source;
 use zb_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
-    NodeDescReq, NodeDescRsp, SimpleDescriptor,
+    MgmtPermitJoiningRsp, NetworkManagement, NodeDescReq, NodeDescRsp, SimpleDescriptor, Status,
 };
 
 use self::match_desc_req_ext::MatchDescReqExt;
@@ -42,6 +42,8 @@ pub struct Transceiver<T> {
     ncp: T,
     events: Sender<Event>,
     endpoints: Box<[SimpleDescriptor]>,
+    /// Whether the hardware has reported that joining is open.
+    joining_permitted: bool,
     responses: BTreeMap<Index, oneshot::Sender<Command>>,
     seq: u8,
 }
@@ -54,6 +56,7 @@ impl<T> Transceiver<T> {
             ncp,
             events,
             endpoints,
+            joining_permitted: false,
             responses: BTreeMap::new(),
             seq: 0,
         }
@@ -70,6 +73,12 @@ where
             match message {
                 Message::Received { source, frame } => {
                     self.handle_message_received(source, frame).await;
+                }
+                Message::NetworkOpened => {
+                    self.joining_permitted = true;
+                }
+                Message::NetworkClosed => {
+                    self.joining_permitted = false;
                 }
                 Message::Communicate {
                     device,
@@ -121,6 +130,11 @@ where
         )) = command
         {
             self.handle_node_desc_req(source, seq, *node_desc_req).await;
+            return;
+        }
+
+        if let Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_)) = command {
+            self.handle_mgmt_permit_joining_req(source, seq).await;
             return;
         }
 
@@ -253,6 +267,26 @@ where
 
         if let Err(error) = self.respond(seq, node_id, Payload::from(payload)).await {
             error!("Failed to send Node_Desc_rsp: {error:?}");
+        }
+    }
+
+    /// Apply a management permit-joining request and return its result to the requester.
+    async fn handle_mgmt_permit_joining_req(&self, source: Source, seq: u8) {
+        let Ok(node_id) = source.node_id().try_into().inspect_err(|error| {
+            warn!("Invalid node ID: {error:?}");
+        }) else {
+            return;
+        };
+
+        let status = if self.joining_permitted {
+            Status::Success
+        } else {
+            Status::NotPermitted
+        };
+        let payload = MgmtPermitJoiningRsp::new(status);
+
+        if let Err(error) = self.respond(seq, node_id, Payload::from(payload)).await {
+            error!("Failed to send Mgmt_Permit_Joining_rsp: {error:?}");
         }
     }
 }
