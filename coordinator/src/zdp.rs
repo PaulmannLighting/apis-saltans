@@ -105,48 +105,40 @@ where
         let index = Index::from_received_zdp_frame(source, &zdp_frame);
         let (seq, command) = zdp_frame.into_parts();
 
-        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
-            match_desc_req,
-        )) = command
-        {
-            self.handle_match_desc_req(source, aps_header, seq, *match_desc_req)
-                .await;
-            return;
+        match command {
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
+                match_desc_req,
+            )) => {
+                self.handle_match_desc_req(source, aps_header, seq, *match_desc_req)
+                    .await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::DeviceAnnce(
+                device_annce,
+            )) => {
+                self.handle_device_annce(*device_annce).await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescReq(
+                node_desc_req,
+            )) => {
+                self.handle_node_desc_req(source, seq, *node_desc_req).await;
+            }
+            Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_)) => {
+                self.handle_mgmt_permit_joining_req(source, seq).await;
+            }
+            command => {
+                if let Some(sender) = self.responses.remove(&index) {
+                    debug!(
+                        "Answering ZDP request: seq={seq} cluster_id={:#06X}",
+                        command.cluster_id()
+                    );
+                    sender.send(command).unwrap_or_else(|error| {
+                        warn!("Failed to send ZDP response: {error:?}");
+                    });
+                } else {
+                    warn!("Unexpected ZDP response: {command:?}");
+                }
+            }
         }
-
-        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::DeviceAnnce(
-            device_annce,
-        )) = command
-        {
-            self.handle_device_annce(*device_annce).await;
-            return;
-        }
-
-        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescReq(
-            node_desc_req,
-        )) = command
-        {
-            self.handle_node_desc_req(source, seq, *node_desc_req).await;
-            return;
-        }
-
-        if let Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_)) = command {
-            self.handle_mgmt_permit_joining_req(source, seq).await;
-            return;
-        }
-
-        if let Some(sender) = self.responses.remove(&index) {
-            debug!(
-                "Answering ZDP request: seq={seq} cluster_id={:#06X}",
-                command.cluster_id()
-            );
-            sender.send(command).unwrap_or_else(|error| {
-                warn!("Failed to send ZDP response: {error:?}");
-            });
-            return;
-        }
-
-        warn!("Unexpected ZDP response: {command:?}");
     }
 
     /// Send a ZDP unicast message with back-channel communication.
