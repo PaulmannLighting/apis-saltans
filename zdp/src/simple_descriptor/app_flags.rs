@@ -33,7 +33,9 @@ impl AppFlags {
     /// descriptor wire format.
     #[must_use]
     pub const fn with_version(self, version: u8) -> Self {
-        Self(self.bits() | (version << Self::VERSION.bits().trailing_zeros()))
+        let version = version << Self::VERSION.bits().trailing_zeros();
+
+        Self((self.bits() & !Self::VERSION.bits()) | (version & Self::VERSION.bits()))
     }
 
     /// Return the application version stored in the high nibble.
@@ -66,7 +68,24 @@ mod tests {
     use super::AppFlags;
 
     const PARTIAL_VERSION_BITS: u8 = 0x10;
+    const REPLACEMENT_VERSION: u8 = 0x05;
+    const VERSION_WITH_HIGH_BITS: u8 = 0xF5;
     const VERSION_AND_RESERVED: &str = "VERSION | RESERVED";
+
+    #[test]
+    fn replaces_existing_version_and_preserves_reserved_bits() {
+        let flags = (AppFlags::VERSION | AppFlags::RESERVED).with_version(REPLACEMENT_VERSION);
+
+        assert_eq!(flags.version(), REPLACEMENT_VERSION);
+        assert_eq!(flags & AppFlags::RESERVED, AppFlags::RESERVED);
+    }
+
+    #[test]
+    fn ignores_version_bits_above_the_low_nibble() {
+        let flags = AppFlags::empty().with_version(VERSION_WITH_HIGH_BITS);
+
+        assert_eq!(flags.version(), REPLACEMENT_VERSION);
+    }
 
     #[test]
     fn displays_named_flags() {
