@@ -5,8 +5,8 @@ use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
 use self::configure_reporting_request::ConfigureReportingRequest;
 use self::read_attributes_request::ReadAttributesRequest;
 use self::write_attributes_request::WriteAttributesRequest;
-use crate::Error;
 use crate::api::zcl::Zcl;
+use crate::{Error, ZclResponse};
 
 mod configure_reporting_request;
 mod read_attributes_request;
@@ -28,14 +28,18 @@ pub trait Attributes {
     /// The attributes supply their own cluster, profile, manufacturer, attribute ID, and type
     /// metadata through the ZCL `Reportable` implementation.
     ///
+    /// The first await queues the request and returns a [`ZclResponse`]. Await that response to
+    /// confirm transmission and receive the device's configure-reporting response.
+    ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if communication fails or the response is invalid.
+    /// Returns an [`Error`] if the request cannot be queued. The returned [`ZclResponse`] reports
+    /// transmission, reception, and response-conversion errors when awaited.
     fn configure_reporting<T>(
         &self,
         device: Device,
         attributes: T,
-    ) -> impl Future<Output = Result<configure_reporting::Response, Error>> + Send
+    ) -> impl Future<Output = Result<ZclResponse<configure_reporting::Response>, Error>> + Send
     where
         Self: Sync,
         T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send;
@@ -82,7 +86,7 @@ where
         &self,
         device: Device,
         attributes: U,
-    ) -> Result<configure_reporting::Response, Error>
+    ) -> Result<ZclResponse<configure_reporting::Response>, Error>
     where
         U: IntoIterator<Item: Reportable>,
     {
@@ -101,6 +105,7 @@ where
         Ok(self
             .communicate(device, ReadAttributesRequest(attributes))
             .await?
+            .await?
             .into())
     }
 
@@ -114,6 +119,7 @@ where
     {
         Ok(self
             .communicate(device, WriteAttributesRequest(attributes))
+            .await?
             .await?
             .into_iter()
             .map(TryInto::try_into)

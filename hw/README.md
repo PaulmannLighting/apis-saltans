@@ -25,7 +25,7 @@ commands to the NCP actor.
 
 ```toml
 [dependencies]
-apis-saltans-hw = { version = "0.7", features = ["coordinator"] }
+apis-saltans-hw = { version = "0.9", features = ["coordinator"] }
 ```
 
 Import the `Ncp` trait to make the handle methods available:
@@ -44,6 +44,19 @@ Use this feature for command-side operations such as reading the coordinator IEE
 networks, reading local endpoint cluster sets, allowing joins, resolving addresses, requesting
 routes, and transmitting serialized `Datagram` values to `zb_core::Destination` targets.
 
+`Ncp::transmit(...)` is intentionally two-stage. Awaiting the method sends the request to the driver
+actor and returns a Tokio one-shot receiver. Await that receiver to observe the driver's actual
+transmission result:
+
+```rust,ignore
+let completion = ncp.transmit(destination, datagram).await?;
+completion.await??;
+```
+
+The first error means the actor command could not be sent. The receiver's outer error means the
+driver actor dropped the completion channel, while its inner error is the driver's transmission
+failure.
+
 ### Implementing a Driver
 
 Enable `driver` in hardware backend crates. It exposes the traits and common data types used to
@@ -51,7 +64,7 @@ implement a backend:
 
 ```toml
 [dependencies]
-apis-saltans-hw = { version = "0.7", features = ["driver"] }
+apis-saltans-hw = { version = "0.9", features = ["driver"] }
 ```
 
 Driver crates typically implement:
@@ -116,6 +129,10 @@ network state changes, device joins/leaves with `FullAddress`, route errors, and
 `Ncp` is the caller-facing proxy trait implemented for `NcpHandle`. It sends commands to the driver
 actor through a Tokio MPSC channel and waits for the one-shot response associated with each command.
 `get_endpoints()` returns the same local endpoint cluster map exposed by the driver.
+
+Most proxy methods await the driver result before returning. `Ncp::transmit(...)` instead returns
+its one-shot completion receiver immediately after actor handoff, allowing coordinator layers to
+compose hardware completion with their own protocol-response futures.
 
 ### `Clusters`
 

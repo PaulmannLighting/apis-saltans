@@ -18,6 +18,7 @@ device model.
 - the hardware driver is owned by `apis-saltans-hw`
 - `Coordinator::start(...)` spawns ZCL and ZDP transceivers
 - a mux task consumes hardware events and forwards APS payloads to the right transceiver
+- response futures separate actor handoff from hardware transmission and protocol reception
 - unmatched inbound frames and network/device notifications are sent to an application-provided
   `Sender<Event>`
 
@@ -119,6 +120,7 @@ Fragmented APS payloads are reassembled with `zb_aps::Assembler` before parsing.
 The ZCL transceiver:
 
 - sends ZCL commands through the NCP
+- returns the NCP's transmission-completion receiver without waiting for the hardware result
 - creates ZCL frames with monotonically wrapping sequence numbers
 - stores pending response channels for `communicate(...)`
 - resolves received frames against the pending response map
@@ -132,6 +134,7 @@ APS metadata, and manufacturer code.
 The ZDP transceiver:
 
 - sends ZDP unicast requests to endpoint `0x00`
+- returns the NCP's transmission-completion receiver without waiting for the hardware result
 - creates ZDP frames with monotonically wrapping sequence numbers
 - stores pending response channels for `communicate(...)`
 - resolves received frames against the pending response map
@@ -156,6 +159,9 @@ flowchart TD
     CLUSTERS[OnOff ColorControl Level Attributes]
     DISCOVERY[Node Endpoints]
     BIND[Binding]
+    TXR[TransmissionResponse]
+    ZCLR[ZclResponse]
+    ZDPR[ZdpResponse]
 
     COORD --> JOIN
     COORD --> HWHELPERS
@@ -164,6 +170,9 @@ flowchart TD
     ZCL --> CLUSTERS
     ZDP --> DISCOVERY
     ZDP --> BIND
+    ZCL -->|transmit| TXR
+    ZCL -->|communicate| ZCLR
+    ZDP -->|communicate| ZDPR
 ```
 
 This layering keeps policy outside the crate. A user-owned discovery workflow can listen for
@@ -196,43 +205,84 @@ sequenceDiagram
     M->>ZDP: Message::Received
 ```
 
-## 2) ZCL command with response
+## 2) ZCL command without a protocol response
 
 ```mermaid
 sequenceDiagram
     participant API as API Caller
     participant ZCL as ZCL Transceiver
-    participant HW as NCP
+    participant HW as NCP Driver Actor
+    participant TX as TransmissionResponse
+
+    API->>ZCL: Message::Transmit(destination, payload)
+    ZCL->>HW: Ncp::transmit(datagram)
+    HW-->>ZCL: transmission completion receiver
+    ZCL-->>API: TransmissionResponse
+    API->>TX: await
+    HW-->>TX: driver transmission result
+    TX-->>API: Result&lt;(), Error&gt;
+```
+
+The first await on `Zcl::transmit(...)` covers the API-to-transceiver handoff and returns the
+`TransmissionResponse`. The second await observes the driver result. Dropping the response future
+does not retract a command already present in an actor inbox.
+
+## 3) ZCL command with response
+
+```mermaid
+sequenceDiagram
+    participant API as API Caller
+    participant ZCL as ZCL Transceiver
+    participant HW as NCP Driver Actor
     participant M as Mux
+    participant R as ZclResponse
 
     API->>ZCL: Message::Communicate(destination, payload)
     ZCL->>ZCL: allocate sequence and store pending response
-    ZCL->>HW: transmit APS ZCL frame
+    ZCL->>HW: Ncp::transmit(APS ZCL frame)
+    HW-->>ZCL: transmission completion receiver
+    ZCL-->>API: ZclResponse
+    API->>R: await
+    HW-->>R: driver transmission result
     HW->>M: MessageReceived(ZCL response)
     M->>ZCL: Message::Received
     ZCL->>ZCL: match response index
-    ZCL-->>API: typed response
+    ZCL-->>R: raw Cluster
+    R-->>API: converted typed response
 ```
 
-## 3) ZDP request with response
+`ZclResponse<T>` is a protocol alias for `CommunicationResponse<Cluster, T>`. Its poll order is
+strict: it completes hardware transmission first, then receives the correlated raw `Cluster`, then
+applies `TryFrom<Cluster>` to produce `T`. A failed transmission prevents the response receiver from
+being polled.
+
+## 4) ZDP request with response
 
 ```mermaid
 sequenceDiagram
     participant API as API Caller
     participant ZDP as ZDP Transceiver
-    participant HW as NCP
+    participant HW as NCP Driver Actor
     participant M as Mux
+    participant R as ZdpResponse
 
     API->>ZDP: Message::Communicate(device, request)
     ZDP->>ZDP: allocate sequence and store pending response
-    ZDP->>HW: transmit APS ZDP frame to endpoint 0x00
+    ZDP->>HW: Ncp::transmit(APS ZDP frame to endpoint 0x00)
+    HW-->>ZDP: transmission completion receiver
+    ZDP-->>API: ZdpResponse
+    API->>R: await
+    HW-->>R: driver transmission result
     HW->>M: MessageReceived(ZDP response)
     M->>ZDP: Message::Received
     ZDP->>ZDP: match response index
-    ZDP-->>API: typed response
+    ZDP-->>R: raw Command
+    R-->>API: converted typed response
 ```
 
-## 4) User-owned discovery workflow
+`ZdpResponse<T>` applies the same sequencing to `CommunicationResponse<Command, T>`.
+
+## 5) User-owned discovery workflow
 
 ```mermaid
 sequenceDiagram
@@ -271,7 +321,7 @@ sequenceDiagram
     APP->>APP: persist or update application device registry
 ```
 
-## 5) Unmatched inbound frame publication
+## 6) Unmatched inbound frame publication
 
 ```mermaid
 sequenceDiagram
@@ -292,14 +342,16 @@ sequenceDiagram
     ZDP->>APP: Event::Zdp{src_address, aps_frame}
 ```
 
-## Timeouts
+## Response Lifetimes and Timeouts
 
-The handle traits apply timeouts while awaiting correlated responses:
+The response futures do not apply an internal deadline. This keeps timeout and retry policy with the
+application, alongside its discovery and binding policy. Callers can wrap the second await in
+`tokio::time::timeout`; `Error` supports conversion from Tokio's elapsed-time error.
 
-- ZCL response timeout: `ZIGBEE_COORDINATOR_ZCL_RESPONSE_TIMEOUT_SECS`
-- ZDP response timeout: `ZIGBEE_COORDINATOR_ZDP_RESPONSE_TIMEOUT_SECS`
-
-Timeouts produce `Error::Timeout`.
+The response objects own one-shot receivers. `TransmissionResponse` owns only the hardware
+completion receiver. `CommunicationResponse` wraps `InternalCommunicationResponse`, which owns both
+the hardware completion receiver and the correlated ZCL or ZDP receiver. The internal communication
+future always polls the hardware completion receiver first.
 
 ## Removed Internal Responsibilities
 

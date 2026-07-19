@@ -37,6 +37,7 @@ where
 
         let response = self
             .communicate(device, NodeDescReq::from(fragmentation))
+            .await?
             .await?;
 
         Ok(response.try_into()?)

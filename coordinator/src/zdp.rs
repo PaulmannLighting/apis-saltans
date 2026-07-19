@@ -25,6 +25,7 @@ use self::match_desc_req_ext::MatchDescReqExt;
 pub use self::message::Message;
 pub use self::payload::Payload;
 use super::index::Index;
+use crate::response::InternalCommunicationResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
 mod match_desc_req_ext;
@@ -165,7 +166,7 @@ where
         &mut self,
         device: Device,
         payload: Payload,
-    ) -> Result<oneshot::Receiver<Command>, zb_hw::Error> {
+    ) -> Result<InternalCommunicationResponse<Command>, zb_hw::Error> {
         let (metadata, payload) = payload.into_parts();
         let seq = self.next_seq();
         let index = Index::from_zdp_command(device, seq, metadata);
@@ -176,13 +177,14 @@ where
             unsafe { Datagram::new_unchecked(metadata, zdp_frame.to_le_stream().collect()) };
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
-        self.ncp
+        let transmission_rx = self
+            .ncp
             .transmit(
                 Destination::Device(destination::Device::new(device, Endpoint::Data)),
                 hw_datagram,
             )
             .await?;
-        Ok(rx)
+        Ok(InternalCommunicationResponse::new(transmission_rx, rx))
     }
 
     async fn respond(&self, seq: u8, device: Device, payload: Payload) -> Result<(), zb_hw::Error> {
@@ -197,7 +199,9 @@ where
                 Destination::Device(destination::Device::new(device, Endpoint::Data)),
                 hw_datagram,
             )
-            .await
+            .await?
+            .await??;
+        Ok(())
     }
 
     async fn handle_match_desc_req(&self, source: Source, seq: u8, match_desc_req: MatchDescReq) {

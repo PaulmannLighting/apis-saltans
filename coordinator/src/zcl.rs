@@ -18,6 +18,7 @@ use zb_zcl::{Cluster, Frame, Header};
 pub use self::message::Message;
 pub use self::payload::{Metadata, Payload};
 use super::index::Index;
+use crate::response::InternalCommunicationResponse;
 use crate::{Event, MPSC_CHANNEL_SIZE};
 
 mod message;
@@ -62,7 +63,7 @@ where
                     response,
                 } => {
                     response
-                        .send(self.transmit(destination, payload).await.map(drop))
+                        .send(self.transmit(destination, payload).await)
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
                         });
@@ -134,13 +135,11 @@ where
         &mut self,
         destination: Destination,
         payload: Payload,
-    ) -> Result<u8, zb_hw::Error> {
+    ) -> Result<oneshot::Receiver<Result<(), zb_hw::Error>>, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
-        let zcl_seq = zcl_frame.header().seq();
         let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
-        self.ncp.transmit(destination, hw_datagram).await?;
-        Ok(zcl_seq)
+        self.ncp.transmit(destination, hw_datagram).await
     }
 
     /// Send a ZCL unicast message with back-channel communication.
@@ -156,7 +155,7 @@ where
         &mut self,
         device: Device,
         datagram: Payload,
-    ) -> Result<oneshot::Receiver<Cluster>, zb_hw::Error> {
+    ) -> Result<InternalCommunicationResponse<Cluster>, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = datagram.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
         let index = Index::from_zcl_command(
@@ -168,8 +167,8 @@ where
         let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
-        self.ncp.transmit(device.into(), hw_datagram).await?;
-        Ok(rx)
+        let transmission_rx = self.ncp.transmit(device.into(), hw_datagram).await?;
+        Ok(InternalCommunicationResponse::new(transmission_rx, rx))
     }
 
     fn make_zcl_frame(&mut self, metadata: Metadata, command: Bytes) -> Frame<Bytes> {

@@ -71,6 +71,7 @@ where
     async fn endpoints(&self, device: Device) -> Result<BTreeSet<Endpoint>, Error> {
         let response = self
             .communicate(device, ActiveEpReq::new(device.into()))
+            .await?
             .await?;
 
         response
@@ -86,6 +87,7 @@ where
     ) -> Result<Option<SimpleDescriptor>, Error> {
         let response = self
             .communicate(device, SimpleDescReq::new(device.into(), endpoint))
+            .await?
             .await?;
 
         response

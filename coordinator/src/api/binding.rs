@@ -11,8 +11,8 @@ pub trait Binding {
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the ZDP request fails, times out, returns an invalid response, or
-    /// completes with a non-success ZDP status.
+    /// Returns an [`Error`] if the ZDP request cannot be queued, transmission or reception fails,
+    /// the response is invalid, or it completes with a non-success ZDP status.
     fn bind(
         &self,
         address: FullAddress,
@@ -132,6 +132,7 @@ where
                 destination,
             ),
         )
+        .await?
         .await?
         .status()
         .ensure_success()

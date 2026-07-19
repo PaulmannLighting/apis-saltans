@@ -1,4 +1,4 @@
-use tokio::sync::oneshot::{Receiver, Sender};
+use tokio::sync::oneshot::Sender;
 use zb_aps::Data;
 use zb_core::short_id::Device;
 use zb_hw::Error;
@@ -6,6 +6,7 @@ use zb_nwk::Source;
 use zb_zdp::{Command, Frame};
 
 use super::Payload;
+use crate::response::InternalCommunicationResponse;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -30,6 +31,6 @@ pub enum Message {
         /// The payload.
         payload: Payload,
         /// The response channel.
-        response: Sender<Result<Receiver<Command>, Error>>,
+        response: Sender<Result<InternalCommunicationResponse<Command>, Error>>,
     },
 }

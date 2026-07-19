@@ -7,7 +7,13 @@ use zb_core::{ClusterSpecific, Destination, ExpectResponse, Profiled};
 use zb_zcl::{Cluster, Command, Directed};
 
 use crate::zcl::{Message, Payload};
-use crate::{Coordinator, Error};
+use crate::{CommunicationResponse, Coordinator, Error, TransmissionResponse};
+
+/// A deferred typed ZCL response.
+///
+/// Awaiting this future first confirms hardware transmission, then waits for the correlated ZCL
+/// frame and converts it to `T`.
+pub type ZclResponse<T> = CommunicationResponse<Cluster, T>;
 
 /// Trait for sending ZCL commands.
 ///
@@ -17,30 +23,38 @@ pub trait Zcl {
     /// Send a ZCL command without waiting for an application-level response.
     ///
     /// Use this for cluster commands that are transmitted as commands or group/broadcast messages.
+    /// The returned outer future queues the command and yields a [`TransmissionResponse`]. Await
+    /// that response separately to observe whether the hardware transmission completed.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued for the ZCL transceiver or the
-    /// hardware transmission fails.
+    /// The outer future returns an [`Error`] if the command cannot be queued. Awaiting the returned
+    /// [`TransmissionResponse`] returns an [`Error`] if the hardware transmission fails or its
+    /// completion channel closes.
     fn transmit<T>(
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<(), Error>> + Send
+    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream;
 
     /// Send a ZCL command to a device endpoint and wait for its typed response.
     ///
+    /// The returned outer future queues the request and yields a [`ZclResponse`]. Await that
+    /// response separately; it confirms hardware transmission before waiting for and converting
+    /// the correlated ZCL response frame.
+    ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued, the hardware transmission fails, the
-    /// response times out, or the response cannot be converted into `T::Response`.
+    /// The outer future returns an [`Error`] if the command cannot be queued. Awaiting the returned
+    /// [`ZclResponse`] returns an [`Error`] if transmission or reception fails, or if the raw frame
+    /// cannot be converted into `T::Response`.
     fn communicate<T>(
         &self,
         destination: Device,
         payload: T,
-    ) -> impl Future<Output = Result<T::Response, Error>> + Send
+    ) -> impl Future<Output = Result<ZclResponse<T::Response>, Error>> + Send
     where
         T: ExpectResponse<Cluster> + Into<Payload>;
 }
@@ -50,7 +64,7 @@ impl Zcl for Sender<Message> {
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<(), Error>> + Send
+    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream,
     {
@@ -64,7 +78,7 @@ impl Zcl for Sender<Message> {
                 response,
             })
             .await?;
-            Ok(result.await??)
+            Ok(result.await??.into())
         }
     }
 
@@ -72,7 +86,7 @@ impl Zcl for Sender<Message> {
         &self,
         device: Device,
         payload: T,
-    ) -> impl Future<Output = Result<T::Response, Error>> + Send
+    ) -> impl Future<Output = Result<ZclResponse<T::Response>, Error>> + Send
     where
         T: ExpectResponse<Cluster> + Into<Payload>,
     {
@@ -86,11 +100,8 @@ impl Zcl for Sender<Message> {
                 response,
             })
             .await?;
-            result
-                .await??
-                .await?
-                .try_into()
-                .map_err(|error| Error::InvalidResponseType(format!("{error:?}")))
+
+            Ok(result.await??.into())
         }
     }
 }
@@ -100,7 +111,7 @@ impl Zcl for Coordinator {
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<(), Error>> + Send
+    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream,
     {
@@ -111,7 +122,7 @@ impl Zcl for Coordinator {
         &self,
         destination: Device,
         payload: T,
-    ) -> impl Future<Output = Result<T::Response, Error>> + Send
+    ) -> impl Future<Output = Result<ZclResponse<T::Response>, Error>> + Send
     where
         T: ExpectResponse<Cluster> + Into<Payload>,
     {

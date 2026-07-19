@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use tokio::sync::oneshot::channel;
+use tokio::sync::oneshot::{Receiver, channel};
 use zb_core::{Application, Destination, IeeeAddress};
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
@@ -108,14 +108,21 @@ pub trait Ncp {
 
     /// Transmit a serialized application datagram to a destination.
     ///
+    /// The returned outer future sends the command to the driver actor and yields a one-shot
+    /// receiver. Await that receiver separately to obtain the driver's transmission result. This
+    /// lets callers retain and compose the completion notification without blocking the actor
+    /// request path.
+    ///
     /// # Errors
     ///
-    /// Returns an error if the actor is unavailable or the driver fails to transmit the datagram.
+    /// The outer future returns an error if the actor is unavailable. The returned receiver yields
+    /// an error if the driver fails to transmit the datagram, and awaiting it fails if the driver
+    /// actor drops the completion channel.
     fn transmit(
         &self,
         destination: Destination,
         datagram: Datagram,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
+    ) -> impl Future<Output = Result<Receiver<Result<(), Error>>, Error>> + Send;
 }
 
 impl Ncp for NcpHandle {
@@ -198,7 +205,11 @@ impl Ncp for NcpHandle {
         rx.await?
     }
 
-    async fn transmit(&self, destination: Destination, datagram: Datagram) -> Result<(), Error> {
+    async fn transmit(
+        &self,
+        destination: Destination,
+        datagram: Datagram,
+    ) -> Result<Receiver<Result<(), Error>>, Error> {
         let (response, rx) = channel();
         self.send(Message::Transmit {
             destination,
@@ -206,6 +217,6 @@ impl Ncp for NcpHandle {
             response,
         })
         .await?;
-        rx.await?
+        Ok(rx)
     }
 }

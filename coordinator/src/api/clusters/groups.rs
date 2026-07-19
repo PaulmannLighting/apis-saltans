@@ -3,19 +3,23 @@ use zb_core::destination::Device;
 use zb_core::types::{String, Uint16};
 use zb_zcl::groups::{AddGroup, GetGroupMembership, GetGroupMembershipResponse, RemoveGroup};
 
-use crate::{Error, StatusExt, Zcl};
+use crate::{Error, StatusExt, Zcl, ZclResponse};
 
 /// Trait for Groups cluster operations.
 pub trait Groups {
     /// Lists the group memberships from the device.
     ///
+    /// The first await queues the request and returns a [`ZclResponse`]. Await that response to
+    /// confirm transmission and receive the membership list.
+    ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if execution of the command failed.
+    /// Returns an [`Error`] if the request cannot be queued. The returned [`ZclResponse`] reports
+    /// transmission, reception, and response-conversion errors when awaited.
     fn list(
         &self,
         device: Device,
-    ) -> impl Future<Output = Result<GetGroupMembershipResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<ZclResponse<GetGroupMembershipResponse>, Error>> + Send;
 
     /// Adds the device to a group.
     ///
@@ -49,7 +53,7 @@ impl<T> Groups for T
 where
     T: Zcl + Sync,
 {
-    async fn list(&self, device: Device) -> Result<GetGroupMembershipResponse, Error> {
+    async fn list(&self, device: Device) -> Result<ZclResponse<GetGroupMembershipResponse>, Error> {
         self.communicate(device, GetGroupMembership::default())
             .await
     }
@@ -62,6 +66,7 @@ where
     ) -> Result<Uint16, Error> {
         let response = self
             .communicate(device, AddGroup::new(group_id, name.unwrap_or_default()))
+            .await?
             .await?;
 
         response
@@ -71,7 +76,10 @@ where
     }
 
     async fn remove(&self, device: Device, group_id: GroupId) -> Result<Uint16, Error> {
-        let response = self.communicate(device, RemoveGroup::new(group_id)).await?;
+        let response = self
+            .communicate(device, RemoveGroup::new(group_id))
+            .await?
+            .await?;
         response
             .status()
             .ensure_success()

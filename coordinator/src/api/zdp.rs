@@ -6,7 +6,13 @@ use zb_core::{ClusterSpecific, ExpectResponse};
 use zb_zdp::Command;
 
 use crate::zdp::{Message, Payload};
-use crate::{Coordinator, Error};
+use crate::{CommunicationResponse, Coordinator, Error};
+
+/// A deferred typed ZDP response.
+///
+/// Awaiting this future first confirms hardware transmission, then waits for the correlated ZDP
+/// command and converts it to `T`.
+pub type ZdpResponse<T> = CommunicationResponse<Command, T>;
 
 /// Trait for sending ZDP requests.
 ///
@@ -15,15 +21,20 @@ use crate::{Coordinator, Error};
 pub trait Zdp {
     /// Send a ZDP request to a device and wait for its typed response.
     ///
+    /// The returned outer future queues the request and yields a [`ZdpResponse`]. Await that
+    /// response separately; it confirms hardware transmission before waiting for and converting
+    /// the correlated ZDP response command.
+    ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the request cannot be queued, the hardware transmission fails, the
-    /// response times out, or the response cannot be converted into `T::Response`.
+    /// The outer future returns an [`Error`] if the request cannot be queued. Awaiting the returned
+    /// [`ZdpResponse`] returns an [`Error`] if transmission or reception fails, or if the raw
+    /// command cannot be converted into `T::Response`.
     fn communicate<T>(
         &self,
         device: Device,
         request: T,
-    ) -> impl Future<Output = Result<T::Response, Error>> + Send
+    ) -> impl Future<Output = Result<ZdpResponse<T::Response>, Error>> + Send
     where
         T: ClusterSpecific + ExpectResponse<Command> + ToLeStream;
 }
@@ -33,7 +44,7 @@ impl Zdp for Sender<Message> {
         &self,
         device: Device,
         command: T,
-    ) -> impl Future<Output = Result<T::Response, Error>> + Send
+    ) -> impl Future<Output = Result<ZdpResponse<T::Response>, Error>> + Send
     where
         T: ClusterSpecific + ExpectResponse<Command> + ToLeStream,
     {
@@ -47,11 +58,7 @@ impl Zdp for Sender<Message> {
                 response,
             })
             .await?;
-            result
-                .await??
-                .await?
-                .try_into()
-                .map_err(|error| Error::InvalidResponseType(format!("{error:?}")))
+            Ok(result.await??.into())
         }
     }
 }
@@ -61,7 +68,7 @@ impl Zdp for Coordinator {
         &self,
         device: Device,
         command: T,
-    ) -> impl Future<Output = Result<T::Response, Error>> + Send
+    ) -> impl Future<Output = Result<ZdpResponse<T::Response>, Error>> + Send
     where
         T: ClusterSpecific + ExpectResponse<Command> + ToLeStream,
     {

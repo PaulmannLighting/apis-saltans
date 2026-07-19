@@ -7,6 +7,7 @@ use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame};
 
 pub use super::Payload;
+use crate::response::InternalCommunicationResponse;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -26,7 +27,7 @@ pub enum Message {
         /// ZCL payload and its transmission metadata.
         payload: Payload,
         /// The response channel.
-        response: Sender<Result<(), Error>>,
+        response: Sender<Result<Receiver<Result<(), Error>>, Error>>,
     },
 
     /// Communicate a unicast with an expected response.
@@ -36,6 +37,6 @@ pub enum Message {
         /// ZCL payload and its transmission metadata.
         payload: Payload,
         /// The response channel.
-        response: Sender<Result<Receiver<Cluster>, Error>>,
+        response: Sender<Result<InternalCommunicationResponse<Cluster>, Error>>,
     },
 }

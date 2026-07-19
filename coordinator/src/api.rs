@@ -1,4 +1,4 @@
-//! Zigbee API.
+//! Trait-based Zigbee API and protocol-specific deferred response aliases.
 
 pub use self::address_translation::AddressTranslation;
 pub use self::binding::Binding;
@@ -11,8 +11,8 @@ pub use self::local_node::{Clusters, LocalNode};
 pub use self::node::Node;
 pub use self::routing::Routing;
 pub use self::scanning::{FoundNetwork, ScannedChannel, Scanning};
-pub use self::zcl::Zcl;
-pub use self::zdp::Zdp;
+pub use self::zcl::{Zcl, ZclResponse};
+pub use self::zdp::{Zdp, ZdpResponse};
 
 mod address_translation;
 mod binding;

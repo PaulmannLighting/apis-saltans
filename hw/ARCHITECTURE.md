@@ -15,6 +15,8 @@ channels owned by each message.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
 - `Driver` is the implementor-facing NCP command API.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
+- `Ncp::transmit` returns the driver's one-shot completion receiver after actor handoff instead of
+  awaiting the driver result inside the proxy method.
 - `EventTranslator` converts backend-specific event messages into common `Event` values.
 - `Datagram` carries serialized application payload bytes together with APS `Metadata`.
 - `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel` are exported by
@@ -180,14 +182,20 @@ sequenceDiagram
 
     C->>H: transmit(destination, datagram);
     H->>A: Message::Transmit;
+    H-->>C: transmission completion receiver;
     A->>D: transmit(destination, datagram);
     D-->>A: transmit result;
-    A-->>C: oneshot response;
+    A-->>C: result through completion receiver;
 ```
 
 Each proxy call maps to one internal `Message` and one driver call. Destination-specific delivery
 semantics are represented by `zb_core::Destination`; the hardware abstraction no longer
 has separate unicast, multicast, and broadcast actor messages.
+
+The transmit path differs from other proxy calls at the response boundary. The first await only
+confirms that `Message::Transmit` entered the actor inbox and returns its one-shot receiver. The
+caller decides when to await that receiver for the driver's result. This lets the coordinator wrap
+hardware completion together with a later ZCL or ZDP response without blocking the command handoff.
 
 ## Module Inventory
 
@@ -227,7 +235,7 @@ response sender so the actor can return the result of the corresponding driver c
 | `route_request` | `RouteRequest` | `route_request` |
 | `short_id_to_ieee_address` | `TranslateIeeeAddress` | `short_id_to_ieee_address` |
 | `ieee_address_to_short_id` | `TranslateShortId` | `ieee_address_to_short_id` |
-| `transmit` | `Transmit` | `transmit` |
+| `transmit` | `Transmit` | `transmit`; the proxy returns the completion receiver before the driver result is available |
 
 ## Data Model
 

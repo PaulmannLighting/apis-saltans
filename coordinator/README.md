@@ -18,6 +18,11 @@ Public API exports:
 - low-level transport traits:
   - `Zcl`
   - `Zdp`
+- deferred response types:
+  - `TransmissionResponse`
+  - `CommunicationResponse<T, U>`
+  - `ZclResponse<T>`
+  - `ZdpResponse<T>`
 - composed ZDP traits:
   - `Node`
   - `Endpoints`
@@ -100,6 +105,37 @@ The `Coordinator` implements `Zcl`, `Zdp`, `Joining`, `AddressTranslation`, `Loc
 and `Scanning` directly. Discovery, binding, cluster, and attribute traits are blanket
 implementations over the raw ZCL/ZDP traits, so they are available on the coordinator without a
 separate manager object.
+
+## Deferred Responses
+
+Sending is split into two observable stages. The first await queues work on the coordinator actor
+and returns a response future. Awaiting that returned future observes the hardware and protocol
+result:
+
+- `TransmissionResponse` waits for hardware completion of a ZCL command that has no
+  application-level response.
+- `ZclResponse<T>` waits for hardware completion, then a correlated ZCL frame, and converts that
+  frame to `T`.
+- `ZdpResponse<T>` does the same for a correlated ZDP command.
+- `CommunicationResponse<Raw, T>` is the generic future behind the two protocol aliases.
+
+Consequently, raw transport and command-helper calls commonly use two awaits:
+
+```rust,ignore
+let transmission = api.on(destination).await?;
+transmission.await?;
+
+let response = api.communicate(device, request).await?;
+let typed_response = response.await?;
+```
+
+The first error reports that the request could not be queued or handed off. The second await reports
+hardware transmission, response-channel, or typed-conversion failures. Dropping a returned response
+future stops observing its result but does not cancel work that has already been queued.
+
+Higher-level discovery and binding helpers consume both stages internally when they return a final
+value. `Groups::list(...)` and `Attributes::configure_reporting(...)` intentionally expose a
+`ZclResponse<T>` so callers retain control over when to await the device response.
 
 ## Events
 
@@ -325,7 +361,7 @@ async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Err
     let endpoint = Application::try_from(1).expect("valid endpoint");
     let destination = Destination::from(DeviceDestination::new(short_id, endpoint.into()));
 
-    api.on(destination).await
+    api.on(destination).await?.await
 }
 ```
 
@@ -368,6 +404,7 @@ async fn set_color_temperature(
         Deciseconds::new(10).expect("valid transition time"),
         Options::empty(),
     )
+    .await?
     .await
 }
 ```
@@ -443,11 +480,17 @@ request.
 
 ## Raw Transports
 
-Use `Zcl::transmit(...)` for native cluster commands that do not expect a response, and
-`Zcl::communicate(...)` for commands implementing `ExpectResponse<zb_zcl::Cluster>`.
+Use `Zcl::transmit(...)` for native cluster commands that do not expect an application-level
+response. Its first await returns a `TransmissionResponse`; await that value to confirm hardware
+completion.
 
-Use `Zdp::communicate(...)` for ZDP requests implementing `ExpectResponse<zb_zdp::Command>`.
-The composed traits above are thin wrappers over these raw transports.
+Use `Zcl::communicate(...)` for commands implementing `ExpectResponse<zb_zcl::Cluster>`. Its first
+await returns `ZclResponse<T::Response>`. Awaiting that response confirms transmission, waits for a
+correlated ZCL frame, and converts the frame to the declared response type.
+
+Use `Zdp::communicate(...)` for ZDP requests implementing `ExpectResponse<zb_zdp::Command>`. It
+returns the equivalent `ZdpResponse<T::Response>`. The composed traits above are thin wrappers over
+these raw transports; most of them await the deferred response internally.
 
 ## Error Model
 
@@ -466,13 +509,18 @@ Most APIs return `apis_saltans_coordinator::Error`:
 
 ZCL and ZDP status responses preserve known status enums and raw unknown status bytes.
 
+For deferred operations, an error can occur at either await boundary. Queue and actor handoff
+errors occur while obtaining the response future. Hardware, receive-channel, and conversion errors
+occur while awaiting that response future.
+
 ## Runtime Configuration
 
 Behavior is configurable through environment variables:
 
 - `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`
-- `ZIGBEE_COORDINATOR_ZCL_RESPONSE_TIMEOUT_SECS`
-- `ZIGBEE_COORDINATOR_ZDP_RESPONSE_TIMEOUT_SECS`
+
+Deferred response futures do not impose a deadline. Applications that require one can wrap the
+second await with `tokio::time::timeout` and select a timeout policy appropriate to the operation.
 
 Retry behavior for discovery or binding is intentionally not configured here anymore. Applications
 that build discovery or binding workflows should apply their own retry and persistence policy.
