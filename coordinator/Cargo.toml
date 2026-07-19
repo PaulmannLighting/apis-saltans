@@ -7,7 +7,7 @@ repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "coordinator", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-coordinator"
-version = "0.10.0"
+version = "0.10.1"
 edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 

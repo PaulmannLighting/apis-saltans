@@ -14,6 +14,7 @@
 //! the converted protocol response.
 
 use const_env::env_item;
+pub use zb_hw::HwResponse;
 
 pub use self::api::{
     AddressTranslation, Attributes, Binding, Clusters, ColorControl, Endpoints, FoundNetwork,
