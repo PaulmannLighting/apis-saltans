@@ -65,7 +65,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-hw"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
