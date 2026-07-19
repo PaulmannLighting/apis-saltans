@@ -45,7 +45,7 @@ pub struct InvalidType<T> {
 impl<T> InvalidType<T> {
     /// Create a new invalid type error.
     #[must_use]
-    pub const fn new(id: T, typ: Type) -> Self {
+    pub(crate) const fn new(id: T, typ: Type) -> Self {
         Self { id, typ }
     }
 }
