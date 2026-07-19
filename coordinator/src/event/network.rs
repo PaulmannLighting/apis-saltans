@@ -28,9 +28,5 @@ pub enum Network {
 pub enum Error {
     /// Route error reported by the hardware layer.
     #[error("{0}")]
-    Route(
-        #[from]
-        #[source]
-        RouteError,
-    ),
+    Route(#[from] RouteError),
 }

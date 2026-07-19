@@ -5,19 +5,11 @@ use thiserror::Error;
 pub enum ParseApsFrameError {
     /// The ZCL frame is invalid.
     #[error("{0}")]
-    ParseZclFrameError(
-        #[from]
-        #[source]
-        zb_zcl::ParseFrameError,
-    ),
+    ParseZclFrameError(#[from] zb_zcl::ParseFrameError),
 
     /// The ZDP frame is invalid.
     #[error("{0}")]
-    ParseZdpFrameError(
-        #[from]
-        #[source]
-        zb_zdp::ParseFrameError,
-    ),
+    ParseZdpFrameError(#[from] zb_zdp::ParseFrameError),
 
     /// The profile ID is invalid.
     #[error("Invalid profile ID: {0}")]

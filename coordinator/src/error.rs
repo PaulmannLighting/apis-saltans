@@ -20,11 +20,7 @@ mod status_ext;
 pub enum Error {
     /// Hardware error.
     #[error("Hardware error: {0}")]
-    Hardware(
-        #[from]
-        #[source]
-        zb_hw::Error,
-    ),
+    Hardware(#[from] zb_hw::Error),
 
     /// Transmission through the channel failed.
     #[error("Sending failed")]
@@ -32,11 +28,7 @@ pub enum Error {
 
     /// Receiving of response failed.
     #[error("Receiving failed: {0}")]
-    ReceiveError(
-        #[from]
-        #[source]
-        RecvError,
-    ),
+    ReceiveError(#[from] RecvError),
 
     /// Invalid response type.
     #[error("Invalid response type: {0}")]
@@ -64,11 +56,7 @@ pub enum Error {
 
     /// A request exceeded its allotted response time.
     #[error("Timeout: {0:?}")]
-    Timeout(
-        #[from]
-        #[source]
-        Elapsed,
-    ),
+    Timeout(#[from] Elapsed),
 }
 
 impl<T> From<SendError<T>> for Error {

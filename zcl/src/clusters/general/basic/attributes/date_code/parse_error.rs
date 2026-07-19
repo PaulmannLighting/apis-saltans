@@ -6,11 +6,7 @@ use thiserror::Error;
 pub enum ParseError {
     /// The date within the string is invalid.
     #[error("{0}")]
-    InvalidDate(
-        #[from]
-        #[source]
-        chrono::ParseError,
-    ),
+    InvalidDate(#[from] chrono::ParseError),
 
     /// The custom part of the date code is too long.
     #[error("Custom part of date code is too long.")]

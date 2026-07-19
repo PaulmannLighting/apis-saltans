@@ -25,7 +25,7 @@ pub enum ParseAttributeError<T> {
 
     /// The attribute type is invalid for this ID.
     #[error("{0}")]
-    InvalidType(#[source] Box<InvalidType<T>>),
+    InvalidType(#[from] Box<InvalidType<T>>),
 }
 
 impl<T> From<InvalidType<T>> for ParseAttributeError<T> {
