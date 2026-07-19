@@ -8,7 +8,8 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::channel;
-use zb_aps::Data;
+use zb_aps::data::Header;
+use zb_aps::{Data, DeliveryMode};
 use zb_core::node::Descriptor;
 use zb_core::short_id::{Device, ShortId};
 use zb_core::{Destination, Endpoint, FullAddress, destination};
@@ -19,14 +20,16 @@ use zb_zdp::{
     MgmtPermitJoiningRsp, NetworkManagement, NodeDescReq, NodeDescRsp, Status,
 };
 
-use self::match_desc_req_ext::MatchDescReqExt;
+use self::match_desc::{
+    Action as MatchDescAction, action as match_desc_action, matching_endpoints,
+};
 pub use self::message::Message;
 pub use self::payload::Payload;
 use super::index::Index;
 use crate::response::InternalCommunicationResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
-mod match_desc_req_ext;
+mod match_desc;
 mod message;
 mod payload;
 
@@ -98,7 +101,7 @@ where
 
     async fn handle_message_received(&mut self, source: Source, frame: Data<Frame<Command>>) {
         trace!("Received ZDP message from {source}: {frame:?}");
-        let (_, zdp_frame) = frame.into_parts();
+        let (aps_header, zdp_frame) = frame.into_parts();
         let index = Index::from_received_zdp_frame(source, &zdp_frame);
         let (seq, command) = zdp_frame.into_parts();
 
@@ -106,7 +109,7 @@ where
             match_desc_req,
         )) = command
         {
-            self.handle_match_desc_req(source, seq, *match_desc_req)
+            self.handle_match_desc_req(source, aps_header, seq, *match_desc_req)
                 .await;
             return;
         }
@@ -197,24 +200,63 @@ where
         Ok(())
     }
 
-    async fn handle_match_desc_req(&self, source: Source, seq: u8, match_desc_req: MatchDescReq) {
-        let Ok(endpoints) = self.ncp.get_endpoints().await else {
+    /// Process a Match Descriptor request and unicast any required response to its originator.
+    async fn handle_match_desc_req(
+        &self,
+        source: Source,
+        aps_header: Header,
+        seq: u8,
+        match_desc_req: MatchDescReq,
+    ) {
+        let request_was_broadcast = matches!(
+            aps_header.control().delivery_mode(),
+            Some(DeliveryMode::Broadcast)
+        );
+        let Ok(logical_type) = self
+            .descriptor
+            .flags()
+            .logical_type()
+            .inspect_err(|value| warn!("Invalid logical device type: {value:#04X}"))
+        else {
             return;
         };
+        let nwk_addr_of_interest = match_desc_req.nwk_addr_of_interest();
+        let response =
+            match match_desc_action(logical_type, nwk_addr_of_interest, request_was_broadcast) {
+                MatchDescAction::MatchLocalDescriptors => {
+                    let Ok(endpoints) = self.ncp.get_endpoints().await else {
+                        return;
+                    };
+                    let Some(matches) = matching_endpoints(&match_desc_req, &endpoints) else {
+                        error!("Too many endpoints matched Match_Desc_req");
+                        return;
+                    };
 
-        let payload = MatchDescRsp::new(
-            match_desc_req.nwk_addr_of_interest(),
-            Ok(endpoints
-                .iter()
-                .filter_map(|endpoint| {
-                    if match_desc_req.matches(endpoint) {
-                        Some(endpoint.endpoint_id())
-                    } else {
-                        None
+                    if matches.is_empty() && request_was_broadcast {
+                        return;
                     }
-                })
-                .collect()),
-        );
+
+                    MatchDescRsp::new(nwk_addr_of_interest, Ok(matches))
+                }
+                MatchDescAction::MatchRemoteDevice(nwk_address) => {
+                    if self
+                        .ncp
+                        .short_id_to_ieee_address(nwk_address)
+                        .await
+                        .is_err()
+                    {
+                        MatchDescRsp::new(nwk_addr_of_interest, Err(Status::DeviceNotFound))
+                    } else if request_was_broadcast {
+                        return;
+                    } else {
+                        MatchDescRsp::new(nwk_addr_of_interest, Err(Status::NoDescriptor))
+                    }
+                }
+                MatchDescAction::RespondWithError(status) => {
+                    MatchDescRsp::new(nwk_addr_of_interest, Err(status))
+                }
+                MatchDescAction::Ignore => return,
+            };
 
         let Ok(node_id) = source.node_id().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
@@ -222,7 +264,7 @@ where
             return;
         };
 
-        if let Err(error) = self.respond(seq, node_id, Payload::from(payload)).await {
+        if let Err(error) = self.respond(seq, node_id, Payload::from(response)).await {
             error!("Failed to send Match_Desc_rsp: {error:?}");
         }
     }
