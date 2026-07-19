@@ -1,33 +1,40 @@
 
 # cargo-vet imports lock
 
-[[unpublished.apis-saltans-aps]]
-version = "0.5.0"
-audited_as = "0.4.0"
+[[publisher.proc-macro2]]
+version = "1.0.107"
+when = "2026-07-19"
+user-id = 3618
+user-login = "dtolnay"
+user-name = "David Tolnay"
 
-[[unpublished.apis-saltans-coordinator]]
-version = "0.8.0"
-audited_as = "0.7.0"
+[[publisher.quote]]
+version = "1.0.47"
+when = "2026-07-19"
+user-id = 3618
+user-login = "dtolnay"
+user-name = "David Tolnay"
 
-[[unpublished.apis-saltans-core]]
-version = "0.6.0"
-audited_as = "0.5.0"
+[[publisher.serde]]
+version = "1.0.229"
+when = "2026-07-18"
+user-id = 3618
+user-login = "dtolnay"
+user-name = "David Tolnay"
 
-[[unpublished.apis-saltans-hw]]
-version = "0.8.0"
-audited_as = "0.7.0"
+[[publisher.serde_core]]
+version = "1.0.229"
+when = "2026-07-18"
+user-id = 3618
+user-login = "dtolnay"
+user-name = "David Tolnay"
 
-[[unpublished.apis-saltans-nwk]]
-version = "0.3.0"
-audited_as = "0.2.0"
-
-[[unpublished.apis-saltans-zcl]]
-version = "0.6.0"
-audited_as = "0.5.1"
-
-[[unpublished.apis-saltans-zdp]]
-version = "0.5.0"
-audited_as = "0.4.0"
+[[publisher.serde_derive]]
+version = "1.0.229"
+when = "2026-07-18"
+user-id = 3618
+user-login = "dtolnay"
+user-name = "David Tolnay"
 
 [[publisher.syn]]
 version = "2.0.119"
@@ -35,6 +42,20 @@ when = "2026-07-15"
 user-id = 3618
 user-login = "dtolnay"
 user-name = "David Tolnay"
+
+[[publisher.syn]]
+version = "3.0.0"
+when = "2026-07-18"
+user-id = 3618
+user-login = "dtolnay"
+user-name = "David Tolnay"
+
+[[publisher.tokio]]
+version = "1.53.0"
+when = "2026-07-17"
+user-id = 6741
+user-login = "Darksonn"
+user-name = "Alice Ryhl"
 
 [[audits.google.audits.num-traits]]
 who = "Manish Goregaokar <manishearth@google.com>"

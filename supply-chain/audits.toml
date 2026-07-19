@@ -25,6 +25,12 @@ criteria = "safe-to-deploy"
 delta = "0.3.0 -> 0.4.0"
 notes = "AI-assisted delta audit; APS defragmentation was reworked around Bytes-backed fragments, NWK Source addressing was adopted, dependency bounds were bumped, docs were updated, and no new unsafe code was introduced"
 
+[[audits.apis-saltans-aps]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.4.0 -> 0.5.0"
+notes = "AI-assisted delta audit; reviewed APS endpoint parsing changes, fragmentation response handling, and the core/NWK dependency updates. The public destination type now preserves reserved endpoint values; no new ambient capabilities were introduced."
+
 [[audits.apis-saltans-coordinator]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -61,6 +67,12 @@ criteria = "safe-to-deploy"
 delta = "0.6.0 -> 0.7.0"
 notes = "AI-assisted delta audit; dependency bounds were updated for the ZCL 0.5 API, with no coordinator source changes and no new unsafe code introduced"
 
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.7.0 -> 0.8.0"
+notes = "AI-assisted delta audit; reviewed the coordinator API revamp, actor/mux routing changes, ZCL/ZDP request-response handling, timeout error, and joining-state tracking. The changes remain within Tokio channels and NCP abstractions and introduce no new ambient capabilities."
+
 [[audits.apis-saltans-core]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -91,6 +103,12 @@ criteria = "safe-to-deploy"
 delta = "0.4.0 -> 0.5.0"
 notes = "AI-assisted delta audit; adds the IeeeAddress newtype and Eui64 alias with le-stream and serde coverage, updates address/TLV usages, and introduces no unsafe code"
 
+[[audits.apis-saltans-core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.5.0 -> 0.6.0"
+notes = "AI-assisted delta audit; reviewed endpoint-domain changes, including removal of the separate broadcast endpoint representation, plus TypeId and Zigbee type API updates. No build scripts, filesystem, network, or process capabilities were added."
+
 [[audits.apis-saltans-hw]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -115,6 +133,12 @@ criteria = "safe-to-deploy"
 delta = "0.6.0 -> 0.7.0"
 notes = "AI-assisted delta audit; dependency bounds were updated for the ZCL 0.5 API, with no hardware crate source changes and no new unsafe code introduced"
 
+[[audits.apis-saltans-hw]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.7.0 -> 0.8.0"
+notes = "AI-assisted delta audit; reviewed NCP and driver trait changes for endpoint discovery and replies, hardware event forwarding, re-exports, and removal of the EventTranslator constructor. Hardware interaction remains delegated to driver implementations."
+
 [[audits.apis-saltans-macros]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -126,6 +150,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.2.0"
 notes = "AI-assisted audit; reviewed NWK envelope/source metadata types, optional serde and le-stream support, documentation, and workspace integration; no unsafe code or build script is present"
+
+[[audits.apis-saltans-nwk]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.0 -> 0.3.0"
+notes = "AI-assisted delta audit; reviewed the workspace dependency transition to apis-saltans-core 0.6. No NWK source changes or new ambient capabilities were introduced."
 
 [[audits.apis-saltans-zcl]]
 who = "Codex AI"
@@ -151,6 +181,12 @@ criteria = "safe-to-deploy"
 delta = "0.4.0 -> 0.5.1"
 notes = "AI-assisted delta audit; implemented additional ZCL global command frames, added parse-direction metadata for bidirectional default-response parsing, moved command-frame parser generation from the procedural macro crate into the declarative zcl_command_enum macro, removed the obsolete macros crate dependency, and introduced no unsafe code"
 
+[[audits.apis-saltans-zcl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.5.1 -> 0.6.0"
+notes = "AI-assisted delta audit; reviewed the added response expectation implementations, Groups API support, public newtype exports, parser refinements, and APS/core dependency updates. No build scripts or new ambient capabilities were added."
+
 [[audits.apis-saltans-zdp]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -169,6 +205,12 @@ criteria = "safe-to-deploy"
 delta = "0.3.0 -> 0.4.0"
 notes = "AI-assisted delta audit; frame payloads now use Bytes, ZDP address fields were moved to core IeeeAddress/Eui64 types, dependency bounds and docs were updated, and no new unsafe code was introduced"
 
+[[audits.apis-saltans-zdp]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.4.0 -> 0.5.0"
+notes = "AI-assisted delta audit; reviewed ZDP parsing changes that preserve weak APS destinations, status/display refinements, and APS/core dependency updates. No build scripts or new ambient capabilities were added."
+
 [[audits.autocfg]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -180,6 +222,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "2.13.0"
 notes = "AI-assisted audit"
+
+[[audits.bitflags]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "2.13.0 -> 2.13.1"
+notes = "AI-assisted delta audit; reviewed the const-context refactor of the public `all` macro. It preserves flag aggregation while removing runtime local state; no unsafe code, build scripts, or ambient capabilities were added."
 
 [[audits.bumpalo]]
 who = "Codex AI"
@@ -222,6 +270,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "1.2.66 -> 1.2.67"
 notes = "AI-assisted delta audit; adds aarch64-unknown-linux-pauthtest target handling, regenerated target metadata, and clippy/nightly compatibility updates. Reviewed changed compiler/sysroot flag paths and confirmed no new unsafe code or new ambient capabilities beyond cc's existing build-tool filesystem/process behavior."
+
+[[audits.cc]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.2.67 -> 1.3.0"
+notes = "AI-assisted delta audit; reviewed the Cargo -Ztrim-paths integration. It reads Cargo-provided scope and remap environment variables and translates recognized entries into compiler prefix-map flags after checking compiler support. No unsafe code was added, and it introduces no ambient capability beyond cc's existing build-tool environment, filesystem, and process access."
 
 [[audits.cfg-if]]
 who = "Codex AI"
@@ -271,7 +325,25 @@ criteria = "safe-to-deploy"
 version = "0.3.32"
 notes = "AI-assisted audit"
 
+[[audits.futures-core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.32 -> 0.3.33"
+notes = "AI-assisted delta audit; reviewed the version and package-metadata-only update. No source, unsafe code, build scripts, or ambient capability changes were introduced."
+
 [[audits.futures-task]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "0.3.32"
+notes = "AI-assisted audit"
+
+[[audits.futures-task]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.32 -> 0.3.33"
+notes = "AI-assisted delta audit; reviewed target-atomic cfg simplifications and the alloc::task::Wake re-export. No unsafe code, build scripts, or ambient capabilities were added."
+
+[[audits.futures-util]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.3.32"
@@ -280,8 +352,8 @@ notes = "AI-assisted audit"
 [[audits.futures-util]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
-version = "0.3.32"
-notes = "AI-assisted audit"
+delta = "0.3.32 -> 0.3.33"
+notes = "AI-assisted delta audit; reviewed the Miri-oriented UnsafeCell-backed transparent NotifyWaker change in the futures 0.1 compatibility layer. The pointer conversions retain the Box allocation and Waker layout, with unsafe accesses limited to the cell dereferences and Box reclamation required by UnsafeNotify01. Other changes are target-atomic cfg cleanup, optional portable-atomic feature plumbing, and documentation. No new ambient capabilities were added."
 
 [[audits.hash32]]
 who = "Codex AI"
@@ -553,8 +625,50 @@ criteria = "safe-to-deploy"
 version = "0.5.1"
 notes = "AI-assisted audit"
 
+[[trusted.cc]]
+criteria = "safe-to-deploy"
+user-id = 55123
+start = "2022-10-29"
+end = "2027-07-19"
+
+[[trusted.proc-macro2]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2019-04-23"
+end = "2027-07-19"
+
+[[trusted.quote]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2019-04-09"
+end = "2027-07-19"
+
+[[trusted.serde]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2019-03-01"
+end = "2027-07-19"
+
+[[trusted.serde_core]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2025-09-13"
+end = "2027-07-19"
+
+[[trusted.serde_derive]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2019-03-01"
+end = "2027-07-19"
+
 [[trusted.syn]]
 criteria = "safe-to-deploy"
 user-id = 3618 # David Tolnay (dtolnay)
 start = "2019-03-01"
+end = "2027-07-19"
+
+[[trusted.tokio]]
+criteria = "safe-to-deploy"
+user-id = 6741 # Alice Ryhl (Darksonn)
+start = "2020-12-25"
 end = "2027-07-19"
