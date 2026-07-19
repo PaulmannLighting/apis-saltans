@@ -52,13 +52,13 @@ pub trait Binding {
 
     /// Bind matching remote endpoint output clusters to local coordinator endpoints.
     ///
-    /// This method reads the coordinator IEEE address and local endpoint cluster sets through
-    /// [`LocalNode`]. For each local endpoint, it intersects that endpoint's input clusters with
+    /// This method reads the coordinator IEEE address and local simple descriptors through
+    /// [`LocalNode`]. For each local endpoint, it intersects that descriptor's input clusters with
     /// every remote source endpoint's output clusters, then sends ZDP bind requests for the
     /// matching clusters only.
     ///
     /// The outer `Result` represents local coordinator lookup failures, such as failing to read the
-    /// coordinator IEEE address or local endpoint cluster sets. The returned map contains per-source
+    /// coordinator IEEE address or local endpoint descriptors. The returned map contains per-source
     /// endpoint bind results for requests that were attempted.
     ///
     /// If several local endpoints can receive clusters from the same remote source endpoint, later
@@ -76,12 +76,23 @@ pub trait Binding {
             let mut results = BTreeMap::new();
             let dst_address = self.get_ieee_address().await?;
 
-            for (dst_endpoint, input_clusters) in self
+            for (dst_endpoint, descriptor) in self
                 .get_endpoints()
                 .await?
                 .into_iter()
-                .map(|(endpoint, clusters)| (endpoint, clusters.input().clone()))
+                .enumerate()
+                .map_while(|(index, descriptor)| {
+                    Endpoint::try_from(u8::try_from(index.checked_add(1)?).ok()?)
+                        .ok()
+                        .map(|endpoint| (endpoint, descriptor))
+                })
             {
+                let input_clusters: BTreeSet<_> = descriptor
+                    .input_clusters()
+                    .iter()
+                    .copied()
+                    .filter_map(|cluster| Cluster::try_from(cluster).ok())
+                    .collect();
                 let mut endpoint_clusters_to_bind = BTreeMap::new();
 
                 for (src_endpoint, output_clusters) in &src_endpoint_clusters {
@@ -100,7 +111,7 @@ pub trait Binding {
                         endpoint_clusters_to_bind,
                         Destination::Extended {
                             address: dst_address,
-                            endpoint: dst_endpoint.into(),
+                            endpoint: dst_endpoint,
                         },
                     )
                     .await,

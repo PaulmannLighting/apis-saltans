@@ -2,30 +2,28 @@
 
 //! Coordinator-facing hardware abstraction API.
 
-use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::oneshot::channel;
-use zb_core::{Application, Destination, IeeeAddress};
+use zb_core::{Destination, IeeeAddress};
+use zb_zdp::SimpleDescriptor;
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
-use crate::{Clusters, Error, HwResponse, NcpHandle};
+use crate::{Error, HwResponse, NcpHandle};
 
 /// Proxy trait for sending commands to a Zigbee NCP driver actor.
 pub trait Ncp {
-    /// Return the local endpoint cluster sets registered with the NCP.
+    /// Return the local application endpoints provided by the NCP.
     ///
-    /// The returned map is keyed by application endpoint ID and each value contains the endpoint's
-    /// input and output cluster sets. Callers can use these cluster sets to advertise the
-    /// coordinator's local application endpoints or to build higher-level endpoint descriptors.
+    /// The returned descriptors contain the endpoint ID, profile, device ID, application version,
+    /// and input and output cluster lists advertised by each local endpoint. Coordinator-level ZDP
+    /// and binding operations use these descriptors as the authoritative local endpoint set.
     ///
     /// # Errors
     ///
-    /// Returns an error if the driver actor is unavailable or the backend cannot provide endpoint
-    /// cluster information.
-    fn get_endpoints(
-        &self,
-    ) -> impl Future<Output = Result<BTreeMap<Application, Clusters>, Error>> + Send;
+    /// Returns an error if the driver actor is unavailable or the NCP cannot provide its local
+    /// endpoint descriptors.
+    fn get_endpoints(&self) -> impl Future<Output = Result<Box<[SimpleDescriptor]>, Error>> + Send;
 
     /// Get the short ID of the network manager.
     ///
@@ -126,7 +124,7 @@ pub trait Ncp {
 }
 
 impl Ncp for NcpHandle {
-    async fn get_endpoints(&self) -> Result<BTreeMap<Application, Clusters>, Error> {
+    async fn get_endpoints(&self) -> Result<Box<[SimpleDescriptor]>, Error> {
         let (response, rx) = channel();
         self.send(Message::GetEndpoints { response }).await?;
         rx.await?

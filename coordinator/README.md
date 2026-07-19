@@ -69,24 +69,29 @@ It takes:
 - an `NcpHandle` for a running hardware driver actor
 - a receiver for translated hardware `zb_hw::Event` values
 - a sender for outbound coordinator `Event` values
-- the local endpoint descriptors that the coordinator should advertise through ZDP match
-  descriptor handling
+
+The NCP driver must implement `zb_hw::Driver::get_endpoints()` and return a complete
+`zb_zdp::SimpleDescriptor` for every local application endpoint. The coordinator retrieves these
+descriptors through `zb_hw::Ncp::get_endpoints()` when it needs them; endpoint descriptors are no
+longer passed to `Coordinator::start(...)`.
 
 ```rust,no_run
 use apis_saltans_coordinator::{Coordinator, Event};
 use tokio::sync::mpsc::{Receiver, Sender};
 use zb_hw::NcpHandle;
-use zb_zdp::SimpleDescriptor;
 
 fn init(
     ncp: NcpHandle,
     hw_events: Receiver<zb_hw::Event>,
     app_events: Sender<Event>,
-    endpoints: &[SimpleDescriptor],
 ) -> Result<Coordinator, zb_hw::Error> {
-    Coordinator::start(ncp, hw_events, app_events, endpoints)
+    Coordinator::start(ncp, hw_events, app_events)
 }
 ```
+
+When a remote device sends `MatchDescReq`, the ZDP transceiver asks the NCP for its current endpoint
+descriptors and builds `MatchDescRsp` from matching descriptors. If the NCP cannot provide them, the
+request cannot be answered.
 
 The crate does not persist a device table. Store the `FullAddress` values received in
 `Event::Device` if your application needs a device registry. The `AddressTranslation` trait can ask
@@ -214,6 +219,10 @@ async fn local_info(api: &impl LocalNode) -> Result<(u16, IeeeAddress), apis_sal
 }
 ```
 
+`LocalNode::get_endpoints()` returns the same boxed slice of `SimpleDescriptor` values supplied by
+the NCP. This makes the hardware's endpoint configuration available without maintaining a second
+coordinator-owned copy.
+
 ### Address Translation
 
 ```rust,no_run
@@ -324,9 +333,9 @@ async fn bind_cluster(
 ```
 
 Use `bind_all_to_self(...)` when remote endpoint output clusters should be bound to matching local
-coordinator endpoints. The helper reads the coordinator IEEE address and local endpoint cluster sets
-through `LocalNode`, intersects each local endpoint's input clusters with each remote endpoint's
-output clusters, and sends bind requests for matching clusters only.
+coordinator endpoints. The helper reads the coordinator IEEE address and local simple descriptors
+through `LocalNode`, intersects each descriptor's input clusters with each remote endpoint's output
+clusters, and sends bind requests for matching clusters only.
 
 ```rust,no_run
 use std::collections::{BTreeMap, BTreeSet};

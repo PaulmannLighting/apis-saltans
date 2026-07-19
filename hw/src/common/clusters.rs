@@ -4,10 +4,9 @@ use zb_core::Cluster;
 
 /// Input and output cluster set advertised by one local application endpoint.
 ///
-/// `Clusters` is the hardware-layer summary returned by `get_endpoints()`. It intentionally stores
-/// only the cluster IDs exposed by the local endpoint; higher layers can combine these sets with
-/// application endpoint IDs, profile IDs, device IDs, and version information when they need to
-/// build full ZDP simple descriptors.
+/// This compact helper stores only validated cluster IDs. The NCP endpoint APIs return full
+/// `zb_zdp::SimpleDescriptor` values instead, since coordinator operations also require endpoint,
+/// profile, device, and application-version metadata.
 pub struct Clusters {
     input: BTreeSet<Cluster>,
     output: BTreeSet<Cluster>,

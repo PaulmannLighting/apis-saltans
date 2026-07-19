@@ -1,13 +1,13 @@
-use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::oneshot::Sender;
-use zb_core::{Application, Destination, IeeeAddress};
+use zb_core::{Destination, IeeeAddress};
+use zb_zdp::SimpleDescriptor;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
+use crate::HwResponse;
 use crate::common::{Datagram, Error};
-use crate::{Clusters, HwResponse};
 
 mod found_network;
 mod scanned_channel;
@@ -20,10 +20,10 @@ pub type WeakNcpHandle = tokio::sync::mpsc::WeakSender<Message>;
 
 /// Messages exchanged with the NCP driver actor.
 pub enum Message {
-    /// Return local application endpoint cluster sets.
+    /// Return the NCP's local application endpoint descriptors.
     GetEndpoints {
-        /// One-shot channel used to return application endpoint cluster sets or driver error.
-        response: Sender<Result<BTreeMap<Application, Clusters>, Error>>,
+        /// One-shot channel used to return local simple descriptors or a driver error.
+        response: Sender<Result<Box<[SimpleDescriptor]>, Error>>,
     },
 
     /// Return the PAN ID.

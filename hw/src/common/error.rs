@@ -23,7 +23,7 @@ pub enum Error {
     #[error("Feature not implemented")]
     NotImplemented,
 
-    /// No endpoints were provided.
+    /// The NCP did not provide any required local endpoint descriptors.
     #[error("No endpoints provided")]
     NoEndpoints,
 }

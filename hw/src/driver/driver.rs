@@ -1,26 +1,25 @@
-use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::mpsc::{Receiver, channel};
-use zb_core::{Application, Destination, IeeeAddress};
+use zb_core::{Destination, IeeeAddress};
+use zb_zdp::SimpleDescriptor;
 
 use crate::common::Message;
-use crate::{Clusters, Datagram, Error, FoundNetwork, HwResponse, NcpHandle, ScannedChannel};
+use crate::{Datagram, Error, FoundNetwork, HwResponse, NcpHandle, ScannedChannel};
 
 /// A common Zigbee NCP driver interface.
 pub trait Driver {
-    /// Return the local endpoint cluster sets registered with the NCP.
+    /// Return the local application endpoints provided by the NCP.
     ///
-    /// The returned map is keyed by application endpoint ID. Driver implementations should report
-    /// the input and output clusters that each local coordinator endpoint exposes to the Zigbee
-    /// network.
+    /// Every driver must implement this method and return a [`SimpleDescriptor`] for each endpoint
+    /// exposed to the Zigbee network. Each descriptor supplies the endpoint ID, profile, device ID,
+    /// application version, and input and output cluster lists used by coordinator-level ZDP and
+    /// binding operations.
     ///
     /// # Errors
     ///
-    /// Returns an error if endpoint cluster information cannot be read or is not available.
-    fn get_endpoints(
-        &self,
-    ) -> impl Future<Output = Result<BTreeMap<Application, Clusters>, Error>> + Send;
+    /// Returns an error if the NCP cannot provide its local endpoint descriptors.
+    fn get_endpoints(&self) -> impl Future<Output = Result<Box<[SimpleDescriptor]>, Error>> + Send;
 
     /// Get the PAN ID of the network.
     ///

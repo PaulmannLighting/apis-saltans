@@ -30,6 +30,7 @@ coordinator = [
     "dep:zb-aps",
     "dep:zb-core",
     "dep:zb-nwk",
+    "dep:zb-zdp",
 ]
 driver = [
     "dep:bytes",

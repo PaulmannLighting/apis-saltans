@@ -6,11 +6,11 @@
 //! No default features are enabled. Enable exactly the API surface needed by the depending crate:
 //!
 //! - `coordinator` exposes `Ncp`, `NcpHandle`, `WeakNcpHandle`, common errors, hardware
-//!   events, local endpoint cluster summaries, scan results, transmit datagram types, and the
-//!   deferred `HwResponse` returned by transmission requests for coordinator and application code
-//!   that sends commands to a running NCP actor.
+//!   events, access to the NCP's local simple descriptors, scan results, transmit datagram types,
+//!   and the deferred `HwResponse` returned by transmission requests for coordinator and
+//!   application code that sends commands to a running NCP actor.
 //! - `driver` exposes `Backend`, `Driver`, `EventTranslator`, `bridge`, shared driver/coordinator
-//!   data types, local endpoint cluster summaries, command handles, `HwResponse`, common errors,
+//!   data types, the required local-endpoint API, command handles, `HwResponse`, common errors,
 //!   and the `aps`, `core`, `nwk`, and `zdp` protocol re-export modules for hardware backend
 //!   implementations.
 //!
@@ -22,6 +22,10 @@
 //! `Ncp::transmit` is a two-stage operation. Awaiting the method hands the datagram to the driver
 //! actor and returns an `HwResponse`; awaiting that response observes completion of the hardware
 //! transmission.
+//!
+//! Every `Driver` implementation must provide the NCP's local application endpoints through
+//! `Driver::get_endpoints`. Each endpoint is represented by a complete `zdp::SimpleDescriptor`;
+//! coordinator code retrieves the same descriptors through `Ncp::get_endpoints`.
 
 #[cfg(any(feature = "coordinator", feature = "driver"))]
 pub use self::common::{

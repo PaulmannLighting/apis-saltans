@@ -1,24 +1,21 @@
-use std::collections::BTreeMap;
-
-use zb_core::{Application, IeeeAddress};
+use zb_core::IeeeAddress;
 pub use zb_hw::Clusters;
 use zb_hw::Ncp;
+use zb_zdp::SimpleDescriptor;
 
 use crate::{Coordinator, Error};
 
 /// Trait for reading local coordinator node information.
 pub trait LocalNode {
-    /// Return the local application endpoint cluster sets advertised by the coordinator.
+    /// Return the local application endpoints advertised by the NCP.
     ///
-    /// The returned map is keyed by application endpoint ID. Each [`Clusters`] value contains the
-    /// input and output clusters configured for that local endpoint.
+    /// Each [`SimpleDescriptor`] contains the endpoint ID, profile, device ID, application version,
+    /// and input and output cluster lists used for local ZDP and binding operations.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if the hardware request fails.
-    fn get_endpoints(
-        &self,
-    ) -> impl Future<Output = Result<BTreeMap<Application, Clusters>, Error>> + Send;
+    fn get_endpoints(&self) -> impl Future<Output = Result<Box<[SimpleDescriptor]>, Error>> + Send;
 
     /// Return the PAN ID of the coordinator's current network.
     ///
@@ -36,7 +33,7 @@ pub trait LocalNode {
 }
 
 impl LocalNode for Coordinator {
-    async fn get_endpoints(&self) -> Result<BTreeMap<Application, Clusters>, Error> {
+    async fn get_endpoints(&self) -> Result<Box<[SimpleDescriptor]>, Error> {
         Ok(Ncp::get_endpoints(&self.ncp).await?)
     }
 

@@ -8,6 +8,11 @@
 //! workflows built from traits such as [`Node`], [`Endpoints`], [`Binding`],
 //! [`AddressTranslation`], [`Zcl`], and [`Zdp`].
 //!
+//! The hardware NCP is responsible for providing its complete local endpoint descriptors through
+//! [`zb_hw::Ncp::get_endpoints`]. The coordinator queries those descriptors when serving ZDP match
+//! requests and exposes them through [`LocalNode::get_endpoints`]; they are no longer passed to
+//! [`Coordinator::start`].
+//!
 //! ZCL and ZDP sends use deferred response futures. The first await queues an operation and returns
 //! either [`TransmissionResponse`] or a protocol-specific [`ZclResponse`] or [`ZdpResponse`]. Await
 //! that returned future to observe hardware completion and, for communication requests, receive the

@@ -18,7 +18,7 @@ use zb_hw::{Datagram, Ncp};
 use zb_nwk::Source;
 use zb_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
-    MgmtPermitJoiningRsp, NetworkManagement, NodeDescReq, NodeDescRsp, SimpleDescriptor, Status,
+    MgmtPermitJoiningRsp, NetworkManagement, NodeDescReq, NodeDescRsp, Status,
 };
 
 use self::match_desc_req_ext::MatchDescReqExt;
@@ -42,7 +42,6 @@ const STACK_COMPLIANCE_REVISION: u8 = 0;
 pub struct Transceiver<T> {
     ncp: T,
     events: Sender<Event>,
-    endpoints: Box<[SimpleDescriptor]>,
     /// Whether the hardware has reported that joining is open.
     joining_permitted: bool,
     responses: BTreeMap<Index, oneshot::Sender<Command>>,
@@ -52,11 +51,10 @@ pub struct Transceiver<T> {
 impl<T> Transceiver<T> {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T, events: Sender<Event>, endpoints: Box<[SimpleDescriptor]>) -> Self {
+    pub const fn new(ncp: T, events: Sender<Event>) -> Self {
         Self {
             ncp,
             events,
-            endpoints,
             joining_permitted: false,
             responses: BTreeMap::new(),
             seq: 0,
@@ -205,10 +203,13 @@ where
     }
 
     async fn handle_match_desc_req(&self, source: Source, seq: u8, match_desc_req: MatchDescReq) {
+        let Ok(endpoints) = self.ncp.get_endpoints().await else {
+            return;
+        };
+
         let payload = MatchDescRsp::new(
             match_desc_req.nwk_addr_of_interest(),
-            Ok(self
-                .endpoints
+            Ok(endpoints
                 .iter()
                 .filter_map(|endpoint| {
                     if match_desc_req.matches(endpoint) {
@@ -326,9 +327,9 @@ where
     T: Ncp + Send + Sync + 'static,
 {
     /// Start the ZDP transceiver.
-    pub fn spawn(ncp: T, events: Sender<Event>, endpoints: &[SimpleDescriptor]) -> Sender<Message> {
+    pub fn spawn(ncp: T, events: Sender<Event>) -> Sender<Message> {
         let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, events, endpoints.into()).run(zdp_rx));
+        spawn(Self::new(ncp, events).run(zdp_rx));
         zdp_tx
     }
 }

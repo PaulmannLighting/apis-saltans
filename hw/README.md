@@ -41,7 +41,7 @@ async fn permit_joining(ncp: &NcpHandle) -> Result<Duration, apis_saltans_hw::Er
 ```
 
 Use this feature for command-side operations such as reading the coordinator IEEE address, scanning
-networks, reading local endpoint cluster sets, allowing joins, resolving addresses, requesting
+networks, reading local endpoint descriptors, allowing joins, resolving addresses, requesting
 routes, and transmitting serialized `Datagram` values to `zb_core::Destination` targets.
 
 `Ncp::transmit(...)` is intentionally two-stage. Awaiting the method sends the request to the driver
@@ -74,7 +74,8 @@ apis-saltans-hw = { version = "0.10", features = ["driver"] }
 Driver crates typically implement:
 
 - `Backend` for the backend's associated hardware event, translator message, and translator type.
-- `Driver` on the NCP command actor.
+- every `Driver` method on the NCP command actor, including the required `get_endpoints()` method
+  that reports the NCP's local application endpoints
 - `EventTranslator` to convert backend events into common `Event` values.
 
 Backend startup is owned by the backend crate. It should initialize the concrete driver, run the
@@ -104,6 +105,12 @@ of adding direct dependencies on every protocol crate.
 `Driver` is the implementor-facing command API. The sealed actor runtime receives internal
 `Message` values and dispatches them to the corresponding `Driver` methods.
 
+Every driver must implement `get_endpoints()` and return one complete
+`zdp::SimpleDescriptor` for each application endpoint exposed by the NCP. Descriptors include the
+endpoint ID, profile ID, device ID, application version, and input/output cluster lists. The
+coordinator treats this as the authoritative local endpoint set when answering ZDP match descriptor
+requests and when matching clusters for bindings.
+
 `Driver::transmit(...)` starts the operation and returns an `HwResponse`. Drivers can construct the
 response with `HwResponse::new(future)`. The future must be `Send + 'static`, resolve to
 `Result<(), E>`, and use an error type convertible into `apis_saltans_hw::Error`. The actor forwards
@@ -118,15 +125,14 @@ transmit(destination, datagram)
 The `Destination` describes the APS target, and the `Datagram` contains APS profile/cluster metadata
 plus the serialized application payload.
 
-Local endpoint cluster discovery uses:
+Local endpoint discovery uses:
 
 ```rust
 get_endpoints()
 ```
 
-It returns a map keyed by `zb_core::Application` endpoint ID with `Clusters` values. Each `Clusters`
-value contains the input and output `zb_core::Cluster` sets the driver has registered on that local
-application endpoint.
+It returns `Box<[zdp::SimpleDescriptor]>`. The NCP must return every endpoint it advertises; callers
+no longer construct or pass a separate descriptor list to the coordinator.
 
 ### `EventTranslator`
 
@@ -137,7 +143,7 @@ network state changes, device joins/leaves with `FullAddress`, route errors, and
 
 `Ncp` is the caller-facing proxy trait implemented for `NcpHandle`. It sends commands to the driver
 actor through a Tokio MPSC channel and waits for the one-shot response associated with each command.
-`get_endpoints()` returns the same local endpoint cluster map exposed by the driver.
+`get_endpoints()` returns the same local simple descriptors exposed by the driver.
 
 Most proxy methods await the driver result before returning. `Ncp::transmit(...)` instead returns
 the driver's `HwResponse` immediately after actor handoff, allowing coordinator layers to compose
@@ -158,22 +164,27 @@ response.await?;
 Dropping an `HwResponse` drops its inner future. Whether that cancels an operation depends on the
 driver's future and hardware backend; the abstraction does not promise cancellation.
 
-### `Clusters`
+### Local Endpoint Descriptors
 
-`Clusters` describes the input and output cluster IDs advertised by one local application endpoint.
-It is used as the value in the `get_endpoints()` map:
+`Ncp::get_endpoints()` retrieves the full simple descriptors supplied by the driver:
 
 ```rust,no_run
-use std::collections::BTreeMap;
+use apis_saltans_hw::{Ncp, NcpHandle};
 
-use apis_saltans_hw::{Clusters, Ncp, NcpHandle};
-use zb_core::Application;
+async fn inspect_local_endpoints(ncp: &NcpHandle) -> Result<(), apis_saltans_hw::Error> {
+    for descriptor in ncp.get_endpoints().await? {
+        println!(
+            "endpoint {}: profile {:#06x}, device {:#06x}",
+            descriptor.endpoint_id(),
+            descriptor.profile_id(),
+            descriptor.device_id(),
+        );
+    }
 
-async fn local_clusters(
-    ncp: &NcpHandle,
-) -> Result<BTreeMap<Application, Clusters>, apis_saltans_hw::Error> {
-    ncp.get_endpoints().await
+    Ok(())
 }
 ```
 
-Use `Clusters::input()` and `Clusters::output()` to inspect the endpoint's cluster sets.
+Use `SimpleDescriptor::input_clusters()` and `SimpleDescriptor::output_clusters()` to inspect the
+raw cluster IDs. The standalone `Clusters` helper remains available for code that needs a compact
+set of validated `zb_core::Cluster` values, but it is not the return type of `get_endpoints()`.

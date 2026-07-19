@@ -15,7 +15,11 @@ opaque `HwResponse` future.
   coordinator-side data/event types for coordinator code.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
 - `Driver` is the implementor-facing NCP command API.
+- Every `Driver` must implement `get_endpoints` and return a complete `SimpleDescriptor` for each
+  local application endpoint exposed by the NCP.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
+- `Ncp::get_endpoints` forwards the driver's descriptor set to coordinator-level ZDP and binding
+  code; the hardware layer is the source of truth for local endpoints.
 - `Driver::transmit` starts a transmission and returns an `HwResponse` that owns its deferred
   completion future.
 - `Ncp::transmit` returns that `HwResponse` after actor handoff instead of awaiting hardware
@@ -33,7 +37,7 @@ opaque `HwResponse` future.
 | --- | --- | --- | --- |
 | `Backend` | `driver` | `driver/backend.rs` | Defines backend-specific event and translator types. |
 | `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
-| `Clusters` | `driver` or `coordinator` | `common/clusters.rs` | Input and output cluster sets advertised by one local application endpoint. |
+| `Clusters` | `driver` or `coordinator` | `common/clusters.rs` | Compact validated cluster-set helper; endpoint queries use full ZDP simple descriptors. |
 | `Datagram` | `driver` or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
 | `Driver` | `driver` | `driver/driver.rs` | Driver-side command API implemented by hardware backends. |
 | `Error` | `driver` or `coordinator` | `common/error.rs` | Common crate error type. |
@@ -123,6 +127,7 @@ classDiagram
 
     class Message
     class Clusters
+    class SimpleDescriptor
     class Event
     class FullAddress
     class Datagram
@@ -145,7 +150,7 @@ classDiagram
     SealedDriver --> NcpHandle : creates
     NcpHandle ..|> Ncp : Sender<Message> impl
     Ncp --> Message : sends
-    Message --> Clusters : endpoint response
+    Message --> SimpleDescriptor : endpoint response
     Message --> Datagram : carries TX payload
     Message --> HwResponse : returns for TX
     Datagram --> Metadata : contains
@@ -189,6 +194,12 @@ sequenceDiagram
     A->>D: scan_networks(channel_mask, duration);
     D-->>A: scan result;
     A-->>C: oneshot response;
+
+    C->>H: get_endpoints();
+    H->>A: Message::GetEndpoints;
+    A->>D: get_endpoints();
+    D-->>A: boxed SimpleDescriptor slice;
+    A-->>C: endpoint descriptors;
 
     C->>H: transmit(destination, datagram);
     H->>A: Message::Transmit;
@@ -253,9 +264,13 @@ response sender so the actor can return the result of the corresponding driver c
 
 ## Data Model
 
-`Clusters` is the local endpoint cluster summary returned by `get_endpoints`. The outer map is
-keyed by `zb_core::Application` endpoint ID, and each `Clusters` value contains input and output
-`zb_core::Cluster` sets for that endpoint.
+`get_endpoints` returns a boxed slice of `zb_zdp::SimpleDescriptor` values. Each descriptor carries
+the endpoint ID, profile ID, device ID, application version, and raw input/output cluster IDs needed
+to advertise the endpoint and answer ZDP requests. Drivers must return every local application
+endpoint exposed by the NCP. The coordinator does not maintain a separate descriptor list.
+
+`Clusters` remains a compact helper for validated input and output `zb_core::Cluster` sets, but it is
+not the endpoint-query return type.
 
 `Datagram` is the transmit payload passed to the driver. It contains:
 
@@ -282,7 +297,7 @@ channel activity results without exposing backend-specific scan response formats
 - `DriverSend` means the actor command channel was closed.
 - `DriverRecv` means the one-shot response channel was closed.
 - `NotImplemented` represents unsupported backend features.
-- `NoEndpoints` represents startup without endpoint cluster information.
+- `NoEndpoints` means the NCP did not provide any required local endpoint descriptors.
 
 The common and routing error enums derive `thiserror::Error`. `Implementation` retains its
 backend-specific error as the source. Actor send and receive conversions remain explicit because

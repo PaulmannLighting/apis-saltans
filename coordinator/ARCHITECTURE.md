@@ -55,6 +55,7 @@ flowchart TD
     ZDP -->|unmatched ZDP frame| APP
     ZDP -->|DeviceAnnce as Device::Announced| APP
     ZDP -->|MatchDescRsp| HW
+    ZDP -->|Ncp::get_endpoints for MatchDescReq| HW
 
     C -->|Zcl trait calls| ZCL
     C -->|Zdp trait calls| ZDP
@@ -65,15 +66,17 @@ flowchart TD
 
 `Coordinator::start(...)`:
 
-1. Receives an `NcpHandle`, a hardware event receiver, an outbound `Sender<Event>`, and the local
-   `SimpleDescriptor` list.
+1. Receives an `NcpHandle`, a hardware event receiver, and an outbound `Sender<Event>`.
 2. Starts the ZCL transceiver task with a clone of the NCP handle and outbound event sender.
-3. Starts the ZDP transceiver task with a clone of the NCP handle, outbound event sender, and local
-   endpoint descriptors.
+3. Starts the ZDP transceiver task with a clone of the NCP handle and outbound event sender.
 4. Starts the mux task with the hardware event receiver and both transceiver senders.
 5. Returns a lightweight `Coordinator` holding the NCP handle plus ZCL and ZDP actor senders.
 
 Actor inboxes are bounded MPSC channels sized by `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
+
+The coordinator does not own a startup copy of the local endpoints. The NCP driver is required to
+provide `Box<[zb_zdp::SimpleDescriptor]>` through `Driver::get_endpoints`; the coordinator reaches
+the same data through `Ncp::get_endpoints` whenever current endpoint metadata is needed.
 
 ## Actor Responsibilities
 
@@ -135,6 +138,7 @@ The ZDP transceiver:
 
 - sends ZDP unicast requests to endpoint `0x00`
 - composes the NCP's `HwResponse` with the correlated protocol response
+- queries `Ncp::get_endpoints` when serving an incoming `MatchDescReq`
 - creates ZDP frames with monotonically wrapping sequence numbers
 - stores pending response channels for `communicate(...)`
 - resolves received frames against the pending response map
@@ -142,7 +146,8 @@ The ZDP transceiver:
 
 It also handles two ZDP requests locally:
 
-- `MatchDescReq`: responds from the local `SimpleDescriptor` list provided at startup
+- `MatchDescReq`: fetches the NCP's current `SimpleDescriptor` values and responds with the matching
+  endpoint IDs; if the endpoint query fails, no response can be produced
 - `DeviceAnnce`: publishes `Event::Device(Device::Announced(...))`
 
 ## Public Trait Composition
