@@ -13,8 +13,8 @@ No default features are enabled. Pick the feature that matches the role of the c
 
 | Feature | Intended user | Public API |
 | --- | --- | --- |
-| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
-| `driver` | Hardware backend crates. | `Backend`, `Driver`, `EventTranslator`, `bridge`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
+| `driver` | Hardware backend crates. | `Backend`, `Driver`, `EventTranslator`, `bridge`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
 
 Backend crates should enable `driver`. Coordinator crates should enable `coordinator`.
 
@@ -45,17 +45,17 @@ networks, reading local endpoint cluster sets, allowing joins, resolving address
 routes, and transmitting serialized `Datagram` values to `zb_core::Destination` targets.
 
 `Ncp::transmit(...)` is intentionally two-stage. Awaiting the method sends the request to the driver
-actor and returns a Tokio one-shot receiver. Await that receiver to observe the driver's actual
+actor and returns an opaque `HwResponse`. Await that response to observe the driver's actual
 transmission result:
 
 ```rust,ignore
-let completion = ncp.transmit(destination, datagram).await?;
-completion.await??;
+let response = ncp.transmit(destination, datagram).await?;
+response.await?;
 ```
 
-The first error means the actor command could not be sent. The receiver's outer error means the
-driver actor dropped the completion channel, while its inner error is the driver's transmission
-failure.
+An error from the first await means the actor command could not be delivered or the driver could not
+start the operation. An error from the second await is the deferred hardware transmission failure.
+`HwResponse` hides whether a backend uses a channel, an I/O future, or another completion mechanism.
 
 The common `Error` type implements `std::error::Error`. Backend-specific `Implementation` failures
 are retained as an error source; closed actor channels are represented by the payload-free
@@ -104,6 +104,11 @@ of adding direct dependencies on every protocol crate.
 `Driver` is the implementor-facing command API. The sealed actor runtime receives internal
 `Message` values and dispatches them to the corresponding `Driver` methods.
 
+`Driver::transmit(...)` starts the operation and returns an `HwResponse`. Drivers can construct the
+response with `HwResponse::new(future)`. The future must be `Send + 'static`, resolve to
+`Result<(), E>`, and use an error type convertible into `apis_saltans_hw::Error`. The actor forwards
+the response without waiting for the inner future to finish.
+
 Transmission uses one method:
 
 ```rust
@@ -135,8 +140,23 @@ actor through a Tokio MPSC channel and waits for the one-shot response associate
 `get_endpoints()` returns the same local endpoint cluster map exposed by the driver.
 
 Most proxy methods await the driver result before returning. `Ncp::transmit(...)` instead returns
-its one-shot completion receiver immediately after actor handoff, allowing coordinator layers to
-compose hardware completion with their own protocol-response futures.
+the driver's `HwResponse` immediately after actor handoff, allowing coordinator layers to compose
+hardware completion with their own protocol-response futures without depending on the driver's
+completion mechanism.
+
+### `HwResponse`
+
+`HwResponse` is an opaque future with output `Result<(), Error>`. It owns the driver-provided
+completion future and can be moved into a higher-level response object. Await it exactly like any
+other future:
+
+```rust,ignore
+let response = ncp.transmit(destination, datagram).await?;
+response.await?;
+```
+
+Dropping an `HwResponse` drops its inner future. Whether that cancels an operation depends on the
+driver's future and hardware backend; the abstraction does not promise cancellation.
 
 ### `Clusters`
 

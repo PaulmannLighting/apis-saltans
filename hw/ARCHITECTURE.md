@@ -2,8 +2,9 @@
 
 `apis-saltans-hw` is the hardware abstraction crate between coordinator logic and concrete Zigbee
 network co-processor (NCP) drivers. The crate is actor-oriented: callers hold an `NcpHandle`,
-send internal `Message` commands through the `Ncp` trait, and receive responses through one-shot
-channels owned by each message.
+send internal `Message` commands through the `Ncp` trait, and receive actor responses through
+one-shot channels owned by each message. Transmission completion is represented separately by the
+opaque `HwResponse` future.
 
 ## Boundaries
 
@@ -15,12 +16,14 @@ channels owned by each message.
 - `Backend` defines the hardware-specific event, translator message, and translator types.
 - `Driver` is the implementor-facing NCP command API.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
-- `Ncp::transmit` returns the driver's one-shot completion receiver after actor handoff instead of
-  awaiting the driver result inside the proxy method.
+- `Driver::transmit` starts a transmission and returns an `HwResponse` that owns its deferred
+  completion future.
+- `Ncp::transmit` returns that `HwResponse` after actor handoff instead of awaiting hardware
+  completion inside the proxy method.
 - `EventTranslator` converts backend-specific event messages into common `Event` values.
 - `Datagram` carries serialized application payload bytes together with APS `Metadata`.
-- `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel` are exported by
-  `coordinator` and `driver`.
+- `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `HwResponse`, `Network`, and `ScannedChannel` are
+  exported by `coordinator` and `driver`.
 - `Error`, `RouteError`, `NcpHandle`, and `WeakNcpHandle` are exported by `coordinator` and
   `driver`.
 
@@ -37,6 +40,7 @@ channels owned by each message.
 | `Event` | `driver` or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
 | `EventTranslator` | `driver` | `driver/event_translator.rs` | Converts backend event messages into `Event` values. |
 | `FoundNetwork` | `driver` or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
+| `HwResponse` | `driver` or `coordinator` | `common/hw_response.rs` | Opaque deferred hardware-operation future. |
 | `Metadata` | `driver` or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
 | `Ncp` | `coordinator` | `coordinator.rs` | Caller-side API implemented for `NcpHandle`. |
 | `NcpHandle` | `driver` or `coordinator` | `common.rs` | `tokio::sync::mpsc::Sender<Message>`, the actor command handle. |
@@ -127,6 +131,10 @@ classDiagram
     class Network
     class ScannedChannel
     class Error
+    class HwResponse {
+        <<future>>
+        Output_Result
+    }
 
     Backend --> Driver : associated type
     Backend --> EventTranslator : associated type
@@ -139,6 +147,7 @@ classDiagram
     Ncp --> Message : sends
     Message --> Clusters : endpoint response
     Message --> Datagram : carries TX payload
+    Message --> HwResponse : returns for TX
     Datagram --> Metadata : contains
     Message --> FoundNetwork : scan response
     Message --> ScannedChannel : scan response
@@ -173,6 +182,7 @@ sequenceDiagram
     participant H as NcpHandle;
     participant A as Driver actor;
     participant D as Driver;
+    participant R as HwResponse;
 
     C->>H: scan_networks(channel_mask, duration);
     H->>A: Message::ScanNetworks;
@@ -182,20 +192,23 @@ sequenceDiagram
 
     C->>H: transmit(destination, datagram);
     H->>A: Message::Transmit;
-    H-->>C: transmission completion receiver;
     A->>D: transmit(destination, datagram);
-    D-->>A: transmit result;
-    A-->>C: result through completion receiver;
+    D-->>A: HwResponse;
+    A-->>H: HwResponse through command response channel;
+    H-->>C: HwResponse;
+    C->>R: await;
+    R-->>C: hardware transmission result;
 ```
 
 Each proxy call maps to one internal `Message` and one driver call. Destination-specific delivery
 semantics are represented by `zb_core::Destination`; the hardware abstraction no longer
 has separate unicast, multicast, and broadcast actor messages.
 
-The transmit path differs from other proxy calls at the response boundary. The first await only
-confirms that `Message::Transmit` entered the actor inbox and returns its one-shot receiver. The
-caller decides when to await that receiver for the driver's result. This lets the coordinator wrap
-hardware completion together with a later ZCL or ZDP response without blocking the command handoff.
+The transmit path differs from other proxy calls at the response boundary. The first await sends
+`Message::Transmit`, waits for the driver to start the operation, and returns the driver's
+`HwResponse`. The caller decides when to await that response for the deferred result. This lets the
+coordinator wrap hardware completion together with a later ZCL or ZDP response without exposing the
+driver's concrete completion mechanism.
 
 ## Module Inventory
 
@@ -207,6 +220,7 @@ flowchart TD
     lib --> reexports["reexports.rs"]
     common --> datagram["common/datagram.rs"]
     common --> error["common/error.rs"]
+    common --> hw_response["common/hw_response.rs"]
     common --> event["common/event.rs"]
     event --> route_error["common/event/route_error.rs"]
     common --> message["common/message.rs"]
@@ -235,7 +249,7 @@ response sender so the actor can return the result of the corresponding driver c
 | `route_request` | `RouteRequest` | `route_request` |
 | `short_id_to_ieee_address` | `TranslateIeeeAddress` | `short_id_to_ieee_address` |
 | `ieee_address_to_short_id` | `TranslateShortId` | `ieee_address_to_short_id` |
-| `transmit` | `Transmit` | `transmit`; the proxy returns the completion receiver before the driver result is available |
+| `transmit` | `Transmit` | `transmit`; the proxy returns `HwResponse` before hardware completion |
 
 ## Data Model
 
@@ -247,6 +261,11 @@ keyed by `zb_core::Application` endpoint ID, and each `Clusters` value contains 
 
 - `Metadata`, which identifies the APS profile and cluster.
 - `bytes::Bytes`, which contains the serialized application payload.
+
+`HwResponse` owns a boxed, pinned, `Send + 'static` future supplied by the driver. Its public future
+output is `Result<(), Error>`; `HwResponse::new` converts a backend future's error into the common
+error type. Keeping the future opaque allows different drivers to use different completion
+mechanisms without changing the coordinator-facing API.
 
 `Event` is the receive-side model emitted by the event translator. It reports network state changes,
 device join/rejoin/leave notifications carrying `zb_core::FullAddress`, route errors, and

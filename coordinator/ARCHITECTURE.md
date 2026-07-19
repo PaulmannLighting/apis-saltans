@@ -120,7 +120,7 @@ Fragmented APS payloads are reassembled with `zb_aps::Assembler` before parsing.
 The ZCL transceiver:
 
 - sends ZCL commands through the NCP
-- returns the NCP's transmission-completion receiver without waiting for the hardware result
+- returns the NCP's `HwResponse` without waiting for the hardware result
 - creates ZCL frames with monotonically wrapping sequence numbers
 - stores pending response channels for `communicate(...)`
 - resolves received frames against the pending response map
@@ -134,7 +134,7 @@ APS metadata, and manufacturer code.
 The ZDP transceiver:
 
 - sends ZDP unicast requests to endpoint `0x00`
-- returns the NCP's transmission-completion receiver without waiting for the hardware result
+- composes the NCP's `HwResponse` with the correlated protocol response
 - creates ZDP frames with monotonically wrapping sequence numbers
 - stores pending response channels for `communicate(...)`
 - resolves received frames against the pending response map
@@ -159,7 +159,7 @@ flowchart TD
     CLUSTERS[OnOff ColorControl Level Attributes]
     DISCOVERY[Node Endpoints]
     BIND[Binding]
-    TXR[TransmissionResponse]
+    HWR[zb_hw::HwResponse]
     ZCLR[ZclResponse]
     ZDPR[ZdpResponse]
 
@@ -170,7 +170,7 @@ flowchart TD
     ZCL --> CLUSTERS
     ZDP --> DISCOVERY
     ZDP --> BIND
-    ZCL -->|transmit| TXR
+    ZCL -->|transmit| HWR
     ZCL -->|communicate| ZCLR
     ZDP -->|communicate| ZDPR
 ```
@@ -212,20 +212,20 @@ sequenceDiagram
     participant API as API Caller
     participant ZCL as ZCL Transceiver
     participant HW as NCP Driver Actor
-    participant TX as TransmissionResponse
+    participant R as HwResponse
 
     API->>ZCL: Message::Transmit(destination, payload)
     ZCL->>HW: Ncp::transmit(datagram)
-    HW-->>ZCL: transmission completion receiver
-    ZCL-->>API: TransmissionResponse
-    API->>TX: await
-    HW-->>TX: driver transmission result
-    TX-->>API: Result&lt;(), Error&gt;
+    HW-->>ZCL: HwResponse
+    ZCL-->>API: HwResponse
+    API->>R: await
+    R-->>API: Result&lt;(), zb_hw::Error&gt;
 ```
 
 The first await on `Zcl::transmit(...)` covers the API-to-transceiver handoff and returns the
-`TransmissionResponse`. The second await observes the driver result. Dropping the response future
-does not retract a command already present in an actor inbox.
+`HwResponse`. The second await observes the deferred driver result. The response hides the driver's
+concrete completion mechanism. Dropping it stops driving and observing its inner future; whether
+that cancels the hardware operation is backend-dependent.
 
 ## 3) ZCL command with response
 
@@ -240,7 +240,7 @@ sequenceDiagram
     API->>ZCL: Message::Communicate(destination, payload)
     ZCL->>ZCL: allocate sequence and store pending response
     ZCL->>HW: Ncp::transmit(APS ZCL frame)
-    HW-->>ZCL: transmission completion receiver
+    HW-->>ZCL: HwResponse
     ZCL-->>API: ZclResponse
     API->>R: await
     HW-->>R: driver transmission result
@@ -269,7 +269,7 @@ sequenceDiagram
     API->>ZDP: Message::Communicate(device, request)
     ZDP->>ZDP: allocate sequence and store pending response
     ZDP->>HW: Ncp::transmit(APS ZDP frame to endpoint 0x00)
-    HW-->>ZDP: transmission completion receiver
+    HW-->>ZDP: HwResponse
     ZDP-->>API: ZdpResponse
     API->>R: await
     HW-->>R: driver transmission result
@@ -353,10 +353,11 @@ frame failures use source-preserving `#[from]` conversions. Channel send errors 
 status results retain explicit conversions because their public variants deliberately do not store
 an error source compatible with `#[from]`.
 
-The response objects own one-shot receivers. `TransmissionResponse` owns only the hardware
-completion receiver. `CommunicationResponse` wraps `InternalCommunicationResponse`, which owns both
-the hardware completion receiver and the correlated ZCL or ZDP receiver. The internal communication
-future always polls the hardware completion receiver first.
+`HwResponse` owns the driver's opaque deferred hardware future. `CommunicationResponse` wraps
+`InternalCommunicationResponse`, which owns an `HwResponse` and the correlated ZCL or ZDP one-shot
+receiver. The internal communication future always polls the hardware response first. After it
+succeeds, the completed `HwResponse` is discarded and only the protocol receiver is polled; a
+hardware error completes the communication future without polling that receiver.
 
 ## Removed Internal Responsibilities
 

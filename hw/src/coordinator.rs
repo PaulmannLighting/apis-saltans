@@ -5,11 +5,11 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use tokio::sync::oneshot::{Receiver, channel};
+use tokio::sync::oneshot::channel;
 use zb_core::{Application, Destination, IeeeAddress};
 
 use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
-use crate::{Clusters, Error, NcpHandle};
+use crate::{Clusters, Error, HwResponse, NcpHandle};
 
 /// Proxy trait for sending commands to a Zigbee NCP driver actor.
 pub trait Ncp {
@@ -108,21 +108,21 @@ pub trait Ncp {
 
     /// Transmit a serialized application datagram to a destination.
     ///
-    /// The returned outer future sends the command to the driver actor and yields a one-shot
-    /// receiver. Await that receiver separately to obtain the driver's transmission result. This
-    /// lets callers retain and compose the completion notification without blocking the actor
-    /// request path.
+    /// The returned outer future sends the command to the driver actor and yields an
+    /// [`HwResponse`]. Await that response separately to observe completion of the hardware
+    /// transmission. This lets callers retain and compose the completion future without blocking
+    /// the actor request path.
     ///
     /// # Errors
     ///
-    /// The outer future returns an error if the actor is unavailable. The returned receiver yields
-    /// an error if the driver fails to transmit the datagram, and awaiting it fails if the driver
-    /// actor drops the completion channel.
+    /// The outer future returns an error if the command cannot be handed to the driver actor or the
+    /// driver cannot create the transmission response. Awaiting the returned [`HwResponse`] returns
+    /// an error if the deferred hardware transmission fails.
     fn transmit(
         &self,
         destination: Destination,
         datagram: Datagram,
-    ) -> impl Future<Output = Result<Receiver<Result<(), Error>>, Error>> + Send;
+    ) -> impl Future<Output = Result<HwResponse, Error>> + Send;
 }
 
 impl Ncp for NcpHandle {
@@ -209,7 +209,7 @@ impl Ncp for NcpHandle {
         &self,
         destination: Destination,
         datagram: Datagram,
-    ) -> Result<Receiver<Result<(), Error>>, Error> {
+    ) -> Result<HwResponse, Error> {
         let (response, rx) = channel();
         self.send(Message::Transmit {
             destination,
@@ -217,6 +217,6 @@ impl Ncp for NcpHandle {
             response,
         })
         .await?;
-        Ok(rx)
+        rx.await?
     }
 }

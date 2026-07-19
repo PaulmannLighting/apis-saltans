@@ -6,8 +6,8 @@ use zb_core::{Application, Destination, IeeeAddress};
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
-use crate::Clusters;
 use crate::common::{Datagram, Error};
+use crate::{Clusters, HwResponse};
 
 mod found_network;
 mod scanned_channel;
@@ -97,6 +97,6 @@ pub enum Message {
         /// Serialized payload and APS metadata to transmit.
         datagram: Datagram,
         /// One-shot channel used to return success or driver error.
-        response: Sender<Result<(), Error>>,
+        response: Sender<Result<HwResponse, Error>>,
     },
 }

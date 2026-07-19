@@ -18,8 +18,7 @@ Public API exports:
 - low-level transport traits:
   - `Zcl`
   - `Zdp`
-- deferred response types:
-  - `TransmissionResponse`
+- deferred response futures:
   - `CommunicationResponse<T, U>`
   - `ZclResponse<T>`
   - `ZdpResponse<T>`
@@ -52,6 +51,8 @@ Public API exports:
   - `Device`
 - error type:
   - `Error`
+
+Commands without a protocol response return `zb_hw::HwResponse` directly from the hardware API.
 
 ## Coordinator Lifecycle
 
@@ -112,8 +113,8 @@ Sending is split into two observable stages. The first await queues work on the 
 and returns a response future. Awaiting that returned future observes the hardware and protocol
 result:
 
-- `TransmissionResponse` waits for hardware completion of a ZCL command that has no
-  application-level response.
+- `zb_hw::HwResponse` waits for hardware completion of a ZCL command that has no application-level
+  response.
 - `ZclResponse<T>` waits for hardware completion, then a correlated ZCL frame, and converts that
   frame to `T`.
 - `ZdpResponse<T>` does the same for a correlated ZDP command.
@@ -131,7 +132,8 @@ let typed_response = response.await?;
 
 The first error reports that the request could not be queued or handed off. The second await reports
 hardware transmission, response-channel, or typed-conversion failures. Dropping a returned response
-future stops observing its result but does not cancel work that has already been queued.
+future stops driving and observing that future. The coordinator does not promise that dropping it
+cancels work already handed to the hardware backend.
 
 `Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and
 expose their source errors and can be constructed through `From`; the send variant intentionally
@@ -485,8 +487,9 @@ request.
 ## Raw Transports
 
 Use `Zcl::transmit(...)` for native cluster commands that do not expect an application-level
-response. Its first await returns a `TransmissionResponse`; await that value to confirm hardware
-completion.
+response. Its first await returns a `zb_hw::HwResponse`; await that value to confirm hardware
+completion. The hardware response is opaque, so coordinator users do not depend on the driver's
+completion mechanism.
 
 Use `Zcl::communicate(...)` for commands implementing `ExpectResponse<zb_zcl::Cluster>`. Its first
 await returns `ZclResponse<T::Response>`. Awaiting that response confirms transmission, waits for a

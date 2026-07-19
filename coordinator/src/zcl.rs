@@ -11,7 +11,7 @@ use tokio::sync::oneshot::{self, channel};
 use zb_aps::Data;
 use zb_core::Destination;
 use zb_core::destination::Device;
-use zb_hw::Ncp;
+use zb_hw::{HwResponse, Ncp};
 use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame, Header};
 
@@ -135,7 +135,7 @@ where
         &mut self,
         destination: Destination,
         payload: Payload,
-    ) -> Result<oneshot::Receiver<Result<(), zb_hw::Error>>, zb_hw::Error> {
+    ) -> Result<HwResponse, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
         let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);

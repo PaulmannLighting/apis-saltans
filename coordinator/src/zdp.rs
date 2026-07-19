@@ -200,7 +200,7 @@ where
                 hw_datagram,
             )
             .await?
-            .await??;
+            .await?;
         Ok(())
     }
 

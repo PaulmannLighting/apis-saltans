@@ -5,7 +5,7 @@ use tokio::sync::mpsc::{Receiver, channel};
 use zb_core::{Application, Destination, IeeeAddress};
 
 use crate::common::Message;
-use crate::{Clusters, Datagram, Error, FoundNetwork, NcpHandle, ScannedChannel};
+use crate::{Clusters, Datagram, Error, FoundNetwork, HwResponse, NcpHandle, ScannedChannel};
 
 /// A common Zigbee NCP driver interface.
 pub trait Driver {
@@ -113,14 +113,19 @@ pub trait Driver {
 
     /// Transmit an application datagram to the specified destination.
     ///
+    /// Return an [`HwResponse`] that owns the deferred hardware operation. The driver actor passes
+    /// this response to the caller without waiting for the transmission to complete.
+    ///
     /// # Errors
     ///
-    /// Returns an error if the datagram cannot be transmitted.
+    /// Returns an error if the transmission cannot be started or its deferred response cannot be
+    /// created. Errors that occur after the response is returned are reported when the
+    /// [`HwResponse`] is awaited.
     fn transmit(
         &mut self,
         destination: Destination,
         datagram: Datagram,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
+    ) -> impl Future<Output = Result<HwResponse, Error>> + Send;
 
     /// Spawn the actor in a tokio task.
     ///
