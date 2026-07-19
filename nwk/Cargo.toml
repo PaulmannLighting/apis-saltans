@@ -12,7 +12,7 @@ version = "0.3.0"
 edition = "2024"
 
 [dependencies]
-serde = { version = "1", features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
 zb-core.workspace = true
 
 [lints]

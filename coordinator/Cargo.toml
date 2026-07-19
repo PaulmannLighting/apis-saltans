@@ -12,13 +12,13 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-bytes = "1"
-const_env = "0.1"
-le-stream = { version = "10", features = ["derive", "bytes"] }
-log = "0.4"
-serde = { version = "1", features = ["derive"] }
+bytes.workspace = true
+const_env.workspace = true
+le-stream = { workspace = true, features = ["derive", "bytes"] }
+log.workspace = true
+serde = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
-tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
+tokio = { workspace = true, features = ["sync", "rt", "rt-multi-thread", "time"] }
 zb-aps.workspace = true
 zb-core = { workspace = true, features = ["serde"] }
 zb-hw = { workspace = true, features = ["coordinator", "serde"] }

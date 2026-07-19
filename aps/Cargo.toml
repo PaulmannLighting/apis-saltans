@@ -13,10 +13,10 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
-bitflags = "2"
-bytes = "1"
-le-stream = { version = "10", features = ["derive"] }
-log = "0.4"
+bitflags.workspace = true
+bytes.workspace = true
+le-stream = { workspace = true, features = ["derive"] }
+log.workspace = true
 num_enum.workspace = true
 zb-core.workspace = true
 zb-nwk.workspace = true

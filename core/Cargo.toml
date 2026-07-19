@@ -12,17 +12,17 @@ edition = "2024"
 exclude = [".gitignore"]
 
 [dependencies]
-bitflags = "2"
-chrono = "0.4"
+bitflags.workspace = true
+chrono.workspace = true
 cfg_eval = { version = "0.1", optional = true }
-heapless = "0.9"
+heapless.workspace = true
 intx = "0.1"
-le-stream = { version = "10", features = ["alloc", "derive", "heapless", "intx", "macaddr"] }
-log = "0.4"
+le-stream = { workspace = true, features = ["alloc", "derive", "heapless", "intx", "macaddr"] }
+log.workspace = true
 macaddr = "1"
 num_enum.workspace = true
-repr-discriminant = { version = "3", features = ["derive"] }
-serde = { version = "1", optional = true }
+repr-discriminant.workspace = true
+serde = { workspace = true, optional = true }
 serde_with = { version = "3.21.0", default-features = false, features = ["macros"], optional = true }
 thiserror.workspace = true
 

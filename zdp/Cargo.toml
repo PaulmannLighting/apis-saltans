@@ -12,13 +12,13 @@ edition = "2024"
 exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
-bitflags = "2"
-bytes = "1.12.0"
-heapless = "0.9"
-le-stream = { version = "10", features = ["derive"] }
+bitflags.workspace = true
+bytes.workspace = true
+heapless.workspace = true
+le-stream = { workspace = true, features = ["derive"] }
 num_enum.workspace = true
-repr-discriminant = { version = "3", features = ["derive"] }
-serde = { version = "1", optional = true }
+repr-discriminant.workspace = true
+serde = { workspace = true, optional = true }
 thiserror.workspace = true
 zb-aps.workspace = true
 zb-core.workspace = true
