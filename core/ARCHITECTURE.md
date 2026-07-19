@@ -11,7 +11,7 @@ protocol crates can share.
 ```mermaid
 flowchart TD
     Addressing["Addressing<br/>FullAddress, ShortId, IeeeAddress, GroupId"]
-    Routing["Routing metadata<br/>Endpoint, Destination, Profile, Cluster"]
+    Routing["Routing metadata<br/>Endpoint, Destination, Device, Profile, Cluster"]
     Traits["Type metadata traits<br/>ClusterSpecific, Profiled, ExpectResponse, TypeId"]
     Values["Zigbee values<br/>types::Type, units"]
     Tlv["TLVs<br/>types::tlv"]
@@ -31,7 +31,7 @@ flowchart TD
 | Area | Files and modules | Responsibility |
 | --- | --- | --- |
 | Addressing | `full_address.rs`, `ieee_address.rs`, `short_id.rs`, `group_id.rs` | IEEE addresses, NWK short addresses, complete device addresses, and APS group identifiers. |
-| Routing metadata | `endpoint.rs`, `destination.rs`, `profile.rs`, `cluster.rs`, `direction.rs` | Endpoint, destination, profile, cluster, and command-direction domain values. |
+| Routing metadata | `endpoint.rs`, `destination.rs`, `device.rs`, `profile.rs`, `cluster.rs`, `direction.rs` | Endpoint, destination, application device, profile, cluster, and command-direction domain values. |
 | Traits | `traits.rs`, `cluster.rs`, `profile.rs` | Cross-crate metadata traits such as `ExpectResponse`, `ClusterSpecific`, `Profiled`, and `TypeId`. |
 | Typed values | `types.rs`, `types/*` | Zigbee primitive, discrete, analog, composite, and tagged value representations. |
 | TLVs | `types/tlv.rs`, `types/tlv/*` | Local, global, and encapsulated TLV representations. |
@@ -85,6 +85,11 @@ membership is endpoint-local on receiving nodes.
 numeric IDs, while `Application` accepts the two numeric forms and enforces the application range.
 Reserved endpoint IDs remain representable only through `Reserved` errors and are never accepted as
 an `Endpoint`.
+
+The root-level `Device` enum represents known Zigbee application device identifiers. It is distinct
+from the validated network address in `short_id::Device` and the outbound addressing payload in
+`destination::Device`. Application device identifiers support numeric access through `as_u16`,
+stable text formatting, and parsing from canonical names or numeric identifiers.
 
 `Profile` is the Zigbee profile identifier enum. It supports numeric access through `as_u16`,
 stable text formatting, and parsing from canonical names or numeric identifiers. Its

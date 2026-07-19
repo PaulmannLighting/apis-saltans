@@ -5,7 +5,7 @@ Core Zigbee protocol definitions used by the workspace crates (`apis-saltans-aps
 This crate provides:
 - protocol-level data types (`types::Type`, scalar wrappers, strings, dates/times)
 - Type-Length-Value (TLV) structures (`types::tlv`)
-- core identifiers and enums (`Endpoint`, `ShortId`, `Profile`, `Direction`, `Cluster`)
+- core identifiers and enums (`Endpoint`, `ShortId`, `Device`, `Profile`, `Direction`, `Cluster`)
 - destination, address, group, and node representation (`Destination`, `FullAddress`, `GroupId`, `node::Node`, descriptor bitfields)
 - utility traits used across protocol layers (`ExpectResponse`, `ClusterSpecific`, `Profiled`, `TypeId`)
 
@@ -43,6 +43,7 @@ Top-level re-exports from `apis-saltans-core`:
 - `ByteSizedVec`
 - `Cluster`, `ClusterSpecific`
 - `Destination`
+- `Device`
 - `Direction`
 - `Endpoint`, `Application`
 - `Eui64`, `IeeeAddress`
@@ -149,17 +150,20 @@ let value = Type::from_le_stream_tagged(tag, payload.into_iter())
 assert!(matches!(value, Type::Uint16(_)));
 ```
 
-### Convert Endpoints, Profiles, and Clusters
+### Convert Endpoints, Devices, Profiles, and Clusters
 
 ```rust
-use zb_core::{Application, Cluster, Endpoint, Profile};
+use zb_core::{Application, Cluster, Device, Endpoint, Profile};
 
 let application: Application = "1".parse().expect("valid application endpoint");
 let ep = Endpoint::from(application);
 let broadcast: Endpoint = "0xff".parse().expect("broadcast endpoint");
+let device: Device = "ColorDimmableLight".parse().expect("known device");
 let profile: Profile = "ZigbeeHomeAutomation".parse().expect("known profile");
 let cluster: Cluster = "0x0300".parse().expect("known cluster");
 
+assert_eq!(device.as_u16(), 0x0102);
+assert_eq!(device.to_string(), "ColorDimmableLight (0x0102)");
 assert_eq!(profile.as_u16(), 0x0104);
 assert_eq!(profile.to_string(), "ZigbeeHomeAutomation (0x0104)");
 assert_eq!(cluster, Cluster::ColorControl);
