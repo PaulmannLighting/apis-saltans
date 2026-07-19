@@ -11,7 +11,7 @@ use tokio::sync::oneshot::channel;
 use zb_aps::data::Header;
 use zb_aps::{Data, DeliveryMode};
 use zb_core::node::Descriptor;
-use zb_core::short_id::{Device, ShortId};
+use zb_core::short_id::Device;
 use zb_core::{Destination, Endpoint, FullAddress, destination};
 use zb_hw::{Datagram, Ncp};
 use zb_nwk::Source;
@@ -24,6 +24,9 @@ use self::match_desc::{
     Action as MatchDescAction, action as match_desc_action, matching_endpoints,
 };
 pub use self::message::Message;
+use self::node_desc::{
+    Action as NodeDescAction, action as node_desc_action, unavailable_child_status,
+};
 pub use self::payload::Payload;
 use super::index::Index;
 use crate::response::InternalCommunicationResponse;
@@ -31,6 +34,7 @@ use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
 mod match_desc;
 mod message;
+mod node_desc;
 mod payload;
 
 /// Zigbee transceiver actor.
@@ -282,22 +286,34 @@ where
             });
     }
 
-    /// Respond to a node-descriptor request addressed to this coordinator.
+    /// Respond to a Node Descriptor request with the descriptor or an appropriate status.
     async fn handle_node_desc_req(&self, source: Source, seq: u8, node_desc_req: NodeDescReq) {
-        let coordinator_address = ShortId::Coordinator.as_u16();
-
-        if node_desc_req.nwk_addr() != coordinator_address {
-            return;
-        }
-
         let Ok(node_id) = source.node_id().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
         }) else {
             return;
         };
 
-        let payload =
-            NodeDescRsp::new(coordinator_address, Ok(self.descriptor.clone()), Vec::new());
+        let Ok(logical_type) = self
+            .descriptor
+            .flags()
+            .logical_type()
+            .inspect_err(|value| warn!("Invalid logical device type: {value:#04X}"))
+        else {
+            return;
+        };
+
+        let nwk_addr_of_interest = node_desc_req.nwk_addr();
+        let node_descriptor = match node_desc_action(logical_type, nwk_addr_of_interest) {
+            NodeDescAction::RespondWithLocalDescriptor => Ok(self.descriptor.clone()),
+            NodeDescAction::ResolveChild(nwk_address) => {
+                let child_is_known = self.ncp.short_id_to_ieee_address(nwk_address).await.is_ok();
+
+                Err(unavailable_child_status(child_is_known))
+            }
+            NodeDescAction::RespondWithError(status) => Err(status),
+        };
+        let payload = NodeDescRsp::new(nwk_addr_of_interest, node_descriptor, Vec::new());
 
         if let Err(error) = self.respond(seq, node_id, Payload::from(payload)).await {
             error!("Failed to send Node_Desc_rsp: {error:?}");
