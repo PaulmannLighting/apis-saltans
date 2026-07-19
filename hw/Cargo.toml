@@ -7,14 +7,14 @@ repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "hardware", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-hw"
-version = "0.10.0"
+version = "0.10.1"
 edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
 bytes = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
-thiserror.workspace = true
+thiserror = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["sync"], optional = true }
 zb-aps = { workspace = true, optional = true }
 zb-core = { workspace = true, optional = true }
@@ -24,19 +24,21 @@ zb-zdp = { workspace = true, optional = true }
 [features]
 default = []
 coordinator = [
+    "dep:bytes",
+    "dep:thiserror",
+    "dep:tokio",
     "dep:zb-aps",
     "dep:zb-core",
     "dep:zb-nwk",
-    "dep:bytes",
-    "dep:tokio",
 ]
 driver = [
+    "dep:bytes",
+    "dep:thiserror",
+    "dep:tokio",
     "dep:zb-aps",
     "dep:zb-core",
     "dep:zb-nwk",
     "dep:zb-zdp",
-    "dep:bytes",
-    "dep:tokio"
 ]
 serde = ["dep:serde", "serde/derive"]
 
