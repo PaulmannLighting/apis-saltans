@@ -3,12 +3,12 @@ members = ["core", "zcl", "zdp", "aps", "coordinator", "hw", "nwk"]
 resolver = "3"
 
 [workspace.dependencies]
-zb-aps = { package = "apis-saltans-aps", version = "0.4", path = "aps" }
-zb-core = { package = "apis-saltans-core", version = "0.5", path = "core" }
-zb-hw = { package = "apis-saltans-hw", version = "0.7", path = "hw" }
-zb-nwk = { package = "apis-saltans-nwk", version = "0.2", path = "nwk" }
-zb-zcl = { package = "apis-saltans-zcl", version = "0.5", path = "zcl" }
-zb-zdp = { package = "apis-saltans-zdp", version = "0.4", path = "zdp" }
+zb-aps = { package = "apis-saltans-aps", version = "0.5", path = "aps" }
+zb-core = { package = "apis-saltans-core", version = "0.6", path = "core" }
+zb-hw = { package = "apis-saltans-hw", version = "0.8", path = "hw" }
+zb-nwk = { package = "apis-saltans-nwk", version = "0.3", path = "nwk" }
+zb-zcl = { package = "apis-saltans-zcl", version = "0.6", path = "zcl" }
+zb-zdp = { package = "apis-saltans-zdp", version = "0.5", path = "zdp" }
 
 [workspace.lints.rust]
 absolute_paths_not_starting_with_crate = "warn"

@@ -552,3 +552,9 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.5.1"
 notes = "AI-assisted audit"
+
+[[trusted.syn]]
+criteria = "safe-to-deploy"
+user-id = 3618 # David Tolnay (dtolnay)
+start = "2019-03-01"
+end = "2027-07-19"
