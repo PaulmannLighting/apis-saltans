@@ -81,9 +81,16 @@ The device and broadcast variants wrap `destination::Device` and
 endpoint selector. Group destinations carry only `GroupId` because group
 membership is endpoint-local on receiving nodes.
 
-`Profile` is the Zigbee profile identifier enum. Its `broadcast_endpoint`
-method returns the endpoint value used for profile-level broadcasts. `Cluster`
-is the enum of well-known cluster identifiers defined in this crate, while
+`Endpoint` parses the `Data` and `Broadcast` variant names as well as decimal and `0x`-prefixed
+numeric IDs, while `Application` accepts the two numeric forms and enforces the application range.
+Reserved endpoint IDs remain representable only through `Reserved` errors and are never accepted as
+an `Endpoint`.
+
+`Profile` is the Zigbee profile identifier enum. It supports numeric access through `as_u16`,
+stable text formatting, and parsing from canonical names or numeric identifiers. Its
+`broadcast_endpoint` method returns the endpoint value used for profile-level broadcasts. `Cluster`
+is the enum of well-known cluster identifiers defined in this crate and supports the same canonical
+name, decimal identifier, and `0x`-prefixed hexadecimal parsing forms as `Profile`, while
 `ClusterSpecific<T = u16>` lets downstream command and attribute types expose
 their own cluster ID as metadata.
 

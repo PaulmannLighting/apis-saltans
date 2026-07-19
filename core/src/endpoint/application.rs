@@ -1,6 +1,11 @@
+use core::fmt::{self, Display};
 use core::ops::RangeInclusive;
+use core::str::FromStr;
 
 /// A Zigbee application endpoint ID.
+///
+/// Application endpoints can be parsed from a decimal ID or a hexadecimal ID with a `0x` prefix.
+/// Values outside `1..=240` are rejected.
 #[cfg_attr(
     feature = "serde",
     expect(clippy::unsafe_derive_deserialize),
@@ -75,10 +80,90 @@ impl From<Application> for u8 {
     }
 }
 
+impl FromStr for Application {
+    type Err = ParseApplicationError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::try_from(parse_application_id(value)?).map_err(|_| ParseApplicationError)
+    }
+}
+
 impl TryFrom<u8> for Application {
     type Error = u8;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::new(value).ok_or(value)
+    }
+}
+
+/// Error returned when parsing an unknown, malformed, or out-of-range application endpoint.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ParseApplicationError;
+
+impl Display for ParseApplicationError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("invalid Zigbee application endpoint")
+    }
+}
+
+impl core::error::Error for ParseApplicationError {}
+fn parse_application_id(value: &str) -> Result<u8, ParseApplicationError> {
+    value.strip_prefix("0x").map_or_else(
+        || value.parse().map_err(|_| ParseApplicationError),
+        |value| u8::from_str_radix(value, 16).map_err(|_| ParseApplicationError),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate alloc;
+
+    use alloc::string::ToString;
+
+    use super::{Application, ParseApplicationError};
+
+    const APPLICATION_ID: u8 = 10;
+
+    #[test]
+    fn parses_decimal_id() {
+        assert_eq!(
+            APPLICATION_ID.to_string().parse(),
+            Ok(Application::new(APPLICATION_ID).unwrap())
+        );
+    }
+
+    #[test]
+    fn parses_hexadecimal_id() {
+        assert_eq!(
+            "0x0A".parse(),
+            Ok(Application::new(APPLICATION_ID).unwrap())
+        );
+    }
+
+    #[test]
+    fn parses_range_boundaries() {
+        assert_eq!(
+            Application::MIN_ID.to_string().parse(),
+            Ok(Application::MIN)
+        );
+        assert_eq!(
+            Application::MAX_ID.to_string().parse(),
+            Ok(Application::MAX)
+        );
+    }
+
+    #[test]
+    fn rejects_out_of_range_ids() {
+        assert_eq!("0".parse::<Application>(), Err(ParseApplicationError));
+        assert_eq!("241".parse::<Application>(), Err(ParseApplicationError));
+    }
+
+    #[test]
+    fn rejects_unsupported_representations() {
+        assert_eq!(
+            "Application".parse::<Application>(),
+            Err(ParseApplicationError)
+        );
+        assert_eq!("0X0A".parse::<Application>(), Err(ParseApplicationError));
     }
 }

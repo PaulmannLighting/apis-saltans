@@ -149,17 +149,23 @@ let value = Type::from_le_stream_tagged(tag, payload.into_iter())
 assert!(matches!(value, Type::Uint16(_)));
 ```
 
-### Convert Endpoints and Profiles
+### Convert Endpoints, Profiles, and Clusters
 
 ```rust
-use zb_core::{Application, Endpoint, Profile};
+use zb_core::{Application, Cluster, Endpoint, Profile};
 
-let application = Application::new(1).expect("valid application endpoint");
+let application: Application = "1".parse().expect("valid application endpoint");
 let ep = Endpoint::from(application);
-let profile = Profile::try_from(0x0104).expect("known profile");
+let broadcast: Endpoint = "0xff".parse().expect("broadcast endpoint");
+let profile: Profile = "ZigbeeHomeAutomation".parse().expect("known profile");
+let cluster: Cluster = "0x0300".parse().expect("known cluster");
 
-assert_eq!(u16::from(profile), 0x0104);
+assert_eq!(profile.as_u16(), 0x0104);
+assert_eq!(profile.to_string(), "ZigbeeHomeAutomation (0x0104)");
+assert_eq!(cluster, Cluster::ColorControl);
+assert_eq!(cluster.to_string(), "ColorControl (0x0300)");
 assert_eq!(u8::from(ep), 1);
+assert_eq!(broadcast, Endpoint::Broadcast);
 ```
 
 ## Traits

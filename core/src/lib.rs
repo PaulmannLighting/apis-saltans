@@ -14,14 +14,14 @@
 #![no_std]
 
 pub use self::byte_sized_vec::ByteSizedVec;
-pub use self::cluster::{Cluster, ClusterSpecific};
+pub use self::cluster::{Cluster, ClusterSpecific, ParseClusterError};
 pub use self::destination::Destination;
 pub use self::direction::Direction;
-pub use self::endpoint::{Application, Endpoint};
+pub use self::endpoint::{Application, Endpoint, ParseApplicationError, ParseEndpointError};
 pub use self::full_address::FullAddress;
 pub use self::group_id::GroupId;
 pub use self::ieee_address::{Eui64, IeeeAddress};
-pub use self::profile::{Profile, Profiled};
+pub use self::profile::{ParseProfileError, Profile, Profiled};
 pub use self::short_id::ShortId;
 pub use self::traits::{ExpectResponse, TypeId};
 
