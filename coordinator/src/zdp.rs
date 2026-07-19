@@ -204,6 +204,7 @@ where
             aps_header.control().delivery_mode(),
             Some(DeliveryMode::Broadcast)
         );
+
         let Ok(logical_type) = self
             .descriptor
             .flags()
@@ -212,7 +213,9 @@ where
         else {
             return;
         };
+
         let nwk_addr_of_interest = match_desc_req.nwk_addr_of_interest();
+
         let response =
             match match_desc_action(logical_type, nwk_addr_of_interest, request_was_broadcast) {
                 MatchDescAction::MatchLocalDescriptors => {
