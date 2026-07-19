@@ -9,9 +9,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::channel;
 use zb_aps::Data;
-use zb_core::node::{
-    Descriptor as NodeDescriptor, Flags, FrequencyBand, LogicalType, MacCapabilityFlags, ServerMask,
-};
+use zb_core::node::Descriptor;
 use zb_core::short_id::{Device, ShortId};
 use zb_core::{Destination, Endpoint, FullAddress, destination};
 use zb_hw::{Datagram, Ncp};
@@ -32,16 +30,12 @@ mod match_desc_req_ext;
 mod message;
 mod payload;
 
-const COORDINATOR_MANUFACTURER_CODE: u16 = 0x0000;
-const MAXIMUM_APS_PAYLOAD_SIZE: u8 = 82;
-const MAXIMUM_APS_TRANSFER_SIZE: u16 = MAXIMUM_APS_PAYLOAD_SIZE as u16;
-const STACK_COMPLIANCE_REVISION: u8 = 0;
-
 /// Zigbee transceiver actor.
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
     events: Sender<Event>,
+    descriptor: Descriptor,
     /// Whether the hardware has reported that joining is open.
     joining_permitted: bool,
     responses: BTreeMap<Index, oneshot::Sender<Command>>,
@@ -51,10 +45,11 @@ pub struct Transceiver<T> {
 impl<T> Transceiver<T> {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T, events: Sender<Event>) -> Self {
+    pub const fn new(ncp: T, events: Sender<Event>, descriptor: Descriptor) -> Self {
         Self {
             ncp,
             events,
+            descriptor,
             joining_permitted: false,
             responses: BTreeMap::new(),
             seq: 0,
@@ -264,11 +259,8 @@ where
             return;
         };
 
-        let payload = NodeDescRsp::new(
-            coordinator_address,
-            Ok(coordinator_node_descriptor()),
-            Vec::new(),
-        );
+        let payload =
+            NodeDescRsp::new(coordinator_address, Ok(self.descriptor.clone()), Vec::new());
 
         if let Err(error) = self.respond(seq, node_id, Payload::from(payload)).await {
             error!("Failed to send Node_Desc_rsp: {error:?}");
@@ -296,40 +288,14 @@ where
     }
 }
 
-/// Build the descriptor advertised for the local coordinator.
-fn coordinator_node_descriptor() -> NodeDescriptor {
-    let mut flags = Flags::default();
-    flags.set_logical_type(LogicalType::Coordinator);
-    flags.set_frequency_band(FrequencyBand::FROM_2400_TO_2483_5_MHZ);
-
-    let mac_capability_flags = MacCapabilityFlags::ALTERNATE_PAN_COORDINATOR
-        | MacCapabilityFlags::DEVICE_TYPE
-        | MacCapabilityFlags::POWER_SOURCE
-        | MacCapabilityFlags::RECEIVER_ON_WHEN_IDLE
-        | MacCapabilityFlags::SECURITY_CAPABLE;
-
-    let mut server_mask = ServerMask::PRIMARY_TRUST_CENTER | ServerMask::NETWORK_MANAGER;
-    server_mask.set_stack_compliance_revision(STACK_COMPLIANCE_REVISION);
-
-    NodeDescriptor::new(
-        flags,
-        mac_capability_flags,
-        COORDINATOR_MANUFACTURER_CODE,
-        MAXIMUM_APS_PAYLOAD_SIZE,
-        MAXIMUM_APS_TRANSFER_SIZE,
-        server_mask,
-        MAXIMUM_APS_TRANSFER_SIZE,
-    )
-}
-
 impl<T> Transceiver<T>
 where
     T: Ncp + Send + Sync + 'static,
 {
     /// Start the ZDP transceiver.
-    pub fn spawn(ncp: T, events: Sender<Event>) -> Sender<Message> {
+    pub fn spawn(ncp: T, events: Sender<Event>, descriptor: Descriptor) -> Sender<Message> {
         let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, events).run(zdp_rx));
+        spawn(Self::new(ncp, events, descriptor).run(zdp_rx));
         zdp_tx
     }
 }

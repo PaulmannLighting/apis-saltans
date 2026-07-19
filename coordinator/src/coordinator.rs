@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use tokio::sync::mpsc::{Receiver, Sender};
+use zb_core::node::Descriptor;
 use zb_hw::{Error, NcpHandle};
 
 use crate::mux::Mux;
@@ -25,11 +26,12 @@ impl Coordinator {
     /// Returns an [`Error`] if setting up the actor network fails.
     pub fn start(
         ncp: NcpHandle,
+        descriptor: Descriptor,
         hw_events: Receiver<zb_hw::Event>,
         events_out: Sender<Event>,
     ) -> Result<Self, Error> {
         let zcl = zcl::Transceiver::spawn(ncp.clone(), events_out.clone());
-        let zdp = zdp::Transceiver::spawn(ncp.clone(), events_out.clone());
+        let zdp = zdp::Transceiver::spawn(ncp.clone(), events_out.clone(), descriptor);
         Mux::spawn(hw_events, events_out, zcl.clone(), zdp.clone());
         Ok(Self { ncp, zcl, zdp })
     }
