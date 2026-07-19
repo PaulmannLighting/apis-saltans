@@ -4,11 +4,10 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zb_core::destination::Device;
 use zb_core::{ClusterSpecific, Destination, ExpectResponse, Profiled};
-use zb_hw::HwResponse;
 use zb_zcl::{Cluster, Command, Directed};
 
 use crate::zcl::{Message, Payload};
-use crate::{CommunicationResponse, Coordinator, Error};
+use crate::{CommunicationResponse, Coordinator, Error, TransmissionResponse};
 
 /// A deferred typed ZCL response.
 ///
@@ -24,18 +23,18 @@ pub trait Zcl {
     /// Send a ZCL command without waiting for an application-level response.
     ///
     /// Use this for cluster commands that are transmitted as commands or group/broadcast messages.
-    /// The returned outer future queues the command and yields an [`HwResponse`]. Await that
-    /// response separately to observe whether the hardware transmission completed.
+    /// The returned outer future queues the command and yields a [`TransmissionResponse`]. Await
+    /// that response separately to observe whether the hardware transmission completed.
     ///
     /// # Errors
     ///
     /// The outer future returns an [`Error`] if the command cannot be queued. Awaiting the returned
-    /// [`HwResponse`] returns a [`zb_hw::Error`] if the deferred hardware transmission fails.
+    /// [`TransmissionResponse`] returns an [`Error`] if the deferred hardware transmission fails.
     fn transmit<T>(
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<HwResponse, Error>> + Send
+    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream;
 
@@ -64,7 +63,7 @@ impl Zcl for Sender<Message> {
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<HwResponse, Error>> + Send
+    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream,
     {
@@ -78,7 +77,7 @@ impl Zcl for Sender<Message> {
                 response,
             })
             .await?;
-            Ok(result.await??)
+            Ok(result.await??.into())
         }
     }
 
@@ -111,7 +110,7 @@ impl Zcl for Coordinator {
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<HwResponse, Error>> + Send
+    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream,
     {

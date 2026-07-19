@@ -159,7 +159,7 @@ flowchart TD
     CLUSTERS[OnOff ColorControl Level Attributes]
     DISCOVERY[Node Endpoints]
     BIND[Binding]
-    HWR[zb_hw::HwResponse]
+    TXR[TransmissionResponse]
     ZCLR[ZclResponse]
     ZDPR[ZdpResponse]
 
@@ -170,7 +170,7 @@ flowchart TD
     ZCL --> CLUSTERS
     ZDP --> DISCOVERY
     ZDP --> BIND
-    ZCL -->|transmit| HWR
+    ZCL -->|transmit| TXR
     ZCL -->|communicate| ZCLR
     ZDP -->|communicate| ZDPR
 ```
@@ -212,20 +212,22 @@ sequenceDiagram
     participant API as API Caller
     participant ZCL as ZCL Transceiver
     participant HW as NCP Driver Actor
-    participant R as HwResponse
+    participant R as TransmissionResponse
 
     API->>ZCL: Message::Transmit(destination, payload)
     ZCL->>HW: Ncp::transmit(datagram)
     HW-->>ZCL: HwResponse
-    ZCL-->>API: HwResponse
+    ZCL->>ZCL: wrap HwResponse
+    ZCL-->>API: TransmissionResponse
     API->>R: await
-    R-->>API: Result&lt;(), zb_hw::Error&gt;
+    R-->>API: Result&lt;(), Error&gt;
 ```
 
 The first await on `Zcl::transmit(...)` covers the API-to-transceiver handoff and returns the
-`HwResponse`. The second await observes the deferred driver result. The response hides the driver's
-concrete completion mechanism. Dropping it stops driving and observing its inner future; whether
-that cancels the hardware operation is backend-dependent.
+`TransmissionResponse`. It wraps the driver's `HwResponse`, and the second await observes the
+deferred driver result while converting `zb_hw::Error` into the coordinator's `Error`. The wrapper
+hides the driver's concrete completion mechanism. Dropping it stops driving and observing its inner
+future; whether that cancels the hardware operation is backend-dependent.
 
 ## 3) ZCL command with response
 
@@ -353,11 +355,13 @@ frame failures use source-preserving `#[from]` conversions. Channel send errors 
 status results retain explicit conversions because their public variants deliberately do not store
 an error source compatible with `#[from]`.
 
-`HwResponse` owns the driver's opaque deferred hardware future. `CommunicationResponse` wraps
-`InternalCommunicationResponse`, which owns an `HwResponse` and the correlated ZCL or ZDP one-shot
-receiver. The internal communication future always polls the hardware response first. After it
-succeeds, the completed `HwResponse` is discarded and only the protocol receiver is polled; a
-hardware error completes the communication future without polling that receiver.
+`HwResponse` owns the driver's opaque deferred hardware future. `TransmissionResponse` wraps it for
+commands without a protocol response and converts its error into the coordinator's `Error`.
+`CommunicationResponse` wraps `InternalCommunicationResponse`, which owns an `HwResponse` and the
+correlated ZCL or ZDP one-shot receiver. The internal communication future always polls the hardware
+response first. After it succeeds, the completed `HwResponse` is discarded and only the protocol
+receiver is polled; a hardware error completes the communication future without polling that
+receiver.
 
 ## Removed Internal Responsibilities
 

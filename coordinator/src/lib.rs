@@ -9,12 +9,12 @@
 //! [`AddressTranslation`], [`Zcl`], and [`Zdp`].
 //!
 //! ZCL and ZDP sends use deferred response futures. The first await queues an operation and returns
-//! either [`zb_hw::HwResponse`] or a protocol-specific [`ZclResponse`] or [`ZdpResponse`]. Await
-//! that returned future to observe hardware completion and, for communication requests, receive
-//! the converted protocol response.
+//! either [`TransmissionResponse`] or a protocol-specific [`ZclResponse`] or [`ZdpResponse`]. Await
+//! that returned future to observe hardware completion and, for communication requests, receive the
+//! converted protocol response. All of these futures report failures through the coordinator's
+//! [`Error`] type.
 
 use const_env::env_item;
-pub use zb_hw::HwResponse;
 
 pub use self::api::{
     AddressTranslation, Attributes, Binding, Clusters, ColorControl, Endpoints, FoundNetwork,
@@ -24,7 +24,7 @@ pub use self::api::{
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};
 pub use self::event::{Device, Event, Network, NetworkError};
-pub use self::response::CommunicationResponse;
+pub use self::response::{CommunicationResponse, TransmissionResponse};
 
 mod api;
 mod coordinator;
