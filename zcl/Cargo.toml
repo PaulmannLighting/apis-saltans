@@ -7,7 +7,7 @@ repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "ZCL", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-zcl"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2024"
 exclude = [".gitignore", "TODO.md"]
 

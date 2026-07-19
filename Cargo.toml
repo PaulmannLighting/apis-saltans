@@ -16,12 +16,12 @@ serde = "1"
 strum = { version = "0.28", default-features = false, features = ["derive"] }
 thiserror = { version = "2", default-features = false }
 tokio = "1"
-zb-aps = { package = "apis-saltans-aps", version = "0.5", path = "aps" }
-zb-core = { package = "apis-saltans-core", version = "0.6", path = "core" }
-zb-hw = { package = "apis-saltans-hw", version = "0.9", path = "hw" }
-zb-nwk = { package = "apis-saltans-nwk", version = "0.3", path = "nwk" }
-zb-zcl = { package = "apis-saltans-zcl", version = "0.6", path = "zcl" }
-zb-zdp = { package = "apis-saltans-zdp", version = "0.5", path = "zdp" }
+zb-aps = { package = "apis-saltans-aps", version = "0.6", path = "aps" }
+zb-core = { package = "apis-saltans-core", version = "0.7", path = "core" }
+zb-hw = { package = "apis-saltans-hw", version = "0.10", path = "hw" }
+zb-nwk = { package = "apis-saltans-nwk", version = "0.4", path = "nwk" }
+zb-zcl = { package = "apis-saltans-zcl", version = "0.7", path = "zcl" }
+zb-zdp = { package = "apis-saltans-zdp", version = "0.6", path = "zdp" }
 
 [workspace.lints.rust]
 absolute_paths_not_starting_with_crate = "warn"
