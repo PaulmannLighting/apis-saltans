@@ -168,6 +168,12 @@ assert_eq!(u8::from(ep), 1);
 assert_eq!(broadcast, Endpoint::Broadcast);
 ```
 
+## Error Handling
+
+Identifier parsing and date/time conversion return small, typed errors that implement
+`core::error::Error`. Their `Display` messages describe the rejected domain value or invariant, and
+wrapped source errors remain available through `Error::source` where applicable.
+
 ## Traits
 
 - `ExpectResponse<T>`: associates command/request types with response types.

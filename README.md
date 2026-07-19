@@ -23,6 +23,11 @@ This workspace contains multiple crates pertaining to the Zigbee protocol stack:
 - [`apis-saltans-coordinator`](coordinator): A Zigbee coordinator API using the actor model.
 - [`apis-saltans-hw`](hw): A Zigbee hardware abstraction layer.
 
+Public failure types implement Rust's standard `Error` trait. Errors that retain a lower-level
+failure expose it through `Error::source` and support `From` conversion, so applications can use
+the `?` operator without discarding the original cause. Channel errors represented only as a
+closed-send or closed-receive condition intentionally discard the channel payload.
+
 ## Legal
 
 This library is free software and is not affiliated with the Zigbee Alliance.

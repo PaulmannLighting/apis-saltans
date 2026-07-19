@@ -133,6 +133,10 @@ The first error reports that the request could not be queued or handed off. The 
 hardware transmission, response-channel, or typed-conversion failures. Dropping a returned response
 future stops observing its result but does not cancel work that has already been queued.
 
+`Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and
+expose their source errors and can be constructed through `From`; the send variant intentionally
+discards the failed channel payload.
+
 Higher-level discovery and binding helpers consume both stages internally when they return a final
 value. `Groups::list(...)` and `Attributes::configure_reporting(...)` intentionally expose a
 `ZclResponse<T>` so callers retain control over when to await the device response.

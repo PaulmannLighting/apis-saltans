@@ -206,7 +206,7 @@ where
 
     async fn handle_match_desc_req(&self, source: Source, seq: u8, match_desc_req: MatchDescReq) {
         let payload = MatchDescRsp::new(
-            0x0000,
+            match_desc_req.nwk_addr_of_interest(),
             Ok(self
                 .endpoints
                 .iter()

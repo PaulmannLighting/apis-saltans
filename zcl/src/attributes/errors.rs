@@ -1,16 +1,17 @@
-use core::error::Error;
-use core::fmt::{Debug, Display};
+use core::fmt::{self, Debug, Display};
 use std::boxed::Box;
 
+use thiserror::Error;
 use zb_core::types::Type;
 
 use crate::Status;
 
 /// An error that occurs when parsing an attribute fails.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, Error, PartialEq, Hash)]
 #[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]
 pub enum ParseAttributeError<T> {
     /// The attribute is unsupported.
+    #[error("unsupported attribute {id:#04X}: {}", display_status(.status))]
     Unsupported {
         /// The attribute ID.
         id: u16,
@@ -19,38 +20,12 @@ pub enum ParseAttributeError<T> {
     },
 
     /// The attribute ID is invalid.
+    #[error("Invalid attribute ID: {0}")]
     InvalidId(u16),
 
     /// The attribute type is invalid for this ID.
-    InvalidType(Box<InvalidType<T>>),
-}
-
-impl<T> Display for ParseAttributeError<T>
-where
-    T: Display,
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Unsupported { status, id } => match status {
-                Ok(status) => write!(f, "unsupported attribute {id:#04X}: {status:?}"),
-                Err(status) => write!(f, "unsupported attribute {id:#04X}: {status:#06X}"),
-            },
-            Self::InvalidId(id) => write!(f, "Invalid attribute ID: {id}"),
-            Self::InvalidType(error) => write!(f, "{error}"),
-        }
-    }
-}
-
-impl<T> Error for ParseAttributeError<T>
-where
-    T: Debug + Display + 'static,
-{
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::Unsupported { .. } | Self::InvalidId(_) => None,
-            Self::InvalidType(error) => Some(error),
-        }
-    }
+    #[error("{0}")]
+    InvalidType(#[source] Box<InvalidType<T>>),
 }
 
 impl<T> From<InvalidType<T>> for ParseAttributeError<T> {
@@ -60,7 +35,8 @@ impl<T> From<InvalidType<T>> for ParseAttributeError<T> {
 }
 
 /// The data type is invalid for the given attribute ID.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, Error, PartialEq, Hash)]
+#[error("Invalid type {typ:?} for attribute with id {id}")]
 pub struct InvalidType<T> {
     id: T,
     typ: Type,
@@ -74,17 +50,9 @@ impl<T> InvalidType<T> {
     }
 }
 
-impl<T> Display for InvalidType<T>
-where
-    T: Display,
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "Invalid type {:?} for attribute with id {}",
-            self.typ, self.id
-        )
-    }
+fn display_status(status: &Result<Status, u8>) -> impl Display + '_ {
+    fmt::from_fn(|f| match status {
+        Ok(status) => Debug::fmt(status, f),
+        Err(status) => write!(f, "{status:#06X}"),
+    })
 }
-
-impl<T> Error for InvalidType<T> where T: Debug + Display {}

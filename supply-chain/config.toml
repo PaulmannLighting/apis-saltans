@@ -31,30 +31,6 @@ audit-as-crates-io = true
 [policy.apis-saltans-zdp]
 audit-as-crates-io = true
 
-[[exemptions.apis-saltans-aps]]
-version = "0.1.1"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-coordinator]]
-version = "0.1.2"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-core]]
-version = "0.2.1"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-hw]]
-version = "0.1.1"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-zcl]]
-version = "0.1.1"
-criteria = "safe-to-deploy"
-
-[[exemptions.apis-saltans-zdp]]
-version = "0.1.2"
-criteria = "safe-to-deploy"
-
 [[exemptions.cfg_eval]]
 version = "0.1.2"
 criteria = "safe-to-deploy"

@@ -3,6 +3,7 @@ use core::str::FromStr;
 
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use thiserror::Error;
 
 use crate::Endpoint;
 
@@ -63,6 +64,12 @@ impl Profile {
     }
 }
 
+impl Display for Profile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?} ({:#06X})", self, self.as_u16())
+    }
+}
+
 impl FromStr for Profile {
     type Err = ParseProfileError;
 
@@ -102,22 +109,9 @@ impl From<Profile> for u16 {
 }
 
 /// Error returned when parsing an unknown or malformed Zigbee profile.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
+#[error("invalid Zigbee profile")]
 pub struct ParseProfileError;
-
-impl Display for ParseProfileError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("invalid Zigbee profile")
-    }
-}
-
-impl core::error::Error for ParseProfileError {}
-
-impl Display for Profile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?} ({:#06X})", self, self.as_u16())
-    }
-}
 
 fn profile_from_name(value: &str) -> Option<Profile> {
     match value {

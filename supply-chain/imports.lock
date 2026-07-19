@@ -1,6 +1,48 @@
 
 # cargo-vet imports lock
 
+[[publisher.apis-saltans-aps]]
+version = "0.5.0"
+when = "2026-07-19"
+user-id = 290593
+user-login = "neumann-paulmann"
+user-name = "Richard Neumann"
+
+[[publisher.apis-saltans-coordinator]]
+version = "0.9.0"
+when = "2026-07-19"
+user-id = 290593
+user-login = "neumann-paulmann"
+user-name = "Richard Neumann"
+
+[[publisher.apis-saltans-core]]
+version = "0.6.0"
+when = "2026-07-19"
+user-id = 290593
+user-login = "neumann-paulmann"
+user-name = "Richard Neumann"
+
+[[publisher.apis-saltans-hw]]
+version = "0.9.0"
+when = "2026-07-19"
+user-id = 290593
+user-login = "neumann-paulmann"
+user-name = "Richard Neumann"
+
+[[publisher.apis-saltans-zcl]]
+version = "0.6.0"
+when = "2026-07-19"
+user-id = 290593
+user-login = "neumann-paulmann"
+user-name = "Richard Neumann"
+
+[[publisher.apis-saltans-zdp]]
+version = "0.5.0"
+when = "2026-07-19"
+user-id = 290593
+user-login = "neumann-paulmann"
+user-name = "Richard Neumann"
+
 [[publisher.proc-macro2]]
 version = "1.0.107"
 when = "2026-07-19"

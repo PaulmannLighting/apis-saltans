@@ -20,6 +20,7 @@ num-derive = "0.4"
 num-traits = "0.2"
 repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1", optional = true }
+thiserror.workspace = true
 zb-aps.workspace = true
 zb-core.workspace = true
 

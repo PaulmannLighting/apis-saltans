@@ -541,6 +541,18 @@ criteria = "safe-to-deploy"
 version = "2.0.118"
 notes = "AI-assisted audit"
 
+[[audits.thiserror]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "2.0.19"
+notes = "AI-assisted full audit; reviewed the no_std runtime support, Error/Display/source/From generation interface, and build script. The build script writes only generated module/probe artifacts under OUT_DIR, invokes Cargo-provided rustc and wrapper commands solely for feature detection, and removes its probe directory. No network access, unrelated filesystem access, unsafe code, or runtime ambient capabilities were found."
+
+[[audits.thiserror-impl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "2.0.19"
+notes = "AI-assisted full audit; reviewed derive input parsing, attribute validation, generic-bound inference, format-expression scanning, and generated Error, Display, source, provide, and From implementations. The procedural macro performs deterministic token parsing and generation only; it has no build script, network/process/filesystem access, unsafe code, or generated unsafe operations."
+
 [[audits.tokio]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -624,6 +636,42 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.5.1"
 notes = "AI-assisted audit"
+
+[[trusted.apis-saltans-aps]]
+criteria = "safe-to-deploy"
+user-id = 290593 # Richard Neumann (neumann-paulmann)
+start = "2026-07-01"
+end = "2027-07-19"
+
+[[trusted.apis-saltans-coordinator]]
+criteria = "safe-to-deploy"
+user-id = 290593 # Richard Neumann (neumann-paulmann)
+start = "2026-07-01"
+end = "2027-07-19"
+
+[[trusted.apis-saltans-core]]
+criteria = "safe-to-deploy"
+user-id = 290593 # Richard Neumann (neumann-paulmann)
+start = "2026-07-01"
+end = "2027-07-19"
+
+[[trusted.apis-saltans-hw]]
+criteria = "safe-to-deploy"
+user-id = 290593 # Richard Neumann (neumann-paulmann)
+start = "2026-07-01"
+end = "2027-07-19"
+
+[[trusted.apis-saltans-zcl]]
+criteria = "safe-to-deploy"
+user-id = 290593 # Richard Neumann (neumann-paulmann)
+start = "2026-07-01"
+end = "2027-07-19"
+
+[[trusted.apis-saltans-zdp]]
+criteria = "safe-to-deploy"
+user-id = 290593 # Richard Neumann (neumann-paulmann)
+start = "2026-07-01"
+end = "2027-07-19"
 
 [[trusted.cc]]
 criteria = "safe-to-deploy"

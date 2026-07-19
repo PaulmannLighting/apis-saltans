@@ -1,44 +1,25 @@
-use core::error::Error;
-use core::fmt;
-use core::fmt::Display;
+use thiserror::Error;
 
 /// Frame parsing error.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Error, PartialEq, Hash)]
 pub enum ParseFrameError {
     /// The ZCL frame header is invalid.
+    #[error("Missing ZCL frame header")]
     MissingHeader,
 
     /// Invalid type field.
+    #[error("Invalid type field: {0}")]
     InvalidType(u8),
 
     /// Invalid cluster ID.
+    #[error("Invalid cluster ID: {0}")]
     InvalidClusterId(u16),
 
     /// Invalid command ID.
+    #[error("Invalid command ID: {0}")]
     InvalidCommandId(u8),
 
     /// The number of bytes of the payload is not enough.
+    #[error("Insufficient payload bytes")]
     InsufficientPayload,
 }
-
-impl Display for ParseFrameError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::MissingHeader => write!(f, "Missing ZCL frame header"),
-            Self::InvalidType(typ) => {
-                write!(f, "Invalid type field: {typ}")
-            }
-            Self::InvalidClusterId(cluster_id) => {
-                write!(f, "Invalid cluster ID: {cluster_id}")
-            }
-            Self::InvalidCommandId(command_id) => {
-                write!(f, "Invalid command ID: {command_id}")
-            }
-            Self::InsufficientPayload => {
-                write!(f, "Insufficient payload bytes")
-            }
-        }
-    }
-}
-
-impl Error for ParseFrameError {}

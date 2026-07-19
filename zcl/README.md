@@ -136,6 +136,10 @@ attribute ID, and ZCL `Type` into the corresponding typed reportable attribute e
     - invalid cluster/command id
     - insufficient payload
 
+Frame, attribute, and date-code parse errors implement `core::error::Error`. Variants that retain a
+lower-level parsing or invalid-type error expose it as their source and support conversion with the
+`?` operator.
+
 ## Quick Start
 
 ### Encode a Global Default Response Payload

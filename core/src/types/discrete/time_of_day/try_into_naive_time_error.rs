@@ -1,8 +1,8 @@
-use core::error::Error;
-use core::fmt::Display;
+use thiserror::Error;
 
 /// Error while creating a `TimeOfDay` instance.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Error, Hash, PartialEq)]
+#[error("Invalid time: {hour}:{minute}:{second}.{hundredths}")]
 pub struct TryIntoNaiveTimeError {
     hour: u8,
     minute: u8,
@@ -45,15 +45,3 @@ impl TryIntoNaiveTimeError {
         self.hundredths
     }
 }
-
-impl Display for TryIntoNaiveTimeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "Invalid time: {}:{}:{}.{}",
-            self.hour, self.minute, self.second, self.hundredths
-        )
-    }
-}
-
-impl Error for TryIntoNaiveTimeError {}

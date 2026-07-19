@@ -1,8 +1,9 @@
 //! Coordinator-API errors.
 
-use std::fmt::Display;
+use std::fmt::{self, Display};
 use std::time::Duration;
 
+use thiserror::Error as ThisError;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use tokio::time::error::Elapsed;
@@ -15,96 +16,64 @@ mod optional;
 mod status_ext;
 
 /// Errors that can occur in the coordinator-API.
-#[derive(Debug)]
+#[derive(Debug, ThisError)]
 pub enum Error {
     /// Hardware error.
-    Hardware(zb_hw::Error),
+    #[error("Hardware error: {0}")]
+    Hardware(
+        #[from]
+        #[source]
+        zb_hw::Error,
+    ),
 
     /// Transmission through the channel failed.
+    #[error("Sending failed")]
     SendError,
 
     /// Receiving of response failed.
-    ReceiveError(RecvError),
+    #[error("Receiving failed: {0}")]
+    ReceiveError(
+        #[from]
+        #[source]
+        RecvError,
+    ),
 
     /// Invalid response type.
+    #[error("Invalid response type: {0}")]
     InvalidResponseType(String),
 
     /// Unknown device.
+    #[error("Unknown device: {0}")]
     UnknownDevice(IeeeAddress),
 
     /// Invalid application endpoint.
+    #[error("Invalid application endpoint: {0:#04X}")]
     InvalidApplicationEndpoint(u8),
 
     /// Invalid rate.
+    #[error("Invalid dimming rate: {0:?}")]
     DurationOutOfBounds(Duration),
 
     /// ZCL status error, preserving unknown raw status bytes.
+    #[error("ZCL error: {}", display_status(.0))]
     Zcl(Result<zb_zcl::Status, u8>),
 
     /// ZDP status error, preserving unknown raw status bytes.
+    #[error("ZDP error: {}", display_status(.0))]
     Zdp(Result<zb_zdp::Status, u8>),
 
     /// A request exceeded its allotted response time.
-    Timeout(Elapsed),
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Hardware(error) => write!(f, "Hardware error: {error}"),
-            Self::SendError => write!(f, "Sending failed"),
-            Self::ReceiveError(error) => write!(f, "Receiving failed: {error}"),
-            Self::InvalidResponseType(error) => write!(f, "Invalid response type: {error}"),
-            Self::UnknownDevice(address) => write!(f, "Unknown device: {address}"),
-            Self::InvalidApplicationEndpoint(endpoint) => {
-                write!(f, "Invalid application endpoint: {endpoint:#04X}")
-            }
-            Self::DurationOutOfBounds(rate) => write!(f, "Invalid dimming rate: {rate:?}"),
-            Self::Zcl(error) => match error {
-                Ok(status) => write!(f, "ZCL error: {status}"),
-                Err(raw) => write!(f, "ZCL error: {raw:#04x}"),
-            },
-            Self::Zdp(error) => match error {
-                Ok(status) => write!(f, "ZDP error: {status}"),
-                Err(raw) => write!(f, "ZDP error: {raw:#04x}"),
-            },
-            Self::Timeout(elapsed) => write!(f, "Timeout: {elapsed:?}"),
-        }
-    }
-}
-
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Hardware(error) => Some(error),
-            Self::ReceiveError(error) => Some(error),
-            Self::Timeout(error) => Some(error),
-            Self::SendError
-            | Self::InvalidResponseType(_)
-            | Self::UnknownDevice(_)
-            | Self::InvalidApplicationEndpoint(_)
-            | Self::DurationOutOfBounds(_)
-            | Self::Zcl(_)
-            | Self::Zdp(_) => None,
-        }
-    }
-}
-
-impl From<zb_hw::Error> for Error {
-    fn from(error: zb_hw::Error) -> Self {
-        Self::Hardware(error)
-    }
+    #[error("Timeout: {0:?}")]
+    Timeout(
+        #[from]
+        #[source]
+        Elapsed,
+    ),
 }
 
 impl<T> From<SendError<T>> for Error {
     fn from(_: SendError<T>) -> Self {
         Self::SendError
-    }
-}
-
-impl From<RecvError> for Error {
-    fn from(error: RecvError) -> Self {
-        Self::ReceiveError(error)
     }
 }
 
@@ -120,8 +89,12 @@ impl From<Result<zb_zdp::Status, u8>> for Error {
     }
 }
 
-impl From<Elapsed> for Error {
-    fn from(elapsed: Elapsed) -> Self {
-        Self::Timeout(elapsed)
-    }
+fn display_status<T>(status: &Result<T, u8>) -> impl Display + '_
+where
+    T: Display,
+{
+    fmt::from_fn(|f| match status {
+        Ok(status) => status.fmt(f),
+        Err(raw) => write!(f, "{raw:#04x}"),
+    })
 }

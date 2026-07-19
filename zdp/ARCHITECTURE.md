@@ -53,6 +53,12 @@ Serialization flows in the reverse direction:
 Every command payload has a static cluster ID through `zb_core::Cluster`, and every group
 and top-level command enum can return the contained command's cluster ID.
 
+## Error Model
+
+APS-to-ZDP frame errors and protocol statuses derive `thiserror::Error`. Each variant owns its
+protocol-facing display message; frame errors do not retain additional source errors because their
+fields are the rejected endpoint, destination, or cluster values.
+
 ## Service Organization
 
 Each ZDP command belongs to exactly one service group enum:

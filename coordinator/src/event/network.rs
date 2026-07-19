@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use thiserror::Error as ThisError;
 use zb_hw::RouteError;
 
 /// Network state event.
@@ -21,8 +22,15 @@ pub enum Network {
 }
 
 /// Network-level error event.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Eq, ThisError, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize,
+)]
 pub enum Error {
     /// Route error reported by the hardware layer.
-    Route(RouteError),
+    #[error("{0}")]
+    Route(
+        #[from]
+        #[source]
+        RouteError,
+    ),
 }

@@ -17,6 +17,7 @@ const_env = "0.1"
 le-stream = { version = "10", features = ["derive", "bytes"] }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
+thiserror.workspace = true
 tokio = { version = "1", features = ["sync", "rt", "rt-multi-thread", "time"] }
 zb-aps.workspace = true
 zb-core = { workspace = true, features = ["serde"] }

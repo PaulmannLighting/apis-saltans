@@ -1,28 +1,18 @@
-use core::error::Error;
-use core::fmt::Display;
+use thiserror::Error;
 
 /// Error while creating a `TimeOfDay` instance.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Error, Hash, PartialEq)]
 pub enum TryFromNaiveTimeError {
     /// The hour is invalid.
+    #[error("Invalid hour: {0}")]
     InvalidHour(u32),
     /// The minute is invalid.
+    #[error("Invalid minute: {0}")]
     InvalidMinute(u32),
     /// The second is invalid.
+    #[error("Invalid second: {0}")]
     InvalidSecond(u32),
     /// The hundredths of a second is invalid.
+    #[error("Invalid hundredths: {0}")]
     InvalidHundredths(u32),
 }
-
-impl Display for TryFromNaiveTimeError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::InvalidHour(hour) => write!(f, "Invalid hour: {hour}"),
-            Self::InvalidMinute(minute) => write!(f, "Invalid minute: {minute}"),
-            Self::InvalidSecond(second) => write!(f, "Invalid second: {second}"),
-            Self::InvalidHundredths(hundredths) => write!(f, "Invalid hundredths: {hundredths}"),
-        }
-    }
-}
-
-impl Error for TryFromNaiveTimeError {}

@@ -264,3 +264,7 @@ channel activity results without exposing backend-specific scan response formats
 - `DriverRecv` means the one-shot response channel was closed.
 - `NotImplemented` represents unsupported backend features.
 - `NoEndpoints` represents startup without endpoint cluster information.
+
+The common and routing error enums derive `thiserror::Error`. `Implementation` retains its
+backend-specific error as the source. Actor send and receive conversions remain explicit because
+they intentionally reduce Tokio's channel errors to payload-free variants.

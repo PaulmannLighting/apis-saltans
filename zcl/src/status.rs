@@ -1,8 +1,8 @@
-use std::error::Error;
-use std::fmt::{Display, Formatter, LowerHex, UpperHex};
+use std::fmt::{Formatter, LowerHex, UpperHex};
 
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use thiserror::Error;
 
 use self::deprecated::Deprecated;
 
@@ -10,73 +10,95 @@ mod deprecated;
 
 /// Available ZCL status codes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
 #[repr(u8)]
 pub enum Status {
     /// Indicates the command was successful.
+    #[error("SUCCESS")]
     Success = 0x00,
 
     /// Indicates the command failed.
+    #[error("FAILURE")]
     Failure = 0x01,
 
     /// Indicates the command is not authorized.
+    #[error("NOT_AUTHORIZED")]
     NotAuthorized = 0x7e,
 
     /// Indicates the command was malformed.
+    #[error("MALFORMED_COMMAND")]
     MalformedCommand = 0x80,
 
     /// Indicates the cluster command is not supported.
+    #[error("UNSUP_COMMAND")]
     UnsupportedCommand = 0x81,
 
     /// Indicates the field in the command is invalid.
+    #[error("INVALID_FIELD")]
     InvalidField = 0x85,
 
     /// Indicates the attribute is unsupported.
+    #[error("UNSUPPORTED_ATTRIBUTE")]
     UnsupportedAttribute = 0x86,
 
     /// Indicates the value of the attribute is invalid.
+    #[error("INVALID_VALUE")]
     InvalidValue = 0x87,
 
     /// Indicates the attribute is readable-only.
+    #[error("READ_ONLY")]
     ReadOnly = 0x88,
 
     /// Indicates there is insufficient space to perform the operation.
+    #[error("INSUFFICIENT_SPACE")]
     InsufficientSpace = 0x89,
 
     /// Indicates the requested entry was not found.
+    #[error("NOT_FOUND")]
     NotFound = 0x8b,
 
     /// Indicates the attribute is unreportable.
+    #[error("UNREPORTABLE_ATTRIBUTE")]
     UnreportableAttribute = 0x8c,
 
     /// Indicates the data type of the attribute is invalid.
+    #[error("INVALID_DATA_TYPE")]
     InvalidDataType = 0x8d,
 
     /// Indicates the selector is invalid.
+    #[error("INVALID_SELECTOR")]
     InvalidSelector = 0x8e,
 
     /// Indicates the command timed out.
+    #[error("TIMEOUT")]
     Timeout = 0x94,
 
     /// Indicates the command was aborted.
+    #[error("ABORT")]
     Abort = 0x95,
 
     /// Indicates the image is invalid.
+    #[error("INVALID_IMAGE")]
     InvalidImage = 0x96,
 
     /// Indicates the device is waiting for data.
+    #[error("WAIT_FOR_DATA")]
     WaitForData = 0x97,
 
     /// Indicates no image is available.
+    #[error("NO_IMAGE_AVAILABLE")]
     NoImageAvailable = 0x98,
 
     /// Indicates more image data is required.
+    #[error("REQUIRE_MORE_IMAGE")]
     RequireMoreImage = 0x99,
 
     /// Indicates the notification is pending.
+    #[error("NOTIFICATION_PENDING")]
     NotificationPending = 0x9a,
 
     /// Indicates that the cluster is unsupported.
+    #[error("UNSUPPORTED_CLUSTER")]
     UnsupportedCluster = 0xc3,
 }
 
@@ -110,14 +132,6 @@ impl Status {
         }
     }
 }
-
-impl Display for Status {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-impl Error for Status {}
 
 impl LowerHex for Status {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

@@ -116,6 +116,13 @@ length is `payload_len - 1`.
 Serialization uses `le-stream` traits. Implementations return iterators for
 encoding and parse from byte iterators for decoding.
 
+## Error Model
+
+Public parsing and conversion errors derive `thiserror::Error`. Variant messages live beside their
+domain variants through `#[error(...)]`; retained lower-level failures use `#[from]` so conversion
+and source chaining stay consistent. Unit parse errors carry no rejected input and therefore expose
+only their domain-specific display message.
+
 ## Dependency Boundaries
 
 The core crate is intentionally below all protocol and runtime crates:

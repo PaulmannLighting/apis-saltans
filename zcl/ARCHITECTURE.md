@@ -57,6 +57,13 @@ Serialization flows in the reverse direction:
 The runtime `Cluster` enum is intentionally explicit. Adding a new cluster command group requires
 adding the group module, generating its command enum, and wiring the group into `src/clusters.rs`.
 
+## Error Model
+
+Frame, attribute, date-code, and status errors derive `thiserror::Error`, keeping their display text
+on each variant. Retained parsing and invalid-type failures are error sources; direct wrappers use
+`#[from]`, while the capacity error converted to `CustomPartTooLong` remains an explicit lossy
+conversion because the source value is intentionally not stored.
+
 ## Attribute Flow
 
 Cluster attribute modules invoke `zcl_attributes!` with a cluster ID and an attribute table. The macro

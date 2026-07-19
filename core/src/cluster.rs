@@ -3,6 +3,7 @@ use core::str::FromStr;
 
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use thiserror::Error;
 
 /// Trait to identify a Zigbee cluster.
 pub trait ClusterSpecific<T = u16> {
@@ -82,6 +83,12 @@ impl Cluster {
     }
 }
 
+impl Display for Cluster {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?} ({:#06X})", self, self.as_u16())
+    }
+}
+
 impl FromStr for Cluster {
     type Err = ParseClusterError;
 
@@ -121,22 +128,9 @@ impl TryFrom<u16> for Cluster {
 }
 
 /// Error returned when parsing an unknown or malformed Zigbee cluster.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
+#[error("invalid Zigbee cluster")]
 pub struct ParseClusterError;
-
-impl Display for ParseClusterError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("invalid Zigbee cluster")
-    }
-}
-
-impl core::error::Error for ParseClusterError {}
-
-impl Display for Cluster {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?} ({:#06X})", self, self.as_u16())
-    }
-}
 
 fn cluster_from_name(value: &str) -> Option<Cluster> {
     match value {

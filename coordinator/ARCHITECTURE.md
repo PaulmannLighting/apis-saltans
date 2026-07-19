@@ -348,6 +348,11 @@ The response futures do not apply an internal deadline. This keeps timeout and r
 application, alongside its discovery and binding policy. Callers can wrap the second await in
 `tokio::time::timeout`; `Error` supports conversion from Tokio's elapsed-time error.
 
+Coordinator and APS parsing errors derive `thiserror::Error`. Hardware, receive, timeout, and nested
+frame failures use source-preserving `#[from]` conversions. Channel send errors and raw ZCL/ZDP
+status results retain explicit conversions because their public variants deliberately do not store
+an error source compatible with `#[from]`.
+
 The response objects own one-shot receivers. `TransmissionResponse` owns only the hardware
 completion receiver. `CommunicationResponse` wraps `InternalCommunicationResponse`, which owns both
 the hardware completion receiver and the correlated ZCL or ZDP receiver. The internal communication

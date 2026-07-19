@@ -1,5 +1,7 @@
-use core::fmt::{self, Display};
+use core::fmt;
 use core::str::FromStr;
+
+use thiserror::Error;
 
 pub use self::application::{Application, ParseApplicationError};
 pub use self::reserved::Reserved;
@@ -110,16 +112,9 @@ impl TryFrom<u8> for Endpoint {
 }
 
 /// Error returned when parsing an unknown, malformed, or reserved Zigbee endpoint.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
+#[error("invalid Zigbee endpoint")]
 pub struct ParseEndpointError;
-
-impl Display for ParseEndpointError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("invalid Zigbee endpoint")
-    }
-}
-
-impl core::error::Error for ParseEndpointError {}
 
 fn parse_endpoint_id(value: &str) -> Result<u8, ParseEndpointError> {
     value.strip_prefix("0x").map_or_else(

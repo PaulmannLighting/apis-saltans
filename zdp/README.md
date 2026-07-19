@@ -49,6 +49,10 @@ APIs:
 - `Command::cluster_id()`
 - `Command: ToLeStream`
 
+Invalid APS endpoints, cluster IDs, and payloads are reported through `ParseFrameError`, which
+implements `std::error::Error`. ZDP `Status` values also retain their protocol-defined display names
+when used as errors.
+
 ## Supported Service Groups
 
 ### Device and Service Discovery

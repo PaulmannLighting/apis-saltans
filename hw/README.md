@@ -57,6 +57,10 @@ The first error means the actor command could not be sent. The receiver's outer 
 driver actor dropped the completion channel, while its inner error is the driver's transmission
 failure.
 
+The common `Error` type implements `std::error::Error`. Backend-specific `Implementation` failures
+are retained as an error source; closed actor channels are represented by the payload-free
+`DriverSend` and `DriverRecv` variants.
+
 ### Implementing a Driver
 
 Enable `driver` in hardware backend crates. It exposes the traits and common data types used to
