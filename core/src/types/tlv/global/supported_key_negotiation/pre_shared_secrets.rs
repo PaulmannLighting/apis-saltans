@@ -21,6 +21,8 @@ bitflags! {
     }
 }
 
+impl_bitflags_display_and_from_str!(PreSharedSecrets);
+
 impl FromLeStream for PreSharedSecrets {
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where

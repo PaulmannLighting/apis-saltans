@@ -1,5 +1,3 @@
-use core::fmt::{self, Display};
-
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -30,6 +28,8 @@ bitflags! {
         const ALLOCATE_ADDRESS = 0b0000_0001;
     }
 }
+
+impl_bitflags_display_and_from_str!(MacCapabilityFlags);
 
 impl MacCapabilityFlags {
     /// Returns whether the node is capable of becoming a PAN coordinator.
@@ -83,23 +83,5 @@ impl MacCapabilityFlags {
     #[must_use]
     pub const fn allocate_address(self) -> bool {
         self.contains(Self::ALLOCATE_ADDRESS)
-    }
-}
-
-impl Display for MacCapabilityFlags {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[")?;
-
-        let mut names = self.iter_names();
-
-        if let Some((name, flag)) = names.next() {
-            write!(f, "{name} ({flag:#04X})")?;
-
-            for (name, flag) in names {
-                write!(f, ", {name} ({flag:#04X})")?;
-            }
-        }
-
-        write!(f, "]")
     }
 }

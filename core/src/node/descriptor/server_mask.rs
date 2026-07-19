@@ -1,5 +1,3 @@
-use core::fmt::{self, Display};
-
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -28,6 +26,8 @@ bitflags! {
     }
 }
 
+impl_bitflags_display_and_from_str!(ServerMask);
+
 impl ServerMask {
     /// Return the stack compliance revision.
     #[expect(clippy::cast_possible_truncation)]
@@ -40,27 +40,5 @@ impl ServerMask {
     pub fn set_stack_compliance_revision(&mut self, revision: u8) {
         *self = (*self & !Self::STACK_COMPLIANCE_REVISION)
             | Self(Self::STACK_COMPLIANCE_REVISION.bits() & u16::from(revision));
-    }
-}
-
-impl Display for ServerMask {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[")?;
-
-        for (name, flag) in self.iter_names().filter_map(|(name, flag)| {
-            if flag == Self::STACK_COMPLIANCE_REVISION {
-                None
-            } else {
-                Some((name, flag))
-            }
-        }) {
-            write!(f, "{name} ({flag:#06X}), ")?;
-        }
-
-        write!(
-            f,
-            "STACK_COMPLIANCE_REVISION = {}]",
-            self.stack_compliance_revision()
-        )
     }
 }

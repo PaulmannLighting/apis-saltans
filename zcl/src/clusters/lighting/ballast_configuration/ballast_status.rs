@@ -23,6 +23,8 @@ bitflags! {
     }
 }
 
+crate::macros::impl_bitflags_display_and_from_str!(BallastStatus);
+
 impl From<BallastStatus> for Type {
     fn from(value: BallastStatus) -> Self {
         Self::Map8(value.bits())

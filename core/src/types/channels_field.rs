@@ -75,6 +75,8 @@ bitflags! {
     }
 }
 
+impl_bitflags_display_and_from_str!(ChannelsField);
+
 impl FromLeStream for ChannelsField {
     fn from_le_stream<T>(mut bytes: T) -> Option<Self>
     where

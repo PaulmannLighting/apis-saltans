@@ -22,6 +22,8 @@ bitflags! {
     }
 }
 
+crate::macros::impl_bitflags_display_and_from_str!(Control);
+
 impl Control {
     /// Creates a new `Control` instance with the specified flags.
     #[must_use]

@@ -23,6 +23,8 @@ bitflags! {
     }
 }
 
+crate::macros::impl_bitflags_display_and_from_str!(Options);
+
 impl From<Options> for Type {
     fn from(value: Options) -> Self {
         Self::Map8(value.bits())

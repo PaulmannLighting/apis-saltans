@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -17,21 +15,17 @@ bitflags! {
     }
 }
 
-impl Display for LeaveReqFlags {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[")?;
+impl core::fmt::Display for LeaveReqFlags {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        bitflags::parser::to_writer(self, formatter)
+    }
+}
 
-        let mut names = self.iter_names();
+impl core::str::FromStr for LeaveReqFlags {
+    type Err = bitflags::parser::ParseError;
 
-        if let Some((name, flag)) = names.next() {
-            write!(f, "{name} ({flag:#04X})")?;
-
-            for (name, flag) in names {
-                write!(f, "{name} ({flag:#04X})")?;
-            }
-        }
-
-        write!(f, "]")
+    fn from_str(flags: &str) -> Result<Self, Self::Err> {
+        bitflags::parser::from_str(flags)
     }
 }
 

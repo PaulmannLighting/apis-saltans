@@ -20,3 +20,5 @@ bitflags! {
         const UPDATE_START_HUE = 0b0000_1000;
     }
 }
+
+crate::macros::impl_bitflags_display_and_from_str!(Update);

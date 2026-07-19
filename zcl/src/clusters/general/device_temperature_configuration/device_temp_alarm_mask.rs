@@ -21,3 +21,5 @@ bitflags! {
         const DEVICE_TEMPERATURE_TOO_HIGH = 0b1 << 1;
     }
 }
+
+crate::macros::impl_bitflags_display_and_from_str!(DeviceTempAlarmMask);

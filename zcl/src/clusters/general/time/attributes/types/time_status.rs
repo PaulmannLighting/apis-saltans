@@ -13,3 +13,20 @@ zcl_attribute_newtype! {
         const SUPERSEDING = 0b0000_1000;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::TimeStatus;
+
+    const TIME_STATUS_FLAGS: &str = "MASTER | SYNCHRONIZED";
+
+    #[test]
+    fn generated_display_and_parsing_round_trip() {
+        let flags = TimeStatus::MASTER | TimeStatus::SYNCHRONIZED;
+        let displayed = flags.to_string();
+        let parsed = displayed.parse::<TimeStatus>();
+
+        assert_eq!(displayed, TIME_STATUS_FLAGS);
+        assert!(matches!(parsed, Ok(parsed_flags) if parsed_flags == flags));
+    }
+}

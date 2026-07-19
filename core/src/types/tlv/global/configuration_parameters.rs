@@ -19,6 +19,8 @@ bitflags! {
     }
 }
 
+impl_bitflags_display_and_from_str!(ConfigurationParameters);
+
 impl Tag for ConfigurationParameters {
     const TAG: u8 = 75;
 }

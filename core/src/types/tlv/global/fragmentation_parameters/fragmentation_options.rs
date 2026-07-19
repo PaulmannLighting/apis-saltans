@@ -13,6 +13,8 @@ bitflags! {
     }
 }
 
+impl_bitflags_display_and_from_str!(FragmentationOptions);
+
 impl FromLeStream for FragmentationOptions {
     fn from_le_stream<T>(bytes: T) -> Option<Self>
     where

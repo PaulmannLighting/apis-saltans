@@ -21,6 +21,8 @@ bitflags! {
     }
 }
 
+crate::macros::impl_bitflags_display_and_from_str!(LampAlarmMode);
+
 impl From<LampAlarmMode> for Type {
     fn from(value: LampAlarmMode) -> Self {
         Self::Map8(value.bits())

@@ -25,3 +25,5 @@ bitflags! {
         const GB_SMART_ENEGERGY_SUB_GHZ = 0b0000_0001;
     }
 }
+
+impl_bitflags_display_and_from_str!(FrequencyBand);

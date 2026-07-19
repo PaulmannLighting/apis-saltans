@@ -32,6 +32,8 @@ bitflags! {
     }
 }
 
+impl_bitflags_display_and_from_str!(Flags);
+
 impl Flags {
     /// Returns the logical type.
     ///
@@ -82,7 +84,23 @@ impl Flags {
 
 #[cfg(test)]
 mod tests {
+    extern crate alloc;
+
+    use alloc::string::ToString;
+
     use super::*;
+
+    const DESCRIPTOR_FLAGS: &str = "COMPLEX_DESCRIPTOR_AVAILABLE | USER_DESCRIPTOR_AVAILABLE";
+
+    #[test]
+    fn display_and_parsing_round_trip() {
+        let flags = Flags::COMPLEX_DESCRIPTOR_AVAILABLE | Flags::USER_DESCRIPTOR_AVAILABLE;
+        let displayed = flags.to_string();
+        let parsed = displayed.parse::<Flags>();
+
+        assert_eq!(displayed, DESCRIPTOR_FLAGS);
+        assert!(matches!(parsed, Ok(parsed_flags) if parsed_flags == flags));
+    }
 
     #[test]
     fn flags_modification() {

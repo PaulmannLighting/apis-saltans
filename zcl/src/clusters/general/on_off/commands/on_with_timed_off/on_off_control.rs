@@ -14,3 +14,5 @@ bitflags! {
         const ACCEPT_ONLY_WHEN_ON = 0b0000_0001;
     }
 }
+
+crate::macros::impl_bitflags_display_and_from_str!(OnOffControl);

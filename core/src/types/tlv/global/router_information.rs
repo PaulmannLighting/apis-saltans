@@ -29,6 +29,8 @@ bitflags! {
     }
 }
 
+impl_bitflags_display_and_from_str!(RouterInformation);
+
 impl Tag for RouterInformation {
     const TAG: u8 = 70;
 }

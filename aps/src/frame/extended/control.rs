@@ -21,3 +21,17 @@ bitflags! {
         const FOLLOWUP_FRAGMENT = 0b1000_0000;
     }
 }
+
+impl core::fmt::Display for Control {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        bitflags::parser::to_writer(self, formatter)
+    }
+}
+
+impl core::str::FromStr for Control {
+    type Err = bitflags::parser::ParseError;
+
+    fn from_str(flags: &str) -> Result<Self, Self::Err> {
+        bitflags::parser::from_str(flags)
+    }
+}
