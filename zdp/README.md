@@ -152,6 +152,8 @@ Key dependencies:
 - `le-stream`
 - `heapless`
 - `bitflags`
+- `num_enum` (primitive conversions for fieldless integer-representation enums)
+- `repr-discriminant` (discriminants for payload-carrying enums)
 
 ## Related Workspace Crates
 

@@ -41,7 +41,9 @@ impl Flags {
     ///
     /// Returns an error if the logical type is set to the reserved bits.
     pub fn logical_type(self) -> Result<LogicalType, u8> {
-        LogicalType::try_from(((self & Self::LOGICAL_TYPE).bits() >> 13) as u8)
+        let logical_type = ((self & Self::LOGICAL_TYPE).bits() >> 13) as u8;
+
+        LogicalType::try_from(logical_type).map_err(|_| logical_type)
     }
 
     /// Sets the logical type.

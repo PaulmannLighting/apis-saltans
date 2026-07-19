@@ -1378,19 +1378,25 @@ macro_rules! zcl_attribute_newtype {
         $($attr)*
         #[allow(clippy::enum_variant_names)]
         #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, num_derive::FromPrimitive)]
+        #[derive(
+            Clone,
+            Copy,
+            Debug,
+            Eq,
+            Hash,
+            Ord,
+            PartialEq,
+            PartialOrd,
+            num_enum::IntoPrimitive,
+            num_enum::TryFromPrimitive,
+        )]
+        #[num_enum(error_type(name = u8, constructor = core::convert::identity))]
         #[repr(u8)]
         $vis enum $name {
             $(
                 $(#[$variant_attr])*
                 $variant = $value,
             )+
-        }
-
-        impl From<$name> for u8 {
-            fn from(value: $name) -> Self {
-                value as Self
-            }
         }
 
         impl From<$name> for zb_core::types::Uint8 {
@@ -1411,14 +1417,6 @@ macro_rules! zcl_attribute_newtype {
             [$name]
             [u8]
             [$type_variant]
-        }
-
-        impl TryFrom<u8> for $name {
-            type Error = u8;
-
-            fn try_from(value: u8) -> Result<Self, Self::Error> {
-                num_traits::FromPrimitive::from_u8(value).ok_or(value)
-            }
         }
 
         impl TryFrom<zb_core::types::Uint8> for $name {
@@ -1473,7 +1471,7 @@ macro_rules! zcl_attribute_newtype {
             fn try_from(value: zb_core::types::Type) -> Result<Self, Self::Error> {
                 if let zb_core::types::Type::Enum8(value) = value {
                     Self::try_from(value.into_inner())
-                        .map_err(|value| zb_core::types::Type::Enum8(value.into()))
+                        .map_err(|_| zb_core::types::Type::Enum8(value))
                 } else {
                     Err(value)
                 }
@@ -1871,25 +1869,6 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @readable_attribute_impl
             [$($manufacturer_code)?]
-        }
-
-        impl From<Id> for u16 {
-            fn from(id: Id) -> Self {
-                match id {
-                    $($from_id_arms)*
-                }
-            }
-        }
-
-        impl TryFrom<u16> for Id {
-            type Error = u16;
-
-            fn try_from(id: u16) -> Result<Self, Self::Error> {
-                match id {
-                    $($try_from_u16_arms)*
-                    other => Err(other),
-                }
-            }
         }
 
         impl core::fmt::Display for Id {
@@ -2688,7 +2667,19 @@ macro_rules! zcl_attributes {
     };
     (@emit_id_enum [$($variants:tt)+]) => {
         /// IDs of readable attributes.
-        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        #[derive(
+            Clone,
+            Copy,
+            Debug,
+            Eq,
+            Hash,
+            Ord,
+            PartialEq,
+            PartialOrd,
+            num_enum::IntoPrimitive,
+            num_enum::TryFromPrimitive,
+        )]
+        #[num_enum(error_type(name = u16, constructor = core::convert::identity))]
         #[repr(u16)]
         pub enum Id {
             $($variants)+

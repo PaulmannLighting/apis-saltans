@@ -1,10 +1,10 @@
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zb_core::types::{Enum8, Type, Uint8};
 
 /// Mechanism used for compensating color or color intensity drift over time.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
+#[num_enum(error_type(name = u8, constructor = core::convert::identity))]
 #[repr(u8)]
 pub enum DriftCompensation {
     /// No drift compensation.
@@ -21,14 +21,6 @@ pub enum DriftCompensation {
 
 impl zb_core::TypeId for DriftCompensation {
     const ID: u8 = <Enum8 as zb_core::TypeId>::ID;
-}
-
-impl TryFrom<u8> for DriftCompensation {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
-    }
 }
 
 impl From<DriftCompensation> for Type {
@@ -50,7 +42,7 @@ impl TryFrom<Type> for DriftCompensation {
 
     fn try_from(value: Type) -> Result<Self, Self::Error> {
         if let Type::Enum8(value) = value {
-            Self::try_from(value.into_inner()).map_err(|value| Type::Enum8(value.into()))
+            Self::try_from(value.into_inner()).map_err(|_| Type::Enum8(value))
         } else {
             Err(value)
         }

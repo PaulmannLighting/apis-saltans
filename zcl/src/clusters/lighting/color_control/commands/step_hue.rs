@@ -1,6 +1,5 @@
 //! Data structures for the `Step Hue` command in the `Lighting` cluster.
 
-use num_traits::FromPrimitive;
 use zb_core::{Cluster, Direction};
 
 pub use self::mode::Mode;
@@ -42,7 +41,7 @@ zcl_command! {
             ///
             /// Returns the raw mode value if it cannot be converted into a `Mode` enum.
             pub fn mode(&self) -> Result<Mode, u8> {
-                Mode::from_u8(self.mode).ok_or(self.mode)
+                Mode::try_from(self.mode).map_err(|_| self.mode)
             }
 
             /// Return the size of hue step.

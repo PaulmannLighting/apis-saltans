@@ -1,7 +1,9 @@
-use num_derive::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// The direction of the color loop.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
 #[repr(u8)]
 pub enum Direction {
     /// Decrement the hue in the color loop.

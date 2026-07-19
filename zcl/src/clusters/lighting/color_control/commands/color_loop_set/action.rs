@@ -1,5 +1,3 @@
-use num_traits::FromPrimitive;
-
 pub use self::source::Source;
 
 mod source;
@@ -31,18 +29,15 @@ impl From<Action> for u8 {
     }
 }
 
-impl FromPrimitive for Action {
-    fn from_i64(n: i64) -> Option<Self> {
-        match u8::try_from(n).ok()? {
-            0x00 => Some(Self::Deactivate),
-            other => Some(Self::Activate(Source::from_u8(other)?)),
-        }
-    }
+impl TryFrom<u8> for Action {
+    type Error = u8;
 
-    fn from_u64(n: u64) -> Option<Self> {
-        match u8::try_from(n).ok()? {
-            0x00 => Some(Self::Deactivate),
-            other => Some(Self::Activate(Source::from_u8(other)?)),
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x00 => Ok(Self::Deactivate),
+            other => Source::try_from(other)
+                .map(Self::Activate)
+                .map_err(|_| value),
         }
     }
 }

@@ -132,7 +132,7 @@ Primary dependencies:
 - `le-stream`
 - `bytes`
 - `bitflags`
-- `num-traits` / `num-derive`
+- `num_enum` (primitive conversions for fieldless integer-representation enums)
 
 ## Related Workspace Crates
 

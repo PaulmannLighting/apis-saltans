@@ -1,9 +1,9 @@
-use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Delayed all off effect variants.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
+#[num_enum(error_type(name = u8, constructor = core::convert::identity))]
 #[repr(u8)]
 pub enum DelayedAllOff {
     /// Fade to off in 0.8 seconds.
@@ -13,12 +13,4 @@ pub enum DelayedAllOff {
     NoFade = 0x01,
     /// 50%% dim down in 0.8 seconds, then fade to off in 12 seconds.
     DimDown = 0x02,
-}
-
-impl TryFrom<u8> for DelayedAllOff {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
-    }
 }

@@ -50,3 +50,9 @@ Invalid fragmentation states are intentionally drop-only:
 - first fragments with total block count `0` are rejected;
 - follow-up fragments without an existing transaction are rejected;
 - out-of-bounds follow-up fragments drop the transaction.
+
+## Primitive Enum Conversions
+
+Fieldless enums with an integer `#[repr]`, such as APS broadcast addresses, frame types, and
+delivery modes, derive `num_enum::IntoPrimitive` and `num_enum::TryFromPrimitive`. Repr enums with
+payload-carrying variants cannot use these derives and retain their representation-specific parsing.

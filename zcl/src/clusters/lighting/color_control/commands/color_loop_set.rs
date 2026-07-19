@@ -2,7 +2,6 @@
 
 use core::time::Duration;
 
-use num_traits::FromPrimitive;
 use zb_core::Cluster;
 
 pub use self::action::{Action, Source};
@@ -65,7 +64,7 @@ zcl_command! {
             ///
             /// Returns the raw `u8` value if it does not correspond to a valid `Action`.
             pub fn action(self) -> Result<Action, u8> {
-                Action::from_u8(self.action).ok_or(self.action)
+                Action::try_from(self.action)
             }
 
             /// Return the direction of the color loop.
@@ -74,7 +73,7 @@ zcl_command! {
             ///
             /// Returns the raw `u8` value if the direction is invalid.
             pub fn direction(self) -> Result<Direction, u8> {
-                Direction::from_u8(self.direction).ok_or(self.direction)
+                Direction::try_from(self.direction).map_err(|_| self.direction)
             }
 
             /// Return the time.

@@ -1,9 +1,9 @@
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// The logical type of Zigbee device.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
+#[num_enum(error_type(name = u8, constructor = core::convert::identity))]
 #[repr(u8)]
 pub enum LogicalType {
     /// The device is a coordinator.
@@ -14,18 +14,4 @@ pub enum LogicalType {
 
     /// The device is an end device.
     EndDevice = 0b010,
-}
-
-impl TryFrom<u8> for LogicalType {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
-    }
-}
-
-impl From<LogicalType> for u8 {
-    fn from(logical_type: LogicalType) -> Self {
-        logical_type as Self
-    }
 }

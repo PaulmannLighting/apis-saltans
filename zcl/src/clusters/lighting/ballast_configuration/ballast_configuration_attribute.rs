@@ -1,9 +1,9 @@
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Ballast Configuration attribute.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
+#[num_enum(error_type(name = u16, constructor = core::convert::identity))]
 #[repr(u16)]
 pub enum BallastConfigurationAttribute {
     /// Ballast information.
@@ -14,12 +14,4 @@ pub enum BallastConfigurationAttribute {
     LampInformation = 0x0002,
     /// Lamp settings.
     LampSettings = 0x0003,
-}
-
-impl TryFrom<u16> for BallastConfigurationAttribute {
-    type Error = u16;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        Self::from_u16(value).ok_or(value)
-    }
 }

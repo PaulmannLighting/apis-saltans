@@ -1,10 +1,12 @@
 use le_stream::{FromLeStream, ToLeStream};
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Alarm codes for batteries.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
+#[num_enum(error_type(name = u8, constructor = core::convert::identity))]
 #[repr(u8)]
 pub enum BatteryAlarm {
     /// `BatteryVoltageMinThreshold` or `BatteryPercentageMinThreshold` reached for Battery Source 1
@@ -37,20 +39,12 @@ pub enum BatteryAlarm {
     None = 0xff,
 }
 
-impl TryFrom<u8> for BatteryAlarm {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
-    }
-}
-
 impl FromLeStream for BatteryAlarm {
     fn from_le_stream<T>(bytes: T) -> Option<Self>
     where
         T: Iterator<Item = u8>,
     {
-        u8::from_le_stream(bytes).and_then(Self::from_u8)
+        u8::from_le_stream(bytes).and_then(|value| Self::try_from(value).ok())
     }
 }
 

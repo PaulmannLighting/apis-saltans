@@ -17,8 +17,7 @@ bitflags = "2"
 bytes = "1"
 le-stream = { version = "10", features = ["derive"] }
 log = "0.4"
-num-derive = "0.4"
-num-traits = "0.2"
+num_enum.workspace = true
 zb-core.workspace = true
 zb-nwk.workspace = true
 

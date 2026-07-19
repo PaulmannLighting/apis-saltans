@@ -128,6 +128,13 @@ domain variants through `#[error(...)]`; retained lower-level failures use `#[fr
 and source chaining stay consistent. Unit parse errors carry no rejected input and therefore expose
 only their domain-specific display message.
 
+## Primitive Enum Conversions
+
+Fieldless enums with an integer `#[repr]` derive `num_enum::IntoPrimitive` and
+`num_enum::TryFromPrimitive`. Where the public API historically returned the rejected primitive,
+the derive is configured to preserve that error type. Payload-carrying repr enums instead use
+`repr-discriminant` and explicit parsing because `num_enum` primitive derives require unit variants.
+
 ## Dependency Boundaries
 
 The core crate is intentionally below all protocol and runtime crates:

@@ -1,9 +1,9 @@
 //! Data structures for the `Move To Hue` command in the `Lighting` cluster.
 
-use num_derive::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Direction of hue flow.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Direction {
     /// Take the shortest distance.

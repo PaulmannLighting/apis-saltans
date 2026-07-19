@@ -1,7 +1,6 @@
 use std::fmt::{Formatter, LowerHex, UpperHex};
 
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use thiserror::Error;
 
 pub use self::displayable::Displayable;
@@ -9,7 +8,8 @@ pub use self::displayable::Displayable;
 mod displayable;
 
 /// Status codes returned by various ZDP services.
-#[derive(Clone, Copy, Debug, Eq, Error, PartialEq, Hash, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Error, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
+#[num_enum(error_type(name = u8, constructor = core::convert::identity))]
 #[repr(u8)]
 pub enum Status {
     /// Operation was successful.
@@ -126,19 +126,5 @@ impl UpperHex for Status {
 impl LowerHex for Status {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         LowerHex::fmt(&(*self as u8), f)
-    }
-}
-
-impl From<Status> for u8 {
-    fn from(value: Status) -> Self {
-        value as Self
-    }
-}
-
-impl TryFrom<u8> for Status {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
     }
 }

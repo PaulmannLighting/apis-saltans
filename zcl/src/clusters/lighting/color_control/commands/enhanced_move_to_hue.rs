@@ -1,4 +1,3 @@
-use num_traits::FromPrimitive;
 use zb_core::Cluster;
 use zb_core::types::Uint16;
 
@@ -50,7 +49,7 @@ zcl_command! {
             ///
             /// Returns an error if the direction value is not a valid `Direction`.
             pub fn direction(&self) -> Result<Direction, u8> {
-                Direction::from_u8(self.direction).ok_or(self.direction)
+                Direction::try_from(self.direction).map_err(|_| self.direction)
             }
 
             /// Return the transition time, if any, in deciseconds.

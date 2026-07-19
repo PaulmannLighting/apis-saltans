@@ -1,3 +1,5 @@
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+
 /// Zigbee NWK broadcast short address.
 ///
 /// Broadcast addresses occupy the high end of the 16-bit NWK short-address
@@ -7,7 +9,10 @@
     derive(serde::Deserialize, serde::Serialize),
     serde(try_from = "u16", into = "u16")
 )]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
+#[num_enum(error_type(name = u16, constructor = core::convert::identity))]
 #[repr(u16)]
 pub enum Broadcast {
     /// All devices in the network.
@@ -28,26 +33,6 @@ impl Broadcast {
     #[must_use]
     pub const fn as_u16(self) -> u16 {
         self as u16
-    }
-}
-
-impl From<Broadcast> for u16 {
-    fn from(broadcast: Broadcast) -> Self {
-        broadcast.as_u16()
-    }
-}
-
-impl TryFrom<u16> for Broadcast {
-    type Error = u16;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        match value {
-            0xFFFF => Ok(Self::AllDevices),
-            0xFFFD => Ok(Self::RxOnWhenIdle),
-            0xFFFC => Ok(Self::RoutersAndCoordinator),
-            0xFFFB => Ok(Self::LowPowerRouters),
-            _ => Err(value),
-        }
     }
 }
 

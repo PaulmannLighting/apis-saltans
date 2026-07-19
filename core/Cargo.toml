@@ -20,8 +20,7 @@ intx = "0.1"
 le-stream = { version = "10", features = ["alloc", "derive", "heapless", "intx", "macaddr"] }
 log = "0.4"
 macaddr = "1"
-num-traits = { version = "0.2", default-features = false }
-num-derive = "0.4"
+num_enum.workspace = true
 repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1", optional = true }
 serde_with = { version = "3.21.0", default-features = false, features = ["macros"], optional = true }

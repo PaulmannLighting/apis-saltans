@@ -1,5 +1,7 @@
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+
 /// Zigbee broadcast addresses.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
 #[repr(u16)]
 pub enum Broadcast {
     /// All devices, including end devices, on the network.

@@ -19,8 +19,7 @@ const_env = "0.1.5"
 either = "1"
 heapless = "0.9"
 le-stream = { version = "10", features = ["derive", "heapless", "intx", "bytes"] }
-num-derive = "0.4"
-num-traits = "0.2"
+num_enum.workspace = true
 repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1", optional = true }
 thiserror.workspace = true

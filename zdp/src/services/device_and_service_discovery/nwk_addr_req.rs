@@ -1,4 +1,3 @@
-use num_traits::FromPrimitive;
 use zb_core::IeeeAddress;
 
 pub use self::request_type::RequestType;
@@ -40,7 +39,7 @@ crate::zdp_command! {
         ///
         /// Returns the raw request type byte if it does not correspond to a known [`RequestType`].
         pub fn request_type(&self) -> Result<RequestType, u8> {
-            RequestType::from_u8(self.request_type).ok_or(self.request_type)
+            RequestType::try_from(self.request_type).map_err(|_| self.request_type)
         }
 
         /// Returns the start index.

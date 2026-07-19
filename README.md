@@ -28,6 +28,13 @@ failure expose it through `Error::source` and support `From` conversion, so appl
 the `?` operator without discarding the original cause. Channel errors represented only as a
 closed-send or closed-receive condition intentionally discard the channel payload.
 
+## Dependency Notes
+
+The core, APS, ZCL, and ZDP crates use `num_enum` to derive conversions between fieldless
+integer-representation enums and their primitive values. No workspace crate depends directly on
+`num-traits` or `num-derive`; `num-traits` remains in the resolved dependency graph only through
+`chrono`.
+
 ## Legal
 
 This library is free software and is not affiliated with the Zigbee Alliance.

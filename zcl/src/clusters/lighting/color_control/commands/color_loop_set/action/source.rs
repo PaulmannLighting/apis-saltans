@@ -1,7 +1,9 @@
-use num_derive::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Activation source for the color loop.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
 #[repr(u8)]
 pub enum Source {
     /// Activate the color loop from the value in the `ColorLoopStartEnhancedHue` field.

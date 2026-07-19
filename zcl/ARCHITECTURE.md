@@ -220,7 +220,8 @@ Supported forms:
   - Generates a transparent bitflags type, stream impls, and `Type` conversions.
 - `pub enum Name: Enum8 { ... }` and `pub enum Name: Map8 { ... }`
   - `u8`-backed attribute enums/maps.
-  - Generates numeric conversions, `Uint8` conversions, stream impls, and `Type` conversions.
+  - Derives primitive conversions with `num_enum` and generates `Uint8`, stream, and `Type`
+    conversions.
 
 Use these generated types when the ZCL attribute type has a named protocol domain or a narrower valid
 range than the raw core type.
@@ -265,7 +266,7 @@ Generated items:
   The optional `manufacturer_code:` parameter is emitted as
   `Readable::MANUFACTURER_CODE`, `Writable::MANUFACTURER_CODE`, and
   `Reportable::MANUFACTURER_CODE` where applicable.
-- `From<Id> for u16` and `TryFrom<u16> for Id`.
+- `From<Id> for u16` and `TryFrom<u16> for Id`, derived with `num_enum`.
 - `Display for Id`.
 - `Readable for Id`.
 - `TryFrom<(Id, Type)> for Readable`.
@@ -294,5 +295,8 @@ reportable attributes, it must implement `TryFrom<Type>`.
 - Generated macros should express protocol tables and repeated trait boilerplate.
 - Hand-written code should enforce protocol invariants, status-dependent payload shapes, custom list
   encodings, and non-trivial conversions.
+- Fieldless integer-representation enums should derive `num_enum::IntoPrimitive` and
+  `num_enum::TryFromPrimitive`. Payload-carrying repr enums should retain `repr-discriminant` or
+  explicit conversion logic because `num_enum` requires unit variants.
 - Keep the runtime `Cluster` enum explicit. This avoids silently accepting a cluster in the public
   parser before the command set is ready.

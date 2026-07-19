@@ -1,9 +1,10 @@
 use std::num::NonZeroU8;
 
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zb_core::{ByteSizedVec, IeeeAddress};
 
 /// ZDO joining policy.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum JoiningPolicy {
     /// Any device is allowed to join.
@@ -12,12 +13,6 @@ pub enum JoiningPolicy {
     IeeeListJoin = 0x01,
     /// No device is allowed to join.
     NoJoin = 0x02,
-}
-
-impl From<JoiningPolicy> for u8 {
-    fn from(value: JoiningPolicy) -> Self {
-        value as Self
-    }
 }
 
 /// Successful Management Network IEEE Joining List Response payload.

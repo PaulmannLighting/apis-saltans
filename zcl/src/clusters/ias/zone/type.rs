@@ -1,11 +1,13 @@
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zb_core::types::{Enum16, Type as ZclType, Uint16};
 
 /// Zone types.
 ///
 /// TODO: Add option for manufacturer-specific types.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, FromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
+#[num_enum(error_type(name = u16, constructor = core::convert::identity))]
 #[repr(u16)]
 pub enum Type {
     /// Standard CIE
@@ -61,23 +63,9 @@ impl zb_core::TypeId for Type {
     const ID: u8 = <Enum16 as zb_core::TypeId>::ID;
 }
 
-impl From<Type> for u16 {
-    fn from(value: Type) -> Self {
-        value as Self
-    }
-}
-
 impl From<Type> for ZclType {
     fn from(value: Type) -> Self {
         Self::Enum16(Enum16::new(Uint16::new(value.into())))
-    }
-}
-
-impl TryFrom<u16> for Type {
-    type Error = u16;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        Self::from_u16(value).ok_or(value)
     }
 }
 
@@ -94,7 +82,7 @@ impl TryFrom<ZclType> for Type {
 
     fn try_from(value: ZclType) -> Result<Self, Self::Error> {
         if let ZclType::Enum16(value) = value {
-            Self::try_from(value.into_inner()).map_err(|value| ZclType::Enum16(value.into()))
+            Self::try_from(value.into_inner()).map_err(|_| ZclType::Enum16(value))
         } else {
             Err(value)
         }

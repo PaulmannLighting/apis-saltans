@@ -1,9 +1,11 @@
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Available effect identifiers.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
+#[num_enum(error_type(name = u8, constructor = core::convert::identity))]
 #[repr(u8)]
 pub enum EffectIdentifier {
     /// Turn light off and on again.
@@ -18,18 +20,4 @@ pub enum EffectIdentifier {
     FinishEffect = 0xfe,
     /// Stop the current effect immediately.
     StopEffect = 0xff,
-}
-
-impl From<EffectIdentifier> for u8 {
-    fn from(effect: EffectIdentifier) -> Self {
-        effect as Self
-    }
-}
-
-impl TryFrom<u8> for EffectIdentifier {
-    type Error = u8;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value).ok_or(value)
-    }
 }

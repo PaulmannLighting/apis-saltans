@@ -1,6 +1,5 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
-use num_traits::FromPrimitive;
 
 pub use self::delivery_mode::DeliveryMode;
 pub use self::frame_type::FrameType;
@@ -55,10 +54,10 @@ impl Control {
     /// Return the frame type.
     #[must_use]
     pub fn frame_type(self) -> FrameType {
-        FrameType::from_u8(
+        FrameType::try_from(
             (self & Self::FRAME_TYPE).bits() >> Self::FRAME_TYPE.bits().trailing_zeros(),
         )
-        .unwrap_or_else(|| unreachable!("Frame type covers all possible values."))
+        .unwrap_or_else(|_| unreachable!("Frame type covers all possible values."))
     }
 
     /// Set the frame type.
@@ -70,9 +69,10 @@ impl Control {
     /// Return the delivery mode.
     #[must_use]
     pub fn delivery_mode(self) -> Option<DeliveryMode> {
-        DeliveryMode::from_u8(
+        DeliveryMode::try_from(
             (self & Self::DELIVERY_MODE).bits() >> Self::DELIVERY_MODE.bits().trailing_zeros(),
         )
+        .ok()
     }
 
     /// Set the delivery mode.

@@ -1,4 +1,3 @@
-use num_traits::FromPrimitive;
 use zb_core::endpoint::Reserved;
 use zb_core::{Endpoint, IeeeAddress};
 
@@ -113,7 +112,7 @@ crate::zdp_command! {
                 let src_endpoint = u8::from_le_stream(&mut bytes)?;
                 let cluster_id = u16::from_le_stream(&mut bytes)?;
                 let dst_addr_mode = u8::from_le_stream(&mut bytes)?;
-                let (dst_address, dst_endpoint) = match AddressMode::from_u8(dst_addr_mode)? {
+                let (dst_address, dst_endpoint) = match AddressMode::try_from(dst_addr_mode).ok()? {
                     AddressMode::Group => {
                         (u16::from_le_stream(&mut bytes).map(Address::Group)?, None)
                     }

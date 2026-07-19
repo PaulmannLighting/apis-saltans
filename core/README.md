@@ -185,6 +185,16 @@ wrapped source errors remain available through `Error::source` where applicable.
 - `Profiled`: associates a type with a Zigbee profile.
 - `TypeId`: associates a value type with its Zigbee data type ID.
 
+## Dependencies
+
+Key dependencies:
+
+- `le-stream` for little-endian wire encoding and decoding
+- `num_enum` for primitive conversions on fieldless integer-representation enums
+- `repr-discriminant` for discriminants on payload-carrying enums
+- `chrono` for Zigbee date and time conversion
+- `bitflags` for protocol flag and capability fields
+
 ## Related Crates In This Workspace
 
 - `apis-saltans-aps`: Zigbee APS layer

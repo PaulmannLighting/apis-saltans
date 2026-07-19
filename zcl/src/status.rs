@@ -1,7 +1,6 @@
 use std::fmt::{Formatter, LowerHex, UpperHex};
 
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use thiserror::Error;
 
 use self::deprecated::Deprecated;
@@ -10,19 +9,25 @@ mod deprecated;
 
 /// Available ZCL status codes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Error, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Error, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
+#[num_enum(error_type(name = u8, constructor = core::convert::identity))]
 #[repr(u8)]
 pub enum Status {
     /// Indicates the command was successful.
     #[error("SUCCESS")]
+    #[num_enum(alternatives = [0x8a, 0xc4])]
     Success = 0x00,
 
     /// Indicates the command failed.
     #[error("FAILURE")]
+    #[num_enum(alternatives = [0x90, 0x91, 0x93, 0xc0, 0xc1])]
     Failure = 0x01,
 
     /// Indicates the command is not authorized.
     #[error("NOT_AUTHORIZED")]
+    #[num_enum(alternatives = [0x8f])]
     NotAuthorized = 0x7e,
 
     /// Indicates the command was malformed.
@@ -31,6 +36,7 @@ pub enum Status {
 
     /// Indicates the cluster command is not supported.
     #[error("UNSUP_COMMAND")]
+    #[num_enum(alternatives = [0x82, 0x83, 0x84])]
     UnsupportedCommand = 0x81,
 
     /// Indicates the field in the command is invalid.
@@ -162,29 +168,6 @@ impl From<Deprecated> for Status {
     }
 }
 
-impl From<Status> for u8 {
-    fn from(value: Status) -> Self {
-        value as Self
-    }
-}
-
-impl TryFrom<u8> for Status {
-    type Error = u8;
-
-    /// Attempts to convert a `u8` value into a `Status`.
-    ///
-    /// If the value is deprecated, it will be automatically converted to the corresponding new `Status` value.
-    ///
-    /// # Errors
-    ///
-    /// Returns the original `u8` value if it does not correspond to a valid `Status` or a deprecated status.
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::from_u8(value)
-            .or_else(|| Deprecated::from_u8(value).map(Into::into))
-            .ok_or(value)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -263,7 +246,7 @@ mod tests {
     #[test]
     fn some_invalid_from_u8() {
         for value in 0xc5..=u8::MAX {
-            assert_eq!(Status::try_from(value), Err(value));
+            assert!(Status::try_from(value).is_err());
         }
     }
 }

@@ -1,4 +1,3 @@
-use num_traits::FromPrimitive;
 use zb_core::{Cluster, Direction};
 
 use crate::Options;
@@ -36,7 +35,7 @@ zcl_command! {
             ///
             /// Returns the raw mode value if it does not correspond to a valid `Mode` variant.
             pub fn mode(&self) -> Result<Mode, u8> {
-                Mode::from_u8(self.mode).ok_or(self.mode)
+                Mode::try_from(self.mode).map_err(|_| self.mode)
             }
 
             /// Return the rate of hue change in steps per second.

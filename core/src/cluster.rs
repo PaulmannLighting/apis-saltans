@@ -1,8 +1,7 @@
 use core::fmt::{self, Display, LowerHex, UpperHex};
 use core::str::FromStr;
 
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use thiserror::Error;
 
 /// Trait to identify a Zigbee cluster.
@@ -23,7 +22,10 @@ where
 /// Clusters can be parsed from their exact variant name, decimal identifier, or hexadecimal
 /// identifier with a `0x` prefix.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
+#[num_enum(error_type(name = u16, constructor = core::convert::identity))]
 #[repr(u16)]
 pub enum Cluster {
     /// Basic cluster.
@@ -110,20 +112,6 @@ impl LowerHex for Cluster {
 impl UpperHex for Cluster {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         UpperHex::fmt(&self.as_u16(), f)
-    }
-}
-
-impl From<Cluster> for u16 {
-    fn from(cluster_id: Cluster) -> Self {
-        cluster_id.as_u16()
-    }
-}
-
-impl TryFrom<u16> for Cluster {
-    type Error = u16;
-
-    fn try_from(value: u16) -> Result<Self, Self::Error> {
-        Self::from_u16(value).ok_or(value)
     }
 }
 

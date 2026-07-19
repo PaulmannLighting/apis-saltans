@@ -451,6 +451,18 @@ criteria = "safe-to-deploy"
 version = "1.0.1"
 notes = "AI-assisted audit"
 
+[[audits.num_enum]]
+who = "OpenAI Codex"
+criteria = "safe-to-deploy"
+version = "0.7.6"
+notes = "AI-assisted full source audit: reviewed the crate manifest, all library code, unsafe APIs/code generation, and test-only process/filesystem use. Runtime crate only exposes conversion traits and reexports derives; unsafe conversion is isolated behind explicitly unsafe APIs. No build script, network access, runtime filesystem access, or unexpected side effects found."
+
+[[audits.num_enum_derive]]
+who = "OpenAI Codex"
+criteria = "safe-to-deploy"
+version = "0.7.6"
+notes = "AI-assisted full source audit: reviewed the crate manifest and all procedural macro parsing and code generation. Generated safe conversions use exhaustive matches/casts; unsafe code is generated only for explicitly requested catch-all or UnsafeFromPrimitive functionality, neither of which this workspace uses. No build script, network access, process execution, filesystem access, or unexpected side effects found."
+
 [[audits.once_cell]]
 who = "Codex AI"
 criteria = "safe-to-deploy"

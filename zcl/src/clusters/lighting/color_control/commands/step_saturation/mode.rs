@@ -1,9 +1,9 @@
 //! Data structures for the `Step Saturation` command in the `Lighting` cluster.
 
-use num_derive::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Step misc.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Mode {
     // 0x00 is reserved.

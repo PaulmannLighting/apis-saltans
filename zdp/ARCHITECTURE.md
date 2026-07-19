@@ -248,5 +248,8 @@ payload parsing to that group. If no group recognizes the cluster ID, parsing re
 - Group enums are responsible for service-domain membership and cluster-ID dispatch within a group.
 - The top-level `Command` enum is responsible for cross-group dispatch.
 - Status conversion should preserve raw status bytes when conversion into `Status` is not possible.
+- Fieldless integer-representation enums should derive `num_enum::IntoPrimitive` and
+  `num_enum::TryFromPrimitive`; payload-carrying repr enums retain `repr-discriminant` or explicit
+  conversions.
 - Length-prefixed lists should use existing sized-vector helpers when the length byte directly
   precedes the list; otherwise, use custom stream implementations.

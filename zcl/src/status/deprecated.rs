@@ -1,8 +1,10 @@
-use num_derive::FromPrimitive;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 /// Deprecated ZCL status codes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
 #[repr(u8)]
 pub enum Deprecated {
     /// Indicates the global command is not supported.
