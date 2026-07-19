@@ -24,6 +24,7 @@ num_enum.workspace = true
 repr-discriminant.workspace = true
 serde = { workspace = true, optional = true }
 serde_with = { version = "3.21.0", default-features = false, features = ["macros"], optional = true }
+strum.workspace = true
 thiserror.workspace = true
 
 [features]

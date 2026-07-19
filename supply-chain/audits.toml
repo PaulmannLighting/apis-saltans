@@ -367,6 +367,12 @@ criteria = "safe-to-deploy"
 version = "0.9.3"
 notes = "AI-assisted audit"
 
+[[audits.heck]]
+who = "OpenAI Codex"
+criteria = "safe-to-deploy"
+delta = "0.4.1 -> 0.5.0"
+notes = "AI-assisted delta audit: conversion to no_std/alloc and Unicode word-boundary handling through safe char classification. The crate forbids unsafe code; no build script or ambient filesystem/network/process access found."
+
 [[audits.iana-time-zone]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -546,6 +552,18 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "1.2.1"
 notes = "AI-assisted audit"
+
+[[audits.strum]]
+who = "OpenAI Codex"
+criteria = "safe-to-deploy"
+delta = "0.27.1 -> 0.28.0"
+notes = "AI-assisted delta audit: dependency/MSRV updates, no_std Display support for ParseError, and documentation changes only. No unsafe code, build script, ambient filesystem/network/process access, or unexpected side effects found."
+
+[[audits.strum_macros]]
+who = "OpenAI Codex"
+criteria = "safe-to-deploy"
+delta = "0.27.1 -> 0.28.0"
+notes = "AI-assisted delta audit: reviewed procedural macro parsing and generated code changes, including suffix metadata, custom-error/infallible EnumString generation, discriminant propagation, and automatically_derived annotations. Generated code uses safe matches and formatting; no unsafe code, build script, or ambient filesystem/network/process access found."
 
 [[audits.syn]]
 who = "Codex AI"

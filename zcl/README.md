@@ -186,6 +186,7 @@ Key dependencies:
 - `bitflags`
 - `num_enum` (primitive conversions for fieldless integer-representation enums)
 - `repr-discriminant`
+- `strum` (round-trippable names for generated attribute ID enums)
 
 ## Related Workspace Crates
 

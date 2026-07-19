@@ -192,6 +192,7 @@ Key dependencies:
 - `le-stream` for little-endian wire encoding and decoding
 - `num_enum` for primitive conversions on fieldless integer-representation enums
 - `repr-discriminant` for discriminants on payload-carrying enums
+- `strum` for round-trippable text representations of fieldless enums
 - `chrono` for Zigbee date and time conversion
 - `bitflags` for protocol flag and capability fields
 

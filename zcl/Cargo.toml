@@ -22,6 +22,7 @@ le-stream = { workspace = true, features = ["derive", "heapless", "intx", "bytes
 num_enum.workspace = true
 repr-discriminant.workspace = true
 serde = { workspace = true, optional = true }
+strum.workspace = true
 thiserror.workspace = true
 zb-aps.workspace = true
 zb-core.workspace = true

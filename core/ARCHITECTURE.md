@@ -135,6 +135,11 @@ Fieldless enums with an integer `#[repr]` derive `num_enum::IntoPrimitive` and
 the derive is configured to preserve that error type. Payload-carrying repr enums instead use
 `repr-discriminant` and explicit parsing because `num_enum` primitive derives require unit variants.
 
+Fieldless identifier enums with text representations derive `strum::Display` and
+`strum::EnumString`. Variant attributes preserve their decorated display strings and canonical
+name, decimal, and hexadecimal parse aliases. Payload-carrying enums retain explicit formatting or
+parsing where reconstructing the payload requires value-specific logic.
+
 ## Dependency Boundaries
 
 The core crate is intentionally below all protocol and runtime crates:

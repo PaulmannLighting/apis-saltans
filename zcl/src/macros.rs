@@ -1871,12 +1871,6 @@ macro_rules! zcl_attributes {
             [$($manufacturer_code)?]
         }
 
-        impl core::fmt::Display for Id {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{self:?}")
-            }
-        }
-
         impl TryFrom<(Id, zb_core::types::Type)> for Readable {
             type Error = $crate::InvalidType<Id>;
 
@@ -2678,6 +2672,8 @@ macro_rules! zcl_attributes {
             PartialOrd,
             num_enum::IntoPrimitive,
             num_enum::TryFromPrimitive,
+            strum::Display,
+            strum::EnumString,
         )]
         #[num_enum(error_type(name = u16, constructor = core::convert::identity))]
         #[repr(u16)]
@@ -3029,7 +3025,6 @@ mod zcl_attributes_macro_tests {
             <Custom as zb_core::TypeId>::ID,
             <Uint8 as zb_core::TypeId>::ID
         );
-
         let _ = Id::ReadOnly;
         let _ = Id::ClusterRevision;
         let _ = Id::AttributeReportingStatus;
@@ -3057,6 +3052,18 @@ mod zcl_attributes_macro_tests {
             0x20
         );
         let _ = Scene::Writable(Uint8::new(6));
+    }
+
+    #[test]
+    fn generated_id_display_and_parsing_round_trip() {
+        for id in [
+            Id::ReadOnly,
+            Id::Writable,
+            Id::ClusterRevision,
+            Id::AttributeReportingStatus,
+        ] {
+            assert_eq!(id.to_string().parse(), Ok(id));
+        }
     }
 
     mod required_cluster {

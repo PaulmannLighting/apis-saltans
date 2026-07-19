@@ -267,7 +267,7 @@ Generated items:
   `Readable::MANUFACTURER_CODE`, `Writable::MANUFACTURER_CODE`, and
   `Reportable::MANUFACTURER_CODE` where applicable.
 - `From<Id> for u16` and `TryFrom<u16> for Id`, derived with `num_enum`.
-- `Display for Id`.
+- `Display` and `FromStr` for `Id`, derived with `strum`.
 - `Readable for Id`.
 - `TryFrom<(Id, Type)> for Readable`.
 - `From<Readable> for Type`.

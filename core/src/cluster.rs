@@ -1,5 +1,4 @@
-use core::fmt::{self, Display, LowerHex, UpperHex};
-use core::str::FromStr;
+use core::fmt::{self, LowerHex, UpperHex};
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use thiserror::Error;
@@ -23,57 +22,167 @@ where
 /// identifier with a `0x` prefix.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    IntoPrimitive,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    strum::Display,
+    strum::EnumString,
+    TryFromPrimitive,
 )]
+#[cfg_attr(test, derive(strum::EnumIter))]
 #[num_enum(error_type(name = u16, constructor = core::convert::identity))]
+#[strum(parse_err_ty = ParseClusterError, parse_err_fn = parse_cluster_error)]
 #[repr(u16)]
 pub enum Cluster {
     /// Basic cluster.
+    #[strum(
+        to_string = "Basic (0x0000)",
+        serialize = "Basic",
+        serialize = "0",
+        serialize = "0x0000"
+    )]
     Basic = 0x0000,
 
     /// Power configuration cluster.
+    #[strum(
+        to_string = "PowerConfiguration (0x0001)",
+        serialize = "PowerConfiguration",
+        serialize = "1",
+        serialize = "0x0001"
+    )]
     PowerConfiguration = 0x0001,
 
     /// Device temperature configuration cluster.
+    #[strum(
+        to_string = "DeviceTemperatureConfiguration (0x0002)",
+        serialize = "DeviceTemperatureConfiguration",
+        serialize = "2",
+        serialize = "0x0002"
+    )]
     DeviceTemperatureConfiguration = 0x0002,
 
     /// Identify cluster.
+    #[strum(
+        to_string = "Identify (0x0003)",
+        serialize = "Identify",
+        serialize = "3",
+        serialize = "0x0003"
+    )]
     Identify = 0x0003,
 
     /// Groups cluster.
+    #[strum(
+        to_string = "Groups (0x0004)",
+        serialize = "Groups",
+        serialize = "4",
+        serialize = "0x0004"
+    )]
     Groups = 0x0004,
 
     /// Scenes cluster.
+    #[strum(
+        to_string = "Scenes (0x0005)",
+        serialize = "Scenes",
+        serialize = "5",
+        serialize = "0x0005"
+    )]
     Scenes = 0x0005,
 
     /// On/Off cluster.
+    #[strum(
+        to_string = "OnOff (0x0006)",
+        serialize = "OnOff",
+        serialize = "6",
+        serialize = "0x0006"
+    )]
     OnOff = 0x0006,
 
     /// Level control cluster.
+    #[strum(
+        to_string = "Level (0x0008)",
+        serialize = "Level",
+        serialize = "8",
+        serialize = "0x0008"
+    )]
     Level = 0x0008,
 
     /// Alarms cluster.
+    #[strum(
+        to_string = "Alarms (0x0009)",
+        serialize = "Alarms",
+        serialize = "9",
+        serialize = "0x0009"
+    )]
     Alarms = 0x0009,
 
     /// Time cluster.
+    #[strum(
+        to_string = "Time (0x000A)",
+        serialize = "Time",
+        serialize = "10",
+        serialize = "0x000A",
+        serialize = "0x000a"
+    )]
     Time = 0x000A,
 
     /// Color control cluster.
+    #[strum(
+        to_string = "ColorControl (0x0300)",
+        serialize = "ColorControl",
+        serialize = "768",
+        serialize = "0x0300"
+    )]
     ColorControl = 0x0300,
 
     /// Ballast configuration cluster.
+    #[strum(
+        to_string = "BallastConfiguration (0x0301)",
+        serialize = "BallastConfiguration",
+        serialize = "769",
+        serialize = "0x0301"
+    )]
     BallastConfiguration = 0x0301,
 
     /// Illuminance measurement cluster.
+    #[strum(
+        to_string = "IlluminanceMeasurement (0x0400)",
+        serialize = "IlluminanceMeasurement",
+        serialize = "1024",
+        serialize = "0x0400"
+    )]
     IlluminanceMeasurement = 0x0400,
 
     /// Illuminance level sensing cluster.
+    #[strum(
+        to_string = "IlluminanceLevelSensing (0x0401)",
+        serialize = "IlluminanceLevelSensing",
+        serialize = "1025",
+        serialize = "0x0401"
+    )]
     IlluminanceLevelSensing = 0x0401,
 
     /// Occupancy sensing cluster.
+    #[strum(
+        to_string = "OccupancySensing (0x0406)",
+        serialize = "OccupancySensing",
+        serialize = "1030",
+        serialize = "0x0406"
+    )]
     OccupancySensing = 0x0406,
 
     /// IAS Zone cluster.
+    #[strum(
+        to_string = "IasZone (0x0500)",
+        serialize = "IasZone",
+        serialize = "1280",
+        serialize = "0x0500"
+    )]
     IasZone = 0x0500,
 }
 
@@ -82,24 +191,6 @@ impl Cluster {
     #[must_use]
     pub const fn as_u16(self) -> u16 {
         self as u16
-    }
-}
-
-impl Display for Cluster {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?} ({:#06X})", self, self.as_u16())
-    }
-}
-
-impl FromStr for Cluster {
-    type Err = ParseClusterError;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        if let Some(cluster) = cluster_from_name(value) {
-            return Ok(cluster);
-        }
-
-        Self::try_from(parse_cluster_identifier(value)?).map_err(|_| ParseClusterError)
     }
 }
 
@@ -120,33 +211,8 @@ impl UpperHex for Cluster {
 #[error("invalid Zigbee cluster")]
 pub struct ParseClusterError;
 
-fn cluster_from_name(value: &str) -> Option<Cluster> {
-    match value {
-        "Basic" => Some(Cluster::Basic),
-        "PowerConfiguration" => Some(Cluster::PowerConfiguration),
-        "DeviceTemperatureConfiguration" => Some(Cluster::DeviceTemperatureConfiguration),
-        "Identify" => Some(Cluster::Identify),
-        "Groups" => Some(Cluster::Groups),
-        "Scenes" => Some(Cluster::Scenes),
-        "OnOff" => Some(Cluster::OnOff),
-        "Level" => Some(Cluster::Level),
-        "Alarms" => Some(Cluster::Alarms),
-        "Time" => Some(Cluster::Time),
-        "ColorControl" => Some(Cluster::ColorControl),
-        "BallastConfiguration" => Some(Cluster::BallastConfiguration),
-        "IlluminanceMeasurement" => Some(Cluster::IlluminanceMeasurement),
-        "IlluminanceLevelSensing" => Some(Cluster::IlluminanceLevelSensing),
-        "OccupancySensing" => Some(Cluster::OccupancySensing),
-        "IasZone" => Some(Cluster::IasZone),
-        _ => None,
-    }
-}
-
-fn parse_cluster_identifier(value: &str) -> Result<u16, ParseClusterError> {
-    value.strip_prefix("0x").map_or_else(
-        || value.parse().map_err(|_| ParseClusterError),
-        |value| u16::from_str_radix(value, 16).map_err(|_| ParseClusterError),
-    )
+const fn parse_cluster_error(_: &str) -> ParseClusterError {
+    ParseClusterError
 }
 
 #[cfg(test)]
@@ -154,6 +220,8 @@ mod tests {
     extern crate alloc;
 
     use alloc::string::ToString;
+
+    use strum::IntoEnumIterator;
 
     use super::{Cluster, ParseClusterError};
 
@@ -190,6 +258,13 @@ mod tests {
     }
 
     #[test]
+    fn display_and_parsing_round_trip() {
+        for cluster in Cluster::iter() {
+            assert_eq!(cluster.to_string().parse(), Ok(cluster));
+        }
+    }
+
+    #[test]
     fn rejects_unknown_cluster() {
         assert_eq!("Unknown".parse::<Cluster>(), Err(ParseClusterError));
         assert_eq!("0xFFFF".parse::<Cluster>(), Err(ParseClusterError));
@@ -197,10 +272,6 @@ mod tests {
 
     #[test]
     fn rejects_unsupported_representations() {
-        assert_eq!(
-            COLOR_CONTROL_DISPLAY.parse::<Cluster>(),
-            Err(ParseClusterError)
-        );
         assert_eq!("0X0300".parse::<Cluster>(), Err(ParseClusterError));
     }
 }

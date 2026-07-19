@@ -33,7 +33,8 @@ closed-send or closed-receive condition intentionally discard the channel payloa
 The core, APS, ZCL, and ZDP crates use `num_enum` to derive conversions between fieldless
 integer-representation enums and their primitive values. No workspace crate depends directly on
 `num-traits` or `num-derive`; `num-traits` remains in the resolved dependency graph only through
-`chrono`.
+`chrono`. Fieldless enums with textual representations use `strum` derives for `Display` and
+`FromStr` so their displayed form can be parsed back into the same value.
 
 ## Legal
 
