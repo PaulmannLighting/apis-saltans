@@ -2,7 +2,7 @@
 
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::endpoint::Reserved;
-use zb_core::{Endpoint, Profile};
+use zb_core::{Cluster, Endpoint, Profile};
 
 use crate::frame::destination::{Destination, WeakDestination};
 use crate::{Control, Extended, Fragmentation, FrameType};
@@ -65,6 +65,15 @@ impl Header {
     #[must_use]
     pub const fn cluster_id(&self) -> u16 {
         self.cluster_id
+    }
+
+    /// Return the cluster type.
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw cluster ID if it is unknown.
+    pub fn cluster(&self) -> Result<Cluster, u16> {
+        self.cluster_id.try_into()
     }
 
     /// Return the profile ID.

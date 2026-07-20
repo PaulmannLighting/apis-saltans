@@ -120,7 +120,16 @@ let raw = [
 ];
 
 let parsed = Header::from_le_stream(raw.into_iter());
+
+if let Some(header) = parsed {
+    assert_eq!(header.cluster_id(), 0x0006);
+    assert_eq!(header.cluster(), Ok(zb_core::Cluster::OnOff));
+}
 ```
+
+`Header::cluster_id()` always returns the raw wire value. Use `Header::cluster()` when a typed
+`zb_core::Cluster` is useful; it returns the unchanged `u16` in `Err` when the ID is not one of the
+clusters known by `apis-saltans-core`.
 
 ## Notes on Safety APIs
 

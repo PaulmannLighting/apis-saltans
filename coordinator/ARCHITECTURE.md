@@ -49,7 +49,7 @@ flowchart TD
     HW -->|zb_hw::Event| M
     M -->|ZCL APS frame| ZCL
     M -->|ZDP APS frame| ZDP
-    M -->|network and device events| APP
+    M -->|network, lifecycle, and Keep-Alive events| APP
 
     ZCL -->|unmatched ZCL frame| APP
     ZDP -->|unmatched ZDP frame| APP
@@ -113,10 +113,17 @@ It forwards:
 - `NetworkUp`, `NetworkDown`, `NetworkOpened`, `NetworkClosed`, and route errors as
   `Event::Network(...)`
 - `DeviceJoined`, `DeviceRejoined`, and `DeviceLeft` as `Event::Device(...)`
+- Keep-Alive APS packets as `Event::Device(Device::KeepAlive(...))`
 - received ZCL APS frames to the ZCL transceiver
 - received ZDP APS frames to the ZDP transceiver
 
 Fragmented APS payloads are reassembled with `zb_aps::Assembler` before parsing.
+
+APS payload classification first resolves the profile. Network-profile frames are parsed as ZDP.
+For supported application profiles, cluster ID `0x0025` is classified as Keep-Alive without parsing
+the payload as a ZCL frame; other cluster IDs continue through ZCL parsing. The Keep-Alive event
+stores the source NWK device ID and APS source endpoint in a `zb_core::destination::Device`. A
+source outside the allocated device-ID range or a reserved source endpoint is logged and dropped.
 
 ### ZCL Transceiver
 
@@ -208,6 +215,10 @@ sequenceDiagram
 
     HW->>M: MessageReceived(ZDP frame)
     M->>ZDP: Message::Received
+
+    HW->>M: MessageReceived(Keep-Alive APS packet)
+    M->>M: validate source device ID and endpoint
+    M->>APP: Event::Device(Device::KeepAlive(device))
 ```
 
 ## 2) ZCL command without a protocol response

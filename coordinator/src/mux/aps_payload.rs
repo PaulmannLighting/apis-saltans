@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use zb_aps::data::Frame;
-use zb_core::Profile;
+use zb_core::{Cluster, Profile};
 
 pub use self::error::ParseApsFrameError;
 
@@ -9,7 +9,7 @@ mod error;
 type ZdpFrame = zb_zdp::Frame<zb_zdp::Command>;
 type ZclFrame = zb_zcl::Frame<zb_zcl::Cluster>;
 
-/// Commands received on the APS layer.
+/// Payloads received on the APS layer.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum ApsPayload {
     /// A ZDP frame was received.
@@ -17,6 +17,9 @@ pub enum ApsPayload {
 
     /// A ZCL command was received.
     Zcl(ZclFrame),
+
+    /// A Keep-Alive packet was received.
+    KeepAlive,
 }
 
 impl TryFrom<Frame<Bytes>> for ApsPayload {
@@ -37,9 +40,12 @@ impl TryFrom<Frame<Bytes>> for ApsPayload {
             | Profile::TouchLink
             | Profile::BuildingAutomation
             | Profile::HealthCare
-            | Profile::RemoteControl => ZclFrame::try_from(frame)
-                .map(Self::Zcl)
-                .map_err(ParseApsFrameError::ParseZclFrameError),
+            | Profile::RemoteControl => match frame.header().cluster() {
+                Ok(Cluster::KeepAlive) => Ok(Self::KeepAlive),
+                _ => ZclFrame::try_from(frame)
+                    .map(Self::Zcl)
+                    .map_err(ParseApsFrameError::ParseZclFrameError),
+            },
         }
     }
 }

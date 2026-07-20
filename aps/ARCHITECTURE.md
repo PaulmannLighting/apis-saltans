@@ -28,6 +28,11 @@ flowchart TD
 | `frame::extended`        | Extended APS header fields, including fragmentation metadata. |
 | `broadcast`              | Well-known Zigbee broadcast addresses.                        |
 
+APS data headers retain cluster and profile identifiers as their raw wire values. Their
+`cluster()` and `profile()` accessors provide typed `zb_core::Cluster` and `zb_core::Profile`
+interpretations when the identifiers are known, while the raw accessors remain available for
+unknown or manufacturer-specific values.
+
 ## Defragmentation
 
 `frame::data::defragmentation::Assembler` owns a map of in-progress

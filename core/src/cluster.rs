@@ -184,6 +184,15 @@ pub enum Cluster {
         serialize = "0x0500"
     )]
     IasZone = 0x0500,
+
+    /// Keep-Alive cluster.
+    #[strum(
+        to_string = "KeepAlive (0x0025)",
+        serialize = "KeepAlive",
+        serialize = "37",
+        serialize = "0x0025"
+    )]
+    KeepAlive = 0x0025,
 }
 
 impl Cluster {

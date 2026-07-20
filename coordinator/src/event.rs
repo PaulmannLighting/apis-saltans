@@ -14,7 +14,7 @@ pub enum Event {
     /// Network-level state or error notification.
     Network(Network),
 
-    /// Device lifecycle notification.
+    /// Device lifecycle or activity notification.
     Device(Device),
 
     /// Unmatched inbound ZCL frame.

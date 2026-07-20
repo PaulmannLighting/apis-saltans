@@ -4,11 +4,12 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::data::Frame;
 use zb_aps::{Assembler, Data};
+use zb_core::destination;
 use zb_hw::Event as HardwareEvent;
 use zb_nwk::{Envelope, Source};
 
 use self::aps_payload::ApsPayload;
-use crate::{Device, Event as ApplicationEvent, Network, NetworkError, zcl, zdp};
+use crate::{Device, Event as ApplicationEvent, Event, Network, NetworkError, zcl, zdp};
 
 mod aps_payload;
 
@@ -173,6 +174,26 @@ impl Mux {
                     .unwrap_or_else(|error| {
                         trace!("Failed to send ZDP message: {error}");
                     });
+            }
+            ApsPayload::KeepAlive => {
+                let Ok(device_id) = source.node_id().try_into().inspect_err(|id| {
+                    warn!("Keep-Alive packet from invalid device id: {id:#06X}");
+                }) else {
+                    return;
+                };
+
+                let Ok(endpoint) = header.source_endpoint().inspect_err(|reserved| {
+                    warn!("Keep-Alive packet from reserved endpoint: {reserved:#04X}");
+                }) else {
+                    return;
+                };
+
+                self.events
+                    .send(Event::Device(Device::KeepAlive(destination::Device::new(
+                        device_id, endpoint,
+                    ))))
+                    .await
+                    .unwrap_or_else(drop);
             }
         }
     }

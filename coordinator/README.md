@@ -172,19 +172,25 @@ async fn receive_events(mut events: tokio::sync::mpsc::Receiver<Event>) {
             }
             Event::Device(Device::Left(address)) => println!("left: {address}"),
             Event::Device(Device::Announced(address)) => println!("announced: {address}"),
+            Event::Device(Device::KeepAlive(device)) => {
+                println!("keep-alive from {device}");
+            }
             Event::Zcl { src_address, aps_frame } => {
                 println!("unsolicited ZCL from {src_address}: {aps_frame:?}");
-            }
-            Event::Zdp { src_address, aps_frame } => {
-                println!("unsolicited ZDP from {src_address}: {aps_frame:?}");
             }
         }
     }
 }
 ```
 
-`Event::Zcl` and `Event::Zdp` are emitted only for inbound frames that do not match an outstanding
-request. Request/response traffic is consumed by the relevant `communicate(...)` call.
+`Event::Zcl` is emitted only for inbound frames that do not match an outstanding request.
+Request/response traffic is consumed by the relevant `communicate(...)` call.
+
+An APS packet with cluster ID `0x0025` (`Cluster::KeepAlive`) under a supported application profile
+is handled before ZCL payload decoding and produces `Device::KeepAlive`. The contained
+`zb_core::destination::Device` identifies the sender by its NWK short address and APS source
+endpoint. Packets whose source is not an allocated device short address or whose source endpoint is
+reserved are logged and dropped instead of producing an event.
 
 ## Joining Control
 
