@@ -13,6 +13,9 @@
 //! requests and exposes them through [`LocalNode::get_endpoints`]; they are no longer passed to
 //! [`Coordinator::start`].
 //!
+//! [`Driver`] is re-exported from `zb_hw`, allowing hardware integrations to implement the driver
+//! contract through this crate's public API.
+//!
 //! ZCL and ZDP sends use deferred response futures. The first await queues an operation and returns
 //! either [`TransmissionResponse`] or a protocol-specific [`ZclResponse`] or [`ZdpResponse`]. Await
 //! that returned future to observe hardware completion and, for communication requests, receive the
@@ -20,6 +23,7 @@
 //! [`Error`] type.
 
 use const_env::env_item;
+pub use zb_hw::Driver;
 
 pub use self::api::{
     AddressTranslation, Attributes, Binding, Clusters, ColorControl, Endpoints, FoundNetwork,

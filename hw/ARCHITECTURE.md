@@ -8,13 +8,13 @@ opaque `HwResponse` future.
 
 ## Boundaries
 
-- The `driver` feature exposes `Backend`, `Driver`, `EventTranslator`, `bridge`, shared
-  coordinator/driver data types, command handles, common error types, and protocol crate re-export
-  modules for hardware backend implementations.
-- The `coordinator` feature exposes `Ncp`, `NcpHandle`, `WeakNcpHandle`, common error types, and
-  coordinator-side data/event types for coordinator code.
-- `Backend` defines the hardware-specific event, translator message, and translator types.
+- The `driver` feature exposes `Driver`, shared coordinator/driver data types, command handles,
+  common error types, and protocol crate re-export modules for hardware backend implementations.
+- The `coordinator` feature exposes `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, common error
+  types, and coordinator-side data/event types for coordinator code.
 - `Driver` is the implementor-facing NCP command API.
+- `Driver` and all common hardware types are available with either feature. The `driver` feature
+  additionally exposes the protocol crate re-export modules, while `coordinator` adds `Ncp`.
 - Every `Driver` must implement `get_endpoints` and return a complete `SimpleDescriptor` for each
   local application endpoint exposed by the NCP.
 - `Ncp` is the caller-facing proxy API implemented for `tokio::sync::mpsc::Sender<Message>`.
@@ -24,7 +24,8 @@ opaque `HwResponse` future.
   completion future.
 - `Ncp::transmit` returns that `HwResponse` after actor handoff instead of awaiting hardware
   completion inside the proxy method.
-- `EventTranslator` converts backend-specific event messages into common `Event` values.
+- Backends own transport startup and conversion of hardware-specific events into common `Event`
+  values; the hardware crate does not impose a backend configuration or translator abstraction.
 - `Datagram` carries serialized application payload bytes together with APS `Metadata`.
 - `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `HwResponse`, `Network`, and `ScannedChannel` are
   exported by `coordinator` and `driver`.
@@ -35,14 +36,11 @@ opaque `HwResponse` future.
 
 | Export | Feature | Defined in | Purpose |
 | --- | --- | --- | --- |
-| `Backend` | `driver` | `driver/backend.rs` | Defines backend-specific event and translator types. |
-| `bridge` | `driver` | `driver/bridge.rs` | Forwards and converts messages between Tokio MPSC channels. |
 | `Clusters` | `driver` or `coordinator` | `common/clusters.rs` | Compact validated cluster-set helper; endpoint queries use full ZDP simple descriptors. |
 | `Datagram` | `driver` or `coordinator` | `common/datagram.rs` | Serialized application payload plus APS metadata. |
-| `Driver` | `driver` | `driver/driver.rs` | Driver-side command API implemented by hardware backends. |
+| `Driver` | `driver` or `coordinator` | `common/driver.rs` | Driver-side command API implemented by hardware backends. |
 | `Error` | `driver` or `coordinator` | `common/error.rs` | Common crate error type. |
 | `Event` | `driver` or `coordinator` | `common/event.rs` | Common hardware-layer event model. |
-| `EventTranslator` | `driver` | `driver/event_translator.rs` | Converts backend event messages into `Event` values. |
 | `FoundNetwork` | `driver` or `coordinator` | `common/message/found_network.rs` | Network scan result plus last-hop signal quality. |
 | `HwResponse` | `driver` or `coordinator` | `common/hw_response.rs` | Opaque deferred hardware-operation future. |
 | `Metadata` | `driver` or `coordinator` | `common/datagram.rs` | APS profile and cluster metadata for a `Datagram`. |
@@ -62,20 +60,13 @@ Internal modules define additional items used by the public API but not directly
 | Item | Defined in | Purpose |
 | --- | --- | --- |
 | `Message` | `common/message.rs` | Internal actor command protocol between `NcpHandle` and the driver actor. |
-| `SealedDriver` | `driver/driver.rs` | Blanket-implemented actor runtime for every `Driver + Send + 'static`. |
+| `SealedDriver` | `common/driver.rs` | Blanket-implemented actor runtime for every `Driver + Send + 'static`. |
 
 ## Component Relationships
 
 ```mermaid
 classDiagram
     direction LR
-
-    class Backend {
-        <<trait>>
-        type HardwareEvent
-        type Message
-        type EventTranslator
-    }
 
     class Driver {
         <<trait>>
@@ -118,13 +109,6 @@ classDiagram
         Sender_Message
     }
 
-    class EventTranslator {
-        <<trait>>
-        type Message
-        +new()
-        +run()
-    }
-
     class Message
     class Clusters
     class SimpleDescriptor
@@ -141,10 +125,7 @@ classDiagram
         Output_Result
     }
 
-    Backend --> Driver : associated type
-    Backend --> EventTranslator : associated type
     Event --> FullAddress : device membership
-    EventTranslator --> Event : emits
     Driver ..> SealedDriver : run/spawn delegate
     SealedDriver --> Message : receives
     SealedDriver --> NcpHandle : creates
@@ -164,20 +145,23 @@ classDiagram
 ```mermaid
 sequenceDiagram
     participant I as Integration;
-    participant T as EventTranslator;
+    participant B as Backend event task;
     participant D as Driver;
     participant H as NcpHandle;
+    participant E as Event receiver;
 
     I->>D: construct concrete driver;
-    I->>T: construct translator with Event sender;
     I->>D: run(channel_size);
     D-->>I: NcpHandle and driver actor future;
-    I->>T: run(translator inbox);
+    I->>B: start hardware event translation;
+    B-->>E: common Event values;
     I->>H: pass handle to coordinator startup;
+    I->>E: pass receiver to coordinator startup;
 ```
 
-Backend crates own concrete startup and transport wiring. The `hw` crate supplies the common driver
-actor, event model, and translator traits, but does not define a separate startup feature.
+Backend crates own concrete startup, transport wiring, and event translation. The `hw` crate
+supplies the common driver actor and event model, but does not prescribe backend configuration,
+translator traits, channel bridges, or a separate startup feature.
 
 ## Actor Command Flow
 
@@ -226,10 +210,10 @@ driver's concrete completion mechanism.
 ```mermaid
 flowchart TD
     lib["lib.rs"] --> common["common.rs"]
-    lib --> driver["driver/mod.rs"]
     lib --> coordinator["coordinator.rs"]
     lib --> reexports["reexports.rs"]
     common --> datagram["common/datagram.rs"]
+    common --> driver["common/driver.rs"]
     common --> error["common/error.rs"]
     common --> hw_response["common/hw_response.rs"]
     common --> event["common/event.rs"]
@@ -238,10 +222,6 @@ flowchart TD
     message --> found_network["common/message/found_network.rs"]
     found_network --> network["common/message/found_network/network.rs"]
     message --> scanned_channel["common/message/scanned_channel.rs"]
-    driver --> backend["driver/backend.rs"]
-    driver --> bridge["driver/bridge.rs"]
-    driver --> driver_impl["driver/driver.rs"]
-    driver --> event_translator["driver/event_translator.rs"]
 ```
 
 ## Command Protocol

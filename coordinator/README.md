@@ -15,6 +15,8 @@ Public API exports:
 
 - coordinator handle:
   - `Coordinator`
+- hardware driver trait:
+  - `Driver` (re-exported from `apis-saltans-hw`)
 - low-level transport traits:
   - `Zcl`
   - `Zdp`
@@ -55,6 +57,10 @@ Public API exports:
 
 Commands without a protocol response return `TransmissionResponse`, which adapts the hardware
 response to the coordinator's `Error` type.
+
+The `Driver` re-export lets integration crates import the coordinator API and implement the NCP
+driver contract from one dependency. Hardware-specific event translation and startup wiring remain
+the backend's responsibility.
 
 ## Coordinator Lifecycle
 

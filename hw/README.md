@@ -3,8 +3,8 @@
 Hardware abstraction traits and data types for Zigbee network co-processor (NCP) drivers.
 
 This crate separates coordinator logic from concrete hardware backends. A backend implements the
-implementor API (`Backend`, `Driver`, and `EventTranslator`); coordinator code receives an
-`NcpHandle` and uses the `Ncp` trait to send commands to the driver actor.
+`Driver` trait; coordinator code receives an `NcpHandle` and uses the `Ncp` trait to send commands
+to the driver actor. Backends own their event translation and startup wiring.
 
 ## Features
 
@@ -13,10 +13,21 @@ No default features are enabled. Pick the feature that matches the role of the c
 
 | Feature | Intended user | Public API |
 | --- | --- | --- |
-| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
-| `driver` | Hardware backend crates. | `Backend`, `Driver`, `EventTranslator`, `bridge`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
+| `driver` | Hardware backend crates. | `Driver`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
 
 Backend crates should enable `driver`. Coordinator crates should enable `coordinator`.
+
+`Driver` is shared by both features. This lets integration crates name or re-export the driver
+contract without enabling the driver-only protocol re-export modules.
+
+### API Changes
+
+The driver API now consists of the shared `Driver` trait and common hardware types. The former
+`Backend` and `EventTranslator` traits and the `bridge` channel helper have been removed. Backend
+crates should define any hardware-specific configuration and event message types themselves,
+translate incoming events into `Event` values in their own runtime, and use Tokio channels directly
+when channel forwarding is needed.
 
 ### Using the Coordinator API
 
@@ -63,24 +74,21 @@ are retained as an error source; closed actor channels are represented by the pa
 
 ### Implementing a Driver
 
-Enable `driver` in hardware backend crates. It exposes the traits and common data types used to
-implement a backend:
+Enable `driver` in hardware backend crates. It exposes the common data types and protocol re-export
+modules used to implement a backend:
 
 ```toml
 [dependencies]
 apis-saltans-hw = { version = "0.11", features = ["driver"] }
 ```
 
-Driver crates typically implement:
+Driver crates implement every `Driver` method on the NCP command actor, including the required
+`get_endpoints()` method that reports the NCP's local application endpoints.
 
-- `Backend` for the backend's associated hardware event, translator message, and translator type.
-- every `Driver` method on the NCP command actor, including the required `get_endpoints()` method
-  that reports the NCP's local application endpoints
-- `EventTranslator` to convert backend events into common `Event` values.
-
-Backend startup is owned by the backend crate. It should initialize the concrete driver, run the
-event translator, and pass the resulting `NcpHandle` plus translated `Event` receiver to coordinator
-startup code.
+Backend startup is owned by the backend crate. It should initialize the concrete driver, translate
+hardware events into common `Event` values, and pass the resulting `NcpHandle` plus `Event` receiver
+to coordinator startup code. The hardware API intentionally does not impose a translator trait or
+channel-bridge helper on that runtime.
 
 The `driver` feature also exposes protocol crate re-export modules:
 
@@ -94,11 +102,6 @@ convenience for driver crates: public APIs can refer to the protocol types throu
 of adding direct dependencies on every protocol crate.
 
 ## Main Traits
-
-### `Backend`
-
-`Backend` defines the hardware-specific event type, the translator input message type, and the
-`EventTranslator` implementation used by the backend.
 
 ### `Driver`
 
@@ -133,11 +136,6 @@ get_endpoints()
 
 It returns `Box<[zdp::SimpleDescriptor]>`. The NCP must return every endpoint it advertises; callers
 no longer construct or pass a separate descriptor list to the coordinator.
-
-### `EventTranslator`
-
-`EventTranslator` converts hardware-specific event messages into common `Event` values such as
-network state changes, device joins/leaves with `FullAddress`, route errors, and received APS data.
 
 ### `Ncp`
 

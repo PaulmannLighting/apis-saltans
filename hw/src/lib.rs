@@ -5,14 +5,17 @@
 //!
 //! No default features are enabled. Enable exactly the API surface needed by the depending crate:
 //!
-//! - `coordinator` exposes `Ncp`, `NcpHandle`, `WeakNcpHandle`, common errors, hardware
+//! - `coordinator` exposes `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, common errors, hardware
 //!   events, access to the NCP's local simple descriptors, scan results, transmit datagram types,
 //!   and the deferred `HwResponse` returned by transmission requests for coordinator and
 //!   application code that sends commands to a running NCP actor.
-//! - `driver` exposes `Backend`, `Driver`, `EventTranslator`, `bridge`, shared driver/coordinator
-//!   data types, the required local-endpoint API, command handles, `HwResponse`, common errors,
-//!   and the `aps`, `core`, `nwk`, and `zdp` protocol re-export modules for hardware backend
-//!   implementations.
+//! - `driver` exposes `Driver`, shared driver/coordinator data types, the required local-endpoint
+//!   API, command handles, `HwResponse`, common errors, and the `aps`, `core`, `nwk`, and `zdp`
+//!   protocol re-export modules for hardware backend implementations.
+//!
+//! `Driver` is part of the shared API and is therefore available with either feature. Event
+//! translation and startup wiring are backend concerns; this crate does not prescribe backend
+//! configuration or provide an event-translator abstraction.
 //!
 //! The protocol re-export modules are available only with `driver`. They let driver crates refer to
 //! APIS Saltans protocol types through this crate, for example `apis_saltans_hw::core::IeeeAddress`
@@ -24,23 +27,20 @@
 //! transmission.
 //!
 //! Every `Driver` implementation must provide the NCP's local application endpoints through
-//! `Driver::get_endpoints`. Each endpoint is represented by a complete `zdp::SimpleDescriptor`;
-//! coordinator code retrieves the same descriptors through `Ncp::get_endpoints`.
+//! `Driver::get_endpoints`. Each endpoint is represented by a complete
+//! `zb_zdp::SimpleDescriptor`; coordinator code retrieves the same descriptors through
+//! `Ncp::get_endpoints`.
 
 #[cfg(any(feature = "coordinator", feature = "driver"))]
 pub use self::common::{
-    Clusters, Datagram, Error, Event, FoundNetwork, HwResponse, Metadata, NcpHandle, Network,
-    RouteError, ScannedChannel, WeakNcpHandle,
+    Clusters, Datagram, Driver, Error, Event, FoundNetwork, HwResponse, Metadata, NcpHandle,
+    Network, RouteError, ScannedChannel, WeakNcpHandle,
 };
 #[cfg(feature = "coordinator")]
 pub use self::coordinator::*;
-#[cfg(feature = "driver")]
-pub use self::driver::{Backend, Driver, EventTranslator, bridge};
 #[cfg(feature = "driver")]
 pub use self::reexports::{aps, core, nwk, zdp};
 
 mod common;
 mod coordinator;
-mod driver;
-#[cfg(feature = "driver")]
-pub mod reexports;
+mod reexports;
