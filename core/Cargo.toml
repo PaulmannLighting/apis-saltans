@@ -7,7 +7,7 @@ repository = "https://github.com/PaulmannLighting/apis-saltans"
 keywords = ["zigbee", "protocol", "library"]
 categories = ["network-programming"]
 documentation = "https://docs.rs/apis-saltans-aps"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2024"
 exclude = [".gitignore"]
 

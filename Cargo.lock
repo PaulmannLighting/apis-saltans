@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-aps"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "apis-saltans-core",
  "apis-saltans-nwk",
@@ -26,7 +26,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-coordinator"
-version = "0.10.2"
+version = "0.11.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
@@ -45,7 +45,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-core"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bitflags",
  "cfg_eval",
@@ -65,7 +65,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-hw"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
@@ -79,7 +79,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-nwk"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "apis-saltans-core",
  "serde",
@@ -87,7 +87,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-zcl"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-zdp"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
