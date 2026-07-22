@@ -30,6 +30,18 @@ pub enum Message {
         response: Sender<Result<HwResponse, Error>>,
     },
 
+    /// Reply to a received command using its ZCL sequence number.
+    Reply {
+        /// Device endpoint to which the reply is sent.
+        destination: Device,
+        /// Sequence number copied from the request, or advanced for a page response stream.
+        sequence_number: u8,
+        /// ZCL payload and its transmission metadata.
+        payload: Payload,
+        /// Channel used to return the deferred hardware response.
+        response: Sender<Result<HwResponse, Error>>,
+    },
+
     /// Communicate a unicast with an expected response.
     Communicate {
         /// Remote device expected to answer the command.

@@ -56,6 +56,18 @@ impl<T> Frame<T> {
     pub fn into_parts(self) -> (Header, T) {
         (self.header, self.payload)
     }
+
+    /// Transform the payload while preserving the APS data header.
+    #[must_use]
+    pub fn map_payload<U, F>(self, map: F) -> Frame<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        Frame {
+            header: self.header,
+            payload: map(self.payload),
+        }
+    }
 }
 
 impl Frame<Bytes> {

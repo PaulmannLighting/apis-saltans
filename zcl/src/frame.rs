@@ -19,6 +19,12 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
+    /// Create a ZCL frame from a header and its payload.
+    #[must_use]
+    pub const fn new(header: Header, payload: T) -> Self {
+        Self { header, payload }
+    }
+
     /// Create a new ZCL frame from the given header and payload.
     ///
     /// # Safety
@@ -52,6 +58,18 @@ impl<T> Frame<T> {
     #[must_use]
     pub fn into_parts(self) -> (Header, T) {
         (self.header, self.payload)
+    }
+
+    /// Transform the payload while preserving the ZCL header.
+    #[must_use]
+    pub fn map_payload<U, F>(self, map: F) -> Frame<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        Frame {
+            header: self.header,
+            payload: map(self.payload),
+        }
     }
 }
 

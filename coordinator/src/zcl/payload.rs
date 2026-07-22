@@ -2,7 +2,7 @@
 
 use bytes::Bytes;
 use le_stream::ToLeStream;
-use zb_core::{ClusterSpecific, Direction, Profiled};
+use zb_core::{ClusterSpecific, Direction, Profile, Profiled};
 use zb_zcl::{Command, Directed, Scope, Scoped};
 
 /// A simplified APS frame.
@@ -33,6 +33,27 @@ impl Payload {
     pub fn into_parts(self) -> (zb_hw::Metadata, Metadata, Bytes) {
         (self.aps_metadata, self.zcl_metadata, self.bytes)
     }
+
+    /// Override the APS profile used to transmit this payload.
+    #[must_use]
+    pub const fn with_profile(mut self, profile: Profile) -> Self {
+        self.aps_metadata = self.aps_metadata.with_profile(profile);
+        self
+    }
+
+    /// Override whether the outgoing APS frame requests acknowledgement and retries.
+    #[must_use]
+    pub const fn with_aps_acknowledgement(mut self, enabled: bool) -> Self {
+        self.aps_metadata = self.aps_metadata.with_aps_acknowledgement(enabled);
+        self
+    }
+
+    /// Override whether the outgoing ZCL frame disables default responses.
+    #[must_use]
+    pub const fn with_disable_default_response(mut self, disabled: bool) -> Self {
+        self.zcl_metadata.disable_default_response = disabled;
+        self
+    }
 }
 
 /// Metadata needed to construct a ZCL header for an outgoing command.
@@ -43,6 +64,26 @@ pub struct Metadata {
     pub(crate) disable_default_response: bool,
     pub(crate) manufacturer_code: Option<u16>,
     pub(crate) command_id: u8,
+}
+
+impl Metadata {
+    /// Create outgoing ZCL header metadata.
+    #[must_use]
+    pub const fn new(
+        scope: Scope,
+        direction: Direction,
+        disable_default_response: bool,
+        manufacturer_code: Option<u16>,
+        command_id: u8,
+    ) -> Self {
+        Self {
+            scope,
+            direction,
+            disable_default_response,
+            manufacturer_code,
+            command_id,
+        }
+    }
 }
 
 impl<T> From<T> for Payload

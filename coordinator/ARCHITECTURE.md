@@ -16,7 +16,7 @@ device model.
 `apis-saltans-coordinator` runs a small actor graph on top of `tokio`:
 
 - the hardware driver is owned by `apis-saltans-hw`
-- `Coordinator::start(...)` spawns ZCL and ZDP transceivers
+- `Coordinator::start(...)` spawns ZCL and ZDP transceivers plus the OTA Upgrade server
 - a mux task consumes hardware events and forwards APS payloads to the right transceiver
 - response futures separate actor handoff from hardware transmission and protocol reception
 - unmatched inbound frames and network/device notifications are sent to an application-provided
@@ -41,9 +41,11 @@ flowchart TD
     M[Mux task]
     ZCL[ZCL transceiver task]
     ZDP[ZDP transceiver task]
+    OTA[OTA Upgrade server task]
 
     C -->|start| ZCL
     C -->|start| ZDP
+    C -->|start| OTA
     C -->|start| M
 
     HW -->|zb_hw::Event| M
@@ -52,6 +54,8 @@ flowchart TD
     M -->|network, lifecycle, and Keep-Alive events| APP
 
     ZCL -->|unmatched ZCL frame| APP
+    ZCL -->|OTA Upgrade frame| OTA
+    OTA -->|OTA commands and replies| ZCL
     ZDP -->|unmatched ZDP frame| APP
     ZDP -->|DeviceAnnce as Device::Announced| APP
     ZDP -->|MatchDescRsp| HW
@@ -59,6 +63,7 @@ flowchart TD
 
     C -->|Zcl trait calls| ZCL
     C -->|Zdp trait calls| ZDP
+    C -->|Ota::update| OTA
     C -->|Joining trait calls| HW
 ```
 
@@ -66,11 +71,14 @@ flowchart TD
 
 `Coordinator::start(...)`:
 
-1. Receives an `NcpHandle`, a hardware event receiver, and an outbound `Sender<Event>`.
-2. Starts the ZCL transceiver task with a clone of the NCP handle and outbound event sender.
-3. Starts the ZDP transceiver task with a clone of the NCP handle and outbound event sender.
-4. Starts the mux task with the hardware event receiver and both transceiver senders.
-5. Returns a lightweight `Coordinator` holding the NCP handle plus ZCL and ZDP actor senders.
+1. Receives an `NcpHandle`, the coordinator node descriptor, a hardware event receiver, and an
+   outbound `Sender<Event>`.
+2. Creates the OTA inbound channel and starts the ZCL transceiver with its sender, a clone of the
+   NCP handle, and the outbound event sender.
+3. Starts the OTA Upgrade server with its inbound receiver and the ZCL sender.
+4. Starts the ZDP transceiver task with a clone of the NCP handle and outbound event sender.
+5. Starts the mux task with the hardware event receiver and both transceiver senders.
+6. Returns a lightweight `Coordinator` holding the NCP handle plus OTA, ZCL, and ZDP actor senders.
 
 Actor inboxes are bounded MPSC channels sized by `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
 
@@ -85,6 +93,7 @@ the same data through `Ncp::get_endpoints` whenever current endpoint metadata is
 `Coordinator` is an API facade. It stores:
 
 - `ncp: NcpHandle`
+- `ota: Sender<ota::Message>`
 - `zcl: Sender<zcl::Message>`
 - `zdp: Sender<zdp::Message>`
 
@@ -94,6 +103,7 @@ It implements:
 - `AddressTranslation`, `LocalNode`, `Routing`, and `Scanning` directly through the hardware NCP
 - `Zcl` by forwarding to the ZCL transceiver sender
 - `Zdp` by forwarding to the ZDP transceiver sender
+- `Ota` by forwarding validated images and targets to the OTA server sender
 
 The composed traits are blanket implementations:
 
@@ -134,10 +144,33 @@ The ZCL transceiver:
 - creates ZCL frames with monotonically wrapping sequence numbers
 - stores pending response channels for `communicate(...)`
 - resolves received frames against the pending response map
+- forwards unmatched OTA Upgrade frames to the OTA server
+- sends OTA replies with an explicit request sequence number and page responses with advancing
+  sequence numbers
 - publishes unmatched inbound ZCL frames as `Event::Zcl`
 
 Correlation uses an internal `Index` derived from destination/source information, ZCL sequence,
 APS metadata, and manufacturer code.
+
+### OTA Upgrade Server
+
+The OTA server owns the policy and state required by cluster `0x0019`. Its inbox accepts either an
+`Update` containing a target endpoint, application profile, and validated image, or a `Received`
+message containing NWK source information and a typed APS/ZCL OTA command. One scheduled image is
+stored per device endpoint; a later update replaces it.
+
+Every OTA `Transmit` and `Reply` message includes a one-shot response channel. The ZCL transceiver uses
+that channel to return the driver's deferred `HwResponse` without polling it. The OTA actor owns
+those responses and polls them in tracked tasks, reaping completed tasks while continuing to
+service its inbound channel. A page-transfer task polls each block's response itself and stops the
+remaining page stream after a hardware failure.
+
+On `Update`, the server sends a unicast Image Notify. It then handles Query Next Image, Query
+Specific File, Image Block, Image Page, and Upgrade End commands without application involvement.
+It checks image identity, optional IEEE destination and hardware constraints, file bounds, and the
+incoming profile before replying. Page requests run in their own task so response spacing does not
+block other OTA clients. Their Image Block responses have increasing ZCL sequence numbers and APS
+acknowledgement disabled; ordinary replies preserve the request sequence and retain APS retries.
 
 ### ZDP Transceiver
 
@@ -164,6 +197,7 @@ The public API is intentionally layered.
 ```mermaid
 flowchart TD
     COORD[Coordinator]
+    OTA[Ota]
     JOIN[Joining]
     HWHELPERS[AddressTranslation LocalNode Routing Scanning]
     ZCL[Zcl]
@@ -179,6 +213,7 @@ flowchart TD
     COORD --> HWHELPERS
     COORD --> ZCL
     COORD --> ZDP
+    COORD --> OTA
     ZCL --> CLUSTERS
     ZDP --> DISCOVERY
     ZDP --> BIND
@@ -300,7 +335,39 @@ sequenceDiagram
 
 `ZdpResponse<T>` applies the same sequencing to `CommunicationResponse<Command, T>`.
 
-## 5) User-owned discovery workflow
+## 5) Automatic OTA image transfer
+
+```mermaid
+sequenceDiagram
+    participant APP as API Caller
+    participant OTA as OTA Server
+    participant ZCL as ZCL Transceiver
+    participant HW as NCP Driver
+    participant DEV as OTA Client
+
+    APP->>OTA: Ota::update(target, image)
+    OTA->>ZCL: Image Notify
+    ZCL->>HW: unicast command
+    HW-->>ZCL: HwResponse
+    ZCL-->>OTA: HwResponse
+    OTA->>OTA: track deferred completion
+    HW->>DEV: Image Notify
+    DEV->>HW: Query Next Image Request
+    HW->>ZCL: received OTA frame
+    ZCL->>OTA: Message::Received
+    OTA->>ZCL: Query Next Image Response
+    DEV->>OTA: Image Block or Page Requests via HW and ZCL
+    OTA->>DEV: Image Block Responses via ZCL and HW
+    DEV->>OTA: Upgrade End Request via HW and ZCL
+    OTA->>DEV: Upgrade End Response via ZCL and HW
+```
+
+The diagram abbreviates inbound routing through the mux. The OTA actor receives already parsed
+`Data<Frame<ota_upgrade::Command>>` values from the ZCL transceiver. Non-successful upgrade-end
+statuses receive a successful global Default Response, while malformed, unavailable, and
+unauthorized transfer requests receive the ZCL-defined error status.
+
+## 6) User-owned discovery workflow
 
 ```mermaid
 sequenceDiagram
@@ -339,7 +406,7 @@ sequenceDiagram
     APP->>APP: persist or update application device registry
 ```
 
-## 6) Unmatched inbound frame publication
+## 7) Unmatched inbound frame publication
 
 ```mermaid
 sequenceDiagram

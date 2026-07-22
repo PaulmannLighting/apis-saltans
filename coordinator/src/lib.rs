@@ -7,6 +7,8 @@
 //! [`Event`] values. Discovery, binding, address resolution, and persistence are application-owned
 //! workflows built from traits such as [`Node`], [`Endpoints`], [`Binding`],
 //! [`AddressTranslation`], [`Zcl`], and [`Zdp`].
+//! The built-in [`Ota`] service validates complete OTA image files and automatically serves the
+//! OTA Upgrade cluster exchange for individually scheduled [`OtaTarget`] endpoints.
 //!
 //! The hardware NCP is responsible for providing its complete local endpoint descriptors through
 //! [`zb_hw::Ncp::get_endpoints`]. The coordinator queries those descriptors when serving ZDP match
@@ -33,6 +35,9 @@ pub use self::api::{
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};
 pub use self::event::{Device, Event, Network, NetworkError};
+pub use self::ota::{
+    Image as OtaImage, Message as OtaMessage, Ota, ParseImageError, Target as OtaTarget,
+};
 pub use self::response::{CommunicationResponse, TransmissionResponse};
 
 mod api;
@@ -41,6 +46,7 @@ mod error;
 mod event;
 mod index;
 mod mux;
+pub mod ota;
 mod response;
 mod zcl;
 mod zdp;

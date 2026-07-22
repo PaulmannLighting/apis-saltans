@@ -13,13 +13,14 @@ use zb_core::Destination;
 use zb_core::destination::Device;
 use zb_hw::{HwResponse, Ncp};
 use zb_nwk::Source;
+use zb_zcl::ota_upgrade::Command as OtaCommand;
 use zb_zcl::{Cluster, Frame, Header};
 
 pub use self::message::Message;
 pub use self::payload::{Metadata, Payload};
 use super::index::Index;
 use crate::response::InternalCommunicationResponse;
-use crate::{Event, MPSC_CHANNEL_SIZE};
+use crate::{Event, MPSC_CHANNEL_SIZE, ota};
 
 mod message;
 mod payload;
@@ -29,6 +30,7 @@ mod payload;
 pub struct Transceiver<T> {
     ncp: T,
     events: Sender<Event>,
+    ota: Sender<ota::Message>,
     responses: BTreeMap<Index, oneshot::Sender<Cluster>>,
     seq: u8,
 }
@@ -36,10 +38,11 @@ pub struct Transceiver<T> {
 impl<T> Transceiver<T> {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T, events: Sender<Event>) -> Self {
+    pub const fn new(ncp: T, events: Sender<Event>, ota: Sender<ota::Message>) -> Self {
         Self {
             ncp,
             events,
+            ota,
             responses: BTreeMap::new(),
             seq: 0,
         }
@@ -68,6 +71,25 @@ where
                             debug!("Failed to send unicast response: {error:?}");
                         });
                 }
+                Message::Reply {
+                    destination,
+                    sequence_number,
+                    payload,
+                    response,
+                } => {
+                    response
+                        .send(
+                            self.transmit_with_sequence(
+                                destination.into(),
+                                payload,
+                                sequence_number,
+                            )
+                            .await,
+                        )
+                        .unwrap_or_else(|error| {
+                            debug!("Failed to return ZCL reply hardware response: {error:?}");
+                        });
+                }
                 Message::Communicate {
                     device,
                     payload,
@@ -93,6 +115,11 @@ where
     /// Handle a received ZCL message.
     async fn handle_message_received(&mut self, source: Source, aps_frame: Data<Frame<Cluster>>) {
         trace!("Received ZCL message from {source}: {aps_frame:?}");
+        if is_ota_request(aps_frame.payload().payload()) {
+            self.forward_ota(source, into_ota_frame(aps_frame)).await;
+            return;
+        }
+
         let index = Index::from_received_zcl_frame(source, &aps_frame);
 
         if let Some(sender) = self.responses.remove(&index) {
@@ -102,6 +129,11 @@ where
                 debug!("Failed to send ZCL response: {error:?}");
             });
 
+            return;
+        }
+
+        if matches!(aps_frame.payload().payload(), Cluster::OtaUpgrade(_)) {
+            self.forward_ota(source, into_ota_frame(aps_frame)).await;
             return;
         }
 
@@ -122,11 +154,20 @@ where
             });
     }
 
+    async fn forward_ota(&self, source: Source, frame: Data<Frame<OtaCommand>>) {
+        self.ota
+            .send(ota::Message::Received { source, frame })
+            .await
+            .unwrap_or_else(|error| {
+                debug!("Failed to forward OTA Upgrade command: {error:?}");
+            });
+    }
+
     /// Send a ZCL unicast message.
     ///
     /// # Returns
     ///
-    /// Returns the ZCL sequence number.
+    /// Returns the deferred hardware response.
     ///
     /// # Errors
     ///
@@ -138,6 +179,19 @@ where
     ) -> Result<HwResponse, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
+        let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
+        self.ncp.transmit(destination, hw_datagram).await
+    }
+
+    /// Send a ZCL command with an explicitly selected transaction sequence number.
+    async fn transmit_with_sequence(
+        &self,
+        destination: Destination,
+        payload: Payload,
+        sequence_number: u8,
+    ) -> Result<HwResponse, zb_hw::Error> {
+        let (aps_metadata, zcl_metadata, command) = payload.into_parts();
+        let zcl_frame = Self::make_zcl_frame_with_sequence(zcl_metadata, command, sequence_number);
         let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
         self.ncp.transmit(destination, hw_datagram).await
     }
@@ -172,20 +226,23 @@ where
     }
 
     fn make_zcl_frame(&mut self, metadata: Metadata, command: Bytes) -> Frame<Bytes> {
+        Self::make_zcl_frame_with_sequence(metadata, command, self.next_seq())
+    }
+
+    fn make_zcl_frame_with_sequence(
+        metadata: Metadata,
+        command: Bytes,
+        sequence_number: u8,
+    ) -> Frame<Bytes> {
         let header = Header::new(
             metadata.scope,
             metadata.direction,
             metadata.disable_default_response,
             metadata.manufacturer_code,
-            self.next_seq(),
+            sequence_number,
             metadata.command_id,
         );
-        #[expect(unsafe_code)]
-        // SAFETY: We safely construct the frame from the correct metadata
-        // with a freshly incremented sequence number.
-        unsafe {
-            Frame::new_unchecked(header, command)
-        }
+        Frame::new(header, command)
     }
 }
 
@@ -194,17 +251,35 @@ where
     T: Ncp + Send + Sync + 'static,
 {
     /// Start the ZCL transceiver.
-    pub fn spawn(ncp: T, events: Sender<Event>) -> Sender<Message> {
+    pub fn spawn(ncp: T, events: Sender<Event>, ota: Sender<ota::Message>) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, events).run(zcl_rx));
+        spawn(Self::new(ncp, events, ota).run(zcl_rx));
         zcl_tx
     }
 }
 
+fn into_ota_frame(aps_frame: Data<Frame<Cluster>>) -> Data<Frame<OtaCommand>> {
+    aps_frame.map_payload(|frame| {
+        frame.map_payload(|cluster| match cluster {
+            Cluster::OtaUpgrade(command) => command,
+            _ => unreachable!("OTA frame was checked before conversion"),
+        })
+    })
+}
+
+const fn is_ota_request(cluster: &Cluster) -> bool {
+    matches!(
+        cluster,
+        Cluster::OtaUpgrade(
+            OtaCommand::QueryNextImageRequest(_)
+                | OtaCommand::ImageBlockRequest(_)
+                | OtaCommand::ImagePageRequest(_)
+                | OtaCommand::UpgradeEndRequest(_)
+                | OtaCommand::QuerySpecificFileRequest(_)
+        )
+    )
+}
+
 fn make_hw_datagram(metadata: zb_hw::Metadata, payload: Frame<Bytes>) -> zb_hw::Datagram {
-    #[expect(unsafe_code)]
-    // SAFETY: We safely construct the datagram from the correct metadata we destructured before.
-    unsafe {
-        zb_hw::Datagram::new_unchecked(metadata, payload.to_le_stream().collect())
-    }
+    zb_hw::Datagram::new(metadata, payload.to_le_stream().collect())
 }
