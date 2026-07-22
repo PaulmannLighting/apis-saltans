@@ -2,8 +2,8 @@
 # cargo-vet imports lock
 
 [[unpublished.apis-saltans-hw]]
-version = "0.11.1"
-audited_as = "0.11.0"
+version = "0.11.2"
+audited_as = "0.11.1"
 
 [[publisher.apis-saltans-aps]]
 version = "0.7.0"
@@ -27,7 +27,7 @@ user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
 [[publisher.apis-saltans-hw]]
-version = "0.11.0"
+version = "0.11.1"
 when = "2026-07-22"
 user-id = 290593
 user-login = "neumann-paulmann"
