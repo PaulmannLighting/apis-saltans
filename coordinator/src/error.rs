@@ -57,6 +57,10 @@ pub enum Error {
     /// A request exceeded its allotted response time.
     #[error("Timeout: {0:?}")]
     Timeout(#[from] Elapsed),
+
+    /// A coordinator-managed OTA update failed.
+    #[error("OTA update failed: {0}")]
+    Ota(#[from] crate::ota::UpdateError),
 }
 
 impl<T> From<SendError<T>> for Error {

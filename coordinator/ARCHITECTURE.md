@@ -159,9 +159,10 @@ APS metadata, and manufacturer code.
 ### OTA Upgrade Server
 
 The OTA server owns the policy and state required by cluster `0x0019`. Its inbox accepts either an
-`Update` containing a target endpoint, application profile, and validated image, or a `Received`
-message containing NWK source information and a typed APS/ZCL OTA command. One scheduled image is
-stored per device endpoint; a later update replaces it.
+`Update` containing a target endpoint, application profile, validated image, and completion
+one-shot, or a `Received` message containing NWK source information and a typed APS/ZCL OTA command.
+One scheduled image is stored per device endpoint; a later update replaces it and resolves the old
+completion channel as superseded.
 
 An image separates its parsed header from its payload source. The small serialized header and its
 decoded metadata remain in memory, while the payload stays behind an owned `Read + Seek` handle.
@@ -179,7 +180,9 @@ Every OTA `Transmit` and `Reply` message includes a one-shot response channel. T
 uses that channel to return the driver's deferred `HwResponse` without polling it. The OTA actor
 owns those responses and polls them in tracked tasks, reaping completed tasks while continuing to
 service its inbound channel. A page-transfer task polls each block's response itself and stops the
-remaining page stream after a hardware failure.
+remaining page stream after a hardware failure. Background tasks report terminal failures to the
+actor over an internal channel. Generation identifiers prevent a late result from an older page
+task from completing a newer update for the same endpoint and image ID.
 
 On `Update`, the server sends a unicast Image Notify. It then handles Query Next Image, Query
 Specific File, Image Block, Image Page, and Upgrade End commands without application involvement.
@@ -187,6 +190,8 @@ It checks image identity, optional IEEE destination and hardware constraints, fi
 incoming profile before replying. Page requests run in their own task so response spacing does not
 block other OTA clients. Their Image Block responses have increasing ZCL sequence numbers and APS
 acknowledgement disabled; ordinary replies preserve the request sequence and retain APS retries.
+The client's Upgrade End status resolves the completion one-shot, which in turn resolves the
+future returned by `Ota::update`.
 
 ### ZDP Transceiver
 

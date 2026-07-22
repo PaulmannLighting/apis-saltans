@@ -30,6 +30,8 @@ Public API exports:
   - `OtaImage`
   - `OtaTarget`
   - `OtaMessage`
+  - `OtaUpdateError`
+  - `OtaUpdateResult`
 - deferred response futures:
   - `TransmissionResponse`
   - `CommunicationResponse<T, U>`
@@ -162,6 +164,11 @@ published as general `Event::Zcl` values. The server selects the scheduled image
 and file metadata, streams blocks (including paced page responses), preserves or advances ZCL
 transaction numbers as required, and emits the appropriate command or default response. Scheduling
 another image for the same device endpoint replaces its current offer.
+
+`Ota::update` remains pending for the complete exchange. It returns success after the client sends
+a successful Upgrade End Request. Client rejection, image-read failures, terminal transmission
+failures, and replacement by a newer update return an `OtaUpdateError`; stopping the OTA actor
+before completion returns the coordinator's receive error.
 
 ZCL returns the deferred `HwResponse` for every internally generated OTA command to the OTA actor.
 The actor polls ordinary command completions in tracked background tasks, so deferred hardware work

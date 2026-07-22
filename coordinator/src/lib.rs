@@ -39,7 +39,8 @@ pub use self::event::{Device, Event, Network, NetworkError};
 pub use self::ota::{
     BaseHeaderBytes as OtaBaseHeaderBytes, FieldControl as OtaFieldControl, Header as OtaHeader,
     HeaderString as OtaHeaderString, Image as OtaImage, Message as OtaMessage, ParseImage,
-    ParseImageError, Target as OtaTarget,
+    ParseImageError, Target as OtaTarget, UpdateError as OtaUpdateError,
+    UpdateResult as OtaUpdateResult,
 };
 pub use self::response::{CommunicationResponse, TransmissionResponse};
 

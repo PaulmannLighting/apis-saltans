@@ -1,12 +1,15 @@
 //! Coordinator-owned OTA Upgrade server.
 
 use std::collections::BTreeMap;
+use std::future::poll_fn;
+use std::task::Poll;
 use std::time::Duration;
 
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
+use thiserror::Error as ThisError;
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot;
 use tokio::task::JoinSet;
 use tokio::time::sleep;
@@ -35,6 +38,8 @@ mod image;
 
 const CURRENT_TIME_IMMEDIATE: u32 = 0;
 const UPGRADE_TIME_IMMEDIATE: u32 = 0;
+const INITIAL_UPDATE_GENERATION: u64 = 0;
+const UPDATE_GENERATION_STEP: u64 = 1;
 
 /// A device endpoint and application profile targeted for an OTA update.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -75,6 +80,8 @@ pub enum Message {
         target: Target,
         /// Complete OTA image offered to the device.
         image: Image,
+        /// Reports the terminal result of the scheduled update.
+        completion: oneshot::Sender<UpdateResult>,
     },
     /// A received OTA Upgrade cluster command.
     Received {
@@ -85,6 +92,32 @@ pub enum Message {
     },
 }
 
+/// Terminal failure reported by a coordinator-managed OTA update.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ThisError)]
+pub enum UpdateError {
+    /// A newer image replaced this update for the same device endpoint.
+    #[error("the OTA update was superseded by a newer image")]
+    Superseded,
+    /// The OTA client aborted the update.
+    #[error("the OTA client aborted the update")]
+    Aborted,
+    /// The OTA client rejected the downloaded image as invalid.
+    #[error("the OTA client rejected the downloaded image")]
+    InvalidImage,
+    /// The OTA client requires another image before it can upgrade.
+    #[error("the OTA client requires another image")]
+    RequireMoreImage,
+    /// Reading image data failed.
+    #[error("reading OTA image data failed")]
+    ImageTransfer,
+    /// Transmitting an OTA command failed.
+    #[error("transmitting OTA data failed")]
+    Transmission,
+}
+
+/// Terminal result delivered to the caller that scheduled an OTA update.
+pub type UpdateResult = Result<(), UpdateError>;
+
 /// Stateful OTA Upgrade server actor.
 #[derive(Debug)]
 pub struct Server {
@@ -92,12 +125,17 @@ pub struct Server {
     inbound: Receiver<Message>,
     updates: BTreeMap<Device, ScheduledUpdate>,
     transmissions: JoinSet<()>,
+    transfer_events: UnboundedReceiver<TransferEvent>,
+    transfer_events_out: UnboundedSender<TransferEvent>,
+    next_update_generation: u64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct ScheduledUpdate {
     profile: Profile,
     transfer: ImageTransfer,
+    completion: oneshot::Sender<UpdateResult>,
+    generation: u64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -108,24 +146,130 @@ struct RequestContext {
     sequence_number: u8,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct TransferKey {
+    destination: Device,
+    generation: u64,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct TransferEvent {
+    key: TransferKey,
+    error: UpdateError,
+}
+
+struct PageTransfer {
+    zcl: Sender<zcl::Message>,
+    image: ImageTransfer,
+    events: UnboundedSender<TransferEvent>,
+    key: TransferKey,
+    profile: Profile,
+    destination: Device,
+    image_id: ImageId,
+    maximum_data_size: usize,
+    page_end: usize,
+    spacing: Duration,
+    offset: usize,
+    sequence_number: u8,
+    block_data: Box<[u8]>,
+}
+
+enum ServerEvent {
+    Message(Option<Message>),
+    Transfer(TransferEvent),
+}
+
+impl PageTransfer {
+    async fn run(mut self) {
+        loop {
+            let file_offset =
+                u32::try_from(self.offset).expect("validated OTA image offset fits u32");
+            let block = ImageBlock::try_new(self.image_id, file_offset, self.block_data)
+                .expect("requested OTA blocks never exceed the client's u8 maximum data size");
+            let response = ImageBlockResponse::new(ImageBlockResponsePayload::Success(block));
+            let Some(hw_response) = reply_zcl(
+                &self.zcl,
+                self.destination,
+                self.profile,
+                self.sequence_number,
+                Payload::from(response).with_aps_acknowledgement(false),
+            )
+            .await
+            else {
+                report_transfer_failure(&self.events, self.key, UpdateError::Transmission);
+                return;
+            };
+            if let Err(error) = hw_response.await {
+                warn!("OTA page transmission failed: {error}");
+                report_transfer_failure(&self.events, self.key, UpdateError::Transmission);
+                return;
+            }
+
+            self.offset = self.offset.saturating_add(self.maximum_data_size);
+            if self.offset >= self.page_end {
+                return;
+            }
+            sleep(self.spacing).await;
+            self.sequence_number = self.sequence_number.wrapping_add(1);
+            let block_end = self
+                .offset
+                .saturating_add(self.maximum_data_size)
+                .min(self.page_end);
+            self.block_data =
+                match read_image_range(&self.image, self.offset, block_end - self.offset).await {
+                    Ok(data) => data,
+                    Err(status) => {
+                        warn!("Failed to read OTA page data: {status}");
+                        report_transfer_failure(&self.events, self.key, UpdateError::ImageTransfer);
+                        return;
+                    }
+                };
+        }
+    }
+}
+
 impl Server {
     /// Create an empty OTA server attached to its ZCL sender and inbound command channel.
     fn new(zcl: Sender<zcl::Message>, inbound: Receiver<Message>) -> Self {
+        let (transfer_events_out, transfer_events) = tokio::sync::mpsc::unbounded_channel();
         Self {
             zcl,
             inbound,
             updates: BTreeMap::new(),
             transmissions: JoinSet::new(),
+            transfer_events,
+            transfer_events_out,
+            next_update_generation: INITIAL_UPDATE_GENERATION,
         }
     }
 
     /// Process scheduled updates and inbound OTA commands until the inbound channel closes.
     pub async fn run(mut self) {
-        while let Some(message) = self.inbound.recv().await {
+        loop {
             self.reap_transmissions();
-            match message {
-                Message::Update { target, image } => self.update(target, image).await,
-                Message::Received { source, frame } => self.received(source, frame).await,
+            let event = poll_fn(|context| {
+                if let Poll::Ready(Some(event)) = self.transfer_events.poll_recv(context) {
+                    Poll::Ready(ServerEvent::Transfer(event))
+                } else if let Poll::Ready(message) = self.inbound.poll_recv(context) {
+                    Poll::Ready(ServerEvent::Message(message))
+                } else {
+                    Poll::Pending
+                }
+            })
+            .await;
+            match event {
+                ServerEvent::Message(Some(Message::Update {
+                    target,
+                    image,
+                    completion,
+                })) => self.update(target, image, completion).await,
+                ServerEvent::Message(Some(Message::Received { source, frame })) => {
+                    self.received(source, frame).await;
+                }
+                ServerEvent::Message(None) => break,
+                ServerEvent::Transfer(event) => {
+                    self.complete_update(event.key, Err(event.error));
+                }
             }
         }
         self.reap_transmissions();
@@ -137,17 +281,34 @@ impl Server {
     }
 
     /// Replace the update scheduled for `target` and announce the new image to that device.
-    async fn update(&mut self, target: Target, image: Image) {
+    async fn update(
+        &mut self,
+        target: Target,
+        image: Image,
+        completion: oneshot::Sender<UpdateResult>,
+    ) {
         let image_id = image.id();
         let transfer = image.into_transfer();
+        let generation = self.next_update_generation;
+        self.next_update_generation = self
+            .next_update_generation
+            .wrapping_add(UPDATE_GENERATION_STEP);
+        let key = TransferKey {
+            destination: target.destination,
+            generation,
+        };
         trace!("Offering OTA image {image_id:?} to {}", target.destination);
-        self.updates.insert(
+        if let Some(previous) = self.updates.insert(
             target.destination,
             ScheduledUpdate {
                 profile: target.profile,
                 transfer,
+                completion,
+                generation,
             },
-        );
+        ) {
+            let _result = previous.completion.send(Err(UpdateError::Superseded));
+        }
 
         let query_jitter =
             QueryJitter::new(QueryJitter::MAX).expect("the declared maximum query jitter is valid");
@@ -159,7 +320,11 @@ impl Server {
             .with_profile(target.profile)
             .with_disable_default_response(false);
         let response = send_zcl(&self.zcl, target.destination.into(), payload).await;
-        self.track_transmission(response);
+        if response.is_none() {
+            self.complete_update(key, Err(UpdateError::Transmission));
+        } else {
+            self.track_transmission(response, Some(key));
+        }
     }
 
     /// Validate the source metadata and dispatch an inbound frame to its command handler.
@@ -294,6 +459,15 @@ impl Server {
         {
             Ok(data) => data,
             Err(status) => {
+                if status == Status::Failure {
+                    self.complete_update(
+                        TransferKey {
+                            destination: context.destination,
+                            generation: update.generation,
+                        },
+                        Err(UpdateError::ImageTransfer),
+                    );
+                }
                 self.default_response(context, request_command_id, status)
                     .await;
                 return;
@@ -336,16 +510,22 @@ impl Server {
         {
             Ok(data) => data,
             Err(status) => {
+                if status == Status::Failure {
+                    self.complete_update(
+                        TransferKey {
+                            destination: context.destination,
+                            generation: update.generation,
+                        },
+                        Err(UpdateError::ImageTransfer),
+                    );
+                }
                 self.default_response(context, request_command_id, status)
                     .await;
                 return;
             }
         };
 
-        let zcl = self.zcl.clone();
         let transfer = update.transfer.clone();
-        let profile = context.profile;
-        let destination = context.destination;
         let image_id = request.image();
         let maximum_data_size = usize::from(request.maximum_data_size());
         let page_end = usize::try_from(request.file_offset())
@@ -353,52 +533,28 @@ impl Server {
             .saturating_add(usize::from(request.page_size()))
             .min(transfer.len());
         let spacing = Duration::from_millis(u64::from(request.response_spacing()));
-        let first_offset = request.file_offset();
-        let first_sequence_number = context.sequence_number;
-
-        self.transmissions.spawn(async move {
-            let mut offset =
-                usize::try_from(first_offset).expect("validated OTA file offset fits usize");
-            let mut sequence_number = first_sequence_number;
-            let mut block_data = first_block;
-            loop {
-                let file_offset =
-                    u32::try_from(offset).expect("validated OTA image offset fits u32");
-                let block = ImageBlock::try_new(image_id, file_offset, block_data)
-                    .expect("requested OTA blocks never exceed the client's u8 maximum data size");
-                let response = ImageBlockResponse::new(ImageBlockResponsePayload::Success(block));
-                let Some(hw_response) = reply_zcl(
-                    &zcl,
-                    destination,
-                    profile,
-                    sequence_number,
-                    Payload::from(response).with_aps_acknowledgement(false),
-                )
-                .await
-                else {
-                    return;
-                };
-                if let Err(error) = hw_response.await {
-                    warn!("OTA page transmission failed: {error}");
-                    return;
-                }
-
-                offset = offset.saturating_add(maximum_data_size);
-                if offset >= page_end {
-                    break;
-                }
-                sleep(spacing).await;
-                sequence_number = sequence_number.wrapping_add(1);
-                let block_end = offset.saturating_add(maximum_data_size).min(page_end);
-                block_data = match read_image_range(&transfer, offset, block_end - offset).await {
-                    Ok(data) => data,
-                    Err(status) => {
-                        warn!("Failed to read OTA page data: {status}");
-                        return;
-                    }
-                };
+        self.transmissions.spawn(
+            PageTransfer {
+                zcl: self.zcl.clone(),
+                image: transfer,
+                events: self.transfer_events_out.clone(),
+                key: TransferKey {
+                    destination: context.destination,
+                    generation: update.generation,
+                },
+                profile: context.profile,
+                destination: context.destination,
+                image_id,
+                maximum_data_size,
+                page_end,
+                spacing,
+                offset: usize::try_from(request.file_offset())
+                    .expect("validated OTA file offset fits usize"),
+                sequence_number: context.sequence_number,
+                block_data: first_block,
             }
-        });
+            .run(),
+        );
     }
 
     /// Complete or acknowledge an upgrade attempt according to the client's reported status.
@@ -414,6 +570,7 @@ impl Server {
                 .await;
             return;
         }
+        let generation = update.generation;
 
         match request.status() {
             UpgradeEndStatus::Success => {
@@ -423,12 +580,32 @@ impl Server {
                     UPGRADE_TIME_IMMEDIATE,
                 );
                 self.reply(context, response.into()).await;
+                self.complete_update(
+                    TransferKey {
+                        destination: context.destination,
+                        generation,
+                    },
+                    Ok(()),
+                );
             }
-            UpgradeEndStatus::Abort
+            status @ (UpgradeEndStatus::Abort
             | UpgradeEndStatus::InvalidImage
-            | UpgradeEndStatus::RequireMoreImage => {
+            | UpgradeEndStatus::RequireMoreImage) => {
                 self.default_response(context, request_command_id, Status::Success)
                     .await;
+                let error = match status {
+                    UpgradeEndStatus::Abort => UpdateError::Aborted,
+                    UpgradeEndStatus::InvalidImage => UpdateError::InvalidImage,
+                    UpgradeEndStatus::RequireMoreImage => UpdateError::RequireMoreImage,
+                    UpgradeEndStatus::Success => unreachable!("success is handled separately"),
+                };
+                self.complete_update(
+                    TransferKey {
+                        destination: context.destination,
+                        generation,
+                    },
+                    Err(error),
+                );
             }
         }
     }
@@ -442,6 +619,10 @@ impl Server {
 
     /// Send a cluster-specific reply with the request sequence number and track its completion.
     async fn reply(&mut self, context: RequestContext, payload: Payload) {
+        let key = self.update_for(context).map(|update| TransferKey {
+            destination: context.destination,
+            generation: update.generation,
+        });
         let response = reply_zcl(
             &self.zcl,
             context.destination,
@@ -450,7 +631,13 @@ impl Server {
             payload,
         )
         .await;
-        self.track_transmission(response);
+        if response.is_none() {
+            if let Some(key) = key {
+                self.complete_update(key, Err(UpdateError::Transmission));
+            }
+        } else {
+            self.track_transmission(response, key);
+        }
     }
 
     /// Send a global default response for a rejected or acknowledged client command.
@@ -476,13 +663,32 @@ impl Server {
     }
 
     /// Poll a deferred hardware response in a tracked task without blocking the server actor.
-    fn track_transmission(&mut self, response: Option<HwResponse>) {
+    fn track_transmission(&mut self, response: Option<HwResponse>, key: Option<TransferKey>) {
         if let Some(response) = response {
+            let transfer_events = self.transfer_events_out.clone();
             self.transmissions.spawn(async move {
                 if let Err(error) = response.await {
                     warn!("OTA transmission failed: {error}");
+                    if let Some(key) = key {
+                        report_transfer_failure(&transfer_events, key, UpdateError::Transmission);
+                    }
                 }
             });
+        }
+    }
+
+    /// Resolve and remove a scheduled update when `key` still identifies its current image.
+    fn complete_update(&mut self, key: TransferKey, result: UpdateResult) {
+        let is_current = self
+            .updates
+            .get(&key.destination)
+            .is_some_and(|update| update.generation == key.generation);
+        if is_current {
+            let update = self
+                .updates
+                .remove(&key.destination)
+                .expect("the current OTA update remains present");
+            let _result = update.completion.send(result);
         }
     }
 
@@ -494,6 +700,16 @@ impl Server {
             }
         }
     }
+}
+
+fn report_transfer_failure(
+    events: &UnboundedSender<TransferEvent>,
+    key: TransferKey,
+    error: UpdateError,
+) {
+    events
+        .send(TransferEvent { key, error })
+        .unwrap_or_else(drop);
 }
 
 const fn query_success(image: &ImageTransfer) -> QueryResponse {
@@ -644,8 +860,9 @@ mod tests {
     };
     use zb_zcl::{Command, Frame, Header, Scope};
 
-    use super::{Image, Message, ParseImage, Server, Target};
+    use super::{Image, Message, ParseImage, Server, Target, UpdateError, UpdateResult};
     use crate::zcl::{self, Payload};
+    use crate::{Error, Ota};
 
     const TEST_TIMEOUT: Duration = Duration::from_secs(1);
     const MANUFACTURER_CODE: u16 = 0x1234;
@@ -683,11 +900,13 @@ mod tests {
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
             let destination = test_destination();
+            let (completion, _completion_result) = tokio::sync::oneshot::channel();
 
             ota_sender
                 .send(Message::Update {
                     target: Target::new(destination, Profile::ZigbeeHomeAutomation),
                     image: test_image(),
+                    completion,
                 })
                 .await
                 .expect("OTA server is running");
@@ -724,7 +943,7 @@ mod tests {
             let image_id = image.id();
             let image_size =
                 u32::try_from(image.len()).expect("test image length fits OTA size field");
-            schedule(&ota_sender, image).await;
+            let completion = update_via_api(ota_sender.clone(), image);
             receive_zcl(&mut zcl_receiver).await;
 
             let current_image = ImageId::new(MANUFACTURER_CODE, IMAGE_TYPE, FILE_VERSION - 1);
@@ -781,6 +1000,53 @@ mod tests {
             assert_eq!(response.image(), image_id);
             assert_eq!(response.current_time(), 0);
             assert_eq!(response.upgrade_time(), 0);
+            assert!(matches!(completion.await, Ok(Ok(()))));
+        });
+    }
+
+    #[test]
+    fn update_reports_a_background_transmission_failure() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            let completion = update_via_api(ota_sender, test_image());
+
+            fail_next_transmission(&mut zcl_receiver).await;
+
+            let result = timeout(TEST_TIMEOUT, completion)
+                .await
+                .expect("OTA completion timed out")
+                .expect("OTA update task completed normally");
+            assert!(matches!(result, Err(Error::Ota(UpdateError::Transmission))));
+        });
+    }
+
+    #[test]
+    fn update_reports_the_clients_terminal_failure() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            let image = test_image();
+            let image_id = image.id();
+            let completion = update_via_api(ota_sender.clone(), image);
+            receive_zcl(&mut zcl_receiver).await;
+
+            ota_sender
+                .send(incoming(
+                    TEST_SEQUENCE_NUMBER,
+                    UpgradeEndRequest::new(UpgradeEndStatus::InvalidImage, image_id),
+                ))
+                .await
+                .expect("OTA server is running");
+            receive_zcl(&mut zcl_receiver).await;
+
+            let result = timeout(TEST_TIMEOUT, completion)
+                .await
+                .expect("OTA completion timed out")
+                .expect("OTA update task completed normally");
+            assert!(matches!(result, Err(Error::Ota(UpdateError::InvalidImage))));
         });
     }
 
@@ -792,7 +1058,7 @@ mod tests {
             tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
             let image = test_image();
             let image_id = image.id();
-            schedule(&ota_sender, image).await;
+            let _completion = schedule(&ota_sender, image).await;
             receive_zcl(&mut zcl_receiver).await;
 
             ota_sender
@@ -851,14 +1117,34 @@ mod tests {
         )
     }
 
-    async fn schedule(sender: &tokio::sync::mpsc::Sender<Message>, image: Image) {
+    async fn schedule(
+        sender: &tokio::sync::mpsc::Sender<Message>,
+        image: Image,
+    ) -> tokio::sync::oneshot::Receiver<UpdateResult> {
+        let (completion, result) = tokio::sync::oneshot::channel();
         sender
             .send(Message::Update {
                 target: Target::new(test_destination(), Profile::ZigbeeHomeAutomation),
                 image,
+                completion,
             })
             .await
             .expect("OTA server is running");
+        result
+    }
+
+    fn update_via_api(
+        sender: tokio::sync::mpsc::Sender<Message>,
+        image: Image,
+    ) -> tokio::task::JoinHandle<Result<(), Error>> {
+        tokio::spawn(async move {
+            sender
+                .update(
+                    Target::new(test_destination(), Profile::ZigbeeHomeAutomation),
+                    image,
+                )
+                .await
+        })
     }
 
     fn incoming<T>(sequence_number: u8, command: T) -> Message
@@ -921,6 +1207,18 @@ mod tests {
             }
             other => panic!("unexpected ZCL message: {other:?}"),
         }
+    }
+
+    async fn fail_next_transmission(receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>) {
+        let message = timeout(TEST_TIMEOUT, receiver.recv())
+            .await
+            .expect("OTA server response timed out")
+            .expect("ZCL actor channel is open");
+        let zcl::Message::Transmit { response, .. } = message else {
+            panic!("expected OTA transmission");
+        };
+        let hw_response = HwResponse::new(async { Err(zb_hw::Error::NotImplemented) });
+        assert!(response.send(Ok(hw_response)).is_ok());
     }
 
     fn reply_bytes(message: ObservedZcl) -> (u8, Bytes) {
