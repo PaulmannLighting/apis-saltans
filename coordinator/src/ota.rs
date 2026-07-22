@@ -7,12 +7,10 @@ use std::time::Duration;
 
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
-use thiserror::Error as ThisError;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot;
 use tokio::task::JoinSet;
-use tokio::time::sleep;
 use zb_aps::Data;
 use zb_core::destination::Device;
 use zb_core::{Cluster, Direction, IeeeAddress, Profile};
@@ -32,91 +30,22 @@ use self::image::ImageTransfer;
 pub use self::image::{
     BaseHeaderBytes, FieldControl, Header, HeaderString, Image, ParseImage, ParseImageError,
 };
+pub use self::message::{Message, Target, UpdateError, UpdateResult};
+use self::page_transfer::PageTransfer;
+use self::state::{RequestContext, ScheduledUpdate};
+use self::transfer::{ServerEvent, TransferEvent, TransferKey, report_failure};
 use crate::zcl::{self, Metadata, Payload};
 
 mod image;
+mod message;
+mod page_transfer;
+mod state;
+mod transfer;
 
 const CURRENT_TIME_IMMEDIATE: u32 = 0;
 const UPGRADE_TIME_IMMEDIATE: u32 = 0;
 const INITIAL_UPDATE_GENERATION: u64 = 0;
 const UPDATE_GENERATION_STEP: u64 = 1;
-
-/// A device endpoint and application profile targeted for an OTA update.
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct Target {
-    destination: Device,
-    profile: Profile,
-}
-
-impl Target {
-    /// Create an OTA update target.
-    #[must_use]
-    pub const fn new(destination: Device, profile: Profile) -> Self {
-        Self {
-            destination,
-            profile,
-        }
-    }
-
-    /// Return the target device endpoint.
-    #[must_use]
-    pub const fn destination(self) -> Device {
-        self.destination
-    }
-
-    /// Return the target application profile.
-    #[must_use]
-    pub const fn profile(self) -> Profile {
-        self.profile
-    }
-}
-
-/// Messages accepted by the coordinator OTA server.
-#[derive(Debug)]
-pub enum Message {
-    /// Offer a validated OTA image to one device endpoint.
-    Update {
-        /// Device endpoint and profile to update.
-        target: Target,
-        /// Complete OTA image offered to the device.
-        image: Image,
-        /// Reports the terminal result of the scheduled update.
-        completion: oneshot::Sender<UpdateResult>,
-    },
-    /// A received OTA Upgrade cluster command.
-    Received {
-        /// NWK source information supplied by the hardware backend.
-        source: Source,
-        /// Typed APS and ZCL frame.
-        frame: Data<Frame<OtaCommand>>,
-    },
-}
-
-/// Terminal failure reported by a coordinator-managed OTA update.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, ThisError)]
-pub enum UpdateError {
-    /// A newer image replaced this update for the same device endpoint.
-    #[error("the OTA update was superseded by a newer image")]
-    Superseded,
-    /// The OTA client aborted the update.
-    #[error("the OTA client aborted the update")]
-    Aborted,
-    /// The OTA client rejected the downloaded image as invalid.
-    #[error("the OTA client rejected the downloaded image")]
-    InvalidImage,
-    /// The OTA client requires another image before it can upgrade.
-    #[error("the OTA client requires another image")]
-    RequireMoreImage,
-    /// Reading image data failed.
-    #[error("reading OTA image data failed")]
-    ImageTransfer,
-    /// Transmitting an OTA command failed.
-    #[error("transmitting OTA data failed")]
-    Transmission,
-}
-
-/// Terminal result delivered to the caller that scheduled an OTA update.
-pub type UpdateResult = Result<(), UpdateError>;
 
 /// Stateful OTA Upgrade server actor.
 #[derive(Debug)]
@@ -128,104 +57,6 @@ pub struct Server {
     transfer_events: UnboundedReceiver<TransferEvent>,
     transfer_events_out: UnboundedSender<TransferEvent>,
     next_update_generation: u64,
-}
-
-#[derive(Debug)]
-struct ScheduledUpdate {
-    profile: Profile,
-    transfer: ImageTransfer,
-    completion: oneshot::Sender<UpdateResult>,
-    generation: u64,
-}
-
-#[derive(Clone, Copy, Debug)]
-struct RequestContext {
-    destination: Device,
-    profile: Profile,
-    source_ieee_address: Option<IeeeAddress>,
-    sequence_number: u8,
-}
-
-#[derive(Clone, Copy, Debug)]
-struct TransferKey {
-    destination: Device,
-    generation: u64,
-}
-
-#[derive(Clone, Copy, Debug)]
-struct TransferEvent {
-    key: TransferKey,
-    error: UpdateError,
-}
-
-struct PageTransfer {
-    zcl: Sender<zcl::Message>,
-    image: ImageTransfer,
-    events: UnboundedSender<TransferEvent>,
-    key: TransferKey,
-    profile: Profile,
-    destination: Device,
-    image_id: ImageId,
-    maximum_data_size: usize,
-    page_end: usize,
-    spacing: Duration,
-    offset: usize,
-    sequence_number: u8,
-    block_data: Box<[u8]>,
-}
-
-enum ServerEvent {
-    Message(Option<Message>),
-    Transfer(TransferEvent),
-}
-
-impl PageTransfer {
-    async fn run(mut self) {
-        loop {
-            let file_offset =
-                u32::try_from(self.offset).expect("validated OTA image offset fits u32");
-            let block = ImageBlock::try_new(self.image_id, file_offset, self.block_data)
-                .expect("requested OTA blocks never exceed the client's u8 maximum data size");
-            let response = ImageBlockResponse::new(ImageBlockResponsePayload::Success(block));
-            let Some(hw_response) = reply_zcl(
-                &self.zcl,
-                self.destination,
-                self.profile,
-                self.sequence_number,
-                Payload::from(response).with_aps_acknowledgement(false),
-            )
-            .await
-            else {
-                report_transfer_failure(&self.events, self.key, UpdateError::Transmission);
-                return;
-            };
-            if let Err(error) = hw_response.await {
-                warn!("OTA page transmission failed: {error}");
-                report_transfer_failure(&self.events, self.key, UpdateError::Transmission);
-                return;
-            }
-
-            self.offset = self.offset.saturating_add(self.maximum_data_size);
-            if self.offset >= self.page_end {
-                return;
-            }
-            sleep(self.spacing).await;
-            self.sequence_number = self.sequence_number.wrapping_add(1);
-            let block_end = self
-                .offset
-                .saturating_add(self.maximum_data_size)
-                .min(self.page_end);
-            self.block_data =
-                match read_image_range(&self.image, self.offset, block_end - self.offset).await {
-                    Ok(data) => data,
-                    Err(status) => {
-                        warn!("Failed to read OTA page data: {status}");
-                        report_transfer_failure(&self.events, self.key, UpdateError::ImageTransfer);
-                        return;
-                    }
-                };
-        }
-    }
 }
 
 impl Server {
@@ -287,6 +118,8 @@ impl Server {
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
     ) {
+        let destination = target.destination();
+        let profile = target.profile();
         let image_id = image.id();
         let transfer = image.into_transfer();
         let generation = self.next_update_generation;
@@ -294,14 +127,14 @@ impl Server {
             .next_update_generation
             .wrapping_add(UPDATE_GENERATION_STEP);
         let key = TransferKey {
-            destination: target.destination,
+            destination,
             generation,
         };
-        trace!("Offering OTA image {image_id:?} to {}", target.destination);
+        trace!("Offering OTA image {image_id:?} to {destination}");
         if let Some(previous) = self.updates.insert(
-            target.destination,
+            destination,
             ScheduledUpdate {
-                profile: target.profile,
+                profile,
                 transfer,
                 completion,
                 generation,
@@ -317,9 +150,9 @@ impl Server {
             image: image_id,
         });
         let payload = Payload::from(notification)
-            .with_profile(target.profile)
+            .with_profile(profile)
             .with_disable_default_response(false);
-        let response = send_zcl(&self.zcl, target.destination.into(), payload).await;
+        let response = send_zcl(&self.zcl, destination.into(), payload).await;
         if response.is_none() {
             self.complete_update(key, Err(UpdateError::Transmission));
         } else {
@@ -670,7 +503,7 @@ impl Server {
                 if let Err(error) = response.await {
                     warn!("OTA transmission failed: {error}");
                     if let Some(key) = key {
-                        report_transfer_failure(&transfer_events, key, UpdateError::Transmission);
+                        report_failure(&transfer_events, key, UpdateError::Transmission);
                     }
                 }
             });
@@ -700,16 +533,6 @@ impl Server {
             }
         }
     }
-}
-
-fn report_transfer_failure(
-    events: &UnboundedSender<TransferEvent>,
-    key: TransferKey,
-    error: UpdateError,
-) {
-    events
-        .send(TransferEvent { key, error })
-        .unwrap_or_else(drop);
 }
 
 const fn query_success(image: &ImageTransfer) -> QueryResponse {

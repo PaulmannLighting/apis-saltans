@@ -164,6 +164,12 @@ one-shot, or a `Received` message containing NWK source information and a typed 
 One scheduled image is stored per device endpoint; a later update replaces it and resolves the old
 completion channel as superseded.
 
+The OTA module keeps the actor and protocol handlers in `ota.rs`. Its supporting types are grouped
+by responsibility: `message.rs` defines the public actor messages, target, and update result;
+`state.rs` contains scheduled-update and request context state; `transfer.rs` defines internal
+completion events and generation keys; and `page_transfer.rs` owns the paced page-transfer worker.
+Image parsing and source access remain under the nested `image` module.
+
 An image separates its parsed header from its payload source. The small serialized header and its
 decoded metadata remain in memory, while the payload stays behind an owned `Read + Seek` handle.
 The `ParseImage` extension trait defines the parsing workflow as overridable default stages for
