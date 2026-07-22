@@ -1,5 +1,3 @@
-use std::future::Future;
-
 use tokio::sync::mpsc::Sender;
 
 use crate::ota::{Image, Message, Target};
