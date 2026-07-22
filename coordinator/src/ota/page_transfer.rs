@@ -11,6 +11,10 @@ use super::image::ImageTransfer;
 use super::transfer::{TransferEvent, TransferKey, report_failure};
 use super::{Payload, UpdateError, read_image_range, reply_zcl, zcl};
 
+/// State owned by a paced OTA Image Page transfer task.
+///
+/// The task sends consecutive Image Block responses without blocking the server actor and reports
+/// its first read or transmission failure through `events`.
 pub(super) struct PageTransfer {
     pub(super) zcl: Sender<zcl::Message>,
     pub(super) image: ImageTransfer,
@@ -28,6 +32,7 @@ pub(super) struct PageTransfer {
 }
 
 impl PageTransfer {
+    /// Send all remaining blocks in the requested page, respecting response spacing.
     pub(super) async fn run(mut self) {
         loop {
             let file_offset =
