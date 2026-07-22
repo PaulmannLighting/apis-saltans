@@ -934,7 +934,7 @@ mod tests {
                 let (sequence_number, metadata, bytes) =
                     reply_parts(receive_zcl(&mut zcl_receiver).await);
                 assert_eq!(sequence_number, TEST_SEQUENCE_NUMBER.wrapping_add(index));
-                assert!(!metadata.aps_acknowledgement());
+                assert!(metadata.tx_options().is_empty());
                 let response = ImageBlockResponse::from_le_stream(bytes.into_iter())
                     .expect("valid Image Block Response");
                 assert!(matches!(
@@ -1077,7 +1077,10 @@ mod tests {
 
     fn reply_bytes(message: ObservedZcl) -> (u8, Bytes) {
         let (sequence_number, metadata, bytes) = reply_parts(message);
-        assert!(metadata.aps_acknowledgement());
+        assert_eq!(
+            metadata.tx_options(),
+            zb_aps::TxOptions::ACKNOWLEDGED_TRANSMISSION
+        );
         (sequence_number, bytes)
     }
 

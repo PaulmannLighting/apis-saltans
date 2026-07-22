@@ -254,8 +254,8 @@ not the endpoint-query return type.
 
 `Datagram` is the transmit payload passed to the driver. It contains:
 
-- `Metadata`, which identifies the APS profile and cluster and selects whether the driver requests
-  APS acknowledgement and retries.
+- `Metadata`, which identifies the APS profile and cluster and carries the complete
+  `zb_aps::TxOptions` mask for the APSDE-DATA request.
 - `bytes::Bytes`, which contains the serialized application payload.
 
 `HwResponse` owns a boxed, pinned, `Send + 'static` future supplied by the driver. Its public future

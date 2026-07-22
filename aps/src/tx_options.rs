@@ -9,7 +9,7 @@ use le_stream::{FromLeStream, ToLeStream};
 /// Options may be combined to request APS security, acknowledgements, or fragmentation behavior
 /// for one application-service data unit. Bits outside the defined Zigbee APSDE-DATA options are
 /// reserved and rejected during deserialization.
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, ToLeStream)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, ToLeStream)]
 #[repr(transparent)]
 pub struct TxOptions(u8);
 

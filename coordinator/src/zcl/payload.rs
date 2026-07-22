@@ -2,6 +2,7 @@
 
 use bytes::Bytes;
 use le_stream::ToLeStream;
+use zb_aps::TxOptions;
 use zb_core::{ClusterSpecific, Direction, Profile, Profiled};
 use zb_zcl::{Command, Directed, Scope, Scoped};
 
@@ -41,10 +42,10 @@ impl Payload {
         self
     }
 
-    /// Override whether the outgoing APS frame requests acknowledgement and retries.
+    /// Override the outgoing APSDE-DATA transmission options.
     #[must_use]
-    pub const fn with_aps_acknowledgement(mut self, enabled: bool) -> Self {
-        self.aps_metadata = self.aps_metadata.with_aps_acknowledgement(enabled);
+    pub const fn with_tx_options(mut self, tx_options: TxOptions) -> Self {
+        self.aps_metadata = self.aps_metadata.with_tx_options(tx_options);
         self
     }
 

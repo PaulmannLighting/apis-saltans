@@ -3,6 +3,7 @@ use std::time::Duration;
 use log::warn;
 use tokio::sync::mpsc::{Sender, UnboundedSender};
 use tokio::time::sleep;
+use zb_aps::TxOptions;
 use zb_core::destination::Device;
 use zb_zcl::ota_upgrade::{ImageBlock, ImageBlockResponse, ImageBlockResponsePayload, ImageId};
 
@@ -43,7 +44,7 @@ impl PageTransfer {
                 self.destination,
                 OTA_PROFILE,
                 self.sequence_number,
-                Payload::from(response).with_aps_acknowledgement(false),
+                Payload::from(response).with_tx_options(TxOptions::empty()),
             )
             .await
             else {

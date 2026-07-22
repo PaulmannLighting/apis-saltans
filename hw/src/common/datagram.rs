@@ -1,7 +1,8 @@
 use bytes::Bytes;
+use zb_aps::TxOptions;
 use zb_core::Profile;
 
-const DEFAULT_APS_ACKNOWLEDGEMENT: bool = true;
+const DEFAULT_TX_OPTIONS: TxOptions = TxOptions::ACKNOWLEDGED_TRANSMISSION;
 
 /// Serialized application payload plus APS metadata for transmission.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -36,29 +37,29 @@ impl Datagram {
     }
 }
 
-/// APS metadata associated with a serialized application payload.
+/// APS metadata and transmission options associated with a serialized application payload.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Metadata {
     profile: Profile,
     cluster_id: u16,
-    aps_acknowledgement: bool,
+    tx_options: TxOptions,
 }
 
 impl Metadata {
-    /// Create metadata for an APS profile and cluster.
+    /// Create metadata for an APS profile and cluster with acknowledged transmission enabled.
     #[must_use]
     pub const fn new(profile: Profile, cluster_id: u16) -> Self {
         Self {
             profile,
             cluster_id,
-            aps_acknowledgement: DEFAULT_APS_ACKNOWLEDGEMENT,
+            tx_options: DEFAULT_TX_OPTIONS,
         }
     }
 
-    /// Override whether APS acknowledgement and retries are requested for this transmission.
+    /// Override the APSDE-DATA transmission options.
     #[must_use]
-    pub const fn with_aps_acknowledgement(mut self, enabled: bool) -> Self {
-        self.aps_acknowledgement = enabled;
+    pub const fn with_tx_options(mut self, tx_options: TxOptions) -> Self {
+        self.tx_options = tx_options;
         self
     }
 
@@ -81,9 +82,35 @@ impl Metadata {
         self.cluster_id
     }
 
-    /// Return whether the driver should request APS acknowledgement and retries.
+    /// Return the APSDE-DATA transmission options.
     #[must_use]
-    pub const fn aps_acknowledgement(self) -> bool {
-        self.aps_acknowledgement
+    pub const fn tx_options(self) -> TxOptions {
+        self.tx_options
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use zb_aps::TxOptions;
+    use zb_core::{Cluster, Profile};
+
+    use super::Metadata;
+
+    const PROFILE: Profile = Profile::ZigbeeHomeAutomation;
+    const CLUSTER_ID: u16 = Cluster::OtaUpgrade.as_u16();
+
+    #[test]
+    fn requests_acknowledged_transmission_by_default() {
+        let metadata = Metadata::new(PROFILE, CLUSTER_ID);
+
+        assert_eq!(metadata.tx_options(), TxOptions::ACKNOWLEDGED_TRANSMISSION);
+    }
+
+    #[test]
+    fn overrides_all_transmission_options() {
+        let options = TxOptions::SECURITY_ENABLED | TxOptions::FRAGMENTATION_PERMITTED;
+        let metadata = Metadata::new(PROFILE, CLUSTER_ID).with_tx_options(options);
+
+        assert_eq!(metadata.tx_options(), options);
     }
 }
