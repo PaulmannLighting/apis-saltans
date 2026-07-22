@@ -14,6 +14,7 @@ This crate is under active development.
   - `Control`
   - `FrameType`
   - `DeliveryMode`
+  - `TxOptions` (APSDE-DATA transmission options)
 - Addressing and destination modeling:
   - `Destination` (unicast, broadcast endpoint, group)
   - `Broadcast` (well-known Zigbee broadcast addresses)
@@ -41,6 +42,7 @@ Top-level re-exports are available from `apis-saltans-aps` directly.
 - `frame::extended`: extended header fields and fragmentation
 - `frame::data::defragmentation`: stateful reassembly of fragmented APS data frames
 - `broadcast`: Zigbee network broadcast addresses
+- `tx_options`: APSDE-DATA transmission-option bitflags
 
 ## Defragmentation
 

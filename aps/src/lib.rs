@@ -17,6 +17,8 @@ pub use self::frame::{
     AckFmt, Control, DeliveryMode, Destination, Extended, ExtendedControl, Fragmentation,
     FrameType, WeakDestination,
 };
+pub use self::tx_options::TxOptions;
 
 mod broadcast;
 mod frame;
+mod tx_options;
