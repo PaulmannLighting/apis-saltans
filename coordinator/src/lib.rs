@@ -29,15 +29,16 @@ pub use zb_hw::Driver;
 
 pub use self::api::{
     AddressTranslation, Attributes, Binding, Clusters, ColorControl, Endpoints, FoundNetwork,
-    Groups, Joining, Level, LocalNode, Node, OnOff, ReadAttributeResult, Routing, ScannedChannel,
-    Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclResponse, Zdp, ZdpResponse,
+    Groups, Joining, Level, LocalNode, Node, OnOff, Ota, ReadAttributeResult, Routing,
+    ScannedChannel, Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclResponse, Zdp,
+    ZdpResponse,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};
 pub use self::event::{Device, Event, Network, NetworkError};
 pub use self::ota::{
     BaseHeaderBytes as OtaBaseHeaderBytes, FieldControl as OtaFieldControl, Header as OtaHeader,
-    HeaderString as OtaHeaderString, Image as OtaImage, Message as OtaMessage, Ota, ParseImage,
+    HeaderString as OtaHeaderString, Image as OtaImage, Message as OtaMessage, ParseImage,
     ParseImageError, Target as OtaTarget,
 };
 pub use self::response::{CommunicationResponse, TransmissionResponse};

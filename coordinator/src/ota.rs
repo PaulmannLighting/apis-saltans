@@ -1,7 +1,6 @@
 //! Coordinator-owned OTA Upgrade server.
 
 use std::collections::BTreeMap;
-use std::future::Future;
 use std::time::Duration;
 
 use le_stream::ToLeStream;
@@ -31,7 +30,6 @@ pub use self::image::{
     BaseHeaderBytes, FieldControl, Header, HeaderString, Image, ParseImage, ParseImageError,
 };
 use crate::zcl::{self, Metadata, Payload};
-use crate::{Coordinator, Error};
 
 mod image;
 
@@ -85,41 +83,6 @@ pub enum Message {
         /// Typed APS and ZCL frame.
         frame: Data<Frame<OtaCommand>>,
     },
-}
-
-/// API for scheduling OTA updates through the coordinator-owned server.
-pub trait Ota {
-    /// Offer `image` to one device endpoint and initiate the OTA discovery flow.
-    ///
-    /// A later call for the same endpoint replaces the previously offered image. The returned
-    /// future only confirms that the request reached the server actor; transmission and the
-    /// remaining OTA exchange proceed asynchronously.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::SendError`] if the OTA server actor is no longer running.
-    fn update(
-        &self,
-        target: Target,
-        image: Image,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
-}
-
-impl Ota for Sender<Message> {
-    async fn update(&self, target: Target, image: Image) -> Result<(), Error> {
-        self.send(Message::Update { target, image }).await?;
-        Ok(())
-    }
-}
-
-impl Ota for Coordinator {
-    fn update(
-        &self,
-        target: Target,
-        image: Image,
-    ) -> impl Future<Output = Result<(), Error>> + Send {
-        self.ota.update(target, image)
-    }
 }
 
 /// Stateful OTA Upgrade server actor.
