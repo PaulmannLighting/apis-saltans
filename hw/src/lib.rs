@@ -32,13 +32,16 @@
 //! `Ncp::get_endpoints`.
 
 #[cfg(any(feature = "coordinator", feature = "driver"))]
+#[cfg_attr(docsrs, doc(any(feature = "coordinator", feature = "driver")))]
 pub use self::common::{
     Clusters, Datagram, Driver, Error, Event, FoundNetwork, HwResponse, Metadata, NcpHandle,
     Network, RouteError, ScannedChannel, WeakNcpHandle,
 };
 #[cfg(feature = "coordinator")]
+#[cfg_attr(docsrs, doc(feature = "coordinator"))]
 pub use self::coordinator::*;
 #[cfg(feature = "driver")]
+#[cfg_attr(docsrs, doc(feature = "driver"))]
 pub use self::reexports::{aps, core, nwk, zdp};
 
 mod common;
