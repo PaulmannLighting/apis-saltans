@@ -28,7 +28,6 @@ Public API exports:
   - `OtaHeader`
   - `OtaHeaderString`
   - `OtaImage`
-  - `OtaTarget`
   - `OtaMessage`
   - `OtaUpdateError`
   - `OtaUpdateResult`
@@ -122,10 +121,10 @@ the NCP to resolve addresses, but persistence and cache policy remain applicatio
 ## OTA Upgrade Server
 
 The coordinator owns an OTA Upgrade (`0x0019`) server. Open a complete Zigbee OTA file as a
-seekable reader, parse it into an `OtaImage`, select the device endpoint and application profile
-with `OtaTarget`, and call `Ota::update`. The image parser validates the OTA identifier, version,
-null-terminated ASCII header string, declared header and file sizes, optional destination, and
-hardware-version range before the image can be scheduled.
+seekable reader, parse it into an `OtaImage`, select the device endpoint, and call `Ota::update`.
+OTA traffic uses the Zigbee Home Automation profile. The image parser validates the identifier,
+version, null-terminated ASCII header string, declared header and file sizes, optional destination,
+and hardware-version range before the image can be scheduled.
 
 `OtaImage` keeps its parsed `OtaHeader` in memory and retains the supplied
 `Read + Seek + Send + 'static` source for payload reads; it does not copy the payload into an image
@@ -140,11 +139,10 @@ source length, and positioning the retained source at the payload. Implementatio
 reader types can override any of these stages while retaining the default parser workflow.
 
 ```rust,no_run
-use apis_saltans_coordinator::{Coordinator, Ota, OtaTarget, ParseImage};
+use apis_saltans_coordinator::{Coordinator, Ota, ParseImage};
 use std::fs::File;
 use std::path::Path;
 use zb_core::destination::Device;
-use zb_core::Profile;
 
 async fn offer_update(
     coordinator: &Coordinator,
@@ -152,8 +150,7 @@ async fn offer_update(
     ota_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let image = File::open(ota_path)?.parse()?;
-    let target = OtaTarget::new(destination, Profile::ZigbeeHomeAutomation);
-    coordinator.update(target, image).await?;
+    coordinator.update(destination, image).await?;
     Ok(())
 }
 ```

@@ -30,7 +30,7 @@ use self::image::ImageTransfer;
 pub use self::image::{
     BaseHeaderBytes, FieldControl, Header, HeaderString, Image, ParseImage, ParseImageError,
 };
-pub use self::message::{Message, Target, UpdateError, UpdateResult};
+pub use self::message::{Message, UpdateError, UpdateResult};
 use self::page_transfer::PageTransfer;
 use self::state::{RequestContext, ScheduledUpdate};
 use self::transfer::{ServerEvent, TransferEvent, TransferKey, report_failure};
@@ -46,6 +46,7 @@ const CURRENT_TIME_IMMEDIATE: u32 = 0;
 const UPGRADE_TIME_IMMEDIATE: u32 = 0;
 const INITIAL_UPDATE_GENERATION: u64 = 0;
 const UPDATE_GENERATION_STEP: u64 = 1;
+const OTA_PROFILE: Profile = Profile::ZigbeeHomeAutomation;
 
 /// Stateful OTA Upgrade server actor.
 #[derive(Debug)]
@@ -114,12 +115,10 @@ impl Server {
     /// Replace the update scheduled for `target` and announce the new image to that device.
     async fn update(
         &mut self,
-        target: Target,
+        target: Device,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
     ) {
-        let destination = target.destination();
-        let profile = target.profile();
         let image_id = image.id();
         let transfer = image.into_transfer();
         let generation = self.next_update_generation;
@@ -127,14 +126,13 @@ impl Server {
             .next_update_generation
             .wrapping_add(UPDATE_GENERATION_STEP);
         let key = TransferKey {
-            destination,
+            destination: target,
             generation,
         };
-        trace!("Offering OTA image {image_id:?} to {destination}");
+        trace!("Offering OTA image {image_id:?} to {target}");
         if let Some(previous) = self.updates.insert(
-            destination,
+            target,
             ScheduledUpdate {
-                profile,
                 transfer,
                 completion,
                 generation,
@@ -150,9 +148,9 @@ impl Server {
             image: image_id,
         });
         let payload = Payload::from(notification)
-            .with_profile(profile)
+            .with_profile(OTA_PROFILE)
             .with_disable_default_response(false);
-        let response = send_zcl(&self.zcl, destination.into(), payload).await;
+        let response = send_zcl(&self.zcl, target.into(), payload).await;
         if response.is_none() {
             self.complete_update(key, Err(UpdateError::Transmission));
         } else {
@@ -173,6 +171,10 @@ impl Server {
         }) else {
             return;
         };
+        if profile != OTA_PROFILE {
+            warn!("Discarding OTA command with unsupported profile {profile}");
+            return;
+        }
         let Ok(short_id) = source.node_id().try_into().inspect_err(|node_id| {
             warn!("Discarding OTA command from invalid node ID {node_id:#06x}");
         }) else {
@@ -183,7 +185,6 @@ impl Server {
         let (zcl_header, command) = zcl_frame.into_parts();
         let context = RequestContext {
             destination: Device::new(short_id, endpoint),
-            profile,
             source_ieee_address: source.ieee_address(),
             sequence_number: zcl_header.seq(),
         };
@@ -375,7 +376,6 @@ impl Server {
                     destination: context.destination,
                     generation: update.generation,
                 },
-                profile: context.profile,
                 destination: context.destination,
                 image_id,
                 maximum_data_size,
@@ -443,11 +443,9 @@ impl Server {
         }
     }
 
-    /// Find the update authorized for the request's device endpoint and application profile.
+    /// Find the update authorized for the request's device endpoint.
     fn update_for(&self, context: RequestContext) -> Option<&ScheduledUpdate> {
-        self.updates
-            .get(&context.destination)
-            .filter(|update| update.profile == context.profile)
+        self.updates.get(&context.destination)
     }
 
     /// Send a cluster-specific reply with the request sequence number and track its completion.
@@ -459,7 +457,7 @@ impl Server {
         let response = reply_zcl(
             &self.zcl,
             context.destination,
-            context.profile,
+            OTA_PROFILE,
             context.sequence_number,
             payload,
         )
@@ -482,7 +480,7 @@ impl Server {
     ) {
         let response = DefaultResponse::new(request_command_id, status.into());
         let payload = Payload::new(
-            zb_hw::Metadata::new(context.profile, Cluster::OtaUpgrade.as_u16()),
+            zb_hw::Metadata::new(OTA_PROFILE, Cluster::OtaUpgrade.as_u16()),
             Metadata::new(
                 Scope::Global,
                 Direction::ServerToClient,
@@ -683,7 +681,7 @@ mod tests {
     };
     use zb_zcl::{Command, Frame, Header, Scope};
 
-    use super::{Image, Message, ParseImage, Server, Target, UpdateError, UpdateResult};
+    use super::{Image, Message, OTA_PROFILE, ParseImage, Server, UpdateError, UpdateResult};
     use crate::zcl::{self, Payload};
     use crate::{Error, Ota};
 
@@ -727,7 +725,7 @@ mod tests {
 
             ota_sender
                 .send(Message::Update {
-                    target: Target::new(destination, Profile::ZigbeeHomeAutomation),
+                    target: destination,
                     image: test_image(),
                     completion,
                 })
@@ -743,7 +741,8 @@ mod tests {
                 panic!("expected Image Notify transmission");
             };
             assert_eq!(actual_destination, destination.into());
-            let (_, _, bytes) = payload.into_parts();
+            let (metadata, _, bytes) = payload.into_parts();
+            assert_eq!(metadata.profile(), OTA_PROFILE);
             let notification =
                 ImageNotify::from_le_stream(bytes.into_iter()).expect("valid Image Notify payload");
             assert!(matches!(
@@ -753,6 +752,38 @@ mod tests {
                         && image.image_type() == IMAGE_TYPE
                 && image.file_version() == FILE_VERSION
             ));
+        });
+    }
+
+    #[test]
+    fn ignores_requests_outside_the_home_automation_profile() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            let image = test_image();
+            let _completion = schedule(&ota_sender, image).await;
+            receive_zcl(&mut zcl_receiver).await;
+
+            let current_image = ImageId::new(MANUFACTURER_CODE, IMAGE_TYPE, FILE_VERSION - 1);
+            ota_sender
+                .send(incoming_with_profile(
+                    Profile::TouchLink,
+                    TEST_SEQUENCE_NUMBER.wrapping_sub(1),
+                    QueryNextImageRequest::new(current_image, None),
+                ))
+                .await
+                .expect("OTA server is running");
+            ota_sender
+                .send(incoming(
+                    TEST_SEQUENCE_NUMBER,
+                    QueryNextImageRequest::new(current_image, None),
+                ))
+                .await
+                .expect("OTA server is running");
+
+            let (sequence_number, _) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+            assert_eq!(sequence_number, TEST_SEQUENCE_NUMBER);
         });
     }
 
@@ -947,7 +978,7 @@ mod tests {
         let (completion, result) = tokio::sync::oneshot::channel();
         sender
             .send(Message::Update {
-                target: Target::new(test_destination(), Profile::ZigbeeHomeAutomation),
+                target: test_destination(),
                 image,
                 completion,
             })
@@ -960,24 +991,24 @@ mod tests {
         sender: tokio::sync::mpsc::Sender<Message>,
         image: Image,
     ) -> tokio::task::JoinHandle<Result<(), Error>> {
-        tokio::spawn(async move {
-            sender
-                .update(
-                    Target::new(test_destination(), Profile::ZigbeeHomeAutomation),
-                    image,
-                )
-                .await
-        })
+        tokio::spawn(async move { sender.update(test_destination(), image).await })
     }
 
     fn incoming<T>(sequence_number: u8, command: T) -> Message
     where
         T: Command + Into<OtaCommand>,
     {
+        incoming_with_profile(OTA_PROFILE, sequence_number, command)
+    }
+
+    fn incoming_with_profile<T>(profile: Profile, sequence_number: u8, command: T) -> Message
+    where
+        T: Command + Into<OtaCommand>,
+    {
         let aps_header = zb_aps::data::Header::new(
             zb_aps::Destination::Unicast(ENDPOINT),
             Cluster::OtaUpgrade.as_u16(),
-            Profile::ZigbeeHomeAutomation.as_u16(),
+            profile.as_u16(),
             ENDPOINT,
             0,
             None,

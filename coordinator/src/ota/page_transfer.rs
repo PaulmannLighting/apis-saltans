@@ -3,13 +3,12 @@ use std::time::Duration;
 use log::warn;
 use tokio::sync::mpsc::{Sender, UnboundedSender};
 use tokio::time::sleep;
-use zb_core::Profile;
 use zb_core::destination::Device;
 use zb_zcl::ota_upgrade::{ImageBlock, ImageBlockResponse, ImageBlockResponsePayload, ImageId};
 
 use super::image::ImageTransfer;
 use super::transfer::{TransferEvent, TransferKey, report_failure};
-use super::{Payload, UpdateError, read_image_range, reply_zcl, zcl};
+use super::{OTA_PROFILE, Payload, UpdateError, read_image_range, reply_zcl, zcl};
 
 /// State owned by a paced OTA Image Page transfer task.
 ///
@@ -20,7 +19,6 @@ pub(super) struct PageTransfer {
     pub(super) image: ImageTransfer,
     pub(super) events: UnboundedSender<TransferEvent>,
     pub(super) key: TransferKey,
-    pub(super) profile: Profile,
     pub(super) destination: Device,
     pub(super) image_id: ImageId,
     pub(super) maximum_data_size: usize,
@@ -43,7 +41,7 @@ impl PageTransfer {
             let Some(hw_response) = reply_zcl(
                 &self.zcl,
                 self.destination,
-                self.profile,
+                OTA_PROFILE,
                 self.sequence_number,
                 Payload::from(response).with_aps_acknowledgement(false),
             )

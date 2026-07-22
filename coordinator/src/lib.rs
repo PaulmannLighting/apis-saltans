@@ -8,7 +8,7 @@
 //! workflows built from traits such as [`Node`], [`Endpoints`], [`Binding`],
 //! [`AddressTranslation`], [`Zcl`], and [`Zdp`].
 //! The built-in [`Ota`] service validates complete OTA image files and automatically serves the
-//! OTA Upgrade cluster exchange for individually scheduled [`OtaTarget`] endpoints.
+//! OTA Upgrade cluster exchange for individually scheduled device endpoints.
 //!
 //! The hardware NCP is responsible for providing its complete local endpoint descriptors through
 //! [`zb_hw::Ncp::get_endpoints`]. The coordinator queries those descriptors when serving ZDP match
@@ -39,8 +39,7 @@ pub use self::event::{Device, Event, Network, NetworkError};
 pub use self::ota::{
     BaseHeaderBytes as OtaBaseHeaderBytes, FieldControl as OtaFieldControl, Header as OtaHeader,
     HeaderString as OtaHeaderString, Image as OtaImage, Message as OtaMessage, ParseImage,
-    ParseImageError, Target as OtaTarget, UpdateError as OtaUpdateError,
-    UpdateResult as OtaUpdateResult,
+    ParseImageError, UpdateError as OtaUpdateError, UpdateResult as OtaUpdateResult,
 };
 pub use self::response::{CommunicationResponse, TransmissionResponse};
 
