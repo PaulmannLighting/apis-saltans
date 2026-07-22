@@ -84,6 +84,7 @@ bytes)`.
     - Level
     - Alarms
     - Scenes
+    - OTA Upgrade
 - Lighting cluster commands:
     - Color Control
 - IAS cluster commands:
@@ -113,6 +114,7 @@ Current attribute modules include:
     - Level Control
     - Alarms
     - Time
+    - OTA Upgrade
 - Measurement and Sensing:
     - Illuminance Measurement
     - Illuminance Level Sensing
@@ -125,6 +127,27 @@ Current attribute modules include:
 
 For reports, use `zb_zcl::AttributeReport::parse(cluster_id, attribute_id, typ)` to map a raw cluster ID,
 attribute ID, and ZCL `Type` into the corresponding typed reportable attribute enum.
+
+## OTA Upgrade
+
+The `ota_upgrade` module implements cluster `0x0019` end to end. Its runtime command enum covers
+Image Notify, Query Next Image, Image Block/Page transfer, Upgrade End, and Query Specific File
+request/response commands. Status-dependent response layouts are represented by `QueryResponse`
+and `ImageBlockResponsePayload`, while `ImageBlock::try_new` ensures image data fits the wire
+protocol's one-octet data-size field.
+
+```rust
+use zb_zcl::ota_upgrade::{ImageId, QueryNextImageRequest};
+
+const MANUFACTURER_CODE: u16 = 0x1234;
+const IMAGE_TYPE: u16 = 0x0001;
+const CURRENT_FILE_VERSION: u32 = 0x0102_0304;
+const HARDWARE_VERSION: u16 = 0x0002;
+
+let image = ImageId::new(MANUFACTURER_CODE, IMAGE_TYPE, CURRENT_FILE_VERSION);
+let request = QueryNextImageRequest::new(image, Some(HARDWARE_VERSION));
+assert_eq!(request.image(), image);
+```
 
 ## Serialization and Parsing
 

@@ -131,6 +131,15 @@ pub enum Cluster {
     )]
     Time = 0x000A,
 
+    /// OTA Upgrade cluster.
+    #[strum(
+        to_string = "OtaUpgrade (0x0019)",
+        serialize = "OtaUpgrade",
+        serialize = "25",
+        serialize = "0x0019"
+    )]
+    OtaUpgrade = 0x0019,
+
     /// Color control cluster.
     #[strum(
         to_string = "ColorControl (0x0300)",

@@ -4,10 +4,10 @@
 //! cluster-specific commands, and generated access-specific attribute enums.
 //!
 //! Runtime command dispatch currently covers global commands plus the Basic, Groups, Identify,
-//! On/Off, Level Control, Alarms, Scenes, Color Control, and IAS Zone clusters. Attribute modules
-//! are broader and currently cover implemented General, Lighting, Measurement and Sensing, and IAS
-//! clusters. Use [`AttributeReport::parse`] to construct a typed reportable attribute from a
-//! cluster ID, attribute ID, and raw [`zb_core::types::Type`].
+//! On/Off, Level Control, Alarms, Scenes, OTA Upgrade, Color Control, and IAS Zone clusters.
+//! Attribute modules are broader and currently cover implemented General, Lighting, Measurement
+//! and Sensing, and IAS clusters. Use [`AttributeReport::parse`] to construct a typed reportable
+//! attribute from a cluster ID, attribute ID, and raw [`zb_core::types::Type`].
 //!
 //! Set `ZCL_DISABLE_DEFAULT_RESPONSE=true` in the build environment to make commands that do not
 //! specify their own default-response behavior set the disable-default-response bit in outgoing
@@ -18,7 +18,7 @@ pub use self::attributes::{
     Writable,
 };
 pub use self::clusters::general::{
-    alarms, basic, device_temperature_configuration, groups, identify, level, on_off,
+    alarms, basic, device_temperature_configuration, groups, identify, level, on_off, ota_upgrade,
     power_configuration, scenes, time,
 };
 pub use self::clusters::lighting::{ballast_configuration, color_control};

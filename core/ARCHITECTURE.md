@@ -97,8 +97,9 @@ stable text formatting, and parsing from canonical names or numeric identifiers.
 is the enum of well-known cluster identifiers defined in this crate and supports the same canonical
 name, decimal identifier, and `0x`-prefixed hexadecimal parsing forms as `Profile`, while
 `ClusterSpecific<T = u16>` lets downstream command and attribute types expose
-their own cluster ID as metadata. The known identifiers include the Keep-Alive cluster at `0x0025`,
-which coordinator routing can distinguish from ordinary ZCL payloads.
+their own cluster ID as metadata. The known identifiers include the OTA Upgrade cluster at `0x0019`
+and Keep-Alive cluster at `0x0025`; coordinator routing can distinguish Keep-Alive traffic from
+ordinary ZCL payloads.
 
 `Profiled` is separate from `ClusterSpecific` so a type can expose its profile
 without making profile metadata part of the cluster trait.

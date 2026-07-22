@@ -161,6 +161,7 @@ let broadcast: Endpoint = "0xff".parse().expect("broadcast endpoint");
 let device: Device = "ColorDimmableLight".parse().expect("known device");
 let profile: Profile = "ZigbeeHomeAutomation".parse().expect("known profile");
 let cluster: Cluster = "0x0300".parse().expect("known cluster");
+let ota_upgrade: Cluster = "0x0019".parse().expect("known OTA Upgrade cluster");
 let keep_alive: Cluster = "0x0025".parse().expect("known Keep-Alive cluster");
 
 assert_eq!(device.as_u16(), 0x0102);
@@ -169,6 +170,8 @@ assert_eq!(profile.as_u16(), 0x0104);
 assert_eq!(profile.to_string(), "ZigbeeHomeAutomation (0x0104)");
 assert_eq!(cluster, Cluster::ColorControl);
 assert_eq!(cluster.to_string(), "ColorControl (0x0300)");
+assert_eq!(ota_upgrade, Cluster::OtaUpgrade);
+assert_eq!(ota_upgrade.as_u16(), 0x0019);
 assert_eq!(keep_alive, Cluster::KeepAlive);
 assert_eq!(keep_alive.as_u16(), 0x0025);
 assert_eq!(u8::from(ep), 1);

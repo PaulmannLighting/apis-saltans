@@ -57,6 +57,39 @@ Serialization flows in the reverse direction:
 The runtime `Cluster` enum is intentionally explicit. Adding a new cluster command group requires
 adding the group module, generating its command enum, and wiring the group into `src/clusters.rs`.
 
+### OTA Upgrade command flow
+
+The OTA Upgrade cluster (`0x0019`) is implemented under
+`src/clusters/general/ota_upgrade/`. All ten command IDs are wired into runtime dispatch. A typical
+upgrade follows this exchange:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    Client->>Server: Query Next Image Request
+    Server-->>Client: Query Next Image Response
+    loop Until the image is complete
+        Client->>Server: Image Block or Page Request
+        Server-->>Client: Image Block Response
+    end
+    Client->>Server: Upgrade End Request
+    Server-->>Client: Upgrade End Response
+```
+
+The OTA wire format has three kinds of conditional structure that cannot be represented by a plain
+field-by-field derive:
+
+- Image Notify uses a payload-type byte to select progressively longer metadata.
+- Query and block responses select the remaining payload from their status byte.
+- Query, block, and page requests use field-control bits to indicate optional trailing fields.
+
+These rules are implemented by hand-written `FromLeStream` and `ToLeStream` implementations in
+the OTA module. `ImageId` centralizes the repeated manufacturer/image-type/file-version tuple, and
+`ImageBlock` enforces the 255-byte maximum implied by the one-octet data-size field. Command
+metadata explicitly sets default-response behavior: client requests enable it, server responses
+disable it, and Image Notify uses the broadcast-safe disabled setting.
+
 ## Error Model
 
 Frame, attribute, date-code, and status errors derive `thiserror::Error`, keeping their display text

@@ -7,6 +7,7 @@ pub mod groups;
 pub mod identify;
 pub mod level;
 pub mod on_off;
+pub mod ota_upgrade;
 pub mod power_configuration;
 pub mod scenes;
 pub mod time;

@@ -1,6 +1,6 @@
 //! Cluster groups.
 
-use self::general::{alarms, basic, groups, identify, level, on_off, scenes};
+use self::general::{alarms, basic, groups, identify, level, on_off, ota_upgrade, scenes};
 use self::lighting::color_control;
 use crate::{Header, ParseFrameError, Scope};
 
@@ -37,6 +37,9 @@ pub enum Cluster {
 
     /// Scenes cluster commands.
     Scenes(scenes::Command),
+
+    /// OTA Upgrade cluster commands.
+    OtaUpgrade(ota_upgrade::Command),
 
     /// Color Control cluster commands.
     ColorControl(color_control::Command),
@@ -83,6 +86,9 @@ impl Cluster {
                 }
                 <scenes::Command as zb_core::ClusterSpecific>::ID => {
                     scenes::Command::parse_zcl_frame(header, bytes).map(Self::Scenes)
+                }
+                <ota_upgrade::Command as zb_core::ClusterSpecific>::ID => {
+                    ota_upgrade::Command::parse_zcl_frame(header, bytes).map(Self::OtaUpgrade)
                 }
                 <color_control::Command as zb_core::ClusterSpecific>::ID => {
                     color_control::Command::parse_zcl_frame(header, bytes).map(Self::ColorControl)
