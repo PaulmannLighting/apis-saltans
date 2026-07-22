@@ -30,6 +30,7 @@
 //! `Driver::get_endpoints`. Each endpoint is represented by a complete
 //! `zb_zdp::SimpleDescriptor`; coordinator code retrieves the same descriptors through
 //! `Ncp::get_endpoints`.
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[cfg(any(feature = "coordinator", feature = "driver"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
