@@ -3,8 +3,6 @@ use zb_core::{Cluster, Direction};
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageNotifyPayload;
 
-const COMMAND_ID: u8 = 0x00;
-
 zcl_command! {
     /// Notifies OTA clients that an upgrade image may be available.
     ///
@@ -13,7 +11,7 @@ zcl_command! {
     /// can construct its frame header with that bit cleared.
     ImageNotify {
         { Cluster::OtaUpgrade } => OtaUpgrade;
-        command_id: COMMAND_ID;
+        command_id: 0x00;
         direction: Direction::ServerToClient;
         disable_default_response: true;
         fields {

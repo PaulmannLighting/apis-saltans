@@ -5,14 +5,13 @@ use zb_core::{Cluster, Direction, IeeeAddress};
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
 
-const COMMAND_ID: u8 = 0x04;
 const REQUEST_NODE_ADDRESS_PRESENT: u8 = 0b0000_0001;
 
 zcl_command! {
     /// Requests a page of an OTA image as a sequence of block responses.
     ImagePageRequest {
         { Cluster::OtaUpgrade } => OtaUpgrade;
-        command_id: COMMAND_ID;
+        command_id: 0x04;
         direction: Direction::ClientToServer;
         disable_default_response: false;
         response: super::ImageBlockResponse;

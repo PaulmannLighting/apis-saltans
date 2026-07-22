@@ -3,13 +3,11 @@ use zb_core::{Cluster, Direction};
 use crate::macros::zcl_command;
 use crate::ota_upgrade::{ImageId, UpgradeEndStatus};
 
-const COMMAND_ID: u8 = 0x06;
-
 zcl_command! {
     /// Reports completion, validation failure, or termination of an OTA image download.
     UpgradeEndRequest {
         { Cluster::OtaUpgrade } => OtaUpgrade;
-        command_id: COMMAND_ID;
+        command_id: 0x06;
         direction: Direction::ClientToServer;
         disable_default_response: false;
         response: super::UpgradeEndResponse;

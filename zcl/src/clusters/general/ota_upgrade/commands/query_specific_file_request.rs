@@ -3,13 +3,11 @@ use zb_core::{Cluster, Direction, IeeeAddress};
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
 
-const COMMAND_ID: u8 = 0x08;
-
 zcl_command! {
     /// Queries the OTA server for a file specific to one client device.
     QuerySpecificFileRequest {
         { Cluster::OtaUpgrade } => OtaUpgrade;
-        command_id: COMMAND_ID;
+        command_id: 0x08;
         direction: Direction::ClientToServer;
         disable_default_response: false;
         response: super::QuerySpecificFileResponse;

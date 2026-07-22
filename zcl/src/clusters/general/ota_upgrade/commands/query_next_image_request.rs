@@ -5,14 +5,13 @@ use zb_core::{Cluster, Direction};
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
 
-const COMMAND_ID: u8 = 0x01;
 const HARDWARE_VERSION_PRESENT: u8 = 0b0000_0001;
 
 zcl_command! {
     /// Queries the OTA server for the next image applicable to a client.
     QueryNextImageRequest {
         { Cluster::OtaUpgrade } => OtaUpgrade;
-        command_id: COMMAND_ID;
+        command_id: 0x01;
         direction: Direction::ClientToServer;
         disable_default_response: false;
         response: super::QueryNextImageResponse;

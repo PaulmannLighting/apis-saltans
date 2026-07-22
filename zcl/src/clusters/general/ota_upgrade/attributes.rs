@@ -8,43 +8,31 @@ use crate::macros::zcl_attributes;
 
 mod types;
 
-const UPGRADE_SERVER_ID_ATTRIBUTE_ID: u16 = 0x0000;
-const FILE_OFFSET_ATTRIBUTE_ID: u16 = 0x0001;
-const CURRENT_FILE_VERSION_ATTRIBUTE_ID: u16 = 0x0002;
-const CURRENT_ZIGBEE_STACK_VERSION_ATTRIBUTE_ID: u16 = 0x0003;
-const DOWNLOADED_FILE_VERSION_ATTRIBUTE_ID: u16 = 0x0004;
-const DOWNLOADED_ZIGBEE_STACK_VERSION_ATTRIBUTE_ID: u16 = 0x0005;
-const IMAGE_UPGRADE_STATUS_ATTRIBUTE_ID: u16 = 0x0006;
-const MANUFACTURER_ID_ATTRIBUTE_ID: u16 = 0x0007;
-const IMAGE_TYPE_ID_ATTRIBUTE_ID: u16 = 0x0008;
-const MINIMUM_BLOCK_PERIOD_ATTRIBUTE_ID: u16 = 0x0009;
-const IMAGE_STAMP_ATTRIBUTE_ID: u16 = 0x000A;
-
 zcl_attributes! {
     cluster: Cluster::OtaUpgrade;
 
     /// IEEE address of the OTA upgrade server currently used by the client.
-    UpgradeServerId = UPGRADE_SERVER_ID_ATTRIBUTE_ID: UpgradeServerId { R },
+    UpgradeServerId = 0x0000: UpgradeServerId { R },
     /// Current byte offset in the OTA upgrade image.
-    FileOffset = FILE_OFFSET_ATTRIBUTE_ID: Uint32 { R },
+    FileOffset = 0x0001: Uint32 { R },
     /// File version of the image currently running on the client.
-    CurrentFileVersion = CURRENT_FILE_VERSION_ATTRIBUTE_ID: Uint32 { R },
+    CurrentFileVersion = 0x0002: Uint32 { R },
     /// Zigbee stack version of the image currently running on the client.
-    CurrentZigbeeStackVersion = CURRENT_ZIGBEE_STACK_VERSION_ATTRIBUTE_ID: Uint16 { R },
+    CurrentZigbeeStackVersion = 0x0003: Uint16 { R },
     /// File version of the image downloaded by the client.
-    DownloadedFileVersion = DOWNLOADED_FILE_VERSION_ATTRIBUTE_ID: Uint32 { R },
+    DownloadedFileVersion = 0x0004: Uint32 { R },
     /// Zigbee stack version of the image downloaded by the client.
-    DownloadedZigbeeStackVersion = DOWNLOADED_ZIGBEE_STACK_VERSION_ATTRIBUTE_ID: Uint16 { R },
+    DownloadedZigbeeStackVersion = 0x0005: Uint16 { R },
     /// Current state of the client's image download and upgrade process.
-    ImageUpgradeStatus = IMAGE_UPGRADE_STATUS_ATTRIBUTE_ID: ImageUpgradeStatus { R },
+    ImageUpgradeStatus = 0x0006: ImageUpgradeStatus { R },
     /// Zigbee-assigned manufacturer identifier of the client.
-    ManufacturerId = MANUFACTURER_ID_ATTRIBUTE_ID: Uint16 { R },
+    ManufacturerId = 0x0007: Uint16 { R },
     /// Image type currently being downloaded or waiting to be applied.
-    ImageTypeId = IMAGE_TYPE_ID_ATTRIBUTE_ID: Uint16 { R },
+    ImageTypeId = 0x0008: Uint16 { R },
     /// Minimum delay in seconds between image block requests.
-    MinimumBlockPeriod = MINIMUM_BLOCK_PERIOD_ATTRIBUTE_ID: Uint16 { R },
+    MinimumBlockPeriod = 0x0009: Uint16 { R },
     /// Build-specific stamp used as a second image identifier.
-    ImageStamp = IMAGE_STAMP_ATTRIBUTE_ID: Uint32 { R },
+    ImageStamp = 0x000A: Uint32 { R },
 }
 
 #[cfg(test)]
