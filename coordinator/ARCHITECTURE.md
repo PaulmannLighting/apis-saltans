@@ -158,16 +158,17 @@ APS metadata, and manufacturer code.
 
 ### OTA Upgrade Server
 
-The OTA server owns the policy and state required by cluster `0x0019`. Its inbox accepts either an
-`Update` containing a target endpoint, validated image, and completion one-shot, or a `Received`
-message containing NWK source information and a typed APS/ZCL OTA command. One scheduled image is
-stored per device endpoint; a later update replaces it and resolves the old completion channel as
-superseded. OTA traffic is restricted to the Zigbee Home Automation application profile.
+The OTA server owns the policy and state required by cluster `0x0019`. Its inbox accepts an
+`Update` containing a target endpoint, validated image, and completion one-shot; a `Received`
+message containing NWK source information and a typed APS/ZCL OTA command; or an internal
+`TransferFailed` message from a background task. One scheduled image is stored per device endpoint;
+a later update replaces it and resolves the old completion channel as superseded. OTA traffic is
+restricted to the Zigbee Home Automation application profile.
 
 The OTA module keeps the actor and protocol handlers in `ota.rs`. Its supporting types are grouped
 by responsibility: `message.rs` defines the public actor messages and update result;
 `state.rs` contains scheduled-update and request context state; `transfer.rs` defines internal
-completion events and generation keys; and `page_transfer.rs` owns the paced page-transfer worker.
+generation keys and failure forwarding; and `page_transfer.rs` owns the paced page-transfer worker.
 Image parsing and source access remain under the nested `image` module.
 
 An image separates its parsed header from its payload source. The small serialized header and its
@@ -187,8 +188,9 @@ uses that channel to return the driver's deferred `HwResponse` without polling i
 owns those responses and polls them in tracked tasks, reaping completed tasks while continuing to
 service its inbound channel. A page-transfer task polls each block's response itself and stops the
 remaining page stream after a hardware failure. Background tasks report terminal failures to the
-actor over an internal channel. Generation identifiers prevent a late result from an older page
-task from completing a newer update for the same endpoint and image ID.
+actor as `Message::TransferFailed` values over the same bounded inbox used by API and inbound-frame
+messages. Generation identifiers prevent a late result from an older page task from completing a
+newer update for the same endpoint and image ID.
 
 On `Update`, the server sends a unicast Image Notify. It then handles Query Next Image, Query
 Specific File, Image Block, Image Page, and Upgrade End commands without application involvement.

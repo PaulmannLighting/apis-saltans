@@ -1,24 +1,24 @@
 use std::time::Duration;
 
 use log::warn;
-use tokio::sync::mpsc::{Sender, UnboundedSender};
+use tokio::sync::mpsc::{Sender, WeakSender};
 use tokio::time::sleep;
 use zb_aps::TxOptions;
 use zb_core::destination::Device;
 use zb_zcl::ota_upgrade::{ImageBlock, ImageBlockResponse, ImageBlockResponsePayload, ImageId};
 
 use super::image::ImageTransfer;
-use super::transfer::{TransferEvent, TransferKey, report_failure};
+use super::transfer::{TransferKey, report_failure};
 use super::{OTA_PROFILE, Payload, UpdateError, read_image_range, reply_zcl, zcl};
 
 /// State owned by a paced OTA Image Page transfer task.
 ///
 /// The task sends consecutive Image Block responses without blocking the server actor and reports
-/// its first read or transmission failure through `events`.
+/// its first read or transmission failure through `messages`.
 pub(super) struct PageTransfer {
     pub(super) zcl: Sender<zcl::Message>,
     pub(super) image: ImageTransfer,
-    pub(super) events: UnboundedSender<TransferEvent>,
+    pub(super) messages: WeakSender<super::Message>,
     pub(super) key: TransferKey,
     pub(super) destination: Device,
     pub(super) image_id: ImageId,
@@ -48,12 +48,12 @@ impl PageTransfer {
             )
             .await
             else {
-                report_failure(&self.events, self.key, UpdateError::Transmission);
+                report_failure(&self.messages, self.key, UpdateError::Transmission).await;
                 return;
             };
             if let Err(error) = hw_response.await {
                 warn!("OTA page transmission failed: {error}");
-                report_failure(&self.events, self.key, UpdateError::Transmission);
+                report_failure(&self.messages, self.key, UpdateError::Transmission).await;
                 return;
             }
 
@@ -72,7 +72,7 @@ impl PageTransfer {
                     Ok(data) => data,
                     Err(status) => {
                         warn!("Failed to read OTA page data: {status}");
-                        report_failure(&self.events, self.key, UpdateError::ImageTransfer);
+                        report_failure(&self.messages, self.key, UpdateError::ImageTransfer).await;
                         return;
                     }
                 };

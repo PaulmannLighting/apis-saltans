@@ -30,6 +30,16 @@ pub enum Message {
         /// Typed APS and ZCL frame.
         frame: Data<Frame<OtaCommand>>,
     },
+    /// Report a terminal failure from a background transfer task.
+    #[doc(hidden)]
+    TransferFailed {
+        /// Device endpoint whose update failed.
+        target: Device,
+        /// Generation of the scheduled update that failed.
+        generation: u64,
+        /// Terminal transfer failure.
+        error: UpdateError,
+    },
 }
 
 /// Terminal failure reported by a coordinator-managed OTA update.

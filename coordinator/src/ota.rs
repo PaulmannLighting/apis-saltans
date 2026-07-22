@@ -1,14 +1,12 @@
 //! Coordinator-owned OTA Upgrade server.
 
 use std::collections::BTreeMap;
-use std::future::poll_fn;
-use std::task::Poll;
 use std::time::Duration;
 
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot;
 use tokio::task::JoinSet;
 use zb_aps::Data;
@@ -33,7 +31,7 @@ pub use self::image::{
 pub use self::message::{Message, UpdateError, UpdateResult};
 use self::page_transfer::PageTransfer;
 use self::state::{RequestContext, ScheduledUpdate};
-use self::transfer::{ServerEvent, TransferEvent, TransferKey, report_failure};
+use self::transfer::{TransferKey, report_failure};
 use crate::zcl::{self, Metadata, Payload};
 
 mod image;
@@ -53,54 +51,57 @@ const OTA_PROFILE: Profile = Profile::ZigbeeHomeAutomation;
 pub struct Server {
     zcl: Sender<zcl::Message>,
     inbound: Receiver<Message>,
+    outbound: WeakSender<Message>,
     updates: BTreeMap<Device, ScheduledUpdate>,
     transmissions: JoinSet<()>,
-    transfer_events: UnboundedReceiver<TransferEvent>,
-    transfer_events_out: UnboundedSender<TransferEvent>,
     next_update_generation: u64,
 }
 
 impl Server {
-    /// Create an empty OTA server attached to its ZCL sender and inbound command channel.
-    fn new(zcl: Sender<zcl::Message>, inbound: Receiver<Message>) -> Self {
-        let (transfer_events_out, transfer_events) = tokio::sync::mpsc::unbounded_channel();
+    /// Create an empty OTA server attached to its ZCL sender and OTA message channel.
+    ///
+    /// The server retains only a weak OTA sender so internal producers do not keep the actor alive
+    /// after every external sender has been dropped.
+    fn new(
+        zcl: Sender<zcl::Message>,
+        outbound: &Sender<Message>,
+        inbound: Receiver<Message>,
+    ) -> Self {
         Self {
             zcl,
             inbound,
+            outbound: outbound.downgrade(),
             updates: BTreeMap::new(),
             transmissions: JoinSet::new(),
-            transfer_events,
-            transfer_events_out,
             next_update_generation: INITIAL_UPDATE_GENERATION,
         }
     }
 
     /// Process scheduled updates and inbound OTA commands until the inbound channel closes.
     pub async fn run(mut self) {
-        loop {
+        while let Some(message) = self.inbound.recv().await {
             self.reap_transmissions();
-            let event = poll_fn(|context| {
-                if let Poll::Ready(Some(event)) = self.transfer_events.poll_recv(context) {
-                    Poll::Ready(ServerEvent::Transfer(event))
-                } else if let Poll::Ready(message) = self.inbound.poll_recv(context) {
-                    Poll::Ready(ServerEvent::Message(message))
-                } else {
-                    Poll::Pending
-                }
-            })
-            .await;
-            match event {
-                ServerEvent::Message(Some(Message::Update {
+            match message {
+                Message::Update {
                     target,
                     image,
                     completion,
-                })) => self.update(target, image, completion).await,
-                ServerEvent::Message(Some(Message::Received { source, frame })) => {
+                } => self.update(target, image, completion).await,
+                Message::Received { source, frame } => {
                     self.received(source, frame).await;
                 }
-                ServerEvent::Message(None) => break,
-                ServerEvent::Transfer(event) => {
-                    self.complete_update(event.key, Err(event.error));
+                Message::TransferFailed {
+                    target,
+                    generation,
+                    error,
+                } => {
+                    self.complete_update(
+                        TransferKey {
+                            destination: target,
+                            generation,
+                        },
+                        Err(error),
+                    );
                 }
             }
         }
@@ -108,8 +109,12 @@ impl Server {
     }
 
     /// Spawn the OTA server actor on the current Tokio runtime.
-    pub(crate) fn spawn(zcl: Sender<zcl::Message>, receiver: Receiver<Message>) {
-        spawn(Self::new(zcl, receiver).run());
+    pub(crate) fn spawn(
+        zcl: Sender<zcl::Message>,
+        sender: &Sender<Message>,
+        receiver: Receiver<Message>,
+    ) {
+        spawn(Self::new(zcl, sender, receiver).run());
     }
 
     /// Replace the update scheduled for `target` and announce the new image to that device.
@@ -371,7 +376,7 @@ impl Server {
             PageTransfer {
                 zcl: self.zcl.clone(),
                 image: transfer,
-                events: self.transfer_events_out.clone(),
+                messages: self.outbound.clone(),
                 key: TransferKey {
                     destination: context.destination,
                     generation: update.generation,
@@ -496,12 +501,12 @@ impl Server {
     /// Poll a deferred hardware response in a tracked task without blocking the server actor.
     fn track_transmission(&mut self, response: Option<HwResponse>, key: Option<TransferKey>) {
         if let Some(response) = response {
-            let transfer_events = self.transfer_events_out.clone();
+            let messages = self.outbound.clone();
             self.transmissions.spawn(async move {
                 if let Err(error) = response.await {
                     warn!("OTA transmission failed: {error}");
                     if let Some(key) = key {
-                        report_failure(&transfer_events, key, UpdateError::Transmission);
+                        report_failure(&messages, key, UpdateError::Transmission).await;
                     }
                 }
             });
@@ -715,11 +720,25 @@ mod tests {
     }
 
     #[test]
+    fn stops_when_external_ota_senders_are_dropped() {
+        run_test(async {
+            let (zcl_sender, _zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let server = Server::new(zcl_sender, &ota_sender, ota_receiver);
+            drop(ota_sender);
+
+            timeout(TEST_TIMEOUT, server.run())
+                .await
+                .expect("OTA server did not stop after its inbox closed");
+        });
+    }
+
+    #[test]
     fn scheduling_update_sends_unicast_image_notify() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            tokio::spawn(Server::new(zcl_sender, &ota_sender, ota_receiver).run());
             let destination = test_destination();
             let (completion, _completion_result) = tokio::sync::oneshot::channel();
 
@@ -760,7 +779,7 @@ mod tests {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            tokio::spawn(Server::new(zcl_sender, &ota_sender, ota_receiver).run());
             let image = test_image();
             let _completion = schedule(&ota_sender, image).await;
             receive_zcl(&mut zcl_receiver).await;
@@ -792,7 +811,7 @@ mod tests {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            tokio::spawn(Server::new(zcl_sender, &ota_sender, ota_receiver).run());
             let image = test_image();
             let image_id = image.id();
             let image_size =
@@ -863,7 +882,7 @@ mod tests {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            tokio::spawn(Server::new(zcl_sender, &ota_sender, ota_receiver).run());
             let completion = update_via_api(ota_sender, test_image());
 
             fail_next_transmission(&mut zcl_receiver).await;
@@ -881,7 +900,7 @@ mod tests {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            tokio::spawn(Server::new(zcl_sender, &ota_sender, ota_receiver).run());
             let image = test_image();
             let image_id = image.id();
             let completion = update_via_api(ota_sender.clone(), image);
@@ -909,7 +928,7 @@ mod tests {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
+            tokio::spawn(Server::new(zcl_sender, &ota_sender, ota_receiver).run());
             let image = test_image();
             let image_id = image.id();
             let _completion = schedule(&ota_sender, image).await;

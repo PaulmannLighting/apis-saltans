@@ -42,7 +42,7 @@ impl Coordinator {
     ) -> Result<Self, Error> {
         let (ota, ota_inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
         let zcl = zcl::Transceiver::spawn(ncp.clone(), events_out.clone(), ota.clone());
-        ota::Server::spawn(zcl.clone(), ota_inbound);
+        ota::Server::spawn(zcl.clone(), &ota, ota_inbound);
         let zdp = zdp::Transceiver::spawn(ncp.clone(), events_out.clone(), descriptor);
         Mux::spawn(hw_events, events_out, zcl.clone(), zdp.clone());
         Ok(Self { ncp, ota, zcl, zdp })

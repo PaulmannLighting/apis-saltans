@@ -34,7 +34,7 @@
 
 #[cfg(any(feature = "coordinator", feature = "driver"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
-pub use aps::TxOptions;
+pub use zb_aps::TxOptions;
 
 #[cfg(any(feature = "coordinator", feature = "driver"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
