@@ -156,7 +156,7 @@ struct RequestContext {
 }
 
 impl Server {
-    /// Create an empty OTA server attached to a ZCL transceiver.
+    /// Create an empty OTA server attached to its ZCL sender and inbound command channel.
     fn new(zcl: Sender<zcl::Message>, inbound: Receiver<Message>) -> Self {
         Self {
             zcl,
@@ -166,7 +166,7 @@ impl Server {
         }
     }
 
-    /// Process OTA requests until every sender for the inbound channel has closed.
+    /// Process scheduled updates and inbound OTA commands until the inbound channel closes.
     pub async fn run(mut self) {
         while let Some(message) = self.inbound.recv().await {
             self.reap_transmissions();
@@ -178,10 +178,12 @@ impl Server {
         self.reap_transmissions();
     }
 
+    /// Spawn the OTA server actor on the current Tokio runtime.
     pub(crate) fn spawn(zcl: Sender<zcl::Message>, receiver: Receiver<Message>) {
         spawn(Self::new(zcl, receiver).run());
     }
 
+    /// Replace the update scheduled for `target` and announce the new image to that device.
     async fn update(&mut self, target: Target, image: Image) {
         let image_id = image.id();
         let transfer = image.into_transfer();
@@ -207,6 +209,7 @@ impl Server {
         self.track_transmission(response);
     }
 
+    /// Validate the source metadata and dispatch an inbound frame to its command handler.
     async fn received(&mut self, source: Source, frame: Data<Frame<OtaCommand>>) {
         let aps_header = frame.header();
         let Ok(endpoint) = aps_header.source_endpoint().inspect_err(|error| {
@@ -267,6 +270,7 @@ impl Server {
         }
     }
 
+    /// Answer a device's discovery query with its compatible scheduled image, if any.
     async fn query_next_image(&mut self, context: RequestContext, request: &QueryNextImageRequest) {
         let response = self
             .update_for(context)
@@ -290,6 +294,7 @@ impl Server {
             .await;
     }
 
+    /// Answer a destination-restricted query after validating its IEEE address and image metadata.
     async fn query_specific_file(
         &mut self,
         context: RequestContext,
@@ -315,6 +320,7 @@ impl Server {
             .await;
     }
 
+    /// Read and return one requested image block, or emit the corresponding default response.
     async fn image_block(&mut self, context: RequestContext, request: &ImageBlockRequest) {
         let request_command_id = <ImageBlockRequest as Command>::ID;
         let Some(update) = self.update_for(context) else {
@@ -347,6 +353,11 @@ impl Server {
         self.reply(context, response.into()).await;
     }
 
+    /// Start a paced background transfer for the blocks covered by an image page request.
+    ///
+    /// The first block is validated and read before spawning the transfer. The background task
+    /// advances transaction sequence numbers, disables APS acknowledgements, and stops on the
+    /// first read or transmission failure.
     async fn image_page(&mut self, context: RequestContext, request: &ImagePageRequest) {
         let request_command_id = <ImagePageRequest as Command>::ID;
         let Some(update) = self.update_for(context) else {
@@ -437,6 +448,7 @@ impl Server {
         });
     }
 
+    /// Complete or acknowledge an upgrade attempt according to the client's reported status.
     async fn upgrade_end(&mut self, context: RequestContext, request: UpgradeEndRequest) {
         let request_command_id = <UpgradeEndRequest as Command>::ID;
         let Some(update) = self.update_for(context) else {
@@ -468,12 +480,14 @@ impl Server {
         }
     }
 
+    /// Find the update authorized for the request's device endpoint and application profile.
     fn update_for(&self, context: RequestContext) -> Option<&ScheduledUpdate> {
         self.updates
             .get(&context.destination)
             .filter(|update| update.profile == context.profile)
     }
 
+    /// Send a cluster-specific reply with the request sequence number and track its completion.
     async fn reply(&mut self, context: RequestContext, payload: Payload) {
         let response = reply_zcl(
             &self.zcl,
@@ -486,6 +500,7 @@ impl Server {
         self.track_transmission(response);
     }
 
+    /// Send a global default response for a rejected or acknowledged client command.
     async fn default_response(
         &mut self,
         context: RequestContext,
@@ -507,6 +522,7 @@ impl Server {
         self.reply(context, payload).await;
     }
 
+    /// Poll a deferred hardware response in a tracked task without blocking the server actor.
     fn track_transmission(&mut self, response: Option<HwResponse>) {
         if let Some(response) = response {
             self.transmissions.spawn(async move {
@@ -517,6 +533,7 @@ impl Server {
         }
     }
 
+    /// Remove completed transmission tasks and report task failures.
     fn reap_transmissions(&mut self) {
         while let Some(result) = self.transmissions.try_join_next() {
             if let Err(error) = result {
