@@ -106,19 +106,9 @@ pub trait Ota {
 }
 
 impl Ota for Sender<Message> {
-    #[expect(
-        clippy::manual_async_fn,
-        reason = "async trait methods must explicitly return a Send future"
-    )]
-    fn update(
-        &self,
-        target: Target,
-        image: Image,
-    ) -> impl Future<Output = Result<(), Error>> + Send {
-        async move {
-            self.send(Message::Update { target, image }).await?;
-            Ok(())
-        }
+    async fn update(&self, target: Target, image: Image) -> Result<(), Error> {
+        self.send(Message::Update { target, image }).await?;
+        Ok(())
     }
 }
 
