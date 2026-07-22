@@ -283,6 +283,12 @@ criteria = "safe-to-deploy"
 version = "1.0.4"
 notes = "AI-assisted audit"
 
+[[audits.cfg_eval]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "0.1.2"
+notes = "AI-assisted full audit; reviewed the proc-macro token transformation and helper derives. The crate forbids unsafe code, has no build script or ambient filesystem, network, or process capabilities, and emits only the documented cfg-filtering scaffolding."
+
 [[audits.chrono]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -306,6 +312,24 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.8.7"
 notes = "AI-assisted audit"
+
+[[audits.darling]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "0.23.0"
+notes = "AI-assisted full audit; reviewed the facade crate, public helper macros, and re-exports. It contains no unsafe code, build script, or ambient capability and adds no behavior beyond the audited darling_core and darling_macro crates."
+
+[[audits.darling_core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "0.23.0"
+notes = "AI-assisted full audit; reviewed the attribute/meta parsing, error handling, usage analysis, options validation, and derive code generation modules. The crate contains no unsafe code, build script, or ambient filesystem, network, or process capability, and generated code uses ordinary trait implementations."
+
+[[audits.darling_macro]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "0.23.0"
+notes = "AI-assisted full audit; reviewed all procedural-macro entry points. They parse derive inputs and delegate safe token generation to darling_core; there is no unsafe code, build script, or ambient capability."
 
 [[audits.either]]
 who = "Codex AI"
@@ -385,6 +409,12 @@ criteria = "safe-to-deploy"
 version = "0.1.2"
 notes = "AI-assisted audit"
 
+[[audits.ident_case]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "1.0.1"
+notes = "AI-assisted full audit; reviewed the complete identifier case-conversion implementation and tests. The crate contains no unsafe code, build script, generated code, or ambient filesystem, network, or process capabilities."
+
 [[audits.intx]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -396,6 +426,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.3.102"
 notes = "AI-assisted audit"
+
+[[audits.js-sys]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.102 -> 0.3.103"
+notes = "AI-assisted delta audit; the only changes are the package version and the exact wasm-bindgen dependency pin from 0.2.125 to the separately audited 0.2.126."
 
 [[audits.le-stream]]
 who = "Codex AI"
@@ -535,6 +571,18 @@ criteria = "safe-to-deploy"
 version = "1.0.228"
 notes = "AI-assisted audit"
 
+[[audits.serde_with]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "3.21.0"
+notes = "AI-assisted full audit; reviewed the serialization adapters, duplicate handling, content buffering, time/chrono conversions, feature integrations, and all unsafe blocks. Array initialization tracks and drops only initialized elements before transferring ownership, DropGuard takes its ManuallyDrop value exactly once, allocation hints are capped, and no build script or ambient capability is present."
+
+[[audits.serde_with_macros]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "3.21.0"
+notes = "AI-assisted full audit; reviewed the procedural macro parsing and rewriting for serde_as, apply, and skip-serializing-none behavior. The crate contains no unsafe code, build script, or ambient capability and emits ordinary Serde adapter attributes and trait plumbing."
+
 [[audits.shlex]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -613,7 +661,25 @@ criteria = "safe-to-deploy"
 version = "0.2.125"
 notes = "AI-assisted audit"
 
+[[audits.wasm-bindgen]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.125 -> 0.2.126"
+notes = "AI-assisted delta audit; the only changes are the package version and exact dependency pins for the separately audited wasm-bindgen macro and shared crates from 0.2.125 to 0.2.126."
+
 [[audits.wasm-bindgen-macro]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+version = "0.2.125"
+notes = "AI-assisted audit"
+
+[[audits.wasm-bindgen-macro]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.125 -> 0.2.126"
+notes = "AI-assisted delta audit; the only changes are the package version and the exact wasm-bindgen-macro-support dependency pin from 0.2.125 to the separately audited 0.2.126."
+
+[[audits.wasm-bindgen-macro-support]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.2.125"
@@ -622,14 +688,20 @@ notes = "AI-assisted audit"
 [[audits.wasm-bindgen-macro-support]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
-version = "0.2.125"
-notes = "AI-assisted audit"
+delta = "0.2.125 -> 0.2.126"
+notes = "AI-assisted delta audit; the only changes are the package version and the exact wasm-bindgen-shared dependency pin from 0.2.125 to the separately audited 0.2.126."
 
 [[audits.wasm-bindgen-shared]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.2.125"
 notes = "AI-assisted audit"
+
+[[audits.wasm-bindgen-shared]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.125 -> 0.2.126"
+notes = "AI-assisted delta audit; the only changes are the package version fields from 0.2.125 to 0.2.126."
 
 [[audits.windows-core]]
 who = "Codex AI"
