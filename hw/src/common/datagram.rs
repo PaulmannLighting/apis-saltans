@@ -18,18 +18,6 @@ impl Datagram {
         Self { metadata, payload }
     }
 
-    /// Construct a datagram from pre-serialized bytes.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that `payload` is a valid serialized application payload for the
-    /// supplied APS `metadata`. The hardware layer does not parse or validate this relationship.
-    #[expect(unsafe_code)]
-    #[must_use]
-    pub const unsafe fn new_unchecked(metadata: Metadata, payload: Bytes) -> Self {
-        Self { metadata, payload }
-    }
-
     /// Return the APS metadata and serialized payload, consuming the datagram.
     #[must_use]
     pub fn into_parts(self) -> (Metadata, Bytes) {
