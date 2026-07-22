@@ -34,6 +34,10 @@
 
 #[cfg(any(feature = "coordinator", feature = "driver"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
+pub use aps::TxOptions;
+
+#[cfg(any(feature = "coordinator", feature = "driver"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
 pub use self::common::{
     Clusters, Datagram, Driver, Error, Event, FoundNetwork, HwResponse, Metadata, NcpHandle,
     Network, RouteError, ScannedChannel, WeakNcpHandle,
