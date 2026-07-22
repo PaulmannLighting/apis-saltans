@@ -12,8 +12,10 @@ edition = "2024"
 exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
+bitflags.workspace = true
 bytes.workspace = true
 const_env.workspace = true
+heapless.workspace = true
 le-stream = { workspace = true, features = ["derive", "bytes"] }
 log.workspace = true
 serde = { workspace = true, features = ["derive"] }

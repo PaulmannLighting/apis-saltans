@@ -22,6 +22,11 @@ Public API exports:
   - `Zdp`
 - OTA server API:
   - `Ota`
+  - `ParseImage`
+  - `OtaBaseHeaderBytes`
+  - `OtaFieldControl`
+  - `OtaHeader`
+  - `OtaHeaderString`
   - `OtaImage`
   - `OtaTarget`
   - `OtaMessage`
@@ -114,23 +119,37 @@ the NCP to resolve addresses, but persistence and cache policy remain applicatio
 
 ## OTA Upgrade Server
 
-The coordinator owns an OTA Upgrade (`0x0019`) server. Parse a complete Zigbee OTA file into an
-`OtaImage`, select the device endpoint and application profile with `OtaTarget`, and call
-`Ota::update`. The image parser validates the OTA identifier, version, declared header and file
-sizes, optional destination, and hardware-version range before the image can be scheduled.
+The coordinator owns an OTA Upgrade (`0x0019`) server. Open a complete Zigbee OTA file as a
+seekable reader, parse it into an `OtaImage`, select the device endpoint and application profile
+with `OtaTarget`, and call `Ota::update`. The image parser validates the OTA identifier, version,
+null-terminated ASCII header string, declared header and file sizes, optional destination, and
+hardware-version range before the image can be scheduled.
+
+`OtaImage` keeps its parsed `OtaHeader` in memory and retains the supplied
+`Read + Seek + Send + 'static` source for payload reads; it does not copy the payload into an image
+buffer. Seeking is required because clients can request blocks out of order or retry an earlier
+file offset. When the image is scheduled, a dedicated transfer task takes ownership of the reader.
+Lightweight transfer handles send range requests to that task, which serializes access to the file
+cursor without a shared mutex.
+
+`ParseImage` is implemented for `std::fs::File`. Its `parse(self)` method composes default methods
+for seeking to the image start, reading the fixed and optional header sections, determining the
+source length, and positioning the retained source at the payload. Implementations for other
+reader types can override any of these stages while retaining the default parser workflow.
 
 ```rust,no_run
-use apis_saltans_coordinator::{Coordinator, Ota, OtaImage, OtaTarget};
-use bytes::Bytes;
+use apis_saltans_coordinator::{Coordinator, Ota, OtaTarget, ParseImage};
+use std::fs::File;
+use std::path::Path;
 use zb_core::destination::Device;
 use zb_core::Profile;
 
 async fn offer_update(
     coordinator: &Coordinator,
     destination: Device,
-    ota_file: Vec<u8>,
+    ota_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let image = OtaImage::parse(Bytes::from(ota_file))?;
+    let image = File::open(ota_path)?.parse()?;
     let target = OtaTarget::new(destination, Profile::ZigbeeHomeAutomation);
     coordinator.update(target, image).await?;
     Ok(())

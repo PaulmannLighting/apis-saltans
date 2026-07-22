@@ -26,7 +26,10 @@ use zb_zcl::ota_upgrade::{
 };
 use zb_zcl::{Command, Frame, Scope, Status};
 
-pub use self::image::{Image, ParseImageError};
+use self::image::ImageTransfer;
+pub use self::image::{
+    BaseHeaderBytes, FieldControl, Header, HeaderString, Image, ParseImage, ParseImageError,
+};
 use crate::zcl::{self, Metadata, Payload};
 use crate::{Coordinator, Error};
 
@@ -66,7 +69,7 @@ impl Target {
 }
 
 /// Messages accepted by the coordinator OTA server.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub enum Message {
     /// Offer a validated OTA image to one device endpoint.
     Update {
@@ -141,7 +144,7 @@ pub struct Server {
 #[derive(Clone, Debug)]
 struct ScheduledUpdate {
     profile: Profile,
-    image: Image,
+    transfer: ImageTransfer,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -181,12 +184,13 @@ impl Server {
 
     async fn update(&mut self, target: Target, image: Image) {
         let image_id = image.id();
+        let transfer = image.into_transfer();
         trace!("Offering OTA image {image_id:?} to {}", target.destination);
         self.updates.insert(
             target.destination,
             ScheduledUpdate {
                 profile: target.profile,
-                image,
+                transfer,
             },
         );
 
@@ -267,17 +271,19 @@ impl Server {
         let response = self
             .update_for(context)
             .map_or(QueryResponse::NotAuthorized, |update| {
-                let offered = update.image.id();
+                let offered = update.transfer.id();
                 let current = request.image();
-                if update.image.upgrade_file_destination().is_some()
+                if update.transfer.upgrade_file_destination().is_some()
                     || offered.manufacturer_code() != current.manufacturer_code()
                     || offered.image_type() != current.image_type()
                     || offered.file_version() == current.file_version()
-                    || !update.image.supports_hardware(request.hardware_version())
+                    || !update
+                        .transfer
+                        .supports_hardware(request.hardware_version())
                 {
                     QueryResponse::NoImageAvailable
                 } else {
-                    query_success(&update.image)
+                    query_success(&update.transfer)
                 }
             });
         self.reply(context, QueryNextImageResponse::new(response).into())
@@ -294,15 +300,15 @@ impl Server {
             .map_or(QueryResponse::NotAuthorized, |update| {
                 let request_address = request.request_node_address();
                 let authorized = context.source_ieee_address == Some(request_address)
-                    && update.image.upgrade_file_destination() == Some(request_address);
+                    && update.transfer.upgrade_file_destination() == Some(request_address);
                 if !authorized {
                     QueryResponse::NotAuthorized
-                } else if update.image.id() != request.image()
-                    || update.image.zigbee_stack_version() != request.zigbee_stack_version()
+                } else if update.transfer.id() != request.image()
+                    || update.transfer.zigbee_stack_version() != request.zigbee_stack_version()
                 {
                     QueryResponse::NoImageAvailable
                 } else {
-                    query_success(&update.image)
+                    query_success(&update.transfer)
                 }
             });
         self.reply(context, QuerySpecificFileResponse::new(response).into())
@@ -318,13 +324,15 @@ impl Server {
         };
         let data = match requested_data(
             context,
-            &update.image,
+            &update.transfer,
             request.image(),
             request.file_offset(),
             request.maximum_data_size(),
             request.request_node_address(),
             None,
-        ) {
+        )
+        .await
+        {
             Ok(data) => data,
             Err(status) => {
                 self.default_response(context, request_command_id, status)
@@ -353,13 +361,15 @@ impl Server {
         }
         let first_block = match requested_data(
             context,
-            &update.image,
+            &update.transfer,
             request.image(),
             request.file_offset(),
             request.maximum_data_size(),
             request.request_node_address(),
             Some(request.page_size()),
-        ) {
+        )
+        .await
+        {
             Ok(data) => data,
             Err(status) => {
                 self.default_response(context, request_command_id, status)
@@ -369,7 +379,7 @@ impl Server {
         };
 
         let zcl = self.zcl.clone();
-        let image = update.image.clone();
+        let transfer = update.transfer.clone();
         let profile = context.profile;
         let destination = context.destination;
         let image_id = request.image();
@@ -377,7 +387,7 @@ impl Server {
         let page_end = usize::try_from(request.file_offset())
             .unwrap_or(usize::MAX)
             .saturating_add(usize::from(request.page_size()))
-            .min(image.len());
+            .min(transfer.len());
         let spacing = Duration::from_millis(u64::from(request.response_spacing()));
         let first_offset = request.file_offset();
         let first_sequence_number = context.sequence_number;
@@ -416,9 +426,13 @@ impl Server {
                 sleep(spacing).await;
                 sequence_number = sequence_number.wrapping_add(1);
                 let block_end = offset.saturating_add(maximum_data_size).min(page_end);
-                block_data = image.as_bytes()[offset..block_end]
-                    .to_vec()
-                    .into_boxed_slice();
+                block_data = match read_image_range(&transfer, offset, block_end - offset).await {
+                    Ok(data) => data,
+                    Err(status) => {
+                        warn!("Failed to read OTA page data: {status}");
+                        return;
+                    }
+                };
             }
         });
     }
@@ -430,7 +444,7 @@ impl Server {
                 .await;
             return;
         };
-        if update.image.id() != request.image() {
+        if update.transfer.id() != request.image() {
             self.default_response(context, request_command_id, Status::NoImageAvailable)
                 .await;
             return;
@@ -512,16 +526,16 @@ impl Server {
     }
 }
 
-fn query_success(image: &Image) -> QueryResponse {
+const fn query_success(image: &ImageTransfer) -> QueryResponse {
     QueryResponse::Success {
         image: image.id(),
         image_size: image.image_size(),
     }
 }
 
-fn requested_data(
+async fn requested_data(
     context: RequestContext,
-    image: &Image,
+    image: &ImageTransfer,
     requested_image: ImageId,
     file_offset: u32,
     maximum_data_size: u8,
@@ -547,12 +561,23 @@ fn requested_data(
         length = length.min(usize::from(page_size));
     }
     let end = offset.saturating_add(length).min(image.len());
-    Ok(image.as_bytes()[offset..end].to_vec().into_boxed_slice())
+    read_image_range(image, offset, end - offset).await
+}
+
+async fn read_image_range(
+    image: &ImageTransfer,
+    offset: usize,
+    length: usize,
+) -> Result<Box<[u8]>, Status> {
+    image.read_range(offset, length).await.map_err(|error| {
+        warn!("Failed to read OTA image data: {error}");
+        Status::Failure
+    })
 }
 
 fn request_address_is_authorized(
     context: RequestContext,
-    image: &Image,
+    image: &ImageTransfer,
     request_node_address: Option<IeeeAddress>,
 ) -> bool {
     if let Some(request_address) = request_node_address
@@ -629,6 +654,7 @@ async fn receive_hw_response(
 #[cfg(test)]
 mod tests {
     use std::future::Future;
+    use std::io::Cursor;
     use std::time::Duration;
 
     use bytes::{BufMut, Bytes, BytesMut};
@@ -648,7 +674,7 @@ mod tests {
     };
     use zb_zcl::{Command, Frame, Header, Scope};
 
-    use super::{Image, Message, Server, Target};
+    use super::{Image, Message, ParseImage, Server, Target};
     use crate::zcl::{self, Payload};
 
     const TEST_TIMEOUT: Duration = Duration::from_secs(1);
@@ -725,7 +751,10 @@ mod tests {
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
             let image = test_image();
-            schedule(&ota_sender, image.clone()).await;
+            let image_id = image.id();
+            let image_size =
+                u32::try_from(image.len()).expect("test image length fits OTA size field");
+            schedule(&ota_sender, image).await;
             receive_zcl(&mut zcl_receiver).await;
 
             let current_image = ImageId::new(MANUFACTURER_CODE, IMAGE_TYPE, FILE_VERSION - 1);
@@ -743,8 +772,8 @@ mod tests {
             assert_eq!(
                 response.response(),
                 QueryResponse::Success {
-                    image: image.id(),
-                    image_size: image.image_size(),
+                    image: image_id,
+                    image_size,
                 }
             );
 
@@ -754,7 +783,7 @@ mod tests {
             ota_sender
                 .send(incoming(
                     TEST_SEQUENCE_NUMBER,
-                    ImageBlockRequest::new(image.id(), offset, maximum_data_size, None, None),
+                    ImageBlockRequest::new(image_id, offset, maximum_data_size, None, None),
                 ))
                 .await
                 .expect("OTA server is running");
@@ -771,7 +800,7 @@ mod tests {
             ota_sender
                 .send(incoming(
                     TEST_SEQUENCE_NUMBER,
-                    UpgradeEndRequest::new(UpgradeEndStatus::Success, image.id()),
+                    UpgradeEndRequest::new(UpgradeEndStatus::Success, image_id),
                 ))
                 .await
                 .expect("OTA server is running");
@@ -779,7 +808,7 @@ mod tests {
             assert_eq!(sequence_number, TEST_SEQUENCE_NUMBER);
             let response = UpgradeEndResponse::from_le_stream(bytes.into_iter())
                 .expect("valid Upgrade End Response");
-            assert_eq!(response.image(), image.id());
+            assert_eq!(response.image(), image_id);
             assert_eq!(response.current_time(), 0);
             assert_eq!(response.upgrade_time(), 0);
         });
@@ -792,14 +821,15 @@ mod tests {
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             tokio::spawn(Server::new(zcl_sender, ota_receiver).run());
             let image = test_image();
-            schedule(&ota_sender, image.clone()).await;
+            let image_id = image.id();
+            schedule(&ota_sender, image).await;
             receive_zcl(&mut zcl_receiver).await;
 
             ota_sender
                 .send(incoming(
                     TEST_SEQUENCE_NUMBER,
                     ImagePageRequest::new(
-                        image.id(),
+                        image_id,
                         u32::try_from(BASE_HEADER_LENGTH).expect("fixed header length fits u32"),
                         PAGE_MAXIMUM_DATA_SIZE,
                         PAGE_SIZE,
@@ -839,7 +869,9 @@ mod tests {
         bytes.extend_from_slice(&[0; HEADER_STRING_LENGTH]);
         bytes.put_u32_le(u32::try_from(total_length).expect("test image length fits u32"));
         bytes.extend_from_slice(TEST_IMAGE_DATA);
-        Image::parse(bytes.freeze()).expect("valid test image")
+        Cursor::new(bytes.freeze())
+            .parse()
+            .expect("valid test image")
     }
 
     fn test_destination() -> Device {

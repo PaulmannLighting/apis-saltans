@@ -42,6 +42,8 @@ flowchart TD
     ZCL[ZCL transceiver task]
     ZDP[ZDP transceiver task]
     OTA[OTA Upgrade server task]
+    IMG[Image transfer tasks]
+    FILE[Seekable OTA image sources]
 
     C -->|start| ZCL
     C -->|start| ZDP
@@ -56,6 +58,8 @@ flowchart TD
     ZCL -->|unmatched ZCL frame| APP
     ZCL -->|OTA Upgrade frame| OTA
     OTA -->|OTA commands and replies| ZCL
+    OTA -->|byte-range requests| IMG
+    IMG -->|seek and read| FILE
     ZDP -->|unmatched ZDP frame| APP
     ZDP -->|DeviceAnnce as Device::Announced| APP
     ZDP -->|MatchDescRsp| HW
@@ -159,9 +163,21 @@ The OTA server owns the policy and state required by cluster `0x0019`. Its inbox
 message containing NWK source information and a typed APS/ZCL OTA command. One scheduled image is
 stored per device endpoint; a later update replaces it.
 
-Every OTA `Transmit` and `Reply` message includes a one-shot response channel. The ZCL transceiver uses
-that channel to return the driver's deferred `HwResponse` without polling it. The OTA actor owns
-those responses and polls them in tracked tasks, reaping completed tasks while continuing to
+An image separates its parsed header from its payload source. The small serialized header and its
+decoded metadata remain in memory, while the payload stays behind an owned `Read + Seek` handle.
+The `ParseImage` extension trait defines the parsing workflow as overridable default stages for
+initial positioning, fixed-header reading, optional-header reading, length discovery, and final
+payload positioning. The standard implementation attaches this workflow to `std::fs::File`.
+Scheduling an image moves that handle into a dedicated image-transfer task. Page transfers and
+ordinary block requests use cloneable channel handles to request byte ranges, and the task
+serializes access to its file cursor. OTA clients can therefore request arbitrary or previous file
+offsets without loading the full image or sharing the reader behind a mutex. The transfer task runs
+asynchronously and delegates each synchronous seek/read operation to Tokio's blocking pool, so it
+does not permanently occupy a blocking thread or stall an actor worker.
+
+Every OTA `Transmit` and `Reply` message includes a one-shot response channel. The ZCL transceiver
+uses that channel to return the driver's deferred `HwResponse` without polling it. The OTA actor
+owns those responses and polls them in tracked tasks, reaping completed tasks while continuing to
 service its inbound channel. A page-transfer task polls each block's response itself and stops the
 remaining page stream after a hardware failure.
 
