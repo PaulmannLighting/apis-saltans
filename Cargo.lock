@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-aps"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "apis-saltans-core",
  "apis-saltans-nwk",
@@ -26,7 +26,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-coordinator"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
@@ -65,7 +65,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-hw"
-version = "0.11.4"
+version = "0.12.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",

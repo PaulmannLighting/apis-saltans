@@ -36,7 +36,7 @@ commands to the NCP actor.
 
 ```toml
 [dependencies]
-apis-saltans-hw = { version = "0.11", features = ["coordinator"] }
+apis-saltans-hw = { version = "0.12", features = ["coordinator"] }
 ```
 
 Import the `Ncp` trait to make the handle methods available:
@@ -79,7 +79,7 @@ modules used to implement a backend:
 
 ```toml
 [dependencies]
-apis-saltans-hw = { version = "0.11", features = ["driver"] }
+apis-saltans-hw = { version = "0.12", features = ["driver"] }
 ```
 
 Driver crates implement every `Driver` method on the NCP command actor, including the required

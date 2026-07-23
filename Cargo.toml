@@ -16,9 +16,9 @@ serde = "1"
 strum = { version = "0.28", default-features = false, features = ["derive"] }
 thiserror = { version = "2", default-features = false }
 tokio = "1"
-zb-aps = { package = "apis-saltans-aps", version = "0.7", path = "aps" }
+zb-aps = { package = "apis-saltans-aps", version = "0.7.1", path = "aps" }
 zb-core = { package = "apis-saltans-core", version = "0.8", path = "core" }
-zb-hw = { package = "apis-saltans-hw", version = "0.11", path = "hw" }
+zb-hw = { package = "apis-saltans-hw", version = "0.12", path = "hw" }
 zb-nwk = { package = "apis-saltans-nwk", version = "0.5", path = "nwk" }
 zb-zcl = { package = "apis-saltans-zcl", version = "0.8", path = "zcl" }
 zb-zdp = { package = "apis-saltans-zdp", version = "0.7", path = "zdp" }
