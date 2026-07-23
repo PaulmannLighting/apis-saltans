@@ -138,7 +138,7 @@ where
     ) -> Result<HwResponse, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
-        let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
+        let hw_datagram = zb_hw::Datagram::new(aps_metadata, zcl_frame.to_le_stream().collect());
         self.ncp.transmit(destination, hw_datagram).await
     }
 
@@ -164,7 +164,7 @@ where
             aps_metadata,
             zcl_metadata.manufacturer_code,
         );
-        let hw_datagram = make_hw_datagram(aps_metadata, zcl_frame);
+        let hw_datagram = zb_hw::Datagram::new(aps_metadata, zcl_frame.to_le_stream().collect());
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
         let transmission_rx = self.ncp.transmit(device.into(), hw_datagram).await?;
@@ -198,13 +198,5 @@ where
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
         spawn(Self::new(ncp, events).run(zcl_rx));
         zcl_tx
-    }
-}
-
-fn make_hw_datagram(metadata: zb_hw::Metadata, payload: Frame<Bytes>) -> zb_hw::Datagram {
-    #[expect(unsafe_code)]
-    // SAFETY: We safely construct the datagram from the correct metadata we destructured before.
-    unsafe {
-        zb_hw::Datagram::new_unchecked(metadata, payload.to_le_stream().collect())
     }
 }

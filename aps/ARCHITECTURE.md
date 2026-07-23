@@ -27,6 +27,7 @@ flowchart TD
 | `frame::acknowledgement` | APS acknowledgement frame structures.                         |
 | `frame::extended`        | Extended APS header fields, including fragmentation metadata. |
 | `broadcast`              | Well-known Zigbee broadcast addresses.                        |
+| `tx_options`             | APSDE-DATA request transmission-option bitflags.              |
 
 APS data headers retain cluster and profile identifiers as their raw wire values. Their
 `cluster()` and `profile()` accessors provide typed `zb_core::Cluster` and `zb_core::Profile`

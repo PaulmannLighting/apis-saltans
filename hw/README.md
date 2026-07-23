@@ -126,7 +126,10 @@ transmit(destination, datagram)
 ```
 
 The `Destination` describes the APS target, and the `Datagram` contains APS profile/cluster metadata
-plus the serialized application payload.
+plus the serialized application payload. Drivers must also read
+`Metadata::tx_options()` and apply the complete `zb_aps::TxOptions` mask to the APSDE-DATA request.
+`Metadata::new(...)` requests acknowledged transmission by default; callers such as the OTA Upgrade
+server use an empty mask for page-mode block responses.
 
 Local endpoint discovery uses:
 

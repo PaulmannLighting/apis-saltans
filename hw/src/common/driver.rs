@@ -112,6 +112,9 @@ pub trait Driver {
 
     /// Transmit an application datagram to the specified destination.
     ///
+    /// The driver must honor [`Metadata::tx_options`](crate::Metadata::tx_options) when issuing its
+    /// APSDE-DATA request.
+    ///
     /// Return an [`HwResponse`] that owns the deferred hardware operation. The driver actor passes
     /// this response to the caller without waiting for the transmission to complete.
     ///

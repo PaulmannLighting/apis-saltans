@@ -163,10 +163,7 @@ where
         let seq = self.next_seq();
         let index = Index::from_zdp_command(device, seq, metadata);
         let zdp_frame = Frame::new(seq, payload);
-        #[expect(unsafe_code)]
-        // SAFETY: We construct the datagram from the unchanged metadata and correct ZDP payload.
-        let hw_datagram =
-            unsafe { Datagram::new_unchecked(metadata, zdp_frame.to_le_stream().collect()) };
+        let hw_datagram = Datagram::new(metadata, zdp_frame.to_le_stream().collect());
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
         let transmission_rx = self
@@ -182,10 +179,7 @@ where
     async fn respond(&self, seq: u8, device: Device, payload: Payload) -> Result<(), zb_hw::Error> {
         let (metadata, payload) = payload.into_parts();
         let zdp_frame = Frame::new(seq, payload);
-        #[expect(unsafe_code)]
-        // SAFETY: We construct the datagram from the unchanged metadata and correct ZDP payload.
-        let hw_datagram =
-            unsafe { Datagram::new_unchecked(metadata, zdp_frame.to_le_stream().collect()) };
+        let hw_datagram = Datagram::new(metadata, zdp_frame.to_le_stream().collect());
         self.ncp
             .transmit(
                 Destination::Device(destination::Device::new(device, Endpoint::Data)),
