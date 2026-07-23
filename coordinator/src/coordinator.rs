@@ -5,7 +5,7 @@ use zb_core::node::Descriptor;
 use zb_hw::{Error, NcpHandle};
 
 use crate::mux::Mux;
-use crate::{Event, ota, zcl, zdp};
+use crate::{DEFAULT_OTA_UPDATE_TASK_LIMIT, Event, ota, zcl, zdp};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
@@ -40,9 +40,34 @@ impl Coordinator {
         hw_events: Receiver<zb_hw::Event>,
         events_out: Sender<Event>,
     ) -> Result<Self, Error> {
+        Self::start_with_ota_update_task_limit(
+            ncp,
+            descriptor,
+            hw_events,
+            events_out,
+            DEFAULT_OTA_UPDATE_TASK_LIMIT,
+        )
+    }
+
+    /// Start the coordinator with a limit on concurrent destination OTA transfer tasks.
+    ///
+    /// Each destination with an accepted [`crate::ota::Message::Update`] holds one slot for the
+    /// complete exchange. Replacing an update for the same destination reuses its task. A limit of
+    /// zero rejects every OTA update.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`Error`] if setting up the actor network fails.
+    pub fn start_with_ota_update_task_limit(
+        ncp: NcpHandle,
+        descriptor: Descriptor,
+        hw_events: Receiver<zb_hw::Event>,
+        events_out: Sender<Event>,
+        ota_update_task_limit: usize,
+    ) -> Result<Self, Error> {
         let (ota, ota_inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
         let zcl = zcl::Transceiver::spawn(ncp.clone(), events_out.clone(), ota.clone());
-        ota::Server::spawn(zcl.clone(), &ota, ota_inbound);
+        ota::Server::spawn(zcl.clone(), ota_inbound, ota_update_task_limit);
         let zdp = zdp::Transceiver::spawn(ncp.clone(), events_out.clone(), descriptor);
         Mux::spawn(hw_events, events_out, zcl.clone(), zdp.clone());
         Ok(Self { ncp, ota, zcl, zdp })

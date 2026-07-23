@@ -1,11 +1,11 @@
-use std::io::{self, Read, Seek, SeekFrom};
+use std::io;
 
 use tokio::sync::{mpsc, oneshot};
 use zb_core::IeeeAddress;
 use zb_zcl::ota_upgrade::ImageId;
 
 use super::Header;
-use super::source::ImageSource;
+use super::source::{ImageSource, ReadRange};
 
 const TRANSFER_CHANNEL_SIZE: usize = 8;
 
@@ -108,7 +108,7 @@ impl ImageTransferTask {
                 length,
                 response,
             } = request;
-            match tokio::task::spawn_blocking(move || Self::read_range(source, offset, length))
+            match tokio::task::spawn_blocking(move || Self::read_source(source, offset, length))
                 .await
             {
                 Ok((source, result)) => {
@@ -123,28 +123,12 @@ impl ImageTransferTask {
         }
     }
 
-    fn read_range(
+    fn read_source(
         mut source: Box<dyn ImageSource>,
         offset: usize,
         length: usize,
     ) -> (Box<dyn ImageSource>, io::Result<Box<[u8]>>) {
-        let result = read_source_range(source.as_mut(), offset, length);
+        let result = source.read_range(offset, length);
         (source, result)
     }
-}
-
-fn read_source_range<R>(source: &mut R, offset: usize, length: usize) -> io::Result<Box<[u8]>>
-where
-    R: Read + Seek + ?Sized,
-{
-    let mut data = vec![0; length].into_boxed_slice();
-    let offset = u64::try_from(offset).map_err(|_| {
-        io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "OTA image offset does not fit the reader",
-        )
-    })?;
-    source.seek(SeekFrom::Start(offset))?;
-    source.read_exact(&mut data)?;
-    Ok(data)
 }

@@ -1,25 +1,23 @@
 use std::time::Duration;
 
 use log::warn;
-use tokio::sync::mpsc::{Sender, WeakSender};
+use tokio::sync::mpsc::Sender;
 use tokio::time::sleep;
 use zb_aps::TxOptions;
 use zb_core::destination::Device;
 use zb_zcl::ota_upgrade::{ImageBlock, ImageBlockResponse, ImageBlockResponsePayload, ImageId};
 
 use super::image::ImageTransfer;
-use super::transfer::{TransferKey, report_failure};
-use super::{OTA_PROFILE, Payload, UpdateError, read_image_range, reply_zcl, zcl};
+use super::transfer::read_image_range;
+use super::{OTA_PROFILE, Payload, UpdateError, UpdateResult, reply_zcl, zcl};
 
 /// State owned by a paced OTA Image Page transfer task.
 ///
 /// The task sends consecutive Image Block responses without blocking the server actor and reports
-/// its first read or transmission failure through `messages`.
+/// its first read or transmission failure to its owning destination transfer task.
 pub(super) struct PageTransfer {
     pub(super) zcl: Sender<zcl::Message>,
     pub(super) image: ImageTransfer,
-    pub(super) messages: WeakSender<super::Message>,
-    pub(super) key: TransferKey,
     pub(super) destination: Device,
     pub(super) image_id: ImageId,
     pub(super) maximum_data_size: usize,
@@ -32,7 +30,7 @@ pub(super) struct PageTransfer {
 
 impl PageTransfer {
     /// Send all remaining blocks in the requested page, respecting response spacing.
-    pub(super) async fn run(mut self) {
+    pub(super) async fn run(mut self) -> UpdateResult {
         loop {
             let file_offset =
                 u32::try_from(self.offset).expect("validated OTA image offset fits u32");
@@ -48,18 +46,16 @@ impl PageTransfer {
             )
             .await
             else {
-                report_failure(&self.messages, self.key, UpdateError::Transmission).await;
-                return;
+                return Err(UpdateError::Transmission);
             };
             if let Err(error) = hw_response.await {
                 warn!("OTA page transmission failed: {error}");
-                report_failure(&self.messages, self.key, UpdateError::Transmission).await;
-                return;
+                return Err(UpdateError::Transmission);
             }
 
             self.offset = self.offset.saturating_add(self.maximum_data_size);
             if self.offset >= self.page_end {
-                return;
+                return Ok(());
             }
             sleep(self.spacing).await;
             self.sequence_number = self.sequence_number.wrapping_add(1);
@@ -72,8 +68,7 @@ impl PageTransfer {
                     Ok(data) => data,
                     Err(status) => {
                         warn!("Failed to read OTA page data: {status}");
-                        report_failure(&self.messages, self.key, UpdateError::ImageTransfer).await;
-                        return;
+                        return Err(UpdateError::ImageTransfer);
                     }
                 };
         }

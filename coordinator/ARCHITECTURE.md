@@ -79,7 +79,8 @@ flowchart TD
    outbound `Sender<Event>`.
 2. Creates the OTA inbound channel and starts the ZCL transceiver with its sender, a clone of the
    NCP handle, and the outbound event sender.
-3. Starts the OTA Upgrade server with its inbound receiver and the ZCL sender.
+3. Starts the OTA Upgrade server with its inbound receiver, the ZCL sender, and the configured OTA
+   update-task limit.
 4. Starts the ZDP transceiver task with a clone of the NCP handle and outbound event sender.
 5. Starts the mux task with the hardware event receiver and both transceiver senders.
 6. Returns a lightweight `Coordinator` holding the NCP handle plus OTA, ZCL, and ZDP actor senders.
@@ -159,20 +160,22 @@ APS metadata, and manufacturer code.
 ### OTA Upgrade Server
 
 The OTA server owns the policy and state required by cluster `0x0019`. Its inbox accepts an
-`Update` containing a target endpoint, validated image, and completion one-shot; a `Received`
-message containing NWK source information and a typed APS/ZCL OTA command; or an internal
-`TransferFailed` message from a background task. One scheduled image is stored per device endpoint;
-a later update replaces it and resolves the old completion channel as superseded. OTA traffic is
+`Update` containing a target endpoint, validated image, and completion one-shot or a `Received`
+message containing NWK source information and a typed APS/ZCL OTA command. It owns one transfer
+task and routing mailbox per active device endpoint. A later update is routed to the same task,
+which replaces its image and resolves the old completion channel as superseded. OTA traffic is
 restricted to the Zigbee Home Automation application profile.
 
-The OTA module keeps the actor and protocol handlers in `ota.rs`. Its supporting types are grouped
-by responsibility: `message.rs` defines the public actor messages and update result;
-`state.rs` contains scheduled-update and request context state; `transfer.rs` defines internal
-generation keys and failure forwarding; and `page_transfer.rs` owns the paced page-transfer worker.
-Image parsing and source access remain under the nested `image` module.
+The OTA module groups responsibilities as follows: `server.rs` owns admission, frame validation,
+routing, and the destination-task set; `message.rs` defines public actor messages and update
+results; `state.rs` contains validated request context; `transfer.rs` owns the complete
+per-destination protocol state and its private operation set; and `page_transfer.rs` implements one
+paced page operation. Image parsing and source access remain under the nested `image` module.
 
 An image separates its parsed header from its payload source. The small serialized header and its
 decoded metadata remain in memory, while the payload stays behind an owned `Read + Seek` handle.
+The internal `ReadRange` extension trait provides exact offset-based reads for every `Read + Seek`
+implementation; the image-source worker invokes it inside `spawn_blocking`.
 The `ParseImage` extension trait defines the parsing workflow as overridable default stages for
 initial positioning, fixed-header reading, optional-header reading, length discovery, and final
 payload positioning. The standard implementation attaches this workflow to `std::fs::File`.
@@ -184,16 +187,19 @@ asynchronously and delegates each synchronous seek/read operation to Tokio's blo
 does not permanently occupy a blocking thread or stall an actor worker.
 
 Every OTA `Transmit` and `Reply` message includes a one-shot response channel. The ZCL transceiver
-uses that channel to return the driver's deferred `HwResponse` without polling it. The OTA actor
-owns those responses and polls them in tracked tasks, reaping completed tasks while continuing to
-service its inbound channel. A page-transfer task polls each block's response itself and stops the
-remaining page stream after a hardware failure. Background tasks report terminal failures to the
-actor as `Message::TransferFailed` values over the same bounded inbox used by API and inbound-frame
-messages. Generation identifiers prevent a late result from an older page task from completing a
-newer update for the same endpoint and image ID.
+uses that channel to return the driver's deferred `HwResponse` without polling it. The OTA server
+spawns and tracks exactly one long-lived transfer task per active destination. It validates and
+routes inbound commands but does not spawn individual transmission tasks. Each destination task
+owns a private operation set containing its hardware-response waiters and paced page transfers.
+Operation generations prevent results from an image superseded on the same destination task from
+completing the replacement update.
 
 On `Update`, the server sends a unicast Image Notify. It then handles Query Next Image, Query
 Specific File, Image Block, Image Page, and Upgrade End commands without application involvement.
+The server admits a new destination only while the number of active destination tasks is below the
+configured limit. If no slot is available, it rejects the update through its completion channel
+without transmitting. Replacing an update is routed to the existing destination task and does not
+consume another slot.
 It checks image identity, optional IEEE destination and hardware constraints, file bounds, and the
 fixed Zigbee Home Automation profile before replying. Page requests run in their own task so
 response spacing does not block other OTA clients. Their Image Block responses have increasing ZCL
@@ -370,25 +376,30 @@ sequenceDiagram
 sequenceDiagram
     participant APP as API Caller
     participant OTA as OTA Server
+    participant TX as Destination Transfer
     participant ZCL as ZCL Transceiver
     participant HW as NCP Driver
     participant DEV as OTA Client
 
     APP->>OTA: Ota::update(target, image)
-    OTA->>ZCL: Image Notify
+    OTA->>TX: spawn one destination task
+    TX->>ZCL: Image Notify
     ZCL->>HW: unicast command
     HW-->>ZCL: HwResponse
-    ZCL-->>OTA: HwResponse
-    OTA->>OTA: track deferred completion
+    ZCL-->>TX: HwResponse
+    TX->>TX: track operation internally
     HW->>DEV: Image Notify
     DEV->>HW: Query Next Image Request
     HW->>ZCL: received OTA frame
     ZCL->>OTA: Message::Received
-    OTA->>ZCL: Query Next Image Response
-    DEV->>OTA: Image Block or Page Requests via HW and ZCL
-    OTA->>DEV: Image Block Responses via ZCL and HW
-    DEV->>OTA: Upgrade End Request via HW and ZCL
-    OTA->>DEV: Upgrade End Response via ZCL and HW
+    OTA->>TX: route typed request
+    TX->>ZCL: Query Next Image Response
+    DEV->>TX: Image Block or Page Requests via HW, ZCL, and OTA
+    TX->>DEV: Image Block Responses via ZCL and HW
+    DEV->>TX: Upgrade End Request via HW, ZCL, and OTA
+    TX->>DEV: Upgrade End Response via ZCL and HW
+    TX-->>OTA: terminal task result
+    OTA-->>APP: update result
 ```
 
 The diagram abbreviates inbound routing through the mux. The OTA actor receives already parsed

@@ -54,6 +54,9 @@ mod response;
 mod zcl;
 mod zdp;
 
-/// The delay between retries, in seconds.
+/// Capacity of each coordinator actor inbox.
 #[env_item("ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE")]
 const MPSC_CHANNEL_SIZE: usize = 128;
+
+/// Default maximum number of concurrent destination OTA transfer tasks.
+const DEFAULT_OTA_UPDATE_TASK_LIMIT: usize = MPSC_CHANNEL_SIZE;

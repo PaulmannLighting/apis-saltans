@@ -30,21 +30,20 @@ pub enum Message {
         /// Typed APS and ZCL frame.
         frame: Data<Frame<OtaCommand>>,
     },
-    /// Report a terminal failure from a background transfer task.
-    #[doc(hidden)]
-    TransferFailed {
-        /// Device endpoint whose update failed.
-        target: Device,
-        /// Generation of the scheduled update that failed.
-        generation: u64,
-        /// Terminal transfer failure.
-        error: UpdateError,
-    },
 }
 
 /// Terminal failure reported by a coordinator-managed OTA update.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ThisError)]
 pub enum UpdateError {
+    /// The configured number of concurrent destination OTA transfer tasks has been reached.
+    #[error("the concurrent destination OTA transfer task limit of {limit} has been reached")]
+    UpdateTaskLimitReached {
+        /// Configured maximum number of concurrent destination OTA transfer tasks.
+        limit: usize,
+    },
+    /// A destination transfer task stopped unexpectedly.
+    #[error("the OTA transfer task stopped unexpectedly")]
+    TransferTask,
     /// A newer image replaced this update for the same device endpoint.
     #[error("the OTA update was superseded by a newer image")]
     Superseded,
