@@ -1,28 +1,16 @@
 
 # cargo-vet imports lock
 
-[[unpublished.apis-saltans-aps]]
-version = "0.7.1"
-audited_as = "0.7.0"
-
-[[unpublished.apis-saltans-coordinator]]
-version = "0.12.0"
-audited_as = "0.11.0"
-
-[[unpublished.apis-saltans-hw]]
-version = "0.12.0"
-audited_as = "0.11.4"
-
 [[publisher.apis-saltans-aps]]
-version = "0.7.0"
-when = "2026-07-22"
+version = "0.7.1"
+when = "2026-07-23"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
 [[publisher.apis-saltans-coordinator]]
-version = "0.11.0"
-when = "2026-07-22"
+version = "0.12.0"
+when = "2026-07-23"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
@@ -35,8 +23,8 @@ user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
 [[publisher.apis-saltans-hw]]
-version = "0.11.4"
-when = "2026-07-22"
+version = "0.12.0"
+when = "2026-07-23"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
