@@ -5,10 +5,12 @@ use le_stream::ToLeStream;
 use zb_core::{ClusterSpecific, Direction, Profiled};
 use zb_zcl::{Command, Directed, Scope, Scoped};
 
+use crate::aps;
+
 /// A simplified APS frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Payload {
-    aps_metadata: zb_hw::Metadata,
+    aps_metadata: aps::Metadata,
     zcl_metadata: Metadata,
     bytes: Bytes,
 }
@@ -16,11 +18,7 @@ pub struct Payload {
 impl Payload {
     /// Create a ZCL payload with its APS and ZCL transmission metadata.
     #[must_use]
-    pub const fn new(
-        aps_metadata: zb_hw::Metadata,
-        zcl_metadata: Metadata,
-        payload: Bytes,
-    ) -> Self {
+    pub const fn new(aps_metadata: aps::Metadata, zcl_metadata: Metadata, payload: Bytes) -> Self {
         Self {
             aps_metadata,
             zcl_metadata,
@@ -30,7 +28,7 @@ impl Payload {
 
     /// Split the payload into APS metadata, ZCL metadata, and serialized bytes.
     #[must_use]
-    pub fn into_parts(self) -> (zb_hw::Metadata, Metadata, Bytes) {
+    pub fn into_parts(self) -> (aps::Metadata, Metadata, Bytes) {
         (self.aps_metadata, self.zcl_metadata, self.bytes)
     }
 }
@@ -51,7 +49,7 @@ where
 {
     fn from(payload: T) -> Self {
         Self {
-            aps_metadata: zb_hw::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
+            aps_metadata: aps::Metadata::new(T::PROFILE, <T as ClusterSpecific>::ID),
             zcl_metadata: Metadata {
                 scope: T::SCOPE,
                 direction: T::DIRECTION,

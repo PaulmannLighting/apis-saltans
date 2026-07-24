@@ -6,12 +6,11 @@
 //! No default features are enabled. Enable exactly the API surface needed by the depending crate:
 //!
 //! - `coordinator` exposes `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, common errors, hardware
-//!   events, access to the NCP's local simple descriptors, scan results, transmit datagram types,
-//!   and the deferred `HwResponse` returned by transmission requests for coordinator and
-//!   application code that sends commands to a running NCP actor.
+//!   events, access to the NCP's local simple descriptors, scan results, and APS frame
+//!   transmission for coordinator code that sends commands to a running NCP actor.
 //! - `driver` exposes `Driver`, shared driver/coordinator data types, the required local-endpoint
-//!   API, command handles, `HwResponse`, common errors, and the `aps`, `core`, `nwk`, and `zdp`
-//!   protocol re-export modules for hardware backend implementations.
+//!   API, command handles, common errors, and the `aps`, `core`, `nwk`, and `zdp` protocol
+//!   re-export modules for hardware backend implementations.
 //!
 //! `Driver` is part of the shared API and is therefore available with either feature. Event
 //! translation and startup wiring are backend concerns; this crate does not prescribe backend
@@ -22,9 +21,9 @@
 //! or `apis_saltans_hw::zdp::SimpleDescriptor`, without adding direct dependencies on each
 //! protocol crate.
 //!
-//! `Ncp::transmit` is a two-stage operation. Awaiting the method hands the datagram to the driver
-//! actor and returns an `HwResponse`; awaiting that response observes completion of the hardware
-//! transmission.
+//! `Ncp::transmit` hands an APS data frame to the driver actor without a command-response channel.
+//! Hardware backends report acknowledged transmission completion asynchronously through
+//! `Event::ApsResponse`.
 //!
 //! Every `Driver` implementation must provide the NCP's local application endpoints through
 //! `Driver::get_endpoints`. Each endpoint is represented by a complete
@@ -39,8 +38,8 @@ pub use zb_aps::TxOptions;
 #[cfg(any(feature = "coordinator", feature = "driver"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
 pub use self::common::{
-    Clusters, Datagram, Driver, Error, Event, FoundNetwork, HwResponse, Metadata, NcpHandle,
-    Network, RouteError, ScannedChannel, WeakNcpHandle,
+    Clusters, Driver, Error, Event, FoundNetwork, NcpHandle, Network, RouteError, ScannedChannel,
+    WeakNcpHandle,
 };
 #[cfg(feature = "coordinator")]
 #[cfg_attr(docsrs, doc(cfg(feature = "coordinator")))]

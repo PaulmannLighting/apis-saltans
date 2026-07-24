@@ -7,12 +7,11 @@ use zb_core::{ClusterSpecific, Destination, ExpectResponse, Profiled};
 use zb_zcl::{Cluster, Command, Directed};
 
 use crate::zcl::{Message, Payload};
-use crate::{CommunicationResponse, Coordinator, Error, TransmissionResponse};
+use crate::{CommunicationResponse, Coordinator, Error};
 
 /// A deferred typed ZCL response.
 ///
-/// Awaiting this future first confirms hardware transmission, then waits for the correlated ZCL
-/// frame and converts it to `T`.
+/// Awaiting this future waits for the correlated ZCL frame and converts it to `T`.
 pub type ZclResponse<T> = CommunicationResponse<Cluster, T>;
 
 /// Trait for sending ZCL commands.
@@ -23,26 +22,23 @@ pub trait Zcl {
     /// Send a ZCL command without waiting for an application-level response.
     ///
     /// Use this for cluster commands that are transmitted as commands or group/broadcast messages.
-    /// The returned outer future queues the command and yields a [`TransmissionResponse`]. Await
-    /// that response separately to observe whether the hardware transmission completed.
-    ///
     /// # Errors
     ///
-    /// The outer future returns an [`Error`] if the command cannot be queued. Awaiting the returned
-    /// [`TransmissionResponse`] returns an [`Error`] if the deferred hardware transmission fails.
+    /// Returns an [`Error`] if the command cannot be queued or an acknowledged APS transmission
+    /// fails.
     fn transmit<T>(
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
+    ) -> impl Future<Output = Result<(), Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream;
 
     /// Send a ZCL command to a device endpoint and wait for its typed response.
     ///
-    /// The returned outer future queues the request and yields a [`ZclResponse`]. Await that
-    /// response separately; it confirms hardware transmission before waiting for and converting
-    /// the correlated ZCL response frame.
+    /// The returned outer future queues the request, awaits its acknowledged APS transmission, and
+    /// yields a [`ZclResponse`]. Await that response separately to receive and convert the
+    /// correlated ZCL response frame.
     ///
     /// # Errors
     ///
@@ -63,7 +59,7 @@ impl Zcl for Sender<Message> {
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
+    ) -> impl Future<Output = Result<(), Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream,
     {
@@ -77,7 +73,8 @@ impl Zcl for Sender<Message> {
                 response,
             })
             .await?;
-            Ok(result.await??.into())
+            result.await??;
+            Ok(())
         }
     }
 
@@ -110,7 +107,7 @@ impl Zcl for Coordinator {
         &self,
         destination: Destination,
         payload: T,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send
+    ) -> impl Future<Output = Result<(), Error>> + Send
     where
         T: ClusterSpecific + Command + Directed + Profiled + ToLeStream,
     {

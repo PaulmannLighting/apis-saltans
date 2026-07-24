@@ -13,7 +13,7 @@ use zb_aps::{Data, DeliveryMode};
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
 use zb_core::{Destination, Endpoint, FullAddress, destination};
-use zb_hw::{Datagram, Ncp};
+use zb_hw::Ncp;
 use zb_nwk::Source;
 use zb_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
@@ -29,6 +29,7 @@ use self::node_desc::{
 };
 pub use self::payload::Payload;
 use super::index::Index;
+use crate::aps::{self, Aps};
 use crate::response::InternalCommunicationResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
@@ -41,6 +42,7 @@ mod payload;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
+    aps: Sender<aps::Message>,
     events: Sender<Event>,
     descriptor: Descriptor,
     /// Whether the hardware has reported that joining is open.
@@ -52,9 +54,15 @@ pub struct Transceiver<T> {
 impl<T> Transceiver<T> {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T, events: Sender<Event>, descriptor: Descriptor) -> Self {
+    pub const fn new(
+        ncp: T,
+        aps: Sender<aps::Message>,
+        events: Sender<Event>,
+        descriptor: Descriptor,
+    ) -> Self {
         Self {
             ncp,
+            aps,
             events,
             descriptor,
             joining_permitted: false,
@@ -163,31 +171,25 @@ where
         let seq = self.next_seq();
         let index = Index::from_zdp_command(device, seq, metadata);
         let zdp_frame = Frame::new(seq, payload);
-        let hw_datagram = Datagram::new(metadata, zdp_frame.to_le_stream().collect());
+        let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
+        let aps_frame = metadata.frame(destination, zdp_frame.to_le_stream().collect());
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
-        let transmission_rx = self
-            .ncp
-            .transmit(
-                Destination::Device(destination::Device::new(device, Endpoint::Data)),
-                hw_datagram,
-            )
-            .await?;
-        Ok(InternalCommunicationResponse::new(transmission_rx, rx))
+
+        if let Err(error) = self.aps.transmit(destination, aps_frame).await {
+            self.responses.remove(&index);
+            return Err(error);
+        }
+
+        Ok(InternalCommunicationResponse::new(rx))
     }
 
     async fn respond(&self, seq: u8, device: Device, payload: Payload) -> Result<(), zb_hw::Error> {
         let (metadata, payload) = payload.into_parts();
         let zdp_frame = Frame::new(seq, payload);
-        let hw_datagram = Datagram::new(metadata, zdp_frame.to_le_stream().collect());
-        self.ncp
-            .transmit(
-                Destination::Device(destination::Device::new(device, Endpoint::Data)),
-                hw_datagram,
-            )
-            .await?
-            .await?;
-        Ok(())
+        let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
+        let aps_frame = metadata.frame(destination, zdp_frame.to_le_stream().collect());
+        self.aps.transmit(destination, aps_frame).await
     }
 
     /// Process a Match Descriptor request and unicast any required response to its originator.
@@ -340,9 +342,14 @@ where
     T: Ncp + Send + Sync + 'static,
 {
     /// Start the ZDP transceiver.
-    pub fn spawn(ncp: T, events: Sender<Event>, descriptor: Descriptor) -> Sender<Message> {
+    pub fn spawn(
+        ncp: T,
+        aps: Sender<aps::Message>,
+        events: Sender<Event>,
+        descriptor: Descriptor,
+    ) -> Sender<Message> {
         let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, events, descriptor).run(zdp_rx));
+        spawn(Self::new(ncp, aps, events, descriptor).run(zdp_rx));
         zdp_tx
     }
 }

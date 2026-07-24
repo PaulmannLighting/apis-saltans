@@ -5,7 +5,7 @@ use zb_core::node::Descriptor;
 use zb_hw::{Error, NcpHandle};
 
 use crate::mux::Mux;
-use crate::{Event, zcl, zdp};
+use crate::{Event, aps, zcl, zdp};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
@@ -30,9 +30,10 @@ impl Coordinator {
         hw_events: Receiver<zb_hw::Event>,
         events_out: Sender<Event>,
     ) -> Result<Self, Error> {
-        let zcl = zcl::Transceiver::spawn(ncp.clone(), events_out.clone());
-        let zdp = zdp::Transceiver::spawn(ncp.clone(), events_out.clone(), descriptor);
-        Mux::spawn(hw_events, events_out, zcl.clone(), zdp.clone());
+        let aps = aps::Transceiver::spawn(ncp.clone());
+        let zcl = zcl::Transceiver::spawn(aps.clone(), events_out.clone());
+        let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events_out.clone(), descriptor);
+        Mux::spawn(hw_events, events_out, aps, zcl.clone(), zdp.clone());
         Ok(Self { ncp, zcl, zdp })
     }
 }

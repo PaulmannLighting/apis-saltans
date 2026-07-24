@@ -19,7 +19,7 @@ where
 {
     fn from(request: ReadAttributesRequest<T>) -> Self {
         Self::new(
-            zb_hw::Metadata::new(
+            crate::aps::Metadata::new(
                 <T::Item as Profiled>::PROFILE,
                 <T::Item as ClusterSpecific>::ID,
             ),

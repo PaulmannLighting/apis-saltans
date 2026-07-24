@@ -13,8 +13,8 @@ No default features are enabled. Pick the feature that matches the role of the c
 
 | Feature | Intended user | Public API |
 | --- | --- | --- |
-| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
-| `driver` | Hardware backend crates. | `Driver`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
+| `driver` | Hardware backend crates. | `Driver`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
 
 Backend crates should enable `driver`. Coordinator crates should enable `coordinator`.
 
@@ -53,20 +53,16 @@ async fn permit_joining(ncp: &NcpHandle) -> Result<Duration, apis_saltans_hw::Er
 
 Use this feature for command-side operations such as reading the coordinator IEEE address, scanning
 networks, reading local endpoint descriptors, allowing joins, resolving addresses, requesting
-routes, and transmitting serialized `Datagram` values to `zb_core::Destination` targets.
+routes, and transmitting `zb_aps::Data<bytes::Bytes>` frames to `zb_core::Destination` targets.
 
-`Ncp::transmit(...)` is intentionally two-stage. Awaiting the method sends the request to the driver
-actor and returns an opaque `HwResponse`. Await that response to observe the driver's actual
-transmission result:
+`Ncp::transmit(...)` hands a `zb_aps::Data<bytes::Bytes>` frame to the driver actor:
 
 ```rust,ignore
-let response = ncp.transmit(destination, datagram).await?;
-response.await?;
+ncp.transmit(destination, frame).await?;
 ```
 
-An error from the first await means the actor command could not be delivered or the driver could not
-start the operation. An error from the second await is the deferred hardware transmission failure.
-`HwResponse` hides whether a backend uses a channel, an I/O future, or another completion mechanism.
+The transmit command has no response channel. Backends publish acknowledged transmission results as
+`Event::ApsResponse(Result<u8, Error>)`; the successful value is the APS frame counter.
 
 The common `Error` type implements `std::error::Error`. Backend-specific `Implementation` failures
 are retained as an error source; closed actor channels are represented by the payload-free
@@ -114,22 +110,18 @@ endpoint ID, profile ID, device ID, application version, and input/output cluste
 coordinator treats this as the authoritative local endpoint set when answering ZDP match descriptor
 requests and when matching clusters for bindings.
 
-`Driver::transmit(...)` starts the operation and returns an `HwResponse`. Drivers can construct the
-response with `HwResponse::new(future)`. The future must be `Send + 'static`, resolve to
-`Result<(), E>`, and use an error type convertible into `apis_saltans_hw::Error`. The actor forwards
-the response without waiting for the inner future to finish.
+`Driver::transmit(...)` receives a complete `aps::Data<bytes::Bytes>` frame and returns after handing
+it to the hardware stack. The backend later emits `Event::ApsResponse` for acknowledged
+transmissions.
 
 Transmission uses one method:
 
 ```rust
-transmit(destination, datagram)
+transmit(destination, frame)
 ```
 
-The `Destination` describes the APS target, and the `Datagram` contains APS profile/cluster metadata
-plus the serialized application payload. Drivers must also read
-`Metadata::tx_options()` and apply the complete `zb_aps::TxOptions` mask to the APSDE-DATA request.
-`Metadata::new(...)` requests acknowledged transmission by default; callers such as the OTA Upgrade
-server use an empty mask for page-mode block responses.
+The `Destination` describes the NWK target. The APS data frame contains the destination endpoint,
+cluster, profile, source endpoint, APS counter, control flags, and serialized application payload.
 
 Local endpoint discovery uses:
 
@@ -146,24 +138,8 @@ no longer construct or pass a separate descriptor list to the coordinator.
 actor through a Tokio MPSC channel and waits for the one-shot response associated with each command.
 `get_endpoints()` returns the same local simple descriptors exposed by the driver.
 
-Most proxy methods await the driver result before returning. `Ncp::transmit(...)` instead returns
-the driver's `HwResponse` immediately after actor handoff, allowing coordinator layers to compose
-hardware completion with their own protocol-response futures without depending on the driver's
-completion mechanism.
-
-### `HwResponse`
-
-`HwResponse` is an opaque future with output `Result<(), Error>`. It owns the driver-provided
-completion future and can be moved into a higher-level response object. Await it exactly like any
-other future:
-
-```rust,ignore
-let response = ncp.transmit(destination, datagram).await?;
-response.await?;
-```
-
-Dropping an `HwResponse` drops its inner future. Whether that cancels an operation depends on the
-driver's future and hardware backend; the abstraction does not promise cancellation.
+Most proxy methods create and await their own response channel. `Ncp::transmit(...)` only awaits
+actor handoff; APS completion returns through the hardware event stream instead.
 
 ### Local Endpoint Descriptors
 

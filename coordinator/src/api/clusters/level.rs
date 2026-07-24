@@ -6,131 +6,121 @@ use zb_zcl::level::{
     StepWithOnOff, Stop, StopWithOnOff,
 };
 
+use crate::Error;
 use crate::api::Zcl;
-use crate::{Error, TransmissionResponse};
 
 /// Trait for the Level cluster.
 ///
-/// Each method queues its command and returns a [`TransmissionResponse`]. Await the returned
-/// response to observe the hardware transmission result.
+/// Each method awaits the acknowledged APS transmission before returning.
 pub trait Level {
     /// Move to level command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_level(
         &self,
         destination: Destination,
         level: u8,
         transition_time: Deciseconds,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Move command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn r#move(
         &self,
         destination: Destination,
         mode: Mode<UnitsPerSecond>,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Step command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn step(
         &self,
         destination: Destination,
         mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Stop command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn stop(
         &self,
         destination: Destination,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Move to level with on/off command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_level_with_on_off(
         &self,
         destination: Destination,
         level: u8,
         transition_time: Deciseconds,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Move with on/off command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_with_on_off(
         &self,
         destination: Destination,
         mode: Mode<UnitsPerSecond>,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Step with on/off command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn step_with_on_off(
         &self,
         destination: Destination,
         mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Stop with on/off command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn stop_with_on_off(
         &self,
         destination: Destination,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Move to the closest frequency command.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_closest_frequency(
         &self,
         destination: Destination,
         frequency: u16,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl<T> Level for T
@@ -143,7 +133,7 @@ where
         level: u8,
         transition_time: Deciseconds,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(
             destination,
             MoveToLevel::new(level, transition_time, options),
@@ -156,7 +146,7 @@ where
         destination: Destination,
         mode: Mode<UnitsPerSecond>,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(destination, Move::new(mode, options)).await
     }
 
@@ -166,16 +156,12 @@ where
         mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(destination, Step::new(mode, transition_time, options))
             .await
     }
 
-    async fn stop(
-        &self,
-        destination: Destination,
-        options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    async fn stop(&self, destination: Destination, options: Options) -> Result<(), Error> {
         self.transmit(destination, Stop::new(options)).await
     }
 
@@ -185,7 +171,7 @@ where
         level: u8,
         transition_time: Deciseconds,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(
             destination,
             MoveToLevelWithOnOff::new(level, transition_time, options),
@@ -198,7 +184,7 @@ where
         destination: Destination,
         mode: Mode<UnitsPerSecond>,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(destination, MoveWithOnOff::new(mode, options))
             .await
     }
@@ -209,7 +195,7 @@ where
         mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(
             destination,
             StepWithOnOff::new(mode, transition_time, options),
@@ -221,7 +207,7 @@ where
         &self,
         destination: Destination,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(destination, StopWithOnOff::new(options))
             .await
     }
@@ -230,7 +216,7 @@ where
         &self,
         destination: Destination,
         frequency: u16,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(destination, MoveToClosestFrequency::new(frequency))
             .await
     }

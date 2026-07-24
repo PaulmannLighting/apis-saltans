@@ -1,13 +1,14 @@
 use std::time::Duration;
 
+use bytes::Bytes;
 use tokio::sync::oneshot::Sender;
+use zb_aps::Data;
 use zb_core::{Destination, IeeeAddress};
 use zb_zdp::SimpleDescriptor;
 
 pub use self::found_network::{FoundNetwork, Network};
 pub use self::scanned_channel::ScannedChannel;
-use crate::HwResponse;
-use crate::common::{Datagram, Error};
+use crate::common::Error;
 
 mod found_network;
 mod scanned_channel;
@@ -90,13 +91,11 @@ pub enum Message {
         response: Sender<Result<u16, Error>>,
     },
 
-    /// Transmit a serialized application datagram.
+    /// Transmit an APS data frame.
     Transmit {
-        /// APS destination for the datagram.
+        /// Network destination for the frame.
         destination: Destination,
-        /// Serialized payload and APS metadata to transmit.
-        datagram: Datagram,
-        /// One-shot channel used to return success or driver error.
-        response: Sender<Result<HwResponse, Error>>,
+        /// APS frame to transmit.
+        frame: Data<Bytes>,
     },
 }

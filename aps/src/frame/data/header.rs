@@ -102,6 +102,21 @@ impl Header {
         self.counter
     }
 
+    /// Set the APS frame counter.
+    pub const fn set_counter(&mut self, counter: u8) {
+        self.counter = counter;
+    }
+
+    /// Set whether APS security is enabled.
+    pub fn set_security(&mut self, enabled: bool) {
+        self.control.set(Control::SECURITY, enabled);
+    }
+
+    /// Set whether an APS acknowledgement is requested.
+    pub fn set_ack_request(&mut self, enabled: bool) {
+        self.control.set(Control::ACK_REQUEST, enabled);
+    }
+
     /// Return the extended header.
     #[must_use]
     pub const fn extended(&self) -> Option<Extended> {

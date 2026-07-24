@@ -9,12 +9,10 @@ use crate::response::InternalCommunicationResponse;
 
 /// A deferred, typed response to a ZCL or ZDP request.
 ///
-/// The first await on a communication method queues the request and returns this future. Awaiting
-/// this future then waits for the hardware transmission to complete, waits for the correlated raw
-/// response of type `T`, and converts it to `U` with [`TryFrom`]. Transmission and channel failures
-/// are returned as [`Error`]; a failed conversion is returned as [`Error::InvalidResponseType`].
-/// Internally, `InternalCommunicationResponse` polls the hardware response to completion before the
-/// correlated protocol response channel.
+/// The communication method awaits the APS transmission before returning this future. Awaiting
+/// this future waits for the correlated raw response of type `T` and converts it to `U` with
+/// [`TryFrom`]. Channel failures are returned as [`Error`]; a failed conversion is returned as
+/// [`Error::InvalidResponseType`].
 ///
 /// Use the protocol-specific [`crate::ZclResponse`] and [`crate::ZdpResponse`] aliases in public
 /// API signatures.

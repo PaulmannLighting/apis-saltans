@@ -11,7 +11,7 @@ mod route_error;
 ///
 /// Device membership events carry a [`FullAddress`] so consumers receive both
 /// the IEEE address and the current NWK short address for the affected device.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Event {
     /// The network is up and running.
     NetworkUp,
@@ -42,6 +42,11 @@ pub enum Event {
 
     /// Raw APS data frame received from a NWK source.
     MessageReceived(Envelope<Data<Bytes>>),
+
+    /// Result of an acknowledged APS transmission.
+    ///
+    /// A successful result contains the APS frame counter assigned to the transmitted frame.
+    ApsResponse(Result<u8, crate::Error>),
 
     /// A routing error.
     RouteError(RouteError),

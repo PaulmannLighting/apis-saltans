@@ -1,10 +1,11 @@
 use zb_aps::Data;
 use zb_core::destination::Device;
 use zb_core::{Endpoint, short_id};
-use zb_hw::Metadata;
 use zb_nwk::Source;
 use zb_zcl::Cluster;
 use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
+
+use crate::aps::Metadata;
 
 /// Correlation key for pending transceiver responses.
 ///

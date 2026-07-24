@@ -1,395 +1,186 @@
 # apis-saltans-coordinator Architecture
 
-This document explains the current coordinator internals:
-
-- actor responsibilities
-- channel topology
-- request/response correlation
-- how user-owned discovery and binding workflows compose the public traits
-
-The coordinator is now a transport and protocol helper layer. It no longer contains an internal
-network manager, discovery supervisor, attribute discovery pipeline, binding actor, or persistent
-device model.
-
-## Overview
-
-`apis-saltans-coordinator` runs a small actor graph on top of `tokio`:
-
-- the hardware driver is owned by `apis-saltans-hw`
-- `Coordinator::start(...)` spawns ZCL and ZDP transceivers
-- a mux task consumes hardware events and forwards APS payloads to the right transceiver
-- response futures separate actor handoff from hardware transmission and protocol reception
-- unmatched inbound frames and network/device notifications are sent to an application-provided
-  `Sender<Event>`
-
-Applications own higher-level policy:
-
-- device registries
-- IEEE-to-short-address resolution
-- discovery retries
-- endpoint filtering
-- binding selection
-- persistence
+The coordinator is a transport and protocol-helper layer built around bounded Tokio actors.
+Applications own device registries, discovery policy, retries, binding selection, and persistence.
 
 ## Actor Topology
 
 ```mermaid
 flowchart TD
-    HW[Hardware NCP and event stream]
+    HW[Hardware driver actor and event stream]
     C[Coordinator handle]
-    APP[Application event receiver]
+    APS[APS actor]
+    ZCL[ZCL actor]
+    ZDP[ZDP actor]
     M[Mux task]
-    ZCL[ZCL transceiver task]
-    ZDP[ZDP transceiver task]
+    APP[Application event receiver]
 
-    C -->|start| ZCL
-    C -->|start| ZDP
-    C -->|start| M
-
+    C -->|ZCL API| ZCL
+    C -->|ZDP API| ZDP
+    C -->|NCP helper APIs| HW
+    ZCL -->|Data&lt;Bytes&gt;| APS
+    ZDP -->|Data&lt;Bytes&gt;| APS
+    ZDP -->|endpoint and address queries| HW
+    APS -->|Ncp::transmit| HW
     HW -->|zb_hw::Event| M
-    M -->|ZCL APS frame| ZCL
-    M -->|ZDP APS frame| ZDP
-    M -->|network, lifecycle, and Keep-Alive events| APP
-
+    M -->|received ZCL frame| ZCL
+    M -->|received ZDP frame| ZDP
+    M -->|network and device events| APP
     ZCL -->|unmatched ZCL frame| APP
-    ZDP -->|unmatched ZDP frame| APP
-    ZDP -->|DeviceAnnce as Device::Announced| APP
-    ZDP -->|MatchDescRsp| HW
-    ZDP -->|Ncp::get_endpoints for MatchDescReq| HW
-
-    C -->|Zcl trait calls| ZCL
-    C -->|Zdp trait calls| ZDP
-    C -->|Joining trait calls| HW
+    ZDP -->|device announcements| APP
 ```
 
-## Startup and Wiring
+`Coordinator::start` creates the APS, ZCL, and ZDP actors plus the event mux. Actor inboxes use
+`ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
 
-`Coordinator::start(...)`:
+## APS Actor
 
-1. Receives an `NcpHandle`, a hardware event receiver, and an outbound `Sender<Event>`.
-2. Starts the ZCL transceiver task with a clone of the NCP handle and outbound event sender.
-3. Starts the ZDP transceiver task with a clone of the NCP handle and outbound event sender.
-4. Starts the mux task with the hardware event receiver and both transceiver senders.
-5. Returns a lightweight `Coordinator` holding the NCP handle plus ZCL and ZDP actor senders.
+The APS actor is the only coordinator actor that transmits directly through `zb_hw::Ncp`. It owns a
+wrapping `u8` APS frame counter. For every outgoing message it:
 
-Actor inboxes are bounded MPSC channels sized by `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
+1. consumes the supplied `zb_aps::Data<bytes::Bytes>` frame
+2. replaces the frame header counter with its next counter value
+3. stores acknowledged callers under that counter
+4. forwards the frame and destination to the hardware actor
 
-The coordinator does not own a startup copy of the local endpoints. The NCP driver is required to
-provide `Box<[zb_zdp::SimpleDescriptor]>` through `Driver::get_endpoints`; the coordinator reaches
-the same data through `Ncp::get_endpoints` whenever current endpoint metadata is needed.
+Its command protocol contains:
 
-## Actor Responsibilities
+```text
+Transmit {
+    destination: zb_core::Destination,
+    frame: zb_aps::Data<bytes::Bytes>,
+    response: Option<oneshot::Sender<Result<(), zb_hw::Error>>>,
+}
+```
 
-### Coordinator
+The APS sender helper examines the frame's ACK-request control bit. That bit is set while building
+the frame when `TxOptions::ACKNOWLEDGED_TRANSMISSION` is present.
 
-`Coordinator` is an API facade. It stores:
+- Acknowledged frame: retain the caller's response sender and await the matching hardware
+  `Event::ApsResponse`.
+- Unacknowledged frame: omit the caller response and return after actor handoff.
 
-- `ncp: NcpHandle`
-- `zcl: Sender<zcl::Message>`
-- `zdp: Sender<zdp::Message>`
+```mermaid
+sequenceDiagram
+    participant P as ZCL or ZDP actor
+    participant A as APS actor
+    participant H as Hardware actor
+    participant M as Event mux
 
-It implements:
+    P->>P: build Data&lt;Bytes&gt; with TxOptions
+    P->>A: Transmit destination, frame
+    A->>A: assign next APS counter
+    A->>H: transmit destination, frame
+    opt acknowledged transmission
+        H-->>M: Event::ApsResponse
+        M-->>A: ApsResponse
+        A-->>P: completed APS result
+    end
+```
 
-- `Joining` directly through the hardware NCP
-- `AddressTranslation`, `LocalNode`, `Routing`, and `Scanning` directly through the hardware NCP
-- `Zcl` by forwarding to the ZCL transceiver sender
-- `Zdp` by forwarding to the ZDP transceiver sender
+## ZCL Actor
 
-The composed traits are blanket implementations:
+The ZCL actor:
 
-- `Node` and `Endpoints` are implemented for any `T: Zdp + Sync`
-- `Binding` is implemented for any `T: Zdp + Sync`
-- `OnOff`, `ColorControl`, `Level`, and `Attributes` are implemented over `Zcl`
+- owns the wrapping ZCL transaction sequence
+- serializes typed commands into ZCL frames
+- builds APS data headers from profile, cluster, endpoint, destination, and `TxOptions`
+- sends complete APS frames through the APS actor
+- stores response correlation channels for `communicate`
+- routes unmatched received commands to the application event channel
 
-This means users can also implement `Zcl` or `Zdp` for their own handles, test doubles, routing
-layers, or policy wrappers and still reuse the higher-level traits.
+For `transmit`, the actor returns only after the APS helper completes. For `communicate`, it inserts
+the correlation entry before transmitting, removes it if transmission fails, and returns a
+protocol-only response receiver after successful APS completion.
 
-### Mux
+## ZDP Actor
 
-The mux consumes `zb_hw::Event` values.
+The ZDP actor:
 
-It forwards:
+- owns the wrapping ZDP transaction sequence
+- uses profile `0x0000` and endpoint `0x00`
+- sends complete APS frames through the APS actor
+- correlates request and response commands
+- queries the NCP directly for endpoint and address information needed while serving ZDP requests
+- handles device announcements and selected incoming requests
 
-- `NetworkUp`, `NetworkDown`, `NetworkOpened`, `NetworkClosed`, and route errors as
-  `Event::Network(...)`
-- `DeviceJoined`, `DeviceRejoined`, and `DeviceLeft` as `Event::Device(...)`
-- Keep-Alive APS packets as `Event::Device(Device::KeepAlive(...))`
-- received ZCL APS frames to the ZCL transceiver
-- received ZDP APS frames to the ZDP transceiver
+ZDP responses generated locally also travel through the APS actor, so their APS counters and
+acknowledgement behavior follow the same path as outgoing requests.
 
-Fragmented APS payloads are reassembled with `zb_aps::Assembler` before parsing.
+## Response Correlation
 
-APS payload classification first resolves the profile. Network-profile frames are parsed as ZDP.
-For supported application profiles, cluster ID `0x0025` is classified as Keep-Alive without parsing
-the payload as a ZCL frame; other cluster IDs continue through ZCL parsing. The Keep-Alive event
-stores the source NWK device ID and APS source endpoint in a `zb_core::destination::Device`. A
-source outside the allocated device-ID range or a reserved source endpoint is logged and dropped.
+Pending ZCL and ZDP requests are keyed by an internal `Index` containing:
 
-### ZCL Transceiver
+- remote short address
+- endpoint
+- cluster ID
+- profile ID
+- optional ZCL manufacturer code
+- protocol transaction sequence
 
-The ZCL transceiver:
+The mux parses received APS frames and forwards them to the appropriate protocol actor. Each actor
+reconstructs the index from the received frame and removes the matching one-shot sender.
 
-- sends ZCL commands through the NCP
-- returns the NCP's `HwResponse` without waiting for the hardware result
-- creates ZCL frames with monotonically wrapping sequence numbers
-- stores pending response channels for `communicate(...)`
-- resolves received frames against the pending response map
-- publishes unmatched inbound ZCL frames as `Event::Zcl`
+```mermaid
+sequenceDiagram
+    participant API as Caller
+    participant P as Protocol actor
+    participant A as APS actor
+    participant H as Hardware
+    participant M as Mux
+    participant R as Protocol response
 
-Correlation uses an internal `Index` derived from destination/source information, ZCL sequence,
-APS metadata, and manufacturer code.
+    API->>P: communicate
+    P->>P: allocate sequence and store correlation
+    P->>A: acknowledged APS frame
+    A->>H: frame with assigned APS counter
+    H-->>M: Event::ApsResponse
+    M-->>A: APS result
+    A-->>P: correlated APS result
+    P-->>API: protocol response future
+    API->>R: await
+    H->>M: received APS response
+    M->>P: parsed protocol frame
+    P->>P: match and remove correlation
+    P-->>R: raw response
+    R-->>API: converted typed response
+```
 
-### ZDP Transceiver
+`CommunicationResponse<Raw, T>` no longer contains a hardware future. APS completion occurs before
+the response object is returned; the response future only awaits the correlated command and applies
+`TryFrom`.
 
-The ZDP transceiver:
+## Mux and Events
 
-- sends ZDP unicast requests to endpoint `0x00`
-- composes the NCP's `HwResponse` with the correlated protocol response
-- queries `Ncp::get_endpoints` when serving an incoming `MatchDescReq`
-- creates ZDP frames with monotonically wrapping sequence numbers
-- stores pending response channels for `communicate(...)`
-- resolves received frames against the pending response map
-- publishes unmatched inbound ZDP frames as `Event::Zdp`
+The mux consumes `zb_hw::Event` values. It forwards network and device lifecycle events to the
+application, reassembles fragmented APS payloads, parses network-profile frames as ZDP, parses
+supported application-profile frames as ZCL, and recognizes Keep-Alive traffic before ZCL parsing.
 
-It also handles two ZDP requests locally:
-
-- `MatchDescReq`: fetches the NCP's current `SimpleDescriptor` values and responds with the matching
-  endpoint IDs; if the endpoint query fails, no response can be produced
-- `DeviceAnnce`: publishes `Event::Device(Device::Announced(...))`
+Unmatched ZCL commands and supported device notifications remain application-visible. The
+coordinator does not maintain a persistent device table.
 
 ## Public Trait Composition
 
-The public API is intentionally layered.
-
 ```mermaid
 flowchart TD
-    COORD[Coordinator]
-    JOIN[Joining]
-    HWHELPERS[AddressTranslation LocalNode Routing Scanning]
+    C[Coordinator]
+    N[NCP helpers]
     ZCL[Zcl]
     ZDP[Zdp]
-    CLUSTERS[OnOff ColorControl Level Attributes]
-    DISCOVERY[Node Endpoints]
-    BIND[Binding]
-    TXR[TransmissionResponse]
+    CL[OnOff ColorControl Level Attributes]
+    DS[Node Endpoints Binding]
     ZCLR[ZclResponse]
     ZDPR[ZdpResponse]
 
-    COORD --> JOIN
-    COORD --> HWHELPERS
-    COORD --> ZCL
-    COORD --> ZDP
-    ZCL --> CLUSTERS
-    ZDP --> DISCOVERY
-    ZDP --> BIND
-    ZCL -->|transmit| TXR
+    C --> N
+    C --> ZCL
+    C --> ZDP
+    ZCL --> CL
+    ZDP --> DS
     ZCL -->|communicate| ZCLR
     ZDP -->|communicate| ZDPR
 ```
 
-This layering keeps policy outside the crate. A user-owned discovery workflow can listen for
-`Device::Joined` or `Device::Announced`, call `Node::descriptor`, call `Endpoints::endpoints`, call
-`Endpoints::descriptors`, optionally read attributes through `Attributes`, and then decide whether
-to call `Binding::bind`, `Binding::bind_all`, or `Binding::bind_all_to_self`.
-
-## Key Message Flows
-
-## 1) Incoming hardware event routing
-
-```mermaid
-sequenceDiagram
-    participant HW as NCP Event Stream
-    participant M as Mux
-    participant ZCL as ZCL Transceiver
-    participant ZDP as ZDP Transceiver
-    participant APP as Application Event Receiver
-
-    HW->>M: NetworkUp
-    M->>APP: Event::Network(Network::Up)
-
-    HW->>M: DeviceJoined(address)
-    M->>APP: Event::Device(Device::Joined(address))
-
-    HW->>M: MessageReceived(ZCL frame)
-    M->>ZCL: Message::Received
-
-    HW->>M: MessageReceived(ZDP frame)
-    M->>ZDP: Message::Received
-
-    HW->>M: MessageReceived(Keep-Alive APS packet)
-    M->>M: validate source device ID and endpoint
-    M->>APP: Event::Device(Device::KeepAlive(device))
-```
-
-## 2) ZCL command without a protocol response
-
-```mermaid
-sequenceDiagram
-    participant API as API Caller
-    participant ZCL as ZCL Transceiver
-    participant HW as NCP Driver Actor
-    participant R as TransmissionResponse
-
-    API->>ZCL: Message::Transmit(destination, payload)
-    ZCL->>HW: Ncp::transmit(datagram)
-    HW-->>ZCL: HwResponse
-    ZCL->>ZCL: wrap HwResponse
-    ZCL-->>API: TransmissionResponse
-    API->>R: await
-    R-->>API: Result&lt;(), Error&gt;
-```
-
-The first await on `Zcl::transmit(...)` covers the API-to-transceiver handoff and returns the
-`TransmissionResponse`. It wraps the driver's `HwResponse`, and the second await observes the
-deferred driver result while converting `zb_hw::Error` into the coordinator's `Error`. The wrapper
-hides the driver's concrete completion mechanism. Dropping it stops driving and observing its inner
-future; whether that cancels the hardware operation is backend-dependent.
-
-## 3) ZCL command with response
-
-```mermaid
-sequenceDiagram
-    participant API as API Caller
-    participant ZCL as ZCL Transceiver
-    participant HW as NCP Driver Actor
-    participant M as Mux
-    participant R as ZclResponse
-
-    API->>ZCL: Message::Communicate(destination, payload)
-    ZCL->>ZCL: allocate sequence and store pending response
-    ZCL->>HW: Ncp::transmit(APS ZCL frame)
-    HW-->>ZCL: HwResponse
-    ZCL-->>API: ZclResponse
-    API->>R: await
-    HW-->>R: driver transmission result
-    HW->>M: MessageReceived(ZCL response)
-    M->>ZCL: Message::Received
-    ZCL->>ZCL: match response index
-    ZCL-->>R: raw Cluster
-    R-->>API: converted typed response
-```
-
-`ZclResponse<T>` is a protocol alias for `CommunicationResponse<Cluster, T>`. Its poll order is
-strict: it completes hardware transmission first, then receives the correlated raw `Cluster`, then
-applies `TryFrom<Cluster>` to produce `T`. A failed transmission prevents the response receiver from
-being polled.
-
-## 4) ZDP request with response
-
-```mermaid
-sequenceDiagram
-    participant API as API Caller
-    participant ZDP as ZDP Transceiver
-    participant HW as NCP Driver Actor
-    participant M as Mux
-    participant R as ZdpResponse
-
-    API->>ZDP: Message::Communicate(device, request)
-    ZDP->>ZDP: allocate sequence and store pending response
-    ZDP->>HW: Ncp::transmit(APS ZDP frame to endpoint 0x00)
-    HW-->>ZDP: HwResponse
-    ZDP-->>API: ZdpResponse
-    API->>R: await
-    HW-->>R: driver transmission result
-    HW->>M: MessageReceived(ZDP response)
-    M->>ZDP: Message::Received
-    ZDP->>ZDP: match response index
-    ZDP-->>R: raw Command
-    R-->>API: converted typed response
-```
-
-`ZdpResponse<T>` applies the same sequencing to `CommunicationResponse<Command, T>`.
-
-## 5) User-owned discovery workflow
-
-```mermaid
-sequenceDiagram
-    participant APP as Application
-    participant API as Coordinator Traits
-    participant ZDP as ZDP Transceiver
-    participant ZCL as ZCL Transceiver
-
-    APP->>APP: receive Event::Device(Device::Joined(address))
-    APP->>API: Node::descriptor(short_id, None)
-    API->>ZDP: NodeDescReq
-    ZDP-->>API: NodeDescRsp
-
-    APP->>API: Endpoints::endpoints(short_id)
-    API->>ZDP: ActiveEpReq
-    ZDP-->>API: ActiveEpRsp
-
-    loop selected endpoints
-        APP->>API: Endpoints::descriptor(short_id, endpoint)
-        API->>ZDP: SimpleDescReq
-        ZDP-->>API: SimpleDescRsp
-    end
-
-    opt application wants Basic attributes
-        APP->>API: Attributes::read(device endpoint, attribute ids)
-        API->>ZCL: ReadAttributes
-        ZCL-->>API: ReadAttributesResponse
-    end
-
-    opt application wants bindings
-        APP->>API: Binding::bind, Binding::bind_all, or Binding::bind_all_to_self
-        API->>ZDP: BindReq
-        ZDP-->>API: BindRsp
-    end
-
-    APP->>APP: persist or update application device registry
-```
-
-## 6) Unmatched inbound frame publication
-
-```mermaid
-sequenceDiagram
-    participant HW as NCP
-    participant M as Mux
-    participant ZCL as ZCL Transceiver
-    participant ZDP as ZDP Transceiver
-    participant APP as Application Event Receiver
-
-    HW->>M: MessageReceived(ZCL command)
-    M->>ZCL: Message::Received
-    ZCL->>ZCL: no pending response matches
-    ZCL->>APP: Event::Zcl{src_address, aps_frame}
-
-    HW->>M: MessageReceived(ZDP command)
-    M->>ZDP: Message::Received
-    ZDP->>ZDP: no pending response matches
-    ZDP->>APP: Event::Zdp{src_address, aps_frame}
-```
-
-## Response Lifetimes and Timeouts
-
-The response futures do not apply an internal deadline. This keeps timeout and retry policy with the
-application, alongside its discovery and binding policy. Callers can wrap the second await in
-`tokio::time::timeout`; `Error` supports conversion from Tokio's elapsed-time error.
-
-Coordinator and APS parsing errors derive `thiserror::Error`. Hardware, receive, timeout, and nested
-frame failures use source-preserving `#[from]` conversions. Channel send errors and raw ZCL/ZDP
-status results retain explicit conversions because their public variants deliberately do not store
-an error source compatible with `#[from]`.
-
-`HwResponse` owns the driver's opaque deferred hardware future. `TransmissionResponse` wraps it for
-commands without a protocol response and converts its error into the coordinator's `Error`.
-`CommunicationResponse` wraps `InternalCommunicationResponse`, which owns an `HwResponse` and the
-correlated ZCL or ZDP one-shot receiver. The internal communication future always polls the hardware
-response first. After it succeeds, the completed `HwResponse` is discarded and only the protocol
-receiver is polled; a hardware error completes the communication future without polling that
-receiver.
-
-## Removed Internal Responsibilities
-
-The crate no longer has built-in:
-
-- persistent network state
-- address resolution APIs
-- event subscription management
-- automatic descriptor discovery
-- automatic Basic-cluster attribute discovery
-- automatic binding of output clusters
-- discovery or binding retry policy
-
-Those responsibilities now belong to the library user. The crate provides the transport actors,
-typed request/response helpers, event stream, and reusable traits needed to build those workflows.
+Command helpers that do not expect a protocol response return `Result<(), Error>` directly.
+Communication methods first await APS completion and then return `ZclResponse<T>` or
+`ZdpResponse<T>` for the application-level response.

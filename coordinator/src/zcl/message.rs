@@ -2,7 +2,7 @@ use tokio::sync::oneshot::Sender;
 use zb_aps::Data;
 use zb_core::Destination;
 use zb_core::destination::Device;
-use zb_hw::{Error, HwResponse};
+use zb_hw::Error;
 use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame};
 
@@ -27,7 +27,7 @@ pub enum Message {
         /// ZCL payload and its transmission metadata.
         payload: Payload,
         /// The response channel.
-        response: Sender<Result<HwResponse, Error>>,
+        response: Sender<Result<(), Error>>,
     },
 
     /// Communicate a unicast with an expected response.

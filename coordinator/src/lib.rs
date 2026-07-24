@@ -16,11 +16,9 @@
 //! [`Driver`] is re-exported from `zb_hw`, allowing hardware integrations to implement the driver
 //! contract through this crate's public API.
 //!
-//! ZCL and ZDP sends use deferred response futures. The first await queues an operation and returns
-//! either [`TransmissionResponse`] or a protocol-specific [`ZclResponse`] or [`ZdpResponse`]. Await
-//! that returned future to observe hardware completion and, for communication requests, receive the
-//! converted protocol response. All of these futures report failures through the coordinator's
-//! [`Error`] type.
+//! ZCL transmissions directly await acknowledged APS completion. ZCL and ZDP communication
+//! methods then return a protocol-specific [`ZclResponse`] or [`ZdpResponse`] that waits for the
+//! correlated command. All operations report failures through the coordinator's [`Error`] type.
 
 use const_env::env_item;
 pub use zb_hw::Driver;
@@ -33,9 +31,10 @@ pub use self::api::{
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};
 pub use self::event::{Device, Event, Network, NetworkError};
-pub use self::response::{CommunicationResponse, TransmissionResponse};
+pub use self::response::CommunicationResponse;
 
 mod api;
+mod aps;
 mod coordinator;
 mod error;
 mod event;

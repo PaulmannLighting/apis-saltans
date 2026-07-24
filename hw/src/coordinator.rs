@@ -4,12 +4,14 @@
 
 use std::time::Duration;
 
+use bytes::Bytes;
 use tokio::sync::oneshot::channel;
+use zb_aps::Data;
 use zb_core::{Destination, IeeeAddress};
 use zb_zdp::SimpleDescriptor;
 
-use crate::common::{Datagram, FoundNetwork, Message, ScannedChannel};
-use crate::{Error, HwResponse, NcpHandle};
+use crate::common::{FoundNetwork, Message, ScannedChannel};
+use crate::{Error, NcpHandle};
 
 /// Proxy trait for sending commands to a Zigbee NCP driver actor.
 pub trait Ncp {
@@ -104,23 +106,18 @@ pub trait Ncp {
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<u16, Error>> + Send;
 
-    /// Transmit a serialized application datagram to a destination.
+    /// Transmit an APS data frame to a destination.
     ///
-    /// The returned outer future sends the command to the driver actor and yields an
-    /// [`HwResponse`]. Await that response separately to observe completion of the hardware
-    /// transmission. This lets callers retain and compose the completion future without blocking
-    /// the actor request path.
+    /// APS acknowledgements are reported independently through [`crate::Event::ApsResponse`].
     ///
     /// # Errors
     ///
-    /// The outer future returns an error if the command cannot be handed to the driver actor or the
-    /// driver cannot create the transmission response. Awaiting the returned [`HwResponse`] returns
-    /// an error if the deferred hardware transmission fails.
+    /// Returns an error if the command cannot be handed to the driver actor.
     fn transmit(
         &self,
         destination: Destination,
-        datagram: Datagram,
-    ) -> impl Future<Output = Result<HwResponse, Error>> + Send;
+        frame: Data<Bytes>,
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl Ncp for NcpHandle {
@@ -203,18 +200,8 @@ impl Ncp for NcpHandle {
         rx.await?
     }
 
-    async fn transmit(
-        &self,
-        destination: Destination,
-        datagram: Datagram,
-    ) -> Result<HwResponse, Error> {
-        let (response, rx) = channel();
-        self.send(Message::Transmit {
-            destination,
-            datagram,
-            response,
-        })
-        .await?;
-        rx.await?
+    async fn transmit(&self, destination: Destination, frame: Data<Bytes>) -> Result<(), Error> {
+        self.send(Message::Transmit { destination, frame }).await?;
+        Ok(())
     }
 }

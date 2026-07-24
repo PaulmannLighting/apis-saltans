@@ -9,7 +9,7 @@ use zb_hw::Event as HardwareEvent;
 use zb_nwk::{Envelope, Source};
 
 use self::aps_payload::ApsPayload;
-use crate::{Device, Event as ApplicationEvent, Event, Network, NetworkError, zcl, zdp};
+use crate::{Device, Event as ApplicationEvent, Event, Network, NetworkError, aps, zcl, zdp};
 
 mod aps_payload;
 
@@ -17,6 +17,7 @@ mod aps_payload;
 #[derive(Debug)]
 pub struct Mux {
     events: Sender<ApplicationEvent>,
+    aps: Sender<aps::Message>,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
     transactions: Assembler,
@@ -26,11 +27,13 @@ impl Mux {
     /// Create a new multiplexer.
     pub fn new(
         events: Sender<ApplicationEvent>,
+        aps: Sender<aps::Message>,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
     ) -> Self {
         Self {
             events,
+            aps,
             zcl,
             zdp,
             transactions: Assembler::default(),
@@ -41,10 +44,11 @@ impl Mux {
     pub fn spawn(
         hw_events: Receiver<HardwareEvent>,
         events_out: Sender<ApplicationEvent>,
+        aps_tx: Sender<aps::Message>,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
     ) {
-        spawn(Self::new(events_out, zcl_tx, zdp_tx).run(hw_events));
+        spawn(Self::new(events_out, aps_tx, zcl_tx, zdp_tx).run(hw_events));
     }
 
     /// Run the multiplexer.
@@ -123,6 +127,15 @@ impl Mux {
             HardwareEvent::MessageReceived(envelope) => {
                 trace!("Message received: {envelope:?}");
                 self.handle_nwk_envelope(envelope).await;
+            }
+            HardwareEvent::ApsResponse(response) => {
+                trace!("APS response received: {response:?}");
+                self.aps
+                    .send(aps::Message::ApsResponse { response })
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to send APS response: {error}");
+                    });
             }
             HardwareEvent::RouteError(error) => {
                 trace!("Route error: {error}");

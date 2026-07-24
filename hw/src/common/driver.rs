@@ -1,11 +1,13 @@
 use std::time::Duration;
 
+use bytes::Bytes;
 use tokio::sync::mpsc::{Receiver, channel};
+use zb_aps::Data;
 use zb_core::{Destination, IeeeAddress};
 use zb_zdp::SimpleDescriptor;
 
 use crate::common::Message;
-use crate::{Datagram, Error, FoundNetwork, HwResponse, NcpHandle, ScannedChannel};
+use crate::{Error, FoundNetwork, NcpHandle, ScannedChannel};
 
 /// A common Zigbee NCP driver interface.
 pub trait Driver {
@@ -110,24 +112,16 @@ pub trait Driver {
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<u16, Error>> + Send;
 
-    /// Transmit an application datagram to the specified destination.
+    /// Start transmitting an APS data frame to the specified destination.
     ///
-    /// The driver must honor [`Metadata::tx_options`](crate::Metadata::tx_options) when issuing its
-    /// APSDE-DATA request.
-    ///
-    /// Return an [`HwResponse`] that owns the deferred hardware operation. The driver actor passes
-    /// this response to the caller without waiting for the transmission to complete.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the transmission cannot be started or its deferred response cannot be
-    /// created. Errors that occur after the response is returned are reported when the
-    /// [`HwResponse`] is awaited.
+    /// The backend reports acknowledged transmission completion through
+    /// [`Event::ApsResponse`](crate::Event::ApsResponse). This method returns after the request has
+    /// been handed to the hardware stack.
     fn transmit(
         &mut self,
         destination: Destination,
-        datagram: Datagram,
-    ) -> impl Future<Output = Result<HwResponse, Error>> + Send;
+        frame: Data<Bytes>,
+    ) -> impl Future<Output = ()> + Send;
 
     /// Spawn the actor in a tokio task.
     ///
@@ -221,14 +215,8 @@ where
                         .send(self.ieee_address_to_short_id(ieee_address).await)
                         .unwrap_or_else(drop);
                 }
-                Message::Transmit {
-                    destination,
-                    datagram,
-                    response,
-                } => {
-                    response
-                        .send(self.transmit(destination, datagram).await)
-                        .unwrap_or_else(drop);
+                Message::Transmit { destination, frame } => {
+                    self.transmit(destination, frame).await;
                 }
             }
         }

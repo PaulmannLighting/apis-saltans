@@ -11,13 +11,13 @@ use tokio::sync::oneshot::{self, channel};
 use zb_aps::Data;
 use zb_core::Destination;
 use zb_core::destination::Device;
-use zb_hw::{HwResponse, Ncp};
 use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame, Header};
 
 pub use self::message::Message;
 pub use self::payload::{Metadata, Payload};
 use super::index::Index;
+use crate::aps::{self, Aps};
 use crate::response::InternalCommunicationResponse;
 use crate::{Event, MPSC_CHANNEL_SIZE};
 
@@ -26,30 +26,24 @@ mod payload;
 
 /// Zigbee transceiver actor.
 #[derive(Debug)]
-pub struct Transceiver<T> {
-    ncp: T,
+pub struct Transceiver {
+    aps: Sender<aps::Message>,
     events: Sender<Event>,
     responses: BTreeMap<Index, oneshot::Sender<Cluster>>,
     seq: u8,
 }
 
-impl<T> Transceiver<T> {
+impl Transceiver {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T, events: Sender<Event>) -> Self {
+    pub const fn new(aps: Sender<aps::Message>, events: Sender<Event>) -> Self {
         Self {
-            ncp,
+            aps,
             events,
             responses: BTreeMap::new(),
             seq: 0,
         }
     }
-}
-
-impl<T> Transceiver<T>
-where
-    T: Ncp + Sync,
-{
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
@@ -135,11 +129,11 @@ where
         &mut self,
         destination: Destination,
         payload: Payload,
-    ) -> Result<HwResponse, zb_hw::Error> {
+    ) -> Result<(), zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
-        let hw_datagram = zb_hw::Datagram::new(aps_metadata, zcl_frame.to_le_stream().collect());
-        self.ncp.transmit(destination, hw_datagram).await
+        let aps_frame = aps_metadata.frame(destination, zcl_frame.to_le_stream().collect());
+        self.aps.transmit(destination, aps_frame).await
     }
 
     /// Send a ZCL unicast message with back-channel communication.
@@ -164,11 +158,17 @@ where
             aps_metadata,
             zcl_metadata.manufacturer_code,
         );
-        let hw_datagram = zb_hw::Datagram::new(aps_metadata, zcl_frame.to_le_stream().collect());
+        let destination = Destination::from(device);
+        let aps_frame = aps_metadata.frame(destination, zcl_frame.to_le_stream().collect());
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
-        let transmission_rx = self.ncp.transmit(device.into(), hw_datagram).await?;
-        Ok(InternalCommunicationResponse::new(transmission_rx, rx))
+
+        if let Err(error) = self.aps.transmit(destination, aps_frame).await {
+            self.responses.remove(&index);
+            return Err(error);
+        }
+
+        Ok(InternalCommunicationResponse::new(rx))
     }
 
     fn make_zcl_frame(&mut self, metadata: Metadata, command: Bytes) -> Frame<Bytes> {
@@ -189,14 +189,11 @@ where
     }
 }
 
-impl<T> Transceiver<T>
-where
-    T: Ncp + Send + Sync + 'static,
-{
+impl Transceiver {
     /// Start the ZCL transceiver.
-    pub fn spawn(ncp: T, events: Sender<Event>) -> Sender<Message> {
+    pub fn spawn(aps: Sender<aps::Message>, events: Sender<Event>) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, events).run(zcl_rx));
+        spawn(Self::new(aps, events).run(zcl_rx));
         zcl_tx
     }
 }
