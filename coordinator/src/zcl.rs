@@ -17,7 +17,7 @@ use zb_zcl::{Cluster, Frame, Header};
 pub use self::message::Message;
 pub use self::payload::{Metadata, Payload};
 use super::index::Index;
-use crate::aps::{self, Aps};
+use crate::aps::Aps;
 use crate::response::InternalCommunicationResponse;
 use crate::{Event, MPSC_CHANNEL_SIZE};
 
@@ -27,7 +27,7 @@ mod payload;
 /// Zigbee transceiver actor.
 #[derive(Debug)]
 pub struct Transceiver {
-    aps: Sender<aps::Message>,
+    aps: Aps,
     events: Sender<Event>,
     responses: BTreeMap<Index, oneshot::Sender<Cluster>>,
     seq: u8,
@@ -36,7 +36,7 @@ pub struct Transceiver {
 impl Transceiver {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(aps: Sender<aps::Message>, events: Sender<Event>) -> Self {
+    pub const fn new(aps: Aps, events: Sender<Event>) -> Self {
         Self {
             aps,
             events,
@@ -132,8 +132,13 @@ impl Transceiver {
     ) -> Result<(), zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
-        let aps_frame = aps_metadata.frame(destination, zcl_frame.to_le_stream().collect());
-        self.aps.transmit(destination, aps_frame).await
+        self.aps
+            .transmit(
+                destination,
+                aps_metadata,
+                zcl_frame.to_le_stream().collect(),
+            )
+            .await
     }
 
     /// Send a ZCL unicast message with back-channel communication.
@@ -159,11 +164,11 @@ impl Transceiver {
             zcl_metadata.manufacturer_code,
         );
         let destination = Destination::from(device);
-        let aps_frame = aps_metadata.frame(destination, zcl_frame.to_le_stream().collect());
+        let payload = zcl_frame.to_le_stream().collect();
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
 
-        if let Err(error) = self.aps.transmit(destination, aps_frame).await {
+        if let Err(error) = self.aps.transmit(destination, aps_metadata, payload).await {
             self.responses.remove(&index);
             return Err(error);
         }
@@ -191,7 +196,7 @@ impl Transceiver {
 
 impl Transceiver {
     /// Start the ZCL transceiver.
-    pub fn spawn(aps: Sender<aps::Message>, events: Sender<Event>) -> Sender<Message> {
+    pub fn spawn(aps: Aps, events: Sender<Event>) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
         spawn(Self::new(aps, events).run(zcl_rx));
         zcl_tx

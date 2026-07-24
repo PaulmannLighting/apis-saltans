@@ -23,7 +23,7 @@
 //!
 //! `Ncp::transmit` hands an APS data frame to the driver actor without a command-response channel.
 //! Hardware backends report acknowledged transmission completion asynchronously through
-//! `Event::ApsResponse`.
+//! `Event::Ack` and `Event::Nak`.
 //!
 //! Every `Driver` implementation must provide the NCP's local application endpoints through
 //! `Driver::get_endpoints`. Each endpoint is represented by a complete

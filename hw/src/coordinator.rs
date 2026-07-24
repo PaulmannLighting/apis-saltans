@@ -108,7 +108,8 @@ pub trait Ncp {
 
     /// Transmit an APS data frame to a destination.
     ///
-    /// APS acknowledgements are reported independently through [`crate::Event::ApsResponse`].
+    /// APS acknowledgements are reported independently through [`crate::Event::Ack`] and
+    /// [`crate::Event::Nak`].
     ///
     /// # Errors
     ///

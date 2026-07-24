@@ -7,7 +7,8 @@ use log::{debug, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
-use zb_aps::{Control, Data};
+use zb_aps::data::Header;
+use zb_aps::{Data, TxOptions};
 use zb_core::Destination;
 use zb_hw::Ncp;
 
@@ -22,43 +23,62 @@ const INITIAL_COUNTER: u8 = 0;
 
 type PendingResponse = tokio::sync::oneshot::Sender<Result<(), zb_hw::Error>>;
 
-/// Coordinator-internal APS transmission API.
-pub trait Aps {
-    /// Transmit an APS frame and, when it requests an acknowledgement, await the hardware result.
-    fn transmit(
-        &self,
-        destination: Destination,
-        frame: Data<Bytes>,
-    ) -> impl Future<Output = Result<(), zb_hw::Error>> + Send;
-}
+/// Handle for sending commands to the APS actor.
+#[derive(Clone, Debug)]
+pub struct Aps(Sender<Message>);
 
-impl Aps for Sender<Message> {
-    async fn transmit(
+impl Aps {
+    /// Wrap an APS actor sender.
+    #[must_use]
+    pub const fn new(sender: Sender<Message>) -> Self {
+        Self(sender)
+    }
+
+    /// Transmit an APS frame and, when it requests an acknowledgement, await the hardware result.
+    pub async fn transmit(
         &self,
         destination: Destination,
-        frame: Data<Bytes>,
+        metadata: Metadata,
+        payload: Bytes,
     ) -> Result<(), zb_hw::Error> {
-        let acknowledged = frame.header().control().contains(Control::ACK_REQUEST);
-        let (response, result) = if acknowledged {
+        let (response, result) = if metadata.acknowledged() {
             let (response, result) = channel();
             (Some(response), Some(result))
         } else {
             (None, None)
         };
 
-        self.send(Message::Transmit {
-            destination,
-            frame,
-            response,
-        })
-        .await
-        .map_err(|_| zb_hw::Error::DriverSend)?;
+        self.0
+            .send(Message::Transmit {
+                destination,
+                metadata,
+                payload,
+                response,
+            })
+            .await
+            .map_err(|_| zb_hw::Error::DriverSend)?;
 
         if let Some(result) = result {
             result.await?
         } else {
             Ok(())
         }
+    }
+
+    /// Forward a hardware APS acknowledgement to the APS actor.
+    pub async fn ack(&self, sequence: u8) -> Result<(), zb_hw::Error> {
+        self.0
+            .send(Message::Ack { sequence })
+            .await
+            .map_err(|_| zb_hw::Error::DriverSend)
+    }
+
+    /// Forward a hardware APS negative acknowledgement to the APS actor.
+    pub async fn nak(&self, sequence: u8, error: zb_hw::Error) -> Result<(), zb_hw::Error> {
+        self.0
+            .send(Message::Nak { sequence, error })
+            .await
+            .map_err(|_| zb_hw::Error::DriverSend)
     }
 }
 
@@ -88,6 +108,27 @@ impl<T> Transceiver<T> {
         counter
     }
 
+    fn make_frame(
+        &mut self,
+        destination: Destination,
+        metadata: Metadata,
+        payload: Bytes,
+    ) -> (u8, Data<Bytes>) {
+        let counter = self.next_counter();
+        let mut header = Header::new(
+            destination.into(),
+            metadata.cluster_id(),
+            metadata.profile().into(),
+            metadata.source_endpoint(),
+            counter,
+            None,
+        );
+        header.set_security(metadata.tx_options().contains(TxOptions::SECURITY_ENABLED));
+        header.set_ack_request(metadata.acknowledged());
+        let frame = Data::new(header, payload);
+        (counter, frame)
+    }
+
     fn take_response(&mut self, counter: u8) -> Option<PendingResponse> {
         let index = self
             .responses
@@ -96,23 +137,20 @@ impl<T> Transceiver<T> {
         self.responses.remove(index).map(|(_, response)| response)
     }
 
-    fn handle_response(&mut self, response: Result<u8, zb_hw::Error>) {
-        match response {
-            Ok(counter) => {
-                let Some(sender) = self.take_response(counter) else {
-                    warn!("Received APS response for unknown counter: {counter}");
-                    return;
-                };
-                sender.send(Ok(())).unwrap_or_else(drop);
-            }
-            Err(error) => {
-                let Some((_, sender)) = self.responses.pop_front() else {
-                    warn!("Received APS transmission error without a pending response: {error}");
-                    return;
-                };
-                sender.send(Err(error)).unwrap_or_else(drop);
-            }
-        }
+    fn handle_ack(&mut self, sequence: u8) {
+        let Some(sender) = self.take_response(sequence) else {
+            warn!("Received APS acknowledgement for unknown sequence: {sequence}");
+            return;
+        };
+        sender.send(Ok(())).unwrap_or_else(drop);
+    }
+
+    fn handle_nak(&mut self, sequence: u8, error: zb_hw::Error) {
+        let Some(sender) = self.take_response(sequence) else {
+            warn!("Received APS negative acknowledgement for unknown sequence {sequence}: {error}");
+            return;
+        };
+        sender.send(Err(error)).unwrap_or_else(drop);
     }
 }
 
@@ -126,13 +164,11 @@ where
             match message {
                 Message::Transmit {
                     destination,
-                    frame,
+                    metadata,
+                    payload,
                     response,
                 } => {
-                    let (mut header, payload) = frame.into_parts();
-                    let counter = self.next_counter();
-                    header.set_counter(counter);
-                    let frame = Data::new(header, payload);
+                    let (counter, frame) = self.make_frame(destination, metadata, payload);
 
                     if let Some(response) = response {
                         self.responses.push_back((counter, response));
@@ -146,8 +182,11 @@ where
                         }
                     }
                 }
-                Message::ApsResponse { response } => {
-                    self.handle_response(response);
+                Message::Ack { sequence } => {
+                    self.handle_ack(sequence);
+                }
+                Message::Nak { sequence, error } => {
+                    self.handle_nak(sequence, error);
                 }
             }
         }
@@ -159,10 +198,10 @@ where
     T: Ncp + Send + Sync + 'static,
 {
     /// Spawn the APS actor.
-    pub fn spawn(ncp: T) -> Sender<Message> {
+    pub fn spawn(ncp: T) -> Aps {
         let (aps_tx, aps_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
         spawn(Self::new(ncp).run(aps_rx));
-        aps_tx
+        Aps::new(aps_tx)
     }
 }
 
@@ -171,7 +210,7 @@ mod tests {
     use bytes::Bytes;
     use tokio::runtime::Runtime;
     use tokio::sync::mpsc::channel;
-    use zb_aps::{Data, TxOptions};
+    use zb_aps::{Control, TxOptions};
     use zb_core::destination::{Broadcast, Destination};
     use zb_core::{Endpoint, Profile, short_id};
 
@@ -181,15 +220,14 @@ mod tests {
     const CHANNEL_SIZE: usize = 1;
     const CLUSTER_ID: u16 = 0x1234;
     const LAST_COUNTER: u8 = u8::MAX;
+    const PAYLOAD: &[u8] = &[0x12, 0x34];
 
     fn destination() -> Destination {
         Broadcast::new(short_id::Broadcast::AllDevices, Endpoint::Broadcast).into()
     }
 
-    fn frame(tx_options: TxOptions) -> Data<Bytes> {
-        Metadata::new(Profile::ZigbeeHomeAutomation, CLUSTER_ID)
-            .with_tx_options(tx_options)
-            .frame(destination(), Bytes::new())
+    const fn metadata(tx_options: TxOptions) -> Metadata {
+        Metadata::new(Profile::ZigbeeHomeAutomation, CLUSTER_ID).with_tx_options(tx_options)
     }
 
     #[test]
@@ -198,17 +236,24 @@ mod tests {
             .expect("runtime must be available")
             .block_on(async {
                 let (sender, mut receiver) = channel(CHANNEL_SIZE);
+                let aps = Aps::new(sender);
+                let metadata = metadata(TxOptions::empty());
 
-                sender
-                    .transmit(destination(), frame(TxOptions::empty()))
+                aps.transmit(destination(), metadata, Bytes::from_static(PAYLOAD))
                     .await
                     .expect("APS actor channel must be available");
 
-                let Message::Transmit { response, .. } =
-                    receiver.recv().await.expect("message must be available")
+                let Message::Transmit {
+                    metadata: sent_metadata,
+                    payload,
+                    response,
+                    ..
+                } = receiver.recv().await.expect("message must be available")
                 else {
                     panic!("expected APS transmit message");
                 };
+                assert_eq!(sent_metadata, metadata);
+                assert_eq!(payload, PAYLOAD);
                 assert!(response.is_none());
             });
     }
@@ -219,10 +264,14 @@ mod tests {
             .expect("runtime must be available")
             .block_on(async {
                 let (sender, mut receiver) = channel(CHANNEL_SIZE);
+                let aps = Aps::new(sender);
                 let task = tokio::spawn(async move {
-                    sender
-                        .transmit(destination(), frame(TxOptions::ACKNOWLEDGED_TRANSMISSION))
-                        .await
+                    aps.transmit(
+                        destination(),
+                        metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION),
+                        Bytes::new(),
+                    )
+                    .await
                 });
                 let Message::Transmit { response, .. } =
                     receiver.recv().await.expect("message must be available")
@@ -249,13 +298,15 @@ mod tests {
     }
 
     #[test]
-    fn transmitted_frame_counter_can_be_replaced() {
-        let frame = frame(TxOptions::empty());
-        let (mut header, payload) = frame.into_parts();
-        header.set_counter(LAST_COUNTER);
-        let frame = Data::new(header, payload);
+    fn actor_constructs_frame_with_its_counter() {
+        let mut transceiver = Transceiver::new(());
+        transceiver.counter = LAST_COUNTER;
+        let (counter, frame) =
+            transceiver.make_frame(destination(), metadata(TxOptions::empty()), Bytes::new());
 
+        assert_eq!(counter, LAST_COUNTER);
         assert_eq!(frame.header().counter(), LAST_COUNTER);
+        assert!(!frame.header().control().contains(Control::ACK_REQUEST));
     }
 
     #[test]
@@ -267,7 +318,7 @@ mod tests {
                 let (response, result) = tokio::sync::oneshot::channel();
                 transceiver.responses.push_back((LAST_COUNTER, response));
 
-                transceiver.handle_response(Ok(LAST_COUNTER));
+                transceiver.handle_ack(LAST_COUNTER);
 
                 assert!(result.await.expect("response must be available").is_ok());
                 assert!(transceiver.responses.is_empty());
@@ -275,13 +326,13 @@ mod tests {
     }
 
     #[test]
-    fn error_event_resolves_oldest_pending_response() {
+    fn negative_acknowledgement_resolves_matching_sequence() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
                 let mut transceiver = Transceiver::new(());
-                let (first_response, first_result) = tokio::sync::oneshot::channel();
-                let (second_response, _second_result) = tokio::sync::oneshot::channel();
+                let (first_response, _first_result) = tokio::sync::oneshot::channel();
+                let (second_response, second_result) = tokio::sync::oneshot::channel();
                 transceiver
                     .responses
                     .push_back((INITIAL_COUNTER, first_response));
@@ -289,16 +340,16 @@ mod tests {
                     .responses
                     .push_back((LAST_COUNTER, second_response));
 
-                transceiver.handle_response(Err(zb_hw::Error::NotImplemented));
+                transceiver.handle_nak(LAST_COUNTER, zb_hw::Error::NotImplemented);
 
                 assert!(matches!(
-                    first_result.await.expect("response must be available"),
+                    second_result.await.expect("response must be available"),
                     Err(zb_hw::Error::NotImplemented)
                 ));
                 assert_eq!(transceiver.responses.len(), CHANNEL_SIZE);
                 assert_eq!(
                     transceiver.responses.front().map(|(counter, _)| *counter),
-                    Some(LAST_COUNTER)
+                    Some(INITIAL_COUNTER)
                 );
             });
     }

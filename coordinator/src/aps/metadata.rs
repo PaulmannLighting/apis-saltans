@@ -1,9 +1,6 @@
-use bytes::Bytes;
-use zb_aps::data::Header;
-use zb_aps::{Data, TxOptions};
-use zb_core::{Destination, Endpoint, Profile};
+use zb_aps::TxOptions;
+use zb_core::{Endpoint, Profile};
 
-const INITIAL_COUNTER: u8 = 0;
 const DEFAULT_TX_OPTIONS: TxOptions = TxOptions::ACKNOWLEDGED_TRANSMISSION;
 
 /// Metadata used to construct an outgoing APS data frame.
@@ -62,64 +59,47 @@ impl Metadata {
         self.cluster_id
     }
 
+    /// Return the source endpoint.
+    #[must_use]
+    pub const fn source_endpoint(self) -> Endpoint {
+        self.source_endpoint
+    }
+
     /// Return the APS transmission options.
     #[must_use]
     pub const fn tx_options(self) -> TxOptions {
         self.tx_options
     }
 
-    /// Construct an APS data frame.
+    /// Return whether the transmission requests an APS acknowledgement.
     #[must_use]
-    pub fn frame(self, destination: Destination, payload: Bytes) -> Data<Bytes> {
-        let mut header = Header::new(
-            destination.into(),
-            self.cluster_id,
-            self.profile.into(),
-            self.source_endpoint,
-            INITIAL_COUNTER,
-            None,
-        );
-        header.set_security(self.tx_options.contains(TxOptions::SECURITY_ENABLED));
-        header.set_ack_request(
-            self.tx_options
-                .contains(TxOptions::ACKNOWLEDGED_TRANSMISSION),
-        );
-        Data::new(header, payload)
+    pub const fn acknowledged(self) -> bool {
+        self.tx_options
+            .contains(TxOptions::ACKNOWLEDGED_TRANSMISSION)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use bytes::Bytes;
-    use zb_aps::{Control, TxOptions};
-    use zb_core::{Destination, Endpoint, Profile, destination, short_id};
+    use zb_aps::TxOptions;
+    use zb_core::Profile;
 
     use super::Metadata;
 
     const CLUSTER_ID: u16 = 0x1234;
 
     #[test]
-    fn acknowledged_metadata_sets_the_ack_request_flag() {
-        let destination = Destination::Broadcast(destination::Broadcast::new(
-            short_id::Broadcast::AllDevices,
-            Endpoint::Broadcast,
-        ));
-        let frame = Metadata::new(Profile::ZigbeeHomeAutomation, CLUSTER_ID)
-            .frame(destination, Bytes::default());
+    fn metadata_requests_acknowledgement_by_default() {
+        let metadata = Metadata::new(Profile::ZigbeeHomeAutomation, CLUSTER_ID);
 
-        assert!(frame.header().control().contains(Control::ACK_REQUEST));
+        assert!(metadata.acknowledged());
     }
 
     #[test]
-    fn unacknowledged_metadata_clears_the_ack_request_flag() {
-        let destination = Destination::Broadcast(destination::Broadcast::new(
-            short_id::Broadcast::AllDevices,
-            Endpoint::Broadcast,
-        ));
-        let frame = Metadata::new(Profile::ZigbeeHomeAutomation, CLUSTER_ID)
-            .with_tx_options(TxOptions::empty())
-            .frame(destination, Bytes::default());
+    fn empty_options_disable_acknowledgement() {
+        let metadata = Metadata::new(Profile::ZigbeeHomeAutomation, CLUSTER_ID)
+            .with_tx_options(TxOptions::empty());
 
-        assert!(!frame.header().control().contains(Control::ACK_REQUEST));
+        assert!(!metadata.acknowledged());
     }
 }

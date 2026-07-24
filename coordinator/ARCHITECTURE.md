@@ -38,26 +38,29 @@ flowchart TD
 The APS actor is the only coordinator actor that transmits directly through `zb_hw::Ncp`. It owns a
 wrapping `u8` APS frame counter. For every outgoing message it:
 
-1. consumes the supplied `zb_aps::Data<bytes::Bytes>` frame
-2. replaces the frame header counter with its next counter value
-3. stores acknowledged callers under that counter
-4. forwards the frame and destination to the hardware actor
+1. consumes the supplied APS metadata and serialized payload
+2. assigns its next APS frame counter
+3. constructs the APS header and `zb_aps::Data<bytes::Bytes>` frame
+4. stores acknowledged callers under that counter
+5. forwards the completed frame and destination to the hardware actor
 
 Its command protocol contains:
 
 ```text
 Transmit {
     destination: zb_core::Destination,
-    frame: zb_aps::Data<bytes::Bytes>,
+    metadata: aps::Metadata,
+    payload: bytes::Bytes,
     response: Option<oneshot::Sender<Result<(), zb_hw::Error>>>,
 }
 ```
 
-The APS sender helper examines the frame's ACK-request control bit. That bit is set while building
-the frame when `TxOptions::ACKNOWLEDGED_TRANSMISSION` is present.
+The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method examines the
+metadata's `TxOptions::ACKNOWLEDGED_TRANSMISSION` flag when deciding whether to create a caller
+response channel. Its inherent `ack` and `nak` methods forward hardware APS events from the mux.
 
 - Acknowledged frame: retain the caller's response sender and await the matching hardware
-  `Event::ApsResponse`.
+  `Event::Ack` or `Event::Nak`.
 - Unacknowledged frame: omit the caller response and return after actor handoff.
 
 ```mermaid
@@ -67,13 +70,13 @@ sequenceDiagram
     participant H as Hardware actor
     participant M as Event mux
 
-    P->>P: build Data&lt;Bytes&gt; with TxOptions
-    P->>A: Transmit destination, frame
-    A->>A: assign next APS counter
+    P->>P: serialize protocol payload
+    P->>A: Transmit destination, metadata, payload
+    A->>A: assign counter and build Data&lt;Bytes&gt;
     A->>H: transmit destination, frame
     opt acknowledged transmission
-        H-->>M: Event::ApsResponse
-        M-->>A: ApsResponse
+        H-->>M: Event::Ack or Event::Nak
+        M-->>A: Ack or Nak
         A-->>P: completed APS result
     end
 ```
@@ -84,8 +87,7 @@ The ZCL actor:
 
 - owns the wrapping ZCL transaction sequence
 - serializes typed commands into ZCL frames
-- builds APS data headers from profile, cluster, endpoint, destination, and `TxOptions`
-- sends complete APS frames through the APS actor
+- sends APS metadata and serialized ZCL frames through the APS actor
 - stores response correlation channels for `communicate`
 - routes unmatched received commands to the application event channel
 
@@ -99,7 +101,7 @@ The ZDP actor:
 
 - owns the wrapping ZDP transaction sequence
 - uses profile `0x0000` and endpoint `0x00`
-- sends complete APS frames through the APS actor
+- sends APS metadata and serialized ZDP frames through the APS actor
 - correlates request and response commands
 - queries the NCP directly for endpoint and address information needed while serving ZDP requests
 - handles device announcements and selected incoming requests
@@ -134,7 +136,7 @@ sequenceDiagram
     P->>P: allocate sequence and store correlation
     P->>A: acknowledged APS frame
     A->>H: frame with assigned APS counter
-    H-->>M: Event::ApsResponse
+    H-->>M: Event::Ack or Event::Nak
     M-->>A: APS result
     A-->>P: correlated APS result
     P-->>API: protocol response future

@@ -1,8 +1,9 @@
 use bytes::Bytes;
 use tokio::sync::oneshot::Sender;
-use zb_aps::Data;
 use zb_core::Destination;
 use zb_hw::Error;
+
+use super::Metadata;
 
 /// Messages exchanged with the APS actor.
 #[derive(Debug)]
@@ -11,15 +12,25 @@ pub enum Message {
     Transmit {
         /// Network destination for the frame.
         destination: Destination,
-        /// APS data frame to transmit.
-        frame: Data<Bytes>,
+        /// Metadata used by the APS actor to construct the frame header.
+        metadata: Metadata,
+        /// Serialized application payload.
+        payload: Bytes,
         /// Optional channel for the completed APS transmission result.
         response: Option<Sender<Result<(), Error>>>,
     },
 
-    /// Result of an acknowledged APS transmission reported by the hardware event stream.
-    ApsResponse {
-        /// Successful APS counter or hardware failure.
-        response: Result<u8, Error>,
+    /// Successful acknowledgement reported by the hardware event stream.
+    Ack {
+        /// APS counter of the acknowledged transmission.
+        sequence: u8,
+    },
+
+    /// Failed acknowledgement reported by the hardware event stream.
+    Nak {
+        /// APS counter of the rejected transmission.
+        sequence: u8,
+        /// Hardware failure reported for the transmission.
+        error: Error,
     },
 }

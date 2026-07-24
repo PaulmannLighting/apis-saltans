@@ -43,10 +43,18 @@ pub enum Event {
     /// Raw APS data frame received from a NWK source.
     MessageReceived(Envelope<Data<Bytes>>),
 
-    /// Result of an acknowledged APS transmission.
+    /// Successful acknowledgement of an APS transmission.
     ///
-    /// A successful result contains the APS frame counter assigned to the transmitted frame.
-    ApsResponse(Result<u8, crate::Error>),
+    /// Contains the APS frame counter assigned to the acknowledged frame.
+    Ack(u8),
+
+    /// Failed acknowledgement of an APS transmission.
+    Nak {
+        /// APS frame counter assigned to the rejected frame.
+        sequence: u8,
+        /// Hardware error reported for the transmission.
+        error: crate::Error,
+    },
 
     /// A routing error.
     RouteError(RouteError),

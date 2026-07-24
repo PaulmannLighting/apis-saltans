@@ -142,9 +142,13 @@ converts the correlated protocol response. `CommunicationResponse<Raw, T>` is th
 behind both aliases.
 
 If a payload's `TxOptions` omit `ACKNOWLEDGED_TRANSMISSION`, the coordinator does not create or await
-an APS response. Acknowledged results arrive as hardware `Event::ApsResponse` values and are
-correlated by APS counter. Dropping a protocol response future stops observing its correlated
-response; it does not cancel work already handed to the hardware backend.
+an APS response. Acknowledged results arrive as hardware `Event::Ack` or `Event::Nak` values and are
+correlated by APS sequence number. Dropping a protocol response future stops observing its
+correlated response; it does not cancel work already handed to the hardware backend.
+
+ZCL and ZDP actors send APS metadata plus serialized payload bytes to the APS actor. The APS actor
+owns the APS sequence counter and constructs the complete `Data<Bytes>` frame immediately before
+hardware transmission.
 
 `Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and
 expose their source errors and can be constructed through `From`; the send variant intentionally

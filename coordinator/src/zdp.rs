@@ -29,7 +29,7 @@ use self::node_desc::{
 };
 pub use self::payload::Payload;
 use super::index::Index;
-use crate::aps::{self, Aps};
+use crate::aps::Aps;
 use crate::response::InternalCommunicationResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
@@ -42,7 +42,7 @@ mod payload;
 #[derive(Debug)]
 pub struct Transceiver<T> {
     ncp: T,
-    aps: Sender<aps::Message>,
+    aps: Aps,
     events: Sender<Event>,
     descriptor: Descriptor,
     /// Whether the hardware has reported that joining is open.
@@ -54,12 +54,7 @@ pub struct Transceiver<T> {
 impl<T> Transceiver<T> {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(
-        ncp: T,
-        aps: Sender<aps::Message>,
-        events: Sender<Event>,
-        descriptor: Descriptor,
-    ) -> Self {
+    pub const fn new(ncp: T, aps: Aps, events: Sender<Event>, descriptor: Descriptor) -> Self {
         Self {
             ncp,
             aps,
@@ -172,11 +167,11 @@ where
         let index = Index::from_zdp_command(device, seq, metadata);
         let zdp_frame = Frame::new(seq, payload);
         let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
-        let aps_frame = metadata.frame(destination, zdp_frame.to_le_stream().collect());
+        let payload = zdp_frame.to_le_stream().collect();
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
 
-        if let Err(error) = self.aps.transmit(destination, aps_frame).await {
+        if let Err(error) = self.aps.transmit(destination, metadata, payload).await {
             self.responses.remove(&index);
             return Err(error);
         }
@@ -188,8 +183,9 @@ where
         let (metadata, payload) = payload.into_parts();
         let zdp_frame = Frame::new(seq, payload);
         let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
-        let aps_frame = metadata.frame(destination, zdp_frame.to_le_stream().collect());
-        self.aps.transmit(destination, aps_frame).await
+        self.aps
+            .transmit(destination, metadata, zdp_frame.to_le_stream().collect())
+            .await
     }
 
     /// Process a Match Descriptor request and unicast any required response to its originator.
@@ -344,7 +340,7 @@ where
     /// Start the ZDP transceiver.
     pub fn spawn(
         ncp: T,
-        aps: Sender<aps::Message>,
+        aps: Aps,
         events: Sender<Event>,
         descriptor: Descriptor,
     ) -> Sender<Message> {

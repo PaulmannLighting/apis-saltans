@@ -17,7 +17,7 @@ mod aps_payload;
 #[derive(Debug)]
 pub struct Mux {
     events: Sender<ApplicationEvent>,
-    aps: Sender<aps::Message>,
+    aps: aps::Aps,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
     transactions: Assembler,
@@ -27,7 +27,7 @@ impl Mux {
     /// Create a new multiplexer.
     pub fn new(
         events: Sender<ApplicationEvent>,
-        aps: Sender<aps::Message>,
+        aps: aps::Aps,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
     ) -> Self {
@@ -44,11 +44,11 @@ impl Mux {
     pub fn spawn(
         hw_events: Receiver<HardwareEvent>,
         events_out: Sender<ApplicationEvent>,
-        aps_tx: Sender<aps::Message>,
+        aps: aps::Aps,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
     ) {
-        spawn(Self::new(events_out, aps_tx, zcl_tx, zdp_tx).run(hw_events));
+        spawn(Self::new(events_out, aps, zcl_tx, zdp_tx).run(hw_events));
     }
 
     /// Run the multiplexer.
@@ -128,14 +128,17 @@ impl Mux {
                 trace!("Message received: {envelope:?}");
                 self.handle_nwk_envelope(envelope).await;
             }
-            HardwareEvent::ApsResponse(response) => {
-                trace!("APS response received: {response:?}");
-                self.aps
-                    .send(aps::Message::ApsResponse { response })
-                    .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send APS response: {error}");
-                    });
+            HardwareEvent::Ack(sequence) => {
+                trace!("APS acknowledgement received for sequence: {sequence}");
+                self.aps.ack(sequence).await.unwrap_or_else(|error| {
+                    trace!("Failed to send APS acknowledgement: {error}");
+                });
+            }
+            HardwareEvent::Nak { sequence, error } => {
+                trace!("APS negative acknowledgement received for sequence {sequence}: {error}");
+                self.aps.nak(sequence, error).await.unwrap_or_else(|error| {
+                    trace!("Failed to send APS negative acknowledgement: {error}");
+                });
             }
             HardwareEvent::RouteError(error) => {
                 trace!("Route error: {error}");

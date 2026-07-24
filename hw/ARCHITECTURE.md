@@ -52,14 +52,14 @@ sequenceDiagram
     A->>D: transmit(destination, frame)
     D-->>A: request handed to hardware
     opt acknowledged transmission completes
-        D-->>E: Event::ApsResponse
+        D-->>E: Event::Ack or Event::Nak
     end
 ```
 
 `Ncp::transmit` only awaits insertion into the driver actor mailbox. The transmit command never
 carries a response channel. For acknowledged APS transmissions the backend later emits
-`Event::ApsResponse(Result<u8, Error>)`, where success carries the transmitted frame's APS counter.
-Unacknowledged transmissions emit no APS response event.
+`Event::Ack(sequence)` or `Event::Nak { sequence, error }`. Unacknowledged transmissions emit no APS
+acknowledgement event.
 
 `Driver::transmit` initiates the backend APS operation and returns `()`. There is no nested or opaque
 completion future.

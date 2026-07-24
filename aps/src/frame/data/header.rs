@@ -102,11 +102,6 @@ impl Header {
         self.counter
     }
 
-    /// Set the APS frame counter.
-    pub const fn set_counter(&mut self, counter: u8) {
-        self.counter = counter;
-    }
-
     /// Set whether APS security is enabled.
     pub fn set_security(&mut self, enabled: bool) {
         self.control.set(Control::SECURITY, enabled);

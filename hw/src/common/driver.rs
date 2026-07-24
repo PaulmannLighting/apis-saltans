@@ -115,8 +115,8 @@ pub trait Driver {
     /// Start transmitting an APS data frame to the specified destination.
     ///
     /// The backend reports acknowledged transmission completion through
-    /// [`Event::ApsResponse`](crate::Event::ApsResponse). This method returns after the request has
-    /// been handed to the hardware stack.
+    /// [`Event::Ack`](crate::Event::Ack) or [`Event::Nak`](crate::Event::Nak). This method returns
+    /// after the request has been handed to the hardware stack.
     fn transmit(
         &mut self,
         destination: Destination,

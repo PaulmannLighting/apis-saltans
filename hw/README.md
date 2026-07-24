@@ -62,7 +62,7 @@ ncp.transmit(destination, frame).await?;
 ```
 
 The transmit command has no response channel. Backends publish acknowledged transmission results as
-`Event::ApsResponse(Result<u8, Error>)`; the successful value is the APS frame counter.
+`Event::Ack(sequence)` or `Event::Nak { sequence, error }`.
 
 The common `Error` type implements `std::error::Error`. Backend-specific `Implementation` failures
 are retained as an error source; closed actor channels are represented by the payload-free
@@ -111,7 +111,7 @@ coordinator treats this as the authoritative local endpoint set when answering Z
 requests and when matching clusters for bindings.
 
 `Driver::transmit(...)` receives a complete `aps::Data<bytes::Bytes>` frame and returns after handing
-it to the hardware stack. The backend later emits `Event::ApsResponse` for acknowledged
+it to the hardware stack. The backend later emits `Event::Ack` or `Event::Nak` for acknowledged
 transmissions.
 
 Transmission uses one method:
