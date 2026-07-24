@@ -152,9 +152,7 @@ impl Mux {
 
         match payload {
             ApsPayload::Zcl(frame) => {
-                #[expect(unsafe_code)]
-                // SAFETY: We reconstruct the frame from its original parts.
-                let frame = unsafe { Frame::new_unchecked(header, frame) };
+                let frame = Frame::new(header, frame);
 
                 self.zcl
                     .send(zcl::Message::Received { source, frame })
@@ -164,9 +162,7 @@ impl Mux {
                     });
             }
             ApsPayload::Zdp(frame) => {
-                #[expect(unsafe_code)]
-                // SAFETY: We reconstruct the frame from its original parts.
-                let frame = unsafe { Frame::new_unchecked(header, frame) };
+                let frame = Frame::new(header, frame);
 
                 self.zdp
                     .send(zdp::Message::Received { source, frame })
@@ -182,15 +178,10 @@ impl Mux {
                     return;
                 };
 
-                let Ok(endpoint) = header.source_endpoint().inspect_err(|reserved| {
-                    warn!("Keep-Alive packet from reserved endpoint: {reserved:#04X}");
-                }) else {
-                    return;
-                };
-
                 self.events
                     .send(Event::Device(Device::KeepAlive(destination::Device::new(
-                        device_id, endpoint,
+                        device_id,
+                        header.source_endpoint(),
                     ))))
                     .await
                     .unwrap_or_else(drop);

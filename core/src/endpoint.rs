@@ -1,13 +1,12 @@
 use core::fmt;
 use core::str::FromStr;
 
+use le_stream::{FromLeStream, ToLeStream};
 use thiserror::Error;
 
 pub use self::application::{Application, ParseApplicationError};
-pub use self::reserved::Reserved;
 
 mod application;
-mod reserved;
 
 const DATA: u8 = 0x00;
 const BROADCAST: u8 = 0xff;
@@ -36,17 +35,11 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// Create a new `Endpoint` from a raw value.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Reserved`] when the raw value is in the reserved endpoint
-    /// range.
-    pub const fn try_new(value: u8) -> Result<Self, Reserved> {
+    pub const fn new(value: u8) -> Self {
         match value {
-            DATA => Ok(Self::Data),
-            Application::MIN_ID..=Application::MAX_ID => Ok(Self::Application(Application(value))),
-            Reserved::MIN_ID..=Reserved::MAX_ID => Err(Reserved(value)),
-            BROADCAST => Ok(Self::Broadcast),
+            DATA => Self::Data,
+            Application::MIN_ID..=Application::MAX_ID => Self::Application(Application(value)),
+            BROADCAST => Self::Broadcast,
         }
     }
 
@@ -103,11 +96,26 @@ impl From<Endpoint> for u8 {
     }
 }
 
-impl TryFrom<u8> for Endpoint {
-    type Error = Reserved;
+impl From<u8> for Endpoint {
+    fn from(value: u8) -> Self {
+        Self::new(value)
+    }
+}
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        Self::try_new(value)
+impl FromLeStream for Endpoint {
+    fn from_le_stream<T>(bytes: T) -> Option<Self>
+    where
+        T: Iterator<Item = u8>,
+    {
+        u8::from_le_stream(bytes).map(Self::new)
+    }
+}
+
+impl ToLeStream for Endpoint {
+    type Iter = <u8 as ToLeStream>::Iter;
+
+    fn to_le_stream(self) -> Self::Iter {
+        self.as_u8().to_le_stream()
     }
 }
 
@@ -129,7 +137,7 @@ mod tests {
 
     use alloc::string::ToString;
 
-    use super::{Application, Endpoint, ParseEndpointError, Reserved};
+    use super::{Application, Endpoint, ParseEndpointError};
 
     const APPLICATION_ID: u8 = 10;
     const APPLICATION_HEX: &str = "0x0A";
@@ -164,14 +172,6 @@ mod tests {
     fn parses_numeric_data_and_broadcast_ids() {
         assert_eq!("0".parse(), Ok(Endpoint::Data));
         assert_eq!("0xff".parse(), Ok(Endpoint::Broadcast));
-    }
-
-    #[test]
-    fn rejects_reserved_id() {
-        assert_eq!(
-            Reserved::MIN_ID.to_string().parse::<Endpoint>(),
-            Err(ParseEndpointError)
-        );
     }
 
     #[test]

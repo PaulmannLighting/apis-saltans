@@ -1,5 +1,5 @@
 use thiserror::Error;
-use zb_aps::WeakDestination;
+use zb_aps::Destination;
 
 /// Errors that can occur when converting an incoming message to a ZDP frame.
 #[derive(Clone, Debug, Eq, Error, PartialEq, Hash)]
@@ -10,7 +10,7 @@ pub enum ParseFrameError {
 
     /// The destination endpoint is invalid (must be 0 for ZDP commands).
     #[error("Destination endpoint must be 0 for ZDP commands, got {0}")]
-    Destination(WeakDestination),
+    Destination(Destination),
 
     /// The cluster ID could not be parsed into a ZDP frame.
     #[error("Invalid cluster ID for ZDP frame: {0:#06X}")]

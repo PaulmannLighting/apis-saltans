@@ -100,7 +100,7 @@ mod tests {
     use std::num::NonZero;
 
     use bytes::Bytes;
-    use zb_core::{Application, Endpoint};
+    use zb_core::{Application, Endpoint, Profile};
 
     use super::{Fragments, SINGLE_BLOCK};
     use crate::data::{Frame, Header};
@@ -111,7 +111,7 @@ mod tests {
     const COUNTER: u8 = 0x2a;
     const FINAL_PARTIAL_CHUNK_LEN: usize = 2;
     const MULTI_BLOCK_PAYLOAD_LEN: usize = 10;
-    const PROFILE_ID: u16 = 0x0104;
+    const PROFILE_ID: u16 = Profile::ZigbeeHomeAutomation.as_u16();
     const SINGLE_BLOCK_PAYLOAD_LEN: usize = 3;
 
     fn chunk_size() -> NonZero<usize> {

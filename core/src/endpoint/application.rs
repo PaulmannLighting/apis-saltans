@@ -19,13 +19,13 @@ pub struct Application(pub(super) u8);
 
 impl Application {
     /// The minimum valid application endpoint ID.
-    pub const MIN_ID: u8 = 1;
+    pub const MIN_ID: u8 = 0x01;
 
     /// The minimum valid application endpoint.
     pub const MIN: Self = Self(Self::MIN_ID);
 
     /// The maximum valid application endpoint ID.
-    pub const MAX_ID: u8 = 240;
+    pub const MAX_ID: u8 = 0xFE;
 
     /// The maximum valid application endpoint.
     pub const MAX: Self = Self(Self::MAX_ID);

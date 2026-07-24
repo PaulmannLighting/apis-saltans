@@ -1,20 +1,19 @@
 //! Header definitions for a generic APS Data frame.
 
 use le_stream::{FromLeStream, ToLeStream};
-use zb_core::endpoint::Reserved;
 use zb_core::{Cluster, Endpoint, Profile};
 
-use crate::frame::destination::{Destination, WeakDestination};
+use crate::frame::destination::Destination;
 use crate::{Control, Extended, Fragmentation, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Header {
     control: Control,
-    destination: WeakDestination,
+    destination: Destination,
     cluster_id: u16,
     profile_id: u16,
-    source_endpoint: u8,
+    source_endpoint: Endpoint,
     counter: u8,
     extended: Option<Extended>,
 }
@@ -32,7 +31,7 @@ impl Header {
     ) -> Self {
         let mut control = Control::empty();
         control.set_frame_type(FrameType::Data);
-        control.set_destination(destination.into());
+        control.set_destination(destination);
 
         if extended.is_some() {
             control.insert(Control::EXTENDED_HEADER);
@@ -40,10 +39,10 @@ impl Header {
 
         Self {
             control,
-            destination: destination.into(),
+            destination,
             cluster_id,
             profile_id,
-            source_endpoint: source_endpoint.into(),
+            source_endpoint,
             counter,
             extended,
         }
@@ -57,7 +56,7 @@ impl Header {
 
     /// Return the destination.
     #[must_use]
-    pub const fn destination(&self) -> WeakDestination {
+    pub const fn destination(&self) -> Destination {
         self.destination
     }
 
@@ -92,13 +91,9 @@ impl Header {
     }
 
     /// Return the source endpoint.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Reserved`] if the stored endpoint byte is in the reserved
-    /// endpoint range.
-    pub fn source_endpoint(&self) -> Result<Endpoint, Reserved> {
-        self.source_endpoint.try_into()
+    #[must_use]
+    pub const fn source_endpoint(&self) -> Endpoint {
+        self.source_endpoint
     }
 
     /// Return the APS frame counter.
@@ -156,7 +151,7 @@ impl FromLeStream for Header {
         let destination = control.deserialize_destination(&mut bytes)?;
         let cluster_id = u16::from_le_stream(&mut bytes)?;
         let profile_id = u16::from_le_stream(&mut bytes)?;
-        let source_endpoint = u8::from_le_stream(&mut bytes)?;
+        let source_endpoint = Endpoint::from_le_stream(&mut bytes)?;
         let counter = u8::from_le_stream(&mut bytes)?;
         let extended = control.deserialize_extended_header(&mut bytes).ok()?;
 
