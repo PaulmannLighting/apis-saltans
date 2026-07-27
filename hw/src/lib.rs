@@ -17,9 +17,9 @@
 //! configuration or provide an event-translator abstraction.
 //!
 //! The protocol re-export modules are available only with `driver`. They let driver crates refer to
-//! APIS Saltans protocol types through this crate, for example `apis_saltans_hw::core::IeeeAddress`
-//! or `apis_saltans_hw::zdp::SimpleDescriptor`, without adding direct dependencies on each
-//! protocol crate.
+//! `apis-saltans` protocol types through this crate, for example
+//! `apis_saltans_hw::core::IeeeAddress` or `apis_saltans_hw::zdp::SimpleDescriptor`, without adding
+//! direct dependencies on each protocol crate.
 //!
 //! `Ncp::transmit` hands an APS data frame to the driver actor without a command-response channel.
 //! Hardware backends report acknowledged transmission completion asynchronously through

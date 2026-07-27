@@ -2,7 +2,7 @@
 
 //! Re-exported protocol crates for driver implementors.
 //!
-//! These modules expose the APIS Saltans protocol types needed by hardware
+//! These modules expose the `apis-saltans` protocol types needed by hardware
 //! drivers without requiring backend crates to depend on the protocol crates
 //! directly.
 
