@@ -142,7 +142,8 @@ converts the correlated protocol response. `CommunicationResponse<Raw, T>` is th
 behind both aliases.
 
 If a payload's `TxOptions` omit `ACKNOWLEDGED_TRANSMISSION`, the coordinator does not create or await
-an APS response. Acknowledged results arrive as hardware `Event::Ack` or `Event::Nak` values and are
+an APS response. Acknowledged results arrive as hardware `Event::Aps(ApsEvent::Ack(...))` or
+`Event::Aps(ApsEvent::Nak { ... })` values and are
 correlated by APS sequence number. Dropping a protocol response future stops observing its
 correlated response; it does not cancel work already handed to the hardware backend.
 

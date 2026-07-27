@@ -23,7 +23,7 @@
 //!
 //! `Ncp::transmit` hands an APS data frame to the driver actor without a command-response channel.
 //! Hardware backends report acknowledged transmission completion asynchronously through
-//! `Event::Ack` and `Event::Nak`.
+//! `Event::Aps(ApsEvent::Ack)` and `Event::Aps(ApsEvent::Nak)`.
 //!
 //! Every `Driver` implementation must provide the NCP's local application endpoints through
 //! `Driver::get_endpoints`. Each endpoint is represented by a complete
@@ -38,8 +38,8 @@ pub use zb_aps::TxOptions;
 #[cfg(any(feature = "coordinator", feature = "driver"))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
 pub use self::common::{
-    Clusters, Driver, Error, Event, FoundNetwork, NcpHandle, Network, RouteError, ScannedChannel,
-    WeakNcpHandle,
+    ApsEvent, Clusters, DeviceEvent, Driver, Error, Event, FoundNetwork, NcpHandle, Network,
+    NetworkEvent, RouteError, ScannedChannel, WeakNcpHandle,
 };
 #[cfg(feature = "coordinator")]
 #[cfg_attr(docsrs, doc(cfg(feature = "coordinator")))]

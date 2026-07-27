@@ -5,7 +5,10 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::data::Frame;
 use zb_aps::{Assembler, Data};
 use zb_core::destination;
-use zb_hw::Event as HardwareEvent;
+use zb_hw::{
+    ApsEvent as HardwareApsEvent, DeviceEvent as HardwareDeviceEvent, Event as HardwareEvent,
+    NetworkEvent as HardwareNetworkEvent,
+};
 use zb_nwk::{Envelope, Source};
 
 use self::aps_payload::ApsPayload;
@@ -60,21 +63,21 @@ impl Mux {
 
     async fn multiplex(&mut self, event: HardwareEvent) {
         match event {
-            HardwareEvent::NetworkUp => {
+            HardwareEvent::Network(HardwareNetworkEvent::Up) => {
                 trace!("Network is up");
                 self.events
                     .send(ApplicationEvent::Network(Network::Up))
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::NetworkDown => {
+            HardwareEvent::Network(HardwareNetworkEvent::Down) => {
                 trace!("Network is down");
                 self.events
                     .send(ApplicationEvent::Network(Network::Down))
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::NetworkOpened => {
+            HardwareEvent::Network(HardwareNetworkEvent::Opened) => {
                 trace!("Network has been opened");
                 self.zdp
                     .send(zdp::Message::NetworkOpened)
@@ -87,7 +90,7 @@ impl Mux {
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::NetworkClosed => {
+            HardwareEvent::Network(HardwareNetworkEvent::Closed) => {
                 trace!("Network has been closed");
                 self.zdp
                     .send(zdp::Message::NetworkClosed)
@@ -100,14 +103,14 @@ impl Mux {
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::DeviceJoined(address) => {
+            HardwareEvent::Device(HardwareDeviceEvent::Joined(address)) => {
                 trace!("Device joined: {address}");
                 self.events
                     .send(ApplicationEvent::Device(Device::Joined(address)))
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::DeviceRejoined { address, secured } => {
+            HardwareEvent::Device(HardwareDeviceEvent::Rejoined { address, secured }) => {
                 trace!("Device joined: {address} (secured: {secured})");
                 self.events
                     .send(ApplicationEvent::Device(Device::Rejoined {
@@ -117,30 +120,30 @@ impl Mux {
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::DeviceLeft(address) => {
+            HardwareEvent::Device(HardwareDeviceEvent::Left(address)) => {
                 trace!("Device left: {address}");
                 self.events
                     .send(ApplicationEvent::Device(Device::Left(address)))
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::MessageReceived(envelope) => {
+            HardwareEvent::Aps(HardwareApsEvent::MessageReceived(envelope)) => {
                 trace!("Message received: {envelope:?}");
                 self.handle_nwk_envelope(envelope).await;
             }
-            HardwareEvent::Ack(sequence) => {
+            HardwareEvent::Aps(HardwareApsEvent::Ack(sequence)) => {
                 trace!("APS acknowledgement received for sequence: {sequence}");
                 self.aps.ack(sequence).await.unwrap_or_else(|error| {
                     trace!("Failed to send APS acknowledgement: {error}");
                 });
             }
-            HardwareEvent::Nak { sequence, error } => {
+            HardwareEvent::Aps(HardwareApsEvent::Nak { sequence, error }) => {
                 trace!("APS negative acknowledgement received for sequence {sequence}: {error}");
                 self.aps.nak(sequence, error).await.unwrap_or_else(|error| {
                     trace!("Failed to send APS negative acknowledgement: {error}");
                 });
             }
-            HardwareEvent::RouteError(error) => {
+            HardwareEvent::Network(HardwareNetworkEvent::RouteError(error)) => {
                 trace!("Route error: {error}");
                 self.events
                     .send(ApplicationEvent::Network(Network::Error(

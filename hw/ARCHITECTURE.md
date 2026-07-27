@@ -52,13 +52,14 @@ sequenceDiagram
     A->>D: transmit(destination, frame)
     D-->>A: request handed to hardware
     opt acknowledged transmission completes
-        D-->>E: Event::Ack or Event::Nak
+        D-->>E: Event::Aps with Ack or Nak
     end
 ```
 
 `Ncp::transmit` only awaits insertion into the driver actor mailbox. The transmit command never
 carries a response channel. For acknowledged APS transmissions the backend later emits
-`Event::Ack(sequence)` or `Event::Nak { sequence, error }`. Unacknowledged transmissions emit no APS
+`Event::Aps(ApsEvent::Ack(sequence))` or
+`Event::Aps(ApsEvent::Nak { sequence, error })`. Unacknowledged transmissions emit no APS
 acknowledgement event.
 
 `Driver::transmit` initiates the backend APS operation and returns `()`. There is no nested or opaque
@@ -93,14 +94,20 @@ flowchart TD
     C --> E[common/error.rs]
     C --> V[common/event.rs]
     C --> M[common/message.rs]
+    V --> AV[common/event/aps.rs]
+    V --> DV[common/event/device.rs]
+    V --> NV[common/event/network.rs]
+    V --> RV[common/event/route_error.rs]
 ```
 
 `common/message.rs` defines the private actor protocol and handle aliases.
 `common/driver.rs` defines the public driver contract plus the blanket actor runtime.
+`common/event.rs` groups the APS, device, and network event categories.
 `coordinator.rs` defines the `Ncp` proxy implemented for `NcpHandle`.
 
 ## Receive-Side Events
 
-Hardware integrations translate backend-specific events into the common `Event` model. Received
-APS data already uses typed `zb_aps::Data<bytes::Bytes>` values, matching the outgoing transport
-boundary. Startup, event-task ownership, and backend configuration remain outside this crate.
+Hardware integrations translate backend-specific events into the common `Event` model. `Event`
+groups notifications into `NetworkEvent`, `DeviceEvent`, and `ApsEvent` values. Received APS data
+already uses typed `zb_aps::Data<bytes::Bytes>` values, matching the outgoing transport boundary.
+Startup, event-task ownership, and backend configuration remain outside this crate.

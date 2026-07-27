@@ -13,8 +13,8 @@ No default features are enabled. Pick the feature that matches the role of the c
 
 | Feature | Intended user | Public API |
 | --- | --- | --- |
-| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
-| `driver` | Hardware backend crates. | `Driver`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Event`, `NetworkEvent`, `DeviceEvent`, `ApsEvent`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
+| `driver` | Hardware backend crates. | `Driver`, `NcpHandle`, `WeakNcpHandle`, `Error`, `RouteError`, `Clusters`, `Event`, `NetworkEvent`, `DeviceEvent`, `ApsEvent`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
 
 Backend crates should enable `driver`. Coordinator crates should enable `coordinator`.
 
@@ -62,11 +62,27 @@ ncp.transmit(destination, frame).await?;
 ```
 
 The transmit command has no response channel. Backends publish acknowledged transmission results as
-`Event::Ack(sequence)` or `Event::Nak { sequence, error }`.
+`Event::Aps(ApsEvent::Ack(sequence))` or
+`Event::Aps(ApsEvent::Nak { sequence, error })`.
 
 The common `Error` type implements `std::error::Error`. Backend-specific `Implementation` failures
 are retained as an error source; closed actor channels are represented by the payload-free
 `DriverSend` and `DriverRecv` variants.
+
+### Hardware Events
+
+Hardware events are grouped by their protocol responsibility:
+
+```rust
+use apis_saltans_hw::{ApsEvent, DeviceEvent, Event, NetworkEvent};
+
+let network_up = Event::Network(NetworkEvent::Up);
+let device_joined = Event::Device(DeviceEvent::Joined(address));
+let acknowledged = Event::Aps(ApsEvent::Ack(sequence));
+```
+
+`NetworkEvent` reports network state and route errors, `DeviceEvent` reports device membership
+changes, and `ApsEvent` reports received frames and acknowledged transmission results.
 
 ### Implementing a Driver
 
@@ -111,8 +127,8 @@ coordinator treats this as the authoritative local endpoint set when answering Z
 requests and when matching clusters for bindings.
 
 `Driver::transmit(...)` receives a complete `aps::Data<bytes::Bytes>` frame and returns after handing
-it to the hardware stack. The backend later emits `Event::Ack` or `Event::Nak` for acknowledged
-transmissions.
+it to the hardware stack. The backend later emits `Event::Aps(ApsEvent::Ack(...))` or
+`Event::Aps(ApsEvent::Nak { ... })` for acknowledged transmissions.
 
 Transmission uses one method:
 

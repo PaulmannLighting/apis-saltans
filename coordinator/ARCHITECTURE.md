@@ -60,7 +60,7 @@ metadata's `TxOptions::ACKNOWLEDGED_TRANSMISSION` flag when deciding whether to 
 response channel. Its inherent `ack` and `nak` methods forward hardware APS events from the mux.
 
 - Acknowledged frame: retain the caller's response sender and await the matching hardware
-  `Event::Ack` or `Event::Nak`.
+  `Event::Aps(ApsEvent::Ack(...))` or `Event::Aps(ApsEvent::Nak { ... })`.
 - Unacknowledged frame: omit the caller response and return after actor handoff.
 
 ```mermaid
@@ -75,7 +75,7 @@ sequenceDiagram
     A->>A: assign counter and build Data&lt;Bytes&gt;
     A->>H: transmit destination, frame
     opt acknowledged transmission
-        H-->>M: Event::Ack or Event::Nak
+        H-->>M: Event::Aps with Ack or Nak
         M-->>A: Ack or Nak
         A-->>P: completed APS result
     end
@@ -136,7 +136,7 @@ sequenceDiagram
     P->>P: allocate sequence and store correlation
     P->>A: acknowledged APS frame
     A->>H: frame with assigned APS counter
-    H-->>M: Event::Ack or Event::Nak
+    H-->>M: Event::Aps with Ack or Nak
     M-->>A: APS result
     A-->>P: correlated APS result
     P-->>API: protocol response future

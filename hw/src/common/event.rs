@@ -1,61 +1,22 @@
-use bytes::Bytes;
-use zb_aps::Data;
-use zb_core::FullAddress;
-use zb_nwk::Envelope;
-
+pub use self::aps::ApsEvent;
+pub use self::device::DeviceEvent;
+pub use self::network::NetworkEvent;
 pub use self::route_error::RouteError;
 
+mod aps;
+mod device;
+mod network;
 mod route_error;
 
 /// Events emitted by the hardware layer.
-///
-/// Device membership events carry a [`FullAddress`] so consumers receive both
-/// the IEEE address and the current NWK short address for the affected device.
 #[derive(Clone, Debug)]
 pub enum Event {
-    /// The network is up and running.
-    NetworkUp,
+    /// Network state or routing event.
+    Network(NetworkEvent),
 
-    /// The network is down.
-    NetworkDown,
+    /// Device membership event.
+    Device(DeviceEvent),
 
-    /// The network has been opened for new joins.
-    NetworkOpened,
-
-    /// The network has been closed for new joins.
-    NetworkClosed,
-
-    /// A new device has joined the network.
-    DeviceJoined(FullAddress),
-
-    /// A known device has rejoined the network.
-    DeviceRejoined {
-        /// Complete address of the rejoining device.
-        address: FullAddress,
-
-        /// Whether the rejoining was secured.
-        secured: bool,
-    },
-
-    /// A device has left the network.
-    DeviceLeft(FullAddress),
-
-    /// Raw APS data frame received from a NWK source.
-    MessageReceived(Envelope<Data<Bytes>>),
-
-    /// Successful acknowledgement of an APS transmission.
-    ///
-    /// Contains the APS frame counter assigned to the acknowledged frame.
-    Ack(u8),
-
-    /// Failed acknowledgement of an APS transmission.
-    Nak {
-        /// APS frame counter assigned to the rejected frame.
-        sequence: u8,
-        /// Hardware error reported for the transmission.
-        error: crate::Error,
-    },
-
-    /// A routing error.
-    RouteError(RouteError),
+    /// APS receive or transmission event.
+    Aps(ApsEvent),
 }
