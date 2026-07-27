@@ -110,7 +110,7 @@ mod tests {
 
     fn descriptor(profile: Profile) -> SimpleDescriptor {
         SimpleDescriptor::new(
-            Endpoint::try_from(APPLICATION_ENDPOINT).expect("application endpoint must be valid"),
+            Endpoint::from(APPLICATION_ENDPOINT),
             profile,
             DEVICE_ID,
             AppFlags::empty(),

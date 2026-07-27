@@ -63,8 +63,8 @@ impl Header {
 
     /// Return the destination endpoint ID.
     #[must_use]
-    pub fn dst_endpoint(&self) -> Endpoint {
-        self.dst_endpoint.into()
+    pub const fn dst_endpoint(&self) -> Endpoint {
+        self.dst_endpoint
     }
 
     /// Return the cluster ID.
@@ -81,8 +81,8 @@ impl Header {
 
     /// Return the source endpoint ID.
     #[must_use]
-    pub fn source_endpoint(&self) -> Endpoint {
-        self.source_endpoint.into()
+    pub const fn source_endpoint(&self) -> Endpoint {
+        self.source_endpoint
     }
 
     /// Return the APS counter.

@@ -54,9 +54,6 @@ mod tests {
             .read_range(RANGE_OFFSET, RANGE_LENGTH)
             .expect("test range is readable");
 
-        assert_eq!(
-            range.as_ref(),
-            &SOURCE[RANGE_OFFSET..RANGE_OFFSET + RANGE_LENGTH]
-        );
+        assert_eq!(range.as_ref(), &[0x20, 0x30]);
     }
 }

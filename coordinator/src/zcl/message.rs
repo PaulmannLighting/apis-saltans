@@ -38,8 +38,8 @@ pub enum Message {
         sequence_number: u8,
         /// ZCL payload and its transmission metadata.
         payload: Payload,
-        /// Channel used to return the deferred hardware response.
-        response: Sender<Result<HwResponse, Error>>,
+        /// Channel used to return the APS transmission result.
+        response: Sender<Result<(), Error>>,
     },
 
     /// Communicate a unicast with an expected response.

@@ -166,11 +166,7 @@ impl Server {
     /// Validate an inbound frame and route its command to the matching destination task.
     async fn received(&mut self, source: Source, frame: Data<Frame<OtaCommand>>) {
         let aps_header = frame.header();
-        let Ok(endpoint) = aps_header.source_endpoint().inspect_err(|error| {
-            warn!("Discarding OTA command with invalid source endpoint: {error:?}");
-        }) else {
-            return;
-        };
+        let endpoint = aps_header.source_endpoint();
         let Ok(profile) = aps_header.profile().inspect_err(|profile_id| {
             warn!("Discarding OTA command with unknown profile {profile_id:#06x}");
         }) else {
@@ -276,7 +272,7 @@ impl Server {
             | OtaCommand::UpgradeEndResponse(_)
             | OtaCommand::QuerySpecificFileResponse(_) => return,
         };
-        let Some(response) = reply_zcl(
+        let Some(()) = reply_zcl(
             &self.zcl,
             context.destination,
             OTA_PROFILE,
@@ -287,9 +283,6 @@ impl Server {
         else {
             return;
         };
-        if let Err(error) = response.await {
-            warn!("Failed to transmit unauthorized OTA response: {error}");
-        }
     }
 }
 
@@ -307,7 +300,7 @@ const fn is_server_command(command: &OtaCommand) -> bool {
 fn default_response(request_command_id: u8, status: Status) -> Payload {
     let response = DefaultResponse::new(request_command_id, status.into());
     Payload::new(
-        zb_hw::Metadata::new(OTA_PROFILE, Cluster::OtaUpgrade.as_u16()),
+        crate::aps::Metadata::new(OTA_PROFILE, Cluster::OtaUpgrade.as_u16()),
         Metadata::new(
             Scope::Global,
             Direction::ServerToClient,

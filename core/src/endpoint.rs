@@ -15,7 +15,7 @@ const BROADCAST: u8 = 0xff;
 ///
 /// Endpoints can be parsed from the exact `Data` or `Broadcast` variant name, a decimal endpoint
 /// ID, or a hexadecimal endpoint ID with a `0x` prefix. Numeric application endpoint IDs produce
-/// [`Endpoint::Application`]; reserved IDs are rejected.
+/// [`Endpoint::Application`].
 #[cfg_attr(
     feature = "serde",
     derive(serde::Deserialize, serde::Serialize),
@@ -35,6 +35,7 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// Create a new `Endpoint` from a raw value.
+    #[must_use]
     pub const fn new(value: u8) -> Self {
         match value {
             DATA => Self::Data,
@@ -85,7 +86,7 @@ impl FromStr for Endpoint {
         match value {
             "Data" => Ok(Self::Data),
             "Broadcast" => Ok(Self::Broadcast),
-            _ => Self::try_from(parse_endpoint_id(value)?).map_err(|_| ParseEndpointError),
+            _ => Ok(Self::from(parse_endpoint_id(value)?)),
         }
     }
 }

@@ -5,7 +5,6 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zb_core::Profile;
 use zb_core::destination::Device;
-use zb_hw::HwResponse;
 
 pub use self::image::{
     BaseHeaderBytes, FieldControl, Header, HeaderString, Image, ParseImage, ParseImageError,
@@ -31,7 +30,7 @@ async fn reply_zcl(
     profile: Profile,
     sequence_number: u8,
     payload: Payload,
-) -> Option<HwResponse> {
+) -> Option<()> {
     let (response, result) = oneshot::channel();
     if let Err(error) = zcl
         .send(zcl::Message::Reply {
@@ -45,14 +44,14 @@ async fn reply_zcl(
         warn!("Failed to queue OTA reply: {error}");
         return None;
     }
-    receive_hw_response(result).await
+    receive_transmission_result(result).await
 }
 
 async fn send_zcl(
     zcl: &Sender<zcl::Message>,
     destination: zb_core::Destination,
     payload: Payload,
-) -> Option<HwResponse> {
+) -> Option<()> {
     let (response, result) = oneshot::channel();
     if let Err(error) = zcl
         .send(zcl::Message::Transmit {
@@ -65,20 +64,20 @@ async fn send_zcl(
         warn!("Failed to queue OTA command: {error}");
         return None;
     }
-    receive_hw_response(result).await
+    receive_transmission_result(result).await
 }
 
-async fn receive_hw_response(
-    response: oneshot::Receiver<Result<HwResponse, zb_hw::Error>>,
-) -> Option<HwResponse> {
+async fn receive_transmission_result(
+    response: oneshot::Receiver<Result<(), zb_hw::Error>>,
+) -> Option<()> {
     match response.await {
-        Ok(Ok(response)) => Some(response),
+        Ok(Ok(())) => Some(()),
         Ok(Err(error)) => {
-            warn!("Failed to start OTA transmission: {error}");
+            warn!("OTA transmission failed: {error}");
             None
         }
         Err(error) => {
-            warn!("Failed to receive OTA hardware response: {error}");
+            warn!("Failed to receive OTA transmission result: {error}");
             None
         }
     }
@@ -97,7 +96,6 @@ mod tests {
     use zb_core::destination::Device;
     use zb_core::endpoint::Application;
     use zb_core::{Cluster, Direction, Endpoint, Profile, short_id};
-    use zb_hw::HwResponse;
     use zb_nwk::Source;
     use zb_zcl::ota_upgrade::{
         Command as OtaCommand, ImageBlockRequest, ImageBlockResponse, ImageBlockResponsePayload,
@@ -205,7 +203,7 @@ mod tests {
             let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
             tokio::spawn(Server::test_new(zcl_sender, ota_receiver, SINGLE_UPDATE_LIMIT).run());
             let _first_completion = schedule(&ota_sender, test_image()).await;
-            hold_next_transmission(&mut zcl_receiver).await;
+            let _held_transmission = hold_next_transmission(&mut zcl_receiver).await;
 
             let result = ota_sender
                 .update(second_test_destination(), test_image())
@@ -544,7 +542,7 @@ mod tests {
             sequence_number,
             T::ID,
         );
-        let frame = Data::raw(aps_header, Bytes::new())
+        let frame = Data::new(aps_header, Bytes::new())
             .map_payload(|_| Frame::new(zcl_header, command.into()));
         Message::Received {
             source: Source::new(test_destination().device().as_u16(), None),
@@ -594,11 +592,16 @@ mod tests {
         let zcl::Message::Transmit { response, .. } = message else {
             panic!("expected OTA transmission");
         };
-        let hw_response = HwResponse::new(async { Err(zb_hw::Error::NotImplemented) });
-        assert!(response.send(Ok(hw_response)).is_ok());
+        assert!(
+            response
+                .send(Err(zb_hw::Error::Unsupported(zb_hw::Operation::Transmit)))
+                .is_ok()
+        );
     }
 
-    async fn hold_next_transmission(receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>) {
+    async fn hold_next_transmission(
+        receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>,
+    ) -> tokio::sync::oneshot::Sender<Result<(), zb_hw::Error>> {
         let message = timeout(TEST_TIMEOUT, receiver.recv())
             .await
             .expect("OTA server response timed out")
@@ -606,8 +609,7 @@ mod tests {
         let zcl::Message::Transmit { response, .. } = message else {
             panic!("expected OTA transmission");
         };
-        let hw_response = HwResponse::new(std::future::pending::<Result<(), zb_hw::Error>>());
-        assert!(response.send(Ok(hw_response)).is_ok());
+        response
     }
 
     fn reply_bytes(message: ObservedZcl) -> (u8, Bytes) {
@@ -619,7 +621,7 @@ mod tests {
         (sequence_number, bytes)
     }
 
-    fn reply_parts(message: ObservedZcl) -> (u8, zb_hw::Metadata, Bytes) {
+    fn reply_parts(message: ObservedZcl) -> (u8, crate::aps::Metadata, Bytes) {
         let ObservedZcl::Reply {
             destination,
             sequence_number,
@@ -633,11 +635,8 @@ mod tests {
         (sequence_number, metadata, bytes)
     }
 
-    fn complete_transmission(
-        response: tokio::sync::oneshot::Sender<Result<HwResponse, zb_hw::Error>>,
-    ) {
-        let hw_response = HwResponse::new(async { Ok::<(), zb_hw::Error>(()) });
-        assert!(response.send(Ok(hw_response)).is_ok());
+    fn complete_transmission(response: tokio::sync::oneshot::Sender<Result<(), zb_hw::Error>>) {
+        assert!(response.send(Ok(())).is_ok());
     }
 
     fn run_test<T>(future: T)

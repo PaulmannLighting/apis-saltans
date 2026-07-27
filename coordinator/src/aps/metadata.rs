@@ -33,6 +33,13 @@ impl Metadata {
         }
     }
 
+    /// Override the application profile.
+    #[must_use]
+    pub const fn with_profile(mut self, profile: Profile) -> Self {
+        self.profile = profile;
+        self
+    }
+
     /// Override the source endpoint.
     #[must_use]
     pub const fn with_source_endpoint(mut self, source_endpoint: Endpoint) -> Self {

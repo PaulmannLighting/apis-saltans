@@ -25,12 +25,6 @@ impl<T> Frame<T> {
         Self { header, payload }
     }
 
-    /// Create a new ZCL frame from the given header and payload.
-    #[must_use]
-    pub const fn new(header: Header, payload: T) -> Self {
-        Self { header, payload }
-    }
-
     /// Return a reference to the header.
     #[must_use]
     pub const fn header(&self) -> Header {

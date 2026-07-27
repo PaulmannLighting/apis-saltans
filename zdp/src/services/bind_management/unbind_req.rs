@@ -54,6 +54,7 @@ crate::zdp_command! {
         /// # Errors
         ///
         /// Returns [`Reserved`] if the raw endpoint value is reserved.
+        #[must_use]
         pub fn src_endpoint(&self) -> Endpoint {
             self.src_endpoint.into()
         }
@@ -75,6 +76,7 @@ crate::zdp_command! {
         ///
         /// Returns [`Reserved`] if the raw destination endpoint value is reserved.
         #[expect(clippy::missing_panics_doc)]
+        #[must_use]
         pub fn destination(&self) -> Destination {
             match &self.dst_address {
                 Address::Group(addr) => Destination::Group(*addr),

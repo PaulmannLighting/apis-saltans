@@ -6,7 +6,7 @@ use thiserror::Error;
 /// A Zigbee application endpoint ID.
 ///
 /// Application endpoints can be parsed from a decimal ID or a hexadecimal ID with a `0x` prefix.
-/// Values outside `1..=240` are rejected.
+/// Values outside `1..=254` are rejected.
 #[cfg_attr(
     feature = "serde",
     expect(clippy::unsafe_derive_deserialize),
@@ -53,7 +53,7 @@ impl Application {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the given ID is within the valid range (1..=240).
+    /// The caller must ensure that the given ID is within the valid range (1..=254).
     #[expect(unsafe_code)]
     #[must_use]
     pub const unsafe fn new_unchecked(id: u8) -> Self {
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn rejects_out_of_range_ids() {
         assert_eq!("0".parse::<Application>(), Err(ParseApplicationError));
-        assert_eq!("241".parse::<Application>(), Err(ParseApplicationError));
+        assert_eq!("255".parse::<Application>(), Err(ParseApplicationError));
     }
 
     #[test]

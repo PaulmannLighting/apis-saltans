@@ -37,7 +37,7 @@ impl PageTransfer {
             let block = ImageBlock::try_new(self.image_id, file_offset, self.block_data)
                 .expect("requested OTA blocks never exceed the client's u8 maximum data size");
             let response = ImageBlockResponse::new(ImageBlockResponsePayload::Success(block));
-            let Some(hw_response) = reply_zcl(
+            let Some(()) = reply_zcl(
                 &self.zcl,
                 self.destination,
                 OTA_PROFILE,
@@ -48,10 +48,6 @@ impl PageTransfer {
             else {
                 return Err(UpdateError::Transmission);
             };
-            if let Err(error) = hw_response.await {
-                warn!("OTA page transmission failed: {error}");
-                return Err(UpdateError::Transmission);
-            }
 
             self.offset = self.offset.saturating_add(self.maximum_data_size);
             if self.offset >= self.page_end {

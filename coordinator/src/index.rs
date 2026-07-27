@@ -2,7 +2,6 @@ use zb_aps::Data;
 use zb_core::destination::Device;
 use zb_core::{Endpoint, short_id};
 use zb_nwk::Source;
-use zb_zcl::Cluster;
 use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
 
 use crate::aps::Metadata;
@@ -96,7 +95,11 @@ impl Index {
     ///
     /// The incoming frame contributes the APS and ZCL header fields, while the
     /// [`Source`] contributes the remote node id that sent the response.
-    pub fn from_received_zcl_frame(source: Source, frame: &Data<zb_zcl::Frame<Cluster>>) -> Self {
+    #[must_use]
+    pub const fn from_received_zcl_frame<T>(
+        source: Source,
+        frame: &Data<zb_zcl::Frame<T>>,
+    ) -> Self {
         Self::from_aps_and_zcl_headers(source.node_id(), frame.header(), frame.payload().header())
     }
 
@@ -118,7 +121,7 @@ impl Index {
     }
 
     /// Build the ZCL response correlation key from APS and ZCL headers.
-    fn from_aps_and_zcl_headers(
+    const fn from_aps_and_zcl_headers(
         short_id: u16,
         aps_header: zb_aps::data::Header,
         zcl_header: zb_zcl::Header,

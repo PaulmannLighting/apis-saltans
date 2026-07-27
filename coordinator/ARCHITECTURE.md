@@ -12,11 +12,13 @@ flowchart TD
     APS[APS actor]
     ZCL[ZCL actor]
     ZDP[ZDP actor]
+    OTA[OTA server]
     M[Mux task]
     APP[Application event receiver]
 
     C -->|ZCL API| ZCL
     C -->|ZDP API| ZDP
+    C -->|schedule update| OTA
     C -->|NCP helper APIs| HW
     ZCL -->|Data&lt;Bytes&gt;| APS
     ZDP -->|Data&lt;Bytes&gt;| APS
@@ -27,11 +29,13 @@ flowchart TD
     M -->|received ZDP frame| ZDP
     M -->|network and device events| APP
     ZCL -->|unmatched ZCL frame| APP
+    ZCL -->|OTA Upgrade frame| OTA
+    OTA -->|commands and replies| ZCL
     ZDP -->|device announcements| APP
 ```
 
-`Coordinator::start` creates the APS, ZCL, and ZDP actors plus the event mux. Actor inboxes use
-`ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
+`Coordinator::start` creates the APS, ZCL, ZDP, and OTA actors plus the event mux. Actor inboxes
+use `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
 
 ## APS Actor
 
@@ -100,11 +104,26 @@ The ZCL actor:
 - serializes typed commands into ZCL frames
 - sends APS metadata and serialized ZCL frames through the APS actor
 - stores response correlation channels for `communicate`
+- forwards OTA Upgrade traffic to the coordinator-owned OTA server
+- sends replies with an explicitly supplied ZCL transaction sequence
 - routes unmatched received commands to the application event channel
 
 For `transmit`, the actor returns only after the APS helper completes. For `communicate`, it inserts
 the correlation entry before transmitting, removes it if transmission fails, and returns a
-protocol-only response receiver after successful APS completion.
+protocol-only response receiver after successful APS completion. Reply transmission uses the same
+APS path but preserves the request transaction sequence instead of allocating a new one.
+
+## OTA Upgrade Server
+
+The OTA actor owns the set of active device transfers. The ZCL actor forwards OTA requests before
+normal response correlation so client requests cannot be consumed by an unrelated pending
+operation. OTA responses are correlated first when applicable and otherwise forwarded to the OTA
+actor rather than emitted as general application events.
+
+Normal OTA commands and replies retain the default acknowledged APS transmission option. Image Page
+block responses use empty `TxOptions`; the APS handle therefore returns after actor handoff instead
+of creating an acknowledgement response. The page task applies the requested spacing and advances
+the ZCL transaction sequence between blocks.
 
 ## ZDP Actor
 

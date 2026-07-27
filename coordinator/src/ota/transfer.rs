@@ -437,7 +437,7 @@ impl Transfer {
     ) {
         let response = DefaultResponse::new(request_command_id, status.into());
         let payload = Payload::new(
-            zb_hw::Metadata::new(OTA_PROFILE, Cluster::OtaUpgrade.as_u16()),
+            crate::aps::Metadata::new(OTA_PROFILE, Cluster::OtaUpgrade.as_u16()),
             Metadata::new(
                 Scope::Global,
                 Direction::ServerToClient,
@@ -470,13 +470,10 @@ async fn transmit_command(
     destination: Device,
     payload: Payload,
 ) -> UpdateResult {
-    let Some(response) = send_zcl(zcl, destination.into(), payload).await else {
+    let Some(()) = send_zcl(zcl, destination.into(), payload).await else {
         return Err(UpdateError::Transmission);
     };
-    response.await.map_err(|error| {
-        warn!("OTA transmission failed: {error}");
-        UpdateError::Transmission
-    })
+    Ok(())
 }
 
 async fn transmit_reply(
@@ -484,7 +481,7 @@ async fn transmit_reply(
     context: RequestContext,
     payload: Payload,
 ) -> UpdateResult {
-    let Some(response) = reply_zcl(
+    let Some(()) = reply_zcl(
         zcl,
         context.destination,
         OTA_PROFILE,
@@ -495,10 +492,7 @@ async fn transmit_reply(
     else {
         return Err(UpdateError::Transmission);
     };
-    response.await.map_err(|error| {
-        warn!("OTA transmission failed: {error}");
-        UpdateError::Transmission
-    })
+    Ok(())
 }
 
 async fn requested_data(

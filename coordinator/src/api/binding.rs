@@ -82,9 +82,8 @@ pub trait Binding {
                 .into_iter()
                 .enumerate()
                 .map_while(|(index, descriptor)| {
-                    Endpoint::try_from(u8::try_from(index.checked_add(1)?).ok()?)
-                        .ok()
-                        .map(|endpoint| (endpoint, descriptor))
+                    let endpoint = u8::try_from(index.checked_add(1)?).ok()?;
+                    Some((Endpoint::from(endpoint), descriptor))
                 })
             {
                 let input_clusters: BTreeSet<_> = descriptor
