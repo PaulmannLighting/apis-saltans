@@ -17,7 +17,7 @@ use zb_zcl::ota_upgrade::{
     Command as OtaCommand, ImageBlockRequest, ImagePageRequest, QueryNextImageResponse,
     QueryResponse, QuerySpecificFileResponse, UpgradeEndRequest,
 };
-use zb_zcl::{Command, Frame, Scope, Status};
+use zb_zcl::{Cluster as ZclCluster, Command, Frame, Scope, Status};
 
 use super::state::RequestContext;
 use super::transfer::{Transfer, TransferExit, TransferMessage};
@@ -34,6 +34,7 @@ struct ActiveTransfer {
 
 enum ServerEvent {
     Message(Option<Message>),
+    Zcl(Option<zcl::SubscriptionMessage>),
     Transfer(Option<Result<(Id, TransferExit), JoinError>>),
 }
 
@@ -42,6 +43,7 @@ enum ServerEvent {
 pub struct Server {
     zcl: Sender<zcl::Message>,
     inbound: Receiver<Message>,
+    zcl_frames: zcl::SubscriptionReceiver,
     transfers: BTreeMap<Device, ActiveTransfer>,
     tasks: JoinSet<TransferExit>,
     update_task_limit: usize,
@@ -52,11 +54,13 @@ impl Server {
     fn new(
         zcl: Sender<zcl::Message>,
         inbound: Receiver<Message>,
+        zcl_frames: zcl::SubscriptionReceiver,
         update_task_limit: usize,
     ) -> Self {
         Self {
             zcl,
             inbound,
+            zcl_frames,
             transfers: BTreeMap::new(),
             tasks: JoinSet::new(),
             update_task_limit,
@@ -73,7 +77,11 @@ impl Server {
                     return Poll::Ready(ServerEvent::Transfer(task));
                 }
 
-                self.inbound.poll_recv(context).map(ServerEvent::Message)
+                if let Poll::Ready(message) = self.inbound.poll_recv(context) {
+                    return Poll::Ready(ServerEvent::Message(message));
+                }
+
+                self.zcl_frames.poll_recv(context).map(ServerEvent::Zcl)
             })
             .await;
             match event {
@@ -92,10 +100,14 @@ impl Server {
                             completion,
                         } => self.update(target, image, completion).await,
                         Message::Received { source, frame } => {
-                            self.received(source, frame).await;
+                            self.received_ota(source, frame).await;
                         }
                     }
                 }
+                ServerEvent::Zcl(Some(message)) => {
+                    self.received_zcl(message).await;
+                }
+                ServerEvent::Zcl(None) => break,
             }
         }
     }
@@ -104,9 +116,10 @@ impl Server {
     pub(crate) fn spawn(
         zcl: Sender<zcl::Message>,
         receiver: Receiver<Message>,
+        zcl_frames: zcl::SubscriptionReceiver,
         update_task_limit: usize,
     ) {
-        spawn(Self::new(zcl, receiver, update_task_limit).run());
+        spawn(Self::new(zcl, receiver, zcl_frames, update_task_limit).run());
     }
 
     /// Replace an existing destination update or admit a new destination transfer task.
@@ -164,7 +177,20 @@ impl Server {
     }
 
     /// Validate an inbound frame and route its command to the matching destination task.
-    async fn received(&mut self, source: Source, frame: Data<Frame<OtaCommand>>) {
+    async fn received_zcl(&mut self, message: zcl::SubscriptionMessage) {
+        let zcl::SubscriptionMessage { source, frame } = message;
+        let (aps_header, zcl_frame) = frame.into_parts();
+        let (zcl_header, cluster) = zcl_frame.into_parts();
+        let ZclCluster::OtaUpgrade(command) = cluster else {
+            warn!("Discarding non-OTA command delivered by the OTA ZCL subscription");
+            return;
+        };
+        let frame = Data::new(aps_header, Frame::new(zcl_header, command));
+        self.received_ota(source, frame).await;
+    }
+
+    /// Validate an inbound OTA frame and route its command to the matching destination task.
+    async fn received_ota(&mut self, source: Source, frame: Data<Frame<OtaCommand>>) {
         let aps_header = frame.header();
         let endpoint = aps_header.source_endpoint();
         let Ok(profile) = aps_header.profile().inspect_err(|profile_id| {
@@ -319,6 +345,7 @@ impl Server {
         inbound: Receiver<Message>,
         update_task_limit: usize,
     ) -> Self {
-        Self::new(zcl, inbound, update_task_limit)
+        let (_subscription, zcl_frames) = super::subscription();
+        Self::new(zcl, inbound, zcl_frames, update_task_limit)
     }
 }

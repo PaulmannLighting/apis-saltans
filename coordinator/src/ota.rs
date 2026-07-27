@@ -3,8 +3,9 @@
 use log::warn;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
-use zb_core::Profile;
 use zb_core::destination::Device;
+use zb_core::{Cluster, Direction, Profile};
+use zb_zcl::Scope;
 
 pub use self::image::{
     BaseHeaderBytes, FieldControl, Header, HeaderString, Image, ParseImage, ParseImageError,
@@ -23,6 +24,14 @@ mod transfer;
 const CURRENT_TIME_IMMEDIATE: u32 = 0;
 const UPGRADE_TIME_IMMEDIATE: u32 = 0;
 const OTA_PROFILE: Profile = Profile::ZigbeeHomeAutomation;
+
+pub(crate) fn subscription() -> (zcl::Subscription, zcl::SubscriptionReceiver) {
+    zcl::Subscription::channel(zcl::SubscriptionFilter::new(
+        Cluster::OtaUpgrade,
+        Scope::ClusterSpecific,
+        Direction::ClientToServer,
+    ))
+}
 
 async fn reply_zcl(
     zcl: &Sender<zcl::Message>,

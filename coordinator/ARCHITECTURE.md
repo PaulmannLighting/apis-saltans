@@ -29,7 +29,7 @@ flowchart TD
     M -->|received ZDP frame| ZDP
     M -->|network and device events| APP
     ZCL -->|unmatched ZCL frame| APP
-    ZCL -->|OTA Upgrade frame| OTA
+    ZCL -.->|filtered weak subscription| OTA
     OTA -->|commands and replies| ZCL
     ZDP -->|device announcements| APP
 ```
@@ -104,7 +104,8 @@ The ZCL actor:
 - serializes typed commands into ZCL frames
 - sends APS metadata and serialized ZCL frames through the APS actor
 - stores response correlation channels for `communicate`
-- forwards OTA Upgrade traffic to the coordinator-owned OTA server
+- registers generic filtered subscriptions received through its actor inbox
+- delivers matching received frames to generic internal subscriptions before response correlation
 - sends replies with an explicitly supplied ZCL transaction sequence
 - routes unmatched received commands to the application event channel
 
@@ -115,10 +116,17 @@ APS path but preserves the request transaction sequence instead of allocating a 
 
 ## OTA Upgrade Server
 
-The OTA actor owns the set of active device transfers. The ZCL actor forwards OTA requests before
-normal response correlation so client requests cannot be consumed by an unrelated pending
-operation. OTA responses are correlated first when applicable and otherwise forwarded to the OTA
-actor rather than emitted as general application events.
+The OTA subsystem installs a ZCL subscription for cluster-specific, client-to-server OTA Upgrade
+frames. ZCL applies only the subscription's typed cluster, scope, and direction filter; the OTA actor
+performs the typed `Cluster::OtaUpgrade` match. Subscribed frames are delivered before normal
+response correlation so client requests cannot be consumed by an unrelated pending operation.
+During startup, the coordinator sends the subscription through the ZCL actor handle before starting
+the hardware-event mux; subscriptions are not constructor state.
+
+ZCL holds only a weak sender for each subscription. The OTA actor owns the corresponding receiver
+and retains its strong sender as a lifetime guard. ZCL therefore has no OTA-specific dependency and
+cannot keep the OTA actor alive. When the external OTA inbox closes, the OTA actor exits and drops
+its ZCL sender; this avoids a strong ZCL-to-OTA-to-ZCL actor cycle.
 
 Normal OTA commands and replies retain the default acknowledged APS transmission option. Image Page
 block responses use empty `TxOptions`; the APS handle therefore returns after actor handoff instead

@@ -166,6 +166,12 @@ and file metadata, streams blocks (including paced page responses), preserves or
 transaction numbers as required, and emits the appropriate command or default response. Scheduling
 another image for the same device endpoint replaces its current offer.
 
+The OTA subsystem receives those requests through an internal ZCL subscription filtered by a typed
+cluster variant, command scope, and direction. ZCL has no OTA-specific routing logic or OTA actor
+handle. Its subscription handle is weak, so the subscription does not create an actor-lifetime
+cycle. The coordinator registers the subscription by sending a message through the ZCL actor handle
+before it starts routing hardware events.
+
 `Ota::update` remains pending for the complete exchange. It returns success after the client sends
 a successful Upgrade End Request. Client rejection, image-read failures, terminal transmission
 failures, replacement by a newer update, and exhaustion of the configured concurrent update-task

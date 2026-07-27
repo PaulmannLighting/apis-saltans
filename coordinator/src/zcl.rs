@@ -12,37 +12,43 @@ use zb_aps::Data;
 use zb_core::Destination;
 use zb_core::destination::Device;
 use zb_nwk::Source;
-use zb_zcl::ota_upgrade::Command as OtaCommand;
 use zb_zcl::{Cluster, Frame, Header};
 
 pub use self::message::Message;
 pub use self::payload::{Metadata, Payload};
+pub use self::subscription::{
+    Filter as SubscriptionFilter, Received as SubscriptionMessage, Subscription,
+    SubscriptionReceiver,
+};
 use super::index::Index;
 use crate::aps::Aps;
 use crate::response::InternalCommunicationResponse;
-use crate::{Event, MPSC_CHANNEL_SIZE, ota};
+use crate::{Event, MPSC_CHANNEL_SIZE};
 
 mod message;
 mod payload;
+mod subscription;
 
 /// Zigbee transceiver actor.
 #[derive(Debug)]
 pub struct Transceiver {
     aps: Aps,
     events: Sender<Event>,
-    ota: Sender<ota::Message>,
+    subscriptions: Vec<Subscription>,
     responses: BTreeMap<Index, oneshot::Sender<Cluster>>,
     seq: u8,
 }
 
 impl Transceiver {
-    /// Create a new transceiver.
+    /// Create a new transceiver without frame subscriptions.
+    ///
+    /// Register subscriptions by sending [`Message::Subscribe`] to the actor.
     #[must_use]
-    pub const fn new(aps: Aps, events: Sender<Event>, ota: Sender<ota::Message>) -> Self {
+    pub const fn new(aps: Aps, events: Sender<Event>) -> Self {
         Self {
             aps,
             events,
-            ota,
+            subscriptions: Vec::new(),
             responses: BTreeMap::new(),
             seq: 0,
         }
@@ -51,6 +57,9 @@ impl Transceiver {
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
+                Message::Subscribe { subscription } => {
+                    self.subscriptions.push(subscription);
+                }
                 Message::Received { source, frame } => {
                     self.handle_message_received(source, frame).await;
                 }
@@ -109,53 +118,10 @@ impl Transceiver {
     /// Handle a received ZCL message.
     async fn handle_message_received(&mut self, source: Source, aps_frame: Data<Frame<Cluster>>) {
         trace!("Received ZCL message from {source}: {aps_frame:?}");
-        let (aps_header, zcl_frame) = aps_frame.into_parts();
-        let (zcl_header, cluster) = zcl_frame.into_parts();
-
-        match cluster {
-            Cluster::OtaUpgrade(command) => {
-                let frame = Data::new(aps_header, Frame::new(zcl_header, command));
-                self.handle_ota_message_received(source, frame).await;
-            }
-            cluster => {
-                let frame = Data::new(aps_header, Frame::new(zcl_header, cluster));
-                self.handle_non_ota_message_received(source, frame).await;
-            }
-        }
-    }
-
-    /// Correlate or forward a received OTA Upgrade message.
-    async fn handle_ota_message_received(
-        &mut self,
-        source: Source,
-        frame: Data<Frame<OtaCommand>>,
-    ) {
-        if is_ota_request(frame.payload().payload()) {
-            self.forward_ota(source, frame).await;
+        if self.forward_to_subscribers(source, &aps_frame).await {
             return;
         }
 
-        let index = Index::from_received_zcl_frame(source, &frame);
-        if let Some(sender) = self.responses.remove(&index) {
-            let (_, zcl_frame) = frame.into_parts();
-            let (_, command) = zcl_frame.into_parts();
-            sender
-                .send(Cluster::OtaUpgrade(command))
-                .unwrap_or_else(|error| {
-                    debug!("Failed to send ZCL response: {error:?}");
-                });
-            return;
-        }
-
-        self.forward_ota(source, frame).await;
-    }
-
-    /// Correlate or publish a received non-OTA ZCL message.
-    async fn handle_non_ota_message_received(
-        &mut self,
-        source: Source,
-        aps_frame: Data<Frame<Cluster>>,
-    ) {
         let index = Index::from_received_zcl_frame(source, &aps_frame);
 
         if let Some(sender) = self.responses.remove(&index) {
@@ -185,14 +151,24 @@ impl Transceiver {
             });
     }
 
-    /// Forward an OTA Upgrade frame to the coordinator-owned OTA server.
-    async fn forward_ota(&self, source: Source, frame: Data<Frame<OtaCommand>>) {
-        self.ota
-            .send(ota::Message::Received { source, frame })
-            .await
-            .unwrap_or_else(|error| {
-                debug!("Failed to forward OTA Upgrade command: {error:?}");
-            });
+    /// Deliver a received frame to every matching live subscription.
+    async fn forward_to_subscribers(&self, source: Source, frame: &Data<Frame<Cluster>>) -> bool {
+        let mut delivered = false;
+
+        for subscription in &self.subscriptions {
+            if !subscription.matches(frame) {
+                continue;
+            }
+            let message = SubscriptionMessage {
+                source,
+                frame: frame.clone(),
+            };
+            if subscription.send(message).await.is_ok() {
+                delivered = true;
+            }
+        }
+
+        delivered
     }
 
     /// Send a ZCL unicast message.
@@ -298,20 +274,97 @@ impl Transceiver {
 
 impl Transceiver {
     /// Start the ZCL transceiver.
-    pub fn spawn(aps: Aps, events: Sender<Event>, ota: Sender<ota::Message>) -> Sender<Message> {
+    pub fn spawn(aps: Aps, events: Sender<Event>) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(aps, events, ota).run(zcl_rx));
+        spawn(Self::new(aps, events).run(zcl_rx));
         zcl_tx
     }
 }
 
-const fn is_ota_request(command: &OtaCommand) -> bool {
-    matches!(
-        command,
-        OtaCommand::QueryNextImageRequest(_)
-            | OtaCommand::ImageBlockRequest(_)
-            | OtaCommand::ImagePageRequest(_)
-            | OtaCommand::UpgradeEndRequest(_)
-            | OtaCommand::QuerySpecificFileRequest(_)
-    )
+#[cfg(test)]
+mod tests {
+    use std::future::poll_fn;
+
+    use tokio::runtime::Builder;
+    use tokio::sync::mpsc::channel;
+    use zb_aps::Data;
+    use zb_aps::data::Header as ApsHeader;
+    use zb_core::endpoint::Application;
+    use zb_core::{Cluster as ClusterId, Direction, Endpoint, Profile};
+    use zb_nwk::Source;
+    use zb_zcl::on_off::{Command as OnOffCommand, On};
+    use zb_zcl::{Cluster, Command, Frame, Header as ZclHeader, Scope};
+
+    use super::{Message, Subscription, SubscriptionFilter, Transceiver};
+    use crate::MPSC_CHANNEL_SIZE;
+    use crate::aps::Aps;
+
+    const SOURCE_NODE_ID: u16 = 0x4321;
+    const TRANSACTION_SEQUENCE: u8 = 7;
+    const APS_COUNTER: u8 = 9;
+
+    #[test]
+    fn routes_matching_frames_to_a_generic_subscription() {
+        Builder::new_current_thread()
+            .build()
+            .expect("Tokio runtime")
+            .block_on(async {
+                let (aps_sender, _aps_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (events, mut application_events) = channel(MPSC_CHANNEL_SIZE);
+                let filter = SubscriptionFilter::new(
+                    ClusterId::OnOff,
+                    Scope::ClusterSpecific,
+                    Direction::ClientToServer,
+                );
+                let (subscription, mut subscribed_frames) = Subscription::channel(filter);
+                let transceiver = Transceiver::spawn(Aps::new(aps_sender), events);
+                let source = Source::new(SOURCE_NODE_ID, None);
+
+                transceiver
+                    .send(Message::Subscribe { subscription })
+                    .await
+                    .expect("ZCL transceiver remains available");
+                transceiver
+                    .send(Message::Received {
+                        source,
+                        frame: subscribed_frame(),
+                    })
+                    .await
+                    .expect("ZCL transceiver remains available");
+
+                let received = poll_fn(|context| subscribed_frames.poll_recv(context))
+                    .await
+                    .expect("subscription remains open");
+                assert_eq!(received.source, source);
+                assert!(matches!(
+                    received.frame.payload().payload(),
+                    Cluster::OnOff(OnOffCommand::On(_))
+                ));
+                assert!(application_events.try_recv().is_err());
+            });
+    }
+
+    fn subscribed_frame() -> Data<Frame<Cluster>> {
+        let endpoint = Endpoint::Application(Application::MIN);
+        let aps_header = ApsHeader::new(
+            zb_aps::Destination::Unicast(endpoint),
+            ClusterId::OnOff.as_u16(),
+            Profile::ZigbeeHomeAutomation.as_u16(),
+            endpoint,
+            APS_COUNTER,
+            None,
+        );
+        let zcl_header = ZclHeader::new(
+            Scope::ClusterSpecific,
+            Direction::ClientToServer,
+            false,
+            None,
+            TRANSACTION_SEQUENCE,
+            <On as Command>::ID,
+        );
+        Data::new(
+            aps_header,
+            Frame::new(zcl_header, Cluster::OnOff(OnOffCommand::from(On))),
+        )
+    }
 }

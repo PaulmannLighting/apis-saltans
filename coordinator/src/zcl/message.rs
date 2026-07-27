@@ -7,11 +7,18 @@ use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame};
 
 pub use super::Payload;
+use super::Subscription;
 use crate::response::InternalCommunicationResponse;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
 pub enum Message {
+    /// Register a filtered receiver for incoming ZCL frames.
+    Subscribe {
+        /// Subscription to register.
+        subscription: Subscription,
+    },
+
     /// A hardware-level event.
     Received {
         /// The NWK source information of the frame.
