@@ -24,9 +24,12 @@ zb-core = { workspace = true, optional = true }
 zb-nwk = { workspace = true, optional = true }
 zb-zdp = { workspace = true, optional = true }
 
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt"] }
+
 [features]
 default = []
-coordinator = [
+types = [
     "dep:bytes",
     "dep:thiserror",
     "dep:tokio",
@@ -35,16 +38,9 @@ coordinator = [
     "dep:zb-nwk",
     "dep:zb-zdp",
 ]
-driver = [
-    "dep:bytes",
-    "dep:thiserror",
-    "dep:tokio",
-    "dep:zb-aps",
-    "dep:zb-core",
-    "dep:zb-nwk",
-    "dep:zb-zdp",
-]
-serde = ["dep:serde", "serde/derive"]
+coordinator = ["types"]
+driver = ["types"]
+serde = ["types", "dep:serde", "serde/derive", "zb-core/serde"]
 
 [lints]
 workspace = true

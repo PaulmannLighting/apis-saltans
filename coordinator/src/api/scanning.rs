@@ -1,5 +1,7 @@
 use zb_hw::Ncp;
-pub use zb_hw::{FoundNetwork, ScannedChannel};
+pub use zb_hw::{
+    Channel, ChannelMask, FoundNetwork, NetworkDescriptor, ScanDuration, ScannedChannel,
+};
 
 use crate::{Coordinator, Error};
 
@@ -15,8 +17,8 @@ pub trait Scanning {
     /// Returns an [`Error`] if the hardware scan request fails.
     fn scan_networks(
         &self,
-        channel_mask: u32,
-        duration: u8,
+        channel_mask: ChannelMask,
+        duration: ScanDuration,
     ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>> + Send;
 
     /// Scan channels and return energy/channel observations.
@@ -26,24 +28,24 @@ pub trait Scanning {
     /// Returns an [`Error`] if the hardware scan request fails.
     fn scan_channels(
         &self,
-        channel_mask: u32,
-        duration: u8,
+        channel_mask: ChannelMask,
+        duration: ScanDuration,
     ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>> + Send;
 }
 
 impl Scanning for Coordinator {
     async fn scan_networks(
         &self,
-        channel_mask: u32,
-        duration: u8,
+        channel_mask: ChannelMask,
+        duration: ScanDuration,
     ) -> Result<Vec<FoundNetwork>, Error> {
         Ok(Ncp::scan_networks(&self.ncp, channel_mask, duration).await?)
     }
 
     async fn scan_channels(
         &self,
-        channel_mask: u32,
-        duration: u8,
+        channel_mask: ChannelMask,
+        duration: ScanDuration,
     ) -> Result<Vec<ScannedChannel>, Error> {
         Ok(Ncp::scan_channels(&self.ncp, channel_mask, duration).await?)
     }

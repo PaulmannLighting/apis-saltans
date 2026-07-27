@@ -5,6 +5,7 @@ use zb_core::FullAddress;
 /// Each event carries a [`FullAddress`] so consumers receive both the IEEE
 /// address and the current NWK short address for the affected device.
 #[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum DeviceEvent {
     /// A new device has joined the network.
     Joined(FullAddress),

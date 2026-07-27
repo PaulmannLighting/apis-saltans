@@ -41,8 +41,9 @@ wrapping `u8` APS frame counter. For every outgoing message it:
 1. consumes the supplied APS metadata and serialized payload
 2. assigns its next APS frame counter
 3. constructs the APS header and `zb_aps::Data<bytes::Bytes>` frame
-4. stores acknowledged callers under that counter
+4. resolves any older response still pending for that counter with `TransmissionError::Timeout`
 5. forwards the completed frame and destination to the hardware actor
+6. stores an acknowledged caller under the APS counter after hardware acceptance
 
 Its command protocol contains:
 
@@ -57,11 +58,15 @@ Transmit {
 
 The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method examines the
 metadata's `TxOptions::ACKNOWLEDGED_TRANSMISSION` flag when deciding whether to create a caller
-response channel. Its inherent `ack` and `nak` methods forward hardware APS events from the mux.
+response channel. Its completion methods forward hardware APS events from the mux.
 
-- Acknowledged frame: retain the caller's response sender and await the matching hardware
-  `Event::Aps(ApsEvent::Ack(...))` or `Event::Aps(ApsEvent::Nak { ... })`.
+- Acknowledged frame: retain the caller's response sender under the APS counter and await
+  `ApsEvent::Ack` or `ApsEvent::Nak`.
 - Unacknowledged frame: omit the caller response and return after actor handoff.
+
+The counter-reuse check applies before every hardware send attempt, including an unacknowledged
+send or one the backend subsequently rejects. At that point the older completion is no longer safe
+to correlate, so its caller receives `TransmissionError::Timeout`.
 
 ```mermaid
 sequenceDiagram
@@ -73,10 +78,12 @@ sequenceDiagram
     P->>P: serialize protocol payload
     P->>A: Transmit destination, metadata, payload
     A->>A: assign counter and build Data&lt;Bytes&gt;
+    A->>A: timeout older response for counter
     A->>H: transmit destination, frame
+    H-->>A: accepted
     opt acknowledged transmission
-        H-->>M: Event::Aps with Ack or Nak
-        M-->>A: Ack or Nak
+        H-->>M: Event::Aps with counter and result
+        M-->>A: APS result
         A-->>P: completed APS result
     end
 ```
@@ -136,7 +143,8 @@ sequenceDiagram
     P->>P: allocate sequence and store correlation
     P->>A: acknowledged APS frame
     A->>H: frame with assigned APS counter
-    H-->>M: Event::Aps with Ack or Nak
+    H-->>A: accepted
+    H-->>M: Event::Aps with counter and result
     M-->>A: APS result
     A-->>P: correlated APS result
     P-->>API: protocol response future

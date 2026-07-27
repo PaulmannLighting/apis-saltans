@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use tokio::sync::oneshot::Sender;
 use zb_core::Destination;
-use zb_hw::Error;
+use zb_hw::{Error, TransmissionError};
 
 use super::Metadata;
 
@@ -20,17 +20,17 @@ pub enum Message {
         response: Option<Sender<Result<(), Error>>>,
     },
 
-    /// Successful acknowledgement reported by the hardware event stream.
+    /// Successful transmission reported by the hardware event stream.
     Ack {
         /// APS counter of the acknowledged transmission.
-        sequence: u8,
+        counter: u8,
     },
 
-    /// Failed acknowledgement reported by the hardware event stream.
+    /// Failed transmission reported by the hardware event stream.
     Nak {
-        /// APS counter of the rejected transmission.
-        sequence: u8,
+        /// APS counter of the failed transmission.
+        counter: u8,
         /// Hardware failure reported for the transmission.
-        error: Error,
+        error: TransmissionError,
     },
 }

@@ -13,20 +13,17 @@
 //! requests and exposes them through [`LocalNode::get_endpoints`]; they are no longer passed to
 //! [`Coordinator::start`].
 //!
-//! [`Driver`] is re-exported from `zb_hw`, allowing hardware integrations to implement the driver
-//! contract through this crate's public API.
-//!
 //! ZCL transmissions directly await acknowledged APS completion. ZCL and ZDP communication
 //! methods then return a protocol-specific [`ZclResponse`] or [`ZdpResponse`] that waits for the
 //! correlated command. All operations report failures through the coordinator's [`Error`] type.
 
 use const_env::env_item;
-pub use zb_hw::Driver;
 
 pub use self::api::{
-    AddressTranslation, Attributes, Binding, Clusters, ColorControl, Endpoints, FoundNetwork,
-    Groups, Joining, Level, LocalNode, Node, OnOff, ReadAttributeResult, Routing, ScannedChannel,
-    Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclResponse, Zdp, ZdpResponse,
+    AddressTranslation, Attributes, Binding, Channel, ChannelMask, ColorControl, Endpoints,
+    FoundNetwork, Groups, Joining, Level, LocalNode, NetworkDescriptor, Node, OnOff,
+    ReadAttributeResult, Routing, ScanDuration, ScannedChannel, Scanning, SimpleDescriptor,
+    WriteAttributeResult, Zcl, ZclResponse, Zdp, ZdpResponse,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};

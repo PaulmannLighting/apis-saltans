@@ -3,27 +3,24 @@
 //! This crate defines the boundary between coordinator-level logic and concrete Zigbee network
 //! co-processor (NCP) drivers.
 //!
-//! No default features are enabled. Enable exactly the API surface needed by the depending crate:
+//! No default features are enabled. Enable the API surface needed by the depending crate:
 //!
-//! - `coordinator` exposes `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, common errors, hardware
-//!   events, access to the NCP's local simple descriptors, scan results, and APS frame
-//!   transmission for coordinator code that sends commands to a running NCP actor.
-//! - `driver` exposes `Driver`, shared driver/coordinator data types, the required local-endpoint
-//!   API, command handles, common errors, and the `aps`, `core`, `nwk`, and `zdp` protocol
-//!   re-export modules for hardware backend implementations.
+//! - `types` exposes shared handles, errors, events, and scan parameters and results.
+//! - `coordinator` adds the caller-facing `Ncp` trait and enables `types`.
+//! - `driver` adds the implementor-facing `Driver` trait and protocol re-export modules, and enables
+//!   `types`.
 //!
-//! `Driver` is part of the shared API and is therefore available with either feature. Event
-//! translation and startup wiring are backend concerns; this crate does not prescribe backend
-//! configuration or provide an event-translator abstraction.
+//! Event translation and startup wiring are backend concerns; this crate does not prescribe
+//! backend configuration or provide an event-translator abstraction.
 //!
 //! The protocol re-export modules are available only with `driver`. They let driver crates refer to
 //! `apis-saltans` protocol types through this crate, for example
 //! `apis_saltans_hw::core::IeeeAddress` or `apis_saltans_hw::zdp::SimpleDescriptor`, without adding
 //! direct dependencies on each protocol crate.
 //!
-//! `Ncp::transmit` hands an APS data frame to the driver actor without a command-response channel.
-//! Hardware backends report acknowledged transmission completion asynchronously through
-//! `Event::Aps(ApsEvent::Ack)` and `Event::Aps(ApsEvent::Nak)`.
+//! `Ncp::transmit` returns after the hardware backend accepts an APS frame. Hardware backends report
+//! acknowledged transmission completion asynchronously through `Event::Aps(ApsEvent::Ack)` and
+//! `Event::Aps(ApsEvent::Nak)`.
 //!
 //! Every `Driver` implementation must provide the NCP's local application endpoints through
 //! `Driver::get_endpoints`. Each endpoint is represented by a complete
@@ -31,15 +28,19 @@
 //! `Ncp::get_endpoints`.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(any(feature = "coordinator", feature = "driver"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
+#[cfg(feature = "types")]
+#[cfg_attr(docsrs, doc(cfg(feature = "types")))]
 pub use zb_aps::TxOptions;
 
-#[cfg(any(feature = "coordinator", feature = "driver"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "coordinator", feature = "driver"))))]
+#[cfg(feature = "driver")]
+#[cfg_attr(docsrs, doc(cfg(feature = "driver")))]
+pub use self::common::Driver;
+#[cfg(feature = "types")]
+#[cfg_attr(docsrs, doc(cfg(feature = "types")))]
 pub use self::common::{
-    ApsEvent, Clusters, DeviceEvent, Driver, Error, Event, FoundNetwork, NcpHandle, Network,
-    NetworkEvent, RouteError, ScannedChannel, WeakNcpHandle,
+    ApsEvent, Channel, ChannelMask, DeviceEvent, Error, Event, FoundNetwork, NcpHandle,
+    NetworkDescriptor, NetworkEvent, Operation, RouteError, ScanDuration, ScannedChannel,
+    TransmissionError, WeakNcpHandle,
 };
 #[cfg(feature = "coordinator")]
 #[cfg_attr(docsrs, doc(cfg(feature = "coordinator")))]

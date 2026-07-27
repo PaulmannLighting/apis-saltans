@@ -15,8 +15,6 @@ Public API exports:
 
 - coordinator handle:
   - `Coordinator`
-- hardware driver trait:
-  - `Driver` (re-exported from `apis-saltans-hw`)
 - low-level transport traits:
   - `Zcl`
   - `Zdp`
@@ -44,7 +42,11 @@ Public API exports:
   - `ReadAttributeResult<T>`
   - `WriteAttributeResult`
 - scan result types:
+  - `Channel`
+  - `ChannelMask`
+  - `ScanDuration`
   - `FoundNetwork`
+  - `NetworkDescriptor`
   - `ScannedChannel`
 - event types:
   - `Event`
@@ -54,11 +56,8 @@ Public API exports:
 - error type:
   - `Error`
 
-Commands without a protocol response await acknowledged APS completion directly.
-
-The `Driver` re-export lets integration crates import the coordinator API and implement the NCP
-driver contract from one dependency. Hardware-specific event translation and startup wiring remain
-the backend's responsibility.
+Commands without a protocol response await acknowledged APS completion directly. Hardware driver
+implementations use the separate `apis-saltans-hw` `driver` feature.
 
 ## Coordinator Lifecycle
 
@@ -142,9 +141,12 @@ converts the correlated protocol response. `CommunicationResponse<Raw, T>` is th
 behind both aliases.
 
 If a payload's `TxOptions` omit `ACKNOWLEDGED_TRANSMISSION`, the coordinator does not create or await
-an APS response. Acknowledged results arrive as hardware `Event::Aps(ApsEvent::Ack(...))` or
-`Event::Aps(ApsEvent::Nak { ... })` values and are
-correlated by APS sequence number. Dropping a protocol response future stops observing its
+an APS response. Acknowledged results arrive as hardware
+`Event::Aps(ApsEvent::Ack(counter))` or `Event::Aps(ApsEvent::Nak { sequence: counter, error })`
+values and are correlated by the wrapping `u8` APS counter. Before attempting a transmission whose
+counter still has a pending response, the APS actor resolves that older response with
+`TransmissionError::Timeout`. This prevents counter reuse from silently replacing the existing
+pending caller when the counter wraps. Dropping a protocol response future stops observing its
 correlated response; it does not cancel work already handed to the hardware backend.
 
 ZCL and ZDP actors send APS metadata plus serialized payload bytes to the APS actor. The APS actor
@@ -242,12 +244,13 @@ coordinator-owned copy.
 
 ```rust,no_run
 use apis_saltans_coordinator::AddressTranslation;
+use zb_core::short_id::Device;
 use zb_core::IeeeAddress;
 
 async fn refresh_short_id(
     api: &impl AddressTranslation,
     ieee: IeeeAddress,
-) -> Result<u16, apis_saltans_coordinator::Error> {
+) -> Result<Device, apis_saltans_coordinator::Error> {
     api.ieee_address_to_short_id(ieee).await
 }
 ```
@@ -258,18 +261,19 @@ cache the result.
 ### Scanning
 
 ```rust,no_run
-use apis_saltans_coordinator::{FoundNetwork, Scanning};
+use apis_saltans_coordinator::{ChannelMask, FoundNetwork, ScanDuration, Scanning};
 
 async fn scan(api: &impl Scanning) -> Result<Vec<FoundNetwork>, apis_saltans_coordinator::Error> {
-    const ALL_CHANNELS: u32 = 0x07fff800;
-    const DEFAULT_DURATION: u8 = 5;
+    const DEFAULT_DURATION: ScanDuration =
+        ScanDuration::new(5).expect("valid scan duration");
 
-    api.scan_networks(ALL_CHANNELS, DEFAULT_DURATION).await
+    api.scan_networks(ChannelMask::ALL, DEFAULT_DURATION).await
 }
 ```
 
 `scan_networks(...)` returns discovered networks. `scan_channels(...)` returns channel scan
-observations.
+observations. Typed channel masks and scan durations reject unsupported channel bits and the
+reserved scan-duration exponent.
 
 ### Routing
 

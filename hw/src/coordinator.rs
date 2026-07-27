@@ -7,11 +7,13 @@ use std::time::Duration;
 use bytes::Bytes;
 use tokio::sync::oneshot::channel;
 use zb_aps::Data;
+use zb_core::short_id::Device;
 use zb_core::{Destination, IeeeAddress};
 use zb_zdp::SimpleDescriptor;
 
-use crate::common::{FoundNetwork, Message, ScannedChannel};
-use crate::{Error, NcpHandle};
+use crate::common::message::Message;
+use crate::common::{FoundNetwork, ScannedChannel};
+use crate::{ChannelMask, Error, NcpHandle, ScanDuration};
 
 /// Proxy trait for sending commands to a Zigbee NCP driver actor.
 pub trait Ncp {
@@ -27,7 +29,7 @@ pub trait Ncp {
     /// endpoint descriptors.
     fn get_endpoints(&self) -> impl Future<Output = Result<Box<[SimpleDescriptor]>, Error>> + Send;
 
-    /// Get the short ID of the network manager.
+    /// Get the PAN ID of the coordinator's current network.
     ///
     /// # Errors
     ///
@@ -48,8 +50,8 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn scan_networks(
         &self,
-        channel_mask: u32,
-        duration: u8,
+        channel_mask: ChannelMask,
+        duration: ScanDuration,
     ) -> impl Future<Output = Result<Vec<FoundNetwork>, Error>> + Send;
 
     /// Scan channels for activity.
@@ -59,8 +61,8 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn scan_channels(
         &self,
-        channel_mask: u32,
-        duration: u8,
+        channel_mask: ChannelMask,
+        duration: ScanDuration,
     ) -> impl Future<Output = Result<Vec<ScannedChannel>, Error>> + Send;
 
     /// Allow devices to join the network for the specified duration.
@@ -93,7 +95,7 @@ pub trait Ncp {
     /// Returns an error if the operation fails.
     fn short_id_to_ieee_address(
         &self,
-        short_id: u16,
+        short_id: Device,
     ) -> impl Future<Output = Result<IeeeAddress, Error>> + Send;
 
     /// Get the short ID of the device with the specified IEEE address.
@@ -104,12 +106,13 @@ pub trait Ncp {
     fn ieee_address_to_short_id(
         &self,
         ieee_address: IeeeAddress,
-    ) -> impl Future<Output = Result<u16, Error>> + Send;
+    ) -> impl Future<Output = Result<Device, Error>> + Send;
 
     /// Transmit an APS data frame to a destination.
     ///
-    /// APS acknowledgements are reported independently through [`crate::ApsEvent::Ack`] and
-    /// [`crate::ApsEvent::Nak`], wrapped in [`crate::Event::Aps`].
+    /// Success means the hardware backend accepted the frame. APS completion is
+    /// reported independently through [`crate::ApsEvent::Ack`] or
+    /// [`crate::ApsEvent::Nak`].
     ///
     /// # Errors
     ///
@@ -142,8 +145,8 @@ impl Ncp for NcpHandle {
 
     async fn scan_networks(
         &self,
-        channel_mask: u32,
-        duration: u8,
+        channel_mask: ChannelMask,
+        duration: ScanDuration,
     ) -> Result<Vec<FoundNetwork>, Error> {
         let (response, rx) = channel();
         self.send(Message::ScanNetworks {
@@ -157,8 +160,8 @@ impl Ncp for NcpHandle {
 
     async fn scan_channels(
         &self,
-        channel_mask: u32,
-        duration: u8,
+        channel_mask: ChannelMask,
+        duration: ScanDuration,
     ) -> Result<Vec<ScannedChannel>, Error> {
         let (response, rx) = channel();
         self.send(Message::ScanChannels {
@@ -184,14 +187,14 @@ impl Ncp for NcpHandle {
         rx.await?
     }
 
-    async fn short_id_to_ieee_address(&self, short_id: u16) -> Result<IeeeAddress, Error> {
+    async fn short_id_to_ieee_address(&self, short_id: Device) -> Result<IeeeAddress, Error> {
         let (response, rx) = channel();
         self.send(Message::TranslateIeeeAddress { short_id, response })
             .await?;
         rx.await?
     }
 
-    async fn ieee_address_to_short_id(&self, ieee_address: IeeeAddress) -> Result<u16, Error> {
+    async fn ieee_address_to_short_id(&self, ieee_address: IeeeAddress) -> Result<Device, Error> {
         let (response, rx) = channel();
         self.send(Message::TranslateShortId {
             ieee_address,
@@ -202,7 +205,14 @@ impl Ncp for NcpHandle {
     }
 
     async fn transmit(&self, destination: Destination, frame: Data<Bytes>) -> Result<(), Error> {
-        self.send(Message::Transmit { destination, frame }).await?;
+        let (response, receiver) = channel();
+        self.send(Message::Transmit {
+            destination,
+            frame,
+            response,
+        })
+        .await?;
+        receiver.await??;
         Ok(())
     }
 }

@@ -7,10 +7,12 @@ pub use self::clusters::{
 };
 pub use self::endpoints::{Endpoints, SimpleDescriptor};
 pub use self::joining::Joining;
-pub use self::local_node::{Clusters, LocalNode};
+pub use self::local_node::LocalNode;
 pub use self::node::Node;
 pub use self::routing::Routing;
-pub use self::scanning::{FoundNetwork, ScannedChannel, Scanning};
+pub use self::scanning::{
+    Channel, ChannelMask, FoundNetwork, NetworkDescriptor, ScanDuration, ScannedChannel, Scanning,
+};
 pub use self::zcl::{Zcl, ZclResponse};
 pub use self::zdp::{Zdp, ZdpResponse};
 

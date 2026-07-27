@@ -1,6 +1,6 @@
 //! Actor for transmitting APS data frames.
 
-use std::collections::VecDeque;
+use std::collections::BTreeMap;
 
 use bytes::Bytes;
 use log::{debug, warn};
@@ -56,7 +56,7 @@ impl Aps {
                 response,
             })
             .await
-            .map_err(|_| zb_hw::Error::DriverSend)?;
+            .map_err(|_| zb_hw::Error::ActorUnavailable)?;
 
         if let Some(result) = result {
             result.await?
@@ -66,19 +66,23 @@ impl Aps {
     }
 
     /// Forward a hardware APS acknowledgement to the APS actor.
-    pub async fn ack(&self, sequence: u8) -> Result<(), zb_hw::Error> {
+    pub async fn ack(&self, counter: u8) -> Result<(), zb_hw::Error> {
         self.0
-            .send(Message::Ack { sequence })
+            .send(Message::Ack { counter })
             .await
-            .map_err(|_| zb_hw::Error::DriverSend)
+            .map_err(|_| zb_hw::Error::ActorUnavailable)
     }
 
-    /// Forward a hardware APS negative acknowledgement to the APS actor.
-    pub async fn nak(&self, sequence: u8, error: zb_hw::Error) -> Result<(), zb_hw::Error> {
+    /// Forward a failed hardware APS transmission to the APS actor.
+    pub async fn nak(
+        &self,
+        counter: u8,
+        error: zb_hw::TransmissionError,
+    ) -> Result<(), zb_hw::Error> {
         self.0
-            .send(Message::Nak { sequence, error })
+            .send(Message::Nak { counter, error })
             .await
-            .map_err(|_| zb_hw::Error::DriverSend)
+            .map_err(|_| zb_hw::Error::ActorUnavailable)
     }
 }
 
@@ -87,7 +91,7 @@ impl Aps {
 pub struct Transceiver<T> {
     ncp: T,
     counter: u8,
-    responses: VecDeque<(u8, PendingResponse)>,
+    responses: BTreeMap<u8, PendingResponse>,
 }
 
 impl<T> Transceiver<T> {
@@ -97,7 +101,7 @@ impl<T> Transceiver<T> {
         Self {
             ncp,
             counter: INITIAL_COUNTER,
-            responses: VecDeque::new(),
+            responses: BTreeMap::new(),
         }
     }
 
@@ -129,28 +133,40 @@ impl<T> Transceiver<T> {
         (counter, frame)
     }
 
-    fn take_response(&mut self, counter: u8) -> Option<PendingResponse> {
-        let index = self
-            .responses
-            .iter()
-            .position(|(pending_counter, _)| *pending_counter == counter)?;
-        self.responses.remove(index).map(|(_, response)| response)
+    fn expire_pending_response(&mut self, counter: u8) {
+        let Some(sender) = self.responses.remove(&counter) else {
+            return;
+        };
+        sender
+            .send(Err(zb_hw::TransmissionError::Timeout.into()))
+            .unwrap_or_else(drop);
     }
 
-    fn handle_ack(&mut self, sequence: u8) {
-        let Some(sender) = self.take_response(sequence) else {
-            warn!("Received APS acknowledgement for unknown sequence: {sequence}");
+    fn prepare_transmission(
+        &mut self,
+        destination: Destination,
+        metadata: Metadata,
+        payload: Bytes,
+    ) -> (u8, Data<Bytes>) {
+        let (counter, frame) = self.make_frame(destination, metadata, payload);
+        self.expire_pending_response(counter);
+        (counter, frame)
+    }
+
+    fn handle_ack(&mut self, counter: u8) {
+        let Some(sender) = self.responses.remove(&counter) else {
+            warn!("Received APS acknowledgement for unknown counter: {counter}");
             return;
         };
         sender.send(Ok(())).unwrap_or_else(drop);
     }
 
-    fn handle_nak(&mut self, sequence: u8, error: zb_hw::Error) {
-        let Some(sender) = self.take_response(sequence) else {
-            warn!("Received APS negative acknowledgement for unknown sequence {sequence}: {error}");
+    fn handle_nak(&mut self, counter: u8, error: zb_hw::TransmissionError) {
+        let Some(sender) = self.responses.remove(&counter) else {
+            warn!("Received APS failure for unknown counter {counter}: {error}");
             return;
         };
-        sender.send(Err(error)).unwrap_or_else(drop);
+        sender.send(Err(error.into())).unwrap_or_else(drop);
     }
 }
 
@@ -168,25 +184,29 @@ where
                     payload,
                     response,
                 } => {
-                    let (counter, frame) = self.make_frame(destination, metadata, payload);
+                    let (counter, frame) =
+                        self.prepare_transmission(destination, metadata, payload);
 
-                    if let Some(response) = response {
-                        self.responses.push_back((counter, response));
-                    }
-
-                    if let Err(error) = self.ncp.transmit(destination, frame).await {
-                        if let Some(response) = self.take_response(counter) {
-                            response.send(Err(error)).unwrap_or_else(drop);
-                        } else {
-                            debug!("Failed to send APS frame to hardware actor: {error:?}");
+                    match self.ncp.transmit(destination, frame).await {
+                        Ok(()) => {
+                            if let Some(response) = response {
+                                self.responses.insert(counter, response);
+                            }
+                        }
+                        Err(error) => {
+                            if let Some(response) = response {
+                                response.send(Err(error)).unwrap_or_else(drop);
+                            } else {
+                                debug!("Hardware rejected APS frame: {error:?}");
+                            }
                         }
                     }
                 }
-                Message::Ack { sequence } => {
-                    self.handle_ack(sequence);
+                Message::Ack { counter } => {
+                    self.handle_ack(counter);
                 }
-                Message::Nak { sequence, error } => {
-                    self.handle_nak(sequence, error);
+                Message::Nak { counter, error } => {
+                    self.handle_nak(counter, error);
                 }
             }
         }
@@ -214,11 +234,13 @@ mod tests {
     use zb_core::destination::{Broadcast, Destination};
     use zb_core::{Endpoint, Profile, short_id};
 
-    use super::{Aps, INITIAL_COUNTER, Message, Transceiver};
+    use super::{Aps, Message, Transceiver};
     use crate::aps::Metadata;
 
     const CHANNEL_SIZE: usize = 1;
     const CLUSTER_ID: u16 = 0x1234;
+    const FIRST_COUNTER: u8 = 1;
+    const SECOND_COUNTER: u8 = 2;
     const LAST_COUNTER: u8 = u8::MAX;
     const PAYLOAD: &[u8] = &[0x12, 0x34];
 
@@ -310,15 +332,15 @@ mod tests {
     }
 
     #[test]
-    fn successful_event_resolves_matching_counter() {
+    fn acknowledgement_resolves_matching_transmission() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
                 let mut transceiver = Transceiver::new(());
                 let (response, result) = tokio::sync::oneshot::channel();
-                transceiver.responses.push_back((LAST_COUNTER, response));
+                transceiver.responses.insert(FIRST_COUNTER, response);
 
-                transceiver.handle_ack(LAST_COUNTER);
+                transceiver.handle_ack(FIRST_COUNTER);
 
                 assert!(result.await.expect("response must be available").is_ok());
                 assert!(transceiver.responses.is_empty());
@@ -326,31 +348,55 @@ mod tests {
     }
 
     #[test]
-    fn negative_acknowledgement_resolves_matching_sequence() {
+    fn negative_acknowledgement_resolves_matching_transmission() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
                 let mut transceiver = Transceiver::new(());
                 let (first_response, _first_result) = tokio::sync::oneshot::channel();
                 let (second_response, second_result) = tokio::sync::oneshot::channel();
+                transceiver.responses.insert(FIRST_COUNTER, first_response);
                 transceiver
                     .responses
-                    .push_back((INITIAL_COUNTER, first_response));
-                transceiver
-                    .responses
-                    .push_back((LAST_COUNTER, second_response));
+                    .insert(SECOND_COUNTER, second_response);
 
-                transceiver.handle_nak(LAST_COUNTER, zb_hw::Error::NotImplemented);
+                transceiver.handle_nak(SECOND_COUNTER, zb_hw::TransmissionError::Rejected);
 
                 assert!(matches!(
                     second_result.await.expect("response must be available"),
-                    Err(zb_hw::Error::NotImplemented)
+                    Err(zb_hw::Error::Transmission(
+                        zb_hw::TransmissionError::Rejected
+                    ))
                 ));
                 assert_eq!(transceiver.responses.len(), CHANNEL_SIZE);
-                assert_eq!(
-                    transceiver.responses.front().map(|(counter, _)| *counter),
-                    Some(INITIAL_COUNTER)
+                assert!(transceiver.responses.contains_key(&FIRST_COUNTER));
+            });
+    }
+
+    #[test]
+    fn reusing_counter_times_out_pending_transmission() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let mut transceiver = Transceiver::new(());
+                let (response, result) = tokio::sync::oneshot::channel();
+                transceiver.responses.insert(LAST_COUNTER, response);
+                transceiver.counter = LAST_COUNTER;
+
+                let (counter, _) = transceiver.prepare_transmission(
+                    destination(),
+                    metadata(TxOptions::empty()),
+                    Bytes::new(),
                 );
+                assert_eq!(counter, LAST_COUNTER);
+
+                assert!(matches!(
+                    result.await.expect("response must be available"),
+                    Err(zb_hw::Error::Transmission(
+                        zb_hw::TransmissionError::Timeout
+                    ))
+                ));
+                assert!(transceiver.responses.is_empty());
             });
     }
 }

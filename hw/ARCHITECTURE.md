@@ -6,8 +6,8 @@ and receive results through one-shot channels carried by the actor messages.
 
 ## Boundaries
 
-- The `driver` feature exposes the `Driver` contract, actor handles, common events and errors, and
-  protocol crate re-exports for backend implementations.
+- The `types` feature exposes opaque actor handles, common events and errors, and typed scan values.
+- The `driver` feature adds the `Driver` contract and protocol crate re-exports.
 - The `coordinator` feature adds the caller-facing `Ncp` proxy trait.
 - Every driver supplies its local `SimpleDescriptor` values through `Driver::get_endpoints`.
 - Backends own transport startup and hardware-event conversion.
@@ -29,8 +29,9 @@ flowchart LR
     A -->|Driver methods| D
 ```
 
-`NcpHandle` is a bounded Tokio MPSC sender. `SealedDriver` owns the receive loop and dispatches each
-`Message` variant to the corresponding `Driver` method.
+`NcpHandle` is an opaque wrapper around a bounded Tokio MPSC sender. `Driver::into_actor` returns
+the handle plus an unspawned future that owns the receive loop and dispatches each private `Message`
+variant to the corresponding `Driver` method.
 
 ## Transmission Flow
 
@@ -38,6 +39,7 @@ The transmit message carries:
 
 - the NWK `zb_core::Destination`
 - a complete `zb_aps::Data<bytes::Bytes>` frame
+- a one-shot backend-acceptance response
 
 ```mermaid
 sequenceDiagram
@@ -48,27 +50,29 @@ sequenceDiagram
     participant E as Hardware event receiver
 
     APS->>H: transmit(destination, frame)
-    H->>A: Message::Transmit
+    H->>A: Message::Transmit with response
     A->>D: transmit(destination, frame)
-    D-->>A: request handed to hardware
+    D-->>A: accepted
+    A-->>H: acceptance response
     opt acknowledged transmission completes
-        D-->>E: Event::Aps with Ack or Nak
+        D-->>E: Event::Aps with APS counter and result
     end
 ```
 
-`Ncp::transmit` only awaits insertion into the driver actor mailbox. The transmit command never
-carries a response channel. For acknowledged APS transmissions the backend later emits
-`Event::Aps(ApsEvent::Ack(sequence))` or
-`Event::Aps(ApsEvent::Nak { sequence, error })`. Unacknowledged transmissions emit no APS
-acknowledgement event.
+`Ncp::transmit` awaits backend acceptance. For acknowledged APS transmissions the backend later
+emits `Event::Aps(ApsEvent::Ack(counter))` or
+`Event::Aps(ApsEvent::Nak { sequence: counter, error })`. The hardware interface deliberately uses
+the wrapping eight-bit APS counter already present in the frame because arbitrary drivers cannot be
+expected to preserve another correlation identifier. The coordinator handles collisions when it
+reuses a counter. Unacknowledged transmissions emit no APS completion event.
 
-`Driver::transmit` initiates the backend APS operation and returns `()`. There is no nested or opaque
-completion future.
+`Driver::transmit` reports whether the backend accepted the frame. Eventual acknowledged completion
+remains asynchronous.
 
 ## Other Commands
 
-All non-transmit commands retain a required response channel. The `Ncp` proxy creates the one-shot
-pair, enqueues the message, and awaits the result.
+Every command carries a required response channel. The `Ncp` proxy creates the one-shot pair,
+enqueues the message, and awaits the result.
 
 | `Ncp` method | `Message` variant | `Driver` method |
 | --- | --- | --- |
@@ -94,14 +98,17 @@ flowchart TD
     C --> E[common/error.rs]
     C --> V[common/event.rs]
     C --> M[common/message.rs]
+    M --> CH[common/message/channel.rs]
+    M --> CM[common/message/channel_mask.rs]
+    M --> SD[common/message/scan_duration.rs]
     V --> AV[common/event/aps.rs]
     V --> DV[common/event/device.rs]
     V --> NV[common/event/network.rs]
     V --> RV[common/event/route_error.rs]
 ```
 
-`common/message.rs` defines the private actor protocol and handle aliases.
-`common/driver.rs` defines the public driver contract plus the blanket actor runtime.
+`common/message.rs` defines the private actor protocol and opaque handles.
+`common/driver.rs` defines the public driver contract plus the actor runtime.
 `common/event.rs` groups the APS, device, and network event categories.
 `coordinator.rs` defines the `Ncp` proxy implemented for `NcpHandle`.
 

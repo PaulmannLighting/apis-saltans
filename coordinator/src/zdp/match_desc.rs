@@ -2,7 +2,7 @@
 
 use zb_core::ByteSizedVec;
 use zb_core::node::LogicalType;
-use zb_core::short_id::ShortId;
+use zb_core::short_id::{Device, ShortId};
 use zb_zdp::{MatchDescReq, SimpleDescriptor, Status};
 
 const PROFILE_ID_WILDCARD: u16 = u16::MAX;
@@ -13,7 +13,7 @@ pub(super) enum Action {
     MatchLocalDescriptors,
 
     /// Resolve a nonlocal address against the NCP's known devices.
-    MatchRemoteDevice(u16),
+    MatchRemoteDevice(Device),
 
     /// Send an error response with an empty match list.
     RespondWithError(Status),
@@ -46,7 +46,10 @@ pub(super) fn action(
         };
     }
 
-    Action::MatchRemoteDevice(nwk_addr_of_interest)
+    Device::try_from(nwk_addr_of_interest).map_or(
+        Action::RespondWithError(Status::InvalidRequestType),
+        Action::MatchRemoteDevice,
+    )
 }
 
 /// Collect each matching endpoint once.
@@ -213,7 +216,7 @@ mod tests {
         ));
         assert!(matches!(
             action(LogicalType::Router, REMOTE_NWK_ADDRESS, false),
-            Action::MatchRemoteDevice(REMOTE_NWK_ADDRESS)
+            Action::MatchRemoteDevice(address) if address.as_u16() == REMOTE_NWK_ADDRESS
         ));
     }
 }

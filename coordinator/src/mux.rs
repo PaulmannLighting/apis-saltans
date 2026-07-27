@@ -66,6 +66,7 @@ impl Mux {
             HardwareEvent::Network(event) => self.multiplex_network_event(event).await,
             HardwareEvent::Device(event) => self.multiplex_device_event(event).await,
             HardwareEvent::Aps(event) => self.multiplex_aps_event(event).await,
+            _ => trace!("Ignoring unsupported hardware event"),
         }
     }
 
@@ -120,6 +121,7 @@ impl Mux {
                     .await
                     .unwrap_or_else(drop);
             }
+            _ => trace!("Ignoring unsupported hardware network event"),
         }
     }
 
@@ -149,6 +151,7 @@ impl Mux {
                     .await
                     .unwrap_or_else(drop);
             }
+            _ => trace!("Ignoring unsupported hardware device event"),
         }
     }
 
@@ -158,18 +161,19 @@ impl Mux {
                 trace!("Message received: {envelope:?}");
                 self.handle_nwk_envelope(envelope).await;
             }
-            HardwareApsEvent::Ack(sequence) => {
-                trace!("APS acknowledgement received for sequence: {sequence}");
-                self.aps.ack(sequence).await.unwrap_or_else(|error| {
-                    trace!("Failed to send APS acknowledgement: {error}");
+            HardwareApsEvent::Ack(counter) => {
+                trace!("APS transmission acknowledged: {counter}");
+                self.aps.ack(counter).await.unwrap_or_else(|error| {
+                    trace!("Failed to forward APS acknowledgement: {error}");
                 });
             }
             HardwareApsEvent::Nak { sequence, error } => {
-                trace!("APS negative acknowledgement received for sequence {sequence}: {error}");
+                trace!("APS transmission failed for counter {sequence}: {error}");
                 self.aps.nak(sequence, error).await.unwrap_or_else(|error| {
-                    trace!("Failed to send APS negative acknowledgement: {error}");
+                    trace!("Failed to forward APS failure: {error}");
                 });
             }
+            _ => trace!("Ignoring unsupported hardware APS event"),
         }
     }
 

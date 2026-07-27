@@ -1,5 +1,4 @@
 use zb_core::IeeeAddress;
-pub use zb_hw::Clusters;
 use zb_hw::Ncp;
 use zb_zdp::SimpleDescriptor;
 
