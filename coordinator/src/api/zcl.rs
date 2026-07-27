@@ -11,7 +11,8 @@ use crate::{CommunicationResponse, Coordinator, Error};
 
 /// A deferred typed ZCL response.
 ///
-/// Awaiting this future waits for the correlated ZCL frame and converts it to `T`.
+/// Awaiting this future completes the APS transmission, waits for the correlated ZCL frame, and
+/// converts it to `T`.
 pub type ZclResponse<T> = CommunicationResponse<Cluster, T>;
 
 /// Trait for sending ZCL commands.
@@ -36,15 +37,15 @@ pub trait Zcl {
 
     /// Send a ZCL command to a device endpoint and wait for its typed response.
     ///
-    /// The returned outer future queues the request, awaits its acknowledged APS transmission, and
-    /// yields a [`ZclResponse`]. Await that response separately to receive and convert the
-    /// correlated ZCL response frame.
+    /// The returned outer future queues the request and yields a [`ZclResponse`]. Await that
+    /// response separately to complete the APS transmission, receive the correlated ZCL response
+    /// frame, and convert it.
     ///
     /// # Errors
     ///
     /// The outer future returns an [`Error`] if the command cannot be queued. Awaiting the returned
-    /// [`ZclResponse`] returns an [`Error`] if transmission or reception fails, or if the raw frame
-    /// cannot be converted into `T::Response`.
+    /// [`ZclResponse`] returns an [`Error`] if APS transmission or protocol reception fails, or if
+    /// the raw frame cannot be converted into `T::Response`.
     fn communicate<T>(
         &self,
         destination: Device,
@@ -73,7 +74,7 @@ impl Zcl for Sender<Message> {
                 response,
             })
             .await?;
-            result.await??;
+            result.await??.await?;
             Ok(())
         }
     }

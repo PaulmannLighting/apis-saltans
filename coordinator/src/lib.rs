@@ -15,9 +15,10 @@
 //! requests and exposes them through [`LocalNode::get_endpoints`]; they are no longer passed to
 //! [`Coordinator::start`].
 //!
-//! ZCL transmissions directly await acknowledged APS completion. ZCL and ZDP communication
-//! methods then return a protocol-specific [`ZclResponse`] or [`ZdpResponse`] that waits for the
-//! correlated command. All operations report failures through the coordinator's [`Error`] type.
+//! ZCL transmissions await a deferred APS completion outside the protocol actor. ZCL and ZDP
+//! communication methods return a protocol-specific [`ZclResponse`] or [`ZdpResponse`] that first
+//! completes APS transmission and then waits for the correlated command. All operations report
+//! failures through the coordinator's [`Error`] type.
 
 use const_env::env_item;
 

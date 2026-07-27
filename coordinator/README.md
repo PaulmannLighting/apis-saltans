@@ -222,10 +222,10 @@ let response = api.communicate(device, request).await?;
 let typed_response = response.await?;
 ```
 
-The communication method queues the command and directly awaits its APS acknowledgement before
-returning `ZclResponse<T>` or `ZdpResponse<T>`. Awaiting that response future then receives and
-converts the correlated protocol response. `CommunicationResponse<Raw, T>` is the generic future
-behind both aliases.
+The communication method queues the command and returns `ZclResponse<T>` or `ZdpResponse<T>`
+without making the protocol actor wait for an APS acknowledgement. Awaiting that response future
+first completes the deferred APS transmission and then receives and converts the correlated
+protocol response. `CommunicationResponse<Raw, T>` is the generic future behind both aliases.
 
 The coordinator creates and awaits an APS response only when a payload's `TxOptions` contain
 `ACKNOWLEDGED_TRANSMISSION` and its destination is a unicast device. Group and broadcast
@@ -241,7 +241,8 @@ handed to the hardware backend.
 
 ZCL and ZDP actors send APS metadata plus serialized payload bytes to the APS actor. The APS actor
 owns the APS sequence counter and constructs the complete `Data<Bytes>` frame immediately before
-hardware transmission.
+hardware transmission. `Aps::transmit` returns a deferred result after actor handoff, which the
+protocol actors forward rather than awaiting in their command loops.
 
 `Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and
 expose their source errors and can be constructed through `From`; the send variant intentionally
@@ -611,8 +612,9 @@ response. Its await queues the command and, for acknowledged unicast transmissio
 hardware result. Group and broadcast transmissions do not request acknowledgements.
 
 Use `Zcl::communicate(...)` for commands implementing `ExpectResponse<zb_zcl::Cluster>`. Its first
-await confirms APS transmission and returns `ZclResponse<T::Response>`. Awaiting that response waits
-for a correlated ZCL frame and converts the frame to the declared response type.
+await queues the command and returns `ZclResponse<T::Response>`. Awaiting that response completes
+the APS transmission, waits for a correlated ZCL frame, and converts the frame to the declared
+response type.
 
 Use `Zdp::communicate(...)` for ZDP requests implementing `ExpectResponse<zb_zdp::Command>`. It
 returns the equivalent `ZdpResponse<T::Response>`. The composed traits above are thin wrappers over

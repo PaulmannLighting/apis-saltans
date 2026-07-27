@@ -10,7 +10,8 @@ use crate::{CommunicationResponse, Coordinator, Error};
 
 /// A deferred typed ZDP response.
 ///
-/// Awaiting this future waits for the correlated ZDP command and converts it to `T`.
+/// Awaiting this future completes the APS transmission, waits for the correlated ZDP command, and
+/// converts it to `T`.
 pub type ZdpResponse<T> = CommunicationResponse<Command, T>;
 
 /// Trait for sending ZDP requests.
@@ -20,9 +21,9 @@ pub type ZdpResponse<T> = CommunicationResponse<Command, T>;
 pub trait Zdp {
     /// Send a ZDP request to a device and wait for its typed response.
     ///
-    /// The returned outer future queues the request, awaits its acknowledged APS transmission, and
-    /// yields a [`ZdpResponse`]. Await that response separately to receive and convert the
-    /// correlated ZDP response command.
+    /// The returned outer future queues the request and yields a [`ZdpResponse`]. Await that
+    /// response separately to complete the APS transmission, receive the correlated ZDP response
+    /// command, and convert it.
     ///
     /// # Errors
     ///

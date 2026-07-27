@@ -8,7 +8,8 @@ use zb_zcl::{Cluster, Frame};
 
 pub use super::Payload;
 use super::Subscription;
-use crate::response::InternalCommunicationResponse;
+use crate::aps::TransmissionResponse;
+use crate::response::ApsProtocolResponse;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -33,8 +34,8 @@ pub enum Message {
         destination: Destination,
         /// ZCL payload and its transmission metadata.
         payload: Payload,
-        /// The response channel.
-        response: Sender<Result<(), Error>>,
+        /// Channel used to return the deferred APS transmission result.
+        response: Sender<Result<TransmissionResponse, Error>>,
     },
 
     /// Reply to a received command using its ZCL sequence number.
@@ -45,8 +46,8 @@ pub enum Message {
         sequence_number: u8,
         /// ZCL payload and its transmission metadata.
         payload: Payload,
-        /// Channel used to return the APS transmission result.
-        response: Sender<Result<(), Error>>,
+        /// Channel used to return the deferred APS transmission result.
+        response: Sender<Result<TransmissionResponse, Error>>,
     },
 
     /// Communicate a unicast with an expected response.
@@ -56,6 +57,6 @@ pub enum Message {
         /// ZCL payload and its transmission metadata.
         payload: Payload,
         /// The response channel.
-        response: Sender<Result<InternalCommunicationResponse<Cluster>, Error>>,
+        response: Sender<Result<ApsProtocolResponse<Cluster>, Error>>,
     },
 }

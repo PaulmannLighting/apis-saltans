@@ -6,7 +6,7 @@ use zb_nwk::Source;
 use zb_zdp::{Command, Frame};
 
 use super::Payload;
-use crate::response::InternalCommunicationResponse;
+use crate::response::ApsProtocolResponse;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -31,6 +31,6 @@ pub enum Message {
         /// The payload.
         payload: Payload,
         /// The response channel.
-        response: Sender<Result<InternalCommunicationResponse<Command>, Error>>,
+        response: Sender<Result<ApsProtocolResponse<Command>, Error>>,
     },
 }

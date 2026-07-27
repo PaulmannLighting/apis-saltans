@@ -5,26 +5,25 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::Error;
-use crate::response::InternalCommunicationResponse;
+use crate::response::ApsProtocolResponse;
 
 /// A deferred, typed response to a ZCL or ZDP request.
 ///
-/// The communication method awaits the APS transmission before returning this future. Awaiting
-/// this future waits for the correlated raw response of type `T` and converts it to `U` with
-/// [`TryFrom`]. Channel failures are returned as [`Error`]; a failed conversion is returned as
-/// [`Error::InvalidResponseType`].
+/// Awaiting this future first completes the deferred APS transmission, then waits for the
+/// correlated raw response of type `T` and converts it to `U` with [`TryFrom`]. Channel failures
+/// are returned as [`Error`]; a failed conversion is returned as [`Error::InvalidResponseType`].
 ///
 /// Use the protocol-specific [`crate::ZclResponse`] and [`crate::ZdpResponse`] aliases in public
 /// API signatures.
 #[must_use = "futures do nothing unless polled"]
 #[derive(Debug)]
 pub struct CommunicationResponse<T, U> {
-    internal: InternalCommunicationResponse<T>,
+    internal: ApsProtocolResponse<T>,
     target_type: PhantomData<U>,
 }
 
-impl<T, U> From<InternalCommunicationResponse<T>> for CommunicationResponse<T, U> {
-    fn from(internal: InternalCommunicationResponse<T>) -> Self {
+impl<T, U> From<ApsProtocolResponse<T>> for CommunicationResponse<T, U> {
+    fn from(internal: ApsProtocolResponse<T>) -> Self {
         Self {
             internal,
             target_type: PhantomData,

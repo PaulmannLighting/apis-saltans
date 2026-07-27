@@ -21,8 +21,8 @@ pub use self::subscription::{
     SubscriptionReceiver,
 };
 use super::index::Index;
-use crate::aps::Aps;
-use crate::response::InternalCommunicationResponse;
+use crate::aps::{Aps, TransmissionResponse};
+use crate::response::ApsProtocolResponse;
 use crate::{Event, MPSC_CHANNEL_SIZE};
 
 mod message;
@@ -171,11 +171,11 @@ impl Transceiver {
         delivered
     }
 
-    /// Send a ZCL unicast message.
+    /// Queue a ZCL message and return its deferred APS transmission result.
     ///
     /// # Returns
     ///
-    /// Returns the ZCL sequence number.
+    /// Returns the deferred APS transmission response.
     ///
     /// # Errors
     ///
@@ -184,7 +184,7 @@ impl Transceiver {
         &mut self,
         destination: Destination,
         payload: Payload,
-    ) -> Result<(), zb_hw::Error> {
+    ) -> Result<TransmissionResponse, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
         self.aps
@@ -196,13 +196,13 @@ impl Transceiver {
             .await
     }
 
-    /// Send a ZCL command with an explicitly selected transaction sequence number.
+    /// Queue a ZCL command with an explicitly selected transaction sequence number.
     async fn transmit_with_sequence(
         &self,
         destination: Destination,
         payload: Payload,
         sequence_number: u8,
-    ) -> Result<(), zb_hw::Error> {
+    ) -> Result<TransmissionResponse, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
         let zcl_frame = Self::make_zcl_frame_with_sequence(zcl_metadata, command, sequence_number);
         self.aps
@@ -227,7 +227,7 @@ impl Transceiver {
         &mut self,
         device: Device,
         datagram: Payload,
-    ) -> Result<InternalCommunicationResponse<Cluster>, zb_hw::Error> {
+    ) -> Result<ApsProtocolResponse<Cluster>, zb_hw::Error> {
         let (aps_metadata, zcl_metadata, command) = datagram.into_parts();
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
         let index = Index::from_zcl_command(
@@ -241,12 +241,15 @@ impl Transceiver {
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
 
-        if let Err(error) = self.aps.transmit(destination, aps_metadata, payload).await {
-            self.responses.remove(&index);
-            return Err(error);
-        }
+        let transmission = match self.aps.transmit(destination, aps_metadata, payload).await {
+            Ok(transmission) => transmission,
+            Err(error) => {
+                self.responses.remove(&index);
+                return Err(error);
+            }
+        };
 
-        Ok(InternalCommunicationResponse::new(rx))
+        Ok(ApsProtocolResponse::new(transmission, rx))
     }
 
     fn make_zcl_frame(&mut self, metadata: Metadata, command: Bytes) -> Frame<Bytes> {

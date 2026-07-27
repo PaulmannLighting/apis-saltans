@@ -60,8 +60,9 @@ Transmit {
 }
 ```
 
-The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method creates a
-caller response channel only when the metadata contains
+The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method queues the
+actor message and returns a deferred `TransmissionResponse`. It creates an acknowledgement channel
+only when the metadata contains
 `TxOptions::ACKNOWLEDGED_TRANSMISSION` and the destination is a unicast device. The same predicate
 controls the APS header acknowledgement-request bit. Group and broadcast transmissions never
 request or await APS acknowledgements. Its completion methods forward hardware APS events from the
@@ -86,6 +87,7 @@ sequenceDiagram
 
     P->>P: serialize protocol payload
     P->>A: Transmit destination, metadata, payload
+    A-->>P: deferred transmission response
     A->>A: assign counter and build Data&lt;Bytes&gt;
     A->>H: transmit destination, frame
     H-->>A: accepted
@@ -96,7 +98,7 @@ sequenceDiagram
         end
         H-->>M: Event::Aps with counter and result
         M-->>A: APS result
-        A-->>P: completed APS result
+        A-->>P: resolve deferred APS result
     end
 ```
 
@@ -113,10 +115,12 @@ The ZCL actor:
 - sends replies with an explicitly supplied ZCL transaction sequence
 - routes unmatched received commands to the application event channel
 
-For `transmit`, the actor returns only after the APS helper completes. For `communicate`, it inserts
-the correlation entry before transmitting, removes it if transmission fails, and returns a
-protocol-only response receiver after successful APS completion. Reply transmission uses the same
-APS path but preserves the request transaction sequence instead of allocating a new one.
+For `transmit` and reply messages, the actor forwards the deferred APS result to the caller. For
+`communicate`, it inserts the correlation entry before transmitting and returns an
+`ApsProtocolResponse` containing both the deferred APS result and protocol receiver. The
+actor therefore continues processing commands while acknowledgements are pending. Awaiting the
+internal response completes APS transmission before polling the correlated protocol response. Reply
+transmission preserves the request transaction sequence instead of allocating a new one.
 
 ## OTA Upgrade Server
 
@@ -226,6 +230,6 @@ flowchart TD
     ZDP -->|communicate| ZDPR
 ```
 
-Command helpers that do not expect a protocol response return `Result<(), Error>` directly.
-Communication methods first await APS completion and then return `ZclResponse<T>` or
-`ZdpResponse<T>` for the application-level response.
+Command helpers that do not expect a protocol response return `Result<(), Error>` after completing
+the deferred APS result outside the protocol actor. Communication methods return `ZclResponse<T>`
+or `ZdpResponse<T>` containing both the deferred APS completion and the application-level response.

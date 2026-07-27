@@ -30,7 +30,7 @@ use self::node_desc::{
 pub use self::payload::Payload;
 use super::index::Index;
 use crate::aps::Aps;
-use crate::response::InternalCommunicationResponse;
+use crate::response::ApsProtocolResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
 mod match_desc;
@@ -161,7 +161,7 @@ where
         &mut self,
         device: Device,
         payload: Payload,
-    ) -> Result<InternalCommunicationResponse<Command>, zb_hw::Error> {
+    ) -> Result<ApsProtocolResponse<Command>, zb_hw::Error> {
         let (metadata, payload) = payload.into_parts();
         let seq = self.next_seq();
         let index = Index::from_zdp_command(device, seq, metadata);
@@ -171,12 +171,15 @@ where
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
 
-        if let Err(error) = self.aps.transmit(destination, metadata, payload).await {
-            self.responses.remove(&index);
-            return Err(error);
-        }
+        let transmission = match self.aps.transmit(destination, metadata, payload).await {
+            Ok(transmission) => transmission,
+            Err(error) => {
+                self.responses.remove(&index);
+                return Err(error);
+            }
+        };
 
-        Ok(InternalCommunicationResponse::new(rx))
+        Ok(ApsProtocolResponse::new(transmission, rx))
     }
 
     async fn respond(&self, seq: u8, device: Device, payload: Payload) -> Result<(), zb_hw::Error> {
@@ -186,6 +189,7 @@ where
         self.aps
             .transmit(destination, metadata, zdp_frame.to_le_stream().collect())
             .await
+            .map(drop)
     }
 
     /// Process a Match Descriptor request and unicast any required response to its originator.

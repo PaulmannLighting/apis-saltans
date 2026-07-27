@@ -12,6 +12,7 @@ pub use self::image::{
 };
 pub use self::message::{Message, UpdateError, UpdateResult};
 pub use self::server::Server;
+use crate::aps::TransmissionResponse;
 use crate::zcl::{self, Metadata, Payload};
 
 mod image;
@@ -77,16 +78,24 @@ async fn send_zcl(
 }
 
 async fn receive_transmission_result(
-    response: oneshot::Receiver<Result<(), zb_hw::Error>>,
+    response: oneshot::Receiver<Result<TransmissionResponse, zb_hw::Error>>,
 ) -> Option<()> {
-    match response.await {
-        Ok(Ok(())) => Some(()),
+    let transmission = match response.await {
+        Ok(Ok(transmission)) => transmission,
         Ok(Err(error)) => {
-            warn!("OTA transmission failed: {error}");
-            None
+            warn!("Failed to queue OTA transmission: {error}");
+            return None;
         }
         Err(error) => {
             warn!("Failed to receive OTA transmission result: {error}");
+            return None;
+        }
+    };
+
+    match transmission.await {
+        Ok(()) => Some(()),
+        Err(error) => {
+            warn!("OTA transmission failed: {error}");
             None
         }
     }
@@ -114,7 +123,10 @@ mod tests {
     };
     use zb_zcl::{Command, Frame, Header, Scope};
 
-    use super::{Image, Message, OTA_PROFILE, ParseImage, Server, UpdateError, UpdateResult};
+    use super::{
+        Image, Message, OTA_PROFILE, ParseImage, Server, TransmissionResponse, UpdateError,
+        UpdateResult,
+    };
     use crate::zcl::{self, Payload};
     use crate::{Error, Ota};
 
@@ -601,11 +613,13 @@ mod tests {
         let zcl::Message::Transmit { response, .. } = message else {
             panic!("expected OTA transmission");
         };
+        let (completion, transmission) = deferred_transmission();
         assert!(
-            response
+            completion
                 .send(Err(zb_hw::Error::Unsupported(zb_hw::Operation::Transmit)))
                 .is_ok()
         );
+        assert!(response.send(Ok(transmission)).is_ok());
     }
 
     async fn hold_next_transmission(
@@ -618,7 +632,9 @@ mod tests {
         let zcl::Message::Transmit { response, .. } = message else {
             panic!("expected OTA transmission");
         };
-        response
+        let (completion, transmission) = deferred_transmission();
+        assert!(response.send(Ok(transmission)).is_ok());
+        completion
     }
 
     fn reply_bytes(message: ObservedZcl) -> (u8, Bytes) {
@@ -644,8 +660,20 @@ mod tests {
         (sequence_number, metadata, bytes)
     }
 
-    fn complete_transmission(response: tokio::sync::oneshot::Sender<Result<(), zb_hw::Error>>) {
-        assert!(response.send(Ok(())).is_ok());
+    fn complete_transmission(
+        response: tokio::sync::oneshot::Sender<Result<TransmissionResponse, zb_hw::Error>>,
+    ) {
+        let (completion, transmission) = deferred_transmission();
+        assert!(completion.send(Ok(())).is_ok());
+        assert!(response.send(Ok(transmission)).is_ok());
+    }
+
+    fn deferred_transmission() -> (
+        tokio::sync::oneshot::Sender<Result<(), zb_hw::Error>>,
+        TransmissionResponse,
+    ) {
+        let (completion, result) = tokio::sync::oneshot::channel();
+        (completion, TransmissionResponse::new(Some(result)))
     }
 
     fn run_test<T>(future: T)

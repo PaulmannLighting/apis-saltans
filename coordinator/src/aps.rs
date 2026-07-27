@@ -14,10 +14,12 @@ use zb_hw::Ncp;
 
 pub use self::message::Message;
 pub use self::metadata::Metadata;
+pub use self::transmission_response::TransmissionResponse;
 use crate::MPSC_CHANNEL_SIZE;
 
 mod message;
 mod metadata;
+mod transmission_response;
 
 const INITIAL_COUNTER: u8 = 0;
 
@@ -34,13 +36,16 @@ impl Aps {
         Self(sender)
     }
 
-    /// Transmit an APS frame and, when it requests an acknowledgement, await the hardware result.
+    /// Queue an APS frame and return its deferred transmission result.
+    ///
+    /// The returned response completes immediately for transmissions without an APS
+    /// acknowledgement. Acknowledged unicast responses wait for the corresponding hardware event.
     pub async fn transmit(
         &self,
         destination: Destination,
         metadata: Metadata,
         payload: Bytes,
-    ) -> Result<(), zb_hw::Error> {
+    ) -> Result<TransmissionResponse, zb_hw::Error> {
         let (response, result) = if metadata.acknowledged_for(destination) {
             let (response, result) = channel();
             (Some(response), Some(result))
@@ -58,11 +63,7 @@ impl Aps {
             .await
             .map_err(|_| zb_hw::Error::ActorUnavailable)?;
 
-        if let Some(result) = result {
-            result.await?
-        } else {
-            Ok(())
-        }
+        Ok(TransmissionResponse::new(result))
     }
 
     /// Forward a hardware APS acknowledgement to the APS actor.
@@ -284,7 +285,9 @@ mod tests {
 
                 aps.transmit(unicast_destination(), metadata, Bytes::from_static(PAYLOAD))
                     .await
-                    .expect("APS actor channel must be available");
+                    .expect("APS actor channel must be available")
+                    .await
+                    .expect("unacknowledged transmission completes immediately");
 
                 let Message::Transmit {
                     metadata: sent_metadata,
@@ -302,7 +305,7 @@ mod tests {
     }
 
     #[test]
-    fn awaits_hardware_response_for_acknowledged_transmission() {
+    fn returns_deferred_hardware_response_for_acknowledged_transmission() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
@@ -322,12 +325,24 @@ mod tests {
                     panic!("expected APS transmit message");
                 };
 
+                let deferred = task
+                    .await
+                    .expect("task must complete")
+                    .expect("APS actor channel must be available");
+                let completion = tokio::spawn(deferred);
+                assert!(!completion.is_finished());
+
                 response
-                    .expect("acknowledged frame must have a response")
+                    .expect("acknowledged frame must carry a response")
                     .send(Ok(()))
                     .expect("APS response receiver must be available");
 
-                assert!(task.await.expect("task must complete").is_ok());
+                assert!(
+                    completion
+                        .await
+                        .expect("response task must complete")
+                        .is_ok()
+                );
             });
     }
 
@@ -346,7 +361,9 @@ mod tests {
                         Bytes::new(),
                     )
                     .await
-                    .expect("APS actor channel must be available");
+                    .expect("APS actor channel must be available")
+                    .await
+                    .expect("non-unicast transmission completes immediately");
 
                     let Message::Transmit { response, .. } =
                         receiver.recv().await.expect("message must be available")
