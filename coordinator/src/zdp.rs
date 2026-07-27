@@ -171,7 +171,11 @@ where
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
 
-        let transmission = match self.aps.transmit(destination, metadata, payload).await {
+        let transmission = match self
+            .aps
+            .transmit(destination, Endpoint::Data, metadata, payload)
+            .await
+        {
             Ok(transmission) => transmission,
             Err(error) => {
                 self.responses.remove(&index);
@@ -187,7 +191,12 @@ where
         let zdp_frame = Frame::new(seq, payload);
         let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
         self.aps
-            .transmit(destination, metadata, zdp_frame.to_le_stream().collect())
+            .transmit(
+                destination,
+                Endpoint::Data,
+                metadata,
+                zdp_frame.to_le_stream().collect(),
+            )
             .await
             .map(drop)
     }

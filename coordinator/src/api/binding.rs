@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use zb_core::endpoint::Application;
 use zb_core::{Cluster, Endpoint, FullAddress};
 use zb_zdp::{BindReq, Destination};
 
@@ -76,16 +77,11 @@ pub trait Binding {
             let mut results = BTreeMap::new();
             let dst_address = self.get_ieee_address().await?;
 
-            for (dst_endpoint, descriptor) in self
-                .get_endpoints()
-                .await?
-                .into_iter()
-                .enumerate()
-                .map_while(|(index, descriptor)| {
-                    let endpoint = u8::try_from(index.checked_add(1)?).ok()?;
-                    Some((Endpoint::from(endpoint), descriptor))
-                })
-            {
+            for descriptor in self.get_endpoints().await? {
+                let Some(dst_endpoint) = application_endpoint(&descriptor) else {
+                    continue;
+                };
+
                 let input_clusters: BTreeSet<_> = descriptor
                     .input_clusters()
                     .iter()
@@ -110,7 +106,7 @@ pub trait Binding {
                         endpoint_clusters_to_bind,
                         Destination::Extended {
                             address: dst_address,
-                            endpoint: dst_endpoint,
+                            endpoint: dst_endpoint.into(),
                         },
                     )
                     .await,
@@ -146,5 +142,53 @@ where
         .await?
         .status()
         .ensure_success()
+    }
+}
+
+/// Return the application endpoint declared by a local simple descriptor.
+fn application_endpoint(descriptor: &zb_zdp::SimpleDescriptor) -> Option<Application> {
+    let Endpoint::Application(endpoint) = descriptor.endpoint() else {
+        return None;
+    };
+    Some(endpoint)
+}
+
+#[cfg(test)]
+mod tests {
+    use zb_core::endpoint::Application;
+    use zb_core::{Endpoint, Profile};
+    use zb_zdp::{AppFlags, Clusters, SimpleDescriptor};
+
+    use super::application_endpoint;
+
+    const DECLARED_ENDPOINT: u8 = 0x0B;
+    const DEVICE_ID: u16 = 0x0100;
+
+    #[test]
+    fn uses_endpoint_declared_by_descriptor() {
+        let descriptor = descriptor(Endpoint::from(DECLARED_ENDPOINT));
+
+        assert_eq!(
+            application_endpoint(&descriptor),
+            Application::new(DECLARED_ENDPOINT)
+        );
+    }
+
+    #[test]
+    fn ignores_non_application_descriptor_endpoint() {
+        let descriptor = descriptor(Endpoint::Data);
+
+        assert_eq!(application_endpoint(&descriptor), None);
+    }
+
+    fn descriptor(endpoint: Endpoint) -> SimpleDescriptor {
+        SimpleDescriptor::new(
+            endpoint,
+            Profile::ZigbeeHomeAutomation,
+            DEVICE_ID,
+            AppFlags::empty(),
+            Clusters::new(),
+            Clusters::new(),
+        )
     }
 }

@@ -3,13 +3,13 @@
 use std::collections::BTreeMap;
 
 use bytes::Bytes;
-use log::{debug, warn};
+use log::warn;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
 use zb_aps::data::Header;
 use zb_aps::{Data, TxOptions};
-use zb_core::Destination;
+use zb_core::{Destination, Endpoint};
 use zb_hw::Ncp;
 
 pub use self::message::Message;
@@ -38,24 +38,21 @@ impl Aps {
 
     /// Queue an APS frame and return its deferred transmission result.
     ///
-    /// The returned response completes immediately for transmissions without an APS
-    /// acknowledgement. Acknowledged unicast responses wait for the corresponding hardware event.
+    /// The returned response first waits for backend acceptance. For an acknowledged unicast, it
+    /// then waits for the corresponding hardware completion event.
     pub async fn transmit(
         &self,
         destination: Destination,
+        source_endpoint: Endpoint,
         metadata: Metadata,
         payload: Bytes,
     ) -> Result<TransmissionResponse, zb_hw::Error> {
-        let (response, result) = if metadata.acknowledged_for(destination) {
-            let (response, result) = channel();
-            (Some(response), Some(result))
-        } else {
-            (None, None)
-        };
+        let (response, result) = channel();
 
         self.0
             .send(Message::Transmit {
                 destination,
+                source_endpoint,
                 metadata,
                 payload,
                 response,
@@ -116,6 +113,7 @@ impl<T> Transceiver<T> {
     fn make_frame(
         &mut self,
         destination: Destination,
+        source_endpoint: Endpoint,
         metadata: Metadata,
         payload: Bytes,
     ) -> Data<Bytes> {
@@ -124,7 +122,7 @@ impl<T> Transceiver<T> {
             destination.into(),
             metadata.cluster_id(),
             metadata.profile().into(),
-            metadata.source_endpoint(),
+            source_endpoint,
             counter,
             None,
         );
@@ -159,20 +157,23 @@ impl<T> Transceiver<T> {
             .unwrap_or_else(drop);
     }
 
-    /// Store the response for a transmission accepted by the hardware.
-    fn handle_accepted_transmission(&mut self, counter: u8, response: Option<PendingResponse>) {
-        if let Some(response) = response {
+    /// Complete an accepted transmission or retain it for its APS acknowledgement.
+    fn handle_accepted_transmission(
+        &mut self,
+        counter: u8,
+        acknowledged: bool,
+        response: PendingResponse,
+    ) {
+        if acknowledged {
             self.store_pending_response(counter, response);
+        } else {
+            response.send(Ok(())).unwrap_or_else(drop);
         }
     }
 
-    /// Return a hardware rejection to the caller or log an unacknowledged rejection.
-    fn handle_rejected_transmission(response: Option<PendingResponse>, error: zb_hw::Error) {
-        if let Some(response) = response {
-            response.send(Err(error)).unwrap_or_else(drop);
-        } else {
-            debug!("Hardware rejected APS frame: {error:?}");
-        }
+    /// Return a hardware rejection to the caller.
+    fn handle_rejected_transmission(response: PendingResponse, error: zb_hw::Error) {
+        response.send(Err(error)).unwrap_or_else(drop);
     }
 }
 
@@ -186,11 +187,12 @@ where
             match message {
                 Message::Transmit {
                     destination,
+                    source_endpoint,
                     metadata,
                     payload,
                     response,
                 } => {
-                    self.transmit(destination, metadata, payload, response)
+                    self.transmit(destination, source_endpoint, metadata, payload, response)
                         .await;
                 }
                 Message::Ack { counter } => {
@@ -207,15 +209,17 @@ where
     async fn transmit(
         &mut self,
         destination: Destination,
+        source_endpoint: Endpoint,
         metadata: Metadata,
         payload: Bytes,
-        response: Option<PendingResponse>,
+        response: PendingResponse,
     ) {
-        let frame = self.make_frame(destination, metadata, payload);
+        let acknowledged = metadata.acknowledged_for(destination);
+        let frame = self.make_frame(destination, source_endpoint, metadata, payload);
         let counter = frame.header().counter();
 
         match self.ncp.transmit(destination, frame).await {
-            Ok(()) => self.handle_accepted_transmission(counter, response),
+            Ok(()) => self.handle_accepted_transmission(counter, acknowledged, response),
             Err(error) => Self::handle_rejected_transmission(response, error),
         }
     }
@@ -255,9 +259,13 @@ mod tests {
     const LAST_COUNTER: u8 = u8::MAX;
     const PAYLOAD: &[u8] = &[0x12, 0x34];
 
+    const fn application_endpoint() -> Endpoint {
+        Endpoint::Application(Application::MIN)
+    }
+
     fn unicast_destination() -> Destination {
         let device = short_id::Device::new(DEVICE_ID).expect("test device ID is valid");
-        Device::new(device, Endpoint::Application(Application::MIN)).into()
+        Device::new(device, application_endpoint()).into()
     }
 
     fn broadcast_destination() -> Destination {
@@ -275,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn omits_response_for_unacknowledged_transmission() {
+    fn waits_for_backend_acceptance_for_unacknowledged_transmission() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
@@ -283,12 +291,15 @@ mod tests {
                 let aps = Aps::new(sender);
                 let metadata = metadata(TxOptions::empty());
 
-                aps.transmit(unicast_destination(), metadata, Bytes::from_static(PAYLOAD))
+                let task = tokio::spawn(async move {
+                    aps.transmit(
+                        unicast_destination(),
+                        application_endpoint(),
+                        metadata,
+                        Bytes::from_static(PAYLOAD),
+                    )
                     .await
-                    .expect("APS actor channel must be available")
-                    .await
-                    .expect("unacknowledged transmission completes immediately");
-
+                });
                 let Message::Transmit {
                     metadata: sent_metadata,
                     payload,
@@ -300,7 +311,23 @@ mod tests {
                 };
                 assert_eq!(sent_metadata, metadata);
                 assert_eq!(payload, PAYLOAD);
-                assert!(response.is_none());
+
+                let deferred = task
+                    .await
+                    .expect("task must complete")
+                    .expect("APS actor channel must be available");
+                let completion = tokio::spawn(deferred);
+                assert!(!completion.is_finished());
+
+                response
+                    .send(Ok(()))
+                    .expect("APS response receiver must be available");
+                assert!(
+                    completion
+                        .await
+                        .expect("response task must complete")
+                        .is_ok()
+                );
             });
     }
 
@@ -314,6 +341,7 @@ mod tests {
                 let task = tokio::spawn(async move {
                     aps.transmit(
                         unicast_destination(),
+                        application_endpoint(),
                         metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION),
                         Bytes::new(),
                     )
@@ -333,7 +361,6 @@ mod tests {
                 assert!(!completion.is_finished());
 
                 response
-                    .expect("acknowledged frame must carry a response")
                     .send(Ok(()))
                     .expect("APS response receiver must be available");
 
@@ -347,7 +374,7 @@ mod tests {
     }
 
     #[test]
-    fn omits_response_for_acknowledged_non_unicast_transmissions() {
+    fn waits_for_backend_acceptance_for_acknowledged_non_unicast_transmissions() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
@@ -355,22 +382,37 @@ mod tests {
                     let (sender, mut receiver) = channel(CHANNEL_SIZE);
                     let aps = Aps::new(sender);
 
-                    aps.transmit(
-                        destination,
-                        metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION),
-                        Bytes::new(),
-                    )
-                    .await
-                    .expect("APS actor channel must be available")
-                    .await
-                    .expect("non-unicast transmission completes immediately");
-
+                    let task = tokio::spawn(async move {
+                        aps.transmit(
+                            destination,
+                            application_endpoint(),
+                            metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION),
+                            Bytes::new(),
+                        )
+                        .await
+                    });
                     let Message::Transmit { response, .. } =
                         receiver.recv().await.expect("message must be available")
                     else {
                         panic!("expected APS transmit message");
                     };
-                    assert!(response.is_none());
+
+                    let deferred = task
+                        .await
+                        .expect("task must complete")
+                        .expect("APS actor channel must be available");
+                    let completion = tokio::spawn(deferred);
+                    assert!(!completion.is_finished());
+
+                    response
+                        .send(Ok(()))
+                        .expect("APS response receiver must be available");
+                    assert!(
+                        completion
+                            .await
+                            .expect("response task must complete")
+                            .is_ok()
+                    );
                 }
             });
     }
@@ -390,6 +432,7 @@ mod tests {
         transceiver.counter = LAST_COUNTER;
         let frame = transceiver.make_frame(
             unicast_destination(),
+            application_endpoint(),
             metadata(TxOptions::empty()),
             Bytes::new(),
         );
@@ -402,13 +445,68 @@ mod tests {
     fn actor_requests_acknowledgement_only_for_unicast_frames() {
         let mut transceiver = Transceiver::new(());
         let metadata = metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION);
-        let unicast = transceiver.make_frame(unicast_destination(), metadata, Bytes::new());
-        let group = transceiver.make_frame(group_destination(), metadata, Bytes::new());
-        let broadcast = transceiver.make_frame(broadcast_destination(), metadata, Bytes::new());
+        let unicast = transceiver.make_frame(
+            unicast_destination(),
+            application_endpoint(),
+            metadata,
+            Bytes::new(),
+        );
+        let group = transceiver.make_frame(
+            group_destination(),
+            application_endpoint(),
+            metadata,
+            Bytes::new(),
+        );
+        let broadcast = transceiver.make_frame(
+            broadcast_destination(),
+            application_endpoint(),
+            metadata,
+            Bytes::new(),
+        );
 
         assert!(unicast.header().control().contains(Control::ACK_REQUEST));
         assert!(!group.header().control().contains(Control::ACK_REQUEST));
         assert!(!broadcast.header().control().contains(Control::ACK_REQUEST));
+    }
+
+    #[test]
+    fn backend_acceptance_completes_unacknowledged_transmission() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let mut transceiver = Transceiver::new(());
+                let (pending_response, _pending_result) = tokio::sync::oneshot::channel();
+                let (response, result) = tokio::sync::oneshot::channel();
+                transceiver
+                    .responses
+                    .insert(FIRST_COUNTER, pending_response);
+
+                transceiver.handle_accepted_transmission(FIRST_COUNTER, false, response);
+
+                assert!(result.await.expect("response must be available").is_ok());
+                assert!(transceiver.responses.contains_key(&FIRST_COUNTER));
+            });
+    }
+
+    #[test]
+    fn backend_rejection_completes_transmission_with_error() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let (response, result) = tokio::sync::oneshot::channel();
+
+                Transceiver::<()>::handle_rejected_transmission(
+                    response,
+                    zb_hw::TransmissionError::Rejected.into(),
+                );
+
+                assert!(matches!(
+                    result.await.expect("response must be available"),
+                    Err(zb_hw::Error::Transmission(
+                        zb_hw::TransmissionError::Rejected
+                    ))
+                ));
+            });
     }
 
     #[test]

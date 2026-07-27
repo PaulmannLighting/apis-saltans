@@ -67,9 +67,11 @@ mod tests {
 
     #[test]
     fn waits_for_the_protocol_response() {
+        let (transmission_sender, transmission_receiver) = channel();
         let (sender, receiver) = channel();
+        assert!(transmission_sender.send(Ok(())).is_ok());
         let mut response = pin!(ApsProtocolResponse::new(
-            TransmissionResponse::new(None),
+            TransmissionResponse::new(transmission_receiver),
             receiver,
         ));
         let mut context = Context::from_waker(Waker::noop());
@@ -90,7 +92,7 @@ mod tests {
         let (transmission_sender, transmission_receiver) = channel();
         let (protocol_sender, protocol_receiver) = channel();
         let mut response = pin!(ApsProtocolResponse::new(
-            TransmissionResponse::new(Some(transmission_receiver)),
+            TransmissionResponse::new(transmission_receiver),
             protocol_receiver,
         ));
         let mut context = Context::from_waker(Waker::noop());
@@ -112,7 +114,7 @@ mod tests {
         let (transmission_sender, transmission_receiver) = channel();
         let (_protocol_sender, protocol_receiver) = channel::<u8>();
         let mut response = pin!(ApsProtocolResponse::new(
-            TransmissionResponse::new(Some(transmission_receiver)),
+            TransmissionResponse::new(transmission_receiver),
             protocol_receiver,
         ));
         let mut context = Context::from_waker(Waker::noop());

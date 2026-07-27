@@ -6,18 +6,18 @@ use tokio::sync::oneshot::Receiver;
 
 /// Deferred result of an APS transmission.
 ///
-/// A response without a receiver represents a transmission that does not request an APS
-/// acknowledgement and completes immediately. Otherwise, the future resolves when the hardware
-/// reports the acknowledged transmission result.
+/// The future resolves after the hardware backend accepts or rejects the frame. If the frame
+/// requests an APS acknowledgement, acceptance is followed by the corresponding acknowledged
+/// transmission result.
 #[must_use = "futures do nothing unless polled"]
 #[derive(Debug)]
 pub struct TransmissionResponse {
-    response: Option<Receiver<Result<(), zb_hw::Error>>>,
+    response: Receiver<Result<(), zb_hw::Error>>,
 }
 
 impl TransmissionResponse {
     /// Create a deferred APS transmission response.
-    pub(crate) const fn new(response: Option<Receiver<Result<(), zb_hw::Error>>>) -> Self {
+    pub(crate) const fn new(response: Receiver<Result<(), zb_hw::Error>>) -> Self {
         Self { response }
     }
 }
@@ -27,11 +27,8 @@ impl Future for TransmissionResponse {
 
     fn poll(self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
-        let Some(response) = &mut this.response else {
-            return Poll::Ready(Ok(()));
-        };
 
-        match Pin::new(response).poll(context) {
+        match Pin::new(&mut this.response).poll(context) {
             Poll::Pending => Poll::Pending,
             Poll::Ready(Ok(result)) => Poll::Ready(result),
             Poll::Ready(Err(error)) => Poll::Ready(Err(error.into())),
@@ -48,8 +45,10 @@ mod tests {
     use super::TransmissionResponse;
 
     #[test]
-    fn unacknowledged_response_is_ready() {
-        let mut response = pin!(TransmissionResponse::new(None));
+    fn accepted_response_is_ready() {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        assert!(sender.send(Ok(())).is_ok());
+        let mut response = pin!(TransmissionResponse::new(receiver));
         let mut context = Context::from_waker(Waker::noop());
 
         assert!(matches!(
@@ -61,7 +60,7 @@ mod tests {
     #[test]
     fn acknowledged_response_is_deferred() {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let mut response = pin!(TransmissionResponse::new(Some(receiver)));
+        let mut response = pin!(TransmissionResponse::new(receiver));
         let mut context = Context::from_waker(Waker::noop());
 
         assert!(matches!(

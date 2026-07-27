@@ -1,5 +1,5 @@
 use zb_aps::TxOptions;
-use zb_core::{Destination, Endpoint, Profile};
+use zb_core::{Destination, Profile};
 
 const DEFAULT_TX_OPTIONS: TxOptions = TxOptions::ACKNOWLEDGED_TRANSMISSION;
 
@@ -8,27 +8,19 @@ const DEFAULT_TX_OPTIONS: TxOptions = TxOptions::ACKNOWLEDGED_TRANSMISSION;
 pub struct Metadata {
     profile: Profile,
     cluster_id: u16,
-    source_endpoint: Endpoint,
     tx_options: TxOptions,
 }
 
 impl Metadata {
     /// Create APS metadata for a profile and cluster.
     ///
-    /// Network-profile commands use the ZDO data endpoint. Application-profile commands use the
-    /// first application endpoint. Transmissions request an APS acknowledgement by default.
+    /// Transmissions request an APS acknowledgement by default. The protocol actor supplies the
+    /// source endpoint separately when it queues the frame.
     #[must_use]
     pub const fn new(profile: Profile, cluster_id: u16) -> Self {
-        let source_endpoint = if matches!(profile, Profile::Network) {
-            Endpoint::Data
-        } else {
-            Endpoint::Application(zb_core::endpoint::Application::MIN)
-        };
-
         Self {
             profile,
             cluster_id,
-            source_endpoint,
             tx_options: DEFAULT_TX_OPTIONS,
         }
     }
@@ -37,13 +29,6 @@ impl Metadata {
     #[must_use]
     pub const fn with_profile(mut self, profile: Profile) -> Self {
         self.profile = profile;
-        self
-    }
-
-    /// Override the source endpoint.
-    #[must_use]
-    pub const fn with_source_endpoint(mut self, source_endpoint: Endpoint) -> Self {
-        self.source_endpoint = source_endpoint;
         self
     }
 
@@ -64,12 +49,6 @@ impl Metadata {
     #[must_use]
     pub const fn cluster_id(self) -> u16 {
         self.cluster_id
-    }
-
-    /// Return the source endpoint.
-    #[must_use]
-    pub const fn source_endpoint(self) -> Endpoint {
-        self.source_endpoint
     }
 
     /// Return the APS transmission options.

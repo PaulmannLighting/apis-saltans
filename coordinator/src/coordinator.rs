@@ -68,7 +68,7 @@ impl Coordinator {
         let aps = aps::Transceiver::spawn(ncp.clone());
         let (ota, ota_inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
         let (ota_subscription, ota_zcl_frames) = ota::subscription();
-        let zcl = zcl::Transceiver::spawn(aps.clone(), events_out.clone());
+        let zcl = zcl::Transceiver::spawn(ncp.clone(), aps.clone(), events_out.clone());
         zcl.try_send(zcl::Message::Subscribe {
             subscription: ota_subscription,
         })

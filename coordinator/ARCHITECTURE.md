@@ -22,6 +22,7 @@ flowchart TD
     C -->|NCP helper APIs| HW
     ZCL -->|Data&lt;Bytes&gt;| APS
     ZDP -->|Data&lt;Bytes&gt;| APS
+    ZCL -->|endpoint descriptor query| HW
     ZDP -->|endpoint and address queries| HW
     APS -->|Ncp::transmit| HW
     HW -->|zb_hw::Event| M
@@ -46,36 +47,40 @@ wrapping `u8` APS frame counter. For every outgoing message it:
 2. assigns its next APS frame counter
 3. constructs the APS header and `zb_aps::Data<bytes::Bytes>` frame
 4. forwards the completed frame and destination to the hardware actor
-5. stores an acknowledged caller under the APS counter after hardware acceptance
-6. resolves any response replaced by that insertion with `TransmissionError::Timeout`
+5. resolves an unacknowledged caller after hardware acceptance, or stores an acknowledged caller
+   under the APS counter
+6. resolves any acknowledged response replaced by that insertion with
+   `TransmissionError::Timeout`
 
 Its command protocol contains:
 
 ```text
 Transmit {
     destination: zb_core::Destination,
+    source_endpoint: zb_core::Endpoint,
     metadata: aps::Metadata,
     payload: bytes::Bytes,
-    response: Option<oneshot::Sender<Result<(), zb_hw::Error>>>,
+    response: oneshot::Sender<Result<(), zb_hw::Error>>,
 }
 ```
 
 The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method queues the
-actor message and returns a deferred `TransmissionResponse`. It creates an acknowledgement channel
-only when the metadata contains
-`TxOptions::ACKNOWLEDGED_TRANSMISSION` and the destination is a unicast device. The same predicate
-controls the APS header acknowledgement-request bit. Group and broadcast transmissions never
-request or await APS acknowledgements. Its completion methods forward hardware APS events from the
-mux.
+actor message and returns a deferred `TransmissionResponse`. It creates a completion channel for
+every transmission. The APS actor resolves that channel when the hardware rejects or accepts an
+unacknowledged frame. When the metadata contains `TxOptions::ACKNOWLEDGED_TRANSMISSION` and the
+destination is a unicast device, hardware acceptance instead stores the sender until the APS result
+arrives. The same predicate controls the APS header acknowledgement-request bit. Group and
+broadcast transmissions never request or await APS acknowledgements. Its completion methods forward
+hardware APS events from the mux.
 
 - Acknowledged unicast frame: retain the caller's response sender under the APS counter and await
   `ApsEvent::Ack` or `ApsEvent::Nak`.
-- Unacknowledged, group, or broadcast frame: omit the caller response and return after actor
-  handoff.
+- Unacknowledged, group, or broadcast frame: resolve the caller response after backend acceptance.
 
 Counter replacement occurs only after the hardware accepts a transmission that has an
-acknowledgement response. Unacknowledged transmissions have no response to store, and rejected
-transmissions never reach the insertion step, so neither replaces an older pending response.
+acknowledgement response. Unacknowledged transmissions resolve without storing their response, and
+rejected transmissions never reach the insertion step, so neither replaces an older pending
+response.
 
 ```mermaid
 sequenceDiagram
@@ -86,12 +91,14 @@ sequenceDiagram
     participant M as Event mux
 
     P->>P: serialize protocol payload
-    P->>A: Transmit destination, metadata, payload
+    P->>A: Transmit destination, source endpoint, metadata, payload
     A-->>P: deferred transmission response
     A->>A: assign counter and build Data&lt;Bytes&gt;
     A->>H: transmit destination, frame
     H-->>A: accepted
-    opt acknowledged transmission
+    alt unacknowledged transmission
+        A-->>P: resolve deferred APS result
+    else acknowledged transmission
         A->>A: store response under counter
         opt response was replaced
             A-->>O: TransmissionError::Timeout
@@ -108,6 +115,8 @@ The ZCL actor:
 
 - owns the wrapping ZCL transaction sequence
 - serializes typed commands into ZCL frames
+- lazily caches the NCP's local simple descriptors
+- selects the source endpoint whose profile and input/output cluster role match each outgoing frame
 - sends APS metadata and serialized ZCL frames through the APS actor
 - stores response correlation channels for `communicate`
 - registers generic filtered subscriptions received through its actor inbox
@@ -137,9 +146,9 @@ cannot keep the OTA actor alive. When the external OTA inbox closes, the OTA act
 its ZCL sender; this avoids a strong ZCL-to-OTA-to-ZCL actor cycle.
 
 Normal OTA commands and replies retain the default acknowledged APS transmission option. Image Page
-block responses use empty `TxOptions`; the APS handle therefore returns after actor handoff instead
-of creating an acknowledgement response. The page task applies the requested spacing and advances
-the ZCL transaction sequence between blocks.
+block responses use empty `TxOptions`; their deferred APS result therefore completes after hardware
+backend acceptance instead of waiting for an acknowledgement. The page task applies the requested
+spacing and advances the ZCL transaction sequence between blocks.
 
 ## ZDP Actor
 
@@ -195,9 +204,9 @@ sequenceDiagram
     R-->>API: converted typed response
 ```
 
-`CommunicationResponse<Raw, T>` no longer contains a hardware future. APS completion occurs before
-the response object is returned; the response future only awaits the correlated command and applies
-`TryFrom`.
+`CommunicationResponse<Raw, T>` contains the deferred APS completion and the correlated protocol
+receiver. Polling it completes APS transmission first, then waits for the correlated command and
+applies `TryFrom`.
 
 ## Mux and Events
 

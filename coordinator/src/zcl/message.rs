@@ -2,12 +2,12 @@ use tokio::sync::oneshot::Sender;
 use zb_aps::Data;
 use zb_core::Destination;
 use zb_core::destination::Device;
-use zb_hw::Error;
 use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame};
 
 pub use super::Payload;
 use super::Subscription;
+use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::response::ApsProtocolResponse;
 

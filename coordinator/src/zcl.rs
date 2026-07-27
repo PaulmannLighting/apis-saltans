@@ -9,10 +9,12 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::{self, channel};
 use zb_aps::Data;
-use zb_core::Destination;
 use zb_core::destination::Device;
+use zb_core::{Destination, Direction, Endpoint};
+use zb_hw::{Ncp, NcpHandle};
 use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame, Header};
+use zb_zdp::SimpleDescriptor;
 
 pub use self::message::Message;
 pub use self::payload::{Metadata, Payload};
@@ -23,7 +25,7 @@ pub use self::subscription::{
 use super::index::Index;
 use crate::aps::{Aps, TransmissionResponse};
 use crate::response::ApsProtocolResponse;
-use crate::{Event, MPSC_CHANNEL_SIZE};
+use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
 mod message;
 mod payload;
@@ -32,6 +34,8 @@ mod subscription;
 /// Zigbee transceiver actor.
 #[derive(Debug)]
 pub struct Transceiver {
+    ncp: Option<NcpHandle>,
+    endpoints: Option<Box<[SimpleDescriptor]>>,
     aps: Aps,
     events: Sender<Event>,
     subscriptions: Vec<Subscription>,
@@ -40,12 +44,19 @@ pub struct Transceiver {
 }
 
 impl Transceiver {
-    /// Create a new transceiver without frame subscriptions.
+    /// Create a test transceiver with a fixed set of local endpoint descriptors.
     ///
     /// Register subscriptions by sending [`Message::Subscribe`] to the actor.
+    #[cfg(test)]
     #[must_use]
-    pub const fn new(aps: Aps, events: Sender<Event>) -> Self {
+    const fn with_endpoints(
+        aps: Aps,
+        events: Sender<Event>,
+        endpoints: Box<[SimpleDescriptor]>,
+    ) -> Self {
         Self {
+            ncp: None,
+            endpoints: Some(endpoints),
             aps,
             events,
             subscriptions: Vec::new(),
@@ -53,6 +64,20 @@ impl Transceiver {
             seq: 0,
         }
     }
+
+    /// Create a transceiver that obtains local endpoint descriptors from the NCP on demand.
+    const fn with_ncp(ncp: NcpHandle, aps: Aps, events: Sender<Event>) -> Self {
+        Self {
+            ncp: Some(ncp),
+            endpoints: None,
+            aps,
+            events,
+            subscriptions: Vec::new(),
+            responses: BTreeMap::new(),
+            seq: 0,
+        }
+    }
+
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
@@ -184,34 +209,44 @@ impl Transceiver {
         &mut self,
         destination: Destination,
         payload: Payload,
-    ) -> Result<TransmissionResponse, zb_hw::Error> {
+    ) -> Result<TransmissionResponse, Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
+        let source_endpoint = self
+            .source_endpoint(aps_metadata, zcl_metadata.direction)
+            .await?;
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
-        self.aps
+        Ok(self
+            .aps
             .transmit(
                 destination,
+                source_endpoint,
                 aps_metadata,
                 zcl_frame.to_le_stream().collect(),
             )
-            .await
+            .await?)
     }
 
     /// Queue a ZCL command with an explicitly selected transaction sequence number.
     async fn transmit_with_sequence(
-        &self,
+        &mut self,
         destination: Destination,
         payload: Payload,
         sequence_number: u8,
-    ) -> Result<TransmissionResponse, zb_hw::Error> {
+    ) -> Result<TransmissionResponse, Error> {
         let (aps_metadata, zcl_metadata, command) = payload.into_parts();
+        let source_endpoint = self
+            .source_endpoint(aps_metadata, zcl_metadata.direction)
+            .await?;
         let zcl_frame = Self::make_zcl_frame_with_sequence(zcl_metadata, command, sequence_number);
-        self.aps
+        Ok(self
+            .aps
             .transmit(
                 destination,
+                source_endpoint,
                 aps_metadata,
                 zcl_frame.to_le_stream().collect(),
             )
-            .await
+            .await?)
     }
 
     /// Send a ZCL unicast message with back-channel communication.
@@ -227,8 +262,11 @@ impl Transceiver {
         &mut self,
         device: Device,
         datagram: Payload,
-    ) -> Result<ApsProtocolResponse<Cluster>, zb_hw::Error> {
+    ) -> Result<ApsProtocolResponse<Cluster>, Error> {
         let (aps_metadata, zcl_metadata, command) = datagram.into_parts();
+        let source_endpoint = self
+            .source_endpoint(aps_metadata, zcl_metadata.direction)
+            .await?;
         let zcl_frame = self.make_zcl_frame(zcl_metadata, command);
         let index = Index::from_zcl_command(
             device,
@@ -241,15 +279,72 @@ impl Transceiver {
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
 
-        let transmission = match self.aps.transmit(destination, aps_metadata, payload).await {
+        let transmission = match self
+            .aps
+            .transmit(destination, source_endpoint, aps_metadata, payload)
+            .await
+        {
             Ok(transmission) => transmission,
             Err(error) => {
                 self.responses.remove(&index);
-                return Err(error);
+                return Err(error.into());
             }
         };
 
         Ok(ApsProtocolResponse::new(transmission, rx))
+    }
+
+    /// Return a local endpoint that advertises the profile, cluster, and ZCL role.
+    async fn source_endpoint(
+        &mut self,
+        aps_metadata: crate::aps::Metadata,
+        direction: Direction,
+    ) -> Result<Endpoint, Error> {
+        if self.endpoints.is_none() {
+            let Some(ncp) = &self.ncp else {
+                return Err(Self::no_source_endpoint_error(aps_metadata, direction));
+            };
+            self.endpoints = Some(ncp.get_endpoints().await?);
+        }
+
+        self.endpoints
+            .as_deref()
+            .and_then(|endpoints| {
+                Self::matching_source_endpoint(endpoints, aps_metadata, direction)
+            })
+            .ok_or_else(|| Self::no_source_endpoint_error(aps_metadata, direction))
+    }
+
+    /// Find a local application endpoint that advertises the outgoing command's ZCL role.
+    fn matching_source_endpoint(
+        endpoints: &[SimpleDescriptor],
+        aps_metadata: crate::aps::Metadata,
+        direction: Direction,
+    ) -> Option<Endpoint> {
+        endpoints.iter().find_map(|descriptor| {
+            let endpoint = descriptor.endpoint();
+            let clusters = match direction {
+                Direction::ClientToServer => descriptor.output_clusters(),
+                Direction::ServerToClient => descriptor.input_clusters(),
+            };
+
+            (matches!(endpoint, Endpoint::Application(_))
+                && descriptor.profile_id() == aps_metadata.profile().as_u16()
+                && clusters.contains(&aps_metadata.cluster_id()))
+            .then_some(endpoint)
+        })
+    }
+
+    /// Construct the error returned when no compatible local source endpoint exists.
+    const fn no_source_endpoint_error(
+        metadata: crate::aps::Metadata,
+        direction: Direction,
+    ) -> Error {
+        Error::NoSourceEndpoint {
+            profile: metadata.profile(),
+            cluster_id: metadata.cluster_id(),
+            direction,
+        }
     }
 
     fn make_zcl_frame(&mut self, metadata: Metadata, command: Bytes) -> Frame<Bytes> {
@@ -277,9 +372,9 @@ impl Transceiver {
 
 impl Transceiver {
     /// Start the ZCL transceiver.
-    pub fn spawn(aps: Aps, events: Sender<Event>) -> Sender<Message> {
+    pub fn spawn(ncp: NcpHandle, aps: Aps, events: Sender<Event>) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(aps, events).run(zcl_rx));
+        spawn(Self::with_ncp(ncp, aps, events).run(zcl_rx));
         zcl_tx
     }
 }
@@ -297,6 +392,7 @@ mod tests {
     use zb_nwk::Source;
     use zb_zcl::on_off::{Command as OnOffCommand, On};
     use zb_zcl::{Cluster, Command, Frame, Header as ZclHeader, Scope};
+    use zb_zdp::{AppFlags, SimpleDescriptor};
 
     use super::{Message, Subscription, SubscriptionFilter, Transceiver};
     use crate::MPSC_CHANNEL_SIZE;
@@ -305,6 +401,8 @@ mod tests {
     const SOURCE_NODE_ID: u16 = 0x4321;
     const TRANSACTION_SEQUENCE: u8 = 7;
     const APS_COUNTER: u8 = 9;
+    const LOCAL_ENDPOINT_ID: u8 = 0x0B;
+    const DEVICE_ID: u16 = 0x0100;
 
     #[test]
     fn routes_matching_frames_to_a_generic_subscription() {
@@ -320,7 +418,11 @@ mod tests {
                     Direction::ClientToServer,
                 );
                 let (subscription, mut subscribed_frames) = Subscription::channel(filter);
-                let transceiver = Transceiver::spawn(Aps::new(aps_sender), events);
+                let (transceiver, messages) = channel(MPSC_CHANNEL_SIZE);
+                tokio::spawn(
+                    Transceiver::with_endpoints(Aps::new(aps_sender), events, Box::default())
+                        .run(messages),
+                );
                 let source = Source::new(SOURCE_NODE_ID, None);
 
                 transceiver
@@ -345,6 +447,52 @@ mod tests {
                 ));
                 assert!(application_events.try_recv().is_err());
             });
+    }
+
+    #[test]
+    fn selects_advertised_endpoint_for_outgoing_zcl_role() {
+        let descriptor = local_descriptor();
+        let endpoints = [descriptor];
+
+        let client_endpoint = Transceiver::matching_source_endpoint(
+            &endpoints,
+            crate::aps::Metadata::new(Profile::ZigbeeHomeAutomation, ClusterId::OnOff.as_u16()),
+            Direction::ClientToServer,
+        );
+        let server_endpoint = Transceiver::matching_source_endpoint(
+            &endpoints,
+            crate::aps::Metadata::new(
+                Profile::ZigbeeHomeAutomation,
+                ClusterId::OtaUpgrade.as_u16(),
+            ),
+            Direction::ServerToClient,
+        );
+
+        assert_eq!(client_endpoint, Some(Endpoint::from(LOCAL_ENDPOINT_ID)));
+        assert_eq!(server_endpoint, Some(Endpoint::from(LOCAL_ENDPOINT_ID)));
+    }
+
+    #[test]
+    fn rejects_endpoint_without_matching_zcl_role() {
+        let endpoints = [local_descriptor()];
+        let endpoint = Transceiver::matching_source_endpoint(
+            &endpoints,
+            crate::aps::Metadata::new(Profile::ZigbeeHomeAutomation, ClusterId::OnOff.as_u16()),
+            Direction::ServerToClient,
+        );
+
+        assert_eq!(endpoint, None);
+    }
+
+    fn local_descriptor() -> SimpleDescriptor {
+        SimpleDescriptor::new(
+            Endpoint::from(LOCAL_ENDPOINT_ID),
+            Profile::ZigbeeHomeAutomation,
+            DEVICE_ID,
+            AppFlags::empty(),
+            std::iter::once(ClusterId::OtaUpgrade.as_u16()).collect(),
+            std::iter::once(ClusterId::OnOff.as_u16()).collect(),
+        )
     }
 
     fn subscribed_frame() -> Data<Frame<Cluster>> {

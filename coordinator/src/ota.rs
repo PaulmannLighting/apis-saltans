@@ -12,6 +12,7 @@ pub use self::image::{
 };
 pub use self::message::{Message, UpdateError, UpdateResult};
 pub use self::server::Server;
+use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::zcl::{self, Metadata, Payload};
 
@@ -78,7 +79,7 @@ async fn send_zcl(
 }
 
 async fn receive_transmission_result(
-    response: oneshot::Receiver<Result<TransmissionResponse, zb_hw::Error>>,
+    response: oneshot::Receiver<Result<TransmissionResponse, Error>>,
 ) -> Option<()> {
     let transmission = match response.await {
         Ok(Ok(transmission)) => transmission,
@@ -661,7 +662,7 @@ mod tests {
     }
 
     fn complete_transmission(
-        response: tokio::sync::oneshot::Sender<Result<TransmissionResponse, zb_hw::Error>>,
+        response: tokio::sync::oneshot::Sender<Result<TransmissionResponse, Error>>,
     ) {
         let (completion, transmission) = deferred_transmission();
         assert!(completion.send(Ok(())).is_ok());
@@ -673,7 +674,7 @@ mod tests {
         TransmissionResponse,
     ) {
         let (completion, result) = tokio::sync::oneshot::channel();
-        (completion, TransmissionResponse::new(Some(result)))
+        (completion, TransmissionResponse::new(result))
     }
 
     fn run_test<T>(future: T)

@@ -7,7 +7,7 @@ use thiserror::Error as ThisError;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use tokio::time::error::Elapsed;
-use zb_core::IeeeAddress;
+use zb_core::{Direction, IeeeAddress, Profile};
 
 pub use self::optional::Optional;
 pub use self::status_ext::StatusExt;
@@ -41,6 +41,19 @@ pub enum Error {
     /// Invalid application endpoint.
     #[error("Invalid application endpoint: {0:#04X}")]
     InvalidApplicationEndpoint(u8),
+
+    /// No local endpoint advertises the requested ZCL role.
+    #[error(
+        "No local source endpoint for profile {profile}, cluster {cluster_id:#06X}, and direction {direction:?}"
+    )]
+    NoSourceEndpoint {
+        /// Application profile of the outgoing frame.
+        profile: Profile,
+        /// Cluster identifier of the outgoing frame.
+        cluster_id: u16,
+        /// ZCL direction of the outgoing frame.
+        direction: Direction,
+    },
 
     /// Invalid rate.
     #[error("Invalid dimming rate: {0:?}")]

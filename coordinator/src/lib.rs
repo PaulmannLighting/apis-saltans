@@ -11,9 +11,9 @@
 //! OTA Upgrade cluster exchange for individually scheduled device endpoints.
 //!
 //! The hardware NCP is responsible for providing its complete local endpoint descriptors through
-//! [`zb_hw::Ncp::get_endpoints`]. The coordinator queries those descriptors when serving ZDP match
-//! requests and exposes them through [`LocalNode::get_endpoints`]; they are no longer passed to
-//! [`Coordinator::start`].
+//! [`zb_hw::Ncp::get_endpoints`]. The coordinator queries those descriptors when selecting ZCL
+//! source endpoints and serving ZDP match requests, and exposes them through
+//! [`LocalNode::get_endpoints`]; they are no longer passed to [`Coordinator::start`].
 //!
 //! ZCL transmissions await a deferred APS completion outside the protocol actor. ZCL and ZDP
 //! communication methods return a protocol-specific [`ZclResponse`] or [`ZdpResponse`] that first
