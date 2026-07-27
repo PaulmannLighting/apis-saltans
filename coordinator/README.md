@@ -67,8 +67,9 @@ Public API exports:
 - error type:
   - `Error`
 
-Commands without a protocol response await acknowledged APS completion directly. Hardware driver
-implementations use the separate `apis-saltans-hw` `driver` feature.
+Unicast commands without a protocol response await acknowledged APS completion directly. Group and
+broadcast commands complete after actor handoff. Hardware driver implementations use the separate
+`apis-saltans-hw` `driver` feature.
 
 ## Coordinator Lifecycle
 
@@ -226,8 +227,10 @@ returning `ZclResponse<T>` or `ZdpResponse<T>`. Awaiting that response future th
 converts the correlated protocol response. `CommunicationResponse<Raw, T>` is the generic future
 behind both aliases.
 
-If a payload's `TxOptions` omit `ACKNOWLEDGED_TRANSMISSION`, the coordinator does not create or await
-an APS response. Acknowledged results arrive as hardware
+The coordinator creates and awaits an APS response only when a payload's `TxOptions` contain
+`ACKNOWLEDGED_TRANSMISSION` and its destination is a unicast device. Group and broadcast
+transmissions never request APS acknowledgements, regardless of that option. Acknowledged results
+arrive as hardware
 `Event::Aps(ApsEvent::Ack(counter))` or `Event::Aps(ApsEvent::Nak { sequence: counter, error })`
 values and are correlated by the wrapping `u8` APS counter. After the hardware accepts an
 acknowledged transmission, the APS actor stores its response under that counter. If this replaces a
@@ -604,8 +607,8 @@ request.
 ## Raw Transports
 
 Use `Zcl::transmit(...)` for native cluster commands that do not expect an application-level
-response. Its await queues the command and, when APS acknowledgement is requested, waits for the
-hardware result.
+response. Its await queues the command and, for acknowledged unicast transmissions, waits for the
+hardware result. Group and broadcast transmissions do not request acknowledgements.
 
 Use `Zcl::communicate(...)` for commands implementing `ExpectResponse<zb_zcl::Cluster>`. Its first
 await confirms APS transmission and returns `ZclResponse<T::Response>`. Awaiting that response waits

@@ -41,7 +41,7 @@ impl Aps {
         metadata: Metadata,
         payload: Bytes,
     ) -> Result<(), zb_hw::Error> {
-        let (response, result) = if metadata.acknowledged() {
+        let (response, result) = if metadata.acknowledged_for(destination) {
             let (response, result) = channel();
             (Some(response), Some(result))
         } else {
@@ -128,7 +128,7 @@ impl<T> Transceiver<T> {
             None,
         );
         header.set_security(metadata.tx_options().contains(TxOptions::SECURITY_ENABLED));
-        header.set_ack_request(metadata.acknowledged());
+        header.set_ack_request(metadata.acknowledged_for(destination));
         Data::new(header, payload)
     }
 
@@ -238,21 +238,35 @@ mod tests {
     use tokio::runtime::Runtime;
     use tokio::sync::mpsc::channel;
     use zb_aps::{Control, TxOptions};
-    use zb_core::destination::{Broadcast, Destination};
-    use zb_core::{Endpoint, Profile, short_id};
+    use zb_core::destination::{Broadcast, Destination, Device};
+    use zb_core::endpoint::Application;
+    use zb_core::{Endpoint, GroupId, Profile, short_id};
 
     use super::{Aps, Message, Transceiver};
     use crate::aps::Metadata;
 
     const CHANNEL_SIZE: usize = 1;
     const CLUSTER_ID: u16 = 0x1234;
+    const DEVICE_ID: u16 = 0x1234;
     const FIRST_COUNTER: u8 = 1;
+    const GROUP_ID: u16 = 0x2345;
     const SECOND_COUNTER: u8 = 2;
     const LAST_COUNTER: u8 = u8::MAX;
     const PAYLOAD: &[u8] = &[0x12, 0x34];
 
-    fn destination() -> Destination {
+    fn unicast_destination() -> Destination {
+        let device = short_id::Device::new(DEVICE_ID).expect("test device ID is valid");
+        Device::new(device, Endpoint::Application(Application::MIN)).into()
+    }
+
+    fn broadcast_destination() -> Destination {
         Broadcast::new(short_id::Broadcast::AllDevices, Endpoint::Broadcast).into()
+    }
+
+    fn group_destination() -> Destination {
+        GroupId::new(GROUP_ID)
+            .expect("test group ID is valid")
+            .into()
     }
 
     const fn metadata(tx_options: TxOptions) -> Metadata {
@@ -268,7 +282,7 @@ mod tests {
                 let aps = Aps::new(sender);
                 let metadata = metadata(TxOptions::empty());
 
-                aps.transmit(destination(), metadata, Bytes::from_static(PAYLOAD))
+                aps.transmit(unicast_destination(), metadata, Bytes::from_static(PAYLOAD))
                     .await
                     .expect("APS actor channel must be available");
 
@@ -296,7 +310,7 @@ mod tests {
                 let aps = Aps::new(sender);
                 let task = tokio::spawn(async move {
                     aps.transmit(
-                        destination(),
+                        unicast_destination(),
                         metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION),
                         Bytes::new(),
                     )
@@ -318,6 +332,33 @@ mod tests {
     }
 
     #[test]
+    fn omits_response_for_acknowledged_non_unicast_transmissions() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                for destination in [group_destination(), broadcast_destination()] {
+                    let (sender, mut receiver) = channel(CHANNEL_SIZE);
+                    let aps = Aps::new(sender);
+
+                    aps.transmit(
+                        destination,
+                        metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION),
+                        Bytes::new(),
+                    )
+                    .await
+                    .expect("APS actor channel must be available");
+
+                    let Message::Transmit { response, .. } =
+                        receiver.recv().await.expect("message must be available")
+                    else {
+                        panic!("expected APS transmit message");
+                    };
+                    assert!(response.is_none());
+                }
+            });
+    }
+
+    #[test]
     fn counter_wraps_after_its_maximum_value() {
         let mut transceiver = Transceiver::new(());
         transceiver.counter = LAST_COUNTER;
@@ -330,11 +371,27 @@ mod tests {
     fn actor_constructs_frame_with_its_counter() {
         let mut transceiver = Transceiver::new(());
         transceiver.counter = LAST_COUNTER;
-        let frame =
-            transceiver.make_frame(destination(), metadata(TxOptions::empty()), Bytes::new());
+        let frame = transceiver.make_frame(
+            unicast_destination(),
+            metadata(TxOptions::empty()),
+            Bytes::new(),
+        );
 
         assert_eq!(frame.header().counter(), LAST_COUNTER);
         assert!(!frame.header().control().contains(Control::ACK_REQUEST));
+    }
+
+    #[test]
+    fn actor_requests_acknowledgement_only_for_unicast_frames() {
+        let mut transceiver = Transceiver::new(());
+        let metadata = metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION);
+        let unicast = transceiver.make_frame(unicast_destination(), metadata, Bytes::new());
+        let group = transceiver.make_frame(group_destination(), metadata, Bytes::new());
+        let broadcast = transceiver.make_frame(broadcast_destination(), metadata, Bytes::new());
+
+        assert!(unicast.header().control().contains(Control::ACK_REQUEST));
+        assert!(!group.header().control().contains(Control::ACK_REQUEST));
+        assert!(!broadcast.header().control().contains(Control::ACK_REQUEST));
     }
 
     #[test]

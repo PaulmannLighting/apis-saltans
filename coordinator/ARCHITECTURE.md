@@ -60,13 +60,17 @@ Transmit {
 }
 ```
 
-The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method examines the
-metadata's `TxOptions::ACKNOWLEDGED_TRANSMISSION` flag when deciding whether to create a caller
-response channel. Its completion methods forward hardware APS events from the mux.
+The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method creates a
+caller response channel only when the metadata contains
+`TxOptions::ACKNOWLEDGED_TRANSMISSION` and the destination is a unicast device. The same predicate
+controls the APS header acknowledgement-request bit. Group and broadcast transmissions never
+request or await APS acknowledgements. Its completion methods forward hardware APS events from the
+mux.
 
-- Acknowledged frame: retain the caller's response sender under the APS counter and await
+- Acknowledged unicast frame: retain the caller's response sender under the APS counter and await
   `ApsEvent::Ack` or `ApsEvent::Nak`.
-- Unacknowledged frame: omit the caller response and return after actor handoff.
+- Unacknowledged, group, or broadcast frame: omit the caller response and return after actor
+  handoff.
 
 Counter replacement occurs only after the hardware accepts a transmission that has an
 acknowledgement response. Unacknowledged transmissions have no response to store, and rejected
