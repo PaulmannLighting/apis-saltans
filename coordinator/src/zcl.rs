@@ -177,20 +177,17 @@ impl Transceiver {
     }
 
     fn make_zcl_frame(&mut self, metadata: Metadata, command: Bytes) -> Frame<Bytes> {
-        let header = Header::new(
-            metadata.scope,
-            metadata.direction,
-            metadata.disable_default_response,
-            metadata.manufacturer_code,
-            self.next_seq(),
-            metadata.command_id,
-        );
-        #[expect(unsafe_code)]
-        // SAFETY: We safely construct the frame from the correct metadata
-        // with a freshly incremented sequence number.
-        unsafe {
-            Frame::new_unchecked(header, command)
-        }
+        Frame::new(
+            Header::new(
+                metadata.scope,
+                metadata.direction,
+                metadata.disable_default_response,
+                metadata.manufacturer_code,
+                self.next_seq(),
+                metadata.command_id,
+            ),
+            command,
+        )
     }
 }
 

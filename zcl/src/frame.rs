@@ -20,13 +20,8 @@ pub struct Frame<T> {
 
 impl<T> Frame<T> {
     /// Create a new ZCL frame from the given header and payload.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the provided header and payload are consistent.
-    #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new_unchecked(header: Header, payload: T) -> Self {
+    pub const fn new(header: Header, payload: T) -> Self {
         Self { header, payload }
     }
 
