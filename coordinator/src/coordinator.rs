@@ -17,15 +17,6 @@ pub struct Coordinator {
 }
 
 impl Coordinator {
-    /// Return a sender for the coordinator-owned OTA server inbox.
-    ///
-    /// Prefer the [`crate::Ota`] trait for scheduling updates. This sender is exposed for services
-    /// that need to forward already parsed OTA frames into the server directly.
-    #[must_use]
-    pub fn ota_sender(&self) -> Sender<ota::Message> {
-        self.ota.clone()
-    }
-
     /// Start the coordinator on the given hardware.
     ///
     /// Local endpoint descriptors are obtained from the NCP through [`zb_hw::Ncp::get_endpoints`]
