@@ -5,11 +5,14 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::data::Frame;
 use zb_aps::{Assembler, Data};
 use zb_core::destination;
-use zb_hw::Event as HardwareEvent;
+use zb_hw::{
+    ApsEvent as HardwareApsEvent, DeviceEvent as HardwareDeviceEvent, Event as HardwareEvent,
+    NetworkEvent as HardwareNetworkEvent,
+};
 use zb_nwk::{Envelope, Source};
 
 use self::aps_payload::ApsPayload;
-use crate::{Device, Event as ApplicationEvent, Event, Network, NetworkError, zcl, zdp};
+use crate::{Device, Event as ApplicationEvent, Event, Network, NetworkError, aps, zcl, zdp};
 
 mod aps_payload;
 
@@ -17,6 +20,7 @@ mod aps_payload;
 #[derive(Debug)]
 pub struct Mux {
     events: Sender<ApplicationEvent>,
+    aps: aps::Aps,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
     transactions: Assembler,
@@ -26,11 +30,13 @@ impl Mux {
     /// Create a new multiplexer.
     pub fn new(
         events: Sender<ApplicationEvent>,
+        aps: aps::Aps,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
     ) -> Self {
         Self {
             events,
+            aps,
             zcl,
             zdp,
             transactions: Assembler::default(),
@@ -41,10 +47,11 @@ impl Mux {
     pub fn spawn(
         hw_events: Receiver<HardwareEvent>,
         events_out: Sender<ApplicationEvent>,
+        aps: aps::Aps,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
     ) {
-        spawn(Self::new(events_out, zcl_tx, zdp_tx).run(hw_events));
+        spawn(Self::new(events_out, aps, zcl_tx, zdp_tx).run(hw_events));
     }
 
     /// Run the multiplexer.
@@ -56,21 +63,30 @@ impl Mux {
 
     async fn multiplex(&mut self, event: HardwareEvent) {
         match event {
-            HardwareEvent::NetworkUp => {
+            HardwareEvent::Network(event) => self.multiplex_network_event(event).await,
+            HardwareEvent::Device(event) => self.multiplex_device_event(event).await,
+            HardwareEvent::Aps(event) => self.multiplex_aps_event(event).await,
+            _ => trace!("Ignoring unsupported hardware event"),
+        }
+    }
+
+    async fn multiplex_network_event(&self, event: HardwareNetworkEvent) {
+        match event {
+            HardwareNetworkEvent::Up => {
                 trace!("Network is up");
                 self.events
                     .send(ApplicationEvent::Network(Network::Up))
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::NetworkDown => {
+            HardwareNetworkEvent::Down => {
                 trace!("Network is down");
                 self.events
                     .send(ApplicationEvent::Network(Network::Down))
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::NetworkOpened => {
+            HardwareNetworkEvent::Opened => {
                 trace!("Network has been opened");
                 self.zdp
                     .send(zdp::Message::NetworkOpened)
@@ -83,7 +99,7 @@ impl Mux {
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::NetworkClosed => {
+            HardwareNetworkEvent::Closed => {
                 trace!("Network has been closed");
                 self.zdp
                     .send(zdp::Message::NetworkClosed)
@@ -96,14 +112,29 @@ impl Mux {
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::DeviceJoined(address) => {
+            HardwareNetworkEvent::RouteError(error) => {
+                trace!("Route error: {error}");
+                self.events
+                    .send(ApplicationEvent::Network(Network::Error(
+                        NetworkError::Route(error),
+                    )))
+                    .await
+                    .unwrap_or_else(drop);
+            }
+            _ => trace!("Ignoring unsupported hardware network event"),
+        }
+    }
+
+    async fn multiplex_device_event(&self, event: HardwareDeviceEvent) {
+        match event {
+            HardwareDeviceEvent::Joined(address) => {
                 trace!("Device joined: {address}");
                 self.events
                     .send(ApplicationEvent::Device(Device::Joined(address)))
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::DeviceRejoined { address, secured } => {
+            HardwareDeviceEvent::Rejoined { address, secured } => {
                 trace!("Device joined: {address} (secured: {secured})");
                 self.events
                     .send(ApplicationEvent::Device(Device::Rejoined {
@@ -113,26 +144,36 @@ impl Mux {
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::DeviceLeft(address) => {
+            HardwareDeviceEvent::Left(address) => {
                 trace!("Device left: {address}");
                 self.events
                     .send(ApplicationEvent::Device(Device::Left(address)))
                     .await
                     .unwrap_or_else(drop);
             }
-            HardwareEvent::MessageReceived(envelope) => {
+            _ => trace!("Ignoring unsupported hardware device event"),
+        }
+    }
+
+    async fn multiplex_aps_event(&mut self, event: HardwareApsEvent) {
+        match event {
+            HardwareApsEvent::MessageReceived(envelope) => {
                 trace!("Message received: {envelope:?}");
                 self.handle_nwk_envelope(envelope).await;
             }
-            HardwareEvent::RouteError(error) => {
-                trace!("Route error: {error}");
-                self.events
-                    .send(ApplicationEvent::Network(Network::Error(
-                        NetworkError::Route(error),
-                    )))
-                    .await
-                    .unwrap_or_else(drop);
+            HardwareApsEvent::Ack(counter) => {
+                trace!("APS transmission acknowledged: {counter}");
+                self.aps.ack(counter).await.unwrap_or_else(|error| {
+                    trace!("Failed to forward APS acknowledgement: {error}");
+                });
             }
+            HardwareApsEvent::Nak { sequence, error } => {
+                trace!("APS transmission failed for counter {sequence}: {error}");
+                self.aps.nak(sequence, error).await.unwrap_or_else(|error| {
+                    trace!("Failed to forward APS failure: {error}");
+                });
+            }
+            _ => trace!("Ignoring unsupported hardware APS event"),
         }
     }
 
@@ -152,9 +193,7 @@ impl Mux {
 
         match payload {
             ApsPayload::Zcl(frame) => {
-                #[expect(unsafe_code)]
-                // SAFETY: We reconstruct the frame from its original parts.
-                let frame = unsafe { Frame::new_unchecked(header, frame) };
+                let frame = Frame::new(header, frame);
 
                 self.zcl
                     .send(zcl::Message::Received { source, frame })
@@ -164,9 +203,7 @@ impl Mux {
                     });
             }
             ApsPayload::Zdp(frame) => {
-                #[expect(unsafe_code)]
-                // SAFETY: We reconstruct the frame from its original parts.
-                let frame = unsafe { Frame::new_unchecked(header, frame) };
+                let frame = Frame::new(header, frame);
 
                 self.zdp
                     .send(zdp::Message::Received { source, frame })
@@ -182,15 +219,10 @@ impl Mux {
                     return;
                 };
 
-                let Ok(endpoint) = header.source_endpoint().inspect_err(|reserved| {
-                    warn!("Keep-Alive packet from reserved endpoint: {reserved:#04X}");
-                }) else {
-                    return;
-                };
-
                 self.events
                     .send(Event::Device(Device::KeepAlive(destination::Device::new(
-                        device_id, endpoint,
+                        device_id,
+                        header.source_endpoint(),
                     ))))
                     .await
                     .unwrap_or_else(drop);

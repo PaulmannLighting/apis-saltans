@@ -1,5 +1,4 @@
 use zb_core::Endpoint;
-use zb_core::endpoint::Reserved;
 
 use crate::SimpleDescRsp;
 
@@ -36,8 +35,8 @@ crate::zdp_command! {
         /// # Errors
         ///
         /// Returns [`Reserved`] if the raw endpoint value is reserved.
-        pub fn endpoint(self) -> Result<Endpoint, Reserved> {
-            self.endpoint.try_into()
+        pub fn endpoint(self) -> Endpoint {
+            self.endpoint.into()
         }
     }
     display {

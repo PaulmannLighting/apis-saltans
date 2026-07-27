@@ -13,13 +13,12 @@ No default features are enabled. Pick the feature that matches the role of the c
 
 | Feature | Intended user | Public API |
 | --- | --- | --- |
-| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | `Ncp`, `Driver`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, and `ScannedChannel`. |
-| `driver` | Hardware backend crates. | `Driver`, `NcpHandle`, `WeakNcpHandle`, `HwResponse`, `Error`, `RouteError`, `Clusters`, `Datagram`, `Metadata`, `Event`, `FoundNetwork`, `Network`, `ScannedChannel`, and protocol re-export modules. |
+| `types` | Code that only exchanges common hardware values. | Opaque handles, errors, events, and typed scan parameters and results. |
+| `coordinator` | Coordinator and application code that already has a running `NcpHandle`. | Shared types plus the caller-facing `Ncp` trait. |
+| `driver` | Hardware backend crates. | Shared types, the implementor-facing `Driver` trait, and protocol re-export modules. |
+| `serde` | Code that serializes supported hardware values. | Serialization for operation, scan, and network descriptor types; also enables `types`. |
 
 Backend crates should enable `driver`. Coordinator crates should enable `coordinator`.
-
-`Driver` is shared by both features. This lets integration crates name or re-export the driver
-contract without enabling the driver-only protocol re-export modules.
 
 ### API Changes
 
@@ -36,7 +35,7 @@ commands to the NCP actor.
 
 ```toml
 [dependencies]
-apis-saltans-hw = { version = "0.11", features = ["coordinator"] }
+apis-saltans-hw = { version = "0.13", features = ["coordinator"] }
 ```
 
 Import the `Ncp` trait to make the handle methods available:
@@ -53,24 +52,37 @@ async fn permit_joining(ncp: &NcpHandle) -> Result<Duration, apis_saltans_hw::Er
 
 Use this feature for command-side operations such as reading the coordinator IEEE address, scanning
 networks, reading local endpoint descriptors, allowing joins, resolving addresses, requesting
-routes, and transmitting serialized `Datagram` values to `zb_core::Destination` targets.
+routes, and transmitting `zb_aps::Data<bytes::Bytes>` frames to `zb_core::Destination` targets.
 
-`Ncp::transmit(...)` is intentionally two-stage. Awaiting the method sends the request to the driver
-actor and returns an opaque `HwResponse`. Await that response to observe the driver's actual
-transmission result:
+`Ncp::transmit(...)` hands a `zb_aps::Data<bytes::Bytes>` frame to the driver actor and waits for
+the backend to accept it:
 
 ```rust,ignore
-let response = ncp.transmit(destination, datagram).await?;
-response.await?;
+ncp.transmit(destination, frame).await?;
 ```
 
-An error from the first await means the actor command could not be delivered or the driver could not
-start the operation. An error from the second await is the deferred hardware transmission failure.
-`HwResponse` hides whether a backend uses a channel, an I/O future, or another completion mechanism.
+For frames requesting an APS acknowledgement, backends later publish
+`Event::Aps(ApsEvent::Ack(counter))` or
+`Event::Aps(ApsEvent::Nak { sequence: counter, error })`. The `counter` is read from the transmitted
+APS frame.
 
-The common `Error` type implements `std::error::Error`. Backend-specific `Implementation` failures
-are retained as an error source; closed actor channels are represented by the payload-free
-`DriverSend` and `DriverRecv` variants.
+The common `Error` type implements `std::error::Error`. Backend-specific failures retain their
+source, while a stopped driver actor is represented by `Error::ActorUnavailable`.
+
+### Hardware Events
+
+Hardware events are grouped by their protocol responsibility:
+
+```rust,ignore
+use apis_saltans_hw::{ApsEvent, DeviceEvent, Event, NetworkEvent};
+
+let network_up = Event::Network(NetworkEvent::Up);
+let device_joined = Event::Device(DeviceEvent::Joined(address));
+let acknowledged = Event::Aps(ApsEvent::Ack(counter));
+```
+
+`NetworkEvent` reports network state and route errors, `DeviceEvent` reports device membership
+changes, and `ApsEvent` reports received frames and acknowledged transmission results.
 
 ### Implementing a Driver
 
@@ -79,11 +91,25 @@ modules used to implement a backend:
 
 ```toml
 [dependencies]
-apis-saltans-hw = { version = "0.11", features = ["driver"] }
+apis-saltans-hw = { version = "0.13", features = ["driver"] }
 ```
 
 Driver crates implement every `Driver` method on the NCP command actor, including the required
 `get_endpoints()` method that reports the NCP's local application endpoints.
+
+Convert a driver into its opaque handle and driving future with `Driver::into_actor(...)`:
+
+```rust,ignore
+use std::num::NonZeroUsize;
+
+use apis_saltans_hw::Driver;
+
+let (ncp, actor) = driver.into_actor(NonZeroUsize::new(32).expect("non-zero actor capacity"));
+tokio::spawn(actor);
+```
+
+The returned future is deliberately not spawned by `apis-saltans-hw`; backend startup owns the
+runtime and must spawn or otherwise continuously poll it.
 
 Backend startup is owned by the backend crate. It should initialize the concrete driver, translate
 hardware events into common `Event` values, and pass the resulting `NcpHandle` plus `Event` receiver
@@ -105,7 +131,7 @@ of adding direct dependencies on every protocol crate.
 
 ### `Driver`
 
-`Driver` is the implementor-facing command API. The sealed actor runtime receives internal
+`Driver` is the implementor-facing command API. The actor runtime receives internal
 `Message` values and dispatches them to the corresponding `Driver` methods.
 
 Every driver must implement `get_endpoints()` and return one complete
@@ -114,22 +140,18 @@ endpoint ID, profile ID, device ID, application version, and input/output cluste
 coordinator treats this as the authoritative local endpoint set when answering ZDP match descriptor
 requests and when matching clusters for bindings.
 
-`Driver::transmit(...)` starts the operation and returns an `HwResponse`. Drivers can construct the
-response with `HwResponse::new(future)`. The future must be `Send + 'static`, resolve to
-`Result<(), E>`, and use an error type convertible into `apis_saltans_hw::Error`. The actor forwards
-the response without waiting for the inner future to finish.
+`Driver::transmit(...)` receives a complete `aps::Data<bytes::Bytes>` frame. Returning success means
+the hardware backend accepted the frame. For acknowledged transmissions, the backend later emits
+`ApsEvent::Ack` or `ApsEvent::Nak` with the frame's `u8` APS counter.
 
 Transmission uses one method:
 
 ```rust
-transmit(destination, datagram)
+transmit(destination, frame)
 ```
 
-The `Destination` describes the APS target, and the `Datagram` contains APS profile/cluster metadata
-plus the serialized application payload. Drivers must also read
-`Metadata::tx_options()` and apply the complete `zb_aps::TxOptions` mask to the APSDE-DATA request.
-`Metadata::new(...)` requests acknowledged transmission by default; callers such as the OTA Upgrade
-server use an empty mask for page-mode block responses.
+The `Destination` describes the NWK target. The APS data frame contains the destination endpoint,
+cluster, profile, source endpoint, APS counter, control flags, and serialized application payload.
 
 Local endpoint discovery uses:
 
@@ -146,24 +168,9 @@ no longer construct or pass a separate descriptor list to the coordinator.
 actor through a Tokio MPSC channel and waits for the one-shot response associated with each command.
 `get_endpoints()` returns the same local simple descriptors exposed by the driver.
 
-Most proxy methods await the driver result before returning. `Ncp::transmit(...)` instead returns
-the driver's `HwResponse` immediately after actor handoff, allowing coordinator layers to compose
-hardware completion with their own protocol-response futures without depending on the driver's
-completion mechanism.
-
-### `HwResponse`
-
-`HwResponse` is an opaque future with output `Result<(), Error>`. It owns the driver-provided
-completion future and can be moved into a higher-level response object. Await it exactly like any
-other future:
-
-```rust,ignore
-let response = ncp.transmit(destination, datagram).await?;
-response.await?;
-```
-
-Dropping an `HwResponse` drops its inner future. Whether that cancels an operation depends on the
-driver's future and hardware backend; the abstraction does not promise cancellation.
+Every proxy method creates and awaits a response channel. `Ncp::transmit(...)` returns after backend
+acceptance; eventual APS completion returns through the hardware event stream and is identified by
+the APS counter already carried by the frame.
 
 ### Local Endpoint Descriptors
 
@@ -187,5 +194,4 @@ async fn inspect_local_endpoints(ncp: &NcpHandle) -> Result<(), apis_saltans_hw:
 ```
 
 Use `SimpleDescriptor::input_clusters()` and `SimpleDescriptor::output_clusters()` to inspect the
-raw cluster IDs. The standalone `Clusters` helper remains available for code that needs a compact
-set of validated `zb_core::Cluster` values, but it is not the return type of `get_endpoints()`.
+raw cluster IDs.

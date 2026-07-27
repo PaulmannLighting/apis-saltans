@@ -1,48 +1,41 @@
-use bytes::Bytes;
-use zb_aps::Data;
-use zb_core::FullAddress;
-use zb_nwk::Envelope;
-
+pub use self::aps::ApsEvent;
+pub use self::device::DeviceEvent;
+pub use self::network::NetworkEvent;
 pub use self::route_error::RouteError;
 
+mod aps;
+mod device;
+mod network;
 mod route_error;
 
 /// Events emitted by the hardware layer.
-///
-/// Device membership events carry a [`FullAddress`] so consumers receive both
-/// the IEEE address and the current NWK short address for the affected device.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
+#[non_exhaustive]
 pub enum Event {
-    /// The network is up and running.
-    NetworkUp,
+    /// Network state or routing event.
+    Network(NetworkEvent),
 
-    /// The network is down.
-    NetworkDown,
+    /// Device membership event.
+    Device(DeviceEvent),
 
-    /// The network has been opened for new joins.
-    NetworkOpened,
+    /// APS receive or transmission event.
+    Aps(ApsEvent),
+}
 
-    /// The network has been closed for new joins.
-    NetworkClosed,
+impl From<NetworkEvent> for Event {
+    fn from(event: NetworkEvent) -> Self {
+        Self::Network(event)
+    }
+}
 
-    /// A new device has joined the network.
-    DeviceJoined(FullAddress),
+impl From<DeviceEvent> for Event {
+    fn from(event: DeviceEvent) -> Self {
+        Self::Device(event)
+    }
+}
 
-    /// A known device has rejoined the network.
-    DeviceRejoined {
-        /// Complete address of the rejoining device.
-        address: FullAddress,
-
-        /// Whether the rejoining was secured.
-        secured: bool,
-    },
-
-    /// A device has left the network.
-    DeviceLeft(FullAddress),
-
-    /// Raw APS data frame received from a NWK source.
-    MessageReceived(Envelope<Data<Bytes>>),
-
-    /// A routing error.
-    RouteError(RouteError),
+impl From<ApsEvent> for Event {
+    fn from(event: ApsEvent) -> Self {
+        Self::Aps(event)
+    }
 }

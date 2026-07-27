@@ -77,17 +77,10 @@ impl TryFrom<Data<Bytes>> for Frame<Command> {
     fn try_from(frame: Data<Bytes>) -> Result<Self, Self::Error> {
         let (header, payload) = frame.into_parts();
 
-        match header.source_endpoint() {
-            Ok(Endpoint::Data) => {}
-            Ok(endpoint) => return Err(Self::Error::SourceEndpoint(endpoint.into())),
-            Err(endpoint) => return Err(Self::Error::SourceEndpoint(endpoint.into())),
-        }
-
-        let data_endpoint = u8::from(Endpoint::Data);
         if !matches!(
             header.destination(),
             Destination::Unicast(endpoint) | Destination::Broadcast(endpoint)
-                if endpoint == data_endpoint
+                if endpoint == Endpoint::Data
         ) {
             return Err(Self::Error::Destination(header.destination()));
         }

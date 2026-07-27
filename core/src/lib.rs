@@ -1,6 +1,6 @@
 //! Shared Zigbee protocol value types.
 //!
-//! This crate contains the small domain types used across the APIS Saltans
+//! This crate contains the small domain types used across the `apis-saltans`
 //! workspace: IEEE addresses, NWK short addresses, APS endpoints and
 //! destinations, profile and cluster identifiers, node descriptors, ZCL value
 //! types, TLVs, and protocol unit wrappers.

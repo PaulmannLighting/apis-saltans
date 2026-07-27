@@ -1,5 +1,4 @@
 use le_stream::{FromLeStream, ToLeStream};
-use zb_core::endpoint::Reserved;
 use zb_core::{ByteSizedVec, Endpoint, Profile};
 
 pub use self::app_flags::AppFlags;
@@ -68,12 +67,9 @@ impl SimpleDescriptor {
     }
 
     /// Return the validated endpoint.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Reserved`] if the raw endpoint value is reserved.
-    pub fn endpoint(&self) -> Result<Endpoint, Reserved> {
-        self.endpoint.try_into()
+    #[must_use]
+    pub fn endpoint(&self) -> Endpoint {
+        self.endpoint.into()
     }
 
     /// Return the raw profile ID from the descriptor.

@@ -1,32 +1,35 @@
 use zb_core::IeeeAddress;
 
+use crate::Channel;
+
 /// Information about a found network during a network scan.
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Network {
-    channel: u8,
+pub struct NetworkDescriptor {
+    channel: Channel,
     pan_id: u16,
-    ieee_address: IeeeAddress,
-    allow_joins: bool,
+    extended_pan_id: IeeeAddress,
+    permits_joining: bool,
     stack_profile: u8,
     nwk_update_id: u8,
 }
 
-impl Network {
-    /// Create a new `FoundNetwork`.
+impl NetworkDescriptor {
+    /// Create a discovered network descriptor.
     #[must_use]
     pub const fn new(
-        channel: u8,
+        channel: Channel,
         pan_id: u16,
-        ieee_address: IeeeAddress,
-        allow_joins: bool,
+        extended_pan_id: IeeeAddress,
+        permits_joining: bool,
         stack_profile: u8,
         nwk_update_id: u8,
     ) -> Self {
         Self {
             channel,
             pan_id,
-            ieee_address,
-            allow_joins,
+            extended_pan_id,
+            permits_joining,
             stack_profile,
             nwk_update_id,
         }
@@ -34,7 +37,7 @@ impl Network {
 
     /// Get the channel of the found network.
     #[must_use]
-    pub const fn channel(&self) -> u8 {
+    pub const fn channel(&self) -> Channel {
         self.channel
     }
 
@@ -44,16 +47,16 @@ impl Network {
         self.pan_id
     }
 
-    /// Get the IEEE address of the found network.
+    /// Return the network's extended PAN ID.
     #[must_use]
-    pub const fn ieee_address(&self) -> IeeeAddress {
-        self.ieee_address
+    pub const fn extended_pan_id(&self) -> IeeeAddress {
+        self.extended_pan_id
     }
 
     /// Check if the found network allows joins.
     #[must_use]
-    pub const fn allow_joins(&self) -> bool {
-        self.allow_joins
+    pub const fn permits_joining(&self) -> bool {
+        self.permits_joining
     }
 
     /// Get the stack profile of the found network.

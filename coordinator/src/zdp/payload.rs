@@ -3,7 +3,8 @@
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use zb_core::{ClusterSpecific, Profile};
-use zb_hw::Metadata;
+
+use crate::aps::Metadata;
 
 /// A simplified APS frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

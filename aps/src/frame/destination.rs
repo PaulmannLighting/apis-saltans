@@ -1,29 +1,22 @@
 use std::fmt::{self, Display};
 
 use le_stream::ToLeStream;
-use zb_core::{Endpoint, GroupId};
-
-/// A variant of `Destination` with weaker invariants to allow graceful parsing of APS frames.
-pub type WeakDestination = Destination<u8, u16>;
+use zb_core::Endpoint;
 
 /// Represents the destination of an APS frame.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum Destination<E = Endpoint, G = GroupId> {
+pub enum Destination {
     /// A unicast endpoint ID.
-    Unicast(E),
+    Unicast(Endpoint),
 
     /// A broadcast endpoint ID.
-    Broadcast(E),
+    Broadcast(Endpoint),
 
     /// A group address.
-    Group(G),
+    Group(u16),
 }
 
-impl<E, G> Display for Destination<E, G>
-where
-    E: Display,
-    G: Display,
-{
+impl Display for Destination {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unicast(value) => write!(f, "Unicast({value})"),
@@ -33,34 +26,22 @@ where
     }
 }
 
-impl From<Destination> for WeakDestination {
-    fn from(destination: Destination) -> Self {
-        match destination {
-            Destination::Unicast(device) => Self::Unicast(device.into()),
-            Destination::Broadcast(broadcast) => Self::Broadcast(broadcast.into()),
-            Destination::Group(group_id) => Self::Group(group_id.into()),
-        }
-    }
-}
-
-impl From<zb_core::Destination> for WeakDestination {
+impl From<zb_core::Destination> for Destination {
     fn from(destination: zb_core::Destination) -> Self {
         match destination {
-            zb_core::Destination::Device(device) => Self::Unicast(device.endpoint().into()),
-            zb_core::Destination::Broadcast(broadcast) => {
-                Self::Broadcast(broadcast.endpoint().into())
-            }
+            zb_core::Destination::Device(device) => Self::Unicast(device.endpoint()),
+            zb_core::Destination::Broadcast(broadcast) => Self::Broadcast(broadcast.endpoint()),
             zb_core::Destination::Group(group_id) => Self::Group(group_id.into()),
         }
     }
 }
 
-impl ToLeStream for WeakDestination {
+impl ToLeStream for Destination {
     type Iter = iterator::DestinationIterator;
 
     fn to_le_stream(self) -> Self::Iter {
         match self {
-            Self::Unicast(value) | Self::Broadcast(value) => value.into(),
+            Self::Unicast(value) | Self::Broadcast(value) => value.as_u8().into(),
             Self::Group(value) => value.into(),
         }
     }

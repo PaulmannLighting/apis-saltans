@@ -1,10 +1,10 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::Endpoint;
 
 pub use self::delivery_mode::DeliveryMode;
 pub use self::frame_type::FrameType;
-use crate::Extended;
-use crate::frame::destination::WeakDestination;
+use crate::{Destination, Extended};
 
 mod delivery_mode;
 mod frame_type;
@@ -82,15 +82,15 @@ impl Control {
     }
 
     /// Set the delivery mode based on the destination type.
-    pub const fn set_destination(&mut self, destination: WeakDestination) {
+    pub const fn set_destination(&mut self, destination: Destination) {
         match destination {
-            WeakDestination::Unicast(_) => {
+            Destination::Unicast(_) => {
                 self.set_delivery_mode(DeliveryMode::Unicast);
             }
-            WeakDestination::Broadcast(_) => {
+            Destination::Broadcast(_) => {
                 self.set_delivery_mode(DeliveryMode::Broadcast);
             }
-            WeakDestination::Group(_) => {
+            Destination::Group(_) => {
                 self.set_delivery_mode(DeliveryMode::Group);
             }
         }
@@ -123,19 +123,19 @@ impl Control {
         }
     }
 
-    pub(crate) fn deserialize_destination<T>(self, mut bytes: T) -> Option<WeakDestination>
+    pub(crate) fn deserialize_destination<T>(self, mut bytes: T) -> Option<Destination>
     where
         T: Iterator<Item = u8>,
     {
         self.delivery_mode()
             .and_then(|delivery_mode| match delivery_mode {
-                DeliveryMode::Unicast => {
-                    u8::from_le_stream(&mut bytes).map(WeakDestination::Unicast)
-                }
-                DeliveryMode::Broadcast => {
-                    u8::from_le_stream(&mut bytes).map(WeakDestination::Broadcast)
-                }
-                DeliveryMode::Group => u16::from_le_stream(&mut bytes).map(WeakDestination::Group),
+                DeliveryMode::Unicast => u8::from_le_stream(&mut bytes)
+                    .map(Endpoint::from)
+                    .map(Destination::Unicast),
+                DeliveryMode::Broadcast => u8::from_le_stream(&mut bytes)
+                    .map(Endpoint::from)
+                    .map(Destination::Broadcast),
+                DeliveryMode::Group => u16::from_le_stream(&mut bytes).map(Destination::Group),
             })
     }
 }

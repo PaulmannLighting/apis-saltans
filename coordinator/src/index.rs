@@ -1,11 +1,11 @@
 use zb_aps::Data;
 use zb_core::destination::Device;
-use zb_core::endpoint::Reserved;
 use zb_core::{Endpoint, short_id};
-use zb_hw::Metadata;
 use zb_nwk::Source;
 use zb_zcl::Cluster;
 use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
+
+use crate::aps::Metadata;
 
 /// Correlation key for pending transceiver responses.
 ///
@@ -19,7 +19,7 @@ pub struct Index {
     /// The network short address of the remote node.
     short_id: u16,
     /// The endpoint used for the request/response exchange.
-    endpoint: Result<Endpoint, Reserved>,
+    endpoint: Endpoint,
     /// The request cluster id used for response matching.
     cluster_id: u16,
     /// The application profile id used for the exchange.
@@ -36,7 +36,7 @@ impl Index {
     #[must_use]
     pub const fn new(
         short_id: u16,
-        endpoint: Result<Endpoint, Reserved>,
+        endpoint: Endpoint,
         cluster_id: u16,
         profile_id: u16,
         manufacturer_code: Option<u16>,
@@ -67,7 +67,7 @@ impl Index {
     ) -> Self {
         Self::new(
             destination.device().into(),
-            Ok(destination.endpoint()),
+            destination.endpoint(),
             metadata.cluster_id(),
             metadata.profile().into(),
             manufacturer_code,
@@ -84,7 +84,7 @@ impl Index {
     pub fn from_zdp_command(device: short_id::Device, seq: u8, metadata: Metadata) -> Self {
         Self::new(
             device.into(),
-            Ok(Endpoint::Data),
+            Endpoint::Data,
             metadata.cluster_id(),
             metadata.profile().into(),
             None,
@@ -109,7 +109,7 @@ impl Index {
     pub fn from_received_zdp_frame(source: Source, frame: &zb_zdp::Frame<Command>) -> Self {
         Self::new(
             source.node_id(),
-            Ok(Endpoint::Data),
+            Endpoint::Data,
             frame.data().cluster_id() ^ CLUSTER_ID_RESPONSE_MASK,
             frame.data().profile().into(),
             None,

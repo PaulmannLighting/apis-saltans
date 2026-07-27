@@ -24,13 +24,8 @@ pub struct Frame<T> {
 
 impl<T> Frame<T> {
     /// Creates a new APS Data frame without any validation.
-    ///
-    /// # Safety
-    ///
-    /// The caller must ensure that the provided header is consistent with the payload.
-    #[expect(unsafe_code)]
     #[must_use]
-    pub const unsafe fn new_unchecked(header: Header, payload: T) -> Self {
+    pub const fn new(header: Header, payload: T) -> Self {
         Self { header, payload }
     }
 

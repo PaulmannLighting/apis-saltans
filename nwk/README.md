@@ -1,6 +1,6 @@
 # apis-saltans-nwk
 
-Transport-neutral Zigbee NWK receive context types for APIS Saltans.
+Transport-neutral Zigbee NWK receive context types for `apis-saltans`.
 
 This crate defines small value types that carry network-layer context between
 the hardware, APS, ZDP, ZCL, and coordinator crates. It does not parse or

@@ -3,20 +3,18 @@ use zb_core::units::{Deciseconds, Mireds};
 use zb_zcl::Options;
 use zb_zcl::color_control::{MoveToColor, MoveToColorTemperature};
 
+use crate::Error;
 use crate::api::Zcl;
-use crate::{Error, TransmissionResponse};
 
 /// Trait for Color Control cluster operations.
 ///
-/// Each method queues its command and returns a [`TransmissionResponse`]. Await the returned
-/// response to observe the hardware transmission result.
+/// Each method awaits the acknowledged APS transmission before returning.
 pub trait ColorControl {
     /// Move to the specified color (x, y) over the given transition time.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_xy(
         &self,
         destination: Destination,
@@ -24,21 +22,20 @@ pub trait ColorControl {
         color_y: u16,
         transition_time: Deciseconds,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Move to the specified color temperature over the given transition time.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the command cannot be queued. The returned
-    /// [`TransmissionResponse`] reports hardware transmission errors when awaited.
+    /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_color_temperature(
         &self,
         destination: Destination,
         color_temperature: Mireds,
         transition_time: Deciseconds,
         options: Options,
-    ) -> impl Future<Output = Result<TransmissionResponse, Error>> + Send;
+    ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl<T> ColorControl for T
@@ -52,7 +49,7 @@ where
         color_y: u16,
         transition_time: Deciseconds,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(
             destination,
             MoveToColor::new(color_x, color_y, transition_time, options),
@@ -66,7 +63,7 @@ where
         color_temperature: Mireds,
         transition_time: Deciseconds,
         options: Options,
-    ) -> Result<TransmissionResponse, Error> {
+    ) -> Result<(), Error> {
         self.transmit(
             destination,
             MoveToColorTemperature::new(color_temperature, transition_time, options),

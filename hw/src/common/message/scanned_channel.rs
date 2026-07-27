@@ -1,29 +1,32 @@
+use super::Channel;
+
 /// A structure representing the result of a channel scan operation.
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ScannedChannel {
-    channel: u8,
-    max_rssi_value: i8,
+    channel: Channel,
+    max_rssi_dbm: i8,
 }
 
 impl ScannedChannel {
     /// Create a new `ScannedChannel`.
     #[must_use]
-    pub const fn new(channel: u8, max_rssi_value: i8) -> Self {
+    pub const fn new(channel: Channel, max_rssi_dbm: i8) -> Self {
         Self {
             channel,
-            max_rssi_value,
+            max_rssi_dbm,
         }
     }
 
     /// Get the channel number.
     #[must_use]
-    pub const fn channel(&self) -> u8 {
+    pub const fn channel(&self) -> Channel {
         self.channel
     }
 
-    /// Get the maximum RSSI value observed on this channel.
+    /// Return the maximum RSSI observed on this channel in dBm.
     #[must_use]
-    pub const fn max_rssi_value(&self) -> i8 {
-        self.max_rssi_value
+    pub const fn max_rssi_dbm(&self) -> i8 {
+        self.max_rssi_dbm
     }
 }

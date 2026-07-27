@@ -1,7 +1,7 @@
 //! Node Descriptor request processing helpers.
 
 use zb_core::node::LogicalType;
-use zb_core::short_id::ShortId;
+use zb_core::short_id::{Device, ShortId};
 use zb_zdp::Status;
 
 /// Processing selected for an incoming Node Descriptor request.
@@ -10,7 +10,7 @@ pub(super) enum Action {
     RespondWithLocalDescriptor,
 
     /// Resolve a nonlocal address against the NCP's known children.
-    ResolveChild(u16),
+    ResolveChild(Device),
 
     /// Send a response containing the specified error status.
     RespondWithError(Status),
@@ -26,7 +26,10 @@ pub(super) fn action(logical_type: LogicalType, nwk_addr_of_interest: u16) -> Ac
         return Action::RespondWithError(Status::InvalidRequestType);
     }
 
-    Action::ResolveChild(nwk_addr_of_interest)
+    Device::try_from(nwk_addr_of_interest).map_or(
+        Action::RespondWithError(Status::InvalidRequestType),
+        Action::ResolveChild,
+    )
 }
 
 /// Return the status for a child whose node descriptor is unavailable.
@@ -68,11 +71,11 @@ mod tests {
     fn resolves_a_nonlocal_request_received_by_a_router_or_coordinator() {
         assert!(matches!(
             action(LogicalType::Coordinator, REMOTE_NWK_ADDRESS),
-            Action::ResolveChild(REMOTE_NWK_ADDRESS)
+            Action::ResolveChild(address) if address.as_u16() == REMOTE_NWK_ADDRESS
         ));
         assert!(matches!(
             action(LogicalType::Router, REMOTE_NWK_ADDRESS),
-            Action::ResolveChild(REMOTE_NWK_ADDRESS)
+            Action::ResolveChild(address) if address.as_u16() == REMOTE_NWK_ADDRESS
         ));
     }
 

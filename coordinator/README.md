@@ -15,8 +15,6 @@ Public API exports:
 
 - coordinator handle:
   - `Coordinator`
-- hardware driver trait:
-  - `Driver` (re-exported from `apis-saltans-hw`)
 - low-level transport traits:
   - `Zcl`
   - `Zdp`
@@ -32,7 +30,6 @@ Public API exports:
   - `OtaUpdateError`
   - `OtaUpdateResult`
 - deferred response futures:
-  - `TransmissionResponse`
   - `CommunicationResponse<T, U>`
   - `ZclResponse<T>`
   - `ZdpResponse<T>`
@@ -56,7 +53,11 @@ Public API exports:
   - `ReadAttributeResult<T>`
   - `WriteAttributeResult`
 - scan result types:
+  - `Channel`
+  - `ChannelMask`
+  - `ScanDuration`
   - `FoundNetwork`
+  - `NetworkDescriptor`
   - `ScannedChannel`
 - event types:
   - `Event`
@@ -66,17 +67,14 @@ Public API exports:
 - error type:
   - `Error`
 
-Commands without a protocol response return `TransmissionResponse`, which adapts the hardware
-response to the coordinator's `Error` type.
-
-The `Driver` re-export lets integration crates import the coordinator API and implement the NCP
-driver contract from one dependency. Hardware-specific event translation and startup wiring remain
-the backend's responsibility.
+Commands without a protocol response await acknowledged APS completion directly. Hardware driver
+implementations use the separate `apis-saltans-hw` `driver` feature.
 
 ## Coordinator Lifecycle
 
 `Coordinator::start(...)` is synchronous and starts four internal tasks:
 
+- the APS transceiver
 - the ZCL transceiver
 - the ZDP transceiver
 - the OTA Upgrade server
@@ -201,33 +199,39 @@ The `Coordinator` implements `Ota`, `Zcl`, `Zdp`, `Joining`, `AddressTranslation
 implementations over the raw ZCL/ZDP traits, so they are available on the coordinator without a
 separate manager object.
 
-## Deferred Responses
+## Transmission and Protocol Responses
 
-Sending is split into two observable stages. The first await queues work on the coordinator actor
-and returns a response future. Awaiting that returned future observes the hardware and protocol
-result:
-
-- `TransmissionResponse` waits for hardware completion of a ZCL command that has no
-  application-level response and converts hardware failures into `Error::Hardware`.
-- `ZclResponse<T>` waits for hardware completion, then a correlated ZCL frame, and converts that
-  frame to `T`.
-- `ZdpResponse<T>` does the same for a correlated ZDP command.
-- `CommunicationResponse<Raw, T>` is the generic future behind the two protocol aliases.
-
-Consequently, raw transport and command-helper calls commonly use two awaits:
+`Zcl::transmit(...)` and the command helpers await the acknowledged APS result directly:
 
 ```rust,ignore
-let transmission = api.on(destination).await?;
-transmission.await?;
+api.on(destination).await?;
+```
 
+Communication remains split at the protocol boundary:
+
+```rust,ignore
 let response = api.communicate(device, request).await?;
 let typed_response = response.await?;
 ```
 
-The first error reports that the request could not be queued or handed off. The second await reports
-hardware transmission, response-channel, or typed-conversion failures. Dropping a returned response
-future stops driving and observing that future. The coordinator does not promise that dropping it
-cancels work already handed to the hardware backend.
+The communication method queues the command and directly awaits its APS acknowledgement before
+returning `ZclResponse<T>` or `ZdpResponse<T>`. Awaiting that response future then receives and
+converts the correlated protocol response. `CommunicationResponse<Raw, T>` is the generic future
+behind both aliases.
+
+If a payload's `TxOptions` omit `ACKNOWLEDGED_TRANSMISSION`, the coordinator does not create or await
+an APS response. Acknowledged results arrive as hardware
+`Event::Aps(ApsEvent::Ack(counter))` or `Event::Aps(ApsEvent::Nak { sequence: counter, error })`
+values and are correlated by the wrapping `u8` APS counter. After the hardware accepts an
+acknowledged transmission, the APS actor stores its response under that counter. If this replaces a
+response that is still pending, the older response resolves with `TransmissionError::Timeout`.
+Rejected and unacknowledged transmissions do not replace an existing pending response. Dropping a
+protocol response future stops observing its correlated response; it does not cancel work already
+handed to the hardware backend.
+
+ZCL and ZDP actors send APS metadata plus serialized payload bytes to the APS actor. The APS actor
+owns the APS sequence counter and constructs the complete `Data<Bytes>` frame immediately before
+hardware transmission.
 
 `Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and
 expose their source errors and can be constructed through `From`; the send variant intentionally
@@ -320,12 +324,13 @@ coordinator-owned copy.
 
 ```rust,no_run
 use apis_saltans_coordinator::AddressTranslation;
+use zb_core::short_id::Device;
 use zb_core::IeeeAddress;
 
 async fn refresh_short_id(
     api: &impl AddressTranslation,
     ieee: IeeeAddress,
-) -> Result<u16, apis_saltans_coordinator::Error> {
+) -> Result<Device, apis_saltans_coordinator::Error> {
     api.ieee_address_to_short_id(ieee).await
 }
 ```
@@ -336,18 +341,19 @@ cache the result.
 ### Scanning
 
 ```rust,no_run
-use apis_saltans_coordinator::{FoundNetwork, Scanning};
+use apis_saltans_coordinator::{ChannelMask, FoundNetwork, ScanDuration, Scanning};
 
 async fn scan(api: &impl Scanning) -> Result<Vec<FoundNetwork>, apis_saltans_coordinator::Error> {
-    const ALL_CHANNELS: u32 = 0x07fff800;
-    const DEFAULT_DURATION: u8 = 5;
+    const DEFAULT_DURATION: ScanDuration =
+        ScanDuration::new(5).expect("valid scan duration");
 
-    api.scan_networks(ALL_CHANNELS, DEFAULT_DURATION).await
+    api.scan_networks(ChannelMask::ALL, DEFAULT_DURATION).await
 }
 ```
 
 `scan_networks(...)` returns discovered networks. `scan_channels(...)` returns channel scan
-observations.
+observations. Typed channel masks and scan durations reject unsupported channel bits and the
+reserved scan-duration exponent.
 
 ### Routing
 
@@ -591,17 +597,16 @@ request.
 ## Raw Transports
 
 Use `Zcl::transmit(...)` for native cluster commands that do not expect an application-level
-response. Its first await returns a `TransmissionResponse`; await that value to confirm hardware
-completion. It wraps the opaque `zb_hw::HwResponse`, so coordinator users receive the local `Error`
-type without depending on the driver's completion mechanism.
+response. Its await queues the command and, when APS acknowledgement is requested, waits for the
+hardware result.
 
 Use `Zcl::communicate(...)` for commands implementing `ExpectResponse<zb_zcl::Cluster>`. Its first
-await returns `ZclResponse<T::Response>`. Awaiting that response confirms transmission, waits for a
-correlated ZCL frame, and converts the frame to the declared response type.
+await confirms APS transmission and returns `ZclResponse<T::Response>`. Awaiting that response waits
+for a correlated ZCL frame and converts the frame to the declared response type.
 
 Use `Zdp::communicate(...)` for ZDP requests implementing `ExpectResponse<zb_zdp::Command>`. It
 returns the equivalent `ZdpResponse<T::Response>`. The composed traits above are thin wrappers over
-these raw transports; most of them await the deferred response internally.
+these raw transports; most of them await the protocol response internally.
 
 ## Error Model
 

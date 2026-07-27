@@ -1,19 +1,18 @@
-#![cfg(any(feature = "coordinator", feature = "driver"))]
+#![cfg(feature = "types")]
 
 //! Common hardware abstraction types shared by drivers and coordinators.
 
-pub use self::clusters::Clusters;
-pub use self::datagram::{Datagram, Metadata};
+#[cfg(feature = "driver")]
 pub use self::driver::Driver;
-pub use self::error::Error;
-pub use self::event::{Event, RouteError};
-pub use self::hw_response::HwResponse;
-pub use self::message::{FoundNetwork, Message, NcpHandle, Network, ScannedChannel, WeakNcpHandle};
+pub use self::error::{Error, Operation, TransmissionError};
+pub use self::event::{ApsEvent, DeviceEvent, Event, NetworkEvent, RouteError};
+pub use self::message::{
+    Channel, ChannelMask, FoundNetwork, NcpHandle, NetworkDescriptor, ScanDuration, ScannedChannel,
+    WeakNcpHandle,
+};
 
-mod clusters;
-mod datagram;
+#[cfg(feature = "driver")]
 mod driver;
 mod error;
 mod event;
-mod hw_response;
-mod message;
+pub mod message;
