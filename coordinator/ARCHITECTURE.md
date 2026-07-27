@@ -41,9 +41,9 @@ wrapping `u8` APS frame counter. For every outgoing message it:
 1. consumes the supplied APS metadata and serialized payload
 2. assigns its next APS frame counter
 3. constructs the APS header and `zb_aps::Data<bytes::Bytes>` frame
-4. resolves any older response still pending for that counter with `TransmissionError::Timeout`
-5. forwards the completed frame and destination to the hardware actor
-6. stores an acknowledged caller under the APS counter after hardware acceptance
+4. forwards the completed frame and destination to the hardware actor
+5. stores an acknowledged caller under the APS counter after hardware acceptance
+6. resolves any response replaced by that insertion with `TransmissionError::Timeout`
 
 Its command protocol contains:
 
@@ -64,13 +64,14 @@ response channel. Its completion methods forward hardware APS events from the mu
   `ApsEvent::Ack` or `ApsEvent::Nak`.
 - Unacknowledged frame: omit the caller response and return after actor handoff.
 
-The counter-reuse check applies before every hardware send attempt, including an unacknowledged
-send or one the backend subsequently rejects. At that point the older completion is no longer safe
-to correlate, so its caller receives `TransmissionError::Timeout`.
+Counter replacement occurs only after the hardware accepts a transmission that has an
+acknowledgement response. Unacknowledged transmissions have no response to store, and rejected
+transmissions never reach the insertion step, so neither replaces an older pending response.
 
 ```mermaid
 sequenceDiagram
     participant P as ZCL or ZDP actor
+    participant O as Previous caller
     participant A as APS actor
     participant H as Hardware actor
     participant M as Event mux
@@ -78,10 +79,13 @@ sequenceDiagram
     P->>P: serialize protocol payload
     P->>A: Transmit destination, metadata, payload
     A->>A: assign counter and build Data&lt;Bytes&gt;
-    A->>A: timeout older response for counter
     A->>H: transmit destination, frame
     H-->>A: accepted
     opt acknowledged transmission
+        A->>A: store response under counter
+        opt response was replaced
+            A-->>O: TransmissionError::Timeout
+        end
         H-->>M: Event::Aps with counter and result
         M-->>A: APS result
         A-->>P: completed APS result

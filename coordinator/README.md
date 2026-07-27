@@ -143,11 +143,12 @@ behind both aliases.
 If a payload's `TxOptions` omit `ACKNOWLEDGED_TRANSMISSION`, the coordinator does not create or await
 an APS response. Acknowledged results arrive as hardware
 `Event::Aps(ApsEvent::Ack(counter))` or `Event::Aps(ApsEvent::Nak { sequence: counter, error })`
-values and are correlated by the wrapping `u8` APS counter. Before attempting a transmission whose
-counter still has a pending response, the APS actor resolves that older response with
-`TransmissionError::Timeout`. This prevents counter reuse from silently replacing the existing
-pending caller when the counter wraps. Dropping a protocol response future stops observing its
-correlated response; it does not cancel work already handed to the hardware backend.
+values and are correlated by the wrapping `u8` APS counter. After the hardware accepts an
+acknowledged transmission, the APS actor stores its response under that counter. If this replaces a
+response that is still pending, the older response resolves with `TransmissionError::Timeout`.
+Rejected and unacknowledged transmissions do not replace an existing pending response. Dropping a
+protocol response future stops observing its correlated response; it does not cancel work already
+handed to the hardware backend.
 
 ZCL and ZDP actors send APS metadata plus serialized payload bytes to the APS actor. The APS actor
 owns the APS sequence counter and constructs the complete `Data<Bytes>` frame immediately before

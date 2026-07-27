@@ -117,7 +117,7 @@ impl<T> Transceiver<T> {
         destination: Destination,
         metadata: Metadata,
         payload: Bytes,
-    ) -> (u8, Data<Bytes>) {
+    ) -> Data<Bytes> {
         let counter = self.next_counter();
         let mut header = Header::new(
             destination.into(),
@@ -129,28 +129,7 @@ impl<T> Transceiver<T> {
         );
         header.set_security(metadata.tx_options().contains(TxOptions::SECURITY_ENABLED));
         header.set_ack_request(metadata.acknowledged());
-        let frame = Data::new(header, payload);
-        (counter, frame)
-    }
-
-    fn expire_pending_response(&mut self, counter: u8) {
-        let Some(sender) = self.responses.remove(&counter) else {
-            return;
-        };
-        sender
-            .send(Err(zb_hw::TransmissionError::Timeout.into()))
-            .unwrap_or_else(drop);
-    }
-
-    fn prepare_transmission(
-        &mut self,
-        destination: Destination,
-        metadata: Metadata,
-        payload: Bytes,
-    ) -> (u8, Data<Bytes>) {
-        let (counter, frame) = self.make_frame(destination, metadata, payload);
-        self.expire_pending_response(counter);
-        (counter, frame)
+        Data::new(header, payload)
     }
 
     fn handle_ack(&mut self, counter: u8) {
@@ -168,6 +147,32 @@ impl<T> Transceiver<T> {
         };
         sender.send(Err(error.into())).unwrap_or_else(drop);
     }
+
+    /// Store a response and time out the pending response it replaces, if any.
+    fn store_pending_response(&mut self, counter: u8, response: PendingResponse) {
+        let Some(pending_response) = self.responses.insert(counter, response) else {
+            return;
+        };
+        pending_response
+            .send(Err(zb_hw::TransmissionError::Timeout.into()))
+            .unwrap_or_else(drop);
+    }
+
+    /// Store the response for a transmission accepted by the hardware.
+    fn handle_accepted_transmission(&mut self, counter: u8, response: Option<PendingResponse>) {
+        if let Some(response) = response {
+            self.store_pending_response(counter, response);
+        }
+    }
+
+    /// Return a hardware rejection to the caller or log an unacknowledged rejection.
+    fn handle_rejected_transmission(response: Option<PendingResponse>, error: zb_hw::Error) {
+        if let Some(response) = response {
+            response.send(Err(error)).unwrap_or_else(drop);
+        } else {
+            debug!("Hardware rejected APS frame: {error:?}");
+        }
+    }
 }
 
 impl<T> Transceiver<T>
@@ -184,23 +189,8 @@ where
                     payload,
                     response,
                 } => {
-                    let (counter, frame) =
-                        self.prepare_transmission(destination, metadata, payload);
-
-                    match self.ncp.transmit(destination, frame).await {
-                        Ok(()) => {
-                            if let Some(response) = response {
-                                self.responses.insert(counter, response);
-                            }
-                        }
-                        Err(error) => {
-                            if let Some(response) = response {
-                                response.send(Err(error)).unwrap_or_else(drop);
-                            } else {
-                                debug!("Hardware rejected APS frame: {error:?}");
-                            }
-                        }
-                    }
+                    self.transmit(destination, metadata, payload, response)
+                        .await;
                 }
                 Message::Ack { counter } => {
                     self.handle_ack(counter);
@@ -209,6 +199,23 @@ where
                     self.handle_nak(counter, error);
                 }
             }
+        }
+    }
+
+    /// Construct an APS frame and submit it to the hardware actor.
+    async fn transmit(
+        &mut self,
+        destination: Destination,
+        metadata: Metadata,
+        payload: Bytes,
+        response: Option<PendingResponse>,
+    ) {
+        let frame = self.make_frame(destination, metadata, payload);
+        let counter = frame.header().counter();
+
+        match self.ncp.transmit(destination, frame).await {
+            Ok(()) => self.handle_accepted_transmission(counter, response),
+            Err(error) => Self::handle_rejected_transmission(response, error),
         }
     }
 }
@@ -323,10 +330,9 @@ mod tests {
     fn actor_constructs_frame_with_its_counter() {
         let mut transceiver = Transceiver::new(());
         transceiver.counter = LAST_COUNTER;
-        let (counter, frame) =
+        let frame =
             transceiver.make_frame(destination(), metadata(TxOptions::empty()), Bytes::new());
 
-        assert_eq!(counter, LAST_COUNTER);
         assert_eq!(frame.header().counter(), LAST_COUNTER);
         assert!(!frame.header().control().contains(Control::ACK_REQUEST));
     }
@@ -374,29 +380,32 @@ mod tests {
     }
 
     #[test]
-    fn reusing_counter_times_out_pending_transmission() {
+    fn replacing_pending_transmission_times_out_previous_transmission() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
                 let mut transceiver = Transceiver::new(());
-                let (response, result) = tokio::sync::oneshot::channel();
-                transceiver.responses.insert(LAST_COUNTER, response);
-                transceiver.counter = LAST_COUNTER;
+                let (previous_response, previous_result) = tokio::sync::oneshot::channel();
+                let (replacement_response, replacement_result) = tokio::sync::oneshot::channel();
+                transceiver
+                    .responses
+                    .insert(LAST_COUNTER, previous_response);
 
-                let (counter, _) = transceiver.prepare_transmission(
-                    destination(),
-                    metadata(TxOptions::empty()),
-                    Bytes::new(),
-                );
-                assert_eq!(counter, LAST_COUNTER);
-
+                transceiver.store_pending_response(LAST_COUNTER, replacement_response);
                 assert!(matches!(
-                    result.await.expect("response must be available"),
+                    previous_result.await.expect("response must be available"),
                     Err(zb_hw::Error::Transmission(
                         zb_hw::TransmissionError::Timeout
                     ))
                 ));
-                assert!(transceiver.responses.is_empty());
+
+                transceiver.handle_ack(LAST_COUNTER);
+                assert!(
+                    replacement_result
+                        .await
+                        .expect("replacement response must be available")
+                        .is_ok()
+                );
             });
     }
 }
