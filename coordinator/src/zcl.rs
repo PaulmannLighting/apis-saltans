@@ -34,44 +34,23 @@ mod subscription;
 /// Zigbee transceiver actor.
 #[derive(Debug)]
 pub struct Transceiver {
-    ncp: Option<NcpHandle>,
-    endpoints: Option<Box<[SimpleDescriptor]>>,
+    ncp: NcpHandle,
     aps: Aps,
     events: Sender<Event>,
+    endpoints: Option<Box<[SimpleDescriptor]>>,
     subscriptions: Vec<Subscription>,
     responses: BTreeMap<Index, oneshot::Sender<Cluster>>,
     seq: u8,
 }
 
 impl Transceiver {
-    /// Create a test transceiver with a fixed set of local endpoint descriptors.
-    ///
-    /// Register subscriptions by sending [`Message::Subscribe`] to the actor.
-    #[cfg(test)]
-    #[must_use]
-    const fn with_endpoints(
-        aps: Aps,
-        events: Sender<Event>,
-        endpoints: Box<[SimpleDescriptor]>,
-    ) -> Self {
-        Self {
-            ncp: None,
-            endpoints: Some(endpoints),
-            aps,
-            events,
-            subscriptions: Vec::new(),
-            responses: BTreeMap::new(),
-            seq: 0,
-        }
-    }
-
     /// Create a transceiver that obtains local endpoint descriptors from the NCP on demand.
-    const fn with_ncp(ncp: NcpHandle, aps: Aps, events: Sender<Event>) -> Self {
+    pub const fn new(ncp: NcpHandle, aps: Aps, events: Sender<Event>) -> Self {
         Self {
-            ncp: Some(ncp),
-            endpoints: None,
+            ncp,
             aps,
             events,
+            endpoints: None,
             subscriptions: Vec::new(),
             responses: BTreeMap::new(),
             seq: 0,
@@ -301,10 +280,7 @@ impl Transceiver {
         direction: Direction,
     ) -> Result<Endpoint, Error> {
         if self.endpoints.is_none() {
-            let Some(ncp) = &self.ncp else {
-                return Err(Self::no_source_endpoint_error(aps_metadata, direction));
-            };
-            self.endpoints = Some(ncp.get_endpoints().await?);
+            self.endpoints = Some(self.ncp.get_endpoints().await?);
         }
 
         self.endpoints
@@ -374,21 +350,29 @@ impl Transceiver {
     /// Start the ZCL transceiver.
     pub fn spawn(ncp: NcpHandle, aps: Aps, events: Sender<Event>) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::with_ncp(ncp, aps, events).run(zcl_rx));
+        spawn(Self::new(ncp, aps, events).run(zcl_rx));
         zcl_tx
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::future::poll_fn;
+    use std::future::{Future, poll_fn};
+    use std::num::NonZeroUsize;
+    use std::time::Duration;
 
+    use bytes::Bytes;
     use tokio::runtime::Builder;
     use tokio::sync::mpsc::channel;
     use zb_aps::Data;
     use zb_aps::data::Header as ApsHeader;
     use zb_core::endpoint::Application;
-    use zb_core::{Cluster as ClusterId, Direction, Endpoint, Profile};
+    use zb_core::short_id::Device;
+    use zb_core::{Cluster as ClusterId, Destination, Direction, Endpoint, IeeeAddress, Profile};
+    use zb_hw::{
+        ChannelMask, Driver, Error as HardwareError, FoundNetwork, NcpHandle, Operation,
+        ScanDuration, ScannedChannel,
+    };
     use zb_nwk::Source;
     use zb_zcl::on_off::{Command as OnOffCommand, On};
     use zb_zcl::{Cluster, Command, Frame, Header as ZclHeader, Scope};
@@ -403,6 +387,70 @@ mod tests {
     const APS_COUNTER: u8 = 9;
     const LOCAL_ENDPOINT_ID: u8 = 0x0B;
     const DEVICE_ID: u16 = 0x0100;
+    const NCP_CHANNEL_SIZE: NonZeroUsize = NonZeroUsize::MIN;
+
+    #[derive(Debug)]
+    struct TestDriver;
+
+    impl Driver for TestDriver {
+        async fn get_endpoints(&self) -> Result<Box<[SimpleDescriptor]>, HardwareError> {
+            Ok(Box::default())
+        }
+
+        async fn get_pan_id(&mut self) -> Result<u16, HardwareError> {
+            Err(HardwareError::Unsupported(Operation::GetPanId))
+        }
+
+        async fn get_ieee_address(&mut self) -> Result<IeeeAddress, HardwareError> {
+            Err(HardwareError::Unsupported(Operation::GetIeeeAddress))
+        }
+
+        async fn scan_networks(
+            &mut self,
+            _channel_mask: ChannelMask,
+            _duration: ScanDuration,
+        ) -> Result<Vec<FoundNetwork>, HardwareError> {
+            Err(HardwareError::Unsupported(Operation::ScanNetworks))
+        }
+
+        async fn scan_channels(
+            &mut self,
+            _channel_mask: ChannelMask,
+            _duration: ScanDuration,
+        ) -> Result<Vec<ScannedChannel>, HardwareError> {
+            Err(HardwareError::Unsupported(Operation::ScanChannels))
+        }
+
+        async fn allow_joins(&mut self, _duration: Duration) -> Result<Duration, HardwareError> {
+            Err(HardwareError::Unsupported(Operation::AllowJoins))
+        }
+
+        async fn route_request(&mut self, _radius: u8) -> Result<(), HardwareError> {
+            Err(HardwareError::Unsupported(Operation::RouteRequest))
+        }
+
+        async fn short_id_to_ieee_address(
+            &mut self,
+            _short_id: Device,
+        ) -> Result<IeeeAddress, HardwareError> {
+            Err(HardwareError::Unsupported(Operation::ShortIdToIeeeAddress))
+        }
+
+        async fn ieee_address_to_short_id(
+            &mut self,
+            _ieee_address: IeeeAddress,
+        ) -> Result<Device, HardwareError> {
+            Err(HardwareError::Unsupported(Operation::IeeeAddressToShortId))
+        }
+
+        async fn transmit(
+            &mut self,
+            _destination: Destination,
+            _frame: Data<Bytes>,
+        ) -> Result<(), HardwareError> {
+            Err(HardwareError::Unsupported(Operation::Transmit))
+        }
+    }
 
     #[test]
     fn routes_matching_frames_to_a_generic_subscription() {
@@ -419,10 +467,9 @@ mod tests {
                 );
                 let (subscription, mut subscribed_frames) = Subscription::channel(filter);
                 let (transceiver, messages) = channel(MPSC_CHANNEL_SIZE);
-                tokio::spawn(
-                    Transceiver::with_endpoints(Aps::new(aps_sender), events, Box::default())
-                        .run(messages),
-                );
+                let (ncp, ncp_actor) = test_ncp();
+                tokio::spawn(ncp_actor);
+                tokio::spawn(Transceiver::new(ncp, Aps::new(aps_sender), events).run(messages));
                 let source = Source::new(SOURCE_NODE_ID, None);
 
                 transceiver
@@ -447,6 +494,10 @@ mod tests {
                 ));
                 assert!(application_events.try_recv().is_err());
             });
+    }
+
+    fn test_ncp() -> (NcpHandle, impl Future<Output = TestDriver> + Send) {
+        TestDriver.into_actor(NCP_CHANNEL_SIZE)
     }
 
     #[test]

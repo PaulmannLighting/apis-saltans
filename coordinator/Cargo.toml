@@ -28,5 +28,8 @@ zb-nwk.workspace = true
 zb-zcl = { workspace = true, features = ["serde"] }
 zb-zdp = { workspace = true, features = ["serde"] }
 
+[dev-dependencies]
+zb-hw = { workspace = true, features = ["driver"] }
+
 [lints]
 workspace = true
