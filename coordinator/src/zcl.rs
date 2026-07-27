@@ -11,7 +11,7 @@ use tokio::sync::oneshot::{self, channel};
 use zb_aps::Data;
 use zb_core::destination::Device;
 use zb_core::{Destination, Direction, Endpoint};
-use zb_hw::{Ncp, NcpHandle};
+use zb_hw::NcpHandle;
 use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame, Header};
 use zb_zdp::SimpleDescriptor;

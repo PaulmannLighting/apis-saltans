@@ -24,7 +24,7 @@ flowchart TD
     ZDP -->|Data&lt;Bytes&gt;| APS
     ZCL -->|endpoint descriptor query| HW
     ZDP -->|endpoint and address queries| HW
-    APS -->|Ncp::transmit| HW
+    APS -->|NcpHandle::transmit| HW
     HW -->|zb_hw::Event| M
     M -->|received ZCL frame| ZCL
     M -->|received ZDP frame| ZDP
@@ -40,8 +40,8 @@ use `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
 
 ## APS Actor
 
-The APS actor is the only coordinator actor that transmits directly through `zb_hw::Ncp`. It owns a
-wrapping `u8` APS frame counter. For every outgoing message it:
+The APS actor is the only coordinator actor that transmits directly through `zb_hw::NcpHandle`. It
+owns a wrapping `u8` APS frame counter. For every outgoing message it:
 
 1. consumes the supplied APS metadata and serialized payload
 2. assigns its next APS frame counter

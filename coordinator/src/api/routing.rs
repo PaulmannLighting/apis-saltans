@@ -1,5 +1,3 @@
-use zb_hw::Ncp;
-
 use crate::{Coordinator, Error};
 
 /// Trait for requesting route discovery through the hardware/NCP.
@@ -14,6 +12,6 @@ pub trait Routing {
 
 impl Routing for Coordinator {
     async fn route_request(&self, radius: u8) -> Result<(), Error> {
-        Ok(Ncp::route_request(&self.ncp, radius).await?)
+        Ok(self.ncp.route_request(radius).await?)
     }
 }

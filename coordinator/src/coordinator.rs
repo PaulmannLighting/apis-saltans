@@ -19,8 +19,8 @@ pub struct Coordinator {
 impl Coordinator {
     /// Start the coordinator on the given hardware.
     ///
-    /// Local endpoint descriptors are obtained from the NCP through [`zb_hw::Ncp::get_endpoints`]
-    /// when needed; callers do not supply them during startup.
+    /// Local endpoint descriptors are obtained through [`NcpHandle::get_endpoints`] when needed;
+    /// callers do not supply them during startup.
     ///
     /// # Errors
     ///

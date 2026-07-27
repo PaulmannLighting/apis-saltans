@@ -6,7 +6,7 @@
 //! No default features are enabled. Enable the API surface needed by the depending crate:
 //!
 //! - `types` exposes shared handles, errors, events, and scan parameters and results.
-//! - `coordinator` adds the caller-facing `Ncp` trait and enables `types`.
+//! - `coordinator` adds the caller-facing inherent methods on `NcpHandle` and enables `types`.
 //! - `driver` adds the implementor-facing `Driver` trait and protocol re-export modules, and enables
 //!   `types`.
 //!
@@ -18,14 +18,14 @@
 //! `apis_saltans_hw::core::IeeeAddress` or `apis_saltans_hw::zdp::SimpleDescriptor`, without adding
 //! direct dependencies on each protocol crate.
 //!
-//! `Ncp::transmit` returns after the hardware backend accepts an APS frame. Hardware backends report
-//! acknowledged transmission completion asynchronously through `Event::Aps(ApsEvent::Ack)` and
-//! `Event::Aps(ApsEvent::Nak)`.
+//! `NcpHandle::transmit` returns after the hardware backend accepts an APS frame. Hardware backends
+//! report acknowledged transmission completion asynchronously through `Event::Aps(ApsEvent::Ack)`
+//! and `Event::Aps(ApsEvent::Nak)`.
 //!
 //! Every `Driver` implementation must provide the NCP's local application endpoints through
 //! `Driver::get_endpoints`. Each endpoint is represented by a complete
 //! `zb_zdp::SimpleDescriptor`; coordinator code retrieves the same descriptors through
-//! `Ncp::get_endpoints`.
+//! `NcpHandle::get_endpoints`.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[cfg(feature = "types")]
@@ -42,13 +42,9 @@ pub use self::common::{
     NetworkDescriptor, NetworkEvent, Operation, RouteError, ScanDuration, ScannedChannel,
     TransmissionError, WeakNcpHandle,
 };
-#[cfg(feature = "coordinator")]
-#[cfg_attr(docsrs, doc(cfg(feature = "coordinator")))]
-pub use self::coordinator::*;
 #[cfg(feature = "driver")]
 #[cfg_attr(docsrs, doc(cfg(feature = "driver")))]
 pub use self::reexports::{aps, core, nwk, zdp};
 
 mod common;
-mod coordinator;
 mod reexports;

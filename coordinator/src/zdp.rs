@@ -13,7 +13,7 @@ use zb_aps::{Data, DeliveryMode};
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
 use zb_core::{Destination, Endpoint, FullAddress, destination};
-use zb_hw::Ncp;
+use zb_hw::NcpHandle;
 use zb_nwk::Source;
 use zb_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
@@ -67,10 +67,7 @@ impl<T> Transceiver<T> {
     }
 }
 
-impl<T> Transceiver<T>
-where
-    T: Ncp + Sync,
-{
+impl Transceiver<NcpHandle> {
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
@@ -346,13 +343,10 @@ where
     }
 }
 
-impl<T> Transceiver<T>
-where
-    T: Ncp + Send + Sync + 'static,
-{
+impl Transceiver<NcpHandle> {
     /// Start the ZDP transceiver.
     pub fn spawn(
-        ncp: T,
+        ncp: NcpHandle,
         aps: Aps,
         events: Sender<Event>,
         descriptor: Descriptor,

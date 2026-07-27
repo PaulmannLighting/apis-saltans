@@ -1,11 +1,6 @@
-#[cfg(feature = "driver")]
-use std::num::NonZeroUsize;
 use std::time::Duration;
 
 use bytes::Bytes;
-#[cfg(feature = "driver")]
-use tokio::sync::mpsc::channel;
-use tokio::sync::mpsc::{Sender as MpscSender, WeakSender};
 use tokio::sync::oneshot::Sender;
 use zb_aps::Data;
 use zb_core::short_id::Device;
@@ -24,52 +19,6 @@ mod channel_mask;
 mod found_network;
 mod scan_duration;
 mod scanned_channel;
-
-/// A handle on the NCP.
-#[derive(Clone, Debug)]
-pub struct NcpHandle {
-    sender: MpscSender<Message>,
-}
-
-impl NcpHandle {
-    #[cfg(feature = "driver")]
-    pub(crate) fn channel(capacity: NonZeroUsize) -> (Self, tokio::sync::mpsc::Receiver<Message>) {
-        let (sender, receiver) = channel(capacity.get());
-        let handle = Self { sender };
-        (handle, receiver)
-    }
-
-    #[cfg(feature = "coordinator")]
-    pub(crate) async fn send(&self, message: Message) -> Result<(), Error> {
-        Ok(self.sender.send(message).await?)
-    }
-
-    /// Create a weak handle that does not keep the driver actor channel open.
-    #[must_use]
-    pub fn downgrade(&self) -> WeakNcpHandle {
-        WeakNcpHandle(self.sender.downgrade())
-    }
-
-    /// Return whether the driver actor channel has closed.
-    #[must_use]
-    pub fn is_closed(&self) -> bool {
-        self.sender.is_closed()
-    }
-}
-
-/// A weak handle on the NCP that does not keep its actor channel open.
-#[derive(Clone, Debug)]
-pub struct WeakNcpHandle(WeakSender<Message>);
-
-impl WeakNcpHandle {
-    /// Attempt to upgrade this weak handle.
-    #[must_use]
-    pub fn upgrade(&self) -> Option<NcpHandle> {
-        Some(NcpHandle {
-            sender: self.0.upgrade()?,
-        })
-    }
-}
 
 /// Messages exchanged with the NCP driver actor.
 #[cfg_attr(

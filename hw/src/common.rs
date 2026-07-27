@@ -7,12 +7,13 @@ pub use self::driver::Driver;
 pub use self::error::{Error, Operation, TransmissionError};
 pub use self::event::{ApsEvent, DeviceEvent, Event, NetworkEvent, RouteError};
 pub use self::message::{
-    Channel, ChannelMask, FoundNetwork, NcpHandle, NetworkDescriptor, ScanDuration, ScannedChannel,
-    WeakNcpHandle,
+    Channel, ChannelMask, FoundNetwork, NetworkDescriptor, ScanDuration, ScannedChannel,
 };
+pub use self::ncp_handle::{NcpHandle, WeakNcpHandle};
 
 #[cfg(feature = "driver")]
 mod driver;
 mod error;
 mod event;
 pub mod message;
+mod ncp_handle;

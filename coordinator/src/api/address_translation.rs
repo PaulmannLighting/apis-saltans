@@ -1,6 +1,5 @@
 use zb_core::IeeeAddress;
 use zb_core::short_id::Device;
-use zb_hw::Ncp;
 
 use crate::{Coordinator, Error};
 
@@ -33,10 +32,10 @@ pub trait AddressTranslation {
 
 impl AddressTranslation for Coordinator {
     async fn short_id_to_ieee_address(&self, short_id: Device) -> Result<IeeeAddress, Error> {
-        Ok(Ncp::short_id_to_ieee_address(&self.ncp, short_id).await?)
+        Ok(self.ncp.short_id_to_ieee_address(short_id).await?)
     }
 
     async fn ieee_address_to_short_id(&self, ieee_address: IeeeAddress) -> Result<Device, Error> {
-        Ok(Ncp::ieee_address_to_short_id(&self.ncp, ieee_address).await?)
+        Ok(self.ncp.ieee_address_to_short_id(ieee_address).await?)
     }
 }

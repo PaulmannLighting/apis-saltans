@@ -10,7 +10,7 @@ use tokio::sync::oneshot::channel;
 use zb_aps::data::Header;
 use zb_aps::{Data, TxOptions};
 use zb_core::{Destination, Endpoint};
-use zb_hw::Ncp;
+use zb_hw::NcpHandle;
 
 pub use self::message::Message;
 pub use self::metadata::Metadata;
@@ -177,10 +177,7 @@ impl<T> Transceiver<T> {
     }
 }
 
-impl<T> Transceiver<T>
-where
-    T: Ncp + Sync,
-{
+impl Transceiver<NcpHandle> {
     /// Run the APS actor.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
@@ -225,12 +222,9 @@ where
     }
 }
 
-impl<T> Transceiver<T>
-where
-    T: Ncp + Send + Sync + 'static,
-{
+impl Transceiver<NcpHandle> {
     /// Spawn the APS actor.
-    pub fn spawn(ncp: T) -> Aps {
+    pub fn spawn(ncp: NcpHandle) -> Aps {
         let (aps_tx, aps_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
         spawn(Self::new(ncp).run(aps_rx));
         Aps::new(aps_tx)

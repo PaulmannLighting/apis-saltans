@@ -1,4 +1,3 @@
-use zb_hw::Ncp;
 pub use zb_hw::{
     Channel, ChannelMask, FoundNetwork, NetworkDescriptor, ScanDuration, ScannedChannel,
 };
@@ -39,7 +38,7 @@ impl Scanning for Coordinator {
         channel_mask: ChannelMask,
         duration: ScanDuration,
     ) -> Result<Vec<FoundNetwork>, Error> {
-        Ok(Ncp::scan_networks(&self.ncp, channel_mask, duration).await?)
+        Ok(self.ncp.scan_networks(channel_mask, duration).await?)
     }
 
     async fn scan_channels(
@@ -47,6 +46,6 @@ impl Scanning for Coordinator {
         channel_mask: ChannelMask,
         duration: ScanDuration,
     ) -> Result<Vec<ScannedChannel>, Error> {
-        Ok(Ncp::scan_channels(&self.ncp, channel_mask, duration).await?)
+        Ok(self.ncp.scan_channels(channel_mask, duration).await?)
     }
 }

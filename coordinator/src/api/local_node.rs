@@ -1,5 +1,4 @@
 use zb_core::IeeeAddress;
-use zb_hw::Ncp;
 use zb_zdp::SimpleDescriptor;
 
 use crate::{Coordinator, Error};
@@ -33,14 +32,14 @@ pub trait LocalNode {
 
 impl LocalNode for Coordinator {
     async fn get_endpoints(&self) -> Result<Box<[SimpleDescriptor]>, Error> {
-        Ok(Ncp::get_endpoints(&self.ncp).await?)
+        Ok(self.ncp.get_endpoints().await?)
     }
 
     async fn get_pan_id(&self) -> Result<u16, Error> {
-        Ok(Ncp::get_pan_id(&self.ncp).await?)
+        Ok(self.ncp.get_pan_id().await?)
     }
 
     async fn get_ieee_address(&self) -> Result<IeeeAddress, Error> {
-        Ok(Ncp::get_ieee_address(&self.ncp).await?)
+        Ok(self.ncp.get_ieee_address().await?)
     }
 }

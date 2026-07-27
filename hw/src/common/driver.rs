@@ -239,7 +239,7 @@ mod tests {
     use zb_zdp::SimpleDescriptor;
 
     use super::Driver;
-    use crate::{ChannelMask, Error, FoundNetwork, Ncp, Operation, ScanDuration, ScannedChannel};
+    use crate::{ChannelMask, Error, FoundNetwork, Operation, ScanDuration, ScannedChannel};
 
     const ACTOR_CAPACITY: NonZeroUsize = NonZeroUsize::MIN;
     const APS_COUNTER: u8 = 0;
@@ -349,14 +349,16 @@ mod tests {
                 let task = tokio::spawn(actor);
 
                 assert_eq!(
-                    Ncp::get_pan_id(&handle)
+                    handle
+                        .get_pan_id()
                         .await
                         .expect("fake driver must return PAN ID"),
                     PAN_ID
                 );
 
                 let destination = destination();
-                Ncp::transmit(&handle, destination, frame(destination))
+                handle
+                    .transmit(destination, frame(destination))
                     .await
                     .expect("fake driver must accept transmission");
 
@@ -385,7 +387,7 @@ mod tests {
                 let destination = destination();
 
                 assert!(matches!(
-                    Ncp::transmit(&handle, destination, frame(destination)).await,
+                    handle.transmit(destination, frame(destination)).await,
                     Err(Error::Unsupported(Operation::Transmit))
                 ));
 

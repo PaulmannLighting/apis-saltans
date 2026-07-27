@@ -1,7 +1,5 @@
 use std::time::Duration;
 
-use zb_hw::Ncp;
-
 use crate::{Coordinator, Error};
 
 /// Trait to manage joining the network.

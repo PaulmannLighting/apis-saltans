@@ -1,14 +1,14 @@
 # apis-saltans-hw Architecture
 
 `apis-saltans-hw` is the actor-oriented boundary between coordinator logic and concrete Zigbee
-network co-processor drivers. Callers hold an `NcpHandle`, use the `Ncp` trait to enqueue commands,
+network co-processor drivers. Callers use the inherent methods on `NcpHandle` to enqueue commands
 and receive results through one-shot channels carried by the actor messages.
 
 ## Boundaries
 
 - The `types` feature exposes opaque actor handles, common events and errors, and typed scan values.
 - The `driver` feature adds the `Driver` contract and protocol crate re-exports.
-- The `coordinator` feature adds the caller-facing `Ncp` proxy trait.
+- The `coordinator` feature adds the caller-facing methods on `NcpHandle`.
 - Every driver supplies its local `SimpleDescriptor` values through `Driver::get_endpoints`.
 - Backends own transport startup and hardware-event conversion.
 - Outgoing payloads cross the hardware boundary as complete `zb_aps::Data<bytes::Bytes>` frames.
@@ -24,7 +24,7 @@ flowchart LR
     A[Driver actor]
     D[Driver implementation]
 
-    C -->|Ncp methods| H
+    C -->|NcpHandle methods| H
     H -->|Message| A
     A -->|Driver methods| D
 ```
@@ -59,8 +59,8 @@ sequenceDiagram
     end
 ```
 
-`Ncp::transmit` awaits backend acceptance. For acknowledged APS transmissions the backend later
-emits `Event::Aps(ApsEvent::Ack(counter))` or
+`NcpHandle::transmit` awaits backend acceptance. For acknowledged APS transmissions the backend
+later emits `Event::Aps(ApsEvent::Ack(counter))` or
 `Event::Aps(ApsEvent::Nak { sequence: counter, error })`. The hardware interface deliberately uses
 the wrapping eight-bit APS counter already present in the frame because arbitrary drivers cannot be
 expected to preserve another correlation identifier. The coordinator handles collisions when it
@@ -71,10 +71,10 @@ remains asynchronous.
 
 ## Other Commands
 
-Every command carries a required response channel. The `Ncp` proxy creates the one-shot pair,
-enqueues the message, and awaits the result.
+Every command carries a required response channel. `NcpHandle` creates the one-shot pair, enqueues
+the message, and awaits the result.
 
-| `Ncp` method | `Message` variant | `Driver` method |
+| `NcpHandle` method | `Message` variant | `Driver` method |
 | --- | --- | --- |
 | `get_endpoints` | `GetEndpoints` | `get_endpoints` |
 | `get_pan_id` | `GetPanId` | `get_pan_id` |
@@ -92,12 +92,12 @@ enqueues the message, and awaits the result.
 ```mermaid
 flowchart TD
     L[lib.rs] --> C[common.rs]
-    L --> N[coordinator.rs]
     L --> R[reexports.rs]
     C --> D[common/driver.rs]
     C --> E[common/error.rs]
     C --> V[common/event.rs]
     C --> M[common/message.rs]
+    C --> H[common/ncp_handle.rs]
     M --> CH[common/message/channel.rs]
     M --> CM[common/message/channel_mask.rs]
     M --> SD[common/message/scan_duration.rs]
@@ -107,10 +107,10 @@ flowchart TD
     V --> RV[common/event/route_error.rs]
 ```
 
-`common/message.rs` defines the private actor protocol and opaque handles.
+`common/message.rs` defines the private actor protocol.
+`common/ncp_handle.rs` defines the strong and weak handles and the caller-facing proxy methods.
 `common/driver.rs` defines the public driver contract plus the actor runtime.
 `common/event.rs` groups the APS, device, and network event categories.
-`coordinator.rs` defines the `Ncp` proxy implemented for `NcpHandle`.
 
 ## Receive-Side Events
 

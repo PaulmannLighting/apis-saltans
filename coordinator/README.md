@@ -97,8 +97,8 @@ through its completion future if no task slot is available.
 
 The NCP driver must implement `zb_hw::Driver::get_endpoints()` and return a complete
 `zb_zdp::SimpleDescriptor` for every local application endpoint. The coordinator retrieves these
-descriptors through `zb_hw::Ncp::get_endpoints()` when it needs them; endpoint descriptors are no
-longer passed to `Coordinator::start(...)`. Before sending a ZCL command, the ZCL actor selects a
+descriptors through `zb_hw::NcpHandle::get_endpoints()` when it needs them; endpoint descriptors are
+no longer passed to `Coordinator::start(...)`. Before sending a ZCL command, the ZCL actor selects a
 descriptor with the requested profile and cluster role and uses its declared endpoint ID as the APS
 source endpoint.
 
