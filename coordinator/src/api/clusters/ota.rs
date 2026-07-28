@@ -18,8 +18,8 @@ pub trait Ota {
     /// # Errors
     ///
     /// Returns [`Error::SendError`] if the update cannot be queued, [`Error::ReceiveError`] if the
-    /// server stops before reporting an outcome, or [`Error::Ota`] when the update fails or the
-    /// configured concurrent update-task limit has been reached.
+    /// server stops before reporting an outcome, or [`Error::Ota`] when subscription registration
+    /// or the update fails, or when the configured concurrent update-task limit has been reached.
     fn update(
         &self,
         target: Device,

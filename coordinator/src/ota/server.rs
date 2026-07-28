@@ -1,13 +1,11 @@
 use std::collections::BTreeMap;
-use std::future::poll_fn;
-use std::task::Poll;
 
 use le_stream::ToLeStream;
 use log::{debug, warn};
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot;
-use tokio::task::{Id, JoinError, JoinSet};
+use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
 use zb_aps::Data;
 use zb_core::destination::Device;
 use zb_core::{Cluster, Direction};
@@ -29,97 +27,83 @@ use super::{
 #[derive(Debug)]
 struct ActiveTransfer {
     messages: Sender<TransferMessage>,
+    task: AbortHandle,
     task_id: Id,
 }
 
 enum ServerEvent {
-    Message(Option<Message>),
-    Zcl(Option<zcl::SubscriptionMessage>),
-    Transfer(Option<Result<(Id, TransferExit), JoinError>>),
+    Message(Message),
+    Shutdown,
+    Transfer(Result<(Id, TransferExit), JoinError>),
 }
 
 /// Stateful OTA Upgrade server actor.
 #[derive(Debug)]
 pub struct Server {
     zcl: Sender<zcl::Message>,
-    inbound: Receiver<Message>,
-    zcl_frames: zcl::SubscriptionReceiver,
+    sender: WeakSender<ServerEvent>,
+    inbound: Receiver<ServerEvent>,
+    subscription_task: Option<JoinHandle<()>>,
     transfers: BTreeMap<Device, ActiveTransfer>,
-    tasks: JoinSet<TransferExit>,
     update_task_limit: usize,
 }
 
 impl Server {
     /// Create an empty OTA server with a limit on concurrent destination transfer tasks.
-    fn new(
+    const fn new(
         zcl: Sender<zcl::Message>,
-        inbound: Receiver<Message>,
-        zcl_frames: zcl::SubscriptionReceiver,
+        sender: WeakSender<ServerEvent>,
+        inbound: Receiver<ServerEvent>,
         update_task_limit: usize,
     ) -> Self {
         Self {
             zcl,
+            sender,
             inbound,
-            zcl_frames,
+            subscription_task: None,
             transfers: BTreeMap::new(),
-            tasks: JoinSet::new(),
             update_task_limit,
         }
     }
 
-    /// Process update requests, route inbound commands, and reap destination transfer tasks.
+    /// Process every OTA server event through one message inbox.
     pub async fn run(mut self) {
-        loop {
-            let event = poll_fn(|context| {
-                if !self.tasks.is_empty()
-                    && let Poll::Ready(task) = self.tasks.poll_join_next_with_id(context)
-                {
-                    return Poll::Ready(ServerEvent::Transfer(task));
-                }
-
-                if let Poll::Ready(message) = self.inbound.poll_recv(context) {
-                    return Poll::Ready(ServerEvent::Message(message));
-                }
-
-                self.zcl_frames.poll_recv(context).map(ServerEvent::Zcl)
-            })
-            .await;
+        while let Some(event) = self.inbound.recv().await {
             match event {
-                ServerEvent::Transfer(Some(result)) => {
+                ServerEvent::Transfer(result) => {
                     self.transfer_finished(result);
                 }
-                ServerEvent::Transfer(None) => {}
-                ServerEvent::Message(message) => {
-                    let Some(message) = message else {
-                        break;
-                    };
-                    match message {
-                        Message::Update {
-                            target,
-                            image,
-                            completion,
-                        } => self.update(target, image, completion).await,
-                        Message::Received { source, frame } => {
-                            self.received_ota(source, frame).await;
-                        }
+                ServerEvent::Message(message) => match message {
+                    Message::Update {
+                        target,
+                        image,
+                        completion,
+                    } => self.update(target, image, completion).await,
+                    Message::Received { source, frame } => {
+                        self.received_ota(source, frame).await;
                     }
-                }
-                ServerEvent::Zcl(Some(message)) => {
-                    self.received_zcl(message).await;
-                }
-                ServerEvent::Zcl(None) => break,
+                },
+                ServerEvent::Shutdown => break,
             }
+        }
+
+        if let Some(task) = self.subscription_task.take() {
+            task.abort();
+        }
+
+        for transfer in self.transfers.values() {
+            transfer.task.abort();
         }
     }
 
-    /// Spawn the OTA server actor with the given destination transfer-task limit.
-    pub(crate) fn spawn(
-        zcl: Sender<zcl::Message>,
-        receiver: Receiver<Message>,
-        zcl_frames: zcl::SubscriptionReceiver,
-        update_task_limit: usize,
-    ) {
-        spawn(Self::new(zcl, receiver, zcl_frames, update_task_limit).run());
+    /// Spawn the OTA server actor and return its message handle.
+    pub(crate) fn spawn(zcl: Sender<zcl::Message>, update_task_limit: usize) -> Sender<Message> {
+        let (sender, messages) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
+        let (events, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
+        let server = Self::new(zcl, events.downgrade(), inbound, update_task_limit);
+        spawn(forward_api_messages(messages, events));
+        spawn(server.run());
+        sender
     }
 
     /// Replace an existing destination update or admit a new destination transfer task.
@@ -129,11 +113,22 @@ impl Server {
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
     ) {
-        if let Some(messages) = self
+        let existing_transfer = self
             .transfers
             .get(&target)
-            .map(|transfer| transfer.messages.clone())
-        {
+            .map(|transfer| transfer.messages.clone());
+        if existing_transfer.is_none() && self.transfers.len() >= self.update_task_limit {
+            let _result = completion.send(Err(UpdateError::UpdateTaskLimitReached {
+                limit: self.update_task_limit,
+            }));
+            return;
+        }
+        if let Err(error) = self.ensure_subscription().await {
+            let _result = completion.send(Err(error));
+            return;
+        }
+
+        if let Some(messages) = existing_transfer {
             let replacement = TransferMessage::Replace { image, completion };
             match messages.send(replacement).await {
                 Ok(()) => return,
@@ -148,13 +143,25 @@ impl Server {
             }
         }
 
-        if self.transfers.len() >= self.update_task_limit {
-            let _result = completion.send(Err(UpdateError::UpdateTaskLimitReached {
-                limit: self.update_task_limit,
-            }));
-            return;
-        }
         self.start_transfer(target, image, completion);
+    }
+
+    /// Lazily register the OTA frame subscription before offering the first update.
+    async fn ensure_subscription(&mut self) -> Result<(), UpdateError> {
+        if self.subscription_task.is_some() {
+            return Ok(());
+        }
+
+        let (subscription, frames) = super::subscription();
+        self.zcl
+            .send(zcl::Message::Subscribe { subscription })
+            .await
+            .map_err(|_| UpdateError::Subscription)?;
+        self.subscription_task = Some(spawn(forward_subscription_frames(
+            frames,
+            self.sender.clone(),
+        )));
+        Ok(())
     }
 
     /// Spawn and register the sole destination task for a newly admitted update.
@@ -166,27 +173,22 @@ impl Server {
     ) {
         let (messages, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
         let transfer = Transfer::new(self.zcl.clone(), target, image, completion, inbound);
-        let task = self.tasks.spawn(transfer.run());
+        let task = spawn(transfer.run());
+        let task_id = task.id();
+        let abort = task.abort_handle();
+        spawn(forward_transfer_completion(
+            task,
+            task_id,
+            self.sender.clone(),
+        ));
         self.transfers.insert(
             target,
             ActiveTransfer {
                 messages,
-                task_id: task.id(),
+                task: abort,
+                task_id,
             },
         );
-    }
-
-    /// Validate an inbound frame and route its command to the matching destination task.
-    async fn received_zcl(&mut self, message: zcl::SubscriptionMessage) {
-        let zcl::SubscriptionMessage { source, frame } = message;
-        let (aps_header, zcl_frame) = frame.into_parts();
-        let (zcl_header, cluster) = zcl_frame.into_parts();
-        let ZclCluster::OtaUpgrade(command) = cluster else {
-            warn!("Discarding non-OTA command delivered by the OTA ZCL subscription");
-            return;
-        };
-        let frame = Data::new(aps_header, Frame::new(zcl_header, command));
-        self.received_ota(source, frame).await;
     }
 
     /// Validate an inbound OTA frame and route its command to the matching destination task.
@@ -312,6 +314,55 @@ impl Server {
     }
 }
 
+/// Forward public OTA API messages into the server's private event inbox.
+async fn forward_api_messages(mut messages: Receiver<Message>, events: Sender<ServerEvent>) {
+    while let Some(message) = messages.recv().await {
+        if events.send(ServerEvent::Message(message)).await.is_err() {
+            return;
+        }
+    }
+    let _result = events.send(ServerEvent::Shutdown).await;
+}
+
+/// Forward subscribed OTA frames through the server's ordinary message inbox.
+async fn forward_subscription_frames(
+    mut frames: zcl::SubscriptionReceiver,
+    sender: WeakSender<ServerEvent>,
+) {
+    while let Some(message) = frames.recv().await {
+        let zcl::SubscriptionMessage { source, frame } = message;
+        let (aps_header, zcl_frame) = frame.into_parts();
+        let (zcl_header, cluster) = zcl_frame.into_parts();
+        let ZclCluster::OtaUpgrade(command) = cluster else {
+            warn!("Discarding non-OTA command delivered by the OTA ZCL subscription");
+            continue;
+        };
+        let Some(sender) = sender.upgrade() else {
+            return;
+        };
+        let event = ServerEvent::Message(Message::Received {
+            source,
+            frame: Data::new(aps_header, Frame::new(zcl_header, command)),
+        });
+        if sender.send(event).await.is_err() {
+            return;
+        }
+    }
+}
+
+/// Forward one destination task's terminal result into the server event inbox.
+async fn forward_transfer_completion(
+    task: JoinHandle<TransferExit>,
+    task_id: Id,
+    sender: WeakSender<ServerEvent>,
+) {
+    let result = task.await.map(|exit| (task_id, exit));
+    let Some(sender) = sender.upgrade() else {
+        return;
+    };
+    let _result = sender.send(ServerEvent::Transfer(result)).await;
+}
+
 const fn is_server_command(command: &OtaCommand) -> bool {
     matches!(
         command,
@@ -342,10 +393,12 @@ fn default_response(request_command_id: u8, status: Status) -> Payload {
 impl Server {
     pub(super) fn test_new(
         zcl: Sender<zcl::Message>,
-        inbound: Receiver<Message>,
         update_task_limit: usize,
-    ) -> Self {
-        let (_subscription, zcl_frames) = super::subscription();
-        Self::new(zcl, inbound, zcl_frames, update_task_limit)
+    ) -> (Sender<Message>, Self) {
+        let (sender, messages) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
+        let (events, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
+        let server = Self::new(zcl, events.downgrade(), inbound, update_task_limit);
+        spawn(forward_api_messages(messages, events));
+        (sender, server)
     }
 }

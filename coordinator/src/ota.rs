@@ -122,7 +122,7 @@ mod tests {
         QueryNextImageResponse, QueryResponse, UpgradeEndRequest, UpgradeEndResponse,
         UpgradeEndStatus,
     };
-    use zb_zcl::{Command, Frame, Header, Scope};
+    use zb_zcl::{Cluster as ZclCluster, Command, Frame, Header, Scope};
 
     use super::{
         Image, Message, OTA_PROFILE, ParseImage, Server, TransmissionResponse, UpdateError,
@@ -167,8 +167,7 @@ mod tests {
     fn stops_when_external_ota_senders_are_dropped() {
         run_test(async {
             let (zcl_sender, _zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let server = Server::test_new(zcl_sender, ota_receiver, TEST_UPDATE_LIMIT);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
             drop(ota_sender);
 
             timeout(TEST_TIMEOUT, server.run())
@@ -178,11 +177,32 @@ mod tests {
     }
 
     #[test]
+    fn active_subscription_does_not_keep_the_server_alive() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            let server = tokio::spawn(server.run());
+            let _completion = schedule(&ota_sender, test_image()).await;
+            assert!(matches!(
+                receive_raw_zcl(&mut zcl_receiver).await,
+                zcl::Message::Subscribe { .. }
+            ));
+
+            drop(ota_sender);
+
+            timeout(TEST_TIMEOUT, server)
+                .await
+                .expect("OTA server did not stop with an active subscription")
+                .expect("OTA server task completed normally");
+        });
+    }
+
+    #[test]
     fn scheduling_update_sends_unicast_image_notify() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, TEST_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let destination = test_destination();
             let (completion, _completion_result) = tokio::sync::oneshot::channel();
 
@@ -195,7 +215,11 @@ mod tests {
                 .await
                 .expect("OTA server is running");
 
-            let message = receive_zcl(&mut zcl_receiver).await;
+            assert!(matches!(
+                receive_raw_zcl(&mut zcl_receiver).await,
+                zcl::Message::Subscribe { .. }
+            ));
+            let message = observe_zcl(receive_raw_zcl(&mut zcl_receiver).await);
             let ObservedZcl::Transmit {
                 destination: actual_destination,
                 payload,
@@ -219,11 +243,52 @@ mod tests {
     }
 
     #[test]
+    fn reports_a_subscription_registration_failure() {
+        run_test(async {
+            let (zcl_sender, zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            drop(zcl_receiver);
+            tokio::spawn(server.run());
+
+            let result = ota_sender.update(test_destination(), test_image()).await;
+
+            assert!(matches!(result, Err(Error::Ota(UpdateError::Subscription))));
+        });
+    }
+
+    #[test]
+    fn reuses_the_subscription_for_a_replacement_update() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let previous_completion = schedule(&ota_sender, test_image()).await;
+
+            assert!(matches!(
+                receive_raw_zcl(&mut zcl_receiver).await,
+                zcl::Message::Subscribe { .. }
+            ));
+            observe_zcl(receive_raw_zcl(&mut zcl_receiver).await);
+
+            let replacement_completion = schedule(&ota_sender, test_image()).await;
+            assert!(matches!(
+                observe_zcl(receive_raw_zcl(&mut zcl_receiver).await),
+                ObservedZcl::Transmit { .. }
+            ));
+            assert!(matches!(
+                previous_completion.await,
+                Ok(Err(UpdateError::Superseded))
+            ));
+            drop(replacement_completion);
+        });
+    }
+
+    #[test]
     fn rejects_an_update_when_the_update_task_limit_is_reached() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, SINGLE_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, SINGLE_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let _first_completion = schedule(&ota_sender, test_image()).await;
             let _held_transmission = hold_next_transmission(&mut zcl_receiver).await;
 
@@ -244,8 +309,8 @@ mod tests {
     fn replaces_an_update_in_the_existing_destination_task() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, SINGLE_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, SINGLE_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let previous_completion = schedule(&ota_sender, test_image()).await;
             receive_zcl(&mut zcl_receiver).await;
 
@@ -264,8 +329,8 @@ mod tests {
     fn admits_a_new_destination_after_a_transfer_task_finishes() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, SINGLE_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, SINGLE_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let first_completion = schedule(&ota_sender, test_image()).await;
             fail_next_transmission(&mut zcl_receiver).await;
             assert!(matches!(
@@ -287,8 +352,8 @@ mod tests {
     fn ignores_requests_outside_the_home_automation_profile() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, TEST_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let image = test_image();
             let _completion = schedule(&ota_sender, image).await;
             receive_zcl(&mut zcl_receiver).await;
@@ -316,11 +381,42 @@ mod tests {
     }
 
     #[test]
+    fn routes_subscribed_frames_through_the_server_inbox() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let image = test_image();
+            let _completion = schedule(&ota_sender, image).await;
+            let zcl::Message::Subscribe { subscription } = receive_raw_zcl(&mut zcl_receiver).await
+            else {
+                panic!("expected OTA subscription registration");
+            };
+            receive_zcl(&mut zcl_receiver).await;
+
+            let current_image = ImageId::new(MANUFACTURER_CODE, IMAGE_TYPE, FILE_VERSION - 1);
+            subscription
+                .send(subscribed(
+                    TEST_SEQUENCE_NUMBER,
+                    QueryNextImageRequest::new(current_image, None),
+                ))
+                .await
+                .expect("OTA subscription remains available");
+
+            let (sequence_number, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+            assert_eq!(sequence_number, TEST_SEQUENCE_NUMBER);
+            let response = QueryNextImageResponse::from_le_stream(bytes.into_iter())
+                .expect("valid Query Next Image Response");
+            assert!(matches!(response.response(), QueryResponse::Success { .. }));
+        });
+    }
+
+    #[test]
     fn handles_query_block_and_upgrade_end_flow() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, TEST_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let image = test_image();
             let image_id = image.id();
             let image_size =
@@ -390,8 +486,8 @@ mod tests {
     fn update_reports_a_background_transmission_failure() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, TEST_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let completion = update_via_api(ota_sender, test_image());
 
             fail_next_transmission(&mut zcl_receiver).await;
@@ -408,8 +504,8 @@ mod tests {
     fn update_reports_the_clients_terminal_failure() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, TEST_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let image = test_image();
             let image_id = image.id();
             let completion = update_via_api(ota_sender.clone(), image);
@@ -436,8 +532,8 @@ mod tests {
     fn image_page_uses_consecutive_transaction_sequence_numbers() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            let (ota_sender, ota_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-            tokio::spawn(Server::test_new(zcl_sender, ota_receiver, TEST_UPDATE_LIMIT).run());
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
             let image = test_image();
             let image_id = image.id();
             let _completion = schedule(&ota_sender, image).await;
@@ -572,11 +668,54 @@ mod tests {
         }
     }
 
+    fn subscribed<T>(sequence_number: u8, command: T) -> zcl::SubscriptionMessage
+    where
+        T: Command + Into<OtaCommand>,
+    {
+        let aps_header = zb_aps::data::Header::new(
+            zb_aps::Destination::Unicast(ENDPOINT),
+            Cluster::OtaUpgrade.as_u16(),
+            OTA_PROFILE.as_u16(),
+            ENDPOINT,
+            0,
+            None,
+        );
+        let zcl_header = Header::new(
+            Scope::ClusterSpecific,
+            Direction::ClientToServer,
+            false,
+            None,
+            sequence_number,
+            T::ID,
+        );
+        let frame = Data::new(aps_header, Bytes::new())
+            .map_payload(|_| Frame::new(zcl_header, ZclCluster::OtaUpgrade(command.into())));
+        zcl::SubscriptionMessage {
+            source: Source::new(test_destination().device().as_u16(), None),
+            frame,
+        }
+    }
+
     async fn receive_zcl(receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>) -> ObservedZcl {
-        let message = timeout(TEST_TIMEOUT, receiver.recv())
+        loop {
+            let message = receive_raw_zcl(receiver).await;
+            if matches!(message, zcl::Message::Subscribe { .. }) {
+                continue;
+            }
+            return observe_zcl(message);
+        }
+    }
+
+    async fn receive_raw_zcl(
+        receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>,
+    ) -> zcl::Message {
+        timeout(TEST_TIMEOUT, receiver.recv())
             .await
             .expect("OTA server response timed out")
-            .expect("ZCL actor channel is open");
+            .expect("ZCL actor channel is open")
+    }
+
+    fn observe_zcl(message: zcl::Message) -> ObservedZcl {
         match message {
             zcl::Message::Transmit {
                 destination,
@@ -607,10 +746,7 @@ mod tests {
     }
 
     async fn fail_next_transmission(receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>) {
-        let message = timeout(TEST_TIMEOUT, receiver.recv())
-            .await
-            .expect("OTA server response timed out")
-            .expect("ZCL actor channel is open");
+        let message = receive_non_subscription(receiver).await;
         let zcl::Message::Transmit { response, .. } = message else {
             panic!("expected OTA transmission");
         };
@@ -626,16 +762,24 @@ mod tests {
     async fn hold_next_transmission(
         receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>,
     ) -> tokio::sync::oneshot::Sender<Result<(), zb_hw::Error>> {
-        let message = timeout(TEST_TIMEOUT, receiver.recv())
-            .await
-            .expect("OTA server response timed out")
-            .expect("ZCL actor channel is open");
+        let message = receive_non_subscription(receiver).await;
         let zcl::Message::Transmit { response, .. } = message else {
             panic!("expected OTA transmission");
         };
         let (completion, transmission) = deferred_transmission();
         assert!(response.send(Ok(transmission)).is_ok());
         completion
+    }
+
+    async fn receive_non_subscription(
+        receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>,
+    ) -> zcl::Message {
+        loop {
+            let message = receive_raw_zcl(receiver).await;
+            if !matches!(message, zcl::Message::Subscribe { .. }) {
+                return message;
+            }
+        }
     }
 
     fn reply_bytes(message: ObservedZcl) -> (u8, Bytes) {

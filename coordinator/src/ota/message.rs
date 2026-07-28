@@ -35,6 +35,9 @@ pub enum Message {
 /// Terminal failure reported by a coordinator-managed OTA update.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ThisError)]
 pub enum UpdateError {
+    /// The OTA server could not register its ZCL subscription.
+    #[error("the OTA ZCL subscription could not be registered")]
+    Subscription,
     /// The configured number of concurrent destination OTA transfer tasks has been reached.
     #[error("the concurrent destination OTA transfer task limit of {limit} has been reached")]
     UpdateTaskLimitReached {

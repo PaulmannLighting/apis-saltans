@@ -81,7 +81,7 @@ impl Subscription {
         self.filter.matches(frame)
     }
 
-    pub(super) async fn send(&self, received: Received) -> Result<(), Received> {
+    pub(crate) async fn send(&self, received: Received) -> Result<(), Received> {
         let Some(messages) = self.messages.upgrade() else {
             return Err(received);
         };
@@ -90,6 +90,11 @@ impl Subscription {
 }
 
 impl SubscriptionReceiver {
+    /// Receive the next frame delivered to this subscription.
+    pub async fn recv(&mut self) -> Option<Received> {
+        self.messages.recv().await
+    }
+
     /// Poll for the next frame delivered to this subscription.
     pub fn poll_recv(&mut self, context: &mut Context<'_>) -> Poll<Option<Received>> {
         self.messages.poll_recv(context)

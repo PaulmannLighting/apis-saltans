@@ -13,12 +13,15 @@ flowchart TD
     ZCL[ZCL actor]
     ZDP[ZDP actor]
     OTA[OTA server]
+    OTAA[OTA API forwarder]
+    OTAS[OTA subscription forwarder]
     M[Mux task]
     APP[Application event receiver]
 
     C -->|ZCL API| ZCL
     C -->|ZDP API| ZDP
-    C -->|schedule update| OTA
+    C -->|schedule update| OTAA
+    OTAA -->|ServerEvent::Message| OTA
     C -->|NCP helper APIs| HW
     ZCL -->|Data&lt;Bytes&gt;| APS
     ZDP -->|Data&lt;Bytes&gt;| APS
@@ -30,7 +33,8 @@ flowchart TD
     M -->|received ZDP frame| ZDP
     M -->|network and device events| APP
     ZCL -->|unmatched ZCL frame| APP
-    ZCL -.->|filtered weak subscription| OTA
+    ZCL -.->|lazy filtered weak subscription| OTAS
+    OTAS -->|Message::Received through weak sender| OTA
     OTA -->|commands and replies| ZCL
     ZDP -->|device announcements| APP
 ```
@@ -134,16 +138,27 @@ transmission preserves the request transaction sequence instead of allocating a 
 ## OTA Upgrade Server
 
 The OTA subsystem installs a ZCL subscription for cluster-specific, client-to-server OTA Upgrade
-frames. ZCL applies only the subscription's typed cluster, scope, and direction filter; the OTA actor
-performs the typed `Cluster::OtaUpgrade` match. Subscribed frames are delivered before normal
-response correlation so client requests cannot be consumed by an unrelated pending operation.
-During startup, the coordinator sends the subscription through the ZCL actor handle before starting
-the hardware-event mux; subscriptions are not constructor state.
+frames on demand. When the OTA actor admits its first device update, it sends the subscription
+through the ZCL actor handle before spawning the destination transfer and its Image Notify
+operation. The channel ordering therefore registers the subscription before the client can respond
+to the offer. A lightweight forwarding task converts subscribed frames into ordinary OTA
+`Message::Received` values. Later updates reuse the same subscription and forwarding task.
 
-ZCL holds only a weak sender for each subscription. The OTA actor owns the corresponding receiver
-and retains its strong sender as a lifetime guard. ZCL therefore has no OTA-specific dependency and
-cannot keep the OTA actor alive. When the external OTA inbox closes, the OTA actor exits and drops
-its ZCL sender; this avoids a strong ZCL-to-OTA-to-ZCL actor cycle.
+ZCL applies only the subscription's typed cluster, scope, and direction filter; the OTA forwarding
+task performs the typed `Cluster::OtaUpgrade` match. Subscribed frames are delivered before normal
+response correlation so client requests cannot be consumed by an unrelated pending operation.
+Subscription setup is no longer part of coordinator startup or constructor wiring.
+
+The OTA server awaits one private event inbox. A small API task forwards public `Message` values
+into it, subscription forwarding tasks send received frames into it, and destination supervisors
+send transfer completion into it. When the public OTA channel closes, the API task queues a shutdown
+event. The server therefore does not manually poll multiple receivers or its transfer tasks.
+
+The API task owns the sole strong sender for the private event inbox. Subscription and transfer
+forwarders hold only weak senders. ZCL and those forwarders therefore cannot keep the OTA actor
+alive. When the external OTA senders are dropped, the API task queues shutdown, the OTA actor exits,
+and it aborts the subscription and active transfer tasks. This avoids a strong
+ZCL-to-OTA-to-ZCL actor cycle.
 
 Normal OTA commands and replies retain the default acknowledged APS transmission option. Image Page
 block responses use empty `TxOptions`; their deferred APS result therefore completes after hardware

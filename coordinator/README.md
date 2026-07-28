@@ -74,11 +74,12 @@ transmissions complete at that point. Hardware driver implementations use the se
 
 ## Coordinator Lifecycle
 
-`Coordinator::start(...)` is synchronous and starts five internal tasks:
+`Coordinator::start(...)` is synchronous and starts six internal tasks:
 
 - the APS transceiver
 - the ZCL transceiver
 - the ZDP transceiver
+- the OTA API inbox forwarder
 - the OTA Upgrade server
 - the hardware-event mux
 
@@ -173,8 +174,13 @@ another image for the same device endpoint replaces its current offer.
 The OTA subsystem receives those requests through an internal ZCL subscription filtered by a typed
 cluster variant, command scope, and direction. ZCL has no OTA-specific routing logic or OTA actor
 handle. Its subscription handle is weak, so the subscription does not create an actor-lifetime
-cycle. The coordinator registers the subscription by sending a message through the ZCL actor handle
-before it starts routing hardware events.
+cycle. The OTA server creates and registers this subscription on demand when it admits the first
+device update. It queues registration before spawning the destination transfer that sends Image
+Notify. A lightweight task forwards subscribed frames through a weak sender into the server's
+private event inbox, and the subscription is reused for later updates. Public OTA API messages and
+destination transfer completions are forwarded into that same inbox, so the server awaits one
+receiver. Coordinator startup therefore does not wire OTA frame routing itself, and the weak
+forwarders cannot keep the server alive after external OTA handles are dropped.
 
 `Ota::update` remains pending for the complete exchange. It returns success after the client sends
 a successful Upgrade End Request. Client rejection, image-read failures, terminal transmission

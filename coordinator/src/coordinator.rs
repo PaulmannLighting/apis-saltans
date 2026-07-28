@@ -57,19 +57,8 @@ impl Coordinator {
         ota_update_task_limit: usize,
     ) -> Result<Self, Error> {
         let aps = aps::Transceiver::spawn(ncp.clone());
-        let (ota, ota_inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
-        let (ota_subscription, ota_zcl_frames) = ota::subscription();
         let zcl = zcl::Transceiver::spawn(ncp.clone(), aps.clone(), events_out.clone());
-        zcl.try_send(zcl::Message::Subscribe {
-            subscription: ota_subscription,
-        })
-        .map_err(|_| Error::ActorUnavailable)?;
-        ota::Server::spawn(
-            zcl.clone(),
-            ota_inbound,
-            ota_zcl_frames,
-            ota_update_task_limit,
-        );
+        let ota = ota::Server::spawn(zcl.clone(), ota_update_task_limit);
         let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events_out.clone(), descriptor);
         Mux::spawn(hw_events, events_out, aps, zcl.clone(), zdp.clone());
         Ok(Self { ncp, ota, zcl, zdp })
