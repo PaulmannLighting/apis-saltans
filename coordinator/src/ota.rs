@@ -349,6 +349,31 @@ mod tests {
     }
 
     #[test]
+    fn unregisters_and_recreates_the_subscription_between_update_batches() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, SINGLE_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let first_completion = schedule(&ota_sender, test_image()).await;
+            fail_next_transmission(&mut zcl_receiver).await;
+            assert!(matches!(
+                first_completion.await,
+                Ok(Err(UpdateError::Transmission))
+            ));
+            assert!(matches!(
+                receive_raw_zcl(&mut zcl_receiver).await,
+                zcl::Message::Unsubscribe { .. }
+            ));
+
+            let _second_completion = schedule(&ota_sender, test_image()).await;
+            assert!(matches!(
+                receive_raw_zcl(&mut zcl_receiver).await,
+                zcl::Message::Subscribe { .. }
+            ));
+        });
+    }
+
+    #[test]
     fn ignores_requests_outside_the_home_automation_profile() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
@@ -396,11 +421,10 @@ mod tests {
 
             let current_image = ImageId::new(MANUFACTURER_CODE, IMAGE_TYPE, FILE_VERSION - 1);
             subscription
-                .send(subscribed(
+                .try_send(subscribed(
                     TEST_SEQUENCE_NUMBER,
                     QueryNextImageRequest::new(current_image, None),
                 ))
-                .await
                 .expect("OTA subscription remains available");
 
             let (sequence_number, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
@@ -699,7 +723,10 @@ mod tests {
     async fn receive_zcl(receiver: &mut tokio::sync::mpsc::Receiver<zcl::Message>) -> ObservedZcl {
         loop {
             let message = receive_raw_zcl(receiver).await;
-            if matches!(message, zcl::Message::Subscribe { .. }) {
+            if matches!(
+                message,
+                zcl::Message::Subscribe { .. } | zcl::Message::Unsubscribe { .. }
+            ) {
                 continue;
             }
             return observe_zcl(message);
@@ -776,7 +803,10 @@ mod tests {
     ) -> zcl::Message {
         loop {
             let message = receive_raw_zcl(receiver).await;
-            if !matches!(message, zcl::Message::Subscribe { .. }) {
+            if !matches!(
+                message,
+                zcl::Message::Subscribe { .. } | zcl::Message::Unsubscribe { .. }
+            ) {
                 return message;
             }
         }

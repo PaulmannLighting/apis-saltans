@@ -31,6 +31,13 @@ struct ActiveTransfer {
     task_id: Id,
 }
 
+/// Registered OTA subscription and its frame-forwarding task.
+#[derive(Debug)]
+struct ActiveSubscription {
+    messages: Sender<zcl::SubscriptionMessage>,
+    task: JoinHandle<()>,
+}
+
 enum ServerEvent {
     Message(Message),
     Shutdown,
@@ -43,7 +50,7 @@ pub struct Server {
     zcl: Sender<zcl::Message>,
     sender: WeakSender<ServerEvent>,
     inbound: Receiver<ServerEvent>,
-    subscription_task: Option<JoinHandle<()>>,
+    subscription: Option<ActiveSubscription>,
     transfers: BTreeMap<Device, ActiveTransfer>,
     update_task_limit: usize,
 }
@@ -60,7 +67,7 @@ impl Server {
             zcl,
             sender,
             inbound,
-            subscription_task: None,
+            subscription: None,
             transfers: BTreeMap::new(),
             update_task_limit,
         }
@@ -71,7 +78,7 @@ impl Server {
         while let Some(event) = self.inbound.recv().await {
             match event {
                 ServerEvent::Transfer(result) => {
-                    self.transfer_finished(result);
+                    self.transfer_finished(result).await;
                 }
                 ServerEvent::Message(message) => match message {
                     Message::Update {
@@ -87,9 +94,7 @@ impl Server {
             }
         }
 
-        if let Some(task) = self.subscription_task.take() {
-            task.abort();
-        }
+        self.unsubscribe().await;
 
         for transfer in self.transfers.values() {
             transfer.task.abort();
@@ -148,20 +153,44 @@ impl Server {
 
     /// Lazily register the OTA frame subscription before offering the first update.
     async fn ensure_subscription(&mut self) -> Result<(), UpdateError> {
-        if self.subscription_task.is_some() {
+        if self.subscription.is_some() {
             return Ok(());
         }
 
         let (subscription, frames) = super::subscription();
+        let messages = frames.sender();
         self.zcl
             .send(zcl::Message::Subscribe { subscription })
             .await
             .map_err(|_| UpdateError::Subscription)?;
-        self.subscription_task = Some(spawn(forward_subscription_frames(
-            frames,
-            self.sender.clone(),
-        )));
+        let task = spawn(forward_subscription_frames(frames, self.sender.clone()));
+        self.subscription = Some(ActiveSubscription { messages, task });
         Ok(())
+    }
+
+    /// Remove the OTA subscription when there are no active update offers.
+    async fn unsubscribe_if_idle(&mut self) {
+        if self.transfers.is_empty() {
+            self.unsubscribe().await;
+        }
+    }
+
+    /// Stop frame forwarding and unregister the active OTA subscription.
+    async fn unsubscribe(&mut self) {
+        let Some(subscription) = self.subscription.take() else {
+            return;
+        };
+        subscription.task.abort();
+        if self
+            .zcl
+            .send(zcl::Message::Unsubscribe {
+                messages: subscription.messages,
+            })
+            .await
+            .is_err()
+        {
+            warn!("Failed to unregister the OTA ZCL subscription");
+        }
     }
 
     /// Spawn and register the sole destination task for a newly admitted update.
@@ -240,15 +269,16 @@ impl Server {
                 unreachable!("the failed message remains an OTA request");
             };
             self.reject_unauthorized(context, command).await;
+            self.unsubscribe_if_idle().await;
         }
     }
 
     /// Remove a completed task if it is still the registered task for its destination.
-    fn transfer_finished(&mut self, result: Result<(Id, TransferExit), JoinError>) {
-        match result {
+    async fn transfer_finished(&mut self, result: Result<(Id, TransferExit), JoinError>) {
+        let completion = match result {
             Ok((task_id, exit)) => {
                 self.remove_transfer(exit.destination, task_id);
-                let _result = exit.completion.send(exit.result);
+                Some((exit.completion, exit.result))
             }
             Err(error) => {
                 let task_id = error.id();
@@ -261,7 +291,12 @@ impl Server {
                 if let Some(destination) = destination {
                     self.remove_transfer(destination, task_id);
                 }
+                None
             }
+        };
+        self.unsubscribe_if_idle().await;
+        if let Some((completion, result)) = completion {
+            let _result = completion.send(result);
         }
     }
 

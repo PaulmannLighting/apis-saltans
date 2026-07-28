@@ -177,10 +177,16 @@ handle. Its subscription handle is weak, so the subscription does not create an 
 cycle. The OTA server creates and registers this subscription on demand when it admits the first
 device update. It queues registration before spawning the destination transfer that sends Image
 Notify. A lightweight task forwards subscribed frames through a weak sender into the server's
-private event inbox, and the subscription is reused for later updates. Public OTA API messages and
-destination transfer completions are forwarded into that same inbox, so the server awaits one
-receiver. Coordinator startup therefore does not wire OTA frame routing itself, and the weak
-forwarders cannot keep the server alive after external OTA handles are dropped.
+private event inbox. Concurrent destination updates reuse the subscription. After the final
+destination transfer finishes, the server stops the forwarding task and explicitly unregisters the
+subscription from ZCL; a later update registers a new one. Public OTA API messages and destination
+transfer completions are forwarded into that same inbox, so the server awaits one receiver.
+Coordinator startup therefore does not wire OTA frame routing itself, and the weak forwarders
+cannot keep the server alive after external OTA handles are dropped.
+
+ZCL delivers subscription frames without awaiting channel capacity. If a subscription channel is
+full, the current frame continues through normal response correlation and application-event
+routing. Closed subscription channels are removed automatically.
 
 `Ota::update` remains pending for the complete exchange. It returns success after the client sends
 a successful Upgrade End Request. Client rejection, image-read failures, terminal transmission

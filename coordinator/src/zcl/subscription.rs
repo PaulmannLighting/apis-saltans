@@ -1,5 +1,6 @@
 use std::task::{Context, Poll};
 
+use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zb_aps::Data;
 use zb_core::{Cluster, Direction};
@@ -38,7 +39,7 @@ pub struct Subscription {
 /// receiver therefore breaks the subscriber relationship without keeping either actor alive.
 #[derive(Debug)]
 pub struct SubscriptionReceiver {
-    _sender: Sender<Received>,
+    sender: Sender<Received>,
     messages: Receiver<Received>,
 }
 
@@ -70,26 +71,40 @@ impl Subscription {
             filter,
             messages: sender.downgrade(),
         };
-        let receiver = SubscriptionReceiver {
-            _sender: sender,
-            messages,
-        };
+        let receiver = SubscriptionReceiver { sender, messages };
         (subscription, receiver)
+    }
+
+    pub(super) fn is_open(&self) -> bool {
+        self.messages
+            .upgrade()
+            .is_some_and(|messages| !messages.is_closed())
+    }
+
+    pub(super) fn same_channel(&self, other: &Sender<Received>) -> bool {
+        self.messages
+            .upgrade()
+            .is_some_and(|messages| messages.same_channel(other))
     }
 
     pub(super) fn matches(&self, frame: &Data<Frame<ZclCluster>>) -> bool {
         self.filter.matches(frame)
     }
 
-    pub(crate) async fn send(&self, received: Received) -> Result<(), Received> {
+    pub(crate) fn try_send(&self, received: Received) -> Result<(), TrySendError<Received>> {
         let Some(messages) = self.messages.upgrade() else {
-            return Err(received);
+            return Err(TrySendError::Closed(received));
         };
-        messages.send(received).await.map_err(|error| error.0)
+        messages.try_send(received)
     }
 }
 
 impl SubscriptionReceiver {
+    /// Clone a sending handle that identifies this subscription channel.
+    pub(crate) fn sender(&self) -> Sender<Received> {
+        self.sender.clone()
+    }
+
     /// Receive the next frame delivered to this subscription.
     pub async fn recv(&mut self) -> Option<Received> {
         self.messages.recv().await
@@ -147,6 +162,17 @@ mod tests {
         assert!(subscription.messages.upgrade().is_some());
         drop(receiver);
         assert!(subscription.messages.upgrade().is_none());
+    }
+
+    #[test]
+    fn subscriptions_compare_by_channel() {
+        let filter = Filter::new(CLUSTER, Scope::ClusterSpecific, Direction::ClientToServer);
+        let (subscription, receiver) = Subscription::channel(filter);
+        let (other_subscription, _other_receiver) = Subscription::channel(filter);
+        let messages = receiver.sender();
+
+        assert!(subscription.same_channel(&messages));
+        assert!(!other_subscription.same_channel(&messages));
     }
 
     fn frame(cluster: Cluster, scope: Scope, direction: Direction) -> Data<Frame<()>> {

@@ -1,3 +1,4 @@
+use tokio::sync::mpsc::Sender as MpscSender;
 use tokio::sync::oneshot::Sender;
 use zb_aps::Data;
 use zb_core::Destination;
@@ -6,7 +7,7 @@ use zb_nwk::Source;
 use zb_zcl::{Cluster, Frame};
 
 pub use super::Payload;
-use super::Subscription;
+use super::{Subscription, SubscriptionMessage};
 use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::response::ApsProtocolResponse;
@@ -18,6 +19,12 @@ pub enum Message {
     Subscribe {
         /// Subscription to register.
         subscription: Subscription,
+    },
+
+    /// Remove a registered subscription.
+    Unsubscribe {
+        /// Sending handle identifying the subscription channel to remove.
+        messages: MpscSender<SubscriptionMessage>,
     },
 
     /// A hardware-level event.

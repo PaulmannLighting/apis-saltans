@@ -124,6 +124,7 @@ The ZCL actor:
 - sends APS metadata and serialized ZCL frames through the APS actor
 - stores response correlation channels for `communicate`
 - registers generic filtered subscriptions received through its actor inbox
+- unregisters subscriptions by channel identity and prunes subscriptions whose receivers have closed
 - delivers matching received frames to generic internal subscriptions before response correlation
 - sends replies with an explicitly supplied ZCL transaction sequence
 - routes unmatched received commands to the application event channel
@@ -142,12 +143,18 @@ frames on demand. When the OTA actor admits its first device update, it sends th
 through the ZCL actor handle before spawning the destination transfer and its Image Notify
 operation. The channel ordering therefore registers the subscription before the client can respond
 to the offer. A lightweight forwarding task converts subscribed frames into ordinary OTA
-`Message::Received` values. Later updates reuse the same subscription and forwarding task.
+`Message::Received` values. Concurrent updates and replacements reuse the same subscription and
+forwarding task. When the last destination transfer finishes, the OTA server aborts the forwarding
+task and sends an explicit unsubscribe message to ZCL. A later update batch registers a new
+subscription.
 
 ZCL applies only the subscription's typed cluster, scope, and direction filter; the OTA forwarding
 task performs the typed `Cluster::OtaUpgrade` match. Subscribed frames are delivered before normal
-response correlation so client requests cannot be consumed by an unrelated pending operation.
-Subscription setup is no longer part of coordinator startup or constructor wiring.
+response correlation so client requests cannot be consumed by an unrelated pending operation. ZCL
+uses non-blocking delivery for each bounded subscription channel. A full channel retains its
+subscription but sends the current frame through normal response correlation and application-event
+routing. A closed channel removes the subscription immediately. Subscription setup is no longer
+part of coordinator startup or constructor wiring.
 
 The OTA server awaits one private event inbox. A small API task forwards public `Message` values
 into it, subscription forwarding tasks send received frames into it, and destination supervisors

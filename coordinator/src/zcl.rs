@@ -6,6 +6,7 @@ use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
 use tokio::spawn;
+use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::{self, channel};
 use zb_aps::Data;
@@ -62,7 +63,13 @@ impl Transceiver {
         while let Some(message) = messages.recv().await {
             match message {
                 Message::Subscribe { subscription } => {
+                    self.subscriptions.retain(Subscription::is_open);
                     self.subscriptions.push(subscription);
+                }
+                Message::Unsubscribe { messages } => {
+                    self.subscriptions.retain(|subscription| {
+                        !subscription.same_channel(&messages) && subscription.is_open()
+                    });
                 }
                 Message::Received { source, frame } => {
                     self.handle_message_received(source, frame).await;
@@ -122,7 +129,7 @@ impl Transceiver {
     /// Handle a received ZCL message.
     async fn handle_message_received(&mut self, source: Source, aps_frame: Data<Frame<Cluster>>) {
         trace!("Received ZCL message from {source}: {aps_frame:?}");
-        if self.forward_to_subscribers(source, &aps_frame).await {
+        if self.forward_to_subscribers(source, &aps_frame) {
             return;
         }
 
@@ -156,21 +163,32 @@ impl Transceiver {
     }
 
     /// Deliver a received frame to every matching live subscription.
-    async fn forward_to_subscribers(&self, source: Source, frame: &Data<Frame<Cluster>>) -> bool {
+    fn forward_to_subscribers(&mut self, source: Source, frame: &Data<Frame<Cluster>>) -> bool {
         let mut delivered = false;
 
-        for subscription in &self.subscriptions {
+        self.subscriptions.retain(|subscription| {
+            if !subscription.is_open() {
+                return false;
+            }
             if !subscription.matches(frame) {
-                continue;
+                return true;
             }
             let message = SubscriptionMessage {
                 source,
                 frame: frame.clone(),
             };
-            if subscription.send(message).await.is_ok() {
-                delivered = true;
+            match subscription.try_send(message) {
+                Ok(()) => {
+                    delivered = true;
+                    true
+                }
+                Err(TrySendError::Full(_)) => {
+                    warn!("ZCL subscription channel is full; forwarding frame to normal routing");
+                    true
+                }
+                Err(TrySendError::Closed(_)) => false,
             }
-        }
+        });
 
         delivered
     }
@@ -357,7 +375,7 @@ impl Transceiver {
 
 #[cfg(test)]
 mod tests {
-    use std::future::{Future, poll_fn};
+    use std::future::Future;
     use std::num::NonZeroUsize;
     use std::time::Duration;
 
@@ -378,9 +396,9 @@ mod tests {
     use zb_zcl::{Cluster, Command, Frame, Header as ZclHeader, Scope};
     use zb_zdp::{AppFlags, SimpleDescriptor};
 
-    use super::{Message, Subscription, SubscriptionFilter, Transceiver};
-    use crate::MPSC_CHANNEL_SIZE;
+    use super::{Message, Subscription, SubscriptionFilter, SubscriptionMessage, Transceiver};
     use crate::aps::Aps;
+    use crate::{Event, MPSC_CHANNEL_SIZE};
 
     const SOURCE_NODE_ID: u16 = 0x4321;
     const TRANSACTION_SEQUENCE: u8 = 7;
@@ -484,7 +502,8 @@ mod tests {
                     .await
                     .expect("ZCL transceiver remains available");
 
-                let received = poll_fn(|context| subscribed_frames.poll_recv(context))
+                let received = subscribed_frames
+                    .recv()
                     .await
                     .expect("subscription remains open");
                 assert_eq!(received.source, source);
@@ -496,8 +515,114 @@ mod tests {
             });
     }
 
+    #[test]
+    fn unregisters_a_subscription() {
+        Builder::new_current_thread()
+            .build()
+            .expect("Tokio runtime")
+            .block_on(async {
+                let (aps_sender, _aps_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (events, mut application_events) = channel(MPSC_CHANNEL_SIZE);
+                let filter = SubscriptionFilter::new(
+                    ClusterId::OnOff,
+                    Scope::ClusterSpecific,
+                    Direction::ClientToServer,
+                );
+                let (subscription, subscribed_frames) = Subscription::channel(filter);
+                let subscription_messages = subscribed_frames.sender();
+                let (transceiver, messages) = channel(MPSC_CHANNEL_SIZE);
+                let (ncp, ncp_actor) = test_ncp();
+                tokio::spawn(ncp_actor);
+                tokio::spawn(Transceiver::new(ncp, Aps::new(aps_sender), events).run(messages));
+                let source = Source::new(SOURCE_NODE_ID, None);
+
+                transceiver
+                    .send(Message::Subscribe { subscription })
+                    .await
+                    .expect("ZCL transceiver remains available");
+                transceiver
+                    .send(Message::Unsubscribe {
+                        messages: subscription_messages,
+                    })
+                    .await
+                    .expect("ZCL transceiver remains available");
+                transceiver
+                    .send(Message::Received {
+                        source,
+                        frame: subscribed_frame(),
+                    })
+                    .await
+                    .expect("ZCL transceiver remains available");
+
+                assert!(matches!(
+                    application_events.recv().await,
+                    Some(Event::Zcl { .. })
+                ));
+            });
+    }
+
+    #[test]
+    fn removes_closed_subscriptions_during_delivery() {
+        let (subscription, receiver) = Subscription::channel(SubscriptionFilter::new(
+            ClusterId::OnOff,
+            Scope::ClusterSpecific,
+            Direction::ClientToServer,
+        ));
+        let (mut transceiver, _events) = unstarted_transceiver();
+        transceiver.subscriptions.push(subscription);
+        drop(receiver);
+
+        let delivered = transceiver
+            .forward_to_subscribers(Source::new(SOURCE_NODE_ID, None), &subscribed_frame());
+
+        assert!(!delivered);
+        assert!(transceiver.subscriptions.is_empty());
+    }
+
+    #[test]
+    fn full_subscription_does_not_block_normal_routing() {
+        Builder::new_current_thread()
+            .build()
+            .expect("Tokio runtime")
+            .block_on(async {
+                let (subscription, _receiver) = Subscription::channel(SubscriptionFilter::new(
+                    ClusterId::OnOff,
+                    Scope::ClusterSpecific,
+                    Direction::ClientToServer,
+                ));
+                let source = Source::new(SOURCE_NODE_ID, None);
+                for _ in 0..MPSC_CHANNEL_SIZE {
+                    subscription
+                        .try_send(SubscriptionMessage {
+                            source,
+                            frame: subscribed_frame(),
+                        })
+                        .expect("subscription channel has capacity");
+                }
+                let (mut transceiver, mut events) = unstarted_transceiver();
+                transceiver.subscriptions.push(subscription);
+
+                transceiver
+                    .handle_message_received(source, subscribed_frame())
+                    .await;
+
+                assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
+                assert_eq!(transceiver.subscriptions.len(), 1);
+            });
+    }
+
     fn test_ncp() -> (NcpHandle, impl Future<Output = TestDriver> + Send) {
         TestDriver.into_actor(NCP_CHANNEL_SIZE)
+    }
+
+    fn unstarted_transceiver() -> (Transceiver, tokio::sync::mpsc::Receiver<Event>) {
+        let (aps_sender, _aps_receiver) = channel(MPSC_CHANNEL_SIZE);
+        let (events, application_events) = channel(MPSC_CHANNEL_SIZE);
+        let (ncp, _ncp_actor) = test_ncp();
+        (
+            Transceiver::new(ncp, Aps::new(aps_sender), events),
+            application_events,
+        )
     }
 
     #[test]
