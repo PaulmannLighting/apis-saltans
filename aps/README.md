@@ -1,8 +1,9 @@
 # apis-saltans-aps
 
-APS layer frame definitions and utilities for Zigbee.
+APS layer frame, data-service, and fragmentation types for Zigbee.
 
-This crate models the Zigbee APS frame structures (data, command, and acknowledgment paths), including control fields, delivery modes, destinations, and extended header metadata.
+This crate models the Zigbee APS frame structures and the Application Support
+Sublayer Data Entity (APSDE) service primitives.
 
 ## Status
 
@@ -14,7 +15,12 @@ This crate is under active development.
   - `Control`
   - `FrameType`
   - `DeliveryMode`
-  - `TxOptions` (APSDE-DATA transmission options)
+  - `TxOptions`
+- APSDE service primitives:
+  - `apsde::DataRequest<A>` for `APSDE-DATA.request`
+  - `apsde::DataConfirm<T>` for `APSDE-DATA.confirm`
+  - `apsde::DataIndication<A, T, K>` for `APSDE-DATA.indication`
+  - type-safe addressing, alias, status, and security metadata
 - Addressing and destination modeling:
   - `Destination` (unicast, broadcast endpoint, group)
   - `Broadcast` (well-known Zigbee broadcast addresses)
@@ -42,7 +48,54 @@ Top-level re-exports are available from `apis-saltans-aps` directly.
 - `frame::extended`: extended header fields and fragmentation
 - `frame::data::defragmentation`: stateful reassembly of fragmented APS data frames
 - `broadcast`: Zigbee network broadcast addresses
-- `tx_options`: APSDE-DATA transmission-option bitflags
+- `apsde`: APS data-service primitives and transmission-option bitflags
+
+## APS Data Service
+
+The `apsde` module models the three APS data-service primitives without
+coupling them to an actor or hardware backend. Its addressing enums encode the
+address and endpoint fields permitted by each primitive:
+
+- `RequestDestination` supports binding-table, group, 16-bit NWK, and 64-bit
+  IEEE destinations;
+- `Destination` reports the destination of a confirmation;
+- `ReceivedDestination` and `Source` model indication addressing;
+- `NetworkAddress`, `BroadcastAddress`, and `IndividualEndpoint` reject values
+  outside their respective APSDE ranges.
+
+`Alias` groups the alias source address and sequence number.
+`Security<K>` groups the key index and implementation-defined device-key-pair
+handle used for link-key security. ASDU length is derived from byte-like
+payloads instead of being stored as independent state.
+
+```rust
+use zb_aps::apsde::{
+    DataRequest, IndividualEndpoint, NetworkAddress, RequestDestination,
+};
+use zb_aps::TxOptions;
+use zb_core::{Endpoint, Profile};
+
+let local_endpoint =
+    IndividualEndpoint::new(Endpoint::Data).expect("endpoint 0 is individual");
+let destination = RequestDestination::Network {
+    address: NetworkAddress::new(0x1234).expect("valid NWK address"),
+    endpoint: Endpoint::Broadcast,
+};
+let request = DataRequest::new(
+    destination,
+    Profile::ZigbeeHomeAutomation.as_u16(),
+    0x0006,
+    local_endpoint,
+    [0x01, 0x02],
+)
+.with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION);
+
+assert_eq!(request.asdu_length(), 2);
+```
+
+The timestamp and link-key device-pair handle types are generic because their
+representations are implementation-defined. Propagated NWK and security
+processing statuses retain their raw 8-bit protocol values.
 
 ## Defragmentation
 

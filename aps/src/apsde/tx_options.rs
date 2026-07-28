@@ -4,11 +4,10 @@ use core::str::FromStr;
 use bitflags::{bitflags, parser};
 use le_stream::{FromLeStream, ToLeStream};
 
-/// Transmission options for an APSDE-DATA request.
+/// Transmission options for an `APSDE-DATA.request`.
 ///
-/// Options may be combined to request APS security, acknowledgements, or fragmentation behavior
-/// for one application-service data unit. Bits outside the defined Zigbee APSDE-DATA options are
-/// reserved and rejected during deserialization.
+/// Options may be combined to request APS security, acknowledgements, or
+/// fragmentation behavior for one application-service data unit.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd, ToLeStream)]
 #[repr(transparent)]
 pub struct TxOptions(u8);
@@ -57,8 +56,6 @@ mod tests {
 
     use super::TxOptions;
 
-    const RESERVED_OPTION: u8 = 0x20;
-
     #[test]
     fn uses_apsde_data_request_bit_assignments() {
         assert_eq!(TxOptions::SECURITY_ENABLED.bits(), 0x01);
@@ -69,21 +66,21 @@ mod tests {
     }
 
     #[test]
-    fn combined_options_round_trip() {
+    fn combined_options_preserve_their_bits() {
         let options = TxOptions::SECURITY_ENABLED
             | TxOptions::ACKNOWLEDGED_TRANSMISSION
             | TxOptions::FRAGMENTATION_PERMITTED;
-        let bytes: Vec<_> = options.to_le_stream().collect();
 
-        assert_eq!(bytes, [0x0d]);
-        assert_eq!(TxOptions::from_le_stream(bytes.into_iter()), Some(options));
+        assert_eq!(options.bits(), 0x0d);
+        assert_eq!(TxOptions::from_bits(options.bits()), Some(options));
+        assert_eq!(options.to_le_stream().next(), Some(0x0d));
+        assert_eq!(TxOptions::from_le_stream([0x0d].into_iter()), Some(options));
     }
 
     #[test]
     fn rejects_reserved_bits() {
-        assert_eq!(
-            TxOptions::from_le_stream([RESERVED_OPTION].into_iter()),
-            None
-        );
+        const RESERVED_OPTION: u8 = 0x20;
+
+        assert_eq!(TxOptions::from_bits(RESERVED_OPTION), None);
     }
 }

@@ -22,6 +22,7 @@ dependencies = [
  "le-stream",
  "log",
  "num_enum",
+ "thiserror",
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
 # apis-saltans-aps Architecture
 
-`apis-saltans-aps` models Zigbee APS frames and provides stateful
-defragmentation for raw APS data payloads.
+`apis-saltans-aps` models Zigbee APS frames, the APS data-service boundary, and
+stateful defragmentation for raw APS data payloads.
 
 ```mermaid
 flowchart TD
@@ -27,12 +27,53 @@ flowchart TD
 | `frame::acknowledgement` | APS acknowledgement frame structures.                         |
 | `frame::extended`        | Extended APS header fields, including fragmentation metadata. |
 | `broadcast`              | Well-known Zigbee broadcast addresses.                        |
-| `tx_options`             | APSDE-DATA request transmission-option bitflags.              |
+| `apsde`                  | APSDE request, confirmation, indication, and support types.   |
 
 APS data headers retain cluster and profile identifiers as their raw wire values. Their
 `cluster()` and `profile()` accessors provide typed `zb_core::Cluster` and `zb_core::Profile`
 interpretations when the identifiers are known, while the raw accessors remain available for
 unknown or manufacturer-specific values.
+
+## APS Data Entity
+
+The `apsde` module models the service-access-point boundary between a Zigbee
+next-higher-layer entity and the APS data entity. It contains value types only;
+actors, queues, persistence, and security processing belong to implementations
+using the crate.
+
+```mermaid
+flowchart LR
+    NHLE["Next-higher-layer entity"]
+    Request["DataRequest&lt;A&gt;"]
+    APSDE["APS data entity implementation"]
+    Confirm["DataConfirm&lt;T&gt;"]
+    Indication["DataIndication&lt;A, T, K&gt;"]
+    Frames["APS wire frames"]
+
+    NHLE --> Request
+    Request --> APSDE
+    APSDE --> Confirm
+    Confirm --> NHLE
+    APSDE --> Indication
+    Indication --> NHLE
+    APSDE --> Frames
+```
+
+Primitive-specific destination and source enums replace a loose address mode
+plus optional fields. Each enum exposes only the modes legal in its context.
+Group requests include their required NWK broadcast selector.
+`IndividualEndpoint` excludes the APS broadcast endpoint, while request and
+confirmation destinations use `zb_core::Endpoint` where the specification
+permits it.
+
+ASDU length is derived from byte-like payloads, preventing disagreement
+between an explicit length and the ASDU. Generic parameters preserve
+implementation-defined timestamp and link-key device-pair handle
+representations. Propagated NWK and security-processing status values remain
+raw 8-bit codes so unknown statuses are not discarded.
+
+`Security<K>` encodes conditional fields as variants, ensuring a key index and
+key-pair handle exist only for link-key-secured ASDUs.
 
 ## Defragmentation
 
