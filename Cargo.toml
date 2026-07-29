@@ -1,5 +1,5 @@
 [workspace]
-members = ["core", "zcl", "zdp", "aps", "coordinator", "hw", "nwk"]
+members = ["core", "zcl", "zdp", "aps", "coordinator", "hw"]
 resolver = "3"
 
 [workspace.dependencies]
@@ -19,7 +19,6 @@ tokio = "1"
 zb-aps = { package = "apis-saltans-aps", version = "0.8", path = "aps" }
 zb-core = { package = "apis-saltans-core", version = "0.9", path = "core" }
 zb-hw = { package = "apis-saltans-hw", version = "0.13", path = "hw" }
-zb-nwk = { package = "apis-saltans-nwk", version = "0.6", path = "nwk" }
 zb-zcl = { package = "apis-saltans-zcl", version = "0.9", path = "zcl" }
 zb-zdp = { package = "apis-saltans-zdp", version = "0.8", path = "zdp" }
 

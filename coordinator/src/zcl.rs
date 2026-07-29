@@ -10,8 +10,7 @@ use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::{self, channel};
 use zb_aps::Data;
-use zb_aps::apsde::{DataIndication, DataRequest};
-use zb_nwk::Source;
+use zb_aps::apsde::{DataIndication, DataRequest, Source};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::message::Message;
@@ -110,12 +109,16 @@ impl Transceiver {
             warn!("Discarding ZCL indication with unsupported addressing");
             return;
         };
-        trace!("Received ZCL message from {source}: {aps_frame:?}");
+        let Some(source_address) = source.network_address() else {
+            warn!("Discarding ZCL indication from non-network source: {source:?}");
+            return;
+        };
+        trace!("Received ZCL message from {source:?}: {aps_frame:?}");
         if self.forward_to_subscribers(source, &aps_frame) {
             return;
         }
 
-        let index = Index::from_received_zcl_frame(source, &aps_frame);
+        let index = Index::from_received_zcl_frame(source_address, &aps_frame);
 
         if let Some(sender) = self.responses.remove(&index) {
             let (_, zcl_frame) = aps_frame.into_parts();
@@ -127,8 +130,8 @@ impl Transceiver {
             return;
         }
 
-        let Ok(short_id) = source.node_id().try_into().inspect_err(|error| {
-            warn!("Discarding message from invalid source: {source}: {error:?}");
+        let Ok(short_id) = source_address.as_u16().try_into().inspect_err(|error| {
+            warn!("Discarding message from invalid source {source:?}: {error:?}");
         }) else {
             return;
         };
@@ -284,13 +287,12 @@ mod tests {
     use zb_aps::apsde::{
         Alias, DataIndication, DataRequest, IndicationMetadata, IndicationStatus,
         IndividualEndpoint, NetworkAddress, ReceivedDestination, RequestDestination, Security,
-        Source as ApsdeSource,
+        Source,
     };
     use zb_aps::data::Header as ApsHeader;
     use zb_aps::{Data, TxOptions};
     use zb_core::endpoint::Application;
     use zb_core::{Cluster as ClusterId, Direction, Endpoint, Profile};
-    use zb_nwk::Source;
     use zb_zcl::on_off::{Command as OnOffCommand, On};
     use zb_zcl::{Cluster, Command, Frame, Header as ZclHeader, Scope, UnsequencedFrame};
 
@@ -393,7 +395,7 @@ mod tests {
                 let (subscription, mut subscribed_frames) = Subscription::channel(filter);
                 let (transceiver, messages) = channel(MPSC_CHANNEL_SIZE);
                 tokio::spawn(Transceiver::new(Aps::new(aps_sender), events).run(messages));
-                let source = Source::new(SOURCE_NODE_ID, None);
+                let source = source();
 
                 transceiver
                     .send(Message::Subscribe { subscription })
@@ -472,8 +474,7 @@ mod tests {
         transceiver.subscriptions.push(subscription);
         drop(receiver);
 
-        let delivered = transceiver
-            .forward_to_subscribers(Source::new(SOURCE_NODE_ID, None), &subscribed_frame());
+        let delivered = transceiver.forward_to_subscribers(source(), &subscribed_frame());
 
         assert!(!delivered);
         assert!(transceiver.subscriptions.is_empty());
@@ -490,7 +491,7 @@ mod tests {
                     Scope::ClusterSpecific,
                     Direction::ClientToServer,
                 ));
-                let source = Source::new(SOURCE_NODE_ID, None);
+                let source = source();
                 for _ in 0..MPSC_CHANNEL_SIZE {
                     subscription
                         .try_send(SubscriptionMessage {
@@ -553,7 +554,7 @@ mod tests {
                     .expect("coordinator address is a valid NWK address"),
                 endpoint,
             },
-            ApsdeSource::Network {
+            Source::Network {
                 address: NetworkAddress::new(SOURCE_NODE_ID)
                     .expect("source address is a valid NWK address"),
                 endpoint,
@@ -567,5 +568,15 @@ mod tests {
         );
         let (_, frame) = subscribed_frame().into_parts();
         DataIndication::new(metadata, frame)
+    }
+
+    fn source() -> Source {
+        let endpoint = IndividualEndpoint::new(Endpoint::Application(Application::MIN))
+            .expect("application endpoint is individual");
+        Source::Network {
+            address: NetworkAddress::new(SOURCE_NODE_ID)
+                .expect("source address is a valid NWK address"),
+            endpoint,
+        }
     }
 }

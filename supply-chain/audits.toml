@@ -145,18 +145,6 @@ criteria = "safe-to-deploy"
 delta = "0.1.0 -> 0.1.1"
 notes = "AI-assisted delta audit; version bump and README only"
 
-[[audits.apis-saltans-nwk]]
-who = "Codex AI"
-criteria = "safe-to-deploy"
-version = "0.2.0"
-notes = "AI-assisted audit; reviewed NWK envelope/source metadata types, optional serde and le-stream support, documentation, and workspace integration; no unsafe code or build script is present"
-
-[[audits.apis-saltans-nwk]]
-who = "Codex AI"
-criteria = "safe-to-deploy"
-delta = "0.2.0 -> 0.3.0"
-notes = "AI-assisted delta audit; reviewed the workspace dependency transition to apis-saltans-core 0.6. No NWK source changes or new ambient capabilities were introduced."
-
 [[audits.apis-saltans-zcl]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -762,12 +750,6 @@ criteria = "safe-to-deploy"
 user-id = 290593 # Richard Neumann (neumann-paulmann)
 start = "2026-07-01"
 end = "2027-07-19"
-
-[[trusted.apis-saltans-nwk]]
-criteria = "safe-to-deploy"
-user-id = 290593 # Richard Neumann (neumann-paulmann)
-start = "2026-07-07"
-end = "2027-07-21"
 
 [[trusted.apis-saltans-zcl]]
 criteria = "safe-to-deploy"

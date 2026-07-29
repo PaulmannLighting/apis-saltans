@@ -22,9 +22,6 @@ audit-as-crates-io = true
 [policy.apis-saltans-hw]
 audit-as-crates-io = true
 
-[policy.apis-saltans-nwk]
-audit-as-crates-io = true
-
 [policy.apis-saltans-zcl]
 audit-as-crates-io = true
 

@@ -125,11 +125,11 @@ channel-bridge helper on that runtime.
 The `driver` feature also exposes protocol crate re-export modules:
 
 ```rust
-use apis_saltans_hw::{aps, core, nwk, zdp};
+use apis_saltans_hw::{aps, core, zdp};
 ```
 
-These modules re-export `zb-aps`, `zb-core`, `zb-nwk`, and `zb-zdp` respectively. They are a
-convenience for driver crates: public APIs can refer to the protocol types through
+These modules re-export `zb-aps`, `zb-core`, and `zb-zdp` respectively. They are a convenience for
+driver crates: public APIs can refer to the protocol types through
 `apis_saltans_hw::core::...`, `apis_saltans_hw::aps::...`, and the other re-export modules instead
 of adding direct dependencies on every protocol crate.
 

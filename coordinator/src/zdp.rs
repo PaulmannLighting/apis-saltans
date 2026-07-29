@@ -10,13 +10,12 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::channel;
 use zb_aps::DeliveryMode;
-use zb_aps::apsde::{DataIndication, DataRequest};
+use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress};
 use zb_aps::data::Header;
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
 use zb_core::{ClusterSpecific, Destination, Endpoint, FullAddress, Profile, destination};
 use zb_hw::NcpHandle;
-use zb_nwk::Source;
 use zb_zdp::{
     Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
     MgmtPermitJoiningRsp, NetworkManagement, NodeDescReq, NodeDescRsp, Status,
@@ -114,16 +113,20 @@ impl Transceiver {
             warn!("Discarding ZDP indication with unsupported addressing");
             return;
         };
-        trace!("Received ZDP message from {source}: {frame:?}");
+        let Some(source_address) = source.network_address() else {
+            warn!("Discarding ZDP indication from non-network source: {source:?}");
+            return;
+        };
+        trace!("Received ZDP message from {source:?}: {frame:?}");
         let (aps_header, zdp_frame) = frame.into_parts();
-        let index = Index::from_received_zdp_frame(source, &zdp_frame);
+        let index = Index::from_received_zdp_frame(source_address, &zdp_frame);
         let (seq, command) = zdp_frame.into_parts();
 
         match command {
             Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
                 match_desc_req,
             )) => {
-                self.handle_match_desc_req(source, aps_header, seq, *match_desc_req)
+                self.handle_match_desc_req(source_address, aps_header, seq, *match_desc_req)
                     .await;
             }
             Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::DeviceAnnce(
@@ -134,10 +137,12 @@ impl Transceiver {
             Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescReq(
                 node_desc_req,
             )) => {
-                self.handle_node_desc_req(source, seq, *node_desc_req).await;
+                self.handle_node_desc_req(source_address, seq, *node_desc_req)
+                    .await;
             }
             Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_)) => {
-                self.handle_mgmt_permit_joining_req(source, seq).await;
+                self.handle_mgmt_permit_joining_req(source_address, seq)
+                    .await;
             }
             command => {
                 if let Some(sender) = self.responses.remove(&index) {
@@ -203,7 +208,7 @@ impl Transceiver {
     /// Process a Match Descriptor request and unicast any required response to its originator.
     async fn handle_match_desc_req(
         &self,
-        source: Source,
+        source: NetworkAddress,
         aps_header: Header,
         seq: u8,
         match_desc_req: MatchDescReq,
@@ -261,7 +266,7 @@ impl Transceiver {
                 MatchDescAction::Ignore => return,
             };
 
-        let Ok(node_id) = source.node_id().try_into().inspect_err(|error| {
+        let Ok(node_id) = source.as_u16().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
         }) else {
             return;
@@ -291,8 +296,13 @@ impl Transceiver {
     }
 
     /// Respond to a Node Descriptor request with the descriptor or an appropriate status.
-    async fn handle_node_desc_req(&self, source: Source, seq: u8, node_desc_req: NodeDescReq) {
-        let Ok(node_id) = source.node_id().try_into().inspect_err(|error| {
+    async fn handle_node_desc_req(
+        &self,
+        source: NetworkAddress,
+        seq: u8,
+        node_desc_req: NodeDescReq,
+    ) {
+        let Ok(node_id) = source.as_u16().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
         }) else {
             return;
@@ -325,8 +335,8 @@ impl Transceiver {
     }
 
     /// Apply a management permit-joining request and return its result to the requester.
-    async fn handle_mgmt_permit_joining_req(&self, source: Source, seq: u8) {
-        let Ok(node_id) = source.node_id().try_into().inspect_err(|error| {
+    async fn handle_mgmt_permit_joining_req(&self, source: NetworkAddress, seq: u8) {
+        let Ok(node_id) = source.as_u16().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
         }) else {
             return;

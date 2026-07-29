@@ -1,9 +1,8 @@
 use thiserror::Error as ThisError;
 use tokio::sync::oneshot;
 use zb_aps::Data;
-use zb_aps::apsde::IndividualEndpoint;
+use zb_aps::apsde::{IndividualEndpoint, Source};
 use zb_core::destination::Device;
-use zb_nwk::Source;
 use zb_zcl::Frame;
 use zb_zcl::ota_upgrade::Command as OtaCommand;
 
@@ -28,7 +27,7 @@ pub enum Message {
     },
     /// A received OTA Upgrade cluster command.
     Received {
-        /// NWK source information supplied by the hardware backend.
+        /// APSDE source information supplied by the hardware backend.
         source: Source,
         /// Typed APS and ZCL frame.
         frame: Data<Frame<OtaCommand>>,

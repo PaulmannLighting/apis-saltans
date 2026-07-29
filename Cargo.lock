@@ -16,7 +16,6 @@ name = "apis-saltans-aps"
 version = "0.8.0"
 dependencies = [
  "apis-saltans-core",
- "apis-saltans-nwk",
  "bitflags",
  "bytes",
  "le-stream",
@@ -32,7 +31,6 @@ dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
  "apis-saltans-hw",
- "apis-saltans-nwk",
  "apis-saltans-zcl",
  "apis-saltans-zdp",
  "bitflags",
@@ -72,20 +70,11 @@ version = "0.13.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
- "apis-saltans-nwk",
  "apis-saltans-zdp",
  "bytes",
  "serde",
  "thiserror",
  "tokio",
-]
-
-[[package]]
-name = "apis-saltans-nwk"
-version = "0.6.0"
-dependencies = [
- "apis-saltans-core",
- "serde",
 ]
 
 [[package]]

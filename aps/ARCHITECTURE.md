@@ -5,13 +5,13 @@ stateful defragmentation for raw APS data payloads.
 
 ```mermaid
 flowchart TD
-    Envelope["NWK Envelope&lt;Data&lt;Bytes&gt;&gt;"]
+    Indication["APSDE DataIndication&lt;Data&lt;Bytes&gt;, T, K&gt;"]
     Assembler["frame::data::defragmentation::Assembler"]
     Index["Index<br/>Source + APS counter"]
     Transaction["Transaction<br/>header + fragment slots"]
     Frame["Reassembled Data&lt;Bytes&gt;"]
 
-    Envelope --> Assembler
+    Indication --> Assembler
     Assembler --> Index
     Index --> Transaction
     Transaction --> Frame
@@ -86,7 +86,7 @@ key-pair handle exist only for link-key-secured ASDUs.
 transactions. Each
 transaction is keyed by:
 
-- `zb_nwk::Source`, because APS counters are source-scoped;
+- `apsde::Source`, because APS counters are source-scoped;
 - APS frame counter, because fragments of one APS frame share the counter.
 
 The first fragment stores the original APS data header and opens the payload

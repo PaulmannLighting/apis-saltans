@@ -1,8 +1,8 @@
-use zb_nwk::Source;
+use crate::apsde::Source;
 
 /// Key for an in-progress APS defragmentation transaction.
 ///
-/// APS counters are scoped by source, so both the NWK source and APS counter
+/// APS counters are scoped by source, so both the APSDE source and APS counter
 /// are required to distinguish transactions.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Index {

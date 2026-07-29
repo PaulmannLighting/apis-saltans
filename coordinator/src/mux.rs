@@ -2,7 +2,7 @@ use bytes::Bytes;
 use log::{trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
-use zb_aps::apsde::DataIndication;
+use zb_aps::apsde::{DataIndication, Source};
 use zb_aps::data::Frame;
 use zb_core::destination;
 use zb_hw::{
@@ -212,7 +212,7 @@ impl Mux {
 
     async fn forward_received_message(
         &self,
-        source: zb_nwk::Source,
+        source: Source,
         indication: DataIndication<Bytes, (), ()>,
         aps_frame: Frame<ApsPayload>,
     ) {
@@ -240,7 +240,11 @@ impl Mux {
                     });
             }
             ApsPayload::KeepAlive => {
-                let Ok(device_id) = source.node_id().try_into().inspect_err(|id| {
+                let Some(source_address) = source.network_address() else {
+                    warn!("Keep-Alive packet from non-network source: {source:?}");
+                    return;
+                };
+                let Ok(device_id) = source_address.as_u16().try_into().inspect_err(|id| {
                     warn!("Keep-Alive packet from invalid device id: {id:#06X}");
                 }) else {
                     return;

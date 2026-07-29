@@ -44,7 +44,7 @@ pub use self::common::{
 };
 #[cfg(feature = "driver")]
 #[cfg_attr(docsrs, doc(cfg(feature = "driver")))]
-pub use self::reexports::{aps, core, nwk, zdp};
+pub use self::reexports::{aps, core, zdp};
 
 mod common;
 mod reexports;

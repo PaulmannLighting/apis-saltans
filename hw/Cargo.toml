@@ -21,7 +21,6 @@ thiserror = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["sync"], optional = true }
 zb-aps = { workspace = true, optional = true }
 zb-core = { workspace = true, optional = true }
-zb-nwk = { workspace = true, optional = true }
 zb-zdp = { workspace = true, optional = true }
 
 [dev-dependencies]
@@ -38,7 +37,7 @@ types = [
     "dep:zb-zdp",
 ]
 coordinator = ["types"]
-driver = ["types", "dep:zb-nwk"]
+driver = ["types"]
 serde = ["types", "dep:serde", "serde/derive", "zb-core/serde"]
 
 [lints]

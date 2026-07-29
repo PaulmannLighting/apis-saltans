@@ -1,7 +1,6 @@
 use zb_aps::Data;
-use zb_aps::apsde::DataRequest;
+use zb_aps::apsde::{DataRequest, NetworkAddress};
 use zb_core::{Endpoint, short_id};
-use zb_nwk::Source;
 use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
 
 /// Correlation key for pending transceiver responses.
@@ -73,13 +72,13 @@ impl Index {
     /// Create the response correlation key for a received ZCL frame.
     ///
     /// The incoming frame contributes the APS and ZCL header fields, while the
-    /// [`Source`] contributes the remote node id that sent the response.
+    /// [`NetworkAddress`] contributes the remote node id that sent the response.
     #[must_use]
     pub const fn from_received_zcl_frame<T>(
-        source: Source,
+        source: NetworkAddress,
         frame: &Data<zb_zcl::Frame<T>>,
     ) -> Self {
-        Self::from_aps_and_zcl_headers(source.node_id(), frame.header(), frame.payload().header())
+        Self::from_aps_and_zcl_headers(source.as_u16(), frame.header(), frame.payload().header())
     }
 
     /// Create the response correlation key for a received ZDP response frame.
@@ -88,9 +87,9 @@ impl Index {
     /// toggled away before indexing so the response matches the key that was
     /// stored for the original request command.
     #[must_use]
-    pub fn from_received_zdp_frame(source: Source, frame: &zb_zdp::Frame<Command>) -> Self {
+    pub fn from_received_zdp_frame(source: NetworkAddress, frame: &zb_zdp::Frame<Command>) -> Self {
         Self::new(
-            source.node_id(),
+            source.as_u16(),
             Endpoint::Data,
             frame.data().cluster_id() ^ CLUSTER_ID_RESPONSE_MASK,
             frame.data().profile().into(),

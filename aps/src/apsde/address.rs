@@ -268,6 +268,35 @@ impl Source {
             Self::ExtendedWithoutEndpoint(_) => AddressMode::ExtendedWithoutEndpoint,
         }
     }
+
+    /// Return the source NWK address when network addressing was used.
+    #[must_use]
+    pub const fn network_address(self) -> Option<NetworkAddress> {
+        match self {
+            Self::Network { address, .. } => Some(address),
+            Self::Extended { .. } | Self::ExtendedWithoutEndpoint(_) => None,
+        }
+    }
+
+    /// Return the source IEEE address when extended addressing was used.
+    #[must_use]
+    pub const fn ieee_address(self) -> Option<IeeeAddress> {
+        match self {
+            Self::Extended { address, .. } | Self::ExtendedWithoutEndpoint(address) => {
+                Some(address)
+            }
+            Self::Network { .. } => None,
+        }
+    }
+
+    /// Return the source endpoint when the source addressing mode includes one.
+    #[must_use]
+    pub const fn endpoint(self) -> Option<IndividualEndpoint> {
+        match self {
+            Self::Network { endpoint, .. } | Self::Extended { endpoint, .. } => Some(endpoint),
+            Self::ExtendedWithoutEndpoint(_) => None,
+        }
+    }
 }
 
 macro_rules! impl_address_format {
@@ -333,11 +362,11 @@ impl TryFrom<Endpoint> for IndividualEndpoint {
 
 #[cfg(test)]
 mod tests {
-    use zb_core::Endpoint;
+    use zb_core::{Endpoint, IeeeAddress};
 
     use super::{
         AddressMode, BroadcastAddress, IndividualEndpoint, MAX_NETWORK_ADDRESS,
-        MIN_BROADCAST_ADDRESS, NetworkAddress, RequestDestination,
+        MIN_BROADCAST_ADDRESS, NetworkAddress, RequestDestination, Source,
     };
 
     #[test]
@@ -357,6 +386,32 @@ mod tests {
     fn individual_endpoint_rejects_the_broadcast_endpoint() {
         assert!(IndividualEndpoint::new(Endpoint::Data).is_some());
         assert!(IndividualEndpoint::new(Endpoint::Broadcast).is_none());
+    }
+
+    #[test]
+    fn source_accessors_preserve_addressing_mode_fields() {
+        const NETWORK_ADDRESS: u16 = 0x1234;
+        const IEEE_ADDRESS: IeeeAddress = IeeeAddress::new(1, 2, 3, 4, 5, 6, 7, 8);
+
+        let endpoint =
+            IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
+        let network_address =
+            NetworkAddress::new(NETWORK_ADDRESS).expect("test NWK address is valid");
+        let network = Source::Network {
+            address: network_address,
+            endpoint,
+        };
+        let extended = Source::Extended {
+            address: IEEE_ADDRESS,
+            endpoint,
+        };
+
+        assert_eq!(network.network_address(), Some(network_address));
+        assert_eq!(network.ieee_address(), None);
+        assert_eq!(network.endpoint(), Some(endpoint));
+        assert_eq!(extended.network_address(), None);
+        assert_eq!(extended.ieee_address(), Some(IEEE_ADDRESS));
+        assert_eq!(extended.endpoint(), Some(endpoint));
     }
 
     #[test]

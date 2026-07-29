@@ -138,11 +138,10 @@ mod tests {
     use le_stream::FromLeStream;
     use tokio::time::timeout;
     use zb_aps::Data;
-    use zb_aps::apsde::IndividualEndpoint;
+    use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, Source};
     use zb_core::destination::Device;
     use zb_core::endpoint::Application;
     use zb_core::{Cluster, Direction, Endpoint, Profile, short_id};
-    use zb_nwk::Source;
     use zb_zcl::ota_upgrade::{
         Command as OtaCommand, ImageBlockRequest, ImageBlockResponse, ImageBlockResponsePayload,
         ImageId, ImageNotify, ImageNotifyPayload, ImagePageRequest, QueryNextImageRequest,
@@ -728,7 +727,7 @@ mod tests {
         let frame = Data::new(aps_header, Bytes::new())
             .map_payload(|_| Frame::new(zcl_header, command.into()));
         Message::Received {
-            source: Source::new(test_destination().device().as_u16(), None),
+            source: test_source(),
             frame,
         }
     }
@@ -756,8 +755,17 @@ mod tests {
         let frame = Data::new(aps_header, Bytes::new())
             .map_payload(|_| Frame::new(zcl_header, ZclCluster::OtaUpgrade(command.into())));
         zcl::SubscriptionMessage {
-            source: Source::new(test_destination().device().as_u16(), None),
+            source: test_source(),
             frame,
+        }
+    }
+
+    fn test_source() -> Source {
+        Source::Network {
+            address: NetworkAddress::new(test_destination().device().as_u16())
+                .expect("test destination is a valid NWK address"),
+            endpoint: IndividualEndpoint::new(ENDPOINT)
+                .expect("test endpoint is an individual endpoint"),
         }
     }
 

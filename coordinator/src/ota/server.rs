@@ -7,10 +7,9 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot;
 use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
 use zb_aps::Data;
-use zb_aps::apsde::IndividualEndpoint;
+use zb_aps::apsde::{IndividualEndpoint, Source};
 use zb_core::destination::Device;
 use zb_core::{Cluster, Direction};
-use zb_nwk::Source;
 use zb_zcl::global::default_response::DefaultResponse;
 use zb_zcl::ota_upgrade::{
     Command as OtaCommand, ImageBlockRequest, ImagePageRequest, QueryNextImageResponse,
@@ -272,7 +271,11 @@ impl Server {
             warn!("Discarding OTA command with unsupported profile {profile}");
             return;
         }
-        let Ok(short_id) = source.node_id().try_into().inspect_err(|node_id| {
+        let Some(source_address) = source.network_address() else {
+            warn!("Discarding OTA command from non-network source: {source:?}");
+            return;
+        };
+        let Ok(short_id) = source_address.as_u16().try_into().inspect_err(|node_id| {
             warn!("Discarding OTA command from invalid node ID {node_id:#06x}");
         }) else {
             return;

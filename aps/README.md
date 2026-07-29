@@ -101,10 +101,11 @@ processing statuses retain their raw 8-bit protocol values.
 
 ## Defragmentation
 
-`Assembler` consumes `zb_nwk::Envelope<Data<bytes::Bytes>>` values.
-It uses the NWK source and APS counter to identify an in-progress fragmented
-transaction. `Bytes` keeps raw APS payload handling cheap when frames are passed
-between queues or reassembled from multiple fragments.
+`Assembler` consumes
+`apsde::DataIndication<Data<bytes::Bytes>, T, K>` values. It uses the APSDE
+source and APS counter to identify an in-progress fragmented transaction.
+`Bytes` keeps raw APS payload handling cheap when frames are passed between
+queues or reassembled from multiple fragments.
 
 Behavior:
 
@@ -115,15 +116,15 @@ Behavior:
 - invalid frames and out-of-bounds fragments are dropped and return `None`.
 
 ```rust
-use zb_aps::{Assembler, Data};
 use bytes::Bytes;
-use zb_nwk::Envelope;
+use zb_aps::apsde::DataIndication;
+use zb_aps::{Assembler, Data};
 
-fn handle_frame(
+fn handle_frame<T, K>(
     assembler: &mut Assembler,
-    envelope: Envelope<Data<Bytes>>,
+    indication: DataIndication<Data<Bytes>, T, K>,
 ) -> Option<Data<Bytes>> {
-    assembler.add(envelope)
+    assembler.add(indication)
 }
 ```
 

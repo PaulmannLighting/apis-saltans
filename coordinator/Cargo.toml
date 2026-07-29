@@ -24,7 +24,6 @@ tokio = { workspace = true, features = ["sync", "rt", "rt-multi-thread", "time"]
 zb-aps.workspace = true
 zb-core = { workspace = true, features = ["serde"] }
 zb-hw = { workspace = true, features = ["coordinator", "serde"] }
-zb-nwk.workspace = true
 zb-zcl = { workspace = true, features = ["serde"] }
 zb-zdp = { workspace = true, features = ["serde"] }
 

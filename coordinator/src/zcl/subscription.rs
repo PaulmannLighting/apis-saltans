@@ -1,8 +1,8 @@
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zb_aps::Data;
+use zb_aps::apsde::Source;
 use zb_core::{Cluster, Direction};
-use zb_nwk::Source;
 use zb_zcl::{Cluster as ZclCluster, Frame, Scope};
 
 use crate::MPSC_CHANNEL_SIZE;
@@ -10,7 +10,7 @@ use crate::MPSC_CHANNEL_SIZE;
 /// A received ZCL frame delivered to an internal subscriber.
 #[derive(Clone, Debug)]
 pub struct Received {
-    /// NWK source information for the received frame.
+    /// APSDE source information for the received frame.
     pub source: Source,
     /// Parsed APS and ZCL frame.
     pub frame: Data<Frame<ZclCluster>>,

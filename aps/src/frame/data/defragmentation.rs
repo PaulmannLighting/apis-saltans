@@ -1,19 +1,19 @@
 //! APS data-frame defragmentation.
 //!
-//! The assembler consumes NWK envelopes carrying raw APS data frames. It uses
-//! the NWK source and APS counter as the transaction key, buffers payload
-//! fragments, and returns the rebuilt APS data frame once all fragments are
-//! present.
+//! The assembler consumes APSDE data indications carrying raw APS data frames.
+//! It uses the APSDE source and APS counter as the transaction key, buffers
+//! payload fragments, and returns the rebuilt APS data frame once all fragments
+//! are present.
 
 use std::collections::BTreeMap;
 use std::num::NonZero;
 
 use bytes::Bytes;
 use log::{trace, warn};
-use zb_nwk::{Envelope, Source};
 
 use self::index::Index;
 use self::transaction::{InsertResult, Transaction};
+use crate::apsde::{DataIndication, Source};
 use crate::data::Frame;
 use crate::{Extended, ExtendedControl};
 
@@ -42,14 +42,18 @@ impl Assembler {
     /// while a transaction is still incomplete or when the incoming frame is
     /// invalid and must be dropped.
     ///
-    /// A transaction is identified by the envelope source and the APS frame
-    /// counter. If a new first fragment arrives for an existing transaction, the
-    /// previous transaction is dropped and replaced.
+    /// A transaction is identified by the indication source and the APS frame
+    /// counter. If a new first fragment arrives for an existing transaction,
+    /// the previous transaction is dropped and replaced. Other indication
+    /// metadata is not retained after the fragment is added.
     #[must_use]
-    pub fn add(&mut self, envelope: Envelope<Frame<Bytes>>) -> Option<Frame<Bytes>> {
-        trace!("Received NWK envelope: {envelope:?}");
-
-        let (source, _metadata, aps) = envelope.into_parts();
+    pub fn add<T, K>(
+        &mut self,
+        indication: DataIndication<Frame<Bytes>, T, K>,
+    ) -> Option<Frame<Bytes>> {
+        let (metadata, aps) = indication.into_parts();
+        let source = metadata.source();
+        trace!("Received APSDE data indication from {source:?}: {aps:?}");
 
         let Some(extended) = aps.header().extended() else {
             trace!("APS frame has no extended header.");
