@@ -1,6 +1,7 @@
 use thiserror::Error as ThisError;
 use tokio::sync::oneshot;
 use zb_aps::Data;
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::destination::Device;
 use zb_nwk::Source;
 use zb_zcl::Frame;
@@ -18,6 +19,8 @@ pub enum Message {
     Update {
         /// Device endpoint to update.
         target: Device,
+        /// Local OTA server endpoint used as the APS source.
+        source_endpoint: IndividualEndpoint,
         /// Complete OTA image offered to the device.
         image: Image,
         /// Reports the terminal result of the scheduled update.

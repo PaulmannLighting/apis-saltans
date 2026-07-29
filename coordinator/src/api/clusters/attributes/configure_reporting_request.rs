@@ -1,40 +1,25 @@
+use bytes::Bytes;
 use le_stream::ToLeStream;
-use zb_core::{ClusterSpecific, ExpectResponse, Profiled};
 use zb_zcl::global::configure_reporting;
-use zb_zcl::{Cluster, Command, Reportable, Scoped};
+use zb_zcl::{Command, Reportable, Scoped, UnsequencedFrame, UnsequencedHeader};
 
-use crate::zcl::{Metadata, Payload};
-
-/// Global Configure Reporting request scoped to one target cluster.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ConfigureReportingRequest<T>(pub T);
-
-impl<T> ExpectResponse<Cluster> for ConfigureReportingRequest<T> {
-    type Response = configure_reporting::Response;
-}
-
-impl<T> From<ConfigureReportingRequest<T>> for Payload
+/// Construct a global Configure Reporting frame scoped to one target cluster.
+pub fn frame<T>(attributes: T) -> UnsequencedFrame<Bytes>
 where
     T: IntoIterator<Item: Reportable>,
 {
-    fn from(request: ConfigureReportingRequest<T>) -> Self {
-        Self::new(
-            crate::aps::Metadata::new(
-                <T::Item as Profiled>::PROFILE,
-                <T::Item as ClusterSpecific>::ID,
-            ),
-            Metadata {
-                scope: configure_reporting::Send::SCOPE,
-                direction: <configure_reporting::Send as zb_zcl::Directed>::DIRECTION,
-                disable_default_response: configure_reporting::Send::DISABLE_DEFAULT_RESPONSE,
-                manufacturer_code: <T::Item as Reportable>::MANUFACTURER_CODE,
-                command_id: configure_reporting::Send::ID,
-            },
-            configure_reporting::Send::new(request.0.into_iter().map(Into::into).collect())
-                .to_le_stream()
-                .collect(),
-        )
-    }
+    UnsequencedFrame::new(
+        UnsequencedHeader::new(
+            configure_reporting::Send::SCOPE,
+            <configure_reporting::Send as zb_zcl::Directed>::DIRECTION,
+            configure_reporting::Send::DISABLE_DEFAULT_RESPONSE,
+            <T::Item as Reportable>::MANUFACTURER_CODE,
+            configure_reporting::Send::ID,
+        ),
+        configure_reporting::Send::new(attributes.into_iter().map(Into::into).collect())
+            .to_le_stream()
+            .collect(),
+    )
 }
 
 #[cfg(test)]
@@ -44,8 +29,7 @@ mod tests {
     use zb_zcl::Discrete;
     use zb_zcl::on_off::SendReport;
 
-    use super::ConfigureReportingRequest;
-    use crate::zcl::Payload;
+    use super::frame;
 
     const ATTRIBUTE_ID: u16 = 0x0000;
     const TYPE_ID: u8 = 0x10;
@@ -54,7 +38,7 @@ mod tests {
 
     #[test]
     fn derives_request_metadata_and_attribute_ids_from_reportable() {
-        let request = ConfigureReportingRequest([
+        let frame = frame([
             SendReport::OnOff(Discrete::<Bool>::new(
                 MINIMUM_REPORTING_INTERVAL,
                 MAXIMUM_REPORTING_INTERVAL,
@@ -65,7 +49,8 @@ mod tests {
             )),
         ]);
 
-        let (aps, zcl, bytes) = Payload::from(request).into_parts();
+        let manufacturer_code = frame.header().manufacturer_code();
+        let bytes = frame.into_payload();
         let mut record = vec![Direction::ClientToServer as u8];
         record.extend(ATTRIBUTE_ID.to_le_bytes());
         record.push(TYPE_ID);
@@ -73,9 +58,15 @@ mod tests {
         record.extend(MAXIMUM_REPORTING_INTERVAL.to_le_bytes());
         let expected = [record.as_slice(), record.as_slice()].concat();
 
-        assert_eq!(aps.profile(), Profile::ZigbeeHomeAutomation);
-        assert_eq!(aps.cluster_id(), Cluster::OnOff.as_u16());
-        assert_eq!(zcl.manufacturer_code, None);
+        assert_eq!(
+            <SendReport as zb_core::Profiled>::PROFILE,
+            Profile::ZigbeeHomeAutomation
+        );
+        assert_eq!(
+            <SendReport as zb_core::ClusterSpecific>::ID,
+            Cluster::OnOff.as_u16()
+        );
+        assert_eq!(manufacturer_code, None);
         assert_eq!(bytes.as_ref(), expected);
     }
 }

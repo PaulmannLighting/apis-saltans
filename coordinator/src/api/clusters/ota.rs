@@ -1,5 +1,6 @@
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::destination::Device;
 
 use crate::ota::{Image, Message, UpdateResult};
@@ -7,7 +8,8 @@ use crate::{Coordinator, Error};
 
 /// API for scheduling OTA updates through the coordinator-owned server.
 pub trait Ota {
-    /// Offer `image` to one device endpoint and initiate the OTA discovery flow.
+    /// Offer `image` to one device endpoint from the selected local APS source endpoint and
+    /// initiate the OTA discovery flow.
     ///
     /// The OTA exchange uses the Zigbee Home Automation application profile.
     ///
@@ -23,15 +25,22 @@ pub trait Ota {
     fn update(
         &self,
         target: Device,
+        source_endpoint: IndividualEndpoint,
         image: Image,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl Ota for Sender<Message> {
-    async fn update(&self, target: Device, image: Image) -> Result<(), Error> {
+    async fn update(
+        &self,
+        target: Device,
+        source_endpoint: IndividualEndpoint,
+        image: Image,
+    ) -> Result<(), Error> {
         let (completion, result) = oneshot::channel::<UpdateResult>();
         self.send(Message::Update {
             target,
+            source_endpoint,
             image,
             completion,
         })
@@ -42,7 +51,12 @@ impl Ota for Sender<Message> {
 }
 
 impl Ota for Coordinator {
-    async fn update(&self, target: Device, image: Image) -> Result<(), Error> {
-        self.ota.update(target, image).await
+    async fn update(
+        &self,
+        target: Device,
+        source_endpoint: IndividualEndpoint,
+        image: Image,
+    ) -> Result<(), Error> {
+        self.ota.update(target, source_endpoint, image).await
     }
 }

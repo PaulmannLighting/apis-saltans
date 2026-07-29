@@ -18,9 +18,9 @@
 //! `apis_saltans_hw::core::IeeeAddress` or `apis_saltans_hw::zdp::SimpleDescriptor`, without adding
 //! direct dependencies on each protocol crate.
 //!
-//! `NcpHandle::transmit` returns after the hardware backend accepts an APS frame. Hardware backends
-//! report acknowledged transmission completion asynchronously through `Event::Aps(ApsEvent::Ack)`
-//! and `Event::Aps(ApsEvent::Nak)`.
+//! `NcpHandle::transmit` returns after the hardware backend accepts an APS data request. Hardware
+//! backends report incoming ASDUs and acknowledged transmission completion asynchronously through
+//! [`Event::Apsde`] using [`ApsdeEvent::DataIndication`] and [`ApsdeEvent::DataConfirm`].
 //!
 //! Every `Driver` implementation must provide the NCP's local application endpoints through
 //! `Driver::get_endpoints`. Each endpoint is represented by a complete
@@ -38,7 +38,7 @@ pub use self::common::Driver;
 #[cfg(feature = "types")]
 #[cfg_attr(docsrs, doc(cfg(feature = "types")))]
 pub use self::common::{
-    ApsEvent, Channel, ChannelMask, DeviceEvent, Error, Event, FoundNetwork, NcpHandle,
+    ApsdeEvent, Channel, ChannelMask, DeviceEvent, Error, Event, FoundNetwork, NcpHandle,
     NetworkDescriptor, NetworkEvent, Operation, RouteError, ScanDuration, ScannedChannel,
     TransmissionError, WeakNcpHandle,
 };

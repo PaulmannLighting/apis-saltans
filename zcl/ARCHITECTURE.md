@@ -54,6 +54,14 @@ Serialization flows in the reverse direction:
 3. `Cluster` dispatches `ToLeStream` to the contained command enum.
 4. `Frame<T>` serializes the header followed by the typed payload.
 
+`UnsequencedHeader` and `UnsequencedFrame<T>` model outgoing frames before a sender assigns the ZCL
+transaction sequence. They intentionally do not implement stream serialization.
+`UnsequencedFrame<Bytes>::from_command` derives the header fields and serialized payload from the
+command's `Command`, `Directed`, `Scoped`, and `ToLeStream` implementations.
+`UnsequencedFrame::into_frame` consumes that incomplete value, assigns the sequence number, and
+returns a serializable `Frame<T>`. Its `with_disable_default_response` method provides an owned
+builder-style override for the matching frame-control flag before sequence assignment.
+
 The runtime `Cluster` enum is intentionally explicit. Adding a new cluster command group requires
 adding the group module, generating its command enum, and wiring the group into `src/clusters.rs`.
 

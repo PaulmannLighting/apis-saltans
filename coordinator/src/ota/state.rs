@@ -1,3 +1,4 @@
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::IeeeAddress;
 use zb_core::destination::Device;
 
@@ -5,6 +6,7 @@ use zb_core::destination::Device;
 #[derive(Clone, Copy, Debug)]
 pub(super) struct RequestContext {
     pub(super) destination: Device,
+    pub(super) source_endpoint: IndividualEndpoint,
     pub(super) source_ieee_address: Option<IeeeAddress>,
     pub(super) sequence_number: u8,
 }

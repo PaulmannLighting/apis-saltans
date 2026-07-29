@@ -62,9 +62,14 @@ flowchart LR
 Primitive-specific destination and source enums replace a loose address mode
 plus optional fields. Each enum exposes only the modes legal in its context.
 Group requests include their required NWK broadcast selector.
+Network broadcasts retain their receiver-set address and endpoint explicitly.
 `IndividualEndpoint` excludes the APS broadcast endpoint, while request and
 confirmation destinations use `zb_core::Endpoint` where the specification
 permits it.
+
+`DataIndication::map_context` allows a consumer to normalize the implementation-defined timestamp
+and link-key device-pair handle without rebuilding or discarding the remaining indication
+metadata.
 
 ASDU length is derived from byte-like payloads, preventing disagreement
 between an explicit length and the ASDU. Generic parameters preserve

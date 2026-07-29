@@ -27,13 +27,27 @@ impl Header {
         seq: u8,
         command_id: u8,
     ) -> Self {
-        Self {
-            control: Control::new(
+        Self::from_parts(
+            Control::new(
                 typ,
                 manufacturer_code.is_some(),
                 direction,
                 disable_default_response,
             ),
+            manufacturer_code,
+            seq,
+            command_id,
+        )
+    }
+
+    pub(super) const fn from_parts(
+        control: Control,
+        manufacturer_code: Option<u16>,
+        seq: u8,
+        command_id: u8,
+    ) -> Self {
+        Self {
+            control,
             manufacturer_code,
             seq,
             command_id,
@@ -58,9 +72,10 @@ impl Header {
         self.seq
     }
 
-    /// Set the sequence number.
-    pub const fn set_seq(&mut self, seq: u8) {
-        self.seq = seq;
+    /// Set whether the default response is disabled.
+    pub fn set_disable_default_response(&mut self, disabled: bool) {
+        self.control
+            .set(Control::DISABLE_DEFAULT_RESPONSE, disabled);
     }
 
     /// Return the command ID.

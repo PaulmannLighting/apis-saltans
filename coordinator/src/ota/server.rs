@@ -7,6 +7,7 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot;
 use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
 use zb_aps::Data;
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::destination::Device;
 use zb_core::{Cluster, Direction};
 use zb_nwk::Source;
@@ -15,12 +16,15 @@ use zb_zcl::ota_upgrade::{
     Command as OtaCommand, ImageBlockRequest, ImagePageRequest, QueryNextImageResponse,
     QueryResponse, QuerySpecificFileResponse, UpgradeEndRequest,
 };
-use zb_zcl::{Cluster as ZclCluster, Command, Frame, Scope, Status};
+use zb_zcl::{
+    Cluster as ZclCluster, Command, Frame, Scope, Status, UnsequencedFrame, UnsequencedHeader,
+};
 
 use super::state::RequestContext;
 use super::transfer::{Transfer, TransferExit, TransferMessage};
 use super::{
-    Image, Message, Metadata, OTA_PROFILE, Payload, UpdateError, UpdateResult, reply_zcl, zcl,
+    Image, Message, OTA_PROFILE, UpdateError, UpdateResult, reply_zcl,
+    request_from_unsequenced_frame, zcl,
 };
 
 /// Handle used by the OTA server to route messages to one destination transfer.
@@ -83,9 +87,13 @@ impl Server {
                 ServerEvent::Message(message) => match message {
                     Message::Update {
                         target,
+                        source_endpoint,
                         image,
                         completion,
-                    } => self.update(target, image, completion).await,
+                    } => {
+                        self.update(target, source_endpoint, image, completion)
+                            .await;
+                    }
                     Message::Received { source, frame } => {
                         self.received_ota(source, frame).await;
                     }
@@ -115,6 +123,7 @@ impl Server {
     async fn update(
         &mut self,
         target: Device,
+        source_endpoint: IndividualEndpoint,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
     ) {
@@ -134,21 +143,30 @@ impl Server {
         }
 
         if let Some(messages) = existing_transfer {
-            let replacement = TransferMessage::Replace { image, completion };
+            let replacement = TransferMessage::Replace {
+                source_endpoint,
+                image,
+                completion,
+            };
             match messages.send(replacement).await {
                 Ok(()) => return,
                 Err(error) => {
                     self.transfers.remove(&target);
-                    let TransferMessage::Replace { image, completion } = error.0 else {
+                    let TransferMessage::Replace {
+                        source_endpoint,
+                        image,
+                        completion,
+                    } = error.0
+                    else {
                         unreachable!("the failed message remains an update replacement");
                     };
-                    self.start_transfer(target, image, completion);
+                    self.start_transfer(target, source_endpoint, image, completion);
                     return;
                 }
             }
         }
 
-        self.start_transfer(target, image, completion);
+        self.start_transfer(target, source_endpoint, image, completion);
     }
 
     /// Lazily register the OTA frame subscription before offering the first update.
@@ -197,11 +215,19 @@ impl Server {
     fn start_transfer(
         &mut self,
         target: Device,
+        source_endpoint: IndividualEndpoint,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
     ) {
         let (messages, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
-        let transfer = Transfer::new(self.zcl.clone(), target, image, completion, inbound);
+        let transfer = Transfer::new(
+            self.zcl.clone(),
+            target,
+            source_endpoint,
+            image,
+            completion,
+            inbound,
+        );
         let task = spawn(transfer.run());
         let task_id = task.id();
         let abort = task.abort_handle();
@@ -224,6 +250,19 @@ impl Server {
     async fn received_ota(&mut self, source: Source, frame: Data<Frame<OtaCommand>>) {
         let aps_header = frame.header();
         let endpoint = aps_header.source_endpoint();
+        let source_endpoint = match aps_header.destination() {
+            zb_aps::Destination::Unicast(endpoint) | zb_aps::Destination::Broadcast(endpoint) => {
+                let Some(endpoint) = IndividualEndpoint::new(endpoint) else {
+                    warn!("Discarding OTA command addressed to a non-individual local endpoint");
+                    return;
+                };
+                endpoint
+            }
+            zb_aps::Destination::Group(_) => {
+                warn!("Discarding group-addressed OTA command");
+                return;
+            }
+        };
         let Ok(profile) = aps_header.profile().inspect_err(|profile_id| {
             warn!("Discarding OTA command with unknown profile {profile_id:#06x}");
         }) else {
@@ -243,6 +282,7 @@ impl Server {
         let (zcl_header, command) = zcl_frame.into_parts();
         let context = RequestContext {
             destination: Device::new(short_id, endpoint),
+            source_endpoint,
             source_ieee_address: source.ieee_address(),
             sequence_number: zcl_header.seq(),
         };
@@ -313,13 +353,13 @@ impl Server {
 
     /// Reply to a request for which no destination transfer is active.
     async fn reject_unauthorized(&self, context: RequestContext, command: OtaCommand) {
-        let payload = match command {
-            OtaCommand::QueryNextImageRequest(_) => {
-                QueryNextImageResponse::new(QueryResponse::NotAuthorized).into()
-            }
-            OtaCommand::QuerySpecificFileRequest(_) => {
-                QuerySpecificFileResponse::new(QueryResponse::NotAuthorized).into()
-            }
+        let frame: UnsequencedFrame<bytes::Bytes> = match command {
+            OtaCommand::QueryNextImageRequest(_) => UnsequencedFrame::from_command(
+                QueryNextImageResponse::new(QueryResponse::NotAuthorized),
+            ),
+            OtaCommand::QuerySpecificFileRequest(_) => UnsequencedFrame::from_command(
+                QuerySpecificFileResponse::new(QueryResponse::NotAuthorized),
+            ),
             OtaCommand::ImageBlockRequest(_) => {
                 default_response(<ImageBlockRequest as Command>::ID, Status::NotAuthorized)
             }
@@ -335,15 +375,14 @@ impl Server {
             | OtaCommand::UpgradeEndResponse(_)
             | OtaCommand::QuerySpecificFileResponse(_) => return,
         };
-        let Some(()) = reply_zcl(
-            &self.zcl,
-            context.destination,
+        let request = request_from_unsequenced_frame(
+            context.destination.into(),
+            context.source_endpoint,
             OTA_PROFILE,
-            context.sequence_number,
-            payload,
-        )
-        .await
-        else {
+            Cluster::OtaUpgrade.as_u16(),
+            frame,
+        );
+        let Some(()) = reply_zcl(&self.zcl, context.sequence_number, request).await else {
             return;
         };
     }
@@ -409,11 +448,10 @@ const fn is_server_command(command: &OtaCommand) -> bool {
     )
 }
 
-fn default_response(request_command_id: u8, status: Status) -> Payload {
+fn default_response(request_command_id: u8, status: Status) -> UnsequencedFrame<bytes::Bytes> {
     let response = DefaultResponse::new(request_command_id, status.into());
-    Payload::new(
-        crate::aps::Metadata::new(OTA_PROFILE, Cluster::OtaUpgrade.as_u16()),
-        Metadata::new(
+    UnsequencedFrame::new(
+        UnsequencedHeader::new(
             Scope::Global,
             Direction::ServerToClient,
             true,

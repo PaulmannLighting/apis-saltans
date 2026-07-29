@@ -35,11 +35,10 @@ types = [
     "dep:tokio",
     "dep:zb-aps",
     "dep:zb-core",
-    "dep:zb-nwk",
     "dep:zb-zdp",
 ]
 coordinator = ["types"]
-driver = ["types"]
+driver = ["types", "dep:zb-nwk"]
 serde = ["types", "dep:serde", "serde/derive", "zb-core/serde"]
 
 [lints]

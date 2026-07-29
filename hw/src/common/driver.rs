@@ -3,9 +3,9 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use tokio::sync::mpsc::Receiver;
-use zb_aps::Data;
+use zb_aps::apsde::DataRequest;
+use zb_core::IeeeAddress;
 use zb_core::short_id::Device;
-use zb_core::{Destination, IeeeAddress};
 use zb_zdp::SimpleDescriptor;
 
 use crate::common::message::Message;
@@ -114,20 +114,19 @@ pub trait Driver: Send + 'static {
         ieee_address: IeeeAddress,
     ) -> impl Future<Output = Result<Device, Error>> + Send;
 
-    /// Start transmitting an APS data frame to the specified destination.
+    /// Start transmitting an APS data-service request.
     ///
-    /// Returning success means the backend accepted the frame. If the frame
-    /// requests an APS acknowledgement, the backend later reports completion
-    /// through [`crate::ApsEvent::Ack`] or [`crate::ApsEvent::Nak`] using the
-    /// frame's APS counter.
+    /// Returning success means the backend accepted the request. If the request
+    /// requests an APS acknowledgement, the backend later reports completion through
+    /// [`crate::ApsdeEvent::DataConfirm`] using the APS counter supplied with the request.
     ///
     /// # Errors
     ///
-    /// Returns an error if the backend does not accept the frame.
+    /// Returns an error if the backend does not accept the request.
     fn transmit(
         &mut self,
-        destination: Destination,
-        frame: Data<Bytes>,
+        request: DataRequest<Bytes>,
+        counter: u8,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
     /// Convert this driver into an actor handle and its driving future.
@@ -210,12 +209,12 @@ where
                     .unwrap_or_else(drop);
             }
             Message::Transmit {
-                destination,
-                frame,
+                request,
+                counter,
                 response,
             } => {
                 response
-                    .send(driver.transmit(destination, frame).await)
+                    .send(driver.transmit(request, counter).await)
                     .unwrap_or_else(drop);
             }
         }
@@ -231,10 +230,8 @@ mod tests {
 
     use bytes::Bytes;
     use tokio::runtime::Builder;
-    use zb_aps::Data;
-    use zb_aps::data::Header;
-    use zb_core::destination::{Broadcast, Destination};
-    use zb_core::short_id::{Broadcast as BroadcastAddress, Device};
+    use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination};
+    use zb_core::short_id::{Broadcast, Device};
     use zb_core::{Endpoint, IeeeAddress, Profile};
     use zb_zdp::SimpleDescriptor;
 
@@ -309,32 +306,28 @@ mod tests {
 
         async fn transmit(
             &mut self,
-            _destination: Destination,
-            frame: Data<Bytes>,
+            _request: DataRequest<Bytes>,
+            counter: u8,
         ) -> Result<(), Error> {
             if self.reject_transmission {
                 Err(Error::Unsupported(Operation::Transmit))
             } else {
-                self.transmitted_counter = Some(frame.header().counter());
+                self.transmitted_counter = Some(counter);
                 Ok(())
             }
         }
     }
 
-    fn destination() -> Destination {
-        Broadcast::new(BroadcastAddress::AllDevices, Endpoint::Broadcast).into()
-    }
-
-    fn frame(destination: Destination) -> Data<Bytes> {
-        Data::new(
-            Header::new(
-                destination.into(),
-                CLUSTER_ID,
-                PROFILE_ID.into(),
-                SOURCE_ENDPOINT,
-                APS_COUNTER,
-                None,
-            ),
+    const fn request() -> DataRequest<Bytes> {
+        DataRequest::new(
+            RequestDestination::Broadcast {
+                address: Broadcast::AllDevices,
+                endpoint: Endpoint::Broadcast,
+            },
+            PROFILE_ID.as_u16(),
+            CLUSTER_ID,
+            IndividualEndpoint::new(SOURCE_ENDPOINT)
+                .expect("the ZDO data endpoint is an individual endpoint"),
             Bytes::new(),
         )
     }
@@ -356,9 +349,8 @@ mod tests {
                     PAN_ID
                 );
 
-                let destination = destination();
                 handle
-                    .transmit(destination, frame(destination))
+                    .transmit(request(), APS_COUNTER)
                     .await
                     .expect("fake driver must accept transmission");
 
@@ -384,10 +376,9 @@ mod tests {
                 };
                 let (handle, actor) = driver.into_actor(ACTOR_CAPACITY);
                 let task = tokio::spawn(actor);
-                let destination = destination();
 
                 assert!(matches!(
-                    handle.transmit(destination, frame(destination)).await,
+                    handle.transmit(request(), APS_COUNTER).await,
                     Err(Error::Unsupported(Operation::Transmit))
                 ));
 

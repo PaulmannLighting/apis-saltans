@@ -1,12 +1,8 @@
 use tokio::sync::mpsc::Sender as MpscSender;
 use tokio::sync::oneshot::Sender;
-use zb_aps::Data;
-use zb_core::Destination;
-use zb_core::destination::Device;
-use zb_nwk::Source;
-use zb_zcl::{Cluster, Frame};
+use zb_aps::apsde::{DataIndication, DataRequest};
+use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
-pub use super::Payload;
 use super::{Subscription, SubscriptionMessage};
 use crate::Error;
 use crate::aps::TransmissionResponse;
@@ -29,40 +25,32 @@ pub enum Message {
 
     /// A hardware-level event.
     Received {
-        /// The NWK source information of the frame.
-        source: Source,
-        /// The APS frame.
-        frame: Data<Frame<Cluster>>,
+        /// APSDE indication containing the parsed ZCL frame.
+        indication: DataIndication<Frame<Cluster>, (), ()>,
     },
 
     /// Unicast a message.
     Transmit {
-        /// APS destination for the outgoing frame.
-        destination: Destination,
-        /// ZCL payload and its transmission metadata.
-        payload: Payload,
+        /// APS request containing the outgoing ZCL command.
+        request: DataRequest<UnsequencedFrame<bytes::Bytes>>,
         /// Channel used to return the deferred APS transmission result.
         response: Sender<Result<TransmissionResponse, Error>>,
     },
 
     /// Reply to a received command using its ZCL sequence number.
     Reply {
-        /// Device endpoint to which the reply is sent.
-        destination: Device,
         /// Sequence number copied from the request, or advanced for a page response stream.
         sequence_number: u8,
-        /// ZCL payload and its transmission metadata.
-        payload: Payload,
+        /// APS request containing the outgoing ZCL reply.
+        request: DataRequest<UnsequencedFrame<bytes::Bytes>>,
         /// Channel used to return the deferred APS transmission result.
         response: Sender<Result<TransmissionResponse, Error>>,
     },
 
     /// Communicate a unicast with an expected response.
     Communicate {
-        /// Remote device expected to answer the command.
-        device: Device,
-        /// ZCL payload and its transmission metadata.
-        payload: Payload,
+        /// APS request containing the outgoing ZCL command.
+        request: DataRequest<UnsequencedFrame<bytes::Bytes>>,
         /// The response channel.
         response: Sender<Result<ApsProtocolResponse<Cluster>, Error>>,
     },

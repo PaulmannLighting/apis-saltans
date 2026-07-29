@@ -9,11 +9,11 @@ use tokio::sync::mpsc::{Sender, WeakSender};
 #[cfg(feature = "coordinator")]
 use tokio::sync::oneshot::channel;
 #[cfg(feature = "coordinator")]
-use zb_aps::Data;
+use zb_aps::apsde::DataRequest;
+#[cfg(feature = "coordinator")]
+use zb_core::IeeeAddress;
 #[cfg(feature = "coordinator")]
 use zb_core::short_id::Device;
-#[cfg(feature = "coordinator")]
-use zb_core::{Destination, IeeeAddress};
 #[cfg(feature = "coordinator")]
 use zb_zdp::SimpleDescriptor;
 
@@ -200,25 +200,21 @@ impl NcpHandle {
         receiver.await?
     }
 
-    /// Transmit an APS data frame to a destination.
+    /// Submit an APS data-service request with its assigned frame counter.
     ///
-    /// Success means the hardware backend accepted the frame. APS completion is reported
-    /// independently through [`crate::ApsEvent::Ack`] or [`crate::ApsEvent::Nak`].
+    /// Success means the hardware backend accepted the request. APS completion is reported
+    /// independently through [`crate::ApsdeEvent::DataConfirm`].
     ///
     /// # Errors
     ///
     /// Returns an error if the command cannot be handed to the driver actor or the backend rejects
-    /// the frame.
+    /// the request.
     #[cfg(feature = "coordinator")]
-    pub async fn transmit(
-        &self,
-        destination: Destination,
-        frame: Data<Bytes>,
-    ) -> Result<(), Error> {
+    pub async fn transmit(&self, request: DataRequest<Bytes>, counter: u8) -> Result<(), Error> {
         let (response, receiver) = channel();
         self.send(Message::Transmit {
-            destination,
-            frame,
+            request,
+            counter,
             response,
         })
         .await?;

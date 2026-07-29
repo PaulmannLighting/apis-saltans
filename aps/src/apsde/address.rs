@@ -1,7 +1,7 @@
 use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use zb_core::{Endpoint, GroupId, IeeeAddress, ShortId};
+use zb_core::{Endpoint, GroupId, IeeeAddress, ShortId, short_id};
 
 const MAX_NETWORK_ADDRESS: u16 = 0xfff7;
 const MIN_BROADCAST_ADDRESS: u16 = 0xfffc;
@@ -64,6 +64,14 @@ pub enum RequestDestination {
         address: GroupId,
         /// NWK broadcast address used to transport the group message.
         broadcast_address: BroadcastAddress,
+    },
+
+    /// Send to a 16-bit NWK broadcast address and endpoint.
+    Broadcast {
+        /// NWK broadcast receiver set.
+        address: short_id::Broadcast,
+        /// Destination endpoint, including the APS broadcast endpoint when required.
+        endpoint: Endpoint,
     },
 
     /// Send to a 16-bit NWK address and endpoint.
@@ -218,7 +226,7 @@ impl RequestDestination {
         match self {
             Self::Bound => AddressMode::Bound,
             Self::Group { .. } => AddressMode::Group,
-            Self::Network { .. } => AddressMode::Network,
+            Self::Broadcast { .. } | Self::Network { .. } => AddressMode::Network,
             Self::Extended { .. } => AddressMode::Extended,
         }
     }
@@ -354,5 +362,13 @@ mod tests {
     #[test]
     fn request_destination_reports_its_address_mode() {
         assert_eq!(RequestDestination::Bound.mode(), AddressMode::Bound);
+        assert_eq!(
+            RequestDestination::Broadcast {
+                address: zb_core::short_id::Broadcast::AllDevices,
+                endpoint: Endpoint::Broadcast,
+            }
+            .mode(),
+            AddressMode::Network
+        );
     }
 }

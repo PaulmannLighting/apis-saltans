@@ -1,10 +1,8 @@
 use zb_aps::Data;
-use zb_core::destination::Device;
+use zb_aps::apsde::DataRequest;
 use zb_core::{Endpoint, short_id};
 use zb_nwk::Source;
 use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
-
-use crate::aps::Metadata;
 
 /// Correlation key for pending transceiver responses.
 ///
@@ -51,41 +49,22 @@ impl Index {
         }
     }
 
-    /// Create the response correlation key for a sent ZCL payload.
-    ///
-    /// The generated key uses the outbound APS addressing metadata together
-    /// with the ZCL metadata and transaction sequence number. Incoming ZCL
-    /// responses can then be matched by reconstructing the same key from their
-    /// APS and ZCL headers.
-    #[must_use]
-    pub fn from_zcl_command(
-        destination: Device,
-        seq: u8,
-        metadata: Metadata,
-        manufacturer_code: Option<u16>,
-    ) -> Self {
-        Self::new(
-            destination.device().into(),
-            destination.endpoint(),
-            metadata.cluster_id(),
-            metadata.profile().into(),
-            manufacturer_code,
-            seq,
-        )
-    }
-
     /// Create the response correlation key for a sent ZDP command.
     ///
     /// ZDP commands are exchanged on the data endpoint and do not carry a ZCL
-    /// manufacturer code, so the key is built from the command id, profile, and
-    /// transaction sequence number.
+    /// manufacturer code, so the key is built from the request's cluster and
+    /// profile identifiers plus the transaction sequence number.
     #[must_use]
-    pub fn from_zdp_command(device: short_id::Device, seq: u8, metadata: Metadata) -> Self {
+    pub fn from_zdp_command<T>(
+        device: short_id::Device,
+        seq: u8,
+        request: &DataRequest<T>,
+    ) -> Self {
         Self::new(
             device.into(),
             Endpoint::Data,
-            metadata.cluster_id(),
-            metadata.profile().into(),
+            request.cluster_id(),
+            request.profile_id(),
             None,
             seq,
         )

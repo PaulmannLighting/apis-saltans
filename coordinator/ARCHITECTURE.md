@@ -42,28 +42,30 @@ flowchart TD
 `Coordinator::start` creates the APS, ZCL, ZDP, and OTA actors plus the event mux. Actor inboxes
 use `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
 
+ZDP commands enter their actor as complete `DataRequest<Bytes>` values because their local source
+endpoint is always the ZDO data endpoint. ZCL commands enter their actor as complete
+`DataRequest<UnsequencedFrame<Bytes>>` values; the actor assigns the ZCL transaction sequence,
+serializes the resulting regular frame, and preserves all APS fields.
+
 ## APS Actor
 
-The APS actor is the only coordinator actor that transmits directly through `zb_hw::NcpHandle`. It
-owns a wrapping `u8` APS frame counter. For every outgoing message it:
+The APS transceiver stores a concrete `zb_hw::NcpHandle`; it is the only coordinator actor that
+transmits directly through that handle. It also owns a wrapping `u8` APS frame counter. For every
+outgoing message it:
 
-1. consumes the supplied APS metadata and serialized payload
+1. consumes the supplied `zb_aps::apsde::DataRequest<bytes::Bytes>`
 2. assigns its next APS frame counter
-3. constructs the APS header and `zb_aps::Data<bytes::Bytes>` frame
-4. forwards the completed frame and destination to the hardware actor
-5. resolves an unacknowledged caller after hardware acceptance, or stores an acknowledged caller
+3. forwards the request and counter to the hardware actor
+4. resolves an unacknowledged caller after hardware acceptance, or stores an acknowledged caller
    under the APS counter
-6. resolves any acknowledged response replaced by that insertion with
+5. resolves any acknowledged response replaced by that insertion with
    `TransmissionError::Timeout`
 
 Its command protocol contains:
 
 ```text
 Transmit {
-    destination: zb_core::Destination,
-    source_endpoint: zb_core::Endpoint,
-    metadata: aps::Metadata,
-    payload: bytes::Bytes,
+    request: zb_aps::apsde::DataRequest<bytes::Bytes>,
     response: oneshot::Sender<Result<(), zb_hw::Error>>,
 }
 ```
@@ -71,14 +73,13 @@ Transmit {
 The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method queues the
 actor message and returns a deferred `TransmissionResponse`. It creates a completion channel for
 every transmission. The APS actor resolves that channel when the hardware rejects or accepts an
-unacknowledged frame. When the metadata contains `TxOptions::ACKNOWLEDGED_TRANSMISSION` and the
-destination is a unicast device, hardware acceptance instead stores the sender until the APS result
-arrives. The same predicate controls the APS header acknowledgement-request bit. Group and
-broadcast transmissions never request or await APS acknowledgements. Its completion methods forward
-hardware APS events from the mux.
+unacknowledged request. When its options contain `TxOptions::ACKNOWLEDGED_TRANSMISSION` and its
+destination is an individual network or extended address, hardware acceptance instead stores the
+sender until the APS result arrives. Group and broadcast transmissions never await APS
+acknowledgements. Its completion method forwards hardware APSDE confirmations from the mux.
 
 - Acknowledged unicast frame: retain the caller's response sender under the APS counter and await
-  `ApsEvent::Ack` or `ApsEvent::Nak`.
+  `ApsdeEvent::DataConfirm`.
 - Unacknowledged, group, or broadcast frame: resolve the caller response after backend acceptance.
 
 Counter replacement occurs only after the hardware accepts a transmission that has an
@@ -95,10 +96,11 @@ sequenceDiagram
     participant M as Event mux
 
     P->>P: serialize protocol payload
-    P->>A: Transmit destination, source endpoint, metadata, payload
+    P->>P: construct DataRequest&lt;Bytes&gt;
+    P->>A: Transmit request
     A-->>P: deferred transmission response
-    A->>A: assign counter and build Data&lt;Bytes&gt;
-    A->>H: transmit destination, frame
+    A->>A: assign counter
+    A->>H: transmit request, counter
     H-->>A: accepted
     alt unacknowledged transmission
         A-->>P: resolve deferred APS result
@@ -107,8 +109,8 @@ sequenceDiagram
         opt response was replaced
             A-->>O: TransmissionError::Timeout
         end
-        H-->>M: Event::Aps with counter and result
-        M-->>A: APS result
+        H-->>M: Event::Apsde with counter and DataConfirm
+        M-->>A: confirmation status
         A-->>P: resolve deferred APS result
     end
 ```
@@ -118,10 +120,11 @@ sequenceDiagram
 The ZCL actor:
 
 - owns the wrapping ZCL transaction sequence
-- serializes typed commands into ZCL frames
-- lazily caches the NCP's local simple descriptors
-- selects the source endpoint whose profile and input/output cluster role match each outgoing frame
-- sends APS metadata and serialized ZCL frames through the APS actor
+- receives parsed ZCL frames as normalized `DataIndication<Frame<Cluster>, (), ()>` values
+- accepts complete `DataRequest<UnsequencedFrame<Bytes>>` values
+- consumes each unsequenced frame with the assigned transaction sequence and serializes the
+  resulting `Frame<Bytes>` while preserving every APS request field
+- sends the resulting `DataRequest<Bytes>` through the APS actor
 - stores response correlation channels for `communicate`
 - registers generic filtered subscriptions received through its actor inbox
 - unregisters subscriptions by channel identity and prunes subscriptions whose receivers have closed
@@ -135,6 +138,12 @@ For `transmit` and reply messages, the actor forwards the deferred APS result to
 actor therefore continues processing commands while acknowledgements are pending. Awaiting the
 internal response completes APS transmission before polling the correlated protocol response. Reply
 transmission preserves the request transaction sequence instead of allocating a new one.
+
+Source-endpoint policy belongs to the caller. The ZCL actor does not query or cache local endpoint
+descriptors. High-level cluster helpers therefore require an explicit `IndividualEndpoint`, while
+the raw `Zcl` API accepts the complete `DataRequest`. A communicating request must use a 16-bit
+network destination with one individual remote endpoint because response correlation requires both
+values.
 
 ## OTA Upgrade Server
 
@@ -176,6 +185,8 @@ spacing and advances the ZCL transaction sequence between blocks.
 
 The ZDP actor:
 
+- stores a concrete `zb_hw::NcpHandle` for NCP queries
+- receives parsed ZDP frames as normalized `DataIndication<Frame<Command>, (), ()>` values
 - owns the wrapping ZDP transaction sequence
 - uses profile `0x0000` and endpoint `0x00`
 - sends APS metadata and serialized ZDP frames through the APS actor
@@ -197,8 +208,9 @@ Pending ZCL and ZDP requests are keyed by an internal `Index` containing:
 - optional ZCL manufacturer code
 - protocol transaction sequence
 
-The mux parses received APS frames and forwards them to the appropriate protocol actor. Each actor
-reconstructs the index from the received frame and removes the matching one-shot sender.
+The mux parses successful APSDE data indications and forwards them to the appropriate protocol
+actor. Each actor reconstructs the index from the received metadata and parsed frame and removes
+the matching one-shot sender.
 
 ```mermaid
 sequenceDiagram
@@ -214,12 +226,12 @@ sequenceDiagram
     P->>A: acknowledged APS frame
     A->>H: frame with assigned APS counter
     H-->>A: accepted
-    H-->>M: Event::Aps with counter and result
-    M-->>A: APS result
+    H-->>M: Event::Apsde with counter and DataConfirm
+    M-->>A: confirmation status
     A-->>P: correlated APS result
     P-->>API: protocol response future
     API->>R: await
-    H->>M: received APS response
+    H->>M: DataIndication with received ASDU
     M->>P: parsed protocol frame
     P->>P: match and remove correlation
     P-->>R: raw response
@@ -232,9 +244,14 @@ applies `TryFrom`.
 
 ## Mux and Events
 
-The mux consumes `zb_hw::Event` values. It forwards network and device lifecycle events to the
-application, reassembles fragmented APS payloads, parses network-profile frames as ZDP, parses
-supported application-profile frames as ZCL, and recognizes Keep-Alive traffic before ZCL parsing.
+The mux consumes generic `zb_hw::Event<T, K>` values. It forwards network and device lifecycle
+events to the application, accepts successful `DataIndication<Bytes, T, K>` values, parses
+network-profile ASDUs as ZDP, parses supported application-profile ASDUs as ZCL, and recognizes
+Keep-Alive traffic before ZCL parsing. APS reassembly and security processing have already happened
+before the hardware backend emits the indication. Before forwarding parsed indications to the
+protocol actors, the mux normalizes only the backend-defined timestamp and device-key-pair handle
+to `()`; APS addressing, profile, cluster, status, security mode, key index, link quality, and the
+parsed ASDU remain attached.
 
 Unmatched ZCL commands and supported device notifications remain application-visible. The
 coordinator does not maintain a persistent device table.

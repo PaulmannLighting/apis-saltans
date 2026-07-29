@@ -11,7 +11,8 @@ and receive results through one-shot channels carried by the actor messages.
 - The `coordinator` feature adds the caller-facing methods on `NcpHandle`.
 - Every driver supplies its local `SimpleDescriptor` values through `Driver::get_endpoints`.
 - Backends own transport startup and hardware-event conversion.
-- Outgoing payloads cross the hardware boundary as complete `zb_aps::Data<bytes::Bytes>` frames.
+- Outgoing payloads cross the hardware boundary as
+  `zb_aps::apsde::DataRequest<bytes::Bytes>` values plus an APS correlation counter.
 - `Datagram`, its separate metadata, and the deferred `HwResponse` abstraction are no longer part of
   the hardware API.
 
@@ -37,8 +38,8 @@ variant to the corresponding `Driver` method.
 
 The transmit message carries:
 
-- the NWK `zb_core::Destination`
-- a complete `zb_aps::Data<bytes::Bytes>` frame
+- an APS `DataRequest<bytes::Bytes>`
+- the wrapping `u8` APS counter assigned by the coordinator APS actor
 - a one-shot backend-acceptance response
 
 ```mermaid
@@ -49,24 +50,24 @@ sequenceDiagram
     participant D as Driver
     participant E as Hardware event receiver
 
-    APS->>H: transmit(destination, frame)
+    APS->>H: transmit(request, counter)
     H->>A: Message::Transmit with response
-    A->>D: transmit(destination, frame)
+    A->>D: transmit(request, counter)
     D-->>A: accepted
     A-->>H: acceptance response
     opt acknowledged transmission completes
-        D-->>E: Event::Aps with APS counter and result
+        D-->>E: Event::Apsde with counter and DataConfirm
     end
 ```
 
 `NcpHandle::transmit` awaits backend acceptance. For acknowledged APS transmissions the backend
-later emits `Event::Aps(ApsEvent::Ack(counter))` or
-`Event::Aps(ApsEvent::Nak { sequence: counter, error })`. The hardware interface deliberately uses
-the wrapping eight-bit APS counter already present in the frame because arbitrary drivers cannot be
-expected to preserve another correlation identifier. The coordinator handles collisions when it
-reuses a counter. Unacknowledged transmissions emit no APS completion event.
+later emits `Event::Apsde(ApsdeEvent::DataConfirm { counter, confirmation })`. The hardware
+interface deliberately supplies the wrapping eight-bit APS counter alongside both the
+standards-based request and confirmation because `DataConfirm` has no correlation handle.
+The coordinator handles collisions when it reuses a counter. Unacknowledged transmissions emit no
+APS completion event.
 
-`Driver::transmit` reports whether the backend accepted the frame. Eventual acknowledged completion
+`Driver::transmit` reports whether the backend accepted the request. Eventual acknowledged completion
 remains asynchronous.
 
 ## Other Commands
@@ -101,7 +102,7 @@ flowchart TD
     M --> CH[common/message/channel.rs]
     M --> CM[common/message/channel_mask.rs]
     M --> SD[common/message/scan_duration.rs]
-    V --> AV[common/event/aps.rs]
+    V --> AV[common/event/apsde.rs]
     V --> DV[common/event/device.rs]
     V --> NV[common/event/network.rs]
     V --> RV[common/event/route_error.rs]
@@ -110,11 +111,13 @@ flowchart TD
 `common/message.rs` defines the private actor protocol.
 `common/ncp_handle.rs` defines the strong and weak handles and the caller-facing proxy methods.
 `common/driver.rs` defines the public driver contract plus the actor runtime.
-`common/event.rs` groups the APS, device, and network event categories.
+`common/event.rs` groups the APSDE, device, and network event categories.
 
 ## Receive-Side Events
 
 Hardware integrations translate backend-specific events into the common `Event` model. `Event`
-groups notifications into `NetworkEvent`, `DeviceEvent`, and `ApsEvent` values. Received APS data
-already uses typed `zb_aps::Data<bytes::Bytes>` values, matching the outgoing transport boundary.
-Startup, event-task ownership, and backend configuration remain outside this crate.
+groups notifications into `NetworkEvent`, `DeviceEvent`, and `ApsdeEvent<T, K>` values. Incoming
+application-service data uses `DataIndication<bytes::Bytes, T, K>`, and acknowledged completion uses
+`DataConfirm<T>` plus the coordinator correlation counter. The generic timestamp and key-pair
+handle preserve backend-native representations. Startup, event-task ownership, and backend
+configuration remain outside this crate.

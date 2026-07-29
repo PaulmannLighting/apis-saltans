@@ -154,6 +154,25 @@ impl<T, K> IndicationMetadata<T, K> {
     pub const fn rx_time(&self) -> &T {
         &self.rx_time
     }
+
+    /// Transform the implementation-defined timestamp and device-key-pair handle.
+    #[must_use]
+    pub fn map_context<U, L, F, G>(self, map_time: F, map_key_pair: G) -> IndicationMetadata<U, L>
+    where
+        F: FnOnce(T) -> U,
+        G: FnOnce(K) -> L,
+    {
+        IndicationMetadata {
+            destination: self.destination,
+            source: self.source,
+            profile_id: self.profile_id,
+            cluster_id: self.cluster_id,
+            status: self.status,
+            security: self.security.map_key_pair(map_key_pair),
+            link_quality: self.link_quality,
+            rx_time: map_time(self.rx_time),
+        }
+    }
 }
 
 impl<A, T, K> DataIndication<A, T, K> {
@@ -190,6 +209,19 @@ impl<A, T, K> DataIndication<A, T, K> {
         DataIndication {
             metadata: self.metadata,
             asdu: map(self.asdu),
+        }
+    }
+
+    /// Transform the implementation-defined timestamp and device-key-pair handle.
+    #[must_use]
+    pub fn map_context<U, L, F, G>(self, map_time: F, map_key_pair: G) -> DataIndication<A, U, L>
+    where
+        F: FnOnce(T) -> U,
+        G: FnOnce(K) -> L,
+    {
+        DataIndication {
+            metadata: self.metadata.map_context(map_time, map_key_pair),
+            asdu: self.asdu,
         }
     }
 }
@@ -259,5 +291,16 @@ mod tests {
                 device_key_pair_entry: DEVICE_KEY_PAIR_ENTRY
             }
         ));
+
+        let normalized = indication.map_context(drop, drop);
+        assert_eq!(normalized.metadata().rx_time(), &());
+        assert!(matches!(
+            normalized.metadata().security(),
+            Security::LinkKey {
+                key_index: KEY_INDEX,
+                device_key_pair_entry: ()
+            }
+        ));
+        assert_eq!(normalized.asdu(), &ASDU);
     }
 }

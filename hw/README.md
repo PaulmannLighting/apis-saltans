@@ -52,19 +52,19 @@ async fn permit_joining(ncp: &NcpHandle) -> Result<Duration, apis_saltans_hw::Er
 
 Use this feature for command-side operations such as reading the coordinator IEEE address, scanning
 networks, reading local endpoint descriptors, allowing joins, resolving addresses, requesting
-routes, and transmitting `zb_aps::Data<bytes::Bytes>` frames to `zb_core::Destination` targets.
+routes, and transmitting `zb_aps::apsde::DataRequest<bytes::Bytes>` values.
 
-`NcpHandle::transmit(...)` hands a `zb_aps::Data<bytes::Bytes>` frame to the driver actor and waits
-for the backend to accept it:
+`NcpHandle::transmit(...)` hands an APS data-service request and the coordinator-assigned APS
+counter to the driver actor, then waits for the backend to accept it:
 
 ```rust,ignore
-ncp.transmit(destination, frame).await?;
+ncp.transmit(request, counter).await?;
 ```
 
 For frames requesting an APS acknowledgement, backends later publish
-`Event::Aps(ApsEvent::Ack(counter))` or
-`Event::Aps(ApsEvent::Nak { sequence: counter, error })`. The `counter` is read from the transmitted
-APS frame.
+`Event::Apsde(ApsdeEvent::DataConfirm { counter, confirmation })`. The event carries the same
+counter that was supplied alongside the request, while the `DataConfirm` retains the APS
+destination, source endpoint, status, and backend-defined transmission timestamp.
 
 The common `Error` type implements `std::error::Error`. Backend-specific failures retain their
 source, while a stopped driver actor is represented by `Error::ActorUnavailable`.
@@ -74,15 +74,21 @@ source, while a stopped driver actor is represented by `Error::ActorUnavailable`
 Hardware events are grouped by their protocol responsibility:
 
 ```rust,ignore
-use apis_saltans_hw::{ApsEvent, DeviceEvent, Event, NetworkEvent};
+use apis_saltans_hw::{ApsdeEvent, DeviceEvent, Event, NetworkEvent};
 
 let network_up = Event::Network(NetworkEvent::Up);
 let device_joined = Event::Device(DeviceEvent::Joined(address));
-let acknowledged = Event::Aps(ApsEvent::Ack(counter));
+let indication = Event::Apsde(ApsdeEvent::DataIndication(indication));
+let confirmation = Event::Apsde(ApsdeEvent::DataConfirm {
+    counter,
+    confirmation,
+});
 ```
 
 `NetworkEvent` reports network state and route errors, `DeviceEvent` reports device membership
-changes, and `ApsEvent` reports received frames and acknowledged transmission results.
+changes, and `ApsdeEvent` reports incoming ASDUs and acknowledged transmission results. Its
+timestamp type and link-key device-pair handle type are generic so each backend can retain its
+native representations.
 
 ### Implementing a Driver
 
@@ -140,18 +146,21 @@ endpoint ID, profile ID, device ID, application version, and input/output cluste
 coordinator treats this as the authoritative local endpoint set when answering ZDP match descriptor
 requests and when matching clusters for bindings.
 
-`Driver::transmit(...)` receives a complete `aps::Data<bytes::Bytes>` frame. Returning success means
-the hardware backend accepted the frame. For acknowledged transmissions, the backend later emits
-`ApsEvent::Ack` or `ApsEvent::Nak` with the frame's `u8` APS counter.
+`Driver::transmit(...)` receives an `aps::apsde::DataRequest<bytes::Bytes>` and a wrapping `u8` APS
+counter. Returning success means the hardware backend accepted the request. The backend uses the
+request fields to perform APSDE-DATA processing and the supplied counter when constructing or
+submitting the corresponding APS frame. For acknowledged transmissions, it later emits
+`ApsdeEvent::DataConfirm` with that counter and a complete `aps::apsde::DataConfirm`.
 
 Transmission uses one method:
 
 ```rust
-transmit(destination, frame)
+transmit(request, counter)
 ```
 
-The `Destination` describes the NWK target. The APS data frame contains the destination endpoint,
-cluster, profile, source endpoint, APS counter, control flags, and serialized application payload.
+The request contains the destination, profile, cluster, source endpoint, transmission options,
+alias parameters, radius, and serialized ASDU. The separate counter is implementation correlation
+metadata and is not part of the APSDE-DATA.request primitive.
 
 Local endpoint discovery uses:
 
@@ -170,7 +179,8 @@ through a Tokio MPSC channel and wait for the one-shot response associated with 
 
 Every proxy method creates and awaits a response channel. `NcpHandle::transmit(...)` returns after
 backend acceptance; eventual APS completion returns through the hardware event stream and is
-identified by the APS counter already carried by the frame.
+identified by the APS counter supplied with the request. Incoming application-service data is
+reported as `ApsdeEvent::DataIndication(aps::apsde::DataIndication<Bytes, T, K>)`.
 
 ### Local Endpoint Descriptors
 

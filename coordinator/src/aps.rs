@@ -7,9 +7,12 @@ use log::warn;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot::channel;
-use zb_aps::data::Header;
-use zb_aps::{Data, TxOptions};
-use zb_core::{Destination, Endpoint};
+use zb_aps::TxOptions;
+use zb_aps::apsde::{
+    BroadcastAddress, ConfirmStatus, DataRequest, IndividualEndpoint, NetworkAddress,
+    RequestDestination,
+};
+use zb_core::{Destination, Endpoint, short_id};
 use zb_hw::NcpHandle;
 
 pub use self::message::Message;
@@ -22,8 +25,61 @@ mod metadata;
 mod transmission_response;
 
 const INITIAL_COUNTER: u8 = 0;
+const GROUP_BROADCAST_ADDRESS: u16 = short_id::Broadcast::AllDevices.as_u16();
 
 type PendingResponse = tokio::sync::oneshot::Sender<Result<(), zb_hw::Error>>;
+
+/// Construct an APS data-service request from coordinator destination metadata.
+pub const fn data_request(
+    destination: Destination,
+    source_endpoint: Endpoint,
+    metadata: Metadata,
+    asdu: Bytes,
+) -> DataRequest<Bytes> {
+    let destination = request_destination(destination);
+    let source_endpoint = IndividualEndpoint::new(source_endpoint)
+        .expect("coordinator transmissions use an individual source endpoint");
+
+    DataRequest::new(
+        destination,
+        metadata.profile().as_u16(),
+        metadata.cluster_id(),
+        source_endpoint,
+        asdu,
+    )
+    .with_tx_options(metadata.tx_options())
+}
+
+/// Convert a coordinator destination into APSDE request addressing.
+#[must_use]
+pub const fn request_destination(destination: Destination) -> RequestDestination {
+    match destination {
+        Destination::Device(device) => RequestDestination::Network {
+            address: NetworkAddress::new(device.device().as_u16())
+                .expect("device short addresses are valid APSDE network addresses"),
+            endpoint: device.endpoint(),
+        },
+        Destination::Broadcast(broadcast) => RequestDestination::Broadcast {
+            address: broadcast.address(),
+            endpoint: broadcast.endpoint(),
+        },
+        Destination::Group(address) => RequestDestination::Group {
+            address,
+            broadcast_address: BroadcastAddress::new(GROUP_BROADCAST_ADDRESS)
+                .expect("the all-devices address is a valid APSDE broadcast address"),
+        },
+    }
+}
+
+const fn acknowledged<T>(request: &DataRequest<T>) -> bool {
+    request
+        .tx_options()
+        .contains(TxOptions::ACKNOWLEDGED_TRANSMISSION)
+        && matches!(
+            request.destination(),
+            RequestDestination::Network { .. } | RequestDestination::Extended { .. }
+        )
+}
 
 /// Handle for sending commands to the APS actor.
 #[derive(Clone, Debug)]
@@ -42,43 +98,22 @@ impl Aps {
     /// then waits for the corresponding hardware completion event.
     pub async fn transmit(
         &self,
-        destination: Destination,
-        source_endpoint: Endpoint,
-        metadata: Metadata,
-        payload: Bytes,
+        request: DataRequest<Bytes>,
     ) -> Result<TransmissionResponse, zb_hw::Error> {
         let (response, result) = channel();
 
         self.0
-            .send(Message::Transmit {
-                destination,
-                source_endpoint,
-                metadata,
-                payload,
-                response,
-            })
+            .send(Message::Transmit { request, response })
             .await
             .map_err(|_| zb_hw::Error::ActorUnavailable)?;
 
         Ok(TransmissionResponse::new(result))
     }
 
-    /// Forward a hardware APS acknowledgement to the APS actor.
-    pub async fn ack(&self, counter: u8) -> Result<(), zb_hw::Error> {
+    /// Forward a hardware APS data confirmation to the APS actor.
+    pub async fn confirm(&self, counter: u8, status: ConfirmStatus) -> Result<(), zb_hw::Error> {
         self.0
-            .send(Message::Ack { counter })
-            .await
-            .map_err(|_| zb_hw::Error::ActorUnavailable)
-    }
-
-    /// Forward a failed hardware APS transmission to the APS actor.
-    pub async fn nak(
-        &self,
-        counter: u8,
-        error: zb_hw::TransmissionError,
-    ) -> Result<(), zb_hw::Error> {
-        self.0
-            .send(Message::Nak { counter, error })
+            .send(Message::Confirm { counter, status })
             .await
             .map_err(|_| zb_hw::Error::ActorUnavailable)
     }
@@ -86,18 +121,20 @@ impl Aps {
 
 /// APS transmission actor.
 #[derive(Debug)]
-pub struct Transceiver<T> {
-    ncp: T,
+pub struct Transceiver {
+    ncp: NcpHandle,
+    state: TransmissionState,
+}
+
+#[derive(Debug)]
+struct TransmissionState {
     counter: u8,
     responses: BTreeMap<u8, PendingResponse>,
 }
 
-impl<T> Transceiver<T> {
-    /// Create an APS actor with its frame counter initialized to zero.
-    #[must_use]
-    pub const fn new(ncp: T) -> Self {
+impl TransmissionState {
+    const fn new() -> Self {
         Self {
-            ncp,
             counter: INITIAL_COUNTER,
             responses: BTreeMap::new(),
         }
@@ -110,41 +147,17 @@ impl<T> Transceiver<T> {
         counter
     }
 
-    fn make_frame(
-        &mut self,
-        destination: Destination,
-        source_endpoint: Endpoint,
-        metadata: Metadata,
-        payload: Bytes,
-    ) -> Data<Bytes> {
-        let counter = self.next_counter();
-        let mut header = Header::new(
-            destination.into(),
-            metadata.cluster_id(),
-            metadata.profile().into(),
-            source_endpoint,
-            counter,
-            None,
-        );
-        header.set_security(metadata.tx_options().contains(TxOptions::SECURITY_ENABLED));
-        header.set_ack_request(metadata.acknowledged_for(destination));
-        Data::new(header, payload)
-    }
-
-    fn handle_ack(&mut self, counter: u8) {
+    fn handle_confirm(&mut self, counter: u8, status: ConfirmStatus) {
         let Some(sender) = self.responses.remove(&counter) else {
-            warn!("Received APS acknowledgement for unknown counter: {counter}");
+            warn!("Received APS data confirmation for unknown counter: {counter}");
             return;
         };
-        sender.send(Ok(())).unwrap_or_else(drop);
-    }
-
-    fn handle_nak(&mut self, counter: u8, error: zb_hw::TransmissionError) {
-        let Some(sender) = self.responses.remove(&counter) else {
-            warn!("Received APS failure for unknown counter {counter}: {error}");
-            return;
+        let result = if status.is_success() {
+            Ok(())
+        } else {
+            Err(zb_hw::TransmissionError::Confirmation(status).into())
         };
-        sender.send(Err(error.into())).unwrap_or_else(drop);
+        sender.send(result).unwrap_or_else(drop);
     }
 
     /// Store a response and time out the pending response it replaces, if any.
@@ -177,52 +190,44 @@ impl<T> Transceiver<T> {
     }
 }
 
-impl Transceiver<NcpHandle> {
+impl Transceiver {
+    /// Create an APS actor with its frame counter initialized to zero.
+    #[must_use]
+    pub const fn new(ncp: NcpHandle) -> Self {
+        Self {
+            ncp,
+            state: TransmissionState::new(),
+        }
+    }
+
     /// Run the APS actor.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Transmit {
-                    destination,
-                    source_endpoint,
-                    metadata,
-                    payload,
-                    response,
-                } => {
-                    self.transmit(destination, source_endpoint, metadata, payload, response)
-                        .await;
+                Message::Transmit { request, response } => {
+                    self.transmit(request, response).await;
                 }
-                Message::Ack { counter } => {
-                    self.handle_ack(counter);
-                }
-                Message::Nak { counter, error } => {
-                    self.handle_nak(counter, error);
+                Message::Confirm { counter, status } => {
+                    self.state.handle_confirm(counter, status);
                 }
             }
         }
     }
 
-    /// Construct an APS frame and submit it to the hardware actor.
-    async fn transmit(
-        &mut self,
-        destination: Destination,
-        source_endpoint: Endpoint,
-        metadata: Metadata,
-        payload: Bytes,
-        response: PendingResponse,
-    ) {
-        let acknowledged = metadata.acknowledged_for(destination);
-        let frame = self.make_frame(destination, source_endpoint, metadata, payload);
-        let counter = frame.header().counter();
+    /// Assign an APS counter and submit a data-service request to the hardware actor.
+    async fn transmit(&mut self, request: DataRequest<Bytes>, response: PendingResponse) {
+        let acknowledged = acknowledged(&request);
+        let counter = self.state.next_counter();
 
-        match self.ncp.transmit(destination, frame).await {
-            Ok(()) => self.handle_accepted_transmission(counter, acknowledged, response),
-            Err(error) => Self::handle_rejected_transmission(response, error),
+        match self.ncp.transmit(request, counter).await {
+            Ok(()) => {
+                self.state
+                    .handle_accepted_transmission(counter, acknowledged, response);
+            }
+            Err(error) => TransmissionState::handle_rejected_transmission(response, error),
         }
     }
-}
 
-impl Transceiver<NcpHandle> {
     /// Spawn the APS actor.
     pub fn spawn(ncp: NcpHandle) -> Aps {
         let (aps_tx, aps_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
@@ -236,12 +241,13 @@ mod tests {
     use bytes::Bytes;
     use tokio::runtime::Runtime;
     use tokio::sync::mpsc::channel;
-    use zb_aps::{Control, TxOptions};
+    use zb_aps::TxOptions;
+    use zb_aps::apsde::{ConfirmStatus, Status as ApsStatus};
     use zb_core::destination::{Broadcast, Destination, Device};
     use zb_core::endpoint::Application;
     use zb_core::{Endpoint, GroupId, Profile, short_id};
 
-    use super::{Aps, Message, Transceiver};
+    use super::{Aps, Message, TransmissionState, acknowledged, data_request};
     use crate::aps::Metadata;
 
     const CHANNEL_SIZE: usize = 1;
@@ -272,8 +278,17 @@ mod tests {
             .into()
     }
 
-    const fn metadata(tx_options: TxOptions) -> Metadata {
-        Metadata::new(Profile::ZigbeeHomeAutomation, CLUSTER_ID).with_tx_options(tx_options)
+    const fn metadata() -> Metadata {
+        Metadata::new(Profile::ZigbeeHomeAutomation, CLUSTER_ID)
+    }
+
+    fn request(
+        destination: Destination,
+        tx_options: TxOptions,
+        payload: Bytes,
+    ) -> zb_aps::apsde::DataRequest<Bytes> {
+        data_request(destination, application_endpoint(), metadata(), payload)
+            .with_tx_options(tx_options)
     }
 
     #[test]
@@ -283,28 +298,28 @@ mod tests {
             .block_on(async {
                 let (sender, mut receiver) = channel(CHANNEL_SIZE);
                 let aps = Aps::new(sender);
-                let metadata = metadata(TxOptions::empty());
+                let metadata = metadata();
 
                 let task = tokio::spawn(async move {
                     aps.transmit(
-                        unicast_destination(),
-                        application_endpoint(),
-                        metadata,
-                        Bytes::from_static(PAYLOAD),
+                        data_request(
+                            unicast_destination(),
+                            application_endpoint(),
+                            metadata,
+                            Bytes::from_static(PAYLOAD),
+                        )
+                        .with_tx_options(TxOptions::empty()),
                     )
                     .await
                 });
-                let Message::Transmit {
-                    metadata: sent_metadata,
-                    payload,
-                    response,
-                    ..
-                } = receiver.recv().await.expect("message must be available")
+                let Message::Transmit { request, response } =
+                    receiver.recv().await.expect("message must be available")
                 else {
                     panic!("expected APS transmit message");
                 };
-                assert_eq!(sent_metadata, metadata);
-                assert_eq!(payload, PAYLOAD);
+                assert_eq!(request.profile_id(), metadata.profile().as_u16());
+                assert_eq!(request.cluster_id(), metadata.cluster_id());
+                assert_eq!(request.asdu(), PAYLOAD);
 
                 let deferred = task
                     .await
@@ -333,12 +348,11 @@ mod tests {
                 let (sender, mut receiver) = channel(CHANNEL_SIZE);
                 let aps = Aps::new(sender);
                 let task = tokio::spawn(async move {
-                    aps.transmit(
+                    aps.transmit(request(
                         unicast_destination(),
-                        application_endpoint(),
-                        metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION),
+                        TxOptions::ACKNOWLEDGED_TRANSMISSION,
                         Bytes::new(),
-                    )
+                    ))
                     .await
                 });
                 let Message::Transmit { response, .. } =
@@ -377,12 +391,11 @@ mod tests {
                     let aps = Aps::new(sender);
 
                     let task = tokio::spawn(async move {
-                        aps.transmit(
+                        aps.transmit(request(
                             destination,
-                            application_endpoint(),
-                            metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION),
+                            TxOptions::ACKNOWLEDGED_TRANSMISSION,
                             Bytes::new(),
-                        )
+                        ))
                         .await
                     });
                     let Message::Transmit { response, .. } =
@@ -413,54 +426,49 @@ mod tests {
 
     #[test]
     fn counter_wraps_after_its_maximum_value() {
-        let mut transceiver = Transceiver::new(());
-        transceiver.counter = LAST_COUNTER;
+        let mut state = TransmissionState::new();
+        state.counter = LAST_COUNTER;
 
-        assert_eq!(transceiver.next_counter(), LAST_COUNTER);
-        assert_eq!(transceiver.next_counter(), 0);
+        assert_eq!(state.next_counter(), LAST_COUNTER);
+        assert_eq!(state.next_counter(), 0);
     }
 
     #[test]
-    fn actor_constructs_frame_with_its_counter() {
-        let mut transceiver = Transceiver::new(());
-        transceiver.counter = LAST_COUNTER;
-        let frame = transceiver.make_frame(
+    fn data_request_preserves_transmission_fields() {
+        let request = request(
             unicast_destination(),
-            application_endpoint(),
-            metadata(TxOptions::empty()),
-            Bytes::new(),
+            TxOptions::SECURITY_ENABLED,
+            Bytes::from_static(PAYLOAD),
         );
 
-        assert_eq!(frame.header().counter(), LAST_COUNTER);
-        assert!(!frame.header().control().contains(Control::ACK_REQUEST));
+        assert_eq!(request.source_endpoint().get(), application_endpoint());
+        assert_eq!(request.profile_id(), Profile::ZigbeeHomeAutomation.as_u16());
+        assert_eq!(request.cluster_id(), CLUSTER_ID);
+        assert_eq!(request.tx_options(), TxOptions::SECURITY_ENABLED);
+        assert_eq!(request.asdu(), PAYLOAD);
     }
 
     #[test]
-    fn actor_requests_acknowledgement_only_for_unicast_frames() {
-        let mut transceiver = Transceiver::new(());
-        let metadata = metadata(TxOptions::ACKNOWLEDGED_TRANSMISSION);
-        let unicast = transceiver.make_frame(
+    fn actor_awaits_acknowledgement_only_for_unicast_requests() {
+        let unicast = request(
             unicast_destination(),
-            application_endpoint(),
-            metadata,
+            TxOptions::ACKNOWLEDGED_TRANSMISSION,
             Bytes::new(),
         );
-        let group = transceiver.make_frame(
+        let group = request(
             group_destination(),
-            application_endpoint(),
-            metadata,
+            TxOptions::ACKNOWLEDGED_TRANSMISSION,
             Bytes::new(),
         );
-        let broadcast = transceiver.make_frame(
+        let broadcast = request(
             broadcast_destination(),
-            application_endpoint(),
-            metadata,
+            TxOptions::ACKNOWLEDGED_TRANSMISSION,
             Bytes::new(),
         );
 
-        assert!(unicast.header().control().contains(Control::ACK_REQUEST));
-        assert!(!group.header().control().contains(Control::ACK_REQUEST));
-        assert!(!broadcast.header().control().contains(Control::ACK_REQUEST));
+        assert!(acknowledged(&unicast));
+        assert!(!acknowledged(&group));
+        assert!(!acknowledged(&broadcast));
     }
 
     #[test]
@@ -468,17 +476,15 @@ mod tests {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
-                let mut transceiver = Transceiver::new(());
+                let mut state = TransmissionState::new();
                 let (pending_response, _pending_result) = tokio::sync::oneshot::channel();
                 let (response, result) = tokio::sync::oneshot::channel();
-                transceiver
-                    .responses
-                    .insert(FIRST_COUNTER, pending_response);
+                state.responses.insert(FIRST_COUNTER, pending_response);
 
-                transceiver.handle_accepted_transmission(FIRST_COUNTER, false, response);
+                state.handle_accepted_transmission(FIRST_COUNTER, false, response);
 
                 assert!(result.await.expect("response must be available").is_ok());
-                assert!(transceiver.responses.contains_key(&FIRST_COUNTER));
+                assert!(state.responses.contains_key(&FIRST_COUNTER));
             });
     }
 
@@ -489,7 +495,7 @@ mod tests {
             .block_on(async {
                 let (response, result) = tokio::sync::oneshot::channel();
 
-                Transceiver::<()>::handle_rejected_transmission(
+                TransmissionState::handle_rejected_transmission(
                     response,
                     zb_hw::TransmissionError::Rejected.into(),
                 );
@@ -504,44 +510,43 @@ mod tests {
     }
 
     #[test]
-    fn acknowledgement_resolves_matching_transmission() {
+    fn successful_confirmation_resolves_matching_transmission() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
-                let mut transceiver = Transceiver::new(());
+                let mut state = TransmissionState::new();
                 let (response, result) = tokio::sync::oneshot::channel();
-                transceiver.responses.insert(FIRST_COUNTER, response);
+                state.responses.insert(FIRST_COUNTER, response);
 
-                transceiver.handle_ack(FIRST_COUNTER);
+                state.handle_confirm(FIRST_COUNTER, ConfirmStatus::success());
 
                 assert!(result.await.expect("response must be available").is_ok());
-                assert!(transceiver.responses.is_empty());
+                assert!(state.responses.is_empty());
             });
     }
 
     #[test]
-    fn negative_acknowledgement_resolves_matching_transmission() {
+    fn unsuccessful_confirmation_resolves_matching_transmission() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
-                let mut transceiver = Transceiver::new(());
+                let mut state = TransmissionState::new();
                 let (first_response, _first_result) = tokio::sync::oneshot::channel();
                 let (second_response, second_result) = tokio::sync::oneshot::channel();
-                transceiver.responses.insert(FIRST_COUNTER, first_response);
-                transceiver
-                    .responses
-                    .insert(SECOND_COUNTER, second_response);
+                state.responses.insert(FIRST_COUNTER, first_response);
+                state.responses.insert(SECOND_COUNTER, second_response);
 
-                transceiver.handle_nak(SECOND_COUNTER, zb_hw::TransmissionError::Rejected);
+                let failure = ConfirmStatus::Aps(ApsStatus::NoAcknowledgement);
+                state.handle_confirm(SECOND_COUNTER, failure);
 
                 assert!(matches!(
                     second_result.await.expect("response must be available"),
                     Err(zb_hw::Error::Transmission(
-                        zb_hw::TransmissionError::Rejected
-                    ))
+                        zb_hw::TransmissionError::Confirmation(status)
+                    )) if status == failure
                 ));
-                assert_eq!(transceiver.responses.len(), CHANNEL_SIZE);
-                assert!(transceiver.responses.contains_key(&FIRST_COUNTER));
+                assert_eq!(state.responses.len(), CHANNEL_SIZE);
+                assert!(state.responses.contains_key(&FIRST_COUNTER));
             });
     }
 
@@ -550,14 +555,12 @@ mod tests {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
-                let mut transceiver = Transceiver::new(());
+                let mut state = TransmissionState::new();
                 let (previous_response, previous_result) = tokio::sync::oneshot::channel();
                 let (replacement_response, replacement_result) = tokio::sync::oneshot::channel();
-                transceiver
-                    .responses
-                    .insert(LAST_COUNTER, previous_response);
+                state.responses.insert(LAST_COUNTER, previous_response);
 
-                transceiver.store_pending_response(LAST_COUNTER, replacement_response);
+                state.store_pending_response(LAST_COUNTER, replacement_response);
                 assert!(matches!(
                     previous_result.await.expect("response must be available"),
                     Err(zb_hw::Error::Transmission(
@@ -565,7 +568,7 @@ mod tests {
                     ))
                 ));
 
-                transceiver.handle_ack(LAST_COUNTER);
+                state.handle_confirm(LAST_COUNTER, ConfirmStatus::success());
                 assert!(
                     replacement_result
                         .await

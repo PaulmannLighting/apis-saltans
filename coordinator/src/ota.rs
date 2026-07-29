@@ -1,20 +1,22 @@
 //! Coordinator-owned OTA Upgrade server.
 
+use bytes::Bytes;
+use le_stream::ToLeStream;
 use log::warn;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
-use zb_core::destination::Device;
+use zb_aps::TxOptions;
+use zb_aps::apsde::{DataRequest, IndividualEndpoint};
 use zb_core::{Cluster, Direction, Profile};
-use zb_zcl::Scope;
+use zb_zcl::{Command, Directed, Scope, Scoped, UnsequencedFrame};
 
 pub use self::image::{
     BaseHeaderBytes, FieldControl, Header, HeaderString, Image, ParseImage, ParseImageError,
 };
 pub use self::message::{Message, UpdateError, UpdateResult};
 pub use self::server::Server;
-use crate::Error;
 use crate::aps::TransmissionResponse;
-use crate::zcl::{self, Metadata, Payload};
+use crate::{Error, zcl};
 
 mod image;
 mod message;
@@ -27,6 +29,44 @@ const CURRENT_TIME_IMMEDIATE: u32 = 0;
 const UPGRADE_TIME_IMMEDIATE: u32 = 0;
 const OTA_PROFILE: Profile = Profile::ZigbeeHomeAutomation;
 
+type Request = DataRequest<UnsequencedFrame<Bytes>>;
+
+fn request<T>(
+    destination: zb_core::Destination,
+    source_endpoint: IndividualEndpoint,
+    profile: Profile,
+    cluster_id: u16,
+    command: T,
+) -> Request
+where
+    T: Command + Directed + Scoped + ToLeStream,
+{
+    request_from_unsequenced_frame(
+        destination,
+        source_endpoint,
+        profile,
+        cluster_id,
+        UnsequencedFrame::from_command(command),
+    )
+}
+
+const fn request_from_unsequenced_frame(
+    destination: zb_core::Destination,
+    source_endpoint: IndividualEndpoint,
+    profile: Profile,
+    cluster_id: u16,
+    frame: UnsequencedFrame<Bytes>,
+) -> Request {
+    DataRequest::new(
+        crate::aps::request_destination(destination),
+        profile.as_u16(),
+        cluster_id,
+        source_endpoint,
+        frame,
+    )
+    .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION)
+}
+
 pub(crate) fn subscription() -> (zcl::Subscription, zcl::SubscriptionReceiver) {
     zcl::Subscription::channel(zcl::SubscriptionFilter::new(
         Cluster::OtaUpgrade,
@@ -37,17 +77,14 @@ pub(crate) fn subscription() -> (zcl::Subscription, zcl::SubscriptionReceiver) {
 
 async fn reply_zcl(
     zcl: &Sender<zcl::Message>,
-    destination: Device,
-    profile: Profile,
     sequence_number: u8,
-    payload: Payload,
+    request: Request,
 ) -> Option<()> {
     let (response, result) = oneshot::channel();
     if let Err(error) = zcl
         .send(zcl::Message::Reply {
-            destination,
             sequence_number,
-            payload: payload.with_profile(profile),
+            request,
             response,
         })
         .await
@@ -58,20 +95,9 @@ async fn reply_zcl(
     receive_transmission_result(result).await
 }
 
-async fn send_zcl(
-    zcl: &Sender<zcl::Message>,
-    destination: zb_core::Destination,
-    payload: Payload,
-) -> Option<()> {
+async fn send_zcl(zcl: &Sender<zcl::Message>, request: Request) -> Option<()> {
     let (response, result) = oneshot::channel();
-    if let Err(error) = zcl
-        .send(zcl::Message::Transmit {
-            destination,
-            payload,
-            response,
-        })
-        .await
-    {
+    if let Err(error) = zcl.send(zcl::Message::Transmit { request, response }).await {
         warn!("Failed to queue OTA command: {error}");
         return None;
     }
@@ -112,6 +138,7 @@ mod tests {
     use le_stream::FromLeStream;
     use tokio::time::timeout;
     use zb_aps::Data;
+    use zb_aps::apsde::IndividualEndpoint;
     use zb_core::destination::Device;
     use zb_core::endpoint::Application;
     use zb_core::{Cluster, Direction, Endpoint, Profile, short_id};
@@ -125,11 +152,10 @@ mod tests {
     use zb_zcl::{Cluster as ZclCluster, Command, Frame, Header, Scope};
 
     use super::{
-        Image, Message, OTA_PROFILE, ParseImage, Server, TransmissionResponse, UpdateError,
-        UpdateResult,
+        Image, Message, OTA_PROFILE, ParseImage, Request, Server, TransmissionResponse,
+        UpdateError, UpdateResult,
     };
-    use crate::zcl::{self, Payload};
-    use crate::{Error, Ota};
+    use crate::{Error, Ota, zcl};
 
     const TEST_TIMEOUT: Duration = Duration::from_secs(1);
     const MANUFACTURER_CODE: u16 = 0x1234;
@@ -153,13 +179,11 @@ mod tests {
 
     enum ObservedZcl {
         Transmit {
-            destination: zb_core::Destination,
-            payload: Payload,
+            request: Request,
         },
         Reply {
-            destination: Device,
             sequence_number: u8,
-            payload: Payload,
+            request: Request,
         },
     }
 
@@ -209,6 +233,7 @@ mod tests {
             ota_sender
                 .send(Message::Update {
                     target: destination,
+                    source_endpoint: test_source_endpoint(),
                     image: test_image(),
                     completion,
                 })
@@ -220,16 +245,15 @@ mod tests {
                 zcl::Message::Subscribe { .. }
             ));
             let message = observe_zcl(receive_raw_zcl(&mut zcl_receiver).await);
-            let ObservedZcl::Transmit {
-                destination: actual_destination,
-                payload,
-            } = message
-            else {
+            let ObservedZcl::Transmit { request } = message else {
                 panic!("expected Image Notify transmission");
             };
-            assert_eq!(actual_destination, destination.into());
-            let (metadata, _, bytes) = payload.into_parts();
-            assert_eq!(metadata.profile(), OTA_PROFILE);
+            assert_eq!(
+                request.destination(),
+                crate::aps::request_destination(destination.into())
+            );
+            assert_eq!(request.profile_id(), OTA_PROFILE.as_u16());
+            let (_, bytes) = request.into_asdu().into_parts();
             let notification =
                 ImageNotify::from_le_stream(bytes.into_iter()).expect("valid Image Notify payload");
             assert!(matches!(
@@ -250,7 +274,9 @@ mod tests {
             drop(zcl_receiver);
             tokio::spawn(server.run());
 
-            let result = ota_sender.update(test_destination(), test_image()).await;
+            let result = ota_sender
+                .update(test_destination(), test_source_endpoint(), test_image())
+                .await;
 
             assert!(matches!(result, Err(Error::Ota(UpdateError::Subscription))));
         });
@@ -293,7 +319,11 @@ mod tests {
             let _held_transmission = hold_next_transmission(&mut zcl_receiver).await;
 
             let result = ota_sender
-                .update(second_test_destination(), test_image())
+                .update(
+                    second_test_destination(),
+                    test_source_endpoint(),
+                    test_image(),
+                )
                 .await;
 
             assert!(matches!(
@@ -340,11 +370,13 @@ mod tests {
 
             let _second_completion =
                 schedule_for(&ota_sender, second_test_destination(), test_image()).await;
-            let ObservedZcl::Transmit { destination, .. } = receive_zcl(&mut zcl_receiver).await
-            else {
+            let ObservedZcl::Transmit { request } = receive_zcl(&mut zcl_receiver).await else {
                 panic!("expected Image Notify transmission");
             };
-            assert_eq!(destination, second_test_destination().into());
+            assert_eq!(
+                request.destination(),
+                crate::aps::request_destination(second_test_destination().into())
+            );
         });
     }
 
@@ -579,10 +611,10 @@ mod tests {
                 .expect("OTA server is running");
 
             for index in 0..3 {
-                let (sequence_number, metadata, bytes) =
+                let (sequence_number, tx_options, bytes) =
                     reply_parts(receive_zcl(&mut zcl_receiver).await);
                 assert_eq!(sequence_number, TEST_SEQUENCE_NUMBER.wrapping_add(index));
-                assert!(metadata.tx_options().is_empty());
+                assert!(tx_options.is_empty());
                 let response = ImageBlockResponse::from_le_stream(bytes.into_iter())
                     .expect("valid Image Block Response");
                 assert!(matches!(
@@ -626,6 +658,10 @@ mod tests {
         )
     }
 
+    const fn test_source_endpoint() -> IndividualEndpoint {
+        IndividualEndpoint::new(ENDPOINT).expect("test endpoint is individual")
+    }
+
     async fn schedule(
         sender: &tokio::sync::mpsc::Sender<Message>,
         image: Image,
@@ -642,6 +678,7 @@ mod tests {
         sender
             .send(Message::Update {
                 target,
+                source_endpoint: test_source_endpoint(),
                 image,
                 completion,
             })
@@ -654,7 +691,11 @@ mod tests {
         sender: tokio::sync::mpsc::Sender<Message>,
         image: Image,
     ) -> tokio::task::JoinHandle<Result<(), Error>> {
-        tokio::spawn(async move { sender.update(test_destination(), image).await })
+        tokio::spawn(async move {
+            sender
+                .update(test_destination(), test_source_endpoint(), image)
+                .await
+        })
     }
 
     fn incoming<T>(sequence_number: u8, command: T) -> Message
@@ -744,28 +785,19 @@ mod tests {
 
     fn observe_zcl(message: zcl::Message) -> ObservedZcl {
         match message {
-            zcl::Message::Transmit {
-                destination,
-                payload,
-                response,
-            } => {
+            zcl::Message::Transmit { request, response } => {
                 complete_transmission(response);
-                ObservedZcl::Transmit {
-                    destination,
-                    payload,
-                }
+                ObservedZcl::Transmit { request }
             }
             zcl::Message::Reply {
-                destination,
                 sequence_number,
-                payload,
+                request,
                 response,
             } => {
                 complete_transmission(response);
                 ObservedZcl::Reply {
-                    destination,
                     sequence_number,
-                    payload,
+                    request,
                 }
             }
             other => panic!("unexpected ZCL message: {other:?}"),
@@ -813,26 +845,26 @@ mod tests {
     }
 
     fn reply_bytes(message: ObservedZcl) -> (u8, Bytes) {
-        let (sequence_number, metadata, bytes) = reply_parts(message);
-        assert_eq!(
-            metadata.tx_options(),
-            zb_aps::TxOptions::ACKNOWLEDGED_TRANSMISSION
-        );
+        let (sequence_number, tx_options, bytes) = reply_parts(message);
+        assert_eq!(tx_options, zb_aps::TxOptions::ACKNOWLEDGED_TRANSMISSION);
         (sequence_number, bytes)
     }
 
-    fn reply_parts(message: ObservedZcl) -> (u8, crate::aps::Metadata, Bytes) {
+    fn reply_parts(message: ObservedZcl) -> (u8, zb_aps::TxOptions, Bytes) {
         let ObservedZcl::Reply {
-            destination,
             sequence_number,
-            payload,
+            request,
         } = message
         else {
             panic!("expected OTA reply");
         };
-        assert_eq!(destination, test_destination());
-        let (metadata, _, bytes) = payload.into_parts();
-        (sequence_number, metadata, bytes)
+        assert_eq!(
+            request.destination(),
+            crate::aps::request_destination(test_destination().into())
+        );
+        let tx_options = request.tx_options();
+        let (_, bytes) = request.into_asdu().into_parts();
+        (sequence_number, tx_options, bytes)
     }
 
     fn complete_transmission(

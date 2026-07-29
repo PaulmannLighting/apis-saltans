@@ -1,10 +1,12 @@
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::destination::Device;
-use zb_zcl::global::configure_reporting;
+use zb_core::{ClusterSpecific, Profiled};
+use zb_zcl::global::{configure_reporting, read_attributes, write_attributes};
 use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
 
-use self::configure_reporting_request::ConfigureReportingRequest;
-use self::read_attributes_request::ReadAttributesRequest;
-use self::write_attributes_request::WriteAttributesRequest;
+use self::configure_reporting_request::frame as configure_reporting_frame;
+use self::read_attributes_request::frame as read_attributes_frame;
+use self::write_attributes_request::frame as write_attributes_frame;
 use crate::api::zcl::Zcl;
 use crate::{Error, ZclResponse};
 
@@ -21,7 +23,8 @@ pub type WriteAttributeResult = Result<u16, u16>;
 /// Trait for ZCL global attribute operations.
 ///
 /// The `device` argument contains the target short address and endpoint. Applications are
-/// responsible for discovering and storing those addresses before using this trait.
+/// responsible for discovering and storing those addresses before using this trait. Every
+/// operation also requires the local APS source endpoint.
 pub trait Attributes {
     /// Configure a device to send reports for attributes.
     ///
@@ -38,6 +41,7 @@ pub trait Attributes {
     fn configure_reporting<T>(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         attributes: T,
     ) -> impl Future<Output = Result<ZclResponse<configure_reporting::Response>, Error>> + Send
     where
@@ -55,11 +59,12 @@ pub trait Attributes {
     fn read<T>(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         attributes: T,
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T::Item>]>, Error>> + Send
     where
         Self: Sync,
-        T: IntoIterator<Item: Readable> + Send;
+        T: IntoIterator<Item: Readable, IntoIter: Send> + Send;
 
     /// Write typed attributes to a device.
     ///
@@ -71,11 +76,12 @@ pub trait Attributes {
     fn write<T>(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         attributes: T,
     ) -> impl Future<Output = Result<Vec<WriteAttributeResult>, Error>> + Send
     where
         Self: Sync,
-        T: IntoIterator<Item: Writable> + Send;
+        T: IntoIterator<Item: Writable, IntoIter: Send> + Send;
 }
 
 impl<T> Attributes for T
@@ -85,25 +91,39 @@ where
     async fn configure_reporting<U>(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         attributes: U,
     ) -> Result<ZclResponse<configure_reporting::Response>, Error>
     where
-        U: IntoIterator<Item: Reportable>,
+        U: IntoIterator<Item: Reportable, IntoIter: Send> + Send,
     {
-        self.communicate(device, ConfigureReportingRequest(attributes))
-            .await
+        self.communicate(crate::api::zcl::request_with_ids(
+            device.into(),
+            source_endpoint,
+            <U::Item as Profiled>::PROFILE.as_u16(),
+            <U::Item as ClusterSpecific>::ID,
+            configure_reporting_frame(attributes),
+        ))
+        .await
     }
 
     async fn read<U>(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         attributes: U,
     ) -> Result<Box<[ReadAttributeResult<U::Item>]>, Error>
     where
-        U: IntoIterator<Item: Readable> + Send,
+        U: IntoIterator<Item: Readable, IntoIter: Send> + Send,
     {
         Ok(self
-            .communicate(device, ReadAttributesRequest(attributes))
+            .communicate::<read_attributes::Response>(crate::api::zcl::request_with_ids(
+                device.into(),
+                source_endpoint,
+                <U::Item as Profiled>::PROFILE.as_u16(),
+                <U::Item as ClusterSpecific>::ID,
+                read_attributes_frame(attributes),
+            ))
             .await?
             .await?
             .into())
@@ -112,13 +132,20 @@ where
     async fn write<U>(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         attributes: U,
     ) -> Result<Vec<WriteAttributeResult>, Error>
     where
-        U: IntoIterator<Item: Writable> + Send,
+        U: IntoIterator<Item: Writable, IntoIter: Send> + Send,
     {
         Ok(self
-            .communicate(device, WriteAttributesRequest(attributes))
+            .communicate::<write_attributes::Response>(crate::api::zcl::request_with_ids(
+                device.into(),
+                source_endpoint,
+                <U::Item as Profiled>::PROFILE.as_u16(),
+                <U::Item as ClusterSpecific>::ID,
+                write_attributes_frame(attributes),
+            ))
             .await?
             .await?
             .into_iter()

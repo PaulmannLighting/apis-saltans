@@ -1,11 +1,10 @@
+use bytes::Bytes;
 use tokio::sync::oneshot::Sender;
-use zb_aps::Data;
+use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_core::short_id::Device;
 use zb_hw::Error;
-use zb_nwk::Source;
 use zb_zdp::{Command, Frame};
 
-use super::Payload;
 use crate::response::ApsProtocolResponse;
 
 /// Messages exchanged with the transceiver actor.
@@ -13,10 +12,8 @@ use crate::response::ApsProtocolResponse;
 pub enum Message {
     /// A hardware-level event.
     Received {
-        /// The source information of the frame.
-        source: Source,
-        /// The APS frame.
-        frame: Data<Frame<Command>>,
+        /// APSDE indication containing the parsed ZDP frame.
+        indication: DataIndication<Frame<Command>, (), ()>,
     },
 
     /// The network has been opened for new joins.
@@ -27,9 +24,10 @@ pub enum Message {
 
     /// Communicate a unicast with an expected response.
     Communicate {
+        /// Remote device expected to answer the request.
         device: Device,
-        /// The payload.
-        payload: Payload,
+        /// Complete APS data-service request.
+        request: DataRequest<Bytes>,
         /// The response channel.
         response: Sender<Result<ApsProtocolResponse<Command>, Error>>,
     },

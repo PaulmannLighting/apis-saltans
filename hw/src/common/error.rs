@@ -4,6 +4,7 @@ use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
+use zb_aps::apsde::ConfirmStatus;
 
 /// Hardware operation that a backend may not support.
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -61,6 +62,10 @@ impl Display for Operation {
 /// Failure reported for an APS transmission accepted by a hardware backend.
 #[derive(Clone, Debug, Error)]
 #[non_exhaustive]
+#[expect(
+    variant_size_differences,
+    reason = "backend failures retain a shared trait-object source while protocol statuses stay inline"
+)]
 pub enum TransmissionError {
     /// The APS counter was reused while its previous transmission was pending.
     #[error("APS transmission timed out")]
@@ -73,6 +78,10 @@ pub enum TransmissionError {
     /// The hardware rejected the transmission.
     #[error("APS transmission rejected")]
     Rejected,
+
+    /// APSDE reported an unsuccessful data confirmation.
+    #[error("APS data confirmation failed: {0}")]
+    Confirmation(ConfirmStatus),
 
     /// A backend-specific transmission failure occurred.
     #[error("{0}")]

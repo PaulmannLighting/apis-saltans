@@ -4,12 +4,14 @@ use log::warn;
 use tokio::sync::mpsc::Sender;
 use tokio::time::sleep;
 use zb_aps::TxOptions;
+use zb_aps::apsde::IndividualEndpoint;
+use zb_core::Cluster;
 use zb_core::destination::Device;
 use zb_zcl::ota_upgrade::{ImageBlock, ImageBlockResponse, ImageBlockResponsePayload, ImageId};
 
 use super::image::ImageTransfer;
 use super::transfer::read_image_range;
-use super::{OTA_PROFILE, Payload, UpdateError, UpdateResult, reply_zcl, zcl};
+use super::{OTA_PROFILE, UpdateError, UpdateResult, reply_zcl, request, zcl};
 
 /// State owned by a paced OTA Image Page transfer task.
 ///
@@ -19,6 +21,7 @@ pub(super) struct PageTransfer {
     pub(super) zcl: Sender<zcl::Message>,
     pub(super) image: ImageTransfer,
     pub(super) destination: Device,
+    pub(super) source_endpoint: IndividualEndpoint,
     pub(super) image_id: ImageId,
     pub(super) maximum_data_size: usize,
     pub(super) page_end: usize,
@@ -37,15 +40,15 @@ impl PageTransfer {
             let block = ImageBlock::try_new(self.image_id, file_offset, self.block_data)
                 .expect("requested OTA blocks never exceed the client's u8 maximum data size");
             let response = ImageBlockResponse::new(ImageBlockResponsePayload::Success(block));
-            let Some(()) = reply_zcl(
-                &self.zcl,
-                self.destination,
+            let request = request(
+                self.destination.into(),
+                self.source_endpoint,
                 OTA_PROFILE,
-                self.sequence_number,
-                Payload::from(response).with_tx_options(TxOptions::empty()),
+                Cluster::OtaUpgrade.as_u16(),
+                response,
             )
-            .await
-            else {
+            .with_tx_options(TxOptions::empty());
+            let Some(()) = reply_zcl(&self.zcl, self.sequence_number, request).await else {
                 return Err(UpdateError::Transmission);
             };
 

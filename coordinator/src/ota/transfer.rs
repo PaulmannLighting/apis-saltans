@@ -8,6 +8,7 @@ use log::{debug, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::task::{Id, JoinError, JoinSet};
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::destination::Device;
 use zb_core::{Cluster, Direction, IeeeAddress};
 use zb_zcl::global::default_response::DefaultResponse;
@@ -18,14 +19,14 @@ use zb_zcl::ota_upgrade::{
     QuerySpecificFileRequest, QuerySpecificFileResponse, UpgradeEndRequest, UpgradeEndResponse,
     UpgradeEndStatus,
 };
-use zb_zcl::{Command, Scope, Status};
+use zb_zcl::{Command, Scope, Status, UnsequencedFrame, UnsequencedHeader};
 
 use super::image::ImageTransfer;
 use super::page_transfer::PageTransfer;
 use super::state::RequestContext;
 use super::{
-    CURRENT_TIME_IMMEDIATE, Image, Metadata, OTA_PROFILE, Payload, UPGRADE_TIME_IMMEDIATE,
-    UpdateError, UpdateResult, reply_zcl, send_zcl, zcl,
+    CURRENT_TIME_IMMEDIATE, Image, OTA_PROFILE, Request, UPGRADE_TIME_IMMEDIATE, UpdateError,
+    UpdateResult, reply_zcl, request, request_from_unsequenced_frame, send_zcl, zcl,
 };
 
 const INITIAL_GENERATION: u64 = 0;
@@ -35,6 +36,8 @@ const GENERATION_STEP: u64 = 1;
 pub(super) enum TransferMessage {
     /// Replace the image offered by the existing destination task.
     Replace {
+        /// Local OTA server endpoint used as the APS source.
+        source_endpoint: IndividualEndpoint,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
     },
@@ -56,6 +59,7 @@ pub(super) struct TransferExit {
 pub(super) struct Transfer {
     zcl: Sender<zcl::Message>,
     destination: Device,
+    source_endpoint: IndividualEndpoint,
     image: ImageTransfer,
     completion: Option<oneshot::Sender<UpdateResult>>,
     messages: Receiver<TransferMessage>,
@@ -84,6 +88,7 @@ impl Transfer {
     pub(super) fn new(
         zcl: Sender<zcl::Message>,
         destination: Device,
+        source_endpoint: IndividualEndpoint,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
         messages: Receiver<TransferMessage>,
@@ -91,6 +96,7 @@ impl Transfer {
         Self {
             zcl,
             destination,
+            source_endpoint,
             image: image.into_transfer(),
             completion: Some(completion),
             messages,
@@ -163,8 +169,12 @@ impl Transfer {
     /// Apply an update replacement or dispatch an inbound OTA command.
     async fn handle_message(&mut self, message: TransferMessage) {
         match message {
-            TransferMessage::Replace { image, completion } => {
-                self.replace(image, completion);
+            TransferMessage::Replace {
+                source_endpoint,
+                image,
+                completion,
+            } => {
+                self.replace(source_endpoint, image, completion);
             }
             TransferMessage::Request { context, command } => {
                 trace!(
@@ -203,12 +213,18 @@ impl Transfer {
     }
 
     /// Replace the current image without replacing the destination task.
-    fn replace(&mut self, image: Image, completion: oneshot::Sender<UpdateResult>) {
+    fn replace(
+        &mut self,
+        source_endpoint: IndividualEndpoint,
+        image: Image,
+        completion: oneshot::Sender<UpdateResult>,
+    ) {
         self.operations.abort_all();
         self.generation = self.generation.wrapping_add(GENERATION_STEP);
         if let Some(previous) = self.completion.replace(completion) {
             let _result = previous.send(Err(UpdateError::Superseded));
         }
+        self.source_endpoint = source_endpoint;
         self.image = image.into_transfer();
         self.notify();
     }
@@ -225,11 +241,17 @@ impl Transfer {
             query_jitter,
             image: image_id,
         });
-        let payload = Payload::from(notification)
-            .with_profile(OTA_PROFILE)
-            .with_disable_default_response(false);
+        let frame =
+            UnsequencedFrame::from_command(notification).with_disable_default_response(false);
+        let request = request_from_unsequenced_frame(
+            destination.into(),
+            self.source_endpoint,
+            OTA_PROFILE,
+            Cluster::OtaUpgrade.as_u16(),
+            frame,
+        );
         self.spawn_operation(async move {
-            let result = transmit_command(&zcl, destination, payload).await;
+            let result = transmit_command(&zcl, request).await;
             operation_outcome(result, None)
         });
     }
@@ -248,7 +270,7 @@ impl Transfer {
         } else {
             query_success(&self.image)
         };
-        self.spawn_reply(context, QueryNextImageResponse::new(response).into(), None);
+        self.spawn_reply(context, QueryNextImageResponse::new(response), None);
     }
 
     /// Answer a destination-restricted query after validating its metadata.
@@ -265,11 +287,7 @@ impl Transfer {
         } else {
             query_success(&self.image)
         };
-        self.spawn_reply(
-            context,
-            QuerySpecificFileResponse::new(response).into(),
-            None,
-        );
+        self.spawn_reply(context, QuerySpecificFileResponse::new(response), None);
     }
 
     /// Read and return one requested image block.
@@ -298,7 +316,7 @@ impl Transfer {
         let block = ImageBlock::try_new(request.image(), request.file_offset(), data)
             .expect("requested OTA blocks never exceed the client's u8 maximum data size");
         let response = ImageBlockResponse::new(ImageBlockResponsePayload::Success(block));
-        self.spawn_reply(context, response.into(), None);
+        self.spawn_reply(context, response, None);
     }
 
     /// Start a paced image-page operation owned by this destination task.
@@ -345,6 +363,7 @@ impl Transfer {
             zcl: self.zcl.clone(),
             image,
             destination: context.destination,
+            source_endpoint: context.source_endpoint,
             image_id,
             maximum_data_size,
             page_end,
@@ -377,7 +396,7 @@ impl Transfer {
                     CURRENT_TIME_IMMEDIATE,
                     UPGRADE_TIME_IMMEDIATE,
                 );
-                self.spawn_reply(context, response.into(), Some(Ok(())));
+                self.spawn_reply(context, response, Some(Ok(())));
             }
             status @ (UpgradeEndStatus::Abort
             | UpgradeEndStatus::InvalidImage
@@ -399,15 +418,24 @@ impl Transfer {
     }
 
     /// Spawn one reply operation inside this destination transfer.
-    fn spawn_reply(
+    fn spawn_reply<T>(
         &mut self,
         context: RequestContext,
-        payload: Payload,
+        command: T,
         completion: Option<UpdateResult>,
-    ) {
+    ) where
+        T: Command + zb_zcl::Directed + zb_zcl::Scoped + ToLeStream,
+    {
         let zcl = self.zcl.clone();
+        let request = request(
+            context.destination.into(),
+            context.source_endpoint,
+            OTA_PROFILE,
+            Cluster::OtaUpgrade.as_u16(),
+            command,
+        );
         self.spawn_operation(async move {
-            let result = transmit_reply(&zcl, context, payload).await;
+            let result = transmit_reply(&zcl, context.sequence_number, request).await;
             operation_outcome(result, completion)
         });
     }
@@ -436,9 +464,8 @@ impl Transfer {
         completion: Option<UpdateResult>,
     ) {
         let response = DefaultResponse::new(request_command_id, status.into());
-        let payload = Payload::new(
-            crate::aps::Metadata::new(OTA_PROFILE, Cluster::OtaUpgrade.as_u16()),
-            Metadata::new(
+        let frame = UnsequencedFrame::new(
+            UnsequencedHeader::new(
                 Scope::Global,
                 Direction::ServerToClient,
                 true,
@@ -447,7 +474,18 @@ impl Transfer {
             ),
             response.to_le_stream().collect(),
         );
-        self.spawn_reply(context, payload, completion);
+        let request = request_from_unsequenced_frame(
+            context.destination.into(),
+            context.source_endpoint,
+            OTA_PROFILE,
+            Cluster::OtaUpgrade.as_u16(),
+            frame,
+        );
+        let zcl = self.zcl.clone();
+        self.spawn_operation(async move {
+            let result = transmit_reply(&zcl, context.sequence_number, request).await;
+            operation_outcome(result, completion)
+        });
     }
 }
 
@@ -465,12 +503,8 @@ fn operation_outcome(result: UpdateResult, completion: Option<UpdateResult>) -> 
     }
 }
 
-async fn transmit_command(
-    zcl: &Sender<zcl::Message>,
-    destination: Device,
-    payload: Payload,
-) -> UpdateResult {
-    let Some(()) = send_zcl(zcl, destination.into(), payload).await else {
+async fn transmit_command(zcl: &Sender<zcl::Message>, request: Request) -> UpdateResult {
+    let Some(()) = send_zcl(zcl, request).await else {
         return Err(UpdateError::Transmission);
     };
     Ok(())
@@ -478,18 +512,10 @@ async fn transmit_command(
 
 async fn transmit_reply(
     zcl: &Sender<zcl::Message>,
-    context: RequestContext,
-    payload: Payload,
+    sequence_number: u8,
+    request: Request,
 ) -> UpdateResult {
-    let Some(()) = reply_zcl(
-        zcl,
-        context.destination,
-        OTA_PROFILE,
-        context.sequence_number,
-        payload,
-    )
-    .await
-    else {
+    let Some(()) = reply_zcl(zcl, sequence_number, request).await else {
         return Err(UpdateError::Transmission);
     };
     Ok(())

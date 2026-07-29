@@ -98,10 +98,9 @@ through its completion future if no task slot is available.
 
 The NCP driver must implement `zb_hw::Driver::get_endpoints()` and return a complete
 `zb_zdp::SimpleDescriptor` for every local application endpoint. The coordinator retrieves these
-descriptors through `zb_hw::NcpHandle::get_endpoints()` when it needs them; endpoint descriptors are
-no longer passed to `Coordinator::start(...)`. Before sending a ZCL command, the ZCL actor selects a
-descriptor with the requested profile and cluster role and uses its declared endpoint ID as the APS
-source endpoint.
+descriptors for local-node queries and ZDP match handling; endpoint descriptors are no longer
+passed to `Coordinator::start(...)`. ZCL does not use the descriptors to select an endpoint.
+Applications select the local source endpoint explicitly for every ZCL operation.
 
 ```rust,no_run
 use apis_saltans_coordinator::{Coordinator, Event};
@@ -151,7 +150,9 @@ reader types can override any of these stages while retaining the default parser
 use apis_saltans_coordinator::{Coordinator, Ota, ParseImage};
 use std::fs::File;
 use std::path::Path;
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::destination::Device;
+use zb_core::{Application, Endpoint};
 
 async fn offer_update(
     coordinator: &Coordinator,
@@ -159,7 +160,13 @@ async fn offer_update(
     ota_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let image = File::open(ota_path)?.parse()?;
-    coordinator.update(destination, image).await?;
+    let source_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid local endpoint"),
+    ))
+    .expect("application endpoints are individual");
+    coordinator
+        .update(destination, source_endpoint, image)
+        .await?;
     Ok(())
 }
 ```
@@ -227,13 +234,13 @@ separate manager object.
 `Zcl::transmit(...)` and the command helpers await the acknowledged APS result directly:
 
 ```rust,ignore
-api.on(destination).await?;
+api.on(destination, source_endpoint).await?;
 ```
 
 Communication remains split at the protocol boundary:
 
 ```rust,ignore
-let response = api.communicate(device, request).await?;
+let response = api.communicate(request).await?;
 let typed_response = response.await?;
 ```
 
@@ -243,25 +250,26 @@ first completes the deferred APS transmission and then receives and converts the
 protocol response. `CommunicationResponse<Raw, T>` is the generic future behind both aliases.
 
 The coordinator creates a deferred APS response for every transmission. It completes on hardware
-rejection or acceptance unless the payload's `TxOptions` contain `ACKNOWLEDGED_TRANSMISSION` and
+rejection or acceptance unless the request's `TxOptions` contain `ACKNOWLEDGED_TRANSMISSION` and
 its destination is a unicast device. Such a unicast remains pending for its APS result. Group and
 broadcast transmissions never request APS acknowledgements, regardless of that option.
 Acknowledged results arrive as hardware
-`Event::Aps(ApsEvent::Ack(counter))` or `Event::Aps(ApsEvent::Nak { sequence: counter, error })`
-values and are correlated by the wrapping `u8` APS counter. After the hardware accepts an
-acknowledged transmission, the APS actor stores its response under that counter. If this replaces a
-response that is still pending, the older response resolves with `TransmissionError::Timeout`.
-Rejected and unacknowledged transmissions do not replace an existing pending response. Dropping a
-protocol response future stops observing its correlated response; it does not cancel work already
-handed to the hardware backend.
+`Event::Apsde(ApsdeEvent::DataConfirm { counter, confirmation })` values and are correlated by the
+wrapping `u8` APS counter. A successful confirmation resolves the deferred result; an unsuccessful
+APS or propagated NWK status becomes `TransmissionError::Confirmation`. After the hardware accepts
+an acknowledged transmission, the APS actor stores its response under that counter. If this
+replaces a response that is still pending, the older response resolves with
+`TransmissionError::Timeout`. Rejected and unacknowledged transmissions do not replace an existing
+pending response. Dropping a protocol response future stops observing its correlated response; it
+does not cancel work already handed to the hardware backend.
 
-ZCL and ZDP actors send an explicit source endpoint, APS metadata, and serialized payload bytes to
-the APS actor. ZCL derives that endpoint from the NCP's simple descriptors: client-to-server
-commands require an advertised output cluster, while server-to-client commands require an
-advertised input cluster. ZDP always uses the ZDO data endpoint. The APS actor owns the APS sequence
-counter and constructs the complete `Data<Bytes>` frame immediately before hardware transmission.
-`Aps::transmit` returns a deferred result after actor handoff, which the protocol actors forward
-rather than awaiting in their command loops.
+ZCL accepts a complete `DataRequest<zb_zcl::UnsequencedFrame<Bytes>>` from its caller. The ZCL actor
+consumes the unsequenced frame with its assigned transaction sequence and serializes the resulting
+regular frame without changing any APS request field. ZDP constructs a complete
+`DataRequest<Bytes>` with the fixed ZDO data endpoint. The APS actor owns the wrapping APS counter
+and submits the request plus that counter to the hardware actor. `Aps::transmit` returns a deferred
+result after actor handoff, which the protocol actors forward rather than awaiting in their command
+loops.
 
 `Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and
 expose their source errors and can be constructed through `From`; the send variant intentionally
@@ -312,6 +320,11 @@ is handled before ZCL payload decoding and produces `Device::KeepAlive`. The con
 `zb_core::destination::Device` identifies the sender by its NWK short address and APS source
 endpoint. Packets whose source is not an allocated device short address or whose source endpoint is
 reserved are logged and dropped instead of producing an event.
+
+The mux forwards parsed ZCL and ZDP frames to their protocol actors inside
+`DataIndication<Frame<_>, (), ()>`. It retains APS addressing, status, security mode, key index,
+profile, cluster, and link quality while normalizing the backend-specific timestamp and
+device-key-pair handle to `()`.
 
 ## Joining Control
 
@@ -501,14 +514,20 @@ Commands that do not expect an application-level response use `transmit(...)`.
 use apis_saltans_coordinator::OnOff;
 use zb_core::destination::Device as DeviceDestination;
 use zb_core::short_id::Device;
-use zb_core::{Application, Destination};
+use zb_aps::apsde::IndividualEndpoint;
+use zb_core::{Application, Destination, Endpoint};
 
 async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Error> {
     let short_id = Device::try_from(0x1234).expect("valid short address");
-    let endpoint = Application::try_from(1).expect("valid endpoint");
-    let destination = Destination::from(DeviceDestination::new(short_id, endpoint.into()));
+    let remote_endpoint = Application::try_from(1).expect("valid remote endpoint");
+    let destination =
+        Destination::from(DeviceDestination::new(short_id, remote_endpoint.into()));
+    let source_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid local endpoint"),
+    ))
+    .expect("application endpoints are individual");
 
-    api.on(destination).await?.await
+    api.on(destination, source_endpoint).await
 }
 ```
 
@@ -535,18 +554,25 @@ use apis_saltans_coordinator::ColorControl;
 use zb_core::destination::Device as DeviceDestination;
 use zb_core::short_id::Device;
 use zb_core::units::{Deciseconds, Mireds};
-use zb_core::{Application, Destination};
+use zb_aps::apsde::IndividualEndpoint;
+use zb_core::{Application, Destination, Endpoint};
 use zb_zcl::Options;
 
 async fn set_color_temperature(
     api: &impl ColorControl,
 ) -> Result<(), apis_saltans_coordinator::Error> {
     let short_id = Device::try_from(0x1234).expect("valid short address");
-    let endpoint = Application::try_from(1).expect("valid endpoint");
-    let destination = Destination::from(DeviceDestination::new(short_id, endpoint.into()));
+    let remote_endpoint = Application::try_from(1).expect("valid remote endpoint");
+    let destination =
+        Destination::from(DeviceDestination::new(short_id, remote_endpoint.into()));
+    let source_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid local endpoint"),
+    ))
+    .expect("application endpoints are individual");
 
     api.move_to_color_temperature(
         destination,
+        source_endpoint,
         Mireds::try_from(250).expect("valid color temperature"),
         Deciseconds::new(10).expect("valid transition time"),
         Options::empty(),
@@ -571,7 +597,8 @@ Build or look this up from your own discovery state before calling the trait.
 use apis_saltans_coordinator::{Attributes, ReadAttributeResult};
 use zb_core::destination::Device as DeviceDestination;
 use zb_core::short_id::Device;
-use zb_core::Application;
+use zb_aps::apsde::IndividualEndpoint;
+use zb_core::{Application, Endpoint};
 use zb_zcl::general::basic::readable::Id as BasicReadableId;
 
 async fn read_basic(
@@ -580,9 +607,14 @@ async fn read_basic(
 ) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, apis_saltans_coordinator::Error> {
     let endpoint = Application::try_from(1).expect("valid endpoint");
     let device = DeviceDestination::new(short_id, endpoint.into());
+    let source_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid local endpoint"),
+    ))
+    .expect("application endpoints are individual");
 
     api.read(
         device,
+        source_endpoint,
         [
             BasicReadableId::ModelIdentifier,
             BasicReadableId::ManufacturerName,
@@ -599,7 +631,8 @@ use apis_saltans_coordinator::Attributes;
 use zb_core::destination::Device as DeviceDestination;
 use zb_core::short_id::Device;
 use zb_core::types::String;
-use zb_core::Application;
+use zb_aps::apsde::IndividualEndpoint;
+use zb_core::{Application, Endpoint};
 use zb_zcl::general::basic::writable::Attribute as BasicWritable;
 
 async fn write_location(
@@ -608,10 +641,18 @@ async fn write_location(
 ) -> Result<(), apis_saltans_coordinator::Error> {
     let endpoint = Application::try_from(1).expect("valid endpoint");
     let device = DeviceDestination::new(short_id, endpoint.into());
+    let source_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid local endpoint"),
+    ))
+    .expect("application endpoints are individual");
     let location = String::<16>::try_from("Living Room").expect("fits");
 
     let result = api
-        .write(device, [BasicWritable::LocationDescription(location)])
+        .write(
+            device,
+            source_endpoint,
+            [BasicWritable::LocationDescription(location)],
+        )
         .await?;
 
     let _per_attribute_status = result;
@@ -628,13 +669,19 @@ request.
 ## Raw Transports
 
 Use `Zcl::transmit(...)` for native cluster commands that do not expect an application-level
-response. Its await queues the command and, for acknowledged unicast transmissions, waits for the
-hardware result. Group and broadcast transmissions do not request acknowledgements.
+response. It accepts
+`zb_aps::apsde::DataRequest<zb_zcl::UnsequencedFrame<bytes::Bytes>>`. The request contains the APS
+destination, profile and cluster IDs, local source endpoint, transmission options, alias, radius,
+and unsequenced ZCL frame. Its await queues the frame and, for acknowledged unicast transmissions,
+waits for the hardware result. The caller controls whether group and broadcast requests use APS
+acknowledgements through the request's `TxOptions`. The ZCL actor consumes the unsequenced frame
+with its transaction sequence number immediately before serialization.
 
-Use `Zcl::communicate(...)` for commands implementing `ExpectResponse<zb_zcl::Cluster>`. Its first
-await queues the command and returns `ZclResponse<T::Response>`. Awaiting that response completes
-the APS transmission, waits for a correlated ZCL frame, and converts the frame to the declared
-response type.
+Use `Zcl::communicate::<T>(...)` with the same request type when a typed response is expected. Its
+first await queues the complete request and returns `ZclResponse<T>`. The destination must be one
+16-bit network address and individual endpoint so it can be correlated. Awaiting that response
+completes the APS transmission, waits for a correlated ZCL frame, and converts the received cluster
+to `T` through `TryFrom`.
 
 Use `Zdp::communicate(...)` for ZDP requests implementing `ExpectResponse<zb_zdp::Command>`. It
 returns the equivalent `ZdpResponse<T::Response>`. The composed traits above are thin wrappers over
@@ -651,15 +698,15 @@ Most APIs return `apis_saltans_coordinator::Error`:
 - `InvalidResponseType(String)`
 - `UnknownDevice(IeeeAddress)`
 - `InvalidApplicationEndpoint(u8)`
-- `NoSourceEndpoint { profile, cluster_id, direction }`
+- `InvalidZclCommunicationDestination(RequestDestination)`
 - `DurationOutOfBounds(Duration)`
 - `Zcl(Result<zb_zcl::Status, u8>)`
 - `Zdp(Result<zb_zdp::Status, u8>)`
 
 ZCL and ZDP status responses preserve known status enums and raw unknown status bytes.
 
-For deferred operations, an error can occur at either await boundary. Queue, local source-endpoint
-selection, and actor handoff errors occur while obtaining the response future. Hardware
+For deferred operations, an error can occur at either await boundary. Queue, destination
+validation, and actor handoff errors occur while obtaining the response future. Hardware
 acceptance, APS completion, receive-channel, and conversion errors occur while awaiting that
 response future.
 

@@ -56,8 +56,8 @@ The `apsde` module models the three APS data-service primitives without
 coupling them to an actor or hardware backend. Its addressing enums encode the
 address and endpoint fields permitted by each primitive:
 
-- `RequestDestination` supports binding-table, group, 16-bit NWK, and 64-bit
-  IEEE destinations;
+- `RequestDestination` supports binding-table, group, 16-bit NWK unicast,
+  16-bit NWK broadcast, and 64-bit IEEE destinations;
 - `Destination` reports the destination of a confirmation;
 - `ReceivedDestination` and `Source` model indication addressing;
 - `NetworkAddress`, `BroadcastAddress`, and `IndividualEndpoint` reject values
@@ -66,7 +66,9 @@ address and endpoint fields permitted by each primitive:
 `Alias` groups the alias source address and sequence number.
 `Security<K>` groups the key index and implementation-defined device-key-pair
 handle used for link-key security. ASDU length is derived from byte-like
-payloads instead of being stored as independent state.
+payloads instead of being stored as independent state. `DataIndication::map_context` transforms
+the backend-defined timestamp and device-key-pair handle while preserving all protocol metadata
+and the ASDU.
 
 ```rust
 use zb_aps::apsde::{

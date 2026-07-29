@@ -6,10 +6,12 @@ use zb_aps::Data;
 
 pub use self::header::{Control, Direction, Header, Scope};
 pub use self::parse_frame_error::ParseFrameError;
+pub use self::unsequenced::{UnsequencedFrame, UnsequencedHeader};
 use crate::Cluster;
 
 mod header;
 mod parse_frame_error;
+mod unsequenced;
 
 /// A ZCL frame.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, FromLeStream, ToLeStream)]
@@ -49,6 +51,13 @@ impl<T> Frame<T> {
         (self.header, self.payload)
     }
 
+    /// Override whether the frame disables the default response.
+    #[must_use]
+    pub fn with_disable_default_response(mut self, disabled: bool) -> Self {
+        self.header.set_disable_default_response(disabled);
+        self
+    }
+
     /// Transform the payload while preserving the ZCL header.
     #[must_use]
     pub fn map_payload<U, F>(self, map: F) -> Frame<U>
@@ -85,5 +94,33 @@ impl TryFrom<Data<Bytes>> for Frame<Cluster> {
     fn try_from(frame: Data<Bytes>) -> Result<Self, Self::Error> {
         let (header, payload) = frame.into_parts();
         Self::parse(header.cluster_id(), payload.into_iter())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bytes::Bytes;
+
+    use super::{Direction, Frame, Header, Scope};
+
+    const SEQUENCE_NUMBER: u8 = 42;
+    const COMMAND_ID: u8 = 1;
+
+    #[test]
+    fn overrides_default_response_flag() {
+        let frame = Frame::new(
+            Header::new(
+                Scope::Global,
+                Direction::ClientToServer,
+                true,
+                None,
+                SEQUENCE_NUMBER,
+                COMMAND_ID,
+            ),
+            Bytes::new(),
+        )
+        .with_disable_default_response(false);
+
+        assert!(!frame.header().control().disable_default_response());
     }
 }

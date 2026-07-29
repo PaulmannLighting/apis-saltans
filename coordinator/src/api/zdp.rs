@@ -1,11 +1,14 @@
+use bytes::Bytes;
 use le_stream::ToLeStream;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
+use zb_aps::apsde::DataRequest;
 use zb_core::short_id::Device;
-use zb_core::{ClusterSpecific, ExpectResponse};
+use zb_core::{ClusterSpecific, Destination, Endpoint, ExpectResponse, Profile, destination};
 use zb_zdp::Command;
 
-use crate::zdp::{Message, Payload};
+use crate::aps::Metadata;
+use crate::zdp::Message;
 use crate::{CommunicationResponse, Coordinator, Error};
 
 /// A deferred typed ZDP response.
@@ -49,12 +52,18 @@ impl Zdp for Sender<Message> {
         T: ClusterSpecific + ExpectResponse<Command> + ToLeStream,
     {
         let (response, result) = channel();
-        let payload = Payload::from(command);
+        let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
+        let request: DataRequest<Bytes> = crate::aps::data_request(
+            destination,
+            Endpoint::Data,
+            Metadata::new(Profile::Network, T::ID),
+            command.to_le_stream().collect(),
+        );
 
         async move {
             self.send(Message::Communicate {
                 device,
-                payload,
+                request,
                 response,
             })
             .await?;

@@ -2,9 +2,9 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use tokio::sync::oneshot::Sender;
-use zb_aps::Data;
+use zb_aps::apsde::DataRequest;
+use zb_core::IeeeAddress;
 use zb_core::short_id::Device;
-use zb_core::{Destination, IeeeAddress};
 use zb_zdp::SimpleDescriptor;
 
 pub use self::channel::Channel;
@@ -96,13 +96,13 @@ pub enum Message {
         response: Sender<Result<Device, Error>>,
     },
 
-    /// Transmit an APS data frame.
+    /// Submit an APS data-service request.
     Transmit {
-        /// Network destination for the frame.
-        destination: Destination,
-        /// APS frame to transmit.
-        frame: Data<Bytes>,
-        /// One-shot channel used to report whether the backend accepted the frame.
+        /// APS data-service request to transmit.
+        request: DataRequest<Bytes>,
+        /// APS frame counter assigned by the coordinator APS actor.
+        counter: u8,
+        /// One-shot channel used to report whether the backend accepted the request.
         response: Sender<Result<(), Error>>,
     },
 }

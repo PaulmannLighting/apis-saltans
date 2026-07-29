@@ -20,17 +20,22 @@ impl Coordinator {
     /// Start the coordinator on the given hardware.
     ///
     /// Local endpoint descriptors are obtained through [`NcpHandle::get_endpoints`] when needed;
-    /// callers do not supply them during startup.
+    /// callers do not supply them during startup. The hardware event timestamp and link-key
+    /// device-pair handle types may be selected by the backend.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
-    pub fn start(
+    pub fn start<T, K>(
         ncp: NcpHandle,
         descriptor: Descriptor,
-        hw_events: Receiver<zb_hw::Event>,
+        hw_events: Receiver<zb_hw::Event<T, K>>,
         events_out: Sender<Event>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error>
+    where
+        T: Send + 'static,
+        K: Send + 'static,
+    {
         Self::start_with_ota_update_task_limit(
             ncp,
             descriptor,
@@ -44,20 +49,25 @@ impl Coordinator {
     ///
     /// Each destination with an accepted [`crate::ota::Message::Update`] holds one slot for the
     /// complete exchange. Replacing an update for the same destination reuses its task. A limit of
-    /// zero rejects every OTA update.
+    /// zero rejects every OTA update. The hardware event timestamp and link-key device-pair handle
+    /// types may be selected by the backend.
     ///
     /// # Errors
     ///
     /// Returns an [`Error`] if setting up the actor network fails.
-    pub fn start_with_ota_update_task_limit(
+    pub fn start_with_ota_update_task_limit<T, K>(
         ncp: NcpHandle,
         descriptor: Descriptor,
-        hw_events: Receiver<zb_hw::Event>,
+        hw_events: Receiver<zb_hw::Event<T, K>>,
         events_out: Sender<Event>,
         ota_update_task_limit: usize,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error>
+    where
+        T: Send + 'static,
+        K: Send + 'static,
+    {
         let aps = aps::Transceiver::spawn(ncp.clone());
-        let zcl = zcl::Transceiver::spawn(ncp.clone(), aps.clone(), events_out.clone());
+        let zcl = zcl::Transceiver::spawn(aps.clone(), events_out.clone());
         let ota = ota::Server::spawn(zcl.clone(), ota_update_task_limit);
         let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events_out.clone(), descriptor);
         Mux::spawn(hw_events, events_out, aps, zcl.clone(), zdp.clone());

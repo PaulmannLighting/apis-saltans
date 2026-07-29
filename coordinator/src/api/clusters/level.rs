@@ -1,3 +1,4 @@
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::Destination;
 use zb_core::units::{Deciseconds, UnitsPerSecond};
 use zb_zcl::Options;
@@ -11,7 +12,8 @@ use crate::api::Zcl;
 
 /// Trait for the Level cluster.
 ///
-/// Each method awaits the acknowledged APS transmission before returning.
+/// Each method requires the local APS source endpoint and awaits the acknowledged APS transmission
+/// before returning.
 pub trait Level {
     /// Move to level command.
     ///
@@ -21,6 +23,7 @@ pub trait Level {
     fn move_to_level(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         level: u8,
         transition_time: Deciseconds,
         options: Options,
@@ -34,6 +37,7 @@ pub trait Level {
     fn r#move(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -46,6 +50,7 @@ pub trait Level {
     fn step(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
@@ -59,6 +64,7 @@ pub trait Level {
     fn stop(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -70,6 +76,7 @@ pub trait Level {
     fn move_to_level_with_on_off(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         level: u8,
         transition_time: Deciseconds,
         options: Options,
@@ -83,6 +90,7 @@ pub trait Level {
     fn move_with_on_off(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -95,6 +103,7 @@ pub trait Level {
     fn step_with_on_off(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
@@ -108,6 +117,7 @@ pub trait Level {
     fn stop_with_on_off(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -119,6 +129,7 @@ pub trait Level {
     fn move_to_closest_frequency(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         frequency: u16,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
@@ -130,94 +141,136 @@ where
     async fn move_to_level(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         level: u8,
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(
+        self.transmit(crate::api::zcl::request(
             destination,
+            source_endpoint,
             MoveToLevel::new(level, transition_time, options),
-        )
+        ))
         .await
     }
 
     async fn r#move(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(destination, Move::new(mode, options)).await
+        self.transmit(crate::api::zcl::request(
+            destination,
+            source_endpoint,
+            Move::new(mode, options),
+        ))
+        .await
     }
 
     async fn step(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(destination, Step::new(mode, transition_time, options))
-            .await
+        self.transmit(crate::api::zcl::request(
+            destination,
+            source_endpoint,
+            Step::new(mode, transition_time, options),
+        ))
+        .await
     }
 
-    async fn stop(&self, destination: Destination, options: Options) -> Result<(), Error> {
-        self.transmit(destination, Stop::new(options)).await
+    async fn stop(
+        &self,
+        destination: Destination,
+        source_endpoint: IndividualEndpoint,
+        options: Options,
+    ) -> Result<(), Error> {
+        self.transmit(crate::api::zcl::request(
+            destination,
+            source_endpoint,
+            Stop::new(options),
+        ))
+        .await
     }
 
     async fn move_to_level_with_on_off(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         level: u8,
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(
+        self.transmit(crate::api::zcl::request(
             destination,
+            source_endpoint,
             MoveToLevelWithOnOff::new(level, transition_time, options),
-        )
+        ))
         .await
     }
 
     async fn move_with_on_off(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(destination, MoveWithOnOff::new(mode, options))
-            .await
+        self.transmit(crate::api::zcl::request(
+            destination,
+            source_endpoint,
+            MoveWithOnOff::new(mode, options),
+        ))
+        .await
     }
 
     async fn step_with_on_off(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         mode: Mode<u8>,
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(
+        self.transmit(crate::api::zcl::request(
             destination,
+            source_endpoint,
             StepWithOnOff::new(mode, transition_time, options),
-        )
+        ))
         .await
     }
 
     async fn stop_with_on_off(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(destination, StopWithOnOff::new(options))
-            .await
+        self.transmit(crate::api::zcl::request(
+            destination,
+            source_endpoint,
+            StopWithOnOff::new(options),
+        ))
+        .await
     }
 
     async fn move_to_closest_frequency(
         &self,
         destination: Destination,
+        source_endpoint: IndividualEndpoint,
         frequency: u16,
     ) -> Result<(), Error> {
-        self.transmit(destination, MoveToClosestFrequency::new(frequency))
-            .await
+        self.transmit(crate::api::zcl::request(
+            destination,
+            source_endpoint,
+            MoveToClosestFrequency::new(frequency),
+        ))
+        .await
     }
 }

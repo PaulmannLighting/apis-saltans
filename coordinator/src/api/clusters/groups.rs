@@ -1,11 +1,17 @@
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::GroupId;
 use zb_core::destination::Device;
 use zb_core::types::{String, Uint16};
-use zb_zcl::groups::{AddGroup, GetGroupMembership, GetGroupMembershipResponse, RemoveGroup};
+use zb_zcl::groups::{
+    AddGroup, AddGroupResponse, GetGroupMembership, GetGroupMembershipResponse, RemoveGroup,
+    RemoveGroupResponse,
+};
 
 use crate::{Error, StatusExt, Zcl, ZclResponse};
 
 /// Trait for Groups cluster operations.
+///
+/// Every operation requires the local APS source endpoint.
 pub trait Groups {
     /// Lists the group memberships from the device.
     ///
@@ -19,6 +25,7 @@ pub trait Groups {
     fn list(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
     ) -> impl Future<Output = Result<ZclResponse<GetGroupMembershipResponse>, Error>> + Send;
 
     /// Adds the device to a group.
@@ -32,6 +39,7 @@ pub trait Groups {
     fn add(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         group_id: GroupId,
         name: Option<String>,
     ) -> impl Future<Output = Result<Uint16, Error>> + Send;
@@ -45,6 +53,7 @@ pub trait Groups {
     fn remove(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         group_id: GroupId,
     ) -> impl Future<Output = Result<Uint16, Error>> + Send;
 }
@@ -53,19 +62,32 @@ impl<T> Groups for T
 where
     T: Zcl + Sync,
 {
-    async fn list(&self, device: Device) -> Result<ZclResponse<GetGroupMembershipResponse>, Error> {
-        self.communicate(device, GetGroupMembership::default())
-            .await
+    async fn list(
+        &self,
+        device: Device,
+        source_endpoint: IndividualEndpoint,
+    ) -> Result<ZclResponse<GetGroupMembershipResponse>, Error> {
+        self.communicate(crate::api::zcl::request(
+            device.into(),
+            source_endpoint,
+            GetGroupMembership::default(),
+        ))
+        .await
     }
 
     async fn add(
         &self,
         device: Device,
+        source_endpoint: IndividualEndpoint,
         group_id: GroupId,
         name: Option<String>,
     ) -> Result<Uint16, Error> {
         let response = self
-            .communicate(device, AddGroup::new(group_id, name.unwrap_or_default()))
+            .communicate::<AddGroupResponse>(crate::api::zcl::request(
+                device.into(),
+                source_endpoint,
+                AddGroup::new(group_id, name.unwrap_or_default()),
+            ))
             .await?
             .await?;
 
@@ -75,9 +97,18 @@ where
             .map(|()| response.group_id())
     }
 
-    async fn remove(&self, device: Device, group_id: GroupId) -> Result<Uint16, Error> {
+    async fn remove(
+        &self,
+        device: Device,
+        source_endpoint: IndividualEndpoint,
+        group_id: GroupId,
+    ) -> Result<Uint16, Error> {
         let response = self
-            .communicate(device, RemoveGroup::new(group_id))
+            .communicate::<RemoveGroupResponse>(crate::api::zcl::request(
+                device.into(),
+                source_endpoint,
+                RemoveGroup::new(group_id),
+            ))
             .await?
             .await?;
         response

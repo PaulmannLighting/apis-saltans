@@ -153,6 +153,13 @@ assert_eq!(request.image(), image);
 
 - Encode any typed frame/command with `ToLeStream`
 - Parse bytes with `Frame::parse(cluster_id, bytes)` into `Frame<Cluster>`
+- Construct outgoing frames without a transaction sequence using `UnsequencedHeader` and
+  `UnsequencedFrame<T>`
+- Convert a typed command directly with `UnsequencedFrame::from_command`
+- Assign the transaction sequence by consuming an unsequenced frame with
+  `UnsequencedFrame::into_frame`
+- Override its default-response flag with
+  `UnsequencedFrame::with_disable_default_response`
 - Parse failures are surfaced as `ParseFrameError`:
     - missing header
     - invalid scope/type

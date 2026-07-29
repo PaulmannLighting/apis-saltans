@@ -1,5 +1,3 @@
-use std::task::{Context, Poll};
-
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zb_aps::Data;
@@ -108,11 +106,6 @@ impl SubscriptionReceiver {
     /// Receive the next frame delivered to this subscription.
     pub async fn recv(&mut self) -> Option<Received> {
         self.messages.recv().await
-    }
-
-    /// Poll for the next frame delivered to this subscription.
-    pub fn poll_recv(&mut self, context: &mut Context<'_>) -> Poll<Option<Received>> {
-        self.messages.poll_recv(context)
     }
 }
 

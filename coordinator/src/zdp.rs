@@ -2,17 +2,19 @@
 
 use std::collections::BTreeMap;
 
+use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, error, trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::channel;
+use zb_aps::DeliveryMode;
+use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_aps::data::Header;
-use zb_aps::{Data, DeliveryMode};
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
-use zb_core::{Destination, Endpoint, FullAddress, destination};
+use zb_core::{ClusterSpecific, Destination, Endpoint, FullAddress, Profile, destination};
 use zb_hw::NcpHandle;
 use zb_nwk::Source;
 use zb_zdp::{
@@ -27,21 +29,19 @@ pub use self::message::Message;
 use self::node_desc::{
     Action as NodeDescAction, action as node_desc_action, unavailable_child_status,
 };
-pub use self::payload::Payload;
 use super::index::Index;
-use crate::aps::Aps;
+use crate::aps::{Aps, Metadata};
 use crate::response::ApsProtocolResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
 mod match_desc;
 mod message;
 mod node_desc;
-mod payload;
 
 /// Zigbee transceiver actor.
 #[derive(Debug)]
-pub struct Transceiver<T> {
-    ncp: T,
+pub struct Transceiver {
+    ncp: NcpHandle,
     aps: Aps,
     events: Sender<Event>,
     descriptor: Descriptor,
@@ -51,10 +51,15 @@ pub struct Transceiver<T> {
     seq: u8,
 }
 
-impl<T> Transceiver<T> {
+impl Transceiver {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(ncp: T, aps: Aps, events: Sender<Event>, descriptor: Descriptor) -> Self {
+    pub const fn new(
+        ncp: NcpHandle,
+        aps: Aps,
+        events: Sender<Event>,
+        descriptor: Descriptor,
+    ) -> Self {
         Self {
             ncp,
             aps,
@@ -65,15 +70,13 @@ impl<T> Transceiver<T> {
             seq: 0,
         }
     }
-}
 
-impl Transceiver<NcpHandle> {
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
             match message {
-                Message::Received { source, frame } => {
-                    self.handle_message_received(source, frame).await;
+                Message::Received { indication } => {
+                    self.handle_message_received(indication).await;
                 }
                 Message::NetworkOpened => {
                     self.joining_permitted = true;
@@ -83,11 +86,11 @@ impl Transceiver<NcpHandle> {
                 }
                 Message::Communicate {
                     device,
-                    payload,
+                    request,
                     response,
                 } => {
                     response
-                        .send(self.communicate(device, payload).await)
+                        .send(self.communicate(device, request).await)
                         .unwrap_or_else(|error| {
                             debug!("Failed to send unicast response: {error:?}");
                         });
@@ -103,7 +106,14 @@ impl Transceiver<NcpHandle> {
         seq
     }
 
-    async fn handle_message_received(&mut self, source: Source, frame: Data<Frame<Command>>) {
+    async fn handle_message_received(
+        &mut self,
+        indication: DataIndication<Frame<Command>, (), ()>,
+    ) {
+        let Some((source, frame)) = crate::apsde::into_legacy_data(indication) else {
+            warn!("Discarding ZDP indication with unsupported addressing");
+            return;
+        };
         trace!("Received ZDP message from {source}: {frame:?}");
         let (aps_header, zdp_frame) = frame.into_parts();
         let index = Index::from_received_zdp_frame(source, &zdp_frame);
@@ -157,22 +167,15 @@ impl Transceiver<NcpHandle> {
     async fn communicate(
         &mut self,
         device: Device,
-        payload: Payload,
+        request: DataRequest<Bytes>,
     ) -> Result<ApsProtocolResponse<Command>, zb_hw::Error> {
-        let (metadata, payload) = payload.into_parts();
         let seq = self.next_seq();
-        let index = Index::from_zdp_command(device, seq, metadata);
-        let zdp_frame = Frame::new(seq, payload);
-        let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
-        let payload = zdp_frame.to_le_stream().collect();
+        let index = Index::from_zdp_command(device, seq, &request);
+        let request = request.map_asdu(|payload| Frame::new(seq, payload).to_le_stream().collect());
         let (tx, rx) = channel();
         self.responses.insert(index, tx);
 
-        let transmission = match self
-            .aps
-            .transmit(destination, Endpoint::Data, metadata, payload)
-            .await
-        {
+        let transmission = match self.aps.transmit(request).await {
             Ok(transmission) => transmission,
             Err(error) => {
                 self.responses.remove(&index);
@@ -183,19 +186,18 @@ impl Transceiver<NcpHandle> {
         Ok(ApsProtocolResponse::new(transmission, rx))
     }
 
-    async fn respond(&self, seq: u8, device: Device, payload: Payload) -> Result<(), zb_hw::Error> {
-        let (metadata, payload) = payload.into_parts();
-        let zdp_frame = Frame::new(seq, payload);
+    async fn respond<T>(&self, seq: u8, device: Device, payload: T) -> Result<(), zb_hw::Error>
+    where
+        T: ClusterSpecific + ToLeStream,
+    {
         let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
-        self.aps
-            .transmit(
-                destination,
-                Endpoint::Data,
-                metadata,
-                zdp_frame.to_le_stream().collect(),
-            )
-            .await
-            .map(drop)
+        let request = crate::aps::data_request(
+            destination,
+            Endpoint::Data,
+            Metadata::new(Profile::Network, T::ID),
+            Frame::new(seq, payload).to_le_stream().collect(),
+        );
+        self.aps.transmit(request).await.map(drop)
     }
 
     /// Process a Match Descriptor request and unicast any required response to its originator.
@@ -265,7 +267,7 @@ impl Transceiver<NcpHandle> {
             return;
         };
 
-        if let Err(error) = self.respond(seq, node_id, Payload::from(response)).await {
+        if let Err(error) = self.respond(seq, node_id, response).await {
             error!("Failed to send Match_Desc_rsp: {error:?}");
         }
     }
@@ -317,7 +319,7 @@ impl Transceiver<NcpHandle> {
         };
         let payload = NodeDescRsp::new(nwk_addr_of_interest, node_descriptor, Vec::new());
 
-        if let Err(error) = self.respond(seq, node_id, Payload::from(payload)).await {
+        if let Err(error) = self.respond(seq, node_id, payload).await {
             error!("Failed to send Node_Desc_rsp: {error:?}");
         }
     }
@@ -337,13 +339,11 @@ impl Transceiver<NcpHandle> {
         };
         let payload = MgmtPermitJoiningRsp::new(status);
 
-        if let Err(error) = self.respond(seq, node_id, Payload::from(payload)).await {
+        if let Err(error) = self.respond(seq, node_id, payload).await {
             error!("Failed to send Mgmt_Permit_Joining_rsp: {error:?}");
         }
     }
-}
 
-impl Transceiver<NcpHandle> {
     /// Start the ZDP transceiver.
     pub fn spawn(
         ncp: NcpHandle,

@@ -1,3 +1,5 @@
+use core::fmt::{self, Display, Formatter};
+
 use super::{Destination, IndividualEndpoint, Status};
 
 /// Status reported by an `APSDE-DATA.confirm`.
@@ -39,6 +41,15 @@ impl ConfirmStatus {
 impl From<Status> for ConfirmStatus {
     fn from(status: Status) -> Self {
         Self::Aps(status)
+    }
+}
+
+impl Display for ConfirmStatus {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Aps(status) => Display::fmt(status, formatter),
+            Self::Network(status) => write!(formatter, "NWK status {status:#04x}"),
+        }
     }
 }
 
