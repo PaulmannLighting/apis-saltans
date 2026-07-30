@@ -258,7 +258,7 @@ actor while the hardware result is pending.
 
 ## Response Correlation
 
-Pending ZCL and ZDP requests are keyed by an internal `Index` containing:
+Pending ZCL and ZDP requests are keyed by an internal correlation `Key` containing:
 
 - remote short address
 - endpoint

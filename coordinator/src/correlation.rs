@@ -3,8 +3,10 @@ use std::time::Duration;
 
 use tokio::sync::oneshot::{Receiver, Sender, channel};
 
+pub use self::key::Key;
 use crate::Error;
-use crate::index::Index;
+
+mod key;
 
 /// Maximum time retained for a pending ZCL or ZDP response.
 pub const PROTOCOL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
@@ -19,15 +21,15 @@ type RegisteredResponse<T> = (u8, Token, Receiver<Result<T, Error>>);
 /// Coordinator-private identity for lifecycle messages associated with one protocol transaction.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Token {
-    index: Index,
+    key: Key,
     generation: u64,
 }
 
 impl Token {
-    /// Return the response-correlation index carried by this token.
+    /// Return the response-correlation key carried by this token.
     #[must_use]
-    pub const fn index(self) -> Index {
-        self.index
+    pub const fn key(self) -> Key {
+        self.key
     }
 }
 
@@ -52,13 +54,13 @@ impl Cancellation {
     }
 
     #[cfg(test)]
-    pub fn test_new<F>(index: Index, cancel: F) -> Self
+    pub fn test_new<F>(key: Key, cancel: F) -> Self
     where
         F: FnOnce(Token) + Send + 'static,
     {
         Self::new(
             Token {
-                index,
+                key,
                 generation: INITIAL_GENERATION,
             },
             cancel,
@@ -100,8 +102,8 @@ struct Pending<T> {
 pub struct Registry<T> {
     next_sequence: u8,
     next_generation: u64,
-    pending: BTreeMap<Index, Pending<T>>,
-    quarantined: BTreeMap<Index, u64>,
+    pending: BTreeMap<Key, Pending<T>>,
+    quarantined: BTreeMap<Key, u64>,
 }
 
 impl<T> Registry<T> {
@@ -116,13 +118,13 @@ impl<T> Registry<T> {
     }
 
     /// Allocate and register a response correlation.
-    pub fn register<F>(&mut self, index_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
+    pub fn register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
     where
-        F: Fn(u8) -> Index,
+        F: Fn(u8) -> Key,
     {
-        let (sequence, index) = self.allocate(&index_for_sequence)?;
+        let (sequence, key) = self.allocate(&key_for_sequence)?;
         let token = Token {
-            index,
+            key,
             generation: self.next_generation,
         };
         self.next_generation = self.next_generation.wrapping_add(1);
@@ -132,7 +134,7 @@ impl<T> Registry<T> {
             response,
         };
 
-        let previous = self.pending.insert(index, pending);
+        let previous = self.pending.insert(key, pending);
         debug_assert!(previous.is_none());
 
         Ok((sequence, token, receiver))
@@ -142,16 +144,16 @@ impl<T> Registry<T> {
     ///
     /// The allocator skips identities used by tracked or quarantined requests, but does not retain
     /// the selected identity after returning it.
-    pub fn allocate_untracked_sequence<F>(&mut self, index_for_sequence: F) -> Result<u8, Error>
+    pub fn allocate_untracked_sequence<F>(&mut self, key_for_sequence: F) -> Result<u8, Error>
     where
-        F: Fn(u8) -> Option<Index>,
+        F: Fn(u8) -> Option<Key>,
     {
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
             let sequence = self.take_next_sequence();
-            let Some(index) = index_for_sequence(sequence) else {
+            let Some(key) = key_for_sequence(sequence) else {
                 return Ok(sequence);
             };
-            if self.index_is_available(index) {
+            if self.key_is_available(key) {
                 return Ok(sequence);
             }
         }
@@ -160,8 +162,8 @@ impl<T> Registry<T> {
     }
 
     /// Complete a pending response and release its transaction identity.
-    pub fn complete(&mut self, index: Index, value: T) -> bool {
-        let Some(pending) = self.pending.remove(&index) else {
+    pub fn complete(&mut self, key: Key, value: T) -> bool {
+        let Some(pending) = self.pending.remove(&key) else {
             return false;
         };
 
@@ -177,23 +179,23 @@ impl<T> Registry<T> {
     /// Discard a correlation whose request was never handed to the hardware.
     pub fn discard(&mut self, token: Token) {
         if self.pending_generation_matches(token) {
-            self.pending.remove(&token.index);
+            self.pending.remove(&token.key);
         }
     }
 
     /// Consume a late response and release its quarantined transaction identity.
-    pub fn release_quarantine(&mut self, index: Index) -> bool {
-        self.quarantined.remove(&index).is_some()
+    pub fn release_quarantine(&mut self, key: Key) -> bool {
+        self.quarantined.remove(&key).is_some()
     }
 
     /// Release a quarantined identity after its bounded late-response grace period.
     pub fn expire_quarantine(&mut self, token: Token) -> bool {
         let generation_matches = self
             .quarantined
-            .get(&token.index)
+            .get(&token.key)
             .is_some_and(|generation| *generation == token.generation);
         if generation_matches {
-            self.quarantined.remove(&token.index);
+            self.quarantined.remove(&token.key);
         }
         generation_matches
     }
@@ -233,15 +235,15 @@ impl<T> Registry<T> {
         }
     }
 
-    fn allocate<F>(&mut self, index_for_sequence: &F) -> Result<(u8, Index), Error>
+    fn allocate<F>(&mut self, key_for_sequence: &F) -> Result<(u8, Key), Error>
     where
-        F: Fn(u8) -> Index,
+        F: Fn(u8) -> Key,
     {
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
             let sequence = self.take_next_sequence();
-            let index = index_for_sequence(sequence);
-            if self.index_is_available(index) {
-                return Ok((sequence, index));
+            let key = key_for_sequence(sequence);
+            if self.key_is_available(key) {
+                return Ok((sequence, key));
             }
         }
 
@@ -254,8 +256,8 @@ impl<T> Registry<T> {
         sequence
     }
 
-    fn index_is_available(&self, index: Index) -> bool {
-        !self.pending.contains_key(&index) && !self.quarantined.contains_key(&index)
+    fn key_is_available(&self, key: Key) -> bool {
+        !self.pending.contains_key(&key) && !self.quarantined.contains_key(&key)
     }
 
     fn remove_and_quarantine(&mut self, token: Token) -> Option<Pending<T>> {
@@ -263,10 +265,10 @@ impl<T> Registry<T> {
             return None;
         }
 
-        let pending = self.pending.remove(&token.index);
+        let pending = self.pending.remove(&token.key);
         let newly_quarantined = self
             .quarantined
-            .insert(token.index, token.generation)
+            .insert(token.key, token.generation)
             .is_none();
         debug_assert!(newly_quarantined);
         pending
@@ -274,7 +276,7 @@ impl<T> Registry<T> {
 
     fn pending_generation_matches(&self, token: Token) -> bool {
         self.pending
-            .get(&token.index)
+            .get(&token.key)
             .is_some_and(|pending| pending.generation == token.generation)
     }
 }
@@ -283,9 +285,10 @@ impl<T> Registry<T> {
 mod tests {
     use std::sync::{Arc, Mutex};
 
-    use super::{Cancellation, INITIAL_GENERATION, Registry, TRANSACTION_SEQUENCE_COUNT, Token};
+    use super::{
+        Cancellation, INITIAL_GENERATION, Key, Registry, TRANSACTION_SEQUENCE_COUNT, Token,
+    };
     use crate::Error;
-    use crate::index::Index;
 
     const CLUSTER_ID: u16 = 1;
     const OTHER_SHORT_ID: u16 = 4;
@@ -299,13 +302,13 @@ mod tests {
 
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
             let (_, _, response) = registry
-                .register(index)
+                .register(key)
                 .expect("all transaction sequences are initially available");
             responses.push(response);
         }
 
         assert!(matches!(
-            registry.register(index),
+            registry.register(key),
             Err(Error::TransactionSequenceExhausted)
         ));
         assert_eq!(responses.len(), TRANSACTION_SEQUENCE_COUNT);
@@ -315,9 +318,9 @@ mod tests {
     fn dropping_a_response_requests_actor_owned_cancellation() {
         let cancelled = Arc::new(Mutex::new(None));
         let cancellation_result = cancelled.clone();
-        let expected = index(u8::MIN);
+        let expected = key(u8::MIN);
         let token = Token {
-            index: expected,
+            key: expected,
             generation: INITIAL_GENERATION,
         };
         let cancellation = Cancellation::new(token, move |token| {
@@ -340,13 +343,13 @@ mod tests {
     fn completed_sequence_is_immediately_reallocated() {
         let mut registry = Registry::<()>::new();
         let (first_sequence, first_token, _response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
-        assert!(registry.complete(first_token.index(), ()));
+        assert!(registry.complete(first_token.key(), ()));
         registry.next_sequence = first_sequence;
 
         let (second_sequence, _, _response) = registry
-            .register(index)
+            .register(key)
             .expect("another transaction sequence is available");
 
         assert_eq!(second_sequence, first_sequence);
@@ -356,7 +359,7 @@ mod tests {
     fn actor_expiration_returns_a_protocol_timeout() {
         let mut registry = Registry::<()>::new();
         let (sequence, token, response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
 
         registry.timeout(token);
@@ -365,9 +368,9 @@ mod tests {
             response.blocking_recv(),
             Ok(Err(Error::ProtocolResponseTimeout))
         ));
-        assert!(registry.quarantined.contains_key(&index(sequence)));
-        assert!(registry.release_quarantine(index(sequence)));
-        assert!(!registry.quarantined.contains_key(&index(sequence)));
+        assert!(registry.quarantined.contains_key(&key(sequence)));
+        assert!(registry.release_quarantine(key(sequence)));
+        assert!(!registry.quarantined.contains_key(&key(sequence)));
     }
 
     #[test]
@@ -378,7 +381,7 @@ mod tests {
         for _ in 0..TRANSACTION_SEQUENCE_COUNT * 2 {
             sequences.push(
                 registry
-                    .allocate_untracked_sequence(|sequence| Some(index(sequence)))
+                    .allocate_untracked_sequence(|sequence| Some(key(sequence)))
                     .expect("untracked transaction sequences remain available"),
             );
         }
@@ -391,12 +394,12 @@ mod tests {
     fn untracked_allocation_skips_a_pending_identity() {
         let mut registry = Registry::<()>::new();
         let (pending_sequence, _token, _response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
         registry.next_sequence = pending_sequence;
 
         let untracked_sequence = registry
-            .allocate_untracked_sequence(|sequence| Some(index(sequence)))
+            .allocate_untracked_sequence(|sequence| Some(key(sequence)))
             .expect("another transaction sequence is available");
 
         assert_ne!(untracked_sequence, pending_sequence);
@@ -408,13 +411,13 @@ mod tests {
         let mut responses = Vec::new();
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
             let (_, token, response) = registry
-                .register(index)
+                .register(key)
                 .expect("all transaction sequences are initially available");
             assert!(registry.cancel(token));
             responses.push(response);
         }
         assert!(matches!(
-            registry.register(index),
+            registry.register(key),
             Err(Error::TransactionSequenceExhausted)
         ));
 
@@ -422,7 +425,7 @@ mod tests {
 
         assert_eq!(
             registry
-                .allocate_untracked_sequence(|sequence| Some(index(sequence)))
+                .allocate_untracked_sequence(|sequence| Some(key(sequence)))
                 .expect("network boundary starts a fresh correlation epoch"),
             u8::MIN
         );
@@ -433,10 +436,10 @@ mod tests {
     fn network_failure_resolves_every_pending_response() {
         let mut registry = Registry::<()>::new();
         let (_, first_token, first_response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
         let (_, _, second_response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
         registry.cancel(first_token);
 
@@ -456,10 +459,10 @@ mod tests {
     fn hardware_unavailability_resolves_every_pending_response() {
         let mut registry = Registry::<()>::new();
         let (_, first_token, first_response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
         let (_, _, second_response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
         registry.cancel(first_token);
 
@@ -477,19 +480,19 @@ mod tests {
     fn stale_lifecycle_token_does_not_remove_reused_transaction() {
         let mut registry = Registry::<()>::new();
         let (sequence, stale_token, stale_response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
-        assert!(registry.complete(stale_token.index(), ()));
+        assert!(registry.complete(stale_token.key(), ()));
         assert!(matches!(stale_response.blocking_recv(), Ok(Ok(()))));
         registry.next_sequence = sequence;
         let (_, current_token, mut current_response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence can be reused after completion");
 
         registry.cancel(stale_token);
         registry.timeout(stale_token);
 
-        assert!(registry.pending.contains_key(&current_token.index()));
+        assert!(registry.pending.contains_key(&current_token.key()));
         assert!(current_response.try_recv().is_err());
     }
 
@@ -497,19 +500,19 @@ mod tests {
     fn stale_quarantine_timeout_does_not_release_a_newer_generation() {
         let mut registry = Registry::<()>::new();
         let (sequence, stale_token, _response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
         assert!(registry.cancel(stale_token));
         assert!(registry.expire_quarantine(stale_token));
 
         registry.next_sequence = sequence;
         let (_, current_token, _response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence can be reused after quarantine expiry");
         assert!(registry.cancel(current_token));
 
         assert!(!registry.expire_quarantine(stale_token));
-        assert!(registry.quarantined.contains_key(&current_token.index()));
+        assert!(registry.quarantined.contains_key(&current_token.key()));
         assert!(registry.expire_quarantine(current_token));
     }
 
@@ -517,7 +520,7 @@ mod tests {
     fn discarded_unsent_transaction_is_not_quarantined() {
         let mut registry = Registry::<()>::new();
         let (sequence, token, response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
 
         registry.discard(token);
@@ -526,7 +529,7 @@ mod tests {
         assert!(response.blocking_recv().is_err());
         assert_eq!(
             registry
-                .register(index)
+                .register(key)
                 .expect("unsent transaction identity is immediately reusable")
                 .0,
             sequence
@@ -534,17 +537,17 @@ mod tests {
     }
 
     #[test]
-    fn quarantine_is_scoped_to_the_complete_correlation_index() {
+    fn quarantine_is_scoped_to_the_complete_correlation_key() {
         let mut registry = Registry::<()>::new();
         let (sequence, token, _response) = registry
-            .register(index)
+            .register(key)
             .expect("transaction sequence is available");
         registry.cancel(token);
         registry.next_sequence = sequence;
 
         let (reused_sequence, _, _response) = registry
             .register(|sequence| {
-                Index::new(
+                Key::new(
                     OTHER_SHORT_ID,
                     zb_core::Endpoint::Data,
                     CLUSTER_ID,
@@ -558,8 +561,8 @@ mod tests {
         assert_eq!(reused_sequence, sequence);
     }
 
-    fn index(sequence: u8) -> Index {
-        Index::new(
+    fn key(sequence: u8) -> Key {
+        Key::new(
             SHORT_ID,
             zb_core::Endpoint::Data,
             CLUSTER_ID,

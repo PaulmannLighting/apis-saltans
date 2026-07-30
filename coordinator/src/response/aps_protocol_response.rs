@@ -72,8 +72,7 @@ mod tests {
     use tokio::sync::oneshot::channel;
 
     use super::{ApsProtocolResponse, TransmissionResponse};
-    use crate::correlation::Cancellation;
-    use crate::index::Index;
+    use crate::correlation::{Cancellation, Key};
 
     const CLUSTER_ID: u16 = 2;
     const PROFILE_ID: u16 = 3;
@@ -144,7 +143,7 @@ mod tests {
         transmission: tokio::sync::oneshot::Receiver<Result<(), zb_hw::Error>>,
         protocol: tokio::sync::oneshot::Receiver<Result<T, crate::Error>>,
     ) -> ApsProtocolResponse<T> {
-        let cancellation = Cancellation::test_new(index(), drop);
+        let cancellation = Cancellation::test_new(key(), drop);
         let (aps_inbox, _aps_messages) = tokio::sync::mpsc::channel(1);
         ApsProtocolResponse::new(
             TransmissionResponse::test_new(transmission, APS_COUNTER, aps_inbox.downgrade()),
@@ -153,8 +152,8 @@ mod tests {
         )
     }
 
-    fn index() -> Index {
-        Index::new(
+    fn key() -> Key {
+        Key::new(
             SHORT_ID,
             zb_core::Endpoint::Data,
             CLUSTER_ID,

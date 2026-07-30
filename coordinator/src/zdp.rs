@@ -35,10 +35,9 @@ pub use self::message::Message;
 use self::node_desc::{
     Action as NodeDescAction, action as node_desc_action, unavailable_child_status,
 };
-use super::index::Index;
 use crate::aps::{Aps, Metadata, TransmissionResponse};
 use crate::correlation::{
-    Cancellation, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
+    Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
 };
 use crate::event_sink::EventSink;
 use crate::response::ApsProtocolResponse;
@@ -137,7 +136,7 @@ impl Transceiver {
         &mut self,
         indication: DataIndication<Frame<Command>, (), ()>,
     ) {
-        let Some((source_address, index)) = received_index(&indication) else {
+        let Some((source_address, key)) = received_key(&indication) else {
             return;
         };
         let request_was_broadcast = matches!(
@@ -216,12 +215,12 @@ impl Transceiver {
                     .await;
             }
             command => {
-                if self.responses.complete(index, command.clone()) {
+                if self.responses.complete(key, command.clone()) {
                     debug!(
                         "Answering ZDP request: seq={seq} cluster_id={:#06X}",
                         command.cluster_id()
                     );
-                } else if self.responses.release_quarantine(index) {
+                } else if self.responses.release_quarantine(key) {
                     debug!("Discarding late ZDP response with quarantined sequence {seq}");
                 } else {
                     warn!("Unexpected ZDP response: {command:?}");
@@ -246,7 +245,7 @@ impl Transceiver {
     ) -> Result<ApsProtocolResponse<Command>, crate::Error> {
         let (seq, token, rx) = self
             .responses
-            .register(|sequence| Index::from_zdp_command(device, sequence, &request))?;
+            .register(|sequence| Key::from_zdp_command(device, sequence, &request))?;
         self.schedule_response_timeout(token);
         let request = request.map_asdu(|payload| Frame::new(seq, payload).to_le_stream().collect());
 
@@ -649,15 +648,15 @@ impl Transceiver {
 }
 
 /// Validate an indication's ZDP addressing and derive its response-correlation key.
-fn received_index<T, K>(
+fn received_key<T, K>(
     indication: &DataIndication<Frame<Command>, T, K>,
-) -> Option<(NetworkAddress, Index)> {
+) -> Option<(NetworkAddress, Key)> {
     let source = indication.metadata().source();
     let Some(source_address) = source.network_address() else {
         warn!("Discarding ZDP indication from non-network source: {source:?}");
         return None;
     };
-    let Some(index) = Index::from_received_zdp_indication(indication) else {
+    let Some(key) = Key::from_received_zdp_indication(indication) else {
         warn!(
             "Discarding ZDP indication not addressed between endpoint zero: source={source:?} destination={:?}",
             indication.metadata().destination()
@@ -665,7 +664,7 @@ fn received_index<T, K>(
         return None;
     };
 
-    Some((source_address, index))
+    Some((source_address, key))
 }
 
 /// Await a deferred ZDP response transmission and report any failure through the actor inbox.

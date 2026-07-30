@@ -16,10 +16,9 @@ pub use self::subscription::{
     Filter as SubscriptionFilter, Received as SubscriptionMessage, Subscription,
     SubscriptionReceiver,
 };
-use super::index::Index;
 use crate::aps::{Aps, TransmissionResponse};
 use crate::correlation::{
-    Cancellation, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
+    Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
 };
 use crate::event_sink::EventSink;
 use crate::response::ApsProtocolResponse;
@@ -126,7 +125,7 @@ impl Transceiver {
     /// Handle a received ZCL message.
     fn handle_message_received(&mut self, indication: DataIndication<Frame<Cluster>, (), ()>) {
         let source = indication.metadata().source();
-        let Some(index) = Index::from_received_zcl_indication(&indication) else {
+        let Some(key) = Key::from_received_zcl_indication(&indication) else {
             warn!("Discarding ZCL indication from unsupported source: {source:?}");
             return;
         };
@@ -134,13 +133,13 @@ impl Transceiver {
 
         let zcl_frame = indication.asdu().clone();
         let (_, cluster) = zcl_frame.into_parts();
-        if self.responses.complete(index, cluster) {
+        if self.responses.complete(key, cluster) {
             return;
         }
-        if self.responses.release_quarantine(index) {
+        if self.responses.release_quarantine(key) {
             debug!(
                 "Discarding late ZCL response with quarantined sequence {}",
-                index.sequence()
+                key.sequence()
             );
             return;
         }
@@ -197,13 +196,13 @@ impl Transceiver {
         &mut self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<TransmissionResponse, Error> {
-        let is_individual_unicast = Self::request_index(&request, u8::MIN).is_ok();
+        let is_individual_unicast = Self::request_key(&request, u8::MIN).is_ok();
         if is_individual_unicast && !request.asdu().header().control().disable_default_response() {
             return Err(Error::ZclDefaultResponseEnabled);
         }
         let sequence_number = self
             .responses
-            .allocate_untracked_sequence(|sequence| Self::request_index(&request, sequence).ok())?;
+            .allocate_untracked_sequence(|sequence| Self::request_key(&request, sequence).ok())?;
         let request = Self::encode_request(request, sequence_number);
         self.aps.transmit(request).await
     }
@@ -231,9 +230,9 @@ impl Transceiver {
         &mut self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<ApsProtocolResponse<Cluster>, Error> {
-        Self::request_index(&request, u8::MIN)?;
+        Self::request_key(&request, u8::MIN)?;
         let (sequence_number, token, rx) = self.responses.register(|sequence| {
-            Self::request_index(&request, sequence)
+            Self::request_key(&request, sequence)
                 .expect("ZCL communication destination was validated")
         })?;
         self.schedule_response_timeout(token);
@@ -313,10 +312,10 @@ impl Transceiver {
         request.map_asdu(|frame| frame.into_frame(sequence_number).to_le_stream().collect())
     }
 
-    fn request_index(
+    fn request_key(
         request: &DataRequest<UnsequencedFrame<Bytes>>,
         sequence_number: u8,
-    ) -> Result<Index, Error> {
+    ) -> Result<Key, Error> {
         let zb_aps::apsde::RequestDestination::Network { address, endpoint } =
             request.destination()
         else {
@@ -330,7 +329,7 @@ impl Transceiver {
             ));
         }
 
-        Ok(Index::new_zcl(
+        Ok(Key::new_zcl(
             address.as_u16(),
             endpoint,
             request.cluster_id(),
@@ -368,8 +367,8 @@ mod tests {
 
     use super::{Message, Subscription, SubscriptionFilter, SubscriptionMessage, Transceiver};
     use crate::aps::Aps;
+    use crate::correlation::Key;
     use crate::event_sink::EventSink;
-    use crate::index::Index;
     use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
     const SOURCE_NODE_ID: u16 = 0x4321;
@@ -444,7 +443,7 @@ mod tests {
         );
 
         assert!(matches!(
-            Transceiver::request_index(&request, TRANSACTION_SEQUENCE),
+            Transceiver::request_key(&request, TRANSACTION_SEQUENCE),
             Err(Error::InvalidZclCommunicationDestination(
                 RequestDestination::Bound
             ))
@@ -545,11 +544,11 @@ mod tests {
                 let (mut transceiver, mut events) = unstarted_transceiver();
                 transceiver.subscriptions.push(subscription);
                 let indication = subscribed_indication();
-                let response_index = Index::from_received_zcl_indication(&indication)
+                let response_key = Key::from_received_zcl_indication(&indication)
                     .expect("test indication has a network source");
                 let (_, _, response) = transceiver
                     .responses
-                    .register(|_| response_index)
+                    .register(|_| response_key)
                     .expect("response correlation can be registered");
 
                 transceiver.handle_message_received(indication);
@@ -578,7 +577,7 @@ mod tests {
                 let (mut transceiver, _events) = unstarted_transceiver();
                 transceiver.subscriptions.push(subscription);
                 let endpoint = Endpoint::Application(Application::MIN);
-                let response_index = Index::new_zcl(
+                let response_key = Key::new_zcl(
                     SOURCE_NODE_ID,
                     endpoint,
                     ClusterId::OnOff.as_u16(),
@@ -589,7 +588,7 @@ mod tests {
                 );
                 let (_, _, mut response) = transceiver
                     .responses
-                    .register(|_| response_index)
+                    .register(|_| response_key)
                     .expect("response correlation can be registered");
 
                 transceiver.handle_message_received(subscribed_indication());

@@ -4,13 +4,13 @@ use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
 
 /// Correlation key for pending transceiver responses.
 ///
-/// The coordinator stores outstanding ZCL and ZDP requests under an `Index` and
+/// The coordinator stores outstanding ZCL and ZDP requests under a `Key` and
 /// removes the matching entry again when a response frame arrives. The key uses
 /// the addressing and protocol fields that are expected to be mirrored by the
 /// response: the remote node id, endpoint, cluster id, profile id, optional
 /// manufacturer code, expected ZCL direction where applicable, and transaction sequence number.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct Index {
+pub struct Key {
     /// The network short address of the remote node.
     short_id: u16,
     /// The endpoint used for the request/response exchange.
@@ -27,7 +27,7 @@ pub struct Index {
     seq: u8,
 }
 
-impl Index {
+impl Key {
     /// Create a response correlation key from normalized response-matching
     /// fields.
     #[must_use]
@@ -182,7 +182,7 @@ mod tests {
     use zb_core::{Endpoint, Profile};
     use zb_zdp::{Command, Frame, MgmtPermitJoiningRsp, NetworkManagement, Status};
 
-    use super::Index;
+    use super::Key;
 
     const LOCAL_ADDRESS: u16 = 0;
     const REMOTE_ADDRESS: u16 = 1;
@@ -192,22 +192,16 @@ mod tests {
     #[test]
     fn received_zdp_indication_requires_endpoint_zero_at_both_ends() {
         assert!(
-            Index::from_received_zdp_indication(&indication(Endpoint::Data, Endpoint::Data))
+            Key::from_received_zdp_indication(&indication(Endpoint::Data, Endpoint::Data))
                 .is_some()
         );
         assert!(
-            Index::from_received_zdp_indication(&indication(
-                application_endpoint(),
-                Endpoint::Data
-            ))
-            .is_none()
+            Key::from_received_zdp_indication(&indication(application_endpoint(), Endpoint::Data))
+                .is_none()
         );
         assert!(
-            Index::from_received_zdp_indication(&indication(
-                Endpoint::Data,
-                application_endpoint()
-            ))
-            .is_none()
+            Key::from_received_zdp_indication(&indication(Endpoint::Data, application_endpoint()))
+                .is_none()
         );
     }
 

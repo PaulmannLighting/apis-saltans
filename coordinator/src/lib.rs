@@ -50,7 +50,6 @@ mod correlation;
 mod error;
 mod event;
 mod event_sink;
-mod index;
 mod mux;
 pub mod ota;
 mod response;
