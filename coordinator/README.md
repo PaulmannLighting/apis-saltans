@@ -138,7 +138,8 @@ descriptors and builds `MatchDescRsp` from matching descriptors. If the NCP cann
 request cannot be answered. Received APSDE metadata preserves whether the NWK destination was
 broadcast. An empty broadcast match therefore remains silent, while a non-empty match is returned
 as a unicast response to the originator. Broadcast `MgmtPermitJoiningReq` commands likewise produce
-no response.
+no response. Unicast `MgmtPermitJoiningReq` commands receive `InvalidRequestType`; remote requests
+never inspect or change the joining state.
 
 The coordinator also serves local Active Endpoint and Simple Descriptor discovery from those NCP
 descriptors. It answers single-device Network Address and IEEE Address requests through the NCP's
@@ -418,7 +419,8 @@ async fn allow_joins(api: &impl Joining) -> Result<Duration, apis_saltans_coordi
 }
 ```
 
-The return value is the effective duration accepted by the hardware.
+The return value is the effective duration accepted by the hardware. This local API is the only
+way the coordinator permits joining; remote ZDP permit-joining requests cannot open or close it.
 
 ## Hardware Helpers
 

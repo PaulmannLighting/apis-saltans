@@ -137,22 +137,10 @@ impl Mux {
             }
             HardwareNetworkEvent::Opened => {
                 trace!("Network has been opened");
-                self.zdp
-                    .send(zdp::Message::NetworkOpened)
-                    .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send ZDP message: {error}");
-                    });
                 self.events.emit(Event::Network(Network::Opened));
             }
             HardwareNetworkEvent::Closed => {
                 trace!("Network has been closed");
-                self.zdp
-                    .send(zdp::Message::NetworkClosed)
-                    .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send ZDP message: {error}");
-                    });
                 self.events.emit(Event::Network(Network::Closed));
             }
             HardwareNetworkEvent::RouteError(error) => {

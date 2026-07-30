@@ -17,12 +17,6 @@ pub enum Message {
         indication: DataIndication<Frame<Command>, (), ()>,
     },
 
-    /// The network has been opened for new joins.
-    NetworkOpened,
-
-    /// The network has been closed for new joins.
-    NetworkClosed,
-
     /// Fail pending protocol responses because the Zigbee network went down.
     NetworkDown,
 

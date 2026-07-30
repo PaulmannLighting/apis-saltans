@@ -56,8 +56,6 @@ pub struct Transceiver {
     aps: Aps,
     events: EventSink,
     descriptor: Descriptor,
-    /// Whether the hardware has reported that joining is open.
-    joining_permitted: bool,
     responses: Registry<Command>,
     inbox: WeakSender<Message>,
 }
@@ -77,7 +75,6 @@ impl Transceiver {
             aps,
             events,
             descriptor,
-            joining_permitted: false,
             responses: Registry::new(),
             inbox,
         }
@@ -96,12 +93,6 @@ impl Transceiver {
         match message {
             Message::Received { indication } => {
                 self.handle_message_received(indication).await;
-            }
-            Message::NetworkOpened => {
-                self.joining_permitted = true;
-            }
-            Message::NetworkClosed => {
-                self.joining_permitted = false;
             }
             Message::NetworkDown => {
                 self.responses
@@ -620,29 +611,22 @@ impl Transceiver {
         }
     }
 
-    /// Apply a management permit-joining request and return its result to the requester.
+    /// Reject a remote management permit-joining request without changing local joining state.
     async fn handle_mgmt_permit_joining_req(
         &self,
         source: NetworkAddress,
         request_was_broadcast: bool,
         seq: u8,
     ) {
-        if !permit_joining_response_required(request_was_broadcast) {
+        let Some(payload) = permit_joining_response(request_was_broadcast) else {
             return;
-        }
+        };
 
         let Ok(node_id) = source.as_u16().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
         }) else {
             return;
         };
-
-        let status = if self.joining_permitted {
-            Status::Success
-        } else {
-            Status::NotPermitted
-        };
-        let payload = MgmtPermitJoiningRsp::new(status);
 
         if let Err(error) = self.respond(seq, node_id, payload).await {
             error!("Failed to send Mgmt_Permit_Joining_rsp: {error:?}");
@@ -662,17 +646,26 @@ impl Transceiver {
     }
 }
 
-const fn permit_joining_response_required(request_was_broadcast: bool) -> bool {
-    !request_was_broadcast
+const fn permit_joining_response(request_was_broadcast: bool) -> Option<MgmtPermitJoiningRsp> {
+    if request_was_broadcast {
+        None
+    } else {
+        Some(MgmtPermitJoiningRsp::new(Status::InvalidRequestType))
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::permit_joining_response_required;
+    use zb_zdp::Status;
+
+    use super::permit_joining_response;
 
     #[test]
-    fn permit_joining_responds_only_to_unicast_requests() {
-        assert!(permit_joining_response_required(false));
-        assert!(!permit_joining_response_required(true));
+    fn permit_joining_rejects_unicast_and_ignores_broadcast_requests() {
+        let response =
+            permit_joining_response(false).expect("a unicast request requires a rejection");
+
+        assert_eq!(response.status(), Ok(Status::InvalidRequestType));
+        assert!(permit_joining_response(true).is_none());
     }
 }

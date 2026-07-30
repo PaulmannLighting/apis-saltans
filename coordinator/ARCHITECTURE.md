@@ -238,7 +238,9 @@ configuration does not contain a power descriptor. `System_Server_Discovery_req`
 response only when the requested mask intersects the server mask advertised in the coordinator's
 node descriptor. The actor reads broadcast delivery directly from the normalized APSDE destination
 metadata. It suppresses an empty `Match_Desc_rsp` for a broadcast `Match_Desc_req` and never sends a
-`Mgmt_Permit_Joining_rsp` for a broadcast request.
+`Mgmt_Permit_Joining_rsp` for a broadcast request. It rejects every unicast
+`Mgmt_Permit_Joining_req` with `INVALID_REQUESTTYPE`; only the local `Joining` API controls the
+hardware joining state.
 
 ZDP responses generated locally also travel through the APS actor, so their APS counters and
 acknowledgement behavior follow the same path as outgoing requests.
