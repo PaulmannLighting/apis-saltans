@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use tokio::sync::mpsc::Sender as MpscSender;
 use tokio::sync::oneshot::Sender;
 use zb_aps::apsde::{DataIndication, DataRequest};
@@ -32,7 +33,7 @@ pub enum Message {
     /// Unicast a message.
     Transmit {
         /// APS request containing the outgoing ZCL command.
-        request: DataRequest<UnsequencedFrame<bytes::Bytes>>,
+        request: DataRequest<UnsequencedFrame<Bytes>>,
         /// Channel used to return the deferred APS transmission result.
         response: Sender<Result<TransmissionResponse, Error>>,
     },
@@ -42,7 +43,7 @@ pub enum Message {
         /// Sequence number copied from the request, or advanced for a page response stream.
         sequence_number: u8,
         /// APS request containing the outgoing ZCL reply.
-        request: DataRequest<UnsequencedFrame<bytes::Bytes>>,
+        request: DataRequest<UnsequencedFrame<Bytes>>,
         /// Channel used to return the deferred APS transmission result.
         response: Sender<Result<TransmissionResponse, Error>>,
     },
@@ -50,7 +51,7 @@ pub enum Message {
     /// Communicate a unicast with an expected response.
     Communicate {
         /// APS request containing the outgoing ZCL command.
-        request: DataRequest<UnsequencedFrame<bytes::Bytes>>,
+        request: DataRequest<UnsequencedFrame<Bytes>>,
         /// The response channel.
         response: Sender<Result<ApsProtocolResponse<Cluster>, Error>>,
     },
