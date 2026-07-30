@@ -29,4 +29,8 @@ pub enum Error {
     /// Route error reported by the hardware layer.
     #[error("{0}")]
     Route(#[from] RouteError),
+
+    /// The hardware event stream closed and the coordinator runtime can no longer make progress.
+    #[error("hardware event stream closed")]
+    HardwareEventStreamClosed,
 }

@@ -8,6 +8,9 @@
 //! closed, so application backpressure cannot stall protocol processing. Discovery, binding,
 //! address resolution, and persistence are application-owned workflows built from traits such as
 //! [`Node`], [`Endpoints`], [`Binding`], [`AddressTranslation`], [`Zcl`], and [`Zdp`].
+//! Closing the hardware event stream is fatal: protocol actors fail pending work and stop, and the
+//! coordinator emits [`NetworkError::HardwareEventStreamClosed`]. Applications must start a new
+//! coordinator with a live hardware event stream after that boundary.
 //! The built-in [`Ota`] service validates complete OTA image files and automatically serves the
 //! OTA Upgrade cluster exchange for individually scheduled device endpoints.
 //!

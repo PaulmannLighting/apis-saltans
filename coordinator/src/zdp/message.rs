@@ -26,6 +26,9 @@ pub enum Message {
     /// Fail pending protocol responses because the Zigbee network went down.
     NetworkDown,
 
+    /// Fail pending protocol responses and stop because hardware events are unavailable.
+    HardwareUnavailable,
+
     /// Cancel a pending protocol response whose future was dropped.
     Cancel {
         /// Coordinator-private identity of the protocol transaction to cancel.

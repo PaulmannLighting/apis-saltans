@@ -72,7 +72,14 @@ impl Coordinator {
         let zcl = zcl::Transceiver::spawn(aps.clone(), events.clone());
         let ota = ota::Server::spawn(ncp.clone(), zcl.clone(), ota_update_task_limit);
         let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events.clone(), descriptor);
-        Mux::spawn(hw_events, events, aps, zcl.clone(), zdp.clone());
+        Mux::spawn(
+            hw_events,
+            events,
+            aps,
+            ota.clone(),
+            zcl.clone(),
+            zdp.clone(),
+        );
         Ok(Self { ncp, ota, zcl, zdp })
     }
 }

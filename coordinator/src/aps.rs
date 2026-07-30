@@ -139,6 +139,14 @@ impl Aps {
             .await
             .map_err(|_| zb_hw::Error::ActorUnavailable)
     }
+
+    /// Notify the APS actor that its hardware event source has terminated.
+    pub async fn hardware_unavailable(&self) -> Result<(), zb_hw::Error> {
+        self.0
+            .send(Message::HardwareUnavailable)
+            .await
+            .map_err(|_| zb_hw::Error::ActorUnavailable)
+    }
 }
 
 /// APS transmission actor.
@@ -268,13 +276,13 @@ impl TransmissionState {
             .is_some_and(|pending| pending.generation == token.generation)
     }
 
-    fn fail_all(&mut self, error: &zb_hw::TransmissionError) {
+    fn fail_all(&mut self, error: &zb_hw::Error) {
         let responses = std::mem::take(&mut self.responses);
         for (counter, pending) in responses {
             self.quarantined.insert(counter);
             pending
                 .response
-                .send(Err(error.clone().into()))
+                .send(Err(error.clone()))
                 .unwrap_or_else(drop);
         }
     }
@@ -294,11 +302,13 @@ impl Transceiver {
     /// Run the APS actor.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
-            self.handle_actor_message(message).await;
+            if !self.handle_actor_message(message).await {
+                break;
+            }
         }
     }
 
-    async fn handle_actor_message(&mut self, message: Message) {
+    async fn handle_actor_message(&mut self, message: Message) -> bool {
         match message {
             Message::Transmit { request, response } => {
                 self.transmit(request, response).await;
@@ -307,7 +317,12 @@ impl Transceiver {
                 self.state.handle_confirm(counter, status);
             }
             Message::NetworkDown => {
-                self.state.fail_all(&zb_hw::TransmissionError::NoRoute);
+                self.state
+                    .fail_all(&zb_hw::TransmissionError::NoRoute.into());
+            }
+            Message::HardwareUnavailable => {
+                self.state.fail_all(&zb_hw::Error::ActorUnavailable);
+                return false;
             }
             Message::Cancel { token } => {
                 self.state.cancel(token);
@@ -316,6 +331,7 @@ impl Transceiver {
                 self.state.timeout(token);
             }
         }
+        true
     }
 
     /// Assign an APS counter and submit a data-service request to the hardware actor.
@@ -801,7 +817,7 @@ mod tests {
                 state.store_pending_response(transmission_token(FIRST_COUNTER), first_response);
                 state.store_pending_response(transmission_token(SECOND_COUNTER), second_response);
 
-                state.fail_all(&zb_hw::TransmissionError::NoRoute);
+                state.fail_all(&zb_hw::TransmissionError::NoRoute.into());
 
                 for result in [first_result, second_result] {
                     assert!(matches!(
@@ -809,6 +825,31 @@ mod tests {
                         Err(zb_hw::Error::Transmission(
                             zb_hw::TransmissionError::NoRoute
                         ))
+                    ));
+                }
+                assert!(state.responses.is_empty());
+                assert!(state.quarantined.contains(&FIRST_COUNTER));
+                assert!(state.quarantined.contains(&SECOND_COUNTER));
+            });
+    }
+
+    #[test]
+    fn hardware_unavailability_resolves_every_pending_transmission() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let mut state = TransmissionState::new();
+                let (first_response, first_result) = tokio::sync::oneshot::channel();
+                let (second_response, second_result) = tokio::sync::oneshot::channel();
+                state.store_pending_response(transmission_token(FIRST_COUNTER), first_response);
+                state.store_pending_response(transmission_token(SECOND_COUNTER), second_response);
+
+                state.fail_all(&zb_hw::Error::ActorUnavailable);
+
+                for result in [first_result, second_result] {
+                    assert!(matches!(
+                        result.await.expect("response is available"),
+                        Err(zb_hw::Error::ActorUnavailable)
                     ));
                 }
                 assert!(state.responses.is_empty());

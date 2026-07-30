@@ -103,6 +103,7 @@ impl Server {
 
     /// Process every OTA server event through one message inbox.
     pub async fn run(mut self) {
+        let mut hardware_unavailable = false;
         while let Some(event) = self.inbound.recv().await {
             match event {
                 ServerEvent::Transfer(result) => {
@@ -116,14 +117,34 @@ impl Server {
                         image,
                         completion,
                     } => {
-                        self.update(target, target_endpoint, source_endpoint, image, completion)
+                        if hardware_unavailable {
+                            let _result =
+                                completion.send(Err(UpdateError::HardwareEventStreamClosed));
+                        } else {
+                            self.update(
+                                target,
+                                target_endpoint,
+                                source_endpoint,
+                                image,
+                                completion,
+                            )
                             .await;
+                        }
                     }
                     Message::Received { source, frame } => {
-                        self.received_ota(source, frame).await;
+                        if !hardware_unavailable {
+                            self.received_ota(source, frame).await;
+                        }
+                    }
+                    Message::HardwareUnavailable => {
+                        hardware_unavailable = true;
+                        self.stop_transfers_for_hardware_failure().await;
                     }
                 },
                 ServerEvent::Shutdown => break,
+            }
+            if hardware_unavailable && self.transfers.is_empty() {
+                break;
             }
         }
 
@@ -131,6 +152,23 @@ impl Server {
 
         for transfer in self.transfers.values() {
             transfer.task.abort();
+        }
+    }
+
+    async fn stop_transfers_for_hardware_failure(&self) {
+        let transfers = self
+            .transfers
+            .values()
+            .map(|transfer| transfer.messages.clone())
+            .collect::<Vec<_>>();
+        for messages in transfers {
+            if messages
+                .send(TransferMessage::HardwareUnavailable)
+                .await
+                .is_err()
+            {
+                debug!("Failed to notify completed OTA transfer of hardware failure");
+            }
         }
     }
 
@@ -469,7 +507,18 @@ impl Server {
 /// Forward public OTA API messages into the server's private event inbox.
 async fn forward_api_messages(mut messages: Receiver<Message>, events: Sender<ServerEvent>) {
     while let Some(message) = messages.recv().await {
+        let hardware_unavailable = matches!(&message, Message::HardwareUnavailable);
         if events.send(ServerEvent::Message(message)).await.is_err() {
+            return;
+        }
+        if hardware_unavailable {
+            messages.close();
+            while let Some(message) = messages.recv().await {
+                if let Message::Update { completion, .. } = message {
+                    let _result = completion.send(Err(UpdateError::HardwareEventStreamClosed));
+                }
+            }
+            events.closed().await;
             return;
         }
     }

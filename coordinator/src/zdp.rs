@@ -87,11 +87,13 @@ impl Transceiver {
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
-            self.handle_actor_message(message).await;
+            if !self.handle_actor_message(message).await {
+                break;
+            }
         }
     }
 
-    async fn handle_actor_message(&mut self, message: Message) {
+    async fn handle_actor_message(&mut self, message: Message) -> bool {
         match message {
             Message::Received { indication } => {
                 self.handle_message_received(indication).await;
@@ -105,6 +107,10 @@ impl Transceiver {
             Message::NetworkDown => {
                 self.responses
                     .network_down(&zb_hw::TransmissionError::NoRoute);
+            }
+            Message::HardwareUnavailable => {
+                self.responses.hardware_unavailable();
+                return false;
             }
             Message::Cancel { token } => {
                 if self.responses.cancel(token) {
@@ -131,6 +137,7 @@ impl Transceiver {
                     });
             }
         }
+        true
     }
 
     async fn handle_message_received(

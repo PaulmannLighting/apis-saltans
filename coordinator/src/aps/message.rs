@@ -38,4 +38,7 @@ pub enum Message {
 
     /// Fail every pending acknowledged transmission because the network went down.
     NetworkDown,
+
+    /// Fail every pending transmission and stop because hardware events are unavailable.
+    HardwareUnavailable,
 }

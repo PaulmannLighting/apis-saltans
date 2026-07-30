@@ -34,6 +34,8 @@ pub enum Message {
         /// Typed APS and ZCL frame.
         frame: Data<Frame<OtaCommand>>,
     },
+    /// Stop every active update because hardware events are unavailable.
+    HardwareUnavailable,
 }
 
 /// Terminal failure reported by a coordinator-managed OTA update.
@@ -69,4 +71,7 @@ pub enum UpdateError {
     /// Transmitting an OTA command failed.
     #[error("transmitting OTA data failed")]
     Transmission,
+    /// The hardware event stream closed before the OTA update completed.
+    #[error("the hardware event stream closed")]
+    HardwareEventStreamClosed,
 }

@@ -95,6 +95,14 @@ coordinator drops the new event and logs the condition so application backpressu
 hardware-event routing or the protocol actors. Applications should drain the event channel
 promptly and treat it as a lossy notification stream rather than durable state.
 
+Closing the hardware-event receiver is a fatal coordinator boundary. The mux notifies every
+protocol actor through its inbox and then stops. Pending APS, ZCL, and ZDP operations fail with
+`zb_hw::Error::ActorUnavailable`, active OTA updates fail with
+`OtaUpdateError::HardwareEventStreamClosed`, and the application event stream receives
+`Event::Network(Network::Error(NetworkError::HardwareEventStreamClosed))`. Because application
+events are lossy, applications should also treat operation failures as evidence that the
+coordinator must be restarted with a live hardware-event stream.
+
 By default, the OTA server runs at most `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` concurrent
 destination transfer tasks. Use `Coordinator::start_with_ota_update_task_limit(...)` to select a
 different limit. Each task lasts for the complete OTA exchange and owns its transmission

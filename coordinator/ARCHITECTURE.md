@@ -313,6 +313,13 @@ sends. A new event is dropped and logged if the application channel is full or c
 application backpressure cannot stall the mux or protocol actors. Applications must therefore
 treat events as lossy notifications rather than durable state.
 
+Closure of the hardware event stream is a fatal runtime boundary. The mux sends a terminal message
+through each APS, ZCL, ZDP, and OTA inbox. APS fails pending confirmations, ZCL and ZDP fail their
+correlation registries, and OTA fails active destination transfers before the actors stop. The mux
+also emits `NetworkError::HardwareEventStreamClosed` to the application. Existing handles cannot
+restart these actors; the application must construct a new coordinator with a live hardware event
+stream.
+
 ## Public Trait Composition
 
 ```mermaid

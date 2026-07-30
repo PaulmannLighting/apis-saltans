@@ -656,6 +656,35 @@ mod tests {
     }
 
     #[test]
+    fn hardware_unavailability_fails_an_active_update_and_stops_the_server() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            let server = tokio::spawn(server.run());
+            let completion = update_via_api(ota_sender.clone(), test_image());
+            receive_zcl(&mut zcl_receiver).await;
+
+            ota_sender
+                .send(Message::HardwareUnavailable)
+                .await
+                .expect("OTA server is running");
+
+            let result = timeout(TEST_TIMEOUT, completion)
+                .await
+                .expect("OTA completion timed out")
+                .expect("OTA update task completed normally");
+            assert!(matches!(
+                result,
+                Err(Error::Ota(UpdateError::HardwareEventStreamClosed))
+            ));
+            timeout(TEST_TIMEOUT, server)
+                .await
+                .expect("OTA server did not stop after hardware became unavailable")
+                .expect("OTA server task completed normally");
+        });
+    }
+
+    #[test]
     fn update_reports_the_clients_terminal_failure() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);

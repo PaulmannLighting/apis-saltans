@@ -212,15 +212,24 @@ impl<T> Registry<T> {
 
     /// Fail every pending response and start a fresh network correlation epoch.
     pub fn network_down(&mut self, error: &zb_hw::TransmissionError) {
+        self.fail_all(|| zb_hw::Error::from(error.clone()).into());
+    }
+
+    /// Fail every pending response because the hardware event source is unavailable.
+    pub fn hardware_unavailable(&mut self) {
+        self.fail_all(|| zb_hw::Error::ActorUnavailable.into());
+    }
+
+    fn fail_all<F>(&mut self, mut error: F)
+    where
+        F: FnMut() -> Error,
+    {
         let pending = std::mem::take(&mut self.pending);
         self.quarantined.clear();
         self.next_sequence = INITIAL_SEQUENCE;
 
         for pending in pending.into_values() {
-            pending
-                .response
-                .send(Err(zb_hw::Error::from(error.clone()).into()))
-                .unwrap_or_else(drop);
+            pending.response.send(Err(error())).unwrap_or_else(drop);
         }
     }
 
@@ -439,6 +448,27 @@ mod tests {
             Ok(Err(Error::Hardware(zb_hw::Error::Transmission(
                 zb_hw::TransmissionError::NoRoute
             ))))
+        ));
+        assert!(registry.quarantined.is_empty());
+    }
+
+    #[test]
+    fn hardware_unavailability_resolves_every_pending_response() {
+        let mut registry = Registry::<()>::new();
+        let (_, first_token, first_response) = registry
+            .register(index)
+            .expect("transaction sequence is available");
+        let (_, _, second_response) = registry
+            .register(index)
+            .expect("transaction sequence is available");
+        registry.cancel(first_token);
+
+        registry.hardware_unavailable();
+
+        assert!(first_response.blocking_recv().is_err());
+        assert!(matches!(
+            second_response.blocking_recv(),
+            Ok(Err(Error::Hardware(zb_hw::Error::ActorUnavailable)))
         ));
         assert!(registry.quarantined.is_empty());
     }

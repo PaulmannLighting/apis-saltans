@@ -36,6 +36,8 @@ const GENERATION_STEP: u64 = 1;
 pub(super) enum TransferMessage {
     /// Replace the image offered by the existing destination task.
     Replace(Box<Replacement>),
+    /// Stop the update because the hardware event source is unavailable.
+    HardwareUnavailable,
     /// Process an OTA request received from the destination.
     Request {
         context: RequestContext,
@@ -139,6 +141,9 @@ impl Transfer {
                     let Some(message) = message else {
                         break Err(UpdateError::TransferTask);
                     };
+                    if matches!(&message, TransferMessage::HardwareUnavailable) {
+                        break Err(UpdateError::HardwareEventStreamClosed);
+                    }
                     self.handle_message(message).await;
                 }
                 TransferEvent::Operation(operation) => match operation {
@@ -190,6 +195,9 @@ impl Transfer {
                     completion,
                 } = *replacement;
                 self.replace(target, target_endpoint, source_endpoint, image, completion);
+            }
+            TransferMessage::HardwareUnavailable => {
+                unreachable!("hardware shutdown is handled by the transfer loop");
             }
             TransferMessage::Request { context, command } => {
                 trace!(

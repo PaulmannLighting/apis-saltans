@@ -12,7 +12,7 @@ use zb_hw::{
 
 use self::aps_payload::ApsPayload;
 use crate::event_sink::EventSink;
-use crate::{Device, Event, Network, NetworkError, aps, zcl, zdp};
+use crate::{Device, Event, Network, NetworkError, aps, ota, zcl, zdp};
 
 mod aps_payload;
 
@@ -21,6 +21,7 @@ mod aps_payload;
 pub struct Mux {
     events: EventSink,
     aps: aps::Aps,
+    ota: Sender<ota::Message>,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
 }
@@ -30,12 +31,14 @@ impl Mux {
     pub const fn new(
         events: EventSink,
         aps: aps::Aps,
+        ota: Sender<ota::Message>,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
     ) -> Self {
         Self {
             events,
             aps,
+            ota,
             zcl,
             zdp,
         }
@@ -46,13 +49,14 @@ impl Mux {
         hw_events: Receiver<HardwareEvent<T, K>>,
         events: EventSink,
         aps: aps::Aps,
+        ota_tx: Sender<ota::Message>,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
     ) where
         T: Send + 'static,
         K: Send + 'static,
     {
-        spawn(Self::new(events, aps, zcl_tx, zdp_tx).run(hw_events));
+        spawn(Self::new(events, aps, ota_tx, zcl_tx, zdp_tx).run(hw_events));
     }
 
     /// Run the multiplexer.
@@ -64,6 +68,38 @@ impl Mux {
         while let Some(event) = messages.recv().await {
             self.multiplex(event).await;
         }
+        self.hardware_event_stream_closed().await;
+    }
+
+    async fn hardware_event_stream_closed(&self) {
+        warn!("Hardware event stream closed; stopping coordinator protocol actors");
+        self.events.emit(Event::Network(Network::Error(
+            NetworkError::HardwareEventStreamClosed,
+        )));
+        self.aps
+            .hardware_unavailable()
+            .await
+            .unwrap_or_else(|error| {
+                trace!("Failed to stop APS actor after hardware stream closure: {error}");
+            });
+        self.zcl
+            .send(zcl::Message::HardwareUnavailable)
+            .await
+            .unwrap_or_else(|error| {
+                trace!("Failed to stop ZCL actor after hardware stream closure: {error}");
+            });
+        self.zdp
+            .send(zdp::Message::HardwareUnavailable)
+            .await
+            .unwrap_or_else(|error| {
+                trace!("Failed to stop ZDP actor after hardware stream closure: {error}");
+            });
+        self.ota
+            .send(ota::Message::HardwareUnavailable)
+            .await
+            .unwrap_or_else(|error| {
+                trace!("Failed to stop OTA actor after hardware stream closure: {error}");
+            });
     }
 
     async fn multiplex<T, K>(&self, event: HardwareEvent<T, K>) {
@@ -276,7 +312,7 @@ mod tests {
     use super::Mux;
     use crate::aps::{Aps, Message as ApsMessage};
     use crate::event_sink::EventSink;
-    use crate::{Event, MPSC_CHANNEL_SIZE, Network, zcl, zdp};
+    use crate::{Event, MPSC_CHANNEL_SIZE, Network, NetworkError, ota, zcl, zdp};
 
     const TEST_TIMEOUT: Duration = Duration::from_millis(100);
     const APPLICATION_EVENT_CHANNEL_SIZE: usize = 1;
@@ -445,11 +481,13 @@ mod tests {
                     .await
                     .expect("application event receiver remains available");
                 let (aps_messages, mut aps_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (ota_messages, _ota_receiver) = channel(MPSC_CHANNEL_SIZE);
                 let (zcl_messages, _zcl_receiver) = channel(MPSC_CHANNEL_SIZE);
                 let (zdp_messages, _zdp_receiver) = channel(MPSC_CHANNEL_SIZE);
                 let mux = Mux::new(
                     EventSink::new(events),
                     Aps::new(aps_messages),
+                    ota_messages,
                     zcl_messages,
                     zdp_messages,
                 );
@@ -484,6 +522,53 @@ mod tests {
             });
     }
 
+    #[test]
+    fn hardware_event_stream_closure_stops_every_actor_and_emits_a_failure() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let (hardware_events, inbound) = channel::<zb_hw::Event<(), ()>>(MPSC_CHANNEL_SIZE);
+                let (events, mut application_events) = channel(MPSC_CHANNEL_SIZE);
+                let (aps_messages, mut aps_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (ota_messages, mut ota_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (zcl_messages, mut zcl_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (zdp_messages, mut zdp_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let mux = Mux::new(
+                    EventSink::new(events),
+                    Aps::new(aps_messages),
+                    ota_messages,
+                    zcl_messages,
+                    zdp_messages,
+                );
+                drop(hardware_events);
+
+                mux.run(inbound).await;
+
+                assert!(matches!(
+                    aps_receiver.recv().await,
+                    Some(ApsMessage::HardwareUnavailable)
+                ));
+                assert!(matches!(
+                    ota_receiver.recv().await,
+                    Some(ota::Message::HardwareUnavailable)
+                ));
+                assert!(matches!(
+                    zcl_receiver.recv().await,
+                    Some(zcl::Message::HardwareUnavailable)
+                ));
+                assert!(matches!(
+                    zdp_receiver.recv().await,
+                    Some(zdp::Message::HardwareUnavailable)
+                ));
+                assert!(matches!(
+                    application_events.recv().await,
+                    Some(Event::Network(Network::Error(
+                        NetworkError::HardwareEventStreamClosed
+                    )))
+                ));
+            });
+    }
+
     fn test_mux() -> (
         Mux,
         tokio::sync::mpsc::Receiver<ApsMessage>,
@@ -492,12 +577,14 @@ mod tests {
     ) {
         let (events, _application_events) = channel(MPSC_CHANNEL_SIZE);
         let (aps_messages, aps_receiver) = channel(MPSC_CHANNEL_SIZE);
+        let (ota_messages, _ota_receiver) = channel(MPSC_CHANNEL_SIZE);
         let (zcl_messages, zcl_receiver) = channel(MPSC_CHANNEL_SIZE);
         let (zdp_messages, zdp_receiver) = channel(MPSC_CHANNEL_SIZE);
         (
             Mux::new(
                 EventSink::new(events),
                 Aps::new(aps_messages),
+                ota_messages,
                 zcl_messages,
                 zdp_messages,
             ),
