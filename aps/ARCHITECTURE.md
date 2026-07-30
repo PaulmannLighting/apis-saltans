@@ -63,6 +63,9 @@ Primitive-specific destination and source enums replace a loose address mode
 plus optional fields. Each enum exposes only the modes legal in its context.
 Group requests include their required NWK broadcast selector.
 Network broadcasts retain their receiver-set address and endpoint explicitly.
+Received NWK broadcasts likewise retain their broadcast receiver set and endpoint, allowing
+higher layers to distinguish broadcast requests from unicast requests addressed to the local
+device.
 `IndividualEndpoint` excludes the APS broadcast endpoint, while request and
 confirmation destinations use `zb_core::Endpoint` where the specification
 permits it.

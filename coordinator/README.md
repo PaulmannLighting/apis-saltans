@@ -135,7 +135,10 @@ fn init(
 
 When a remote device sends `MatchDescReq`, the ZDP transceiver asks the NCP for its current endpoint
 descriptors and builds `MatchDescRsp` from matching descriptors. If the NCP cannot provide them, the
-request cannot be answered.
+request cannot be answered. Received APSDE metadata preserves whether the NWK destination was
+broadcast. An empty broadcast match therefore remains silent, while a non-empty match is returned
+as a unicast response to the originator. Broadcast `MgmtPermitJoiningReq` commands likewise produce
+no response.
 
 The coordinator also serves local Active Endpoint and Simple Descriptor discovery from those NCP
 descriptors. It answers single-device Network Address and IEEE Address requests through the NCP's
@@ -224,7 +227,10 @@ ZCL delivers subscription frames without awaiting channel capacity. If a subscri
 full, the current frame continues through application-event routing. Response correlation checks
 the expected response direction before subscription delivery, so a correlated response cannot be
 consumed by a subscription while unrelated client requests continue to reach it. Closed
-subscription channels are removed automatically.
+subscription channels are removed automatically. Each subscription message retains the complete
+normalized `DataIndication`, so OTA validation and routing use the original APSDE source,
+destination, profile, cluster, security, and link-quality metadata without reconstructing an APS
+header.
 
 `Ota::update` remains pending for the complete exchange. It returns success after the client sends
 a successful Upgrade End Request. Client rejection, image-read failures, terminal transmission
@@ -395,7 +401,9 @@ reserved are logged and dropped instead of producing an event.
 The mux forwards parsed ZCL and ZDP frames to their protocol actors inside
 `DataIndication<Frame<_>, (), ()>`. It retains APS addressing, status, security mode, key index,
 profile, cluster, and link quality while normalizing the backend-specific timestamp and
-device-key-pair handle to `()`.
+device-key-pair handle to `()`. Parsing reads the profile, cluster, source endpoint, and destination
+endpoint directly from the indication metadata; the coordinator does not construct a synthetic
+received APS frame header.
 
 ## Joining Control
 

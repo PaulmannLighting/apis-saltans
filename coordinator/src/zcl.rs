@@ -8,8 +8,7 @@ use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::time::sleep;
-use zb_aps::Data;
-use zb_aps::apsde::{DataIndication, DataRequest, Source};
+use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::message::Message;
@@ -126,19 +125,14 @@ impl Transceiver {
 
     /// Handle a received ZCL message.
     fn handle_message_received(&mut self, indication: DataIndication<Frame<Cluster>, (), ()>) {
-        let Some((source, header)) = crate::apsde::legacy_context(indication.metadata()) else {
-            warn!("Discarding ZCL indication with unsupported addressing");
+        let source = indication.metadata().source();
+        let Some(index) = Index::from_received_zcl_indication(&indication) else {
+            warn!("Discarding ZCL indication from unsupported source: {source:?}");
             return;
         };
-        let Some(source_address) = source.network_address() else {
-            warn!("Discarding ZCL indication from non-network source: {source:?}");
-            return;
-        };
-        let aps_frame = Data::new(header, indication.asdu().clone());
-        trace!("Received ZCL message from {source:?}: {aps_frame:?}");
-        let index = Index::from_received_zcl_frame(source_address, &aps_frame);
+        trace!("Received ZCL message from {source:?}: {indication:?}");
 
-        let (_, zcl_frame) = aps_frame.clone().into_parts();
+        let zcl_frame = indication.asdu().clone();
         let (_, cluster) = zcl_frame.into_parts();
         if self.responses.complete(index, cluster) {
             return;
@@ -150,7 +144,7 @@ impl Transceiver {
             );
             return;
         }
-        if self.forward_to_subscribers(source, &aps_frame) {
+        if self.forward_to_subscribers(&indication) {
             return;
         }
 
@@ -158,19 +152,21 @@ impl Transceiver {
     }
 
     /// Deliver a received frame to every matching live subscription.
-    fn forward_to_subscribers(&mut self, source: Source, frame: &Data<Frame<Cluster>>) -> bool {
+    fn forward_to_subscribers(
+        &mut self,
+        indication: &DataIndication<Frame<Cluster>, (), ()>,
+    ) -> bool {
         let mut delivered = false;
 
         self.subscriptions.retain(|subscription| {
             if !subscription.is_open() {
                 return false;
             }
-            if !subscription.matches(frame) {
+            if !subscription.matches(indication) {
                 return true;
             }
             let message = SubscriptionMessage {
-                source,
-                frame: frame.clone(),
+                indication: indication.clone(),
             };
             match subscription.try_send(message) {
                 Ok(()) => {
@@ -359,13 +355,12 @@ impl Transceiver {
 mod tests {
     use tokio::runtime::Builder;
     use tokio::sync::mpsc::channel;
+    use zb_aps::TxOptions;
     use zb_aps::apsde::{
         Alias, DataIndication, DataRequest, IndicationMetadata, IndicationStatus,
         IndividualEndpoint, NetworkAddress, ReceivedDestination, RequestDestination, Security,
         Source,
     };
-    use zb_aps::data::Header as ApsHeader;
-    use zb_aps::{Data, TxOptions};
     use zb_core::endpoint::Application;
     use zb_core::{Cluster as ClusterId, Direction, Endpoint, Profile};
     use zb_zcl::on_off::{Command as OnOffCommand, On};
@@ -525,9 +520,10 @@ mod tests {
                     .recv()
                     .await
                     .expect("subscription remains open");
-                assert_eq!(received.source, source);
+                assert_eq!(received.indication.metadata().source(), source);
+                assert_eq!(received.indication.metadata().link_quality(), LINK_QUALITY);
                 assert!(matches!(
-                    received.frame.payload().payload(),
+                    received.indication.asdu().payload(),
                     Cluster::OnOff(OnOffCommand::On(_))
                 ));
                 assert!(application_events.try_recv().is_err());
@@ -548,16 +544,15 @@ mod tests {
                 let (subscription, mut subscribed_frames) = Subscription::channel(filter);
                 let (mut transceiver, mut events) = unstarted_transceiver();
                 transceiver.subscriptions.push(subscription);
-                let frame = subscribed_frame();
-                let source_address =
-                    NetworkAddress::new(SOURCE_NODE_ID).expect("source address is valid");
-                let response_index = Index::from_received_zcl_frame(source_address, &frame);
+                let indication = subscribed_indication();
+                let response_index = Index::from_received_zcl_indication(&indication)
+                    .expect("test indication has a network source");
                 let (_, _, response) = transceiver
                     .responses
                     .register(|_| response_index)
                     .expect("response correlation can be registered");
 
-                transceiver.handle_message_received(subscribed_indication());
+                transceiver.handle_message_received(indication);
 
                 assert!(matches!(
                     response.await,
@@ -669,7 +664,7 @@ mod tests {
         transceiver.subscriptions.push(subscription);
         drop(receiver);
 
-        let delivered = transceiver.forward_to_subscribers(source(), &subscribed_frame());
+        let delivered = transceiver.forward_to_subscribers(&subscribed_indication());
 
         assert!(!delivered);
         assert!(transceiver.subscriptions.is_empty());
@@ -686,12 +681,10 @@ mod tests {
                     Scope::ClusterSpecific,
                     Direction::ClientToServer,
                 ));
-                let source = source();
                 for _ in 0..MPSC_CHANNEL_SIZE {
                     subscription
                         .try_send(SubscriptionMessage {
-                            source,
-                            frame: subscribed_frame(),
+                            indication: subscribed_indication(),
                         })
                         .expect("subscription channel has capacity");
                 }
@@ -719,30 +712,6 @@ mod tests {
         )
     }
 
-    fn subscribed_frame() -> Data<Frame<Cluster>> {
-        let endpoint = Endpoint::Application(Application::MIN);
-        let aps_header = ApsHeader::new(
-            zb_aps::Destination::Unicast(endpoint),
-            ClusterId::OnOff.as_u16(),
-            Profile::ZigbeeHomeAutomation.as_u16(),
-            endpoint,
-            APS_COUNTER,
-            None,
-        );
-        let zcl_header = ZclHeader::new(
-            Scope::ClusterSpecific,
-            Direction::ClientToServer,
-            false,
-            None,
-            TRANSACTION_SEQUENCE,
-            <On as Command>::ID,
-        );
-        Data::new(
-            aps_header,
-            Frame::new(zcl_header, Cluster::OnOff(OnOffCommand::from(On))),
-        )
-    }
-
     fn subscribed_indication() -> DataIndication<Frame<Cluster>, (), ()> {
         let endpoint = IndividualEndpoint::new(Endpoint::Application(Application::MIN))
             .expect("application endpoint is individual");
@@ -764,7 +733,15 @@ mod tests {
             LINK_QUALITY,
             (),
         );
-        let (_, frame) = subscribed_frame().into_parts();
+        let header = ZclHeader::new(
+            Scope::ClusterSpecific,
+            Direction::ClientToServer,
+            false,
+            None,
+            TRANSACTION_SEQUENCE,
+            <On as Command>::ID,
+        );
+        let frame = Frame::new(header, Cluster::OnOff(OnOffCommand::from(On)));
         DataIndication::new(metadata, frame)
     }
 

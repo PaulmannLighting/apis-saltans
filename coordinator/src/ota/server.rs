@@ -6,8 +6,7 @@ use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot;
 use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
-use zb_aps::Data;
-use zb_aps::apsde::{IndividualEndpoint, Source};
+use zb_aps::apsde::{DataIndication, IndividualEndpoint, ReceivedDestination, Source};
 use zb_core::destination::Device;
 use zb_core::{Cluster, Direction, FullAddress, IeeeAddress};
 use zb_hw::NcpHandle;
@@ -131,9 +130,9 @@ impl Server {
                             .await;
                         }
                     }
-                    Message::Received { source, frame } => {
+                    Message::Received { indication } => {
                         if !hardware_unavailable {
-                            self.received_ota(source, frame).await;
+                            self.received_ota(indication).await;
                         }
                     }
                     Message::HardwareUnavailable => {
@@ -341,23 +340,28 @@ impl Server {
     }
 
     /// Validate an inbound OTA frame and route its command to the matching destination task.
-    async fn received_ota(&mut self, source: Source, frame: Data<Frame<OtaCommand>>) {
-        let aps_header = frame.header();
-        let endpoint = aps_header.source_endpoint();
-        let source_endpoint = match aps_header.destination() {
-            zb_aps::Destination::Unicast(endpoint) | zb_aps::Destination::Broadcast(endpoint) => {
+    async fn received_ota(&mut self, indication: DataIndication<Frame<OtaCommand>, (), ()>) {
+        let metadata = indication.metadata();
+        let source_endpoint = match metadata.destination() {
+            ReceivedDestination::Network { endpoint, .. }
+            | ReceivedDestination::Extended { endpoint, .. } => endpoint,
+            ReceivedDestination::Broadcast { endpoint, .. } => {
                 let Some(endpoint) = IndividualEndpoint::new(endpoint) else {
                     warn!("Discarding OTA command addressed to a non-individual local endpoint");
                     return;
                 };
                 endpoint
             }
-            zb_aps::Destination::Group(_) => {
+            ReceivedDestination::Group(_) => {
                 warn!("Discarding group-addressed OTA command");
                 return;
             }
+            ReceivedDestination::ExtendedWithoutEndpoint(_) => {
+                warn!("Discarding OTA command addressed without a local endpoint");
+                return;
+            }
         };
-        let Ok(profile) = aps_header.profile().inspect_err(|profile_id| {
+        let Ok(profile) = metadata.profile().inspect_err(|profile_id| {
             warn!("Discarding OTA command with unknown profile {profile_id:#06x}");
         }) else {
             return;
@@ -366,7 +370,12 @@ impl Server {
             warn!("Discarding OTA command with unsupported profile {profile}");
             return;
         }
-        let Some(source_address) = source.network_address() else {
+        let source = metadata.source();
+        let Source::Network {
+            address: source_address,
+            endpoint,
+        } = source
+        else {
             warn!("Discarding OTA command from non-network source: {source:?}");
             return;
         };
@@ -376,10 +385,10 @@ impl Server {
             return;
         };
 
-        let (_, zcl_frame) = frame.into_parts();
+        let (_, zcl_frame) = indication.into_parts();
         let (zcl_header, command) = zcl_frame.into_parts();
         let context = RequestContext {
-            destination: Device::new(short_id, endpoint),
+            destination: Device::new(short_id, endpoint.get()),
             source_endpoint,
             sequence_number: zcl_header.seq(),
         };
@@ -531,8 +540,8 @@ async fn forward_subscription_frames(
     sender: WeakSender<ServerEvent>,
 ) {
     while let Some(message) = frames.recv().await {
-        let zcl::SubscriptionMessage { source, frame } = message;
-        let (aps_header, zcl_frame) = frame.into_parts();
+        let zcl::SubscriptionMessage { indication } = message;
+        let (metadata, zcl_frame) = indication.into_parts();
         let (zcl_header, cluster) = zcl_frame.into_parts();
         let ZclCluster::OtaUpgrade(command) = cluster else {
             warn!("Discarding non-OTA command delivered by the OTA ZCL subscription");
@@ -542,8 +551,7 @@ async fn forward_subscription_frames(
             return;
         };
         let event = ServerEvent::Message(Message::Received {
-            source,
-            frame: Data::new(aps_header, Frame::new(zcl_header, command)),
+            indication: DataIndication::new(metadata, Frame::new(zcl_header, command)),
         });
         if sender.send(event).await.is_err() {
             return;

@@ -44,7 +44,6 @@ pub use self::response::CommunicationResponse;
 
 mod api;
 mod aps;
-mod apsde;
 mod coordinator;
 mod correlation;
 mod error;

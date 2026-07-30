@@ -123,6 +123,14 @@ pub enum ReceivedDestination {
     /// The received ASDU was addressed to an APS group.
     Group(GroupId),
 
+    /// The received ASDU was addressed to a 16-bit NWK broadcast address and endpoint.
+    Broadcast {
+        /// NWK broadcast receiver set.
+        address: short_id::Broadcast,
+        /// Local target endpoint, including the APS broadcast endpoint.
+        endpoint: Endpoint,
+    },
+
     /// The received ASDU was addressed to a 16-bit NWK address and endpoint.
     Network {
         /// Destination NWK address.
@@ -251,7 +259,7 @@ impl ReceivedDestination {
     pub const fn mode(self) -> AddressMode {
         match self {
             Self::Group(_) => AddressMode::Group,
-            Self::Network { .. } => AddressMode::Network,
+            Self::Broadcast { .. } | Self::Network { .. } => AddressMode::Network,
             Self::Extended { .. } => AddressMode::Extended,
             Self::ExtendedWithoutEndpoint(_) => AddressMode::ExtendedWithoutEndpoint,
         }
@@ -362,11 +370,12 @@ impl TryFrom<Endpoint> for IndividualEndpoint {
 
 #[cfg(test)]
 mod tests {
+    use zb_core::short_id::Broadcast;
     use zb_core::{Endpoint, IeeeAddress};
 
     use super::{
         AddressMode, BroadcastAddress, IndividualEndpoint, MAX_NETWORK_ADDRESS,
-        MIN_BROADCAST_ADDRESS, NetworkAddress, RequestDestination, Source,
+        MIN_BROADCAST_ADDRESS, NetworkAddress, ReceivedDestination, RequestDestination, Source,
     };
 
     #[test]
@@ -386,6 +395,23 @@ mod tests {
     fn individual_endpoint_rejects_the_broadcast_endpoint() {
         assert!(IndividualEndpoint::new(Endpoint::Data).is_some());
         assert!(IndividualEndpoint::new(Endpoint::Broadcast).is_none());
+    }
+
+    #[test]
+    fn received_broadcast_preserves_its_receiver_set_and_endpoint() {
+        let destination = ReceivedDestination::Broadcast {
+            address: Broadcast::RxOnWhenIdle,
+            endpoint: Endpoint::Data,
+        };
+
+        assert_eq!(destination.mode(), AddressMode::Network);
+        assert!(matches!(
+            destination,
+            ReceivedDestination::Broadcast {
+                address: Broadcast::RxOnWhenIdle,
+                endpoint: Endpoint::Data
+            }
+        ));
     }
 
     #[test]
@@ -419,7 +445,7 @@ mod tests {
         assert_eq!(RequestDestination::Bound.mode(), AddressMode::Bound);
         assert_eq!(
             RequestDestination::Broadcast {
-                address: zb_core::short_id::Broadcast::AllDevices,
+                address: Broadcast::AllDevices,
                 endpoint: Endpoint::Broadcast,
             }
             .mode(),

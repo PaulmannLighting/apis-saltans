@@ -140,8 +140,10 @@ mod tests {
     use bytes::{BufMut, Bytes, BytesMut};
     use le_stream::{FromLeStream, ToLeStream};
     use tokio::time::timeout;
-    use zb_aps::Data;
-    use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, Source};
+    use zb_aps::apsde::{
+        DataIndication, IndicationMetadata, IndicationStatus, IndividualEndpoint, NetworkAddress,
+        ReceivedDestination, Security, Source,
+    };
     use zb_core::destination::Device;
     use zb_core::endpoint::Application;
     use zb_core::{Cluster, Direction, Endpoint, FullAddress, IeeeAddress, Profile, short_id};
@@ -178,6 +180,7 @@ mod tests {
     const PAGE_RESPONSE_SPACING: u16 = 0;
     const SINGLE_UPDATE_LIMIT: usize = 1;
     const TEST_UPDATE_LIMIT: usize = TEST_CHANNEL_SIZE;
+    const LOCAL_NWK_ADDRESS: u16 = 0;
     const SECOND_DEVICE_SHORT_ID: u16 = 0x5678;
     const OTHER_IEEE_ADDRESS: IeeeAddress =
         IeeeAddress::new(0x00, 0x12, 0x4b, 0x00, 0x02, 0xdd, 0xee, 0xff);
@@ -865,14 +868,6 @@ mod tests {
     where
         T: Command + Into<OtaCommand>,
     {
-        let aps_header = zb_aps::data::Header::new(
-            zb_aps::Destination::Unicast(ENDPOINT),
-            Cluster::OtaUpgrade.as_u16(),
-            profile.as_u16(),
-            ENDPOINT,
-            0,
-            None,
-        );
         let zcl_header = Header::new(
             Scope::ClusterSpecific,
             Direction::ClientToServer,
@@ -881,11 +876,11 @@ mod tests {
             sequence_number,
             T::ID,
         );
-        let frame = Data::new(aps_header, Bytes::new())
-            .map_payload(|_| Frame::new(zcl_header, command.into()));
         Message::Received {
-            source: test_source(),
-            frame,
+            indication: DataIndication::new(
+                test_metadata(profile),
+                Frame::new(zcl_header, command.into()),
+            ),
         }
     }
 
@@ -893,14 +888,6 @@ mod tests {
     where
         T: Command + Into<OtaCommand>,
     {
-        let aps_header = zb_aps::data::Header::new(
-            zb_aps::Destination::Unicast(ENDPOINT),
-            Cluster::OtaUpgrade.as_u16(),
-            OTA_PROFILE.as_u16(),
-            ENDPOINT,
-            0,
-            None,
-        );
         let zcl_header = Header::new(
             Scope::ClusterSpecific,
             Direction::ClientToServer,
@@ -909,12 +896,31 @@ mod tests {
             sequence_number,
             T::ID,
         );
-        let frame = Data::new(aps_header, Bytes::new())
-            .map_payload(|_| Frame::new(zcl_header, ZclCluster::OtaUpgrade(command.into())));
         zcl::SubscriptionMessage {
-            source: test_source(),
-            frame,
+            indication: DataIndication::new(
+                test_metadata(OTA_PROFILE),
+                Frame::new(zcl_header, ZclCluster::OtaUpgrade(command.into())),
+            ),
         }
+    }
+
+    fn test_metadata(profile: Profile) -> IndicationMetadata<(), ()> {
+        let endpoint =
+            IndividualEndpoint::new(ENDPOINT).expect("test endpoint is an individual endpoint");
+        IndicationMetadata::new(
+            ReceivedDestination::Network {
+                address: NetworkAddress::new(LOCAL_NWK_ADDRESS)
+                    .expect("coordinator address is valid"),
+                endpoint,
+            },
+            test_source(),
+            profile.as_u16(),
+            Cluster::OtaUpgrade.as_u16(),
+            IndicationStatus::success(),
+            Security::Unsecured,
+            u8::MAX,
+            (),
+        )
     }
 
     fn test_source() -> Source {

@@ -1,7 +1,6 @@
 use thiserror::Error as ThisError;
 use tokio::sync::oneshot;
-use zb_aps::Data;
-use zb_aps::apsde::{IndividualEndpoint, Source};
+use zb_aps::apsde::{DataIndication, IndividualEndpoint};
 use zb_core::FullAddress;
 use zb_zcl::Frame;
 use zb_zcl::ota_upgrade::Command as OtaCommand;
@@ -29,10 +28,8 @@ pub enum Message {
     },
     /// A received OTA Upgrade cluster command.
     Received {
-        /// APSDE source information supplied by the hardware backend.
-        source: Source,
-        /// Typed APS and ZCL frame.
-        frame: Data<Frame<OtaCommand>>,
+        /// APSDE indication containing the typed OTA command and all receive metadata.
+        indication: DataIndication<Frame<OtaCommand>, (), ()>,
     },
     /// Stop every active update because hardware events are unavailable.
     HardwareUnavailable,

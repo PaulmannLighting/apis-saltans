@@ -189,7 +189,8 @@ therefore remains available to the subscription, while a matching response canno
 it. ZCL uses non-blocking delivery for each bounded subscription channel. A full channel retains
 its subscription but sends the current frame through application-event routing. A closed channel
 removes the subscription immediately. Subscription setup is no longer part of coordinator startup
-or constructor wiring.
+or constructor wiring. Subscription messages contain the complete normalized `DataIndication`;
+the OTA forwarder narrows only its parsed ZCL command payload and preserves the original metadata.
 
 The OTA server awaits one private event inbox. A small API task forwards public `Message` values
 into it, subscription forwarding tasks send received frames into it, and destination supervisors
@@ -235,7 +236,9 @@ Extended address requests return `NOT_SUPPORTED` because the hardware abstractio
 an associated-device list. `Power_Desc_req` returns `NO_DESCRIPTOR` because the coordinator startup
 configuration does not contain a power descriptor. `System_Server_Discovery_req` receives a
 response only when the requested mask intersects the server mask advertised in the coordinator's
-node descriptor.
+node descriptor. The actor reads broadcast delivery directly from the normalized APSDE destination
+metadata. It suppresses an empty `Match_Desc_rsp` for a broadcast `Match_Desc_req` and never sends a
+`Mgmt_Permit_Joining_rsp` for a broadcast request.
 
 ZDP responses generated locally also travel through the APS actor, so their APS counters and
 acknowledgement behavior follow the same path as outgoing requests.
@@ -252,13 +255,13 @@ Pending ZCL and ZDP requests are keyed by an internal `Index` containing:
 - protocol transaction sequence
 
 The mux parses successful APSDE data indications and forwards them to the appropriate protocol
-actor. Each actor reconstructs the index from the received metadata and parsed frame and removes
-the matching one-shot sender. Each protocol actor permits up to 256 unavailable identities within
-one correlation domain. It returns `TransactionSequenceExhausted` when no sequence is available
-and expires pending responses after 30 seconds. Response-free ZCL transmissions skip unavailable
-identities without reserving the selected sequence. Cancelled and timed-out tracked identities
-remain quarantined until a late frame arrives, the 30-second quarantine grace period expires, or
-the network goes down.
+actor. Each actor derives the index directly from the received indication metadata and parsed frame
+and removes the matching one-shot sender. Each protocol actor permits up to 256 unavailable
+identities within one correlation domain. It returns `TransactionSequenceExhausted` when no
+sequence is available and expires pending responses after 30 seconds. Response-free ZCL
+transmissions skip unavailable identities without reserving the selected sequence. Cancelled and
+timed-out tracked identities remain quarantined until a late frame arrives, the 30-second
+quarantine grace period expires, or the network goes down.
 
 APS, ZCL, and ZDP each own exactly one bounded message receiver. Hardware events, API requests,
 cancellations, response and quarantine timeout notifications, and network lifecycle notifications
@@ -303,7 +306,8 @@ Keep-Alive traffic before ZCL parsing. APS reassembly and security processing ha
 before the hardware backend emits the indication. Before forwarding parsed indications to the
 protocol actors, the mux normalizes only the backend-defined timestamp and device-key-pair handle
 to `()`; APS addressing, profile, cluster, status, security mode, key index, link quality, and the
-parsed ASDU remain attached.
+parsed ASDU remain attached. The mux selects and parses ZCL, ZDP, and Keep-Alive payloads directly
+from that metadata and ASDU; it does not synthesize a legacy received APS header.
 
 Unmatched ZCL commands remain application-visible as normalized
 `DataIndication<Frame<Cluster>, (), ()>` values, preserving the APSDE receive metadata with the

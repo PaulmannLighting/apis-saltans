@@ -2,8 +2,7 @@ use bytes::Bytes;
 use log::{trace, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
-use zb_aps::apsde::{DataIndication, Source};
-use zb_aps::data::Frame;
+use zb_aps::apsde::DataIndication;
 use zb_core::destination;
 use zb_hw::{
     ApsdeEvent as HardwareApsdeEvent, DeviceEvent as HardwareDeviceEvent, Event as HardwareEvent,
@@ -213,41 +212,30 @@ impl Mux {
 
     async fn handle_data_indication<T, K>(&self, indication: DataIndication<Bytes, T, K>) {
         let indication = indication.map_context(drop, drop);
-        let metadata = indication.metadata();
-        if !metadata.status().is_success() {
+        if !indication.metadata().status().is_success() {
             warn!(
                 "Discarding unsuccessful APS data indication: {:?}",
-                metadata.status()
+                indication.metadata().status()
             );
             return;
         }
 
-        let Some((source, header)) = crate::apsde::legacy_context(metadata) else {
-            warn!("Discarding APS data indication with unsupported addressing");
-            return;
-        };
-        let frame = Frame::new(header, indication.asdu().clone());
-
-        match frame.parse() {
-            Ok(frame) => {
-                self.forward_received_message(source, indication, frame)
+        let (metadata, asdu) = indication.into_parts();
+        match ApsPayload::parse(&metadata, asdu) {
+            Ok(payload) => {
+                self.forward_received_message(DataIndication::new(metadata, payload))
                     .await;
             }
             Err(error) => warn!("Failed to parse APS data indication: {error}"),
         }
     }
 
-    async fn forward_received_message(
-        &self,
-        source: Source,
-        indication: DataIndication<Bytes, (), ()>,
-        aps_frame: Frame<ApsPayload>,
-    ) {
-        let (header, payload) = aps_frame.into_parts();
+    async fn forward_received_message(&self, indication: DataIndication<ApsPayload, (), ()>) {
+        let (metadata, payload) = indication.into_parts();
 
         match payload {
             ApsPayload::Zcl(frame) => {
-                let indication = indication.map_asdu(|_| frame);
+                let indication = DataIndication::new(metadata, frame);
 
                 self.zcl
                     .send(zcl::Message::Received { indication })
@@ -257,7 +245,7 @@ impl Mux {
                     });
             }
             ApsPayload::Zdp(frame) => {
-                let indication = indication.map_asdu(|_| frame);
+                let indication = DataIndication::new(metadata, frame);
 
                 self.zdp
                     .send(zdp::Message::Received { indication })
@@ -267,8 +255,13 @@ impl Mux {
                     });
             }
             ApsPayload::KeepAlive => {
+                let source = metadata.source();
                 let Some(source_address) = source.network_address() else {
                     warn!("Keep-Alive packet from non-network source: {source:?}");
+                    return;
+                };
+                let Some(source_endpoint) = source.endpoint() else {
+                    warn!("Keep-Alive packet from source without endpoint: {source:?}");
                     return;
                 };
                 let Ok(device_id) = source_address.as_u16().try_into().inspect_err(|id| {
@@ -280,7 +273,7 @@ impl Mux {
                 self.events
                     .emit(Event::Device(Device::KeepAlive(destination::Device::new(
                         device_id,
-                        header.source_endpoint(),
+                        source_endpoint.get(),
                     ))));
             }
         }
@@ -301,6 +294,7 @@ mod tests {
         Source as ApsdeSource,
     };
     use zb_core::endpoint::Application;
+    use zb_core::short_id::Broadcast;
     use zb_core::{Cluster, ClusterSpecific, Direction, Endpoint, Profile};
     use zb_hw::{ApsdeEvent, NetworkEvent};
     use zb_zcl::on_off::{Command as OnOffCommand, On};
@@ -389,7 +383,7 @@ mod tests {
     }
 
     #[test]
-    fn routes_data_indication_to_zdp() {
+    fn routes_broadcast_data_indication_to_zdp() {
         Runtime::new()
             .expect("runtime must be available")
             .block_on(async {
@@ -397,9 +391,9 @@ mod tests {
                 let source_endpoint =
                     IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
                 let metadata = IndicationMetadata::new(
-                    ReceivedDestination::Network {
-                        address: network_address(LOCAL_ADDRESS),
-                        endpoint: source_endpoint,
+                    ReceivedDestination::Broadcast {
+                        address: Broadcast::RxOnWhenIdle,
+                        endpoint: Endpoint::Data,
                     },
                     ApsdeSource::Network {
                         address: network_address(REMOTE_ADDRESS),
@@ -427,6 +421,13 @@ mod tests {
                 else {
                     panic!("expected received ZDP message");
                 };
+                assert!(matches!(
+                    indication.metadata().destination(),
+                    ReceivedDestination::Broadcast {
+                        address: Broadcast::RxOnWhenIdle,
+                        endpoint: Endpoint::Data
+                    }
+                ));
                 assert_eq!(indication.metadata().link_quality(), LINK_QUALITY);
                 assert_eq!(indication.metadata().rx_time(), &());
                 assert!(matches!(

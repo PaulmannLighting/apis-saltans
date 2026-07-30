@@ -3,7 +3,7 @@
 use zb_core::ByteSizedVec;
 use zb_core::node::LogicalType;
 use zb_core::short_id::{Device, ShortId};
-use zb_zdp::{MatchDescReq, SimpleDescriptor, Status};
+use zb_zdp::{MatchDescReq, MatchDescRsp, SimpleDescriptor, Status};
 
 const PROFILE_ID_WILDCARD: u16 = u16::MAX;
 
@@ -73,6 +73,19 @@ pub(super) fn matching_endpoints(
     Some(matches)
 }
 
+/// Build the local Match Descriptor response, suppressing an empty broadcast result.
+pub(super) fn local_response(
+    nwk_addr_of_interest: u16,
+    matches: ByteSizedVec<u8>,
+    request_was_broadcast: bool,
+) -> Option<MatchDescRsp> {
+    if matches.is_empty() && request_was_broadcast {
+        return None;
+    }
+
+    Some(MatchDescRsp::new(nwk_addr_of_interest, Ok(matches)))
+}
+
 /// Return whether a Simple Descriptor satisfies the Match Descriptor criteria.
 fn simple_descriptor_matches(match_desc_req: &MatchDescReq, descriptor: &SimpleDescriptor) -> bool {
     let profile_matches = match_desc_req.profile_id() == PROFILE_ID_WILDCARD
@@ -93,11 +106,12 @@ fn simple_descriptor_matches(match_desc_req: &MatchDescReq, descriptor: &SimpleD
 mod tests {
     use zb_core::node::LogicalType;
     use zb_core::short_id::Broadcast;
-    use zb_core::{Endpoint, Profile};
+    use zb_core::{ByteSizedVec, Endpoint, Profile};
     use zb_zdp::{AppFlags, MatchDescReq, SimpleDescriptor, Status};
 
     use super::{
-        Action, PROFILE_ID_WILDCARD, action, matching_endpoints, simple_descriptor_matches,
+        Action, PROFILE_ID_WILDCARD, action, local_response, matching_endpoints,
+        simple_descriptor_matches,
     };
 
     const APPLICATION_ENDPOINT: u8 = 0x01;
@@ -193,6 +207,20 @@ mod tests {
         assert_eq!(
             matching_endpoints(&request, &descriptors).as_deref(),
             Some(&[APPLICATION_ENDPOINT][..])
+        );
+    }
+
+    #[test]
+    fn suppresses_only_an_empty_broadcast_match_response() {
+        assert!(local_response(LOCAL_NWK_ADDRESS, ByteSizedVec::new(), true).is_none());
+        assert!(local_response(LOCAL_NWK_ADDRESS, ByteSizedVec::new(), false).is_some());
+
+        let matches = std::iter::once(APPLICATION_ENDPOINT).collect();
+        assert_eq!(
+            local_response(LOCAL_NWK_ADDRESS, matches, true)
+                .expect("a non-empty broadcast match requires a response")
+                .matches(),
+            &[APPLICATION_ENDPOINT]
         );
     }
 

@@ -59,7 +59,9 @@ address and endpoint fields permitted by each primitive:
 - `RequestDestination` supports binding-table, group, 16-bit NWK unicast,
   16-bit NWK broadcast, and 64-bit IEEE destinations;
 - `Destination` reports the destination of a confirmation;
-- `ReceivedDestination` and `Source` model indication addressing;
+- `ReceivedDestination` preserves group, 16-bit NWK unicast, 16-bit NWK broadcast, and 64-bit
+  IEEE indication addressing;
+- `Source` models indication source addressing;
 - `NetworkAddress`, `BroadcastAddress`, and `IndividualEndpoint` reject values
   outside their respective APSDE ranges.
 

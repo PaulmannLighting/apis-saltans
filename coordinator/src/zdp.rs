@@ -8,9 +8,7 @@ use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::time::sleep;
-use zb_aps::DeliveryMode;
-use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress};
-use zb_aps::data::Header;
+use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress, ReceivedDestination};
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
 use zb_core::{
@@ -30,7 +28,8 @@ use self::discovery::{
     simple_descriptor,
 };
 use self::match_desc::{
-    Action as MatchDescAction, action as match_desc_action, matching_endpoints,
+    Action as MatchDescAction, action as match_desc_action, local_response as local_match_response,
+    matching_endpoints,
 };
 pub use self::message::Message;
 use self::node_desc::{
@@ -144,16 +143,17 @@ impl Transceiver {
         &mut self,
         indication: DataIndication<Frame<Command>, (), ()>,
     ) {
-        let Some((source, frame)) = crate::apsde::into_legacy_data(indication) else {
-            warn!("Discarding ZDP indication with unsupported addressing");
-            return;
-        };
+        let request_was_broadcast = matches!(
+            indication.metadata().destination(),
+            ReceivedDestination::Broadcast { .. }
+        );
+        let source = indication.metadata().source();
         let Some(source_address) = source.network_address() else {
             warn!("Discarding ZDP indication from non-network source: {source:?}");
             return;
         };
-        trace!("Received ZDP message from {source:?}: {frame:?}");
-        let (aps_header, zdp_frame) = frame.into_parts();
+        trace!("Received ZDP message from {source:?}: {indication:?}");
+        let (_, zdp_frame) = indication.into_parts();
         let index = Index::from_received_zdp_frame(source_address, &zdp_frame);
         let (seq, command) = zdp_frame.into_parts();
 
@@ -191,8 +191,13 @@ impl Transceiver {
             Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
                 match_desc_req,
             )) => {
-                self.handle_match_desc_req(source_address, aps_header, seq, *match_desc_req)
-                    .await;
+                self.handle_match_desc_req(
+                    source_address,
+                    request_was_broadcast,
+                    seq,
+                    *match_desc_req,
+                )
+                .await;
             }
             Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::DeviceAnnce(
                 device_annce,
@@ -216,7 +221,7 @@ impl Transceiver {
                 .await;
             }
             Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_)) => {
-                self.handle_mgmt_permit_joining_req(source_address, seq)
+                self.handle_mgmt_permit_joining_req(source_address, request_was_broadcast, seq)
                     .await;
             }
             command => {
@@ -498,15 +503,10 @@ impl Transceiver {
     async fn handle_match_desc_req(
         &self,
         source: NetworkAddress,
-        aps_header: Header,
+        request_was_broadcast: bool,
         seq: u8,
         match_desc_req: MatchDescReq,
     ) {
-        let request_was_broadcast = matches!(
-            aps_header.control().delivery_mode(),
-            Some(DeliveryMode::Broadcast)
-        );
-
         let Ok(logical_type) = self
             .descriptor
             .flags()
@@ -529,11 +529,12 @@ impl Transceiver {
                         return;
                     };
 
-                    if matches.is_empty() && request_was_broadcast {
+                    let Some(response) =
+                        local_match_response(nwk_addr_of_interest, matches, request_was_broadcast)
+                    else {
                         return;
-                    }
-
-                    MatchDescRsp::new(nwk_addr_of_interest, Ok(matches))
+                    };
+                    response
                 }
                 MatchDescAction::MatchRemoteDevice(nwk_address) => {
                     if self
@@ -620,7 +621,16 @@ impl Transceiver {
     }
 
     /// Apply a management permit-joining request and return its result to the requester.
-    async fn handle_mgmt_permit_joining_req(&self, source: NetworkAddress, seq: u8) {
+    async fn handle_mgmt_permit_joining_req(
+        &self,
+        source: NetworkAddress,
+        request_was_broadcast: bool,
+        seq: u8,
+    ) {
+        if !permit_joining_response_required(request_was_broadcast) {
+            return;
+        }
+
         let Ok(node_id) = source.as_u16().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
         }) else {
@@ -649,5 +659,20 @@ impl Transceiver {
         let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
         spawn(Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx));
         zdp_tx
+    }
+}
+
+const fn permit_joining_response_required(request_was_broadcast: bool) -> bool {
+    !request_was_broadcast
+}
+
+#[cfg(test)]
+mod tests {
+    use super::permit_joining_response_required;
+
+    #[test]
+    fn permit_joining_responds_only_to_unicast_requests() {
+        assert!(permit_joining_response_required(false));
+        assert!(!permit_joining_response_required(true));
     }
 }

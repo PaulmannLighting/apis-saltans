@@ -1,5 +1,4 @@
-use zb_aps::Data;
-use zb_aps::apsde::{DataRequest, NetworkAddress};
+use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress, Source};
 use zb_core::{Direction, Endpoint, short_id};
 use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
 
@@ -100,16 +99,31 @@ impl Index {
         )
     }
 
-    /// Create the response correlation key for a received ZCL frame.
+    /// Create the response correlation key for a received ZCL indication.
     ///
-    /// The incoming frame contributes the APS and ZCL header fields, while the
-    /// [`NetworkAddress`] contributes the remote node id that sent the response.
+    /// Returns `None` when the indication source is not a 16-bit NWK address with an endpoint.
     #[must_use]
-    pub const fn from_received_zcl_frame<T>(
-        source: NetworkAddress,
-        frame: &Data<zb_zcl::Frame<T>>,
-    ) -> Self {
-        Self::from_aps_and_zcl_headers(source.as_u16(), frame.header(), frame.payload().header())
+    pub const fn from_received_zcl_indication<T, K>(
+        indication: &DataIndication<zb_zcl::Frame<zb_zcl::Cluster>, T, K>,
+    ) -> Option<Self> {
+        let Source::Network {
+            address: source,
+            endpoint,
+        } = indication.metadata().source()
+        else {
+            return None;
+        };
+        let header = indication.asdu().header();
+
+        Some(Self::new_zcl(
+            source.as_u16(),
+            endpoint.get(),
+            indication.metadata().cluster_id(),
+            indication.metadata().profile_id(),
+            header.manufacturer_code(),
+            header.control().direction(),
+            header.seq(),
+        ))
     }
 
     /// Create the response correlation key for a received ZDP response frame.
@@ -126,23 +140,6 @@ impl Index {
             frame.data().profile().into(),
             None,
             frame.seq(),
-        )
-    }
-
-    /// Build the ZCL response correlation key from APS and ZCL headers.
-    const fn from_aps_and_zcl_headers(
-        short_id: u16,
-        aps_header: zb_aps::data::Header,
-        zcl_header: zb_zcl::Header,
-    ) -> Self {
-        Self::new_zcl(
-            short_id,
-            aps_header.source_endpoint(),
-            aps_header.cluster_id(),
-            aps_header.profile_id(),
-            zcl_header.manufacturer_code(),
-            zcl_header.control().direction(),
-            zcl_header.seq(),
         )
     }
 }

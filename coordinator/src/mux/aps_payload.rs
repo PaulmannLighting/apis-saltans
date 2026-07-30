@@ -1,8 +1,8 @@
 use bytes::Bytes;
-use zb_aps::data::Frame;
-use zb_core::{Cluster, Profile};
+use zb_aps::apsde::{IndicationMetadata, ReceivedDestination};
+use zb_core::{Cluster, Endpoint, Profile};
 
-pub use self::error::ParseApsFrameError;
+pub use self::error::ParseApsPayloadError;
 
 mod error;
 
@@ -22,30 +22,69 @@ pub enum ApsPayload {
     KeepAlive,
 }
 
-impl TryFrom<Frame<Bytes>> for ApsPayload {
-    type Error = ParseApsFrameError;
-
-    fn try_from(frame: Frame<Bytes>) -> Result<Self, Self::Error> {
-        let profile = match frame.header().profile() {
+impl ApsPayload {
+    /// Parse one APSDE indication ASDU using its protocol metadata.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the profile, ZDP addressing, cluster identifier, or encoded protocol
+    /// frame is invalid.
+    pub fn parse<T, K>(
+        metadata: &IndicationMetadata<T, K>,
+        asdu: Bytes,
+    ) -> Result<Self, ParseApsPayloadError> {
+        let profile = match metadata.profile() {
             Ok(profile) => profile,
-            Err(profile_id) => return Err(ParseApsFrameError::InvalidProfile(profile_id)),
+            Err(profile_id) => return Err(ParseApsPayloadError::InvalidProfile(profile_id)),
         };
 
         match profile {
-            Profile::Network => ZdpFrame::try_from(frame)
-                .map(Self::Zdp)
-                .map_err(ParseApsFrameError::ParseZdpFrameError),
+            Profile::Network => Self::parse_zdp(metadata, asdu),
             Profile::ZigbeeHomeAutomation
             | Profile::SmartEnergy
             | Profile::TouchLink
             | Profile::BuildingAutomation
             | Profile::HealthCare
-            | Profile::RemoteControl => match frame.header().cluster() {
+            | Profile::RemoteControl => match metadata.cluster() {
                 Ok(Cluster::KeepAlive) => Ok(Self::KeepAlive),
-                _ => ZclFrame::try_from(frame)
+                _ => ZclFrame::parse(metadata.cluster_id(), asdu.into_iter())
                     .map(Self::Zcl)
-                    .map_err(ParseApsFrameError::ParseZclFrameError),
+                    .map_err(ParseApsPayloadError::ParseZclFrameError),
             },
         }
+    }
+
+    fn parse_zdp<T, K>(
+        metadata: &IndicationMetadata<T, K>,
+        asdu: Bytes,
+    ) -> Result<Self, ParseApsPayloadError> {
+        let source_endpoint = metadata
+            .source()
+            .endpoint()
+            .ok_or_else(|| ParseApsPayloadError::ZdpSourceAddressing(metadata.source()))?
+            .get();
+        if source_endpoint != Endpoint::Data {
+            return Err(ParseApsPayloadError::ZdpSourceEndpoint(source_endpoint));
+        }
+
+        let destination = metadata.destination();
+        let destination_endpoint = match destination {
+            ReceivedDestination::Broadcast { endpoint, .. } => endpoint,
+            ReceivedDestination::Network { endpoint, .. }
+            | ReceivedDestination::Extended { endpoint, .. } => endpoint.get(),
+            ReceivedDestination::Group(_) | ReceivedDestination::ExtendedWithoutEndpoint(_) => {
+                return Err(ParseApsPayloadError::ZdpDestinationAddressing(destination));
+            }
+        };
+        if destination_endpoint != Endpoint::Data {
+            return Err(ParseApsPayloadError::ZdpDestinationEndpoint(
+                destination_endpoint,
+            ));
+        }
+
+        ZdpFrame::parse_with_cluster_id(metadata.cluster_id(), asdu.into_iter())
+            .map_err(ParseApsPayloadError::ZdpClusterId)?
+            .map(Self::Zdp)
+            .ok_or(ParseApsPayloadError::InvalidZdpFrame)
     }
 }
