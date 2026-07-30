@@ -54,6 +54,9 @@ Top-level re-exports from `apis-saltans-core`:
 - `ExpectResponse`, `TypeId`
 - modules: `constants`, `destination`, `endpoint`, `node`, `short_id`, `types`, `units`
 
+Applying the logical-not operator to a `Direction` returns its opposite, so
+`!Direction::ClientToServer` evaluates to `Direction::ServerToClient`.
+
 Key modules:
 - `types`: Zigbee primitive/composite/discrete types and the tagged `Type` enum
 - `types::tlv`: local/global TLV variants and TLV vectors

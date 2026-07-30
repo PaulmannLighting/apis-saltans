@@ -10,7 +10,6 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::time::sleep;
 use zb_aps::Data;
 use zb_aps::apsde::{DataIndication, DataRequest, Source};
-use zb_core::Direction;
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::message::Message;
@@ -291,7 +290,7 @@ impl Transceiver {
         request.map_asdu(|frame| frame.into_frame(sequence_number).to_le_stream().collect())
     }
 
-    const fn request_index(
+    fn request_index(
         request: &DataRequest<UnsequencedFrame<Bytes>>,
         sequence_number: u8,
     ) -> Result<Index, Error> {
@@ -314,16 +313,9 @@ impl Transceiver {
             request.cluster_id(),
             request.profile_id(),
             request.asdu().header().manufacturer_code(),
-            response_direction(request.asdu().header().control().direction()),
+            !request.asdu().header().control().direction(),
             sequence_number,
         ))
-    }
-}
-
-const fn response_direction(request_direction: Direction) -> Direction {
-    match request_direction {
-        Direction::ClientToServer => Direction::ServerToClient,
-        Direction::ServerToClient => Direction::ClientToServer,
     }
 }
 
