@@ -38,7 +38,9 @@ use self::node_desc::{
 };
 use super::index::Index;
 use crate::aps::{Aps, Metadata};
-use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token};
+use crate::correlation::{
+    Cancellation, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
+};
 use crate::event_sink::EventSink;
 use crate::response::ApsProtocolResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
@@ -105,10 +107,17 @@ impl Transceiver {
                     .network_down(&zb_hw::TransmissionError::NoRoute);
             }
             Message::Cancel { token } => {
-                self.responses.cancel(token);
+                if self.responses.cancel(token) {
+                    self.schedule_quarantine_timeout(token);
+                }
             }
             Message::ResponseTimeout { token } => {
-                self.responses.timeout(token);
+                if self.responses.timeout(token) {
+                    self.schedule_quarantine_timeout(token);
+                }
+            }
+            Message::QuarantineTimeout { token } => {
+                self.responses.expire_quarantine(token);
             }
             Message::Communicate {
                 device,
@@ -285,6 +294,22 @@ impl Transceiver {
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to enqueue ZDP response timeout: {error}");
+                });
+        });
+    }
+
+    fn schedule_quarantine_timeout(&self, token: Token) {
+        let inbox = self.inbox.clone();
+        spawn(async move {
+            sleep(PROTOCOL_QUARANTINE_TIMEOUT).await;
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            inbox
+                .send(Message::QuarantineTimeout { token })
+                .await
+                .unwrap_or_else(|error| {
+                    debug!("Failed to enqueue ZDP quarantine timeout: {error}");
                 });
         });
     }

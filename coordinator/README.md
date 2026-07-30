@@ -254,10 +254,18 @@ separate manager object.
 
 ## Transmission and Protocol Responses
 
-`Zcl::transmit(...)` and the command helpers await the acknowledged APS result directly:
+`Zcl::transmit(...)` and the response-free command helpers await the acknowledged APS result
+directly. The helpers explicitly disable ZCL Default Responses:
 
 ```rust,ignore
 api.on(destination, source_endpoint).await?;
+```
+
+Use `Zcl::communicate_default(...)` when a unicast command should be accepted only after a
+successful ZCL Default Response:
+
+```rust,ignore
+api.communicate_default(request).await?;
 ```
 
 Communication remains split at the protocol boundary:
@@ -303,20 +311,21 @@ rather than awaiting in their command loops.
 ZCL and ZDP share the same collision-safe policy within their respective actors. A communicating
 request receives a transaction sequence only if its complete correlation identity is neither
 pending nor quarantined. A successful correlated response releases that identity immediately.
-Cancelling or timing out a response, and sending a command without tracking its response,
-quarantines the identity until the corresponding late frame arrives. There is no time-based
-quarantine expiry. A network-down event fails every pending response with the hardware `NoRoute`
-transmission error and starts a fresh correlation epoch. Exhaustion within one correlation domain
-returns `Error::TransactionSequenceExhausted` instead of replacing an older correlation.
+Response-free ZCL transmissions skip unavailable identities but do not retain the selected
+sequence, so they can wrap without exhausting the transaction space. Cancelling or timing out a
+tracked response quarantines the identity for at most a further 30 seconds; a matching late frame
+or network-down event releases it sooner. Exhaustion within one correlation domain returns
+`Error::TransactionSequenceExhausted` instead of replacing an older pending or quarantined
+correlation.
 
-Cancellation and timeout messages carry a coordinator-private allocation generation. The
-generation never appears in a Zigbee frame; it only prevents an old lifecycle message from
-removing a newer transaction after successful sequence reuse.
+Cancellation, response-timeout, and quarantine-timeout messages carry a coordinator-private
+allocation generation. The generation never appears in a Zigbee frame; it only prevents an old
+lifecycle message from removing a newer transaction after successful sequence reuse.
 
 Each APS, ZCL, and ZDP actor consumes one bounded message inbox. Confirmation, cancellation,
-timeout, network lifecycle, and ordinary request messages all use that inbox. Timeout tasks retain
-only a weak sender and enqueue a timeout message after the configured duration; the actors do not
-use auxiliary receivers.
+response and quarantine timeout, network lifecycle, and ordinary request messages all use that
+inbox. Timeout tasks retain only a weak sender and enqueue a timeout message after the configured
+duration; the actors do not use auxiliary receivers.
 
 `Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and
 expose their source errors and can be constructed through `From`; the send variant intentionally
@@ -727,9 +736,15 @@ response. It accepts
 `zb_aps::apsde::DataRequest<zb_zcl::UnsequencedFrame<bytes::Bytes>>`. The request contains the APS
 destination, profile and cluster IDs, local source endpoint, transmission options, alias, radius,
 and unsequenced ZCL frame. Its await queues the frame and, for acknowledged unicast transmissions,
-waits for the hardware result. The caller controls whether group and broadcast requests use APS
+waits for the hardware result. An individual unicast must set the disable-default-response bit;
+otherwise `transmit` returns `Error::ZclDefaultResponseEnabled`. Response-free transmission
+sequences are not quarantined. The caller controls whether group and broadcast requests use APS
 acknowledgements through the request's `TxOptions`. The ZCL actor consumes the unsequenced frame
 with its transaction sequence number immediately before serialization.
+
+Use `Zcl::communicate_default(...)` for an individual unicast that expects a ZCL Default Response.
+It enables Default Responses, waits for APS completion and the correlated response, verifies the
+response's original command ID, and returns non-success status values as `Error::Zcl`.
 
 Use `Zcl::communicate::<T>(...)` with the same request type when a typed response is expected. Its
 first await queues the complete request and returns `ZclResponse<T>`. The destination must be one
@@ -753,6 +768,7 @@ Most APIs return `apis_saltans_coordinator::Error`:
 - `UnknownDevice(IeeeAddress)`
 - `InvalidApplicationEndpoint(u8)`
 - `InvalidZclCommunicationDestination(RequestDestination)`
+- `ZclDefaultResponseEnabled`
 - `DurationOutOfBounds(Duration)`
 - `Zcl(Result<zb_zcl::Status, u8>)`
 - `Zdp(Result<zb_zdp::Status, u8>)`
@@ -770,8 +786,8 @@ Behavior is configurable through environment variables:
 
 - `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`
 
-Deferred response futures do not impose a deadline. Applications that require one can wrap the
-second await with `tokio::time::timeout` and select a timeout policy appropriate to the operation.
+The protocol actors expire correlated ZCL and ZDP responses after 30 seconds. Applications may
+still wrap either await boundary with `tokio::time::timeout` when they require a shorter deadline.
 
 Retry behavior for discovery or binding is intentionally not configured here anymore. Applications
 that build discovery or binding workflows should apply their own retry and persistence policy.

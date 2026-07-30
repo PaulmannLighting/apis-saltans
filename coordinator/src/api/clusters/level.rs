@@ -9,11 +9,12 @@ use zb_zcl::level::{
 
 use crate::Error;
 use crate::api::Zcl;
+use crate::api::zcl::request_without_response;
 
 /// Trait for the Level cluster.
 ///
-/// Each method requires the local APS source endpoint and awaits the acknowledged APS transmission
-/// before returning.
+/// Each method requires the local APS source endpoint, disables ZCL Default Responses, and awaits
+/// the acknowledged APS transmission before returning.
 pub trait Level {
     /// Move to level command.
     ///
@@ -146,7 +147,7 @@ where
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             MoveToLevel::new(level, transition_time, options),
@@ -161,7 +162,7 @@ where
         mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             Move::new(mode, options),
@@ -177,7 +178,7 @@ where
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             Step::new(mode, transition_time, options),
@@ -191,7 +192,7 @@ where
         source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             Stop::new(options),
@@ -207,7 +208,7 @@ where
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             MoveToLevelWithOnOff::new(level, transition_time, options),
@@ -222,7 +223,7 @@ where
         mode: Mode<UnitsPerSecond>,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             MoveWithOnOff::new(mode, options),
@@ -238,7 +239,7 @@ where
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             StepWithOnOff::new(mode, transition_time, options),
@@ -252,7 +253,7 @@ where
         source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             StopWithOnOff::new(options),
@@ -266,7 +267,7 @@ where
         source_endpoint: IndividualEndpoint,
         frequency: u16,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             MoveToClosestFrequency::new(frequency),

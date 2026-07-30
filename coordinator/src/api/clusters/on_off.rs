@@ -4,11 +4,12 @@ use zb_zcl::on_off::{Effect, Off, OffWithEffect, On, Toggle};
 
 use crate::Error;
 use crate::api::Zcl;
+use crate::api::zcl::request_without_response;
 
 /// Trait for On/Off cluster operations.
 ///
-/// Each method requires the local APS source endpoint and awaits the acknowledged APS transmission
-/// before returning.
+/// Each method requires the local APS source endpoint, disables ZCL Default Responses, and awaits
+/// the acknowledged APS transmission before returning.
 pub trait OnOff {
     /// Turns the device on.
     ///
@@ -65,7 +66,7 @@ where
         destination: Destination,
         source_endpoint: IndividualEndpoint,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(destination, source_endpoint, On))
+        self.transmit(request_without_response(destination, source_endpoint, On))
             .await
     }
 
@@ -74,7 +75,7 @@ where
         destination: Destination,
         source_endpoint: IndividualEndpoint,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(destination, source_endpoint, Off))
+        self.transmit(request_without_response(destination, source_endpoint, Off))
             .await
     }
 
@@ -84,7 +85,7 @@ where
         source_endpoint: IndividualEndpoint,
         effect: Effect,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             OffWithEffect::new(effect),
@@ -97,7 +98,7 @@ where
         destination: Destination,
         source_endpoint: IndividualEndpoint,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             Toggle,

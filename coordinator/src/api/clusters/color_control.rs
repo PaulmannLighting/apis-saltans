@@ -6,11 +6,12 @@ use zb_zcl::color_control::{MoveToColor, MoveToColorTemperature};
 
 use crate::Error;
 use crate::api::Zcl;
+use crate::api::zcl::request_without_response;
 
 /// Trait for Color Control cluster operations.
 ///
-/// Each method requires the local APS source endpoint and awaits the acknowledged APS transmission
-/// before returning.
+/// Each method requires the local APS source endpoint, disables ZCL Default Responses, and awaits
+/// the acknowledged APS transmission before returning.
 pub trait ColorControl {
     /// Move to the specified color (x, y) over the given transition time.
     ///
@@ -55,7 +56,7 @@ where
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             MoveToColor::new(color_x, color_y, transition_time, options),
@@ -71,7 +72,7 @@ where
         transition_time: Deciseconds,
         options: Options,
     ) -> Result<(), Error> {
-        self.transmit(crate::api::zcl::request(
+        self.transmit(request_without_response(
             destination,
             source_endpoint,
             MoveToColorTemperature::new(color_temperature, transition_time, options),

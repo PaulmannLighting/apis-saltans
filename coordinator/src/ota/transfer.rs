@@ -260,8 +260,7 @@ impl Transfer {
             query_jitter,
             image: image_id,
         });
-        let frame =
-            UnsequencedFrame::from_command(notification).with_disable_default_response(false);
+        let frame = UnsequencedFrame::from_command(notification);
         let request = request_from_unsequenced_frame(
             destination.into(),
             self.source_endpoint,

@@ -38,6 +38,12 @@ pub enum Message {
         token: Token,
     },
 
+    /// Release a response identity after its late-response grace period.
+    QuarantineTimeout {
+        /// Coordinator-private identity whose quarantine timeout elapsed.
+        token: Token,
+    },
+
     /// Communicate a unicast with an expected response.
     Communicate {
         /// Remote device expected to answer the request.

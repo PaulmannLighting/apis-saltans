@@ -46,6 +46,12 @@ pub enum Message {
         token: Token,
     },
 
+    /// Release a response identity after its late-response grace period.
+    QuarantineTimeout {
+        /// Coordinator-private identity whose quarantine timeout elapsed.
+        token: Token,
+    },
+
     /// Unicast a message.
     Transmit {
         /// APS request containing the outgoing ZCL command.

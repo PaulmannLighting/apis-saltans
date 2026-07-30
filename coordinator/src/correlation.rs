@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use tokio::sync::oneshot::{Receiver, Sender, channel};
@@ -8,6 +8,8 @@ use crate::index::Index;
 
 /// Maximum time retained for a pending ZCL or ZDP response.
 pub const PROTOCOL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
+/// Maximum additional time retained for a late ZCL or ZDP response.
+pub const PROTOCOL_QUARANTINE_TIMEOUT: Duration = Duration::from_secs(30);
 const INITIAL_GENERATION: u64 = 0;
 const INITIAL_SEQUENCE: u8 = 0;
 const TRANSACTION_SEQUENCE_COUNT: usize = 1_usize << u8::BITS;
@@ -99,7 +101,7 @@ pub struct Registry<T> {
     next_sequence: u8,
     next_generation: u64,
     pending: BTreeMap<Index, Pending<T>>,
-    quarantined: BTreeSet<Index>,
+    quarantined: BTreeMap<Index, u64>,
 }
 
 impl<T> Registry<T> {
@@ -109,7 +111,7 @@ impl<T> Registry<T> {
             next_sequence: INITIAL_SEQUENCE,
             next_generation: INITIAL_GENERATION,
             pending: BTreeMap::new(),
-            quarantined: BTreeSet::new(),
+            quarantined: BTreeMap::new(),
         }
     }
 
@@ -136,8 +138,11 @@ impl<T> Registry<T> {
         Ok((sequence, token, receiver))
     }
 
-    /// Reserve a sequence for a frame that does not expect a correlated response.
-    pub fn reserve_untracked_sequence<F>(&mut self, index_for_sequence: F) -> Result<u8, Error>
+    /// Allocate a sequence for a frame that does not expect a correlated response.
+    ///
+    /// The allocator skips identities used by tracked or quarantined requests, but does not retain
+    /// the selected identity after returning it.
+    pub fn allocate_untracked_sequence<F>(&mut self, index_for_sequence: F) -> Result<u8, Error>
     where
         F: Fn(u8) -> Option<Index>,
     {
@@ -147,7 +152,6 @@ impl<T> Registry<T> {
                 return Ok(sequence);
             };
             if self.index_is_available(index) {
-                self.quarantined.insert(index);
                 return Ok(sequence);
             }
         }
@@ -165,9 +169,9 @@ impl<T> Registry<T> {
         true
     }
 
-    /// Cancel a pending response and quarantine its identity until a late frame arrives.
-    pub fn cancel(&mut self, token: Token) {
-        self.remove_and_quarantine(token);
+    /// Cancel a pending response and quarantine its identity for late-response handling.
+    pub fn cancel(&mut self, token: Token) -> bool {
+        self.remove_and_quarantine(token).is_some()
     }
 
     /// Discard a correlation whose request was never handed to the hardware.
@@ -179,18 +183,31 @@ impl<T> Registry<T> {
 
     /// Consume a late response and release its quarantined transaction identity.
     pub fn release_quarantine(&mut self, index: Index) -> bool {
-        self.quarantined.remove(&index)
+        self.quarantined.remove(&index).is_some()
+    }
+
+    /// Release a quarantined identity after its bounded late-response grace period.
+    pub fn expire_quarantine(&mut self, token: Token) -> bool {
+        let generation_matches = self
+            .quarantined
+            .get(&token.index)
+            .is_some_and(|generation| *generation == token.generation);
+        if generation_matches {
+            self.quarantined.remove(&token.index);
+        }
+        generation_matches
     }
 
     /// Fail one pending response whose actor-owned timeout message arrived.
-    pub fn timeout(&mut self, token: Token) {
+    pub fn timeout(&mut self, token: Token) -> bool {
         let Some(pending) = self.remove_and_quarantine(token) else {
-            return;
+            return false;
         };
         pending
             .response
             .send(Err(Error::ProtocolResponseTimeout))
             .unwrap_or_else(drop);
+        true
     }
 
     /// Fail every pending response and start a fresh network correlation epoch.
@@ -229,7 +246,7 @@ impl<T> Registry<T> {
     }
 
     fn index_is_available(&self, index: Index) -> bool {
-        !self.pending.contains_key(&index) && !self.quarantined.contains(&index)
+        !self.pending.contains_key(&index) && !self.quarantined.contains_key(&index)
     }
 
     fn remove_and_quarantine(&mut self, token: Token) -> Option<Pending<T>> {
@@ -238,7 +255,10 @@ impl<T> Registry<T> {
         }
 
         let pending = self.pending.remove(&token.index);
-        let newly_quarantined = self.quarantined.insert(token.index);
+        let newly_quarantined = self
+            .quarantined
+            .insert(token.index, token.generation)
+            .is_none();
         debug_assert!(newly_quarantined);
         pending
     }
@@ -336,44 +356,56 @@ mod tests {
             response.blocking_recv(),
             Ok(Err(Error::ProtocolResponseTimeout))
         ));
-        assert!(registry.quarantined.contains(&index(sequence)));
+        assert!(registry.quarantined.contains_key(&index(sequence)));
         assert!(registry.release_quarantine(index(sequence)));
-        assert!(!registry.quarantined.contains(&index(sequence)));
+        assert!(!registry.quarantined.contains_key(&index(sequence)));
     }
 
     #[test]
-    fn quarantined_identity_is_unavailable_until_its_late_frame_arrives() {
+    fn untracked_sequences_wrap_without_exhaustion() {
         let mut registry = Registry::<()>::new();
-        let first_sequence = registry
-            .reserve_untracked_sequence(|sequence| Some(index(sequence)))
-            .expect("transaction sequence is available");
-        registry.next_sequence = first_sequence;
+        let mut sequences = Vec::new();
 
-        let second_sequence = registry
-            .reserve_untracked_sequence(|sequence| Some(index(sequence)))
+        for _ in 0..TRANSACTION_SEQUENCE_COUNT * 2 {
+            sequences.push(
+                registry
+                    .allocate_untracked_sequence(|sequence| Some(index(sequence)))
+                    .expect("untracked transaction sequences remain available"),
+            );
+        }
+
+        assert_eq!(sequences[0], sequences[TRANSACTION_SEQUENCE_COUNT]);
+        assert!(registry.quarantined.is_empty());
+    }
+
+    #[test]
+    fn untracked_allocation_skips_a_pending_identity() {
+        let mut registry = Registry::<()>::new();
+        let (pending_sequence, _token, _response) = registry
+            .register(index)
+            .expect("transaction sequence is available");
+        registry.next_sequence = pending_sequence;
+
+        let untracked_sequence = registry
+            .allocate_untracked_sequence(|sequence| Some(index(sequence)))
             .expect("another transaction sequence is available");
 
-        assert_ne!(second_sequence, first_sequence);
-        assert!(registry.release_quarantine(index(first_sequence)));
-        registry.next_sequence = first_sequence;
-        assert_eq!(
-            registry
-                .reserve_untracked_sequence(|sequence| Some(index(sequence)))
-                .expect("late response released the transaction identity"),
-            first_sequence
-        );
+        assert_ne!(untracked_sequence, pending_sequence);
     }
 
     #[test]
     fn network_boundary_releases_quarantined_identities() {
         let mut registry = Registry::<()>::new();
+        let mut responses = Vec::new();
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
-            registry
-                .reserve_untracked_sequence(|sequence| Some(index(sequence)))
+            let (_, token, response) = registry
+                .register(index)
                 .expect("all transaction sequences are initially available");
+            assert!(registry.cancel(token));
+            responses.push(response);
         }
         assert!(matches!(
-            registry.reserve_untracked_sequence(|sequence| Some(index(sequence))),
+            registry.register(index),
             Err(Error::TransactionSequenceExhausted)
         ));
 
@@ -381,10 +413,11 @@ mod tests {
 
         assert_eq!(
             registry
-                .reserve_untracked_sequence(|sequence| Some(index(sequence)))
+                .allocate_untracked_sequence(|sequence| Some(index(sequence)))
                 .expect("network boundary starts a fresh correlation epoch"),
             u8::MIN
         );
+        assert_eq!(responses.len(), TRANSACTION_SEQUENCE_COUNT);
     }
 
     #[test]
@@ -428,6 +461,26 @@ mod tests {
 
         assert!(registry.pending.contains_key(&current_token.index()));
         assert!(current_response.try_recv().is_err());
+    }
+
+    #[test]
+    fn stale_quarantine_timeout_does_not_release_a_newer_generation() {
+        let mut registry = Registry::<()>::new();
+        let (sequence, stale_token, _response) = registry
+            .register(index)
+            .expect("transaction sequence is available");
+        assert!(registry.cancel(stale_token));
+        assert!(registry.expire_quarantine(stale_token));
+
+        registry.next_sequence = sequence;
+        let (_, current_token, _response) = registry
+            .register(index)
+            .expect("transaction sequence can be reused after quarantine expiry");
+        assert!(registry.cancel(current_token));
+
+        assert!(!registry.expire_quarantine(stale_token));
+        assert!(registry.quarantined.contains_key(&current_token.index()));
+        assert!(registry.expire_quarantine(current_token));
     }
 
     #[test]

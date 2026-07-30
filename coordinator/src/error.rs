@@ -47,6 +47,10 @@ pub enum Error {
     #[error("Invalid ZCL communication destination: {0:?}")]
     InvalidZclCommunicationDestination(RequestDestination),
 
+    /// A response-free ZCL unicast left default responses enabled.
+    #[error("ZCL transmit requires default responses to be disabled for individual unicasts")]
+    ZclDefaultResponseEnabled,
+
     /// Invalid rate.
     #[error("Invalid dimming rate: {0:?}")]
     DurationOutOfBounds(Duration),

@@ -19,7 +19,9 @@ pub use self::subscription::{
 };
 use super::index::Index;
 use crate::aps::{Aps, TransmissionResponse};
-use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token};
+use crate::correlation::{
+    Cancellation, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
+};
 use crate::event_sink::EventSink;
 use crate::response::ApsProtocolResponse;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE};
@@ -75,10 +77,17 @@ impl Transceiver {
                     .network_down(&zb_hw::TransmissionError::NoRoute);
             }
             Message::Cancel { token } => {
-                self.responses.cancel(token);
+                if self.responses.cancel(token) {
+                    self.schedule_quarantine_timeout(token);
+                }
             }
             Message::ResponseTimeout { token } => {
-                self.responses.timeout(token);
+                if self.responses.timeout(token) {
+                    self.schedule_quarantine_timeout(token);
+                }
+            }
+            Message::QuarantineTimeout { token } => {
+                self.responses.expire_quarantine(token);
             }
             Message::Transmit { request, response } => {
                 response
@@ -185,20 +194,15 @@ impl Transceiver {
         &mut self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<TransmissionResponse, Error> {
+        let is_individual_unicast = Self::request_index(&request, u8::MIN).is_ok();
+        if is_individual_unicast && !request.asdu().header().control().disable_default_response() {
+            return Err(Error::ZclDefaultResponseEnabled);
+        }
         let sequence_number = self
             .responses
-            .reserve_untracked_sequence(|sequence| Self::request_index(&request, sequence).ok())?;
-        let response_index = Self::request_index(&request, sequence_number).ok();
+            .allocate_untracked_sequence(|sequence| Self::request_index(&request, sequence).ok())?;
         let request = Self::encode_request(request, sequence_number);
-        match self.aps.transmit(request).await {
-            Ok(transmission) => Ok(transmission),
-            Err(error) => {
-                if let Some(index) = response_index {
-                    self.responses.release_quarantine(index);
-                }
-                Err(error)
-            }
-        }
+        self.aps.transmit(request).await
     }
 
     /// Queue a ZCL command with an explicitly selected transaction sequence number.
@@ -279,6 +283,22 @@ impl Transceiver {
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to enqueue ZCL response timeout: {error}");
+                });
+        });
+    }
+
+    fn schedule_quarantine_timeout(&self, token: Token) {
+        let inbox = self.inbox.clone();
+        spawn(async move {
+            sleep(PROTOCOL_QUARANTINE_TIMEOUT).await;
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            inbox
+                .send(Message::QuarantineTimeout { token })
+                .await
+                .unwrap_or_else(|error| {
+                    debug!("Failed to enqueue ZCL quarantine timeout: {error}");
                 });
         });
     }
@@ -427,6 +447,35 @@ mod tests {
                 RequestDestination::Bound
             ))
         ));
+    }
+
+    #[test]
+    fn response_free_unicast_rejects_an_enabled_default_response() {
+        Builder::new_current_thread()
+            .build()
+            .expect("Tokio runtime")
+            .block_on(async {
+                let (mut transceiver, _events) = unstarted_transceiver();
+                let destination = RequestDestination::Network {
+                    address: NetworkAddress::new(SOURCE_NODE_ID)
+                        .expect("test NWK address is valid"),
+                    endpoint: Endpoint::from(REMOTE_ENDPOINT_ID),
+                };
+                let source_endpoint = IndividualEndpoint::new(Endpoint::from(LOCAL_ENDPOINT_ID))
+                    .expect("application endpoint is individual");
+                let request = DataRequest::new(
+                    destination,
+                    Profile::ZigbeeHomeAutomation.as_u16(),
+                    ClusterId::OnOff.as_u16(),
+                    source_endpoint,
+                    UnsequencedFrame::from_command(On).with_disable_default_response(false),
+                );
+
+                assert!(matches!(
+                    transceiver.transmit(request).await,
+                    Err(Error::ZclDefaultResponseEnabled)
+                ));
+            });
     }
 
     #[test]
