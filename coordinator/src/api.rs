@@ -3,7 +3,8 @@
 pub use self::address_translation::AddressTranslation;
 pub use self::binding::Binding;
 pub use self::clusters::{
-    Attributes, ColorControl, Groups, Level, OnOff, Ota, ReadAttributeResult, WriteAttributeResult,
+    Attributes, CancellableOtaUpdate, ColorControl, Groups, Level, OnOff, Ota, ReadAttributeResult,
+    WriteAttributeResult,
 };
 pub use self::endpoints::{Endpoints, SimpleDescriptor};
 pub use self::joining::Joining;

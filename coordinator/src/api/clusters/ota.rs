@@ -1,9 +1,9 @@
 use tokio::sync::mpsc::Sender;
-use tokio::sync::oneshot;
 use zb_aps::apsde::IndividualEndpoint;
 use zb_core::FullAddress;
 
-use crate::ota::{Image, Message, UpdateResult};
+pub use crate::ota::CancellableOtaUpdate;
+use crate::ota::{Image, Message, Update, UpdateTimeouts};
 use crate::{Coordinator, Error};
 
 /// API for scheduling OTA updates through the coordinator-owned server.
@@ -18,7 +18,12 @@ pub trait Ota {
     ///
     /// A later call for the same endpoint replaces the previously offered image. The returned
     /// future remains pending while the OTA exchange runs and resolves after the client reports
-    /// success or the server observes a terminal update failure.
+    /// success or the server observes a terminal update failure. Dropping the future cancels the
+    /// offer and releases its transfer resources. [`CancellableOtaUpdate::cancel`] provides the
+    /// equivalent explicit operation.
+    ///
+    /// This method uses [`UpdateTimeouts::default`]. Use [`Self::update_with_timeouts`] to select
+    /// deadlines for an individual offer.
     ///
     /// # Errors
     ///
@@ -31,41 +36,59 @@ pub trait Ota {
         target_endpoint: IndividualEndpoint,
         source_endpoint: IndividualEndpoint,
         image: Image,
-    ) -> impl Future<Output = Result<(), Error>> + Send;
-}
-
-impl Ota for Sender<Message> {
-    async fn update(
-        &self,
-        target: FullAddress,
-        target_endpoint: IndividualEndpoint,
-        source_endpoint: IndividualEndpoint,
-        image: Image,
-    ) -> Result<(), Error> {
-        let (completion, result) = oneshot::channel::<UpdateResult>();
-        self.send(Message::Update {
+    ) -> impl Future<Output = Result<(), Error>> + CancellableOtaUpdate + Send {
+        self.update_with_timeouts(
             target,
             target_endpoint,
             source_endpoint,
             image,
-            completion,
-        })
-        .await?;
-        result.await??;
-        Ok(())
+            UpdateTimeouts::default(),
+        )
     }
-}
 
-impl Ota for Coordinator {
-    async fn update(
+    /// Offer `image` with explicit discovery, block-inactivity, and total-transfer deadlines.
+    ///
+    /// Dropping or explicitly cancelling the returned future cancels the offer.
+    fn update_with_timeouts(
         &self,
         target: FullAddress,
         target_endpoint: IndividualEndpoint,
         source_endpoint: IndividualEndpoint,
         image: Image,
-    ) -> Result<(), Error> {
+        timeouts: UpdateTimeouts,
+    ) -> impl Future<Output = Result<(), Error>> + CancellableOtaUpdate + Send;
+}
+
+impl Ota for Sender<Message> {
+    fn update_with_timeouts(
+        &self,
+        target: FullAddress,
+        target_endpoint: IndividualEndpoint,
+        source_endpoint: IndividualEndpoint,
+        image: Image,
+        timeouts: UpdateTimeouts,
+    ) -> impl Future<Output = Result<(), Error>> + CancellableOtaUpdate + Send {
+        Update::new(
+            self.clone(),
+            target,
+            target_endpoint,
+            source_endpoint,
+            image,
+            timeouts,
+        )
+    }
+}
+
+impl Ota for Coordinator {
+    fn update_with_timeouts(
+        &self,
+        target: FullAddress,
+        target_endpoint: IndividualEndpoint,
+        source_endpoint: IndividualEndpoint,
+        image: Image,
+        timeouts: UpdateTimeouts,
+    ) -> impl Future<Output = Result<(), Error>> + CancellableOtaUpdate + Send {
         self.ota
-            .update(target, target_endpoint, source_endpoint, image)
-            .await
+            .update_with_timeouts(target, target_endpoint, source_endpoint, image, timeouts)
     }
 }

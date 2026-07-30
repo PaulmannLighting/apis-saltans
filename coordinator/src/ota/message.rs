@@ -5,7 +5,7 @@ use zb_core::FullAddress;
 use zb_zcl::Frame;
 use zb_zcl::ota_upgrade::Command as OtaCommand;
 
-use super::Image;
+use super::{Image, UpdateTimeouts};
 
 /// Terminal result delivered to the caller that scheduled an OTA update.
 pub type UpdateResult = Result<(), UpdateError>;
@@ -23,6 +23,10 @@ pub enum Message {
         source_endpoint: IndividualEndpoint,
         /// Complete OTA image offered to the device.
         image: Image,
+        /// Discovery, inactivity, and total-transfer deadlines for this offer.
+        timeouts: UpdateTimeouts,
+        /// Resolves when the caller explicitly cancels or drops the update future.
+        cancellation: oneshot::Receiver<()>,
         /// Reports the terminal result of the scheduled update.
         completion: oneshot::Sender<UpdateResult>,
     },
@@ -53,6 +57,18 @@ pub enum UpdateError {
     /// A newer image replaced this update for the same device endpoint.
     #[error("the OTA update was superseded by a newer image")]
     Superseded,
+    /// The update future was explicitly cancelled or dropped.
+    #[error("the OTA update was cancelled")]
+    Cancelled,
+    /// The OTA client did not accept the image offer before its discovery deadline.
+    #[error("the OTA client did not accept the image offer before its discovery deadline")]
+    DiscoveryTimeout,
+    /// The OTA client stopped requesting transfer data.
+    #[error("the OTA client exceeded the block-inactivity deadline")]
+    BlockInactivityTimeout,
+    /// The complete OTA exchange exceeded its configured deadline.
+    #[error("the OTA update exceeded its total-transfer deadline")]
+    TotalTransferTimeout,
     /// The OTA client aborted the update.
     #[error("the OTA client aborted the update")]
     Aborted,

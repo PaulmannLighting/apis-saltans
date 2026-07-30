@@ -5,7 +5,7 @@ pub use self::color_control::ColorControl;
 pub use self::groups::Groups;
 pub use self::level::Level;
 pub use self::on_off::OnOff;
-pub use self::ota::Ota;
+pub use self::ota::{CancellableOtaUpdate, Ota};
 
 mod attributes;
 mod color_control;

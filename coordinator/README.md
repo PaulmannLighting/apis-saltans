@@ -107,7 +107,8 @@ By default, the OTA server runs at most `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` c
 destination transfer tasks. Use `Coordinator::start_with_ota_update_task_limit(...)` to select a
 different limit. Each task lasts for the complete OTA exchange and owns its transmission
 operations. Replacing the update for a destination reuses its task. A new destination is rejected
-through its completion future if no task slot is available.
+through its completion future if no task slot is available. Dropping an accepted update future
+cancels its task and releases the slot.
 
 The NCP driver must implement `zb_hw::Driver::get_endpoints()` and return a complete
 `zb_zdp::SimpleDescriptor` for every local application endpoint. The coordinator retrieves these
@@ -204,6 +205,14 @@ and file metadata, streams blocks (including paced page responses), preserves or
 transaction numbers as required, and emits the appropriate command or default response. Scheduling
 another image for the same device endpoint replaces its current offer.
 
+The returned update future is also its cancellation handle. Dropping it cancels the offer;
+import `CancellableOtaUpdate` and call `cancel()` when explicit cancellation reads more clearly.
+`Ota::update` uses discovery and block-inactivity deadlines of 15 minutes and a total-transfer
+deadline of 24 hours. `Ota::update_with_timeouts` accepts an `OtaUpdateTimeouts` value when an
+application needs different limits. A compatible discovery query or valid block/page request ends
+the discovery phase, and every subsequent valid transfer request resets the inactivity deadline.
+The total deadline never resets.
+
 Every update is scheduled with a `FullAddress`, pinning the client's IEEE identity to its current
 NWK short address. Before routing an inbound request to that transfer, the OTA server resolves the
 request's short address through the NCP and requires it to match the pinned IEEE address. Optional
@@ -235,9 +244,9 @@ header.
 
 `Ota::update` remains pending for the complete exchange. It returns success after the client sends
 a successful Upgrade End Request. Client rejection, image-read failures, terminal transmission
-failures, replacement by a newer update, and exhaustion of the configured concurrent update-task
-limit return an `OtaUpdateError`; stopping the OTA actor before completion returns the
-coordinator's receive error.
+failures, replacement by a newer update, lifecycle deadline expiration, and exhaustion of the
+configured concurrent update-task limit return an `OtaUpdateError`; stopping the OTA actor before
+completion returns the coordinator's receive error.
 
 The server routes commands to one long-lived task per destination and tracks only those destination
 tasks. Each destination task owns its transmission operations and any paced page-transfer

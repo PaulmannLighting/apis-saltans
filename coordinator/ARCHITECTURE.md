@@ -197,6 +197,14 @@ into it, subscription forwarding tasks send received frames into it, and destina
 send transfer completion into it. When the public OTA channel closes, the API task queues a shutdown
 event. The server therefore does not manually poll multiple receivers or its transfer tasks.
 
+Each public update future owns one cancellation sender. Dropping or explicitly cancelling the
+future resolves a receiver owned by a weak forwarding task, which sends a generation-tagged
+`Cancel` message through the destination transfer's ordinary inbox. Discovery,
+block-inactivity, and total-transfer timer tasks use the same inbox. Replacements abort the
+previous generation's lifecycle tasks and start new deadlines; generation checks make already
+queued stale messages harmless. Discovery ends only after a compatible query or valid data
+request, block activity resets its deadline, and the total-transfer deadline never resets.
+
 Each update carries a `FullAddress` plus its remote endpoint. The transfer pins the IEEE identity
 and current NWK short address for Image Notify transmission and destination-restricted image
 checks. Before the server routes any inbound OTA request, it resolves the request's NWK source

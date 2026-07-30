@@ -4,7 +4,6 @@ use le_stream::ToLeStream;
 use log::{debug, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
-use tokio::sync::oneshot;
 use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
 use zb_aps::apsde::{DataIndication, IndividualEndpoint, ReceivedDestination, Source};
 use zb_core::destination::Device;
@@ -20,11 +19,8 @@ use zb_zcl::{
 };
 
 use super::state::RequestContext;
-use super::transfer::{Replacement, Transfer, TransferExit, TransferMessage};
-use super::{
-    Image, Message, OTA_PROFILE, UpdateError, UpdateResult, reply_zcl,
-    request_from_unsequenced_frame, zcl,
-};
+use super::transfer::{Offer, Transfer, TransferExit, TransferMessage};
+use super::{Message, OTA_PROFILE, UpdateError, reply_zcl, request_from_unsequenced_frame, zcl};
 
 /// Handle used by the OTA server to route messages to one destination transfer.
 #[derive(Debug)]
@@ -114,20 +110,25 @@ impl Server {
                         target_endpoint,
                         source_endpoint,
                         image,
+                        timeouts,
+                        cancellation,
                         completion,
                     } => {
+                        let offer = Offer {
+                            target,
+                            target_endpoint,
+                            source_endpoint,
+                            image,
+                            timeouts,
+                            cancellation,
+                            completion,
+                        };
                         if hardware_unavailable {
-                            let _result =
-                                completion.send(Err(UpdateError::HardwareEventStreamClosed));
+                            let _result = offer
+                                .completion
+                                .send(Err(UpdateError::HardwareEventStreamClosed));
                         } else {
-                            self.update(
-                                target,
-                                target_endpoint,
-                                source_endpoint,
-                                image,
-                                completion,
-                            )
-                            .await;
+                            self.update(offer).await;
                         }
                     }
                     Message::Received { indication } => {
@@ -192,38 +193,28 @@ impl Server {
     }
 
     /// Replace an existing destination update or admit a new destination transfer task.
-    async fn update(
-        &mut self,
-        target: FullAddress,
-        target_endpoint: IndividualEndpoint,
-        source_endpoint: IndividualEndpoint,
-        image: Image,
-        completion: oneshot::Sender<UpdateResult>,
-    ) {
-        let destination = Device::new(target.short_id(), target_endpoint.get());
+    async fn update(&mut self, offer: Offer) {
+        let destination = Device::new(offer.target.short_id(), offer.target_endpoint.get());
         let existing_transfer = self
             .transfers
             .get(&destination)
             .map(|transfer| transfer.messages.clone());
         if existing_transfer.is_none() && self.transfers.len() >= self.update_task_limit {
-            let _result = completion.send(Err(UpdateError::UpdateTaskLimitReached {
-                limit: self.update_task_limit,
-            }));
+            let _result = offer
+                .completion
+                .send(Err(UpdateError::UpdateTaskLimitReached {
+                    limit: self.update_task_limit,
+                }));
             return;
         }
         if let Err(error) = self.ensure_subscription().await {
-            let _result = completion.send(Err(error));
+            let _result = offer.completion.send(Err(error));
             return;
         }
 
         if let Some(messages) = existing_transfer {
-            let replacement = TransferMessage::Replace(Box::new(Replacement {
-                target,
-                target_endpoint,
-                source_endpoint,
-                image,
-                completion,
-            }));
+            let target = offer.target;
+            let replacement = TransferMessage::Replace(Box::new(offer));
             match messages.send(replacement).await {
                 Ok(()) => {
                     if let Some(transfer) = self.transfers.get_mut(&destination) {
@@ -233,29 +224,16 @@ impl Server {
                 }
                 Err(error) => {
                     self.transfers.remove(&destination);
-                    let TransferMessage::Replace(replacement) = error.0 else {
+                    let TransferMessage::Replace(offer) = error.0 else {
                         unreachable!("the failed message remains an update replacement");
                     };
-                    let Replacement {
-                        target,
-                        target_endpoint,
-                        source_endpoint,
-                        image,
-                        completion,
-                    } = *replacement;
-                    self.start_transfer(
-                        target,
-                        target_endpoint,
-                        source_endpoint,
-                        image,
-                        completion,
-                    );
+                    self.start_transfer(*offer);
                     return;
                 }
             }
         }
 
-        self.start_transfer(target, target_endpoint, source_endpoint, image, completion);
+        self.start_transfer(offer);
     }
 
     /// Lazily register the OTA frame subscription before offering the first update.
@@ -301,25 +279,11 @@ impl Server {
     }
 
     /// Spawn and register the sole destination task for a newly admitted update.
-    fn start_transfer(
-        &mut self,
-        target: FullAddress,
-        target_endpoint: IndividualEndpoint,
-        source_endpoint: IndividualEndpoint,
-        image: Image,
-        completion: oneshot::Sender<UpdateResult>,
-    ) {
-        let destination = Device::new(target.short_id(), target_endpoint.get());
+    fn start_transfer(&mut self, offer: Offer) {
+        let destination = Device::new(offer.target.short_id(), offer.target_endpoint.get());
+        let target = offer.target;
         let (messages, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
-        let transfer = Transfer::new(
-            self.zcl.clone(),
-            target,
-            target_endpoint,
-            source_endpoint,
-            image,
-            completion,
-            inbound,
-        );
+        let transfer = Transfer::new(self.zcl.clone(), messages.downgrade(), offer, inbound);
         let task = spawn(transfer.run());
         let task_id = task.id();
         let abort = task.abort_handle();

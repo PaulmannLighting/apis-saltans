@@ -15,6 +15,9 @@ pub use self::image::{
 };
 pub use self::message::{Message, UpdateError, UpdateResult};
 pub use self::server::Server;
+pub use self::timeouts::UpdateTimeouts;
+pub use self::update::CancellableOtaUpdate;
+pub(crate) use self::update::Update;
 use crate::aps::TransmissionResponse;
 use crate::{Error, zcl};
 
@@ -23,7 +26,9 @@ mod message;
 mod page_transfer;
 mod server;
 mod state;
+mod timeouts;
 mod transfer;
+mod update;
 
 const CURRENT_TIME_IMMEDIATE: u32 = 0;
 const UPGRADE_TIME_IMMEDIATE: u32 = 0;
@@ -135,6 +140,8 @@ async fn receive_transmission_result(
 mod tests {
     use std::future::Future;
     use std::io::Cursor;
+    use std::pin::Pin;
+    use std::task::{Context, Poll};
     use std::time::Duration;
 
     use bytes::{BufMut, Bytes, BytesMut};
@@ -157,11 +164,13 @@ mod tests {
 
     use super::{
         FieldControl, Image, Message, OTA_PROFILE, ParseImage, Request, Server, TEST_IEEE_ADDRESS,
-        TransmissionResponse, UpdateError, UpdateResult,
+        TransmissionResponse, UpdateError, UpdateResult, UpdateTimeouts,
     };
     use crate::{Error, Ota, zcl};
 
     const TEST_TIMEOUT: Duration = Duration::from_secs(1);
+    const TEST_LIFECYCLE_TIMEOUT: Duration = Duration::from_millis(100);
+    const LONG_LIFECYCLE_TIMEOUT: Duration = Duration::from_secs(60);
     const MANUFACTURER_CODE: u16 = 0x1234;
     const IMAGE_TYPE: u16 = 0x5678;
     const FILE_VERSION: u32 = 0x0102_0304;
@@ -194,6 +203,19 @@ mod tests {
             sequence_number: u8,
             request: Request,
         },
+    }
+
+    struct ScheduledUpdate {
+        completion: tokio::sync::oneshot::Receiver<UpdateResult>,
+        _cancellation: tokio::sync::oneshot::Sender<()>,
+    }
+
+    impl Future for ScheduledUpdate {
+        type Output = Result<UpdateResult, tokio::sync::oneshot::error::RecvError>;
+
+        fn poll(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Self::Output> {
+            Pin::new(&mut self.completion).poll(context)
+        }
     }
 
     #[test]
@@ -238,6 +260,7 @@ mod tests {
             tokio::spawn(server.run());
             let destination = test_destination();
             let (completion, _completion_result) = tokio::sync::oneshot::channel();
+            let (_cancellation, cancelled) = tokio::sync::oneshot::channel();
 
             ota_sender
                 .send(Message::Update {
@@ -245,6 +268,8 @@ mod tests {
                     target_endpoint: test_target_endpoint(),
                     source_endpoint: test_source_endpoint(),
                     image: test_image(),
+                    timeouts: UpdateTimeouts::default(),
+                    cancellation: cancelled,
                     completion,
                 })
                 .await
@@ -352,6 +377,130 @@ mod tests {
     }
 
     #[test]
+    fn dropping_update_future_releases_its_transfer_slot() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, SINGLE_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let first_update = update_via_api(ota_sender.clone(), test_image());
+            receive_zcl(&mut zcl_receiver).await;
+
+            first_update.abort();
+            assert!(
+                first_update
+                    .await
+                    .expect_err("the update task was aborted")
+                    .is_cancelled()
+            );
+            assert!(matches!(
+                timeout(TEST_TIMEOUT, receive_raw_zcl(&mut zcl_receiver))
+                    .await
+                    .expect("cancelled update did not unregister its subscription"),
+                zcl::Message::Unsubscribe { .. }
+            ));
+
+            let second_update = update_via_api_for(ota_sender, second_test_address(), test_image());
+            assert!(matches!(
+                receive_raw_zcl(&mut zcl_receiver).await,
+                zcl::Message::Subscribe { .. }
+            ));
+            let ObservedZcl::Transmit { request } = receive_zcl(&mut zcl_receiver).await else {
+                panic!("expected Image Notify transmission");
+            };
+            assert_eq!(
+                request.destination(),
+                crate::aps::request_destination(second_test_destination().into())
+            );
+            second_update.abort();
+        });
+    }
+
+    #[test]
+    fn discovery_deadline_expires_an_unanswered_offer() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let timeouts = UpdateTimeouts::new(
+                TEST_LIFECYCLE_TIMEOUT,
+                LONG_LIFECYCLE_TIMEOUT,
+                LONG_LIFECYCLE_TIMEOUT,
+            );
+            let completion =
+                schedule_for(&ota_sender, test_address(), test_image(), timeouts).await;
+            receive_zcl(&mut zcl_receiver).await;
+
+            assert_eq!(
+                timeout(TEST_TIMEOUT, completion)
+                    .await
+                    .expect("discovery deadline did not expire")
+                    .expect("OTA completion sender was dropped"),
+                Err(UpdateError::DiscoveryTimeout)
+            );
+        });
+    }
+
+    #[test]
+    fn block_inactivity_deadline_resets_after_discovery() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let timeouts = UpdateTimeouts::new(
+                LONG_LIFECYCLE_TIMEOUT,
+                TEST_LIFECYCLE_TIMEOUT,
+                LONG_LIFECYCLE_TIMEOUT,
+            );
+            let image = test_image();
+            let current_image = ImageId::new(MANUFACTURER_CODE, IMAGE_TYPE, FILE_VERSION - 1);
+            let completion = schedule_for(&ota_sender, test_address(), image, timeouts).await;
+            receive_zcl(&mut zcl_receiver).await;
+
+            ota_sender
+                .send(incoming(
+                    TEST_SEQUENCE_NUMBER,
+                    QueryNextImageRequest::new(current_image, None),
+                ))
+                .await
+                .expect("OTA server is running");
+            receive_zcl(&mut zcl_receiver).await;
+
+            assert_eq!(
+                timeout(TEST_TIMEOUT, completion)
+                    .await
+                    .expect("block-inactivity deadline did not expire")
+                    .expect("OTA completion sender was dropped"),
+                Err(UpdateError::BlockInactivityTimeout)
+            );
+        });
+    }
+
+    #[test]
+    fn total_transfer_deadline_bounds_the_complete_offer() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let timeouts = UpdateTimeouts::new(
+                LONG_LIFECYCLE_TIMEOUT,
+                LONG_LIFECYCLE_TIMEOUT,
+                TEST_LIFECYCLE_TIMEOUT,
+            );
+            let completion =
+                schedule_for(&ota_sender, test_address(), test_image(), timeouts).await;
+            receive_zcl(&mut zcl_receiver).await;
+
+            assert_eq!(
+                timeout(TEST_TIMEOUT, completion)
+                    .await
+                    .expect("total-transfer deadline did not expire")
+                    .expect("OTA completion sender was dropped"),
+                Err(UpdateError::TotalTransferTimeout)
+            );
+        });
+    }
+
+    #[test]
     fn replaces_an_update_in_the_existing_destination_task() {
         run_test(async {
             let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
@@ -384,8 +533,13 @@ mod tests {
                 Ok(Err(UpdateError::Transmission))
             ));
 
-            let _second_completion =
-                schedule_for(&ota_sender, second_test_address(), test_image()).await;
+            let _second_completion = schedule_for(
+                &ota_sender,
+                second_test_address(),
+                test_image(),
+                UpdateTimeouts::default(),
+            )
+            .await;
             let ObservedZcl::Transmit { request } = receive_zcl(&mut zcl_receiver).await else {
                 panic!("expected Image Notify transmission");
             };
@@ -818,37 +972,52 @@ mod tests {
     async fn schedule(
         sender: &tokio::sync::mpsc::Sender<Message>,
         image: Image,
-    ) -> tokio::sync::oneshot::Receiver<UpdateResult> {
-        schedule_for(sender, test_address(), image).await
+    ) -> ScheduledUpdate {
+        schedule_for(sender, test_address(), image, UpdateTimeouts::default()).await
     }
 
     async fn schedule_for(
         sender: &tokio::sync::mpsc::Sender<Message>,
         target: FullAddress,
         image: Image,
-    ) -> tokio::sync::oneshot::Receiver<UpdateResult> {
+        timeouts: UpdateTimeouts,
+    ) -> ScheduledUpdate {
         let (completion, result) = tokio::sync::oneshot::channel();
+        let (cancellation, cancelled) = tokio::sync::oneshot::channel();
         sender
             .send(Message::Update {
                 target,
                 target_endpoint: test_target_endpoint(),
                 source_endpoint: test_source_endpoint(),
                 image,
+                timeouts,
+                cancellation: cancelled,
                 completion,
             })
             .await
             .expect("OTA server is running");
-        result
+        ScheduledUpdate {
+            completion: result,
+            _cancellation: cancellation,
+        }
     }
 
     fn update_via_api(
         sender: tokio::sync::mpsc::Sender<Message>,
         image: Image,
     ) -> tokio::task::JoinHandle<Result<(), Error>> {
+        update_via_api_for(sender, test_address(), image)
+    }
+
+    fn update_via_api_for(
+        sender: tokio::sync::mpsc::Sender<Message>,
+        target: FullAddress,
+        image: Image,
+    ) -> tokio::task::JoinHandle<Result<(), Error>> {
         tokio::spawn(async move {
             sender
                 .update(
-                    test_address(),
+                    target,
                     test_target_endpoint(),
                     test_source_endpoint(),
                     image,
