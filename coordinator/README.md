@@ -122,6 +122,13 @@ When a remote device sends `MatchDescReq`, the ZDP transceiver asks the NCP for 
 descriptors and builds `MatchDescRsp` from matching descriptors. If the NCP cannot provide them, the
 request cannot be answered.
 
+The coordinator also serves local Active Endpoint and Simple Descriptor discovery from those NCP
+descriptors. It answers single-device Network Address and IEEE Address requests through the NCP's
+address-translation operations and responds to matching System Server Discovery requests from the
+server mask in its node descriptor. Extended address discovery returns `NOT_SUPPORTED` because the
+hardware abstraction does not expose associated-device enumeration. Power Descriptor discovery
+returns `NO_DESCRIPTOR` because coordinator startup does not configure a power descriptor.
+
 The crate does not persist a device table. Store the `FullAddress` values received in
 `Event::Device` if your application needs a device registry. The `AddressTranslation` trait can ask
 the NCP to resolve addresses, but persistence and cache policy remain application-owned.

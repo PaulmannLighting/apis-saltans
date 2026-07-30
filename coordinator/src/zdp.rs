@@ -14,13 +14,22 @@ use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress};
 use zb_aps::data::Header;
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
-use zb_core::{ClusterSpecific, Destination, Endpoint, FullAddress, Profile, destination};
+use zb_core::{
+    ClusterSpecific, Destination, Endpoint, FullAddress, IeeeAddress, Profile, destination,
+};
 use zb_hw::NcpHandle;
 use zb_zdp::{
-    Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, MatchDescReq, MatchDescRsp,
-    MgmtPermitJoiningRsp, NetworkManagement, NodeDescReq, NodeDescRsp, Status,
+    ActiveEpReq, ActiveEpRsp, Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, IeeeAddrReq,
+    IeeeAddrRsp, IeeeAddrRspResponse, MatchDescReq, MatchDescRsp, MgmtPermitJoiningRsp,
+    NetworkManagement, NodeDescReq, NodeDescRsp, NwkAddrReq, NwkAddrRsp, NwkAddrRspResponse,
+    PowerDescReq, PowerDescRsp, RequestType, SimpleDescReq, SimpleDescRsp, Status,
+    SystemServerDiscoveryReq, SystemServerDiscoveryRsp,
 };
 
+use self::discovery::{
+    DescriptorTarget, LOCAL_NWK_ADDRESS, active_endpoints, descriptor_target, matching_server_mask,
+    simple_descriptor,
+};
 use self::match_desc::{
     Action as MatchDescAction, action as match_desc_action, matching_endpoints,
 };
@@ -33,6 +42,7 @@ use crate::aps::{Aps, Metadata};
 use crate::response::ApsProtocolResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
+mod discovery;
 mod match_desc;
 mod message;
 mod node_desc;
@@ -123,6 +133,36 @@ impl Transceiver {
         let (seq, command) = zdp_frame.into_parts();
 
         match command {
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NwkAddrReq(
+                nwk_addr_req,
+            )) => {
+                self.handle_nwk_addr_req(source_address, seq, *nwk_addr_req)
+                    .await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::IeeeAddrReq(
+                ieee_addr_req,
+            )) => {
+                self.handle_ieee_addr_req(source_address, seq, *ieee_addr_req)
+                    .await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::PowerDescReq(
+                power_desc_req,
+            )) => {
+                self.handle_power_desc_req(source_address, seq, *power_desc_req)
+                    .await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::SimpleDescReq(
+                simple_desc_req,
+            )) => {
+                self.handle_simple_desc_req(source_address, seq, *simple_desc_req)
+                    .await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::ActiveEpReq(
+                active_ep_req,
+            )) => {
+                self.handle_active_ep_req(source_address, seq, *active_ep_req)
+                    .await;
+            }
             Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
                 match_desc_req,
             )) => {
@@ -139,6 +179,16 @@ impl Transceiver {
             )) => {
                 self.handle_node_desc_req(source_address, seq, *node_desc_req)
                     .await;
+            }
+            Command::DeviceAndServiceDiscovery(
+                DeviceAndServiceDiscovery::SystemServerDiscoveryReq(system_server_discovery_req),
+            ) => {
+                self.handle_system_server_discovery_req(
+                    source_address,
+                    seq,
+                    *system_server_discovery_req,
+                )
+                .await;
             }
             Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_)) => {
                 self.handle_mgmt_permit_joining_req(source_address, seq)
@@ -189,6 +239,165 @@ impl Transceiver {
         };
 
         Ok(ApsProtocolResponse::new(transmission, rx))
+    }
+
+    async fn handle_nwk_addr_req(&self, source: NetworkAddress, seq: u8, request: NwkAddrReq) {
+        let response = match request.request_type() {
+            Ok(RequestType::SingleDeviceResponse) => self
+                .resolve_nwk_address(request.ieee_addr())
+                .await
+                .map(|nwk_addr_remote_dev| NwkAddrRspResponse::Single {
+                    ieee_addr_remote_dev: request.ieee_addr(),
+                    nwk_addr_remote_dev,
+                }),
+            Ok(RequestType::ExtendedResponse) => Err(Status::NotSupported),
+            Err(_) => Err(Status::InvalidRequestType),
+        };
+
+        self.respond_to_source(source, seq, NwkAddrRsp::new(response), "NWK_addr_rsp")
+            .await;
+    }
+
+    async fn handle_ieee_addr_req(&self, source: NetworkAddress, seq: u8, request: IeeeAddrReq) {
+        let response = match RequestType::try_from(request.request_type()) {
+            Ok(RequestType::SingleDeviceResponse) => self
+                .resolve_ieee_address(request.nwk_addr_of_interest())
+                .await
+                .map(|ieee_addr_remote_dev| IeeeAddrRspResponse::Single {
+                    ieee_addr_remote_dev,
+                    nwk_addr_remote_dev: request.nwk_addr_of_interest(),
+                }),
+            Ok(RequestType::ExtendedResponse) => Err(Status::NotSupported),
+            Err(_) => Err(Status::InvalidRequestType),
+        };
+
+        self.respond_to_source(source, seq, IeeeAddrRsp::new(response), "IEEE_addr_rsp")
+            .await;
+    }
+
+    async fn handle_power_desc_req(&self, source: NetworkAddress, seq: u8, request: PowerDescReq) {
+        let nwk_addr_of_interest = request.nwk_addr_of_interest();
+        let power_descriptor = match descriptor_target(nwk_addr_of_interest) {
+            DescriptorTarget::Local => Err(Status::NoDescriptor),
+            DescriptorTarget::Remote(device) => Err(self.remote_descriptor_status(device).await),
+            DescriptorTarget::Invalid => Err(Status::InvalidRequestType),
+        };
+        let response = PowerDescRsp::new(nwk_addr_of_interest, power_descriptor);
+
+        self.respond_to_source(source, seq, response, "Power_Desc_rsp")
+            .await;
+    }
+
+    async fn handle_simple_desc_req(
+        &self,
+        source: NetworkAddress,
+        seq: u8,
+        request: SimpleDescReq,
+    ) {
+        let nwk_addr_of_interest = request.nwk_address_of_interest();
+        let descriptor = match descriptor_target(nwk_addr_of_interest) {
+            DescriptorTarget::Local => match self.ncp.get_endpoints().await {
+                Ok(descriptors) => simple_descriptor(request.endpoint(), &descriptors),
+                Err(error) => {
+                    error!("Failed to read local endpoints for Simple_Desc_req: {error}");
+                    Err(Status::NoDescriptor)
+                }
+            },
+            DescriptorTarget::Remote(device) => Err(self.remote_descriptor_status(device).await),
+            DescriptorTarget::Invalid => Err(Status::InvalidRequestType),
+        };
+        let response = SimpleDescRsp::new(nwk_addr_of_interest, descriptor);
+
+        self.respond_to_source(source, seq, response, "Simple_Desc_rsp")
+            .await;
+    }
+
+    async fn handle_active_ep_req(&self, source: NetworkAddress, seq: u8, request: ActiveEpReq) {
+        let nwk_addr_of_interest = request.nwk_addr_of_interest();
+        let endpoints = match descriptor_target(nwk_addr_of_interest) {
+            DescriptorTarget::Local => match self.ncp.get_endpoints().await {
+                Ok(descriptors) => active_endpoints(&descriptors),
+                Err(error) => {
+                    error!("Failed to read local endpoints for Active_EP_req: {error}");
+                    Err(Status::NoDescriptor)
+                }
+            },
+            DescriptorTarget::Remote(device) => Err(self.remote_descriptor_status(device).await),
+            DescriptorTarget::Invalid => Err(Status::InvalidRequestType),
+        };
+        let response = ActiveEpRsp::new(nwk_addr_of_interest, endpoints);
+
+        self.respond_to_source(source, seq, response, "Active_EP_rsp")
+            .await;
+    }
+
+    async fn handle_system_server_discovery_req(
+        &self,
+        source: NetworkAddress,
+        seq: u8,
+        request: SystemServerDiscoveryReq,
+    ) {
+        let Some(server_mask) = matching_server_mask(request.server_mask(), &self.descriptor)
+        else {
+            return;
+        };
+        let response = SystemServerDiscoveryRsp::new(Status::Success.into(), server_mask.bits());
+
+        self.respond_to_source(source, seq, response, "System_Server_Discovery_rsp")
+            .await;
+    }
+
+    async fn resolve_nwk_address(&self, ieee_address: IeeeAddress) -> Result<u16, Status> {
+        match self.ncp.get_ieee_address().await {
+            Ok(local_address) if local_address == ieee_address => Ok(LOCAL_NWK_ADDRESS),
+            Ok(_) => self.resolve_remote_nwk_address(ieee_address).await,
+            Err(error) => {
+                error!("Failed to read the coordinator IEEE address: {error}");
+                self.resolve_remote_nwk_address(ieee_address).await
+            }
+        }
+    }
+
+    async fn resolve_remote_nwk_address(&self, ieee_address: IeeeAddress) -> Result<u16, Status> {
+        self.ncp
+            .ieee_address_to_short_id(ieee_address)
+            .await
+            .map(Device::as_u16)
+            .map_err(|_| Status::DeviceNotFound)
+    }
+
+    async fn resolve_ieee_address(&self, nwk_address: u16) -> Result<IeeeAddress, Status> {
+        match descriptor_target(nwk_address) {
+            DescriptorTarget::Local => self.ncp.get_ieee_address().await,
+            DescriptorTarget::Remote(device) => self.ncp.short_id_to_ieee_address(device).await,
+            DescriptorTarget::Invalid => return Err(Status::InvalidRequestType),
+        }
+        .map_err(|_| Status::DeviceNotFound)
+    }
+
+    async fn remote_descriptor_status(&self, device: Device) -> Status {
+        let device_is_known = self.ncp.short_id_to_ieee_address(device).await.is_ok();
+        unavailable_child_status(device_is_known)
+    }
+
+    async fn respond_to_source<T>(
+        &self,
+        source: NetworkAddress,
+        seq: u8,
+        response: T,
+        response_name: &str,
+    ) where
+        T: ClusterSpecific + ToLeStream,
+    {
+        let Ok(node_id) = source.as_u16().try_into().inspect_err(|error| {
+            warn!("Invalid node ID: {error:?}");
+        }) else {
+            return;
+        };
+
+        if let Err(error) = self.respond(seq, node_id, response).await {
+            error!("Failed to send {response_name}: {error:?}");
+        }
     }
 
     async fn respond<T>(&self, seq: u8, device: Device, payload: T) -> Result<(), zb_hw::Error>

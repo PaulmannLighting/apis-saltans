@@ -192,7 +192,16 @@ The ZDP actor:
 - sends APS metadata and serialized ZDP frames through the APS actor
 - correlates request and response commands
 - queries the NCP directly for endpoint and address information needed while serving ZDP requests
-- handles device announcements and selected incoming requests
+- handles device announcements and incoming address, descriptor, endpoint, match-descriptor,
+  system-server-discovery, and permit-joining requests
+
+For local `Active_EP_req` and `Simple_Desc_req` commands, the actor uses the NCP's current endpoint
+descriptors. Single-device address requests use the NCP's address-translation operations.
+Extended address requests return `NOT_SUPPORTED` because the hardware abstraction does not expose
+an associated-device list. `Power_Desc_req` returns `NO_DESCRIPTOR` because the coordinator startup
+configuration does not contain a power descriptor. `System_Server_Discovery_req` receives a
+response only when the requested mask intersects the server mask advertised in the coordinator's
+node descriptor.
 
 ZDP responses generated locally also travel through the APS actor, so their APS counters and
 acknowledgement behavior follow the same path as outgoing requests.
