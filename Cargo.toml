@@ -50,6 +50,7 @@ complexity = { level = "warn", priority = -100 }
 cargo = { level = "warn", priority = -95 }
 all = { level = "warn", priority = -98 }
 
+inline_trait_bounds = "warn"
 # Serde and thiserror use syn 3 while the remaining proc-macro dependencies still use syn 2.
 multiple_crate_versions = "allow"
 incompatible_msrv = "warn"
