@@ -199,8 +199,10 @@ Coordinator startup therefore does not wire OTA frame routing itself, and the we
 cannot keep the server alive after external OTA handles are dropped.
 
 ZCL delivers subscription frames without awaiting channel capacity. If a subscription channel is
-full, the current frame continues through normal response correlation and application-event
-routing. Closed subscription channels are removed automatically.
+full, the current frame continues through application-event routing. Response correlation checks
+the expected response direction before subscription delivery, so a correlated response cannot be
+consumed by a subscription while unrelated client requests continue to reach it. Closed
+subscription channels are removed automatically.
 
 `Ota::update` remains pending for the complete exchange. It returns success after the client sends
 a successful Upgrade End Request. Client rejection, image-read failures, terminal transmission

@@ -10,6 +10,7 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::time::sleep;
 use zb_aps::Data;
 use zb_aps::apsde::{DataIndication, DataRequest, Source};
+use zb_core::Direction;
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::message::Message;
@@ -121,10 +122,6 @@ impl Transceiver {
             return;
         };
         trace!("Received ZCL message from {source:?}: {aps_frame:?}");
-        if self.forward_to_subscribers(source, &aps_frame) {
-            return;
-        }
-
         let index = Index::from_received_zcl_frame(source_address, &aps_frame);
 
         let (_, zcl_frame) = aps_frame.clone().into_parts();
@@ -137,6 +134,9 @@ impl Transceiver {
                 "Discarding late ZCL response with quarantined sequence {}",
                 index.sequence()
             );
+            return;
+        }
+        if self.forward_to_subscribers(source, &aps_frame) {
             return;
         }
 
@@ -323,14 +323,22 @@ impl Transceiver {
             ));
         }
 
-        Ok(Index::new(
+        Ok(Index::new_zcl(
             address.as_u16(),
             endpoint,
             request.cluster_id(),
             request.profile_id(),
             request.asdu().header().manufacturer_code(),
+            response_direction(request.asdu().header().control().direction()),
             sequence_number,
         ))
+    }
+}
+
+const fn response_direction(request_direction: Direction) -> Direction {
+    match request_direction {
+        Direction::ClientToServer => Direction::ServerToClient,
+        Direction::ServerToClient => Direction::ClientToServer,
     }
 }
 
@@ -361,6 +369,7 @@ mod tests {
 
     use super::{Message, Subscription, SubscriptionFilter, SubscriptionMessage, Transceiver};
     use crate::aps::Aps;
+    use crate::index::Index;
     use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
     const SOURCE_NODE_ID: u16 = 0x4321;
@@ -484,6 +493,80 @@ mod tests {
                     Cluster::OnOff(OnOffCommand::On(_))
                 ));
                 assert!(application_events.try_recv().is_err());
+            });
+    }
+
+    #[test]
+    fn matching_subscription_does_not_consume_correlated_response() {
+        Builder::new_current_thread()
+            .build()
+            .expect("Tokio runtime")
+            .block_on(async {
+                let filter = SubscriptionFilter::new(
+                    ClusterId::OnOff,
+                    Scope::ClusterSpecific,
+                    Direction::ClientToServer,
+                );
+                let (subscription, mut subscribed_frames) = Subscription::channel(filter);
+                let (mut transceiver, mut events) = unstarted_transceiver();
+                transceiver.subscriptions.push(subscription);
+                let frame = subscribed_frame();
+                let source_address =
+                    NetworkAddress::new(SOURCE_NODE_ID).expect("source address is valid");
+                let response_index = Index::from_received_zcl_frame(source_address, &frame);
+                let (_, _, response) = transceiver
+                    .responses
+                    .register(|_| response_index)
+                    .expect("response correlation can be registered");
+
+                transceiver
+                    .handle_message_received(subscribed_indication())
+                    .await;
+
+                assert!(matches!(
+                    response.await,
+                    Ok(Ok(Cluster::OnOff(OnOffCommand::On(_))))
+                ));
+                assert!(subscribed_frames.try_recv().is_err());
+                assert!(events.try_recv().is_err());
+            });
+    }
+
+    #[test]
+    fn subscription_request_does_not_complete_opposite_direction_response() {
+        Builder::new_current_thread()
+            .build()
+            .expect("Tokio runtime")
+            .block_on(async {
+                let filter = SubscriptionFilter::new(
+                    ClusterId::OnOff,
+                    Scope::ClusterSpecific,
+                    Direction::ClientToServer,
+                );
+                let (subscription, mut subscribed_frames) = Subscription::channel(filter);
+                let (mut transceiver, _events) = unstarted_transceiver();
+                transceiver.subscriptions.push(subscription);
+                let endpoint = Endpoint::Application(Application::MIN);
+                let response_index = Index::new_zcl(
+                    SOURCE_NODE_ID,
+                    endpoint,
+                    ClusterId::OnOff.as_u16(),
+                    Profile::ZigbeeHomeAutomation.as_u16(),
+                    None,
+                    Direction::ServerToClient,
+                    TRANSACTION_SEQUENCE,
+                );
+                let (_, _, mut response) = transceiver
+                    .responses
+                    .register(|_| response_index)
+                    .expect("response correlation can be registered");
+
+                transceiver
+                    .handle_message_received(subscribed_indication())
+                    .await;
+
+                assert!(subscribed_frames.recv().await.is_some());
+                assert!(response.try_recv().is_err());
             });
     }
 

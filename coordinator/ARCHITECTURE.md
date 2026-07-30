@@ -138,7 +138,7 @@ The ZCL actor:
 - stores response correlation channels for `communicate`
 - registers generic filtered subscriptions received through its actor inbox
 - unregisters subscriptions by channel identity and prunes subscriptions whose receivers have closed
-- delivers matching received frames to generic internal subscriptions before response correlation
+- correlates responses before delivering unmatched frames to generic internal subscriptions
 - sends replies with an explicitly supplied ZCL transaction sequence
 - routes unmatched received commands to the application event channel
 
@@ -179,12 +179,13 @@ task and sends an explicit unsubscribe message to ZCL. A later update batch regi
 subscription.
 
 ZCL applies only the subscription's typed cluster, scope, and direction filter; the OTA forwarding
-task performs the typed `Cluster::OtaUpgrade` match. Subscribed frames are delivered before normal
-response correlation so client requests cannot be consumed by an unrelated pending operation. ZCL
-uses non-blocking delivery for each bounded subscription channel. A full channel retains its
-subscription but sends the current frame through normal response correlation and application-event
-routing. A closed channel removes the subscription immediately. Subscription setup is no longer
-part of coordinator startup or constructor wiring.
+task performs the typed `Cluster::OtaUpgrade` match. Response correlation includes the direction
+opposite the outgoing request and runs before subscription delivery. An unrelated client request
+therefore remains available to the subscription, while a matching response cannot be consumed by
+it. ZCL uses non-blocking delivery for each bounded subscription channel. A full channel retains
+its subscription but sends the current frame through application-event routing. A closed channel
+removes the subscription immediately. Subscription setup is no longer part of coordinator startup
+or constructor wiring.
 
 The OTA server awaits one private event inbox. A small API task forwards public `Message` values
 into it, subscription forwarding tasks send received frames into it, and destination supervisors
