@@ -342,8 +342,12 @@ async fn receive_events(mut events: tokio::sync::mpsc::Receiver<Event>) {
             Event::Device(Device::KeepAlive(device)) => {
                 println!("keep-alive from {device}");
             }
-            Event::Zcl { src_address, aps_frame } => {
-                println!("unsolicited ZCL from {src_address}: {aps_frame:?}");
+            Event::Zcl { indication } => {
+                println!(
+                    "unsolicited ZCL from {:?}: {:?}",
+                    indication.metadata().source(),
+                    indication.asdu()
+                );
             }
         }
     }
@@ -351,7 +355,10 @@ async fn receive_events(mut events: tokio::sync::mpsc::Receiver<Event>) {
 ```
 
 `Event::Zcl` is emitted only for inbound frames that do not match an outstanding request.
-Request/response traffic is consumed by the relevant `communicate(...)` call.
+Request/response traffic is consumed by the relevant `communicate(...)` call. The event contains
+the normalized `DataIndication<zb_zcl::Frame<zb_zcl::Cluster>, (), ()>` so applications retain the
+received source and destination, profile and cluster identifiers, status, security information,
+and link quality alongside the parsed ZCL frame.
 
 An APS packet with cluster ID `0x0025` (`Cluster::KeepAlive`) under a supported application profile
 is handled before ZCL payload decoding and produces `Device::KeepAlive`. The contained

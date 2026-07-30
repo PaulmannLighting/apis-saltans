@@ -111,7 +111,7 @@ impl Transceiver {
 
     /// Handle a received ZCL message.
     fn handle_message_received(&mut self, indication: DataIndication<Frame<Cluster>, (), ()>) {
-        let Some((source, aps_frame)) = crate::apsde::into_legacy_data(indication) else {
+        let Some((source, header)) = crate::apsde::legacy_context(indication.metadata()) else {
             warn!("Discarding ZCL indication with unsupported addressing");
             return;
         };
@@ -119,6 +119,7 @@ impl Transceiver {
             warn!("Discarding ZCL indication from non-network source: {source:?}");
             return;
         };
+        let aps_frame = Data::new(header, indication.asdu().clone());
         trace!("Received ZCL message from {source:?}: {aps_frame:?}");
         let index = Index::from_received_zcl_frame(source_address, &aps_frame);
 
@@ -138,16 +139,7 @@ impl Transceiver {
             return;
         }
 
-        let Ok(short_id) = source_address.as_u16().try_into().inspect_err(|error| {
-            warn!("Discarding message from invalid source {source:?}: {error:?}");
-        }) else {
-            return;
-        };
-
-        self.events.emit(Event::Zcl {
-            src_address: short_id,
-            aps_frame,
-        });
+        self.events.emit(Event::Zcl { indication });
     }
 
     /// Deliver a received frame to every matching live subscription.
@@ -606,9 +598,14 @@ mod tests {
                     .await
                     .expect("ZCL transceiver remains available");
 
+                let Some(Event::Zcl { indication }) = application_events.recv().await else {
+                    panic!("expected unmatched ZCL indication");
+                };
+                assert_eq!(indication.metadata().source(), source());
+                assert_eq!(indication.metadata().link_quality(), LINK_QUALITY);
                 assert!(matches!(
-                    application_events.recv().await,
-                    Some(Event::Zcl { .. })
+                    indication.asdu().payload(),
+                    Cluster::OnOff(OnOffCommand::On(_))
                 ));
             });
     }

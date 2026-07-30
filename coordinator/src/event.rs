@@ -1,6 +1,5 @@
-use zb_aps::Data;
-use zb_core::ShortId;
-use zb_zcl::Cluster;
+use zb_aps::apsde::DataIndication;
+use zb_zcl::{Cluster, Frame};
 
 pub use self::device::Device;
 pub use self::network::{Error as NetworkError, Network};
@@ -17,12 +16,13 @@ pub enum Event {
     /// Device lifecycle or activity notification.
     Device(Device),
 
-    /// Unmatched inbound ZCL frame.
+    /// Unmatched inbound ZCL indication.
     Zcl {
-        /// NWK short address of the sender.
-        src_address: ShortId,
-
-        /// Received APS frame containing the parsed ZCL frame.
-        aps_frame: Data<zb_zcl::Frame<Cluster>>,
+        /// Normalized APSDE indication containing the parsed ZCL frame and receive metadata.
+        ///
+        /// Backend-specific receive timestamps and device-key-pair handles are normalized to
+        /// `()`. Addressing, profile, cluster, status, security, and link-quality metadata remain
+        /// attached.
+        indication: DataIndication<Frame<Cluster>, (), ()>,
     },
 }
