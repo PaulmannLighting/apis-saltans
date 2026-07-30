@@ -134,18 +134,15 @@ impl Transceiver {
         &mut self,
         indication: DataIndication<Frame<Command>, (), ()>,
     ) {
+        let Some((source_address, index)) = received_index(&indication) else {
+            return;
+        };
         let request_was_broadcast = matches!(
             indication.metadata().destination(),
             ReceivedDestination::Broadcast { .. }
         );
-        let source = indication.metadata().source();
-        let Some(source_address) = source.network_address() else {
-            warn!("Discarding ZDP indication from non-network source: {source:?}");
-            return;
-        };
-        trace!("Received ZDP message from {source:?}: {indication:?}");
+        trace!("Received ZDP message: {indication:?}");
         let (_, zdp_frame) = indication.into_parts();
-        let index = Index::from_received_zdp_frame(source_address, &zdp_frame);
         let (seq, command) = zdp_frame.into_parts();
 
         match command {
@@ -644,6 +641,26 @@ impl Transceiver {
         spawn(Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx));
         zdp_tx
     }
+}
+
+/// Validate an indication's ZDP addressing and derive its response-correlation key.
+fn received_index<T, K>(
+    indication: &DataIndication<Frame<Command>, T, K>,
+) -> Option<(NetworkAddress, Index)> {
+    let source = indication.metadata().source();
+    let Some(source_address) = source.network_address() else {
+        warn!("Discarding ZDP indication from non-network source: {source:?}");
+        return None;
+    };
+    let Some(index) = Index::from_received_zdp_indication(indication) else {
+        warn!(
+            "Discarding ZDP indication not addressed between endpoint zero: source={source:?} destination={:?}",
+            indication.metadata().destination()
+        );
+        return None;
+    };
+
+    Some((source_address, index))
 }
 
 const fn permit_joining_response(request_was_broadcast: bool) -> Option<MgmtPermitJoiningRsp> {

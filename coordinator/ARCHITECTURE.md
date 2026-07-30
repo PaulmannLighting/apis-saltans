@@ -256,6 +256,10 @@ Pending ZCL and ZDP requests are keyed by an internal `Index` containing:
 - optional ZCL manufacturer code
 - protocol transaction sequence
 
+Received ZDP indications can produce a correlation key only when both their source and destination
+use endpoint `0x00`. This validation is repeated at the ZDP actor boundary so malformed
+profile-zero traffic cannot complete a pending exchange even if it bypasses normal mux parsing.
+
 The mux parses successful APSDE data indications and forwards them to the appropriate protocol
 actor. Each actor derives the index directly from the received indication metadata and parsed frame
 and removes the matching one-shot sender. Each protocol actor permits up to 256 unavailable
