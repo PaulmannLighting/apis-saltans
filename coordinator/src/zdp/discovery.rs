@@ -77,7 +77,7 @@ pub(super) fn matching_server_mask(
 
 #[cfg(test)]
 mod tests {
-    use zb_core::node::{Descriptor, ServerMask};
+    use zb_core::node::{Descriptor, Flags, MacCapabilityFlags, ServerMask};
     use zb_core::short_id::Broadcast;
     use zb_core::{Endpoint, Profile};
     use zb_zdp::{AppFlags, Clusters, SimpleDescriptor, Status};
@@ -130,7 +130,10 @@ mod tests {
         let descriptor = descriptor(FIRST_ENDPOINT);
 
         assert_eq!(
-            simple_descriptor(Endpoint::from(FIRST_ENDPOINT), &[descriptor.clone()]),
+            simple_descriptor(
+                Endpoint::from(FIRST_ENDPOINT),
+                std::slice::from_ref(&descriptor),
+            ),
             Ok(descriptor)
         );
         assert_eq!(
@@ -171,8 +174,8 @@ mod tests {
 
     fn node_descriptor(server_mask: ServerMask) -> Descriptor {
         Descriptor::new(
-            Default::default(),
-            Default::default(),
+            Flags::default(),
+            MacCapabilityFlags::default(),
             MANUFACTURER_CODE,
             MAXIMUM_BUFFER_SIZE,
             MAXIMUM_TRANSFER_SIZE,

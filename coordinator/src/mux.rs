@@ -85,6 +85,21 @@ impl Mux {
             }
             HardwareNetworkEvent::Down => {
                 trace!("Network is down");
+                self.aps.network_down().await.unwrap_or_else(|error| {
+                    trace!("Failed to notify APS actor that the network is down: {error}");
+                });
+                self.zcl
+                    .send(zcl::Message::NetworkDown)
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to notify ZCL actor that the network is down: {error}");
+                    });
+                self.zdp
+                    .send(zdp::Message::NetworkDown)
+                    .await
+                    .unwrap_or_else(|error| {
+                        trace!("Failed to notify ZDP actor that the network is down: {error}");
+                    });
                 self.events
                     .send(ApplicationEvent::Network(Network::Down))
                     .await
@@ -285,12 +300,12 @@ mod tests {
     use crate::aps::{Aps, Message as ApsMessage};
     use crate::{MPSC_CHANNEL_SIZE, zcl, zdp};
 
-    const APS_COUNTER: u8 = 7;
     const LINK_QUALITY: u8 = 255;
     const LOCAL_ADDRESS: u16 = 0;
     const REMOTE_ADDRESS: u16 = 0x1234;
     const RX_TIME: u64 = 42;
     const TX_TIME: u64 = 43;
+    const APS_COUNTER: u8 = 8;
     const ZCL_SEQUENCE: u8 = 9;
     const ZDP_SEQUENCE: u8 = 10;
 

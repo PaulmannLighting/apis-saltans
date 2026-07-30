@@ -63,6 +63,18 @@ pub enum Error {
     #[error("Timeout: {0:?}")]
     Timeout(#[from] Elapsed),
 
+    /// Every protocol transaction sequence is pending or quarantined.
+    #[error("No protocol transaction sequence is available")]
+    TransactionSequenceExhausted,
+
+    /// Every APS counter is pending or quarantined.
+    #[error("No APS counter is available")]
+    ApsCounterExhausted,
+
+    /// A correlated ZCL or ZDP response did not arrive before its deadline.
+    #[error("Protocol response timed out")]
+    ProtocolResponseTimeout,
+
     /// A coordinator-managed OTA update failed.
     #[error("OTA update failed: {0}")]
     Ota(#[from] crate::ota::UpdateError),

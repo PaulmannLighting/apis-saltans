@@ -1,14 +1,13 @@
 //! Transceiver to send and receive ZCL messages.
 
-use std::collections::BTreeMap;
-
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
+use tokio::runtime::Handle;
 use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::oneshot::{self, channel};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
+use tokio::time::sleep;
 use zb_aps::Data;
 use zb_aps::apsde::{DataIndication, DataRequest, Source};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
@@ -20,6 +19,7 @@ pub use self::subscription::{
 };
 use super::index::Index;
 use crate::aps::{Aps, TransmissionResponse};
+use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry};
 use crate::response::ApsProtocolResponse;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
@@ -32,72 +32,78 @@ pub struct Transceiver {
     aps: Aps,
     events: Sender<Event>,
     subscriptions: Vec<Subscription>,
-    responses: BTreeMap<Index, oneshot::Sender<Cluster>>,
-    seq: u8,
+    responses: Registry<Cluster>,
+    inbox: WeakSender<Message>,
 }
 
 impl Transceiver {
     /// Create a ZCL transceiver.
-    pub const fn new(aps: Aps, events: Sender<Event>) -> Self {
+    pub const fn new(aps: Aps, events: Sender<Event>, inbox: WeakSender<Message>) -> Self {
         Self {
             aps,
             events,
             subscriptions: Vec::new(),
-            responses: BTreeMap::new(),
-            seq: 0,
+            responses: Registry::new(),
+            inbox,
         }
     }
 
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
-            match message {
-                Message::Subscribe { subscription } => {
-                    self.subscriptions.retain(Subscription::is_open);
-                    self.subscriptions.push(subscription);
-                }
-                Message::Unsubscribe { messages } => {
-                    self.subscriptions.retain(|subscription| {
-                        !subscription.same_channel(&messages) && subscription.is_open()
-                    });
-                }
-                Message::Received { indication } => {
-                    self.handle_message_received(indication).await;
-                }
-                Message::Transmit { request, response } => {
-                    response
-                        .send(self.transmit(request).await)
-                        .unwrap_or_else(|error| {
-                            debug!("Failed to send unicast response: {error:?}");
-                        });
-                }
-                Message::Reply {
-                    sequence_number,
-                    request,
-                    response,
-                } => {
-                    response
-                        .send(self.transmit_with_sequence(request, sequence_number).await)
-                        .unwrap_or_else(|error| {
-                            debug!("Failed to return ZCL reply transmission result: {error:?}");
-                        });
-                }
-                Message::Communicate { request, response } => {
-                    response
-                        .send(self.communicate(request).await)
-                        .unwrap_or_else(|error| {
-                            debug!("Failed to send unicast response: {error:?}");
-                        });
-                }
-            }
+            self.handle_actor_message(message).await;
         }
     }
 
-    /// Return and increment the ZCL sequence number.
-    const fn next_seq(&mut self) -> u8 {
-        let seq = self.seq;
-        self.seq = self.seq.wrapping_add(1);
-        seq
+    async fn handle_actor_message(&mut self, message: Message) {
+        match message {
+            Message::Subscribe { subscription } => {
+                self.subscriptions.retain(Subscription::is_open);
+                self.subscriptions.push(subscription);
+            }
+            Message::Unsubscribe { messages } => {
+                self.subscriptions.retain(|subscription| {
+                    !subscription.same_channel(&messages) && subscription.is_open()
+                });
+            }
+            Message::Received { indication } => {
+                self.handle_message_received(indication).await;
+            }
+            Message::NetworkDown => {
+                self.responses.fail_all(&zb_hw::TransmissionError::NoRoute);
+            }
+            Message::Cancel { index } => {
+                self.responses.cancel(index);
+            }
+            Message::ResponseTimeout { index } => {
+                self.responses.timeout(index);
+            }
+            Message::Transmit { request, response } => {
+                response
+                    .send(self.transmit(request).await)
+                    .unwrap_or_else(|error| {
+                        debug!("Failed to send unicast response: {error:?}");
+                    });
+            }
+            Message::Reply {
+                sequence_number,
+                request,
+                response,
+            } => {
+                response
+                    .send(self.transmit_with_sequence(request, sequence_number).await)
+                    .unwrap_or_else(|error| {
+                        debug!("Failed to return ZCL reply transmission result: {error:?}");
+                    });
+            }
+            Message::Communicate { request, response } => {
+                response
+                    .send(self.communicate(request).await)
+                    .unwrap_or_else(|error| {
+                        debug!("Failed to send unicast response: {error:?}");
+                    });
+            }
+        }
     }
 
     /// Handle a received ZCL message.
@@ -120,13 +126,16 @@ impl Transceiver {
 
         let index = Index::from_received_zcl_frame(source_address, &aps_frame);
 
-        if let Some(sender) = self.responses.remove(&index) {
-            let (_, zcl_frame) = aps_frame.into_parts();
-            let (_, cluster) = zcl_frame.into_parts();
-            sender.send(cluster).unwrap_or_else(|error| {
-                debug!("Failed to send ZCL response: {error:?}");
-            });
-
+        let (_, zcl_frame) = aps_frame.clone().into_parts();
+        let (_, cluster) = zcl_frame.into_parts();
+        if self.responses.complete(index, cluster) {
+            return;
+        }
+        if self.responses.is_quarantined(index) {
+            debug!(
+                "Discarding late ZCL response with quarantined sequence {}",
+                index.sequence()
+            );
             return;
         }
 
@@ -191,9 +200,11 @@ impl Transceiver {
         &mut self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<TransmissionResponse, Error> {
-        let sequence_number = self.next_seq();
+        let sequence_number = self
+            .responses
+            .reserve_untracked_sequence(|sequence| Self::request_index(&request, sequence).ok())?;
         let request = Self::encode_request(request, sequence_number);
-        Ok(self.aps.transmit(request).await?)
+        self.aps.transmit(request).await
     }
 
     /// Queue a ZCL command with an explicitly selected transaction sequence number.
@@ -203,7 +214,7 @@ impl Transceiver {
         sequence_number: u8,
     ) -> Result<TransmissionResponse, Error> {
         let request = Self::encode_request(request, sequence_number);
-        Ok(self.aps.transmit(request).await?)
+        self.aps.transmit(request).await
     }
 
     /// Send a ZCL unicast message with back-channel communication.
@@ -219,21 +230,63 @@ impl Transceiver {
         &mut self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<ApsProtocolResponse<Cluster>, Error> {
-        let sequence_number = self.next_seq();
-        let index = Self::request_index(&request, sequence_number)?;
+        Self::request_index(&request, u8::MIN)?;
+        let (sequence_number, index, rx) = self.responses.register(|sequence| {
+            Self::request_index(&request, sequence)
+                .expect("ZCL communication destination was validated")
+        })?;
+        self.schedule_response_timeout(index);
         let request = Self::encode_request(request, sequence_number);
-        let (tx, rx) = channel();
-        self.responses.insert(index, tx);
 
         let transmission = match self.aps.transmit(request).await {
             Ok(transmission) => transmission,
             Err(error) => {
-                self.responses.remove(&index);
-                return Err(error.into());
+                self.responses.cancel(index);
+                return Err(error);
             }
         };
+        let cancellation = self.cancellation(index);
 
-        Ok(ApsProtocolResponse::new(transmission, rx))
+        Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
+    }
+
+    fn cancellation(&self, index: Index) -> Cancellation {
+        let inbox = self.inbox.clone();
+        let runtime = Handle::current();
+        Cancellation::new(index, move |index| {
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            match inbox.try_send(Message::Cancel { index }) {
+                Ok(()) => {}
+                Err(TrySendError::Full(message)) => {
+                    runtime.spawn(async move {
+                        inbox.send(message).await.unwrap_or_else(|error| {
+                            debug!("Failed to enqueue ZCL response cancellation: {error}");
+                        });
+                    });
+                }
+                Err(TrySendError::Closed(_)) => {
+                    debug!("Failed to enqueue ZCL response cancellation: actor unavailable");
+                }
+            }
+        })
+    }
+
+    fn schedule_response_timeout(&self, index: Index) {
+        let inbox = self.inbox.clone();
+        spawn(async move {
+            sleep(PROTOCOL_RESPONSE_TIMEOUT).await;
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            inbox
+                .send(Message::ResponseTimeout { index })
+                .await
+                .unwrap_or_else(|error| {
+                    debug!("Failed to enqueue ZCL response timeout: {error}");
+                });
+        });
     }
 
     fn encode_request(
@@ -275,7 +328,7 @@ impl Transceiver {
     /// Start the ZCL transceiver.
     pub fn spawn(aps: Aps, events: Sender<Event>) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(aps, events).run(zcl_rx));
+        spawn(Self::new(aps, events, zcl_tx.downgrade()).run(zcl_rx));
         zcl_tx
     }
 }
@@ -394,7 +447,10 @@ mod tests {
                 );
                 let (subscription, mut subscribed_frames) = Subscription::channel(filter);
                 let (transceiver, messages) = channel(MPSC_CHANNEL_SIZE);
-                tokio::spawn(Transceiver::new(Aps::new(aps_sender), events).run(messages));
+                tokio::spawn(
+                    Transceiver::new(Aps::new(aps_sender), events, transceiver.downgrade())
+                        .run(messages),
+                );
                 let source = source();
 
                 transceiver
@@ -437,7 +493,10 @@ mod tests {
                 let (subscription, subscribed_frames) = Subscription::channel(filter);
                 let subscription_messages = subscribed_frames.sender();
                 let (transceiver, messages) = channel(MPSC_CHANNEL_SIZE);
-                tokio::spawn(Transceiver::new(Aps::new(aps_sender), events).run(messages));
+                tokio::spawn(
+                    Transceiver::new(Aps::new(aps_sender), events, transceiver.downgrade())
+                        .run(messages),
+                );
 
                 transceiver
                     .send(Message::Subscribe { subscription })
@@ -515,8 +574,9 @@ mod tests {
     fn unstarted_transceiver() -> (Transceiver, tokio::sync::mpsc::Receiver<Event>) {
         let (aps_sender, _aps_receiver) = channel(MPSC_CHANNEL_SIZE);
         let (events, application_events) = channel(MPSC_CHANNEL_SIZE);
+        let (inbox, _messages) = channel(MPSC_CHANNEL_SIZE);
         (
-            Transceiver::new(Aps::new(aps_sender), events),
+            Transceiver::new(Aps::new(aps_sender), events, inbox.downgrade()),
             application_events,
         )
     }

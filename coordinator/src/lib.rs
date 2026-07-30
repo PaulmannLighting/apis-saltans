@@ -42,6 +42,7 @@ mod api;
 mod aps;
 mod apsde;
 mod coordinator;
+mod correlation;
 mod error;
 mod event;
 mod index;

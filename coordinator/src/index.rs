@@ -48,6 +48,12 @@ impl Index {
         }
     }
 
+    /// Return the transaction sequence represented by this key.
+    #[must_use]
+    pub const fn sequence(self) -> u8 {
+        self.seq
+    }
+
     /// Create the response correlation key for a sent ZDP command.
     ///
     /// ZDP commands are exchanged on the data endpoint and do not carry a ZCL

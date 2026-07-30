@@ -6,6 +6,7 @@ use tokio::sync::oneshot::Receiver;
 
 use crate::Error;
 use crate::aps::TransmissionResponse;
+use crate::correlation::Cancellation;
 
 /// Combined APS transmission and correlated protocol response.
 ///
@@ -16,15 +17,21 @@ use crate::aps::TransmissionResponse;
 #[derive(Debug)]
 pub struct ApsProtocolResponse<T> {
     transmission: Option<TransmissionResponse>,
-    response: Receiver<T>,
+    response: Receiver<Result<T, Error>>,
+    cancellation: Cancellation,
 }
 
 impl<T> ApsProtocolResponse<T> {
     /// Create a response from its deferred APS result and protocol correlation channel.
-    pub const fn new(transmission: TransmissionResponse, response: Receiver<T>) -> Self {
+    pub const fn new(
+        transmission: TransmissionResponse,
+        response: Receiver<Result<T, Error>>,
+        cancellation: Cancellation,
+    ) -> Self {
         Self {
             transmission: Some(transmission),
             response,
+            cancellation,
         }
     }
 }
@@ -47,7 +54,10 @@ impl<T> Future for ApsProtocolResponse<T> {
 
         match Pin::new(&mut this.response).poll(cx) {
             Poll::Pending => Poll::Pending,
-            Poll::Ready(Ok(result)) => Poll::Ready(Ok(result)),
+            Poll::Ready(Ok(result)) => {
+                this.cancellation.disarm();
+                Poll::Ready(result)
+            }
             Poll::Ready(Err(error)) => Poll::Ready(Err(error.into())),
         }
     }
@@ -62,25 +72,29 @@ mod tests {
     use tokio::sync::oneshot::channel;
 
     use super::{ApsProtocolResponse, TransmissionResponse};
+    use crate::correlation::Cancellation;
+    use crate::index::Index;
 
+    const CLUSTER_ID: u16 = 2;
+    const PROFILE_ID: u16 = 3;
     const RESPONSE: u8 = 42;
+    const SEQUENCE: u8 = 1;
+    const SHORT_ID: u16 = 1;
+    const APS_COUNTER: u8 = 1;
 
     #[test]
     fn waits_for_the_protocol_response() {
         let (transmission_sender, transmission_receiver) = channel();
         let (sender, receiver) = channel();
         assert!(transmission_sender.send(Ok(())).is_ok());
-        let mut response = pin!(ApsProtocolResponse::new(
-            TransmissionResponse::new(transmission_receiver),
-            receiver,
-        ));
+        let mut response = pin!(response(transmission_receiver, receiver));
         let mut context = Context::from_waker(Waker::noop());
 
         assert!(matches!(
             response.as_mut().poll(&mut context),
             Poll::Pending
         ));
-        assert_eq!(sender.send(RESPONSE), Ok(()));
+        assert!(sender.send(Ok(RESPONSE)).is_ok());
         assert!(matches!(
             response.as_mut().poll(&mut context),
             Poll::Ready(Ok(RESPONSE))
@@ -91,13 +105,10 @@ mod tests {
     fn waits_for_transmission_before_protocol_response() {
         let (transmission_sender, transmission_receiver) = channel();
         let (protocol_sender, protocol_receiver) = channel();
-        let mut response = pin!(ApsProtocolResponse::new(
-            TransmissionResponse::new(transmission_receiver),
-            protocol_receiver,
-        ));
+        let mut response = pin!(response(transmission_receiver, protocol_receiver));
         let mut context = Context::from_waker(Waker::noop());
 
-        assert_eq!(protocol_sender.send(RESPONSE), Ok(()));
+        assert!(protocol_sender.send(Ok(RESPONSE)).is_ok());
         assert!(matches!(
             response.as_mut().poll(&mut context),
             Poll::Pending
@@ -112,11 +123,8 @@ mod tests {
     #[test]
     fn returns_transmission_failure_before_protocol_response() {
         let (transmission_sender, transmission_receiver) = channel();
-        let (_protocol_sender, protocol_receiver) = channel::<u8>();
-        let mut response = pin!(ApsProtocolResponse::new(
-            TransmissionResponse::new(transmission_receiver),
-            protocol_receiver,
-        ));
+        let (_protocol_sender, protocol_receiver) = channel::<Result<u8, crate::Error>>();
+        let mut response = pin!(response(transmission_receiver, protocol_receiver));
         let mut context = Context::from_waker(Waker::noop());
 
         assert!(
@@ -130,5 +138,29 @@ mod tests {
                 zb_hw::TransmissionError::Timeout
             ))))
         ));
+    }
+
+    fn response<T>(
+        transmission: tokio::sync::oneshot::Receiver<Result<(), zb_hw::Error>>,
+        protocol: tokio::sync::oneshot::Receiver<Result<T, crate::Error>>,
+    ) -> ApsProtocolResponse<T> {
+        let cancellation = Cancellation::new(index(), drop);
+        let (aps_inbox, _aps_messages) = tokio::sync::mpsc::channel(1);
+        ApsProtocolResponse::new(
+            TransmissionResponse::test_new(transmission, APS_COUNTER, aps_inbox.downgrade()),
+            protocol,
+            cancellation,
+        )
+    }
+
+    fn index() -> Index {
+        Index::new(
+            SHORT_ID,
+            zb_core::Endpoint::Data,
+            CLUSTER_ID,
+            PROFILE_ID,
+            None,
+            SEQUENCE,
+        )
     }
 }

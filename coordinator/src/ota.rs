@@ -167,6 +167,7 @@ mod tests {
     const HEADER_STRING_LENGTH: usize = 32;
     const TEST_CHANNEL_SIZE: usize = 4;
     const TEST_SEQUENCE_NUMBER: u8 = 42;
+    const TEST_APS_COUNTER: u8 = 1;
     const TEST_IMAGE_DATA: &[u8] = &[0xa5; 16];
     const PAGE_MAXIMUM_DATA_SIZE: u8 = 6;
     const PAGE_SIZE: u16 = 14;
@@ -888,7 +889,11 @@ mod tests {
         TransmissionResponse,
     ) {
         let (completion, result) = tokio::sync::oneshot::channel();
-        (completion, TransmissionResponse::new(result))
+        let (inbox, _messages) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+        (
+            completion,
+            TransmissionResponse::test_new(result, TEST_APS_COUNTER, inbox.downgrade()),
+        )
     }
 
     fn run_test<T>(future: T)

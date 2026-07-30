@@ -262,21 +262,41 @@ its destination is a unicast device. Such a unicast remains pending for its APS 
 broadcast transmissions never request APS acknowledgements, regardless of that option.
 Acknowledged results arrive as hardware
 `Event::Apsde(ApsdeEvent::DataConfirm { counter, confirmation })` values and are correlated by the
-wrapping `u8` APS counter. A successful confirmation resolves the deferred result; an unsuccessful
-APS or propagated NWK status becomes `TransmissionError::Confirmation`. After the hardware accepts
-an acknowledged transmission, the APS actor stores its response under that counter. If this
-replaces a response that is still pending, the older response resolves with
-`TransmissionError::Timeout`. Rejected and unacknowledged transmissions do not replace an existing
-pending response. Dropping a protocol response future stops observing its correlated response; it
-does not cancel work already handed to the hardware backend.
+eight-bit APS counter supplied to the hardware. A successful confirmation resolves the deferred
+result; an unsuccessful APS or propagated NWK status becomes
+`TransmissionError::Confirmation`. An acknowledged transmission times out after 30 seconds if its
+confirmation does not arrive. A network-down event resolves every pending acknowledged
+transmission with `TransmissionError::NoRoute`. Dropping a deferred APS result removes its pending
+confirmation entry; work already accepted by the hardware is not recalled.
+
+The APS actor allocates counters from the complete 256-value Zigbee counter space. It never
+replaces a pending transmission. A counter released by cancellation, timeout, or network loss is
+quarantined until its late hardware confirmation arrives, so an old confirmation cannot complete a
+new transmission. Quarantine has no time-based expiry because the hardware contract does not
+define a maximum completion latency. If all counters are pending or quarantined, transmission
+fails with `Error::ApsCounterExhausted`.
 
 ZCL accepts a complete `DataRequest<zb_zcl::UnsequencedFrame<Bytes>>` from its caller. The ZCL actor
 consumes the unsequenced frame with its assigned transaction sequence and serializes the resulting
 regular frame without changing any APS request field. ZDP constructs a complete
 `DataRequest<Bytes>` with the fixed ZDO data endpoint. The APS actor owns the wrapping APS counter
-and submits the request plus that counter to the hardware actor. `Aps::transmit` returns a deferred
-result after actor handoff, which the protocol actors forward rather than awaiting in their command
-loops.
+allocator and submits the request plus that counter to the hardware actor.
+`Aps::transmit` returns a deferred result after actor handoff, which the protocol actors forward
+rather than awaiting in their command loops.
+
+ZCL and ZDP share the same collision-safe policy within their respective actors. A communicating
+request receives a transaction sequence only if that sequence is neither pending nor in the
+two-second late-response quarantine. At most 256 protocol exchanges can therefore be outstanding
+per actor. Exhaustion returns `Error::TransactionSequenceExhausted` instead of replacing an older
+correlation. Pending protocol responses time out after 30 seconds, and completing, timing out, or
+cancelling one quarantines its sequence before reuse. Dropping a protocol response future sends an
+actor-owned cancellation and releases its pending entry. A network-down event fails every pending
+ZCL and ZDP response immediately with the hardware `NoRoute` transmission error.
+
+Each APS, ZCL, and ZDP actor consumes one bounded message inbox. Confirmation, cancellation,
+timeout, network lifecycle, and ordinary request messages all use that inbox. Timeout tasks retain
+only a weak sender and enqueue a timeout message after the configured duration; the actors do not
+use auxiliary receivers.
 
 `Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and
 expose their source errors and can be constructed through `From`; the send variant intentionally

@@ -2,9 +2,10 @@ use bytes::Bytes;
 use tokio::sync::oneshot::Sender;
 use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_core::short_id::Device;
-use zb_hw::Error;
 use zb_zdp::{Command, Frame};
 
+use crate::Error;
+use crate::index::Index;
 use crate::response::ApsProtocolResponse;
 
 /// Messages exchanged with the transceiver actor.
@@ -21,6 +22,21 @@ pub enum Message {
 
     /// The network has been closed for new joins.
     NetworkClosed,
+
+    /// Fail pending protocol responses because the Zigbee network went down.
+    NetworkDown,
+
+    /// Cancel a pending protocol response whose future was dropped.
+    Cancel {
+        /// Correlation key to cancel.
+        index: Index,
+    },
+
+    /// Expire a pending protocol response.
+    ResponseTimeout {
+        /// Correlation key whose timeout elapsed.
+        index: Index,
+    },
 
     /// Communicate a unicast with an expected response.
     Communicate {

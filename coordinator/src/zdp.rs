@@ -1,14 +1,13 @@
 //! Transceiver to send and receive ZDP messages.
 
-use std::collections::BTreeMap;
-
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, error, trace, warn};
+use tokio::runtime::Handle;
 use tokio::spawn;
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::oneshot;
-use tokio::sync::oneshot::channel;
+use tokio::sync::mpsc::error::TrySendError;
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
+use tokio::time::sleep;
 use zb_aps::DeliveryMode;
 use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress};
 use zb_aps::data::Header;
@@ -39,6 +38,7 @@ use self::node_desc::{
 };
 use super::index::Index;
 use crate::aps::{Aps, Metadata};
+use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry};
 use crate::response::ApsProtocolResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
@@ -56,8 +56,8 @@ pub struct Transceiver {
     descriptor: Descriptor,
     /// Whether the hardware has reported that joining is open.
     joining_permitted: bool,
-    responses: BTreeMap<Index, oneshot::Sender<Command>>,
-    seq: u8,
+    responses: Registry<Command>,
+    inbox: WeakSender<Message>,
 }
 
 impl Transceiver {
@@ -68,6 +68,7 @@ impl Transceiver {
         aps: Aps,
         events: Sender<Event>,
         descriptor: Descriptor,
+        inbox: WeakSender<Message>,
     ) -> Self {
         Self {
             ncp,
@@ -75,44 +76,50 @@ impl Transceiver {
             events,
             descriptor,
             joining_permitted: false,
-            responses: BTreeMap::new(),
-            seq: 0,
+            responses: Registry::new(),
+            inbox,
         }
     }
 
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
-            match message {
-                Message::Received { indication } => {
-                    self.handle_message_received(indication).await;
-                }
-                Message::NetworkOpened => {
-                    self.joining_permitted = true;
-                }
-                Message::NetworkClosed => {
-                    self.joining_permitted = false;
-                }
-                Message::Communicate {
-                    device,
-                    request,
-                    response,
-                } => {
-                    response
-                        .send(self.communicate(device, request).await)
-                        .unwrap_or_else(|error| {
-                            debug!("Failed to send unicast response: {error:?}");
-                        });
-                }
-            }
+            self.handle_actor_message(message).await;
         }
     }
 
-    /// Return and increment the ZCL sequence number.
-    const fn next_seq(&mut self) -> u8 {
-        let seq = self.seq;
-        self.seq = self.seq.wrapping_add(1);
-        seq
+    async fn handle_actor_message(&mut self, message: Message) {
+        match message {
+            Message::Received { indication } => {
+                self.handle_message_received(indication).await;
+            }
+            Message::NetworkOpened => {
+                self.joining_permitted = true;
+            }
+            Message::NetworkClosed => {
+                self.joining_permitted = false;
+            }
+            Message::NetworkDown => {
+                self.responses.fail_all(&zb_hw::TransmissionError::NoRoute);
+            }
+            Message::Cancel { index } => {
+                self.responses.cancel(index);
+            }
+            Message::ResponseTimeout { index } => {
+                self.responses.timeout(index);
+            }
+            Message::Communicate {
+                device,
+                request,
+                response,
+            } => {
+                response
+                    .send(self.communicate(device, request).await)
+                    .unwrap_or_else(|error| {
+                        debug!("Failed to send unicast response: {error:?}");
+                    });
+            }
+        }
     }
 
     async fn handle_message_received(
@@ -195,14 +202,13 @@ impl Transceiver {
                     .await;
             }
             command => {
-                if let Some(sender) = self.responses.remove(&index) {
+                if self.responses.complete(index, command.clone()) {
                     debug!(
                         "Answering ZDP request: seq={seq} cluster_id={:#06X}",
                         command.cluster_id()
                     );
-                    sender.send(command).unwrap_or_else(|error| {
-                        warn!("Failed to send ZDP response: {error:?}");
-                    });
+                } else if self.responses.is_quarantined(index) {
+                    debug!("Discarding late ZDP response with quarantined sequence {seq}");
                 } else {
                     warn!("Unexpected ZDP response: {command:?}");
                 }
@@ -223,22 +229,62 @@ impl Transceiver {
         &mut self,
         device: Device,
         request: DataRequest<Bytes>,
-    ) -> Result<ApsProtocolResponse<Command>, zb_hw::Error> {
-        let seq = self.next_seq();
-        let index = Index::from_zdp_command(device, seq, &request);
+    ) -> Result<ApsProtocolResponse<Command>, crate::Error> {
+        let (seq, index, rx) = self
+            .responses
+            .register(|sequence| Index::from_zdp_command(device, sequence, &request))?;
+        self.schedule_response_timeout(index);
         let request = request.map_asdu(|payload| Frame::new(seq, payload).to_le_stream().collect());
-        let (tx, rx) = channel();
-        self.responses.insert(index, tx);
 
         let transmission = match self.aps.transmit(request).await {
             Ok(transmission) => transmission,
             Err(error) => {
-                self.responses.remove(&index);
+                self.responses.cancel(index);
                 return Err(error);
             }
         };
+        let cancellation = self.cancellation(index);
 
-        Ok(ApsProtocolResponse::new(transmission, rx))
+        Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
+    }
+
+    fn cancellation(&self, index: Index) -> Cancellation {
+        let inbox = self.inbox.clone();
+        let runtime = Handle::current();
+        Cancellation::new(index, move |index| {
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            match inbox.try_send(Message::Cancel { index }) {
+                Ok(()) => {}
+                Err(TrySendError::Full(message)) => {
+                    runtime.spawn(async move {
+                        inbox.send(message).await.unwrap_or_else(|error| {
+                            debug!("Failed to enqueue ZDP response cancellation: {error}");
+                        });
+                    });
+                }
+                Err(TrySendError::Closed(_)) => {
+                    debug!("Failed to enqueue ZDP response cancellation: actor unavailable");
+                }
+            }
+        })
+    }
+
+    fn schedule_response_timeout(&self, index: Index) {
+        let inbox = self.inbox.clone();
+        spawn(async move {
+            sleep(PROTOCOL_RESPONSE_TIMEOUT).await;
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            inbox
+                .send(Message::ResponseTimeout { index })
+                .await
+                .unwrap_or_else(|error| {
+                    debug!("Failed to enqueue ZDP response timeout: {error}");
+                });
+        });
     }
 
     async fn handle_nwk_addr_req(&self, source: NetworkAddress, seq: u8, request: NwkAddrReq) {
@@ -400,7 +446,7 @@ impl Transceiver {
         }
     }
 
-    async fn respond<T>(&self, seq: u8, device: Device, payload: T) -> Result<(), zb_hw::Error>
+    async fn respond<T>(&self, seq: u8, device: Device, payload: T) -> Result<(), crate::Error>
     where
         T: ClusterSpecific + ToLeStream,
     {
@@ -571,7 +617,7 @@ impl Transceiver {
         descriptor: Descriptor,
     ) -> Sender<Message> {
         let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, aps, events, descriptor).run(zdp_rx));
+        spawn(Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx));
         zdp_tx
     }
 }

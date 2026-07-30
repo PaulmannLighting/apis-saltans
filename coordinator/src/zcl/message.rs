@@ -7,6 +7,7 @@ use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 use super::{Subscription, SubscriptionMessage};
 use crate::Error;
 use crate::aps::TransmissionResponse;
+use crate::index::Index;
 use crate::response::ApsProtocolResponse;
 
 /// Messages exchanged with the transceiver actor.
@@ -28,6 +29,21 @@ pub enum Message {
     Received {
         /// APSDE indication containing the parsed ZCL frame.
         indication: DataIndication<Frame<Cluster>, (), ()>,
+    },
+
+    /// Fail pending protocol responses because the Zigbee network went down.
+    NetworkDown,
+
+    /// Cancel a pending protocol response whose future was dropped.
+    Cancel {
+        /// Correlation key to cancel.
+        index: Index,
+    },
+
+    /// Expire a pending protocol response.
+    ResponseTimeout {
+        /// Correlation key whose timeout elapsed.
+        index: Index,
     },
 
     /// Unicast a message.

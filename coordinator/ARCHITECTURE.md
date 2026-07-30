@@ -50,24 +50,29 @@ serializes the resulting regular frame, and preserves all APS fields.
 ## APS Actor
 
 The APS transceiver stores a concrete `zb_hw::NcpHandle`; it is the only coordinator actor that
-transmits directly through that handle. It also owns a wrapping `u8` APS frame counter. For every
-outgoing message it:
+transmits directly through that handle. It also owns the wrapping eight-bit Zigbee APS counter
+allocator.
+For every outgoing message it:
 
 1. consumes the supplied `zb_aps::apsde::DataRequest<bytes::Bytes>`
-2. assigns its next APS frame counter
+2. assigns a counter that is neither pending nor quarantined
 3. forwards the request and counter to the hardware actor
 4. resolves an unacknowledged caller after hardware acceptance, or stores an acknowledged caller
-   under the APS counter
-5. resolves any acknowledged response replaced by that insertion with
-   `TransmissionError::Timeout`
+   under the counter
+5. quarantines counters released by dropped callers, missing-confirmation timeouts, or network
+   loss until the corresponding late confirmation arrives
 
 Its command protocol contains:
 
 ```text
 Transmit {
     request: zb_aps::apsde::DataRequest<bytes::Bytes>,
-    response: oneshot::Sender<Result<(), zb_hw::Error>>,
+    response: oneshot::Sender<Result<TransmissionResponse, crate::Error>>,
 }
+Confirm { counter, status }
+Cancel { counter }
+ConfirmationTimeout { counter }
+NetworkDown
 ```
 
 The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method queues the
@@ -77,20 +82,28 @@ unacknowledged request. When its options contain `TxOptions::ACKNOWLEDGED_TRANSM
 destination is an individual network or extended address, hardware acceptance instead stores the
 sender until the APS result arrives. Group and broadcast transmissions never await APS
 acknowledgements. Its completion method forwards hardware APSDE confirmations from the mux.
+The actor reads exactly one bounded message inbox. Cancellation and confirmation-timeout events use
+that same inbox; timeout tasks hold a weak sender, sleep, and enqueue `ConfirmationTimeout`.
+Cancellation and timeout messages carry a coordinator-private allocation generation in addition to
+the counter. That generation never crosses the hardware boundary and prevents an old lifecycle
+message from removing a newer transmission after successful counter reuse.
 
 - Acknowledged unicast frame: retain the caller's response sender under the APS counter and await
   `ApsdeEvent::DataConfirm`.
 - Unacknowledged, group, or broadcast frame: resolve the caller response after backend acceptance.
 
-Counter replacement occurs only after the hardware accepts a transmission that has an
-acknowledgement response. Unacknowledged transmissions resolve without storing their response, and
-rejected transmissions never reach the insertion step, so neither replaces an older pending
-response.
+The allocator scans all 256 counter values and never reuses one while it is pending or quarantined.
+Cancellation, confirmation timeout, and network loss quarantine an accepted acknowledged
+transmission's counter until a late confirmation for that counter arrives. The quarantine has no
+clock-based expiry, because the hardware API makes no promise about maximum confirmation latency.
+When every counter is unavailable, the actor returns `Error::ApsCounterExhausted` rather than
+risking a stale confirmation completing a new transmission. Successful or failed confirmations
+release their counters immediately. Unacknowledged transmissions resolve without storing their
+response, and rejected transmissions never reach the pending-confirmation map.
 
 ```mermaid
 sequenceDiagram
     participant P as ZCL or ZDP actor
-    participant O as Previous caller
     participant A as APS actor
     participant H as Hardware actor
     participant M as Event mux
@@ -99,18 +112,15 @@ sequenceDiagram
     P->>P: construct DataRequest&lt;Bytes&gt;
     P->>A: Transmit request
     A-->>P: deferred transmission response
-    A->>A: assign counter
-    A->>H: transmit request, counter
+    A->>A: assign APS counter
+    A->>H: transmit request and counter
     H-->>A: accepted
     alt unacknowledged transmission
         A-->>P: resolve deferred APS result
     else acknowledged transmission
         A->>A: store response under counter
-        opt response was replaced
-            A-->>O: TransmissionError::Timeout
-        end
         H-->>M: Event::Apsde with counter and DataConfirm
-        M-->>A: confirmation status
+        M-->>A: counter and confirmation status
         A-->>P: resolve deferred APS result
     end
 ```
@@ -119,7 +129,7 @@ sequenceDiagram
 
 The ZCL actor:
 
-- owns the wrapping ZCL transaction sequence
+- owns a collision-safe ZCL transaction-sequence allocator
 - receives parsed ZCL frames as normalized `DataIndication<Frame<Cluster>, (), ()>` values
 - accepts complete `DataRequest<UnsequencedFrame<Bytes>>` values
 - consumes each unsequenced frame with the assigned transaction sequence and serializes the
@@ -138,6 +148,14 @@ For `transmit` and reply messages, the actor forwards the deferred APS result to
 actor therefore continues processing commands while acknowledgements are pending. Awaiting the
 internal response completes APS transmission before polling the correlated protocol response. Reply
 transmission preserves the request transaction sequence instead of allocating a new one.
+
+The allocator scans the complete 256-value sequence space and never replaces a pending entry.
+Completed, timed-out, and cancelled sequences enter a two-second quarantine so a late response
+cannot match a newer request. The actor expires pending protocol responses after 30 seconds.
+Dropping an `ApsProtocolResponse` enqueues `Cancel` through the actor's ordinary bounded inbox.
+Per-response timer tasks hold a weak sender and enqueue `ResponseTimeout` through that same inbox.
+The actor has no auxiliary receiver and processes its inbox with one `recv` loop.
+Network-down messages fail all pending protocol responses and quarantine their sequences.
 
 Source-endpoint policy belongs to the caller. The ZCL actor does not query or cache local endpoint
 descriptors. High-level cluster helpers therefore require an explicit `IndividualEndpoint`, while
@@ -187,7 +205,7 @@ The ZDP actor:
 
 - stores a concrete `zb_hw::NcpHandle` for NCP queries
 - receives parsed ZDP frames as normalized `DataIndication<Frame<Command>, (), ()>` values
-- owns the wrapping ZDP transaction sequence
+- owns a collision-safe ZDP transaction-sequence allocator
 - uses profile `0x0000` and endpoint `0x00`
 - sends APS metadata and serialized ZDP frames through the APS actor
 - correlates request and response commands
@@ -219,7 +237,14 @@ Pending ZCL and ZDP requests are keyed by an internal `Index` containing:
 
 The mux parses successful APSDE data indications and forwards them to the appropriate protocol
 actor. Each actor reconstructs the index from the received metadata and parsed frame and removes
-the matching one-shot sender.
+the matching one-shot sender. Each protocol actor permits at most 256 pending exchanges. It
+returns `TransactionSequenceExhausted` when no sequence is available, expires responses after 30
+seconds, fails all pending responses when the network goes down, and quarantines released
+sequences for two seconds before reuse.
+
+APS, ZCL, and ZDP each own exactly one bounded message receiver. Hardware events, API requests,
+cancellations, timeout notifications, and network lifecycle notifications are serialized through
+that actor's single inbox.
 
 ```mermaid
 sequenceDiagram
@@ -236,7 +261,7 @@ sequenceDiagram
     A->>H: frame with assigned APS counter
     H-->>A: accepted
     H-->>M: Event::Apsde with counter and DataConfirm
-    M-->>A: confirmation status
+    M-->>A: counter and confirmation status
     A-->>P: correlated APS result
     P-->>API: protocol response future
     API->>R: await

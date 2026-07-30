@@ -67,7 +67,7 @@ impl Display for Operation {
     reason = "backend failures retain a shared trait-object source while protocol statuses stay inline"
 )]
 pub enum TransmissionError {
-    /// The APS counter was reused while its previous transmission was pending.
+    /// An accepted APS transmission did not complete before its deadline.
     #[error("APS transmission timed out")]
     Timeout,
 
