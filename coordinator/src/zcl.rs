@@ -19,7 +19,7 @@ pub use self::subscription::{
 };
 use super::index::Index;
 use crate::aps::{Aps, TransmissionResponse};
-use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry};
+use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token};
 use crate::response::ApsProtocolResponse;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
@@ -70,13 +70,14 @@ impl Transceiver {
                 self.handle_message_received(indication).await;
             }
             Message::NetworkDown => {
-                self.responses.fail_all(&zb_hw::TransmissionError::NoRoute);
+                self.responses
+                    .network_down(&zb_hw::TransmissionError::NoRoute);
             }
-            Message::Cancel { index } => {
-                self.responses.cancel(index);
+            Message::Cancel { token } => {
+                self.responses.cancel(token);
             }
-            Message::ResponseTimeout { index } => {
-                self.responses.timeout(index);
+            Message::ResponseTimeout { token } => {
+                self.responses.timeout(token);
             }
             Message::Transmit { request, response } => {
                 response
@@ -131,7 +132,7 @@ impl Transceiver {
         if self.responses.complete(index, cluster) {
             return;
         }
-        if self.responses.is_quarantined(index) {
+        if self.responses.release_quarantine(index) {
             debug!(
                 "Discarding late ZCL response with quarantined sequence {}",
                 index.sequence()
@@ -203,8 +204,17 @@ impl Transceiver {
         let sequence_number = self
             .responses
             .reserve_untracked_sequence(|sequence| Self::request_index(&request, sequence).ok())?;
+        let response_index = Self::request_index(&request, sequence_number).ok();
         let request = Self::encode_request(request, sequence_number);
-        self.aps.transmit(request).await
+        match self.aps.transmit(request).await {
+            Ok(transmission) => Ok(transmission),
+            Err(error) => {
+                if let Some(index) = response_index {
+                    self.responses.release_quarantine(index);
+                }
+                Err(error)
+            }
+        }
     }
 
     /// Queue a ZCL command with an explicitly selected transaction sequence number.
@@ -231,33 +241,33 @@ impl Transceiver {
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<ApsProtocolResponse<Cluster>, Error> {
         Self::request_index(&request, u8::MIN)?;
-        let (sequence_number, index, rx) = self.responses.register(|sequence| {
+        let (sequence_number, token, rx) = self.responses.register(|sequence| {
             Self::request_index(&request, sequence)
                 .expect("ZCL communication destination was validated")
         })?;
-        self.schedule_response_timeout(index);
+        self.schedule_response_timeout(token);
         let request = Self::encode_request(request, sequence_number);
 
         let transmission = match self.aps.transmit(request).await {
             Ok(transmission) => transmission,
             Err(error) => {
-                self.responses.cancel(index);
+                self.responses.discard(token);
                 return Err(error);
             }
         };
-        let cancellation = self.cancellation(index);
+        let cancellation = self.cancellation(token);
 
         Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
     }
 
-    fn cancellation(&self, index: Index) -> Cancellation {
+    fn cancellation(&self, token: Token) -> Cancellation {
         let inbox = self.inbox.clone();
         let runtime = Handle::current();
-        Cancellation::new(index, move |index| {
+        Cancellation::new(token, move |token| {
             let Some(inbox) = inbox.upgrade() else {
                 return;
             };
-            match inbox.try_send(Message::Cancel { index }) {
+            match inbox.try_send(Message::Cancel { token }) {
                 Ok(()) => {}
                 Err(TrySendError::Full(message)) => {
                     runtime.spawn(async move {
@@ -273,7 +283,7 @@ impl Transceiver {
         })
     }
 
-    fn schedule_response_timeout(&self, index: Index) {
+    fn schedule_response_timeout(&self, token: Token) {
         let inbox = self.inbox.clone();
         spawn(async move {
             sleep(PROTOCOL_RESPONSE_TIMEOUT).await;
@@ -281,7 +291,7 @@ impl Transceiver {
                 return;
             };
             inbox
-                .send(Message::ResponseTimeout { index })
+                .send(Message::ResponseTimeout { token })
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to enqueue ZCL response timeout: {error}");

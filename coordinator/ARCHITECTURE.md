@@ -149,13 +149,16 @@ actor therefore continues processing commands while acknowledgements are pending
 internal response completes APS transmission before polling the correlated protocol response. Reply
 transmission preserves the request transaction sequence instead of allocating a new one.
 
-The allocator scans the complete 256-value sequence space and never replaces a pending entry.
-Completed, timed-out, and cancelled sequences enter a two-second quarantine so a late response
-cannot match a newer request. The actor expires pending protocol responses after 30 seconds.
-Dropping an `ApsProtocolResponse` enqueues `Cancel` through the actor's ordinary bounded inbox.
-Per-response timer tasks hold a weak sender and enqueue `ResponseTimeout` through that same inbox.
-The actor has no auxiliary receiver and processes its inbox with one `recv` loop.
-Network-down messages fail all pending protocol responses and quarantine their sequences.
+The allocator scans the complete 256-value sequence space for the request's correlation domain and
+never replaces a pending entry. Successful responses release their correlation identity
+immediately. Timed-out and cancelled responses remain quarantined until their late frame arrives;
+untracked transmissions are quarantined by the same rule. Quarantine has no elapsed-time expiry.
+The actor expires pending protocol responses after 30 seconds. Dropping an
+`ApsProtocolResponse` enqueues `Cancel` through the actor's ordinary bounded inbox. Per-response
+timer tasks hold a weak sender and enqueue `ResponseTimeout` through that same inbox. Both messages
+carry a coordinator-private allocation generation so stale lifecycle messages cannot remove a
+reused transaction. The actor has no auxiliary receiver and processes its inbox with one `recv`
+loop. A network-down message fails pending responses and begins a fresh correlation epoch.
 
 Source-endpoint policy belongs to the caller. The ZCL actor does not query or cache local endpoint
 descriptors. High-level cluster helpers therefore require an explicit `IndividualEndpoint`, while
@@ -237,10 +240,10 @@ Pending ZCL and ZDP requests are keyed by an internal `Index` containing:
 
 The mux parses successful APSDE data indications and forwards them to the appropriate protocol
 actor. Each actor reconstructs the index from the received metadata and parsed frame and removes
-the matching one-shot sender. Each protocol actor permits at most 256 pending exchanges. It
-returns `TransactionSequenceExhausted` when no sequence is available, expires responses after 30
-seconds, fails all pending responses when the network goes down, and quarantines released
-sequences for two seconds before reuse.
+the matching one-shot sender. Each protocol actor permits up to 256 unavailable identities within
+one correlation domain. It returns `TransactionSequenceExhausted` when no sequence is available,
+expires pending responses after 30 seconds, and quarantines cancelled, timed-out, and untracked
+identities until a late frame or network-down lifecycle boundary releases them.
 
 APS, ZCL, and ZDP each own exactly one bounded message receiver. Hardware events, API requests,
 cancellations, timeout notifications, and network lifecycle notifications are serialized through

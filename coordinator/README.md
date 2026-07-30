@@ -285,13 +285,17 @@ allocator and submits the request plus that counter to the hardware actor.
 rather than awaiting in their command loops.
 
 ZCL and ZDP share the same collision-safe policy within their respective actors. A communicating
-request receives a transaction sequence only if that sequence is neither pending nor in the
-two-second late-response quarantine. At most 256 protocol exchanges can therefore be outstanding
-per actor. Exhaustion returns `Error::TransactionSequenceExhausted` instead of replacing an older
-correlation. Pending protocol responses time out after 30 seconds, and completing, timing out, or
-cancelling one quarantines its sequence before reuse. Dropping a protocol response future sends an
-actor-owned cancellation and releases its pending entry. A network-down event fails every pending
-ZCL and ZDP response immediately with the hardware `NoRoute` transmission error.
+request receives a transaction sequence only if its complete correlation identity is neither
+pending nor quarantined. A successful correlated response releases that identity immediately.
+Cancelling or timing out a response, and sending a command without tracking its response,
+quarantines the identity until the corresponding late frame arrives. There is no time-based
+quarantine expiry. A network-down event fails every pending response with the hardware `NoRoute`
+transmission error and starts a fresh correlation epoch. Exhaustion within one correlation domain
+returns `Error::TransactionSequenceExhausted` instead of replacing an older correlation.
+
+Cancellation and timeout messages carry a coordinator-private allocation generation. The
+generation never appears in a Zigbee frame; it only prevents an old lifecycle message from
+removing a newer transaction after successful sequence reuse.
 
 Each APS, ZCL, and ZDP actor consumes one bounded message inbox. Confirmation, cancellation,
 timeout, network lifecycle, and ordinary request messages all use that inbox. Timeout tasks retain

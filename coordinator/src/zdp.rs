@@ -38,7 +38,7 @@ use self::node_desc::{
 };
 use super::index::Index;
 use crate::aps::{Aps, Metadata};
-use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry};
+use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token};
 use crate::response::ApsProtocolResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
@@ -100,13 +100,14 @@ impl Transceiver {
                 self.joining_permitted = false;
             }
             Message::NetworkDown => {
-                self.responses.fail_all(&zb_hw::TransmissionError::NoRoute);
+                self.responses
+                    .network_down(&zb_hw::TransmissionError::NoRoute);
             }
-            Message::Cancel { index } => {
-                self.responses.cancel(index);
+            Message::Cancel { token } => {
+                self.responses.cancel(token);
             }
-            Message::ResponseTimeout { index } => {
-                self.responses.timeout(index);
+            Message::ResponseTimeout { token } => {
+                self.responses.timeout(token);
             }
             Message::Communicate {
                 device,
@@ -207,7 +208,7 @@ impl Transceiver {
                         "Answering ZDP request: seq={seq} cluster_id={:#06X}",
                         command.cluster_id()
                     );
-                } else if self.responses.is_quarantined(index) {
+                } else if self.responses.release_quarantine(index) {
                     debug!("Discarding late ZDP response with quarantined sequence {seq}");
                 } else {
                     warn!("Unexpected ZDP response: {command:?}");
@@ -230,32 +231,32 @@ impl Transceiver {
         device: Device,
         request: DataRequest<Bytes>,
     ) -> Result<ApsProtocolResponse<Command>, crate::Error> {
-        let (seq, index, rx) = self
+        let (seq, token, rx) = self
             .responses
             .register(|sequence| Index::from_zdp_command(device, sequence, &request))?;
-        self.schedule_response_timeout(index);
+        self.schedule_response_timeout(token);
         let request = request.map_asdu(|payload| Frame::new(seq, payload).to_le_stream().collect());
 
         let transmission = match self.aps.transmit(request).await {
             Ok(transmission) => transmission,
             Err(error) => {
-                self.responses.cancel(index);
+                self.responses.discard(token);
                 return Err(error);
             }
         };
-        let cancellation = self.cancellation(index);
+        let cancellation = self.cancellation(token);
 
         Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
     }
 
-    fn cancellation(&self, index: Index) -> Cancellation {
+    fn cancellation(&self, token: Token) -> Cancellation {
         let inbox = self.inbox.clone();
         let runtime = Handle::current();
-        Cancellation::new(index, move |index| {
+        Cancellation::new(token, move |token| {
             let Some(inbox) = inbox.upgrade() else {
                 return;
             };
-            match inbox.try_send(Message::Cancel { index }) {
+            match inbox.try_send(Message::Cancel { token }) {
                 Ok(()) => {}
                 Err(TrySendError::Full(message)) => {
                     runtime.spawn(async move {
@@ -271,7 +272,7 @@ impl Transceiver {
         })
     }
 
-    fn schedule_response_timeout(&self, index: Index) {
+    fn schedule_response_timeout(&self, token: Token) {
         let inbox = self.inbox.clone();
         spawn(async move {
             sleep(PROTOCOL_RESPONSE_TIMEOUT).await;
@@ -279,7 +280,7 @@ impl Transceiver {
                 return;
             };
             inbox
-                .send(Message::ResponseTimeout { index })
+                .send(Message::ResponseTimeout { token })
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to enqueue ZDP response timeout: {error}");

@@ -144,7 +144,7 @@ mod tests {
         transmission: tokio::sync::oneshot::Receiver<Result<(), zb_hw::Error>>,
         protocol: tokio::sync::oneshot::Receiver<Result<T, crate::Error>>,
     ) -> ApsProtocolResponse<T> {
-        let cancellation = Cancellation::new(index(), drop);
+        let cancellation = Cancellation::test_new(index(), drop);
         let (aps_inbox, _aps_messages) = tokio::sync::mpsc::channel(1);
         ApsProtocolResponse::new(
             TransmissionResponse::test_new(transmission, APS_COUNTER, aps_inbox.downgrade()),

@@ -7,7 +7,7 @@ use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 use super::{Subscription, SubscriptionMessage};
 use crate::Error;
 use crate::aps::TransmissionResponse;
-use crate::index::Index;
+use crate::correlation::Token;
 use crate::response::ApsProtocolResponse;
 
 /// Messages exchanged with the transceiver actor.
@@ -36,14 +36,14 @@ pub enum Message {
 
     /// Cancel a pending protocol response whose future was dropped.
     Cancel {
-        /// Correlation key to cancel.
-        index: Index,
+        /// Coordinator-private identity of the protocol transaction to cancel.
+        token: Token,
     },
 
     /// Expire a pending protocol response.
     ResponseTimeout {
-        /// Correlation key whose timeout elapsed.
-        index: Index,
+        /// Coordinator-private identity whose response timeout elapsed.
+        token: Token,
     },
 
     /// Unicast a message.

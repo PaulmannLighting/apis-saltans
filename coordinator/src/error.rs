@@ -63,7 +63,7 @@ pub enum Error {
     #[error("Timeout: {0:?}")]
     Timeout(#[from] Elapsed),
 
-    /// Every protocol transaction sequence is pending or quarantined.
+    /// Every protocol transaction sequence in the requested correlation domain is unavailable.
     #[error("No protocol transaction sequence is available")]
     TransactionSequenceExhausted,
 
