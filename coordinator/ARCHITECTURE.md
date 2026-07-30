@@ -279,10 +279,12 @@ The mux parses successful APSDE data indications and forwards them to the approp
 actor. Each actor derives the key directly from the received indication metadata and parsed frame
 and removes the matching one-shot sender. Each protocol actor permits up to 256 unavailable
 identities within one correlation domain. It returns `TransactionSequenceExhausted` when no
-sequence is available and expires pending responses after 30 seconds. Response-free ZCL
-transmissions skip unavailable identities without reserving the selected sequence. Cancelled and
-timed-out tracked identities remain quarantined until a late frame arrives, the 30-second
-quarantine grace period expires, or the network goes down.
+sequence is available and expires pending responses after the compile-time
+`ZIGBEE_COORDINATOR_PROTOCOL_RESPONSE_TIMEOUT_SECS` interval. Response-free ZCL transmissions skip
+unavailable identities without reserving the selected sequence. Cancelled and timed-out tracked
+identities remain quarantined until a late frame arrives, the compile-time
+`ZIGBEE_COORDINATOR_PROTOCOL_QUARANTINE_TIMEOUT_SECS` grace period expires, or the network goes
+down. Both intervals default to 30 seconds and must be greater than zero.
 
 APS, ZCL, and ZDP each own exactly one bounded message receiver. Hardware events, API requests,
 cancellations, response and quarantine timeout notifications, and network lifecycle notifications

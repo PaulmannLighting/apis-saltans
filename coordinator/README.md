@@ -809,14 +809,19 @@ validation, and actor handoff errors occur while obtaining the response future. 
 acceptance, APS completion, receive-channel, and conversion errors occur while awaiting that
 response future.
 
-## Runtime Configuration
+## Compile-Time Configuration
 
-Behavior is configurable through environment variables:
+Behavior is configurable through environment variables read while compiling the crate:
 
-- `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`
+- `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` selects each actor inbox capacity. The default is `128`.
+- `ZIGBEE_COORDINATOR_PROTOCOL_RESPONSE_TIMEOUT_SECS` selects how long a correlated ZCL or ZDP
+  response may remain pending. The default is `30`.
+- `ZIGBEE_COORDINATOR_PROTOCOL_QUARANTINE_TIMEOUT_SECS` selects how long a timed-out or cancelled
+  ZCL or ZDP correlation remains quarantined against late responses. The default is `30`.
 
-The protocol actors expire correlated ZCL and ZDP responses after 30 seconds. Applications may
-still wrap either await boundary with `tokio::time::timeout` when they require a shorter deadline.
+Both timeout values must be greater than zero. Changing any of these variables requires rebuilding
+the application. Applications may still wrap either await boundary with `tokio::time::timeout`
+when they require a shorter runtime deadline.
 
 Retry behavior for discovery or binding is intentionally not configured here anymore. Applications
 that build discovery or binding workflows should apply their own retry and persistence policy.
