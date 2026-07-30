@@ -3,9 +3,11 @@ use zb_zcl::{Cluster, Frame};
 
 pub use self::device::Device;
 pub use self::network::{Error as NetworkError, Network};
+pub use self::sink::EventSink;
 
 mod device;
 mod network;
+mod sink;
 
 /// Event emitted by the coordinator runtime.
 #[derive(Clone, Debug)]

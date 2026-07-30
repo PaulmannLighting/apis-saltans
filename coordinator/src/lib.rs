@@ -49,7 +49,6 @@ mod coordinator;
 mod correlation;
 mod error;
 mod event;
-mod event_sink;
 mod mux;
 pub mod ota;
 mod response;

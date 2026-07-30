@@ -20,7 +20,7 @@ use crate::aps::{Aps, TransmissionResponse};
 use crate::correlation::{
     Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
 };
-use crate::event_sink::EventSink;
+use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
@@ -368,7 +368,7 @@ mod tests {
     use super::{Message, Subscription, SubscriptionFilter, SubscriptionMessage, Transceiver};
     use crate::aps::Aps;
     use crate::correlation::Key;
-    use crate::event_sink::EventSink;
+    use crate::event::EventSink;
     use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
     const SOURCE_NODE_ID: u16 = 0x4321;

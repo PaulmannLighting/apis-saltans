@@ -10,7 +10,7 @@ use zb_hw::{
 };
 
 use self::aps_payload::ApsPayload;
-use crate::event_sink::EventSink;
+use crate::event::EventSink;
 use crate::{Device, Event, Network, NetworkError, aps, ota, zcl, zdp};
 
 mod aps_payload;
@@ -293,7 +293,7 @@ mod tests {
 
     use super::Mux;
     use crate::aps::{Aps, Message as ApsMessage};
-    use crate::event_sink::EventSink;
+    use crate::event::EventSink;
     use crate::{Event, MPSC_CHANNEL_SIZE, Network, NetworkError, ota, zcl, zdp};
 
     const TEST_TIMEOUT: Duration = Duration::from_millis(100);

@@ -4,7 +4,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use zb_core::node::Descriptor;
 use zb_hw::{Error, NcpHandle};
 
-use crate::event_sink::EventSink;
+use crate::event::EventSink;
 use crate::mux::Mux;
 use crate::{DEFAULT_OTA_UPDATE_TASK_LIMIT, Event, aps, ota, zcl, zdp};
 

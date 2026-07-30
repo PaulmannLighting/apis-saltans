@@ -39,7 +39,7 @@ use crate::aps::{Aps, Metadata, TransmissionResponse};
 use crate::correlation::{
     Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
 };
-use crate::event_sink::EventSink;
+use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 

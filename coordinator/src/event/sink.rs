@@ -2,7 +2,7 @@ use log::{debug, warn};
 use tokio::sync::mpsc::Sender;
 use tokio::sync::mpsc::error::TrySendError;
 
-use crate::Event;
+use super::Event;
 
 /// Non-blocking delivery handle for application-visible coordinator events.
 #[derive(Clone, Debug)]
@@ -38,7 +38,7 @@ mod tests {
     use tokio::sync::mpsc::channel;
 
     use super::EventSink;
-    use crate::{Event, Network};
+    use crate::event::{Event, Network};
 
     const CHANNEL_SIZE: usize = 1;
 

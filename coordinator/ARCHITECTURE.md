@@ -42,6 +42,10 @@ flowchart TD
 `Coordinator::start` creates the APS, ZCL, ZDP, and OTA actors plus the event mux. Actor inboxes
 use `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE`.
 
+The `event.rs` façade owns application-visible event types and re-exports its internal
+`event::sink::EventSink`. The sink centralizes non-blocking application-channel delivery for the
+mux and protocol actors without exposing that delivery mechanism through the crate's public API.
+
 ZDP commands enter their actor as complete `DataRequest<Bytes>` values because their local source
 endpoint is always the ZDO data endpoint. ZCL commands enter their actor as complete
 `DataRequest<UnsequencedFrame<Bytes>>` values; the actor assigns the ZCL transaction sequence,
