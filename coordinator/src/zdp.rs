@@ -36,7 +36,7 @@ use self::node_desc::{
     Action as NodeDescAction, action as node_desc_action, unavailable_child_status,
 };
 use super::index::Index;
-use crate::aps::{Aps, Metadata};
+use crate::aps::{Aps, Metadata, TransmissionResponse};
 use crate::correlation::{
     Cancellation, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
 };
@@ -114,6 +114,9 @@ impl Transceiver {
             }
             Message::QuarantineTimeout { token } => {
                 self.responses.expire_quarantine(token);
+            }
+            Message::ReplyTransmissionFailed { error } => {
+                error!("ZDP server response transmission failed: {error}");
             }
             Message::Communicate {
                 device,
@@ -484,7 +487,9 @@ impl Transceiver {
             Metadata::new(Profile::Network, T::ID),
             Frame::new(seq, payload).to_le_stream().collect(),
         );
-        self.aps.transmit(request).await.map(drop)
+        let transmission = self.aps.transmit(request).await?;
+        track_reply_completion(transmission, self.inbox.clone());
+        Ok(())
     }
 
     /// Process a Match Descriptor request and unicast any required response to its originator.
@@ -663,6 +668,25 @@ fn received_index<T, K>(
     Some((source_address, index))
 }
 
+/// Await a deferred ZDP response transmission and report any failure through the actor inbox.
+fn track_reply_completion(transmission: TransmissionResponse, inbox: WeakSender<Message>) {
+    spawn(async move {
+        let Err(error) = transmission.await else {
+            return;
+        };
+        let Some(inbox) = inbox.upgrade() else {
+            error!("ZDP server response transmission failed after actor shutdown: {error}");
+            return;
+        };
+        if let Err(send_error) = inbox.send(Message::ReplyTransmissionFailed { error }).await {
+            let Message::ReplyTransmissionFailed { error } = send_error.0 else {
+                unreachable!("the failed message remains a ZDP reply transmission failure");
+            };
+            log::error!("Failed to report ZDP server response transmission failure: {error}");
+        }
+    });
+}
+
 const fn permit_joining_response(request_was_broadcast: bool) -> Option<MgmtPermitJoiningRsp> {
     if request_was_broadcast {
         None
@@ -673,9 +697,17 @@ const fn permit_joining_response(request_was_broadcast: bool) -> Option<MgmtPerm
 
 #[cfg(test)]
 mod tests {
+    use tokio::runtime::Runtime;
+    use tokio::sync::mpsc::channel;
+    use tokio::sync::oneshot;
+    use zb_aps::apsde::{ConfirmStatus, Status as ApsStatus};
     use zb_zdp::Status;
 
-    use super::permit_joining_response;
+    use super::{Message, permit_joining_response, track_reply_completion};
+    use crate::aps::{Message as ApsMessage, TransmissionResponse};
+
+    const CHANNEL_SIZE: usize = 1;
+    const APS_COUNTER: u8 = 1;
 
     #[test]
     fn permit_joining_rejects_unicast_and_ignores_broadcast_requests() {
@@ -684,5 +716,60 @@ mod tests {
 
         assert_eq!(response.status(), Ok(Status::InvalidRequestType));
         assert!(permit_joining_response(true).is_none());
+    }
+
+    #[test]
+    fn reports_deferred_backend_rejection_through_the_actor_inbox() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let message =
+                    tracked_reply_failure(zb_hw::TransmissionError::Rejected.into()).await;
+
+                assert!(matches!(
+                    message,
+                    Message::ReplyTransmissionFailed {
+                        error: zb_hw::Error::Transmission(zb_hw::TransmissionError::Rejected)
+                    }
+                ));
+            });
+    }
+
+    #[test]
+    fn reports_deferred_acknowledgement_failure_through_the_actor_inbox() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let status = ConfirmStatus::Aps(ApsStatus::NoAcknowledgement);
+                let message =
+                    tracked_reply_failure(zb_hw::TransmissionError::Confirmation(status).into())
+                        .await;
+
+                assert!(matches!(
+                    message,
+                    Message::ReplyTransmissionFailed {
+                        error: zb_hw::Error::Transmission(
+                            zb_hw::TransmissionError::Confirmation(received)
+                        )
+                    } if received == status
+                ));
+            });
+    }
+
+    async fn tracked_reply_failure(error: zb_hw::Error) -> Message {
+        let (aps_inbox, _aps_messages) = channel::<ApsMessage>(CHANNEL_SIZE);
+        let (completion, result) = oneshot::channel();
+        let transmission =
+            TransmissionResponse::test_new(result, APS_COUNTER, aps_inbox.downgrade());
+        let (zdp_inbox, mut zdp_messages) = channel(CHANNEL_SIZE);
+        track_reply_completion(transmission, zdp_inbox.downgrade());
+
+        completion
+            .send(Err(error))
+            .expect("transmission response must be waiting");
+        zdp_messages
+            .recv()
+            .await
+            .expect("deferred failure must reach the ZDP actor inbox")
     }
 }

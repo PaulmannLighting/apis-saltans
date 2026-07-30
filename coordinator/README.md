@@ -148,6 +148,8 @@ address-translation operations and responds to matching System Server Discovery 
 server mask in its node descriptor. Extended address discovery returns `NOT_SUPPORTED` because the
 hardware abstraction does not expose associated-device enumeration. Power Descriptor discovery
 returns `NO_DESCRIPTOR` because coordinator startup does not configure a power descriptor.
+Locally generated ZDP responses retain their deferred APS completion; backend rejection and
+acknowledgement failure are reported by the ZDP actor instead of being discarded after queuing.
 
 The crate does not persist a device table. Store the `FullAddress` values received in
 `Event::Device` if your application needs a device registry. The `AddressTranslation` trait can ask

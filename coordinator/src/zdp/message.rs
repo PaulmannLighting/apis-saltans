@@ -41,6 +41,12 @@ pub enum Message {
         token: Token,
     },
 
+    /// Report a failed deferred APS completion for a locally generated ZDP response.
+    ReplyTransmissionFailed {
+        /// Hardware failure reported after the response was queued.
+        error: zb_hw::Error,
+    },
+
     /// Communicate a unicast with an expected response.
     Communicate {
         /// Remote device expected to answer the request.

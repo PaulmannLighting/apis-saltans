@@ -251,7 +251,10 @@ metadata. It suppresses an empty `Match_Desc_rsp` for a broadcast `Match_Desc_re
 hardware joining state.
 
 ZDP responses generated locally also travel through the APS actor, so their APS counters and
-acknowledgement behavior follow the same path as outgoing requests.
+acknowledgement behavior follow the same path as outgoing requests. A weak completion task retains
+each deferred APS result and sends failures through the ZDP actor's ordinary inbox. Backend
+rejection and unsuccessful acknowledged completion are therefore observed without blocking the
+actor while the hardware result is pending.
 
 ## Response Correlation
 
