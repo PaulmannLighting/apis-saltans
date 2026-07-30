@@ -2,7 +2,7 @@ use thiserror::Error as ThisError;
 use tokio::sync::oneshot;
 use zb_aps::Data;
 use zb_aps::apsde::{IndividualEndpoint, Source};
-use zb_core::destination::Device;
+use zb_core::FullAddress;
 use zb_zcl::Frame;
 use zb_zcl::ota_upgrade::Command as OtaCommand;
 
@@ -16,8 +16,10 @@ pub type UpdateResult = Result<(), UpdateError>;
 pub enum Message {
     /// Offer a validated OTA image to one device endpoint.
     Update {
-        /// Device endpoint to update.
-        target: Device,
+        /// Complete IEEE and NWK address of the device to update.
+        target: FullAddress,
+        /// Remote OTA client endpoint.
+        target_endpoint: IndividualEndpoint,
         /// Local OTA server endpoint used as the APS source.
         source_endpoint: IndividualEndpoint,
         /// Complete OTA image offered to the device.

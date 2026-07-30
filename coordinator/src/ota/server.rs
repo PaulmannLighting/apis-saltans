@@ -9,7 +9,8 @@ use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
 use zb_aps::Data;
 use zb_aps::apsde::{IndividualEndpoint, Source};
 use zb_core::destination::Device;
-use zb_core::{Cluster, Direction};
+use zb_core::{Cluster, Direction, FullAddress, IeeeAddress};
+use zb_hw::NcpHandle;
 use zb_zcl::global::default_response::DefaultResponse;
 use zb_zcl::ota_upgrade::{
     Command as OtaCommand, ImageBlockRequest, ImagePageRequest, QueryNextImageResponse,
@@ -20,7 +21,7 @@ use zb_zcl::{
 };
 
 use super::state::RequestContext;
-use super::transfer::{Transfer, TransferExit, TransferMessage};
+use super::transfer::{Replacement, Transfer, TransferExit, TransferMessage};
 use super::{
     Image, Message, OTA_PROFILE, UpdateError, UpdateResult, reply_zcl,
     request_from_unsequenced_frame, zcl,
@@ -29,6 +30,7 @@ use super::{
 /// Handle used by the OTA server to route messages to one destination transfer.
 #[derive(Debug)]
 struct ActiveTransfer {
+    target: FullAddress,
     messages: Sender<TransferMessage>,
     task: AbortHandle,
     task_id: Id,
@@ -41,6 +43,26 @@ struct ActiveSubscription {
     task: JoinHandle<()>,
 }
 
+#[derive(Debug)]
+enum AddressResolver {
+    Ncp(NcpHandle),
+    #[cfg(test)]
+    Fixed(IeeeAddress),
+}
+
+impl AddressResolver {
+    async fn resolve(
+        &self,
+        short_id: zb_core::short_id::Device,
+    ) -> Result<IeeeAddress, zb_hw::Error> {
+        match self {
+            Self::Ncp(ncp) => ncp.short_id_to_ieee_address(short_id).await,
+            #[cfg(test)]
+            Self::Fixed(address) => Ok(*address),
+        }
+    }
+}
+
 enum ServerEvent {
     Message(Message),
     Shutdown,
@@ -50,6 +72,7 @@ enum ServerEvent {
 /// Stateful OTA Upgrade server actor.
 #[derive(Debug)]
 pub struct Server {
+    addresses: AddressResolver,
     zcl: Sender<zcl::Message>,
     sender: WeakSender<ServerEvent>,
     inbound: Receiver<ServerEvent>,
@@ -61,12 +84,14 @@ pub struct Server {
 impl Server {
     /// Create an empty OTA server with a limit on concurrent destination transfer tasks.
     const fn new(
+        addresses: AddressResolver,
         zcl: Sender<zcl::Message>,
         sender: WeakSender<ServerEvent>,
         inbound: Receiver<ServerEvent>,
         update_task_limit: usize,
     ) -> Self {
         Self {
+            addresses,
             zcl,
             sender,
             inbound,
@@ -86,11 +111,12 @@ impl Server {
                 ServerEvent::Message(message) => match message {
                     Message::Update {
                         target,
+                        target_endpoint,
                         source_endpoint,
                         image,
                         completion,
                     } => {
-                        self.update(target, source_endpoint, image, completion)
+                        self.update(target, target_endpoint, source_endpoint, image, completion)
                             .await;
                     }
                     Message::Received { source, frame } => {
@@ -109,10 +135,20 @@ impl Server {
     }
 
     /// Spawn the OTA server actor and return its message handle.
-    pub(crate) fn spawn(zcl: Sender<zcl::Message>, update_task_limit: usize) -> Sender<Message> {
+    pub(crate) fn spawn(
+        ncp: NcpHandle,
+        zcl: Sender<zcl::Message>,
+        update_task_limit: usize,
+    ) -> Sender<Message> {
         let (sender, messages) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
         let (events, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
-        let server = Self::new(zcl, events.downgrade(), inbound, update_task_limit);
+        let server = Self::new(
+            AddressResolver::Ncp(ncp),
+            zcl,
+            events.downgrade(),
+            inbound,
+            update_task_limit,
+        );
         spawn(forward_api_messages(messages, events));
         spawn(server.run());
         sender
@@ -121,14 +157,16 @@ impl Server {
     /// Replace an existing destination update or admit a new destination transfer task.
     async fn update(
         &mut self,
-        target: Device,
+        target: FullAddress,
+        target_endpoint: IndividualEndpoint,
         source_endpoint: IndividualEndpoint,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
     ) {
+        let destination = Device::new(target.short_id(), target_endpoint.get());
         let existing_transfer = self
             .transfers
-            .get(&target)
+            .get(&destination)
             .map(|transfer| transfer.messages.clone());
         if existing_transfer.is_none() && self.transfers.len() >= self.update_task_limit {
             let _result = completion.send(Err(UpdateError::UpdateTaskLimitReached {
@@ -142,30 +180,45 @@ impl Server {
         }
 
         if let Some(messages) = existing_transfer {
-            let replacement = TransferMessage::Replace {
+            let replacement = TransferMessage::Replace(Box::new(Replacement {
+                target,
+                target_endpoint,
                 source_endpoint,
                 image,
                 completion,
-            };
+            }));
             match messages.send(replacement).await {
-                Ok(()) => return,
+                Ok(()) => {
+                    if let Some(transfer) = self.transfers.get_mut(&destination) {
+                        transfer.target = target;
+                    }
+                    return;
+                }
                 Err(error) => {
-                    self.transfers.remove(&target);
-                    let TransferMessage::Replace {
+                    self.transfers.remove(&destination);
+                    let TransferMessage::Replace(replacement) = error.0 else {
+                        unreachable!("the failed message remains an update replacement");
+                    };
+                    let Replacement {
+                        target,
+                        target_endpoint,
                         source_endpoint,
                         image,
                         completion,
-                    } = error.0
-                    else {
-                        unreachable!("the failed message remains an update replacement");
-                    };
-                    self.start_transfer(target, source_endpoint, image, completion);
+                    } = *replacement;
+                    self.start_transfer(
+                        target,
+                        target_endpoint,
+                        source_endpoint,
+                        image,
+                        completion,
+                    );
                     return;
                 }
             }
         }
 
-        self.start_transfer(target, source_endpoint, image, completion);
+        self.start_transfer(target, target_endpoint, source_endpoint, image, completion);
     }
 
     /// Lazily register the OTA frame subscription before offering the first update.
@@ -213,15 +266,18 @@ impl Server {
     /// Spawn and register the sole destination task for a newly admitted update.
     fn start_transfer(
         &mut self,
-        target: Device,
+        target: FullAddress,
+        target_endpoint: IndividualEndpoint,
         source_endpoint: IndividualEndpoint,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
     ) {
+        let destination = Device::new(target.short_id(), target_endpoint.get());
         let (messages, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
         let transfer = Transfer::new(
             self.zcl.clone(),
             target,
+            target_endpoint,
             source_endpoint,
             image,
             completion,
@@ -236,8 +292,9 @@ impl Server {
             self.sender.clone(),
         ));
         self.transfers.insert(
-            target,
+            destination,
             ActiveTransfer {
+                target,
                 messages,
                 task: abort,
                 task_id,
@@ -286,7 +343,6 @@ impl Server {
         let context = RequestContext {
             destination: Device::new(short_id, endpoint),
             source_endpoint,
-            source_ieee_address: source.ieee_address(),
             sequence_number: zcl_header.seq(),
         };
         if is_server_command(&command) {
@@ -297,14 +353,33 @@ impl Server {
             return;
         }
 
-        let Some(messages) = self
+        let Some((messages, target)) = self
             .transfers
             .get(&context.destination)
-            .map(|transfer| transfer.messages.clone())
+            .map(|transfer| (transfer.messages.clone(), transfer.target))
         else {
             self.reject_unauthorized(context, command).await;
             return;
         };
+        let resolved_address = match self.addresses.resolve(short_id).await {
+            Ok(address) => address,
+            Err(error) => {
+                warn!(
+                    "Failed to resolve the IEEE address for OTA request source {short_id}: {error}"
+                );
+                self.reject_unauthorized(context, command).await;
+                return;
+            }
+        };
+        if resolved_address != target.ieee_address() {
+            warn!(
+                "Rejecting OTA request from {short_id}: resolved IEEE address {resolved_address} \
+                 does not match scheduled target {}",
+                target.ieee_address()
+            );
+            self.reject_unauthorized(context, command).await;
+            return;
+        }
         let request = TransferMessage::Request { context, command };
         if let Err(error) = messages.send(request).await {
             self.transfers.remove(&context.destination);
@@ -471,9 +546,23 @@ impl Server {
         zcl: Sender<zcl::Message>,
         update_task_limit: usize,
     ) -> (Sender<Message>, Self) {
+        Self::test_new_resolving(zcl, update_task_limit, super::TEST_IEEE_ADDRESS)
+    }
+
+    pub(super) fn test_new_resolving(
+        zcl: Sender<zcl::Message>,
+        update_task_limit: usize,
+        resolved_ieee_address: IeeeAddress,
+    ) -> (Sender<Message>, Self) {
         let (sender, messages) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
         let (events, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
-        let server = Self::new(zcl, events.downgrade(), inbound, update_task_limit);
+        let server = Self::new(
+            AddressResolver::Fixed(resolved_ieee_address),
+            zcl,
+            events.downgrade(),
+            inbound,
+            update_task_limit,
+        );
         spawn(forward_api_messages(messages, events));
         (sender, server)
     }

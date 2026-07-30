@@ -28,6 +28,9 @@ mod transfer;
 const CURRENT_TIME_IMMEDIATE: u32 = 0;
 const UPGRADE_TIME_IMMEDIATE: u32 = 0;
 const OTA_PROFILE: Profile = Profile::ZigbeeHomeAutomation;
+#[cfg(test)]
+const TEST_IEEE_ADDRESS: zb_core::IeeeAddress =
+    zb_core::IeeeAddress::new(0x00, 0x12, 0x4b, 0x00, 0x01, 0xaa, 0xbb, 0xcc);
 
 type Request = DataRequest<UnsequencedFrame<Bytes>>;
 
@@ -135,24 +138,24 @@ mod tests {
     use std::time::Duration;
 
     use bytes::{BufMut, Bytes, BytesMut};
-    use le_stream::FromLeStream;
+    use le_stream::{FromLeStream, ToLeStream};
     use tokio::time::timeout;
     use zb_aps::Data;
     use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, Source};
     use zb_core::destination::Device;
     use zb_core::endpoint::Application;
-    use zb_core::{Cluster, Direction, Endpoint, Profile, short_id};
+    use zb_core::{Cluster, Direction, Endpoint, FullAddress, IeeeAddress, Profile, short_id};
     use zb_zcl::ota_upgrade::{
         Command as OtaCommand, ImageBlockRequest, ImageBlockResponse, ImageBlockResponsePayload,
         ImageId, ImageNotify, ImageNotifyPayload, ImagePageRequest, QueryNextImageRequest,
-        QueryNextImageResponse, QueryResponse, UpgradeEndRequest, UpgradeEndResponse,
-        UpgradeEndStatus,
+        QueryNextImageResponse, QueryResponse, QuerySpecificFileRequest, QuerySpecificFileResponse,
+        UpgradeEndRequest, UpgradeEndResponse, UpgradeEndStatus,
     };
     use zb_zcl::{Cluster as ZclCluster, Command, Frame, Header, Scope};
 
     use super::{
-        Image, Message, OTA_PROFILE, ParseImage, Request, Server, TransmissionResponse,
-        UpdateError, UpdateResult,
+        FieldControl, Image, Message, OTA_PROFILE, ParseImage, Request, Server, TEST_IEEE_ADDRESS,
+        TransmissionResponse, UpdateError, UpdateResult,
     };
     use crate::{Error, Ota, zcl};
 
@@ -165,6 +168,7 @@ mod tests {
     const SUPPORTED_HEADER_VERSION: u16 = 0x0100;
     const BASE_HEADER_LENGTH: usize = 56;
     const HEADER_STRING_LENGTH: usize = 32;
+    const UPGRADE_FILE_DESTINATION_LENGTH: usize = 8;
     const TEST_CHANNEL_SIZE: usize = 4;
     const TEST_SEQUENCE_NUMBER: u8 = 42;
     const TEST_APS_COUNTER: u8 = 1;
@@ -175,6 +179,8 @@ mod tests {
     const SINGLE_UPDATE_LIMIT: usize = 1;
     const TEST_UPDATE_LIMIT: usize = TEST_CHANNEL_SIZE;
     const SECOND_DEVICE_SHORT_ID: u16 = 0x5678;
+    const OTHER_IEEE_ADDRESS: IeeeAddress =
+        IeeeAddress::new(0x00, 0x12, 0x4b, 0x00, 0x02, 0xdd, 0xee, 0xff);
     const ENDPOINT: Endpoint = Endpoint::Application(Application::MIN);
 
     enum ObservedZcl {
@@ -232,7 +238,8 @@ mod tests {
 
             ota_sender
                 .send(Message::Update {
-                    target: destination,
+                    target: test_address(),
+                    target_endpoint: test_target_endpoint(),
                     source_endpoint: test_source_endpoint(),
                     image: test_image(),
                     completion,
@@ -275,7 +282,12 @@ mod tests {
             tokio::spawn(server.run());
 
             let result = ota_sender
-                .update(test_destination(), test_source_endpoint(), test_image())
+                .update(
+                    test_address(),
+                    test_target_endpoint(),
+                    test_source_endpoint(),
+                    test_image(),
+                )
                 .await;
 
             assert!(matches!(result, Err(Error::Ota(UpdateError::Subscription))));
@@ -320,7 +332,8 @@ mod tests {
 
             let result = ota_sender
                 .update(
-                    second_test_destination(),
+                    second_test_address(),
+                    test_target_endpoint(),
                     test_source_endpoint(),
                     test_image(),
                 )
@@ -369,7 +382,7 @@ mod tests {
             ));
 
             let _second_completion =
-                schedule_for(&ota_sender, second_test_destination(), test_image()).await;
+                schedule_for(&ota_sender, second_test_address(), test_image()).await;
             let ObservedZcl::Transmit { request } = receive_zcl(&mut zcl_receiver).await else {
                 panic!("expected Image Notify transmission");
             };
@@ -506,7 +519,13 @@ mod tests {
             ota_sender
                 .send(incoming(
                     TEST_SEQUENCE_NUMBER,
-                    ImageBlockRequest::new(image_id, offset, maximum_data_size, None, None),
+                    ImageBlockRequest::new(
+                        image_id,
+                        offset,
+                        maximum_data_size,
+                        Some(TEST_IEEE_ADDRESS),
+                        None,
+                    ),
                 ))
                 .await
                 .expect("OTA server is running");
@@ -535,6 +554,86 @@ mod tests {
             assert_eq!(response.current_time(), 0);
             assert_eq!(response.upgrade_time(), 0);
             assert!(matches!(completion.await, Ok(Ok(()))));
+        });
+    }
+
+    #[test]
+    fn serves_a_destination_restricted_image_to_its_pinned_identity() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let image = test_image_for(Some(TEST_IEEE_ADDRESS));
+            let image_id = image.id();
+            let _completion = schedule(&ota_sender, image).await;
+            receive_zcl(&mut zcl_receiver).await;
+
+            ota_sender
+                .send(incoming(
+                    TEST_SEQUENCE_NUMBER,
+                    QuerySpecificFileRequest::new(TEST_IEEE_ADDRESS, image_id, STACK_VERSION),
+                ))
+                .await
+                .expect("OTA server is running");
+
+            let (sequence_number, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+            assert_eq!(sequence_number, TEST_SEQUENCE_NUMBER);
+            let response = QuerySpecificFileResponse::from_le_stream(bytes.into_iter())
+                .expect("valid Query Specific File Response");
+            assert!(matches!(response.response(), QueryResponse::Success { .. }));
+
+            let offset = u32::try_from(BASE_HEADER_LENGTH + UPGRADE_FILE_DESTINATION_LENGTH)
+                .expect("test payload offset fits u32");
+            let maximum_data_size =
+                u8::try_from(TEST_IMAGE_DATA.len()).expect("test block size fits u8");
+            ota_sender
+                .send(incoming(
+                    TEST_SEQUENCE_NUMBER,
+                    ImageBlockRequest::new(
+                        image_id,
+                        offset,
+                        maximum_data_size,
+                        Some(TEST_IEEE_ADDRESS),
+                        None,
+                    ),
+                ))
+                .await
+                .expect("OTA server is running");
+
+            let (_, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+            let response = ImageBlockResponse::from_le_stream(bytes.into_iter())
+                .expect("valid Image Block Response");
+            assert!(matches!(
+                response.payload(),
+                ImageBlockResponsePayload::Success(_)
+            ));
+        });
+    }
+
+    #[test]
+    fn rejects_a_request_when_the_short_address_resolves_to_another_identity() {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) =
+                Server::test_new_resolving(zcl_sender, TEST_UPDATE_LIMIT, OTHER_IEEE_ADDRESS);
+            tokio::spawn(server.run());
+            let image = test_image();
+            let current_image = ImageId::new(MANUFACTURER_CODE, IMAGE_TYPE, FILE_VERSION - 1);
+            let _completion = schedule(&ota_sender, image).await;
+            receive_zcl(&mut zcl_receiver).await;
+
+            ota_sender
+                .send(incoming(
+                    TEST_SEQUENCE_NUMBER,
+                    QueryNextImageRequest::new(current_image, None),
+                ))
+                .await
+                .expect("OTA server is running");
+
+            let (_, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+            let response = QueryNextImageResponse::from_le_stream(bytes.into_iter())
+                .expect("valid Query Next Image Response");
+            assert_eq!(response.response(), QueryResponse::NotAuthorized);
         });
     }
 
@@ -626,22 +725,40 @@ mod tests {
     }
 
     fn test_image() -> Image {
-        let total_length = BASE_HEADER_LENGTH + TEST_IMAGE_DATA.len();
+        test_image_for(None)
+    }
+
+    fn test_image_for(destination: Option<IeeeAddress>) -> Image {
+        let optional_header_length = destination.map_or(0, |_| UPGRADE_FILE_DESTINATION_LENGTH);
+        let header_length = BASE_HEADER_LENGTH + optional_header_length;
+        let total_length = header_length + TEST_IMAGE_DATA.len();
         let mut bytes = BytesMut::with_capacity(total_length);
         bytes.put_u32_le(OTA_FILE_IDENTIFIER);
         bytes.put_u16_le(SUPPORTED_HEADER_VERSION);
-        bytes.put_u16_le(u16::try_from(BASE_HEADER_LENGTH).expect("fixed header length fits u16"));
-        bytes.put_u16_le(0);
+        bytes.put_u16_le(u16::try_from(header_length).expect("test header length fits u16"));
+        let field_control = destination.map_or(FieldControl::empty(), |_| {
+            FieldControl::UPGRADE_FILE_DESTINATION
+        });
+        bytes.put_u16_le(field_control.bits());
         bytes.put_u16_le(MANUFACTURER_CODE);
         bytes.put_u16_le(IMAGE_TYPE);
         bytes.put_u32_le(FILE_VERSION);
         bytes.put_u16_le(STACK_VERSION);
         bytes.extend_from_slice(&[0; HEADER_STRING_LENGTH]);
         bytes.put_u32_le(u32::try_from(total_length).expect("test image length fits u32"));
+        bytes.extend(destination.to_le_stream());
         bytes.extend_from_slice(TEST_IMAGE_DATA);
         Cursor::new(bytes.freeze())
             .parse()
             .expect("valid test image")
+    }
+
+    fn test_address() -> FullAddress {
+        FullAddress::new(TEST_IEEE_ADDRESS, test_destination().device())
+    }
+
+    fn second_test_address() -> FullAddress {
+        FullAddress::new(TEST_IEEE_ADDRESS, second_test_destination().device())
     }
 
     fn test_destination() -> Device {
@@ -662,22 +779,27 @@ mod tests {
         IndividualEndpoint::new(ENDPOINT).expect("test endpoint is individual")
     }
 
+    const fn test_target_endpoint() -> IndividualEndpoint {
+        IndividualEndpoint::new(ENDPOINT).expect("test endpoint is individual")
+    }
+
     async fn schedule(
         sender: &tokio::sync::mpsc::Sender<Message>,
         image: Image,
     ) -> tokio::sync::oneshot::Receiver<UpdateResult> {
-        schedule_for(sender, test_destination(), image).await
+        schedule_for(sender, test_address(), image).await
     }
 
     async fn schedule_for(
         sender: &tokio::sync::mpsc::Sender<Message>,
-        target: Device,
+        target: FullAddress,
         image: Image,
     ) -> tokio::sync::oneshot::Receiver<UpdateResult> {
         let (completion, result) = tokio::sync::oneshot::channel();
         sender
             .send(Message::Update {
                 target,
+                target_endpoint: test_target_endpoint(),
                 source_endpoint: test_source_endpoint(),
                 image,
                 completion,
@@ -693,7 +815,12 @@ mod tests {
     ) -> tokio::task::JoinHandle<Result<(), Error>> {
         tokio::spawn(async move {
             sender
-                .update(test_destination(), test_source_endpoint(), image)
+                .update(
+                    test_address(),
+                    test_target_endpoint(),
+                    test_source_endpoint(),
+                    image,
+                )
                 .await
         })
     }

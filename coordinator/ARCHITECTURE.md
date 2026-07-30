@@ -192,6 +192,14 @@ into it, subscription forwarding tasks send received frames into it, and destina
 send transfer completion into it. When the public OTA channel closes, the API task queues a shutdown
 event. The server therefore does not manually poll multiple receivers or its transfer tasks.
 
+Each update carries a `FullAddress` plus its remote endpoint. The transfer pins the IEEE identity
+and current NWK short address for Image Notify transmission and destination-restricted image
+checks. Before the server routes any inbound OTA request, it resolves the request's NWK source
+through the NCP and compares the result with the pinned IEEE address. A stale offer cannot therefore
+be inherited by a different device after NWK short-address reuse. Query Specific File requests,
+optional request-node addresses, and OTA image header destinations are validated against that same
+identity.
+
 The API task owns the sole strong sender for the private event inbox. Subscription and transfer
 forwarders hold only weak senders. ZCL and those forwarders therefore cannot keep the OTA actor
 alive. When the external OTA senders are dropped, the API task queues shutdown, the OTA actor exits,

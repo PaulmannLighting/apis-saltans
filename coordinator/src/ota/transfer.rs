@@ -10,7 +10,7 @@ use tokio::sync::oneshot;
 use tokio::task::{Id, JoinError, JoinSet};
 use zb_aps::apsde::IndividualEndpoint;
 use zb_core::destination::Device;
-use zb_core::{Cluster, Direction, IeeeAddress};
+use zb_core::{Cluster, Direction, FullAddress, IeeeAddress};
 use zb_zcl::global::default_response::DefaultResponse;
 use zb_zcl::ota_upgrade::{
     Command as OtaCommand, ImageBlock, ImageBlockRequest, ImageBlockResponse,
@@ -35,17 +35,26 @@ const GENERATION_STEP: u64 = 1;
 /// Command routed from the OTA server to one destination transfer task.
 pub(super) enum TransferMessage {
     /// Replace the image offered by the existing destination task.
-    Replace {
-        /// Local OTA server endpoint used as the APS source.
-        source_endpoint: IndividualEndpoint,
-        image: Image,
-        completion: oneshot::Sender<UpdateResult>,
-    },
+    Replace(Box<Replacement>),
     /// Process an OTA request received from the destination.
     Request {
         context: RequestContext,
         command: OtaCommand,
     },
+}
+
+/// Replacement update routed to an existing destination transfer.
+pub(super) struct Replacement {
+    /// Complete address of the replacement update target.
+    pub(super) target: FullAddress,
+    /// Remote OTA client endpoint.
+    pub(super) target_endpoint: IndividualEndpoint,
+    /// Local OTA server endpoint used as the APS source.
+    pub(super) source_endpoint: IndividualEndpoint,
+    /// Replacement image.
+    pub(super) image: Image,
+    /// Reports the replacement update's terminal result.
+    pub(super) completion: oneshot::Sender<UpdateResult>,
 }
 
 /// Normal completion notification from a destination transfer task.
@@ -58,7 +67,8 @@ pub(super) struct TransferExit {
 /// One long-lived OTA update task for a single destination endpoint.
 pub(super) struct Transfer {
     zcl: Sender<zcl::Message>,
-    destination: Device,
+    target: FullAddress,
+    target_endpoint: IndividualEndpoint,
     source_endpoint: IndividualEndpoint,
     image: ImageTransfer,
     completion: Option<oneshot::Sender<UpdateResult>>,
@@ -87,7 +97,8 @@ impl Transfer {
     /// Create a destination transfer around its initial image and command mailbox.
     pub(super) fn new(
         zcl: Sender<zcl::Message>,
-        destination: Device,
+        target: FullAddress,
+        target_endpoint: IndividualEndpoint,
         source_endpoint: IndividualEndpoint,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
@@ -95,7 +106,8 @@ impl Transfer {
     ) -> Self {
         Self {
             zcl,
-            destination,
+            target,
+            target_endpoint,
             source_endpoint,
             image: image.into_transfer(),
             completion: Some(completion),
@@ -157,7 +169,7 @@ impl Transfer {
         };
         self.operations.abort_all();
         TransferExit {
-            destination: self.destination,
+            destination: self.destination(),
             completion: self
                 .completion
                 .take()
@@ -169,12 +181,15 @@ impl Transfer {
     /// Apply an update replacement or dispatch an inbound OTA command.
     async fn handle_message(&mut self, message: TransferMessage) {
         match message {
-            TransferMessage::Replace {
-                source_endpoint,
-                image,
-                completion,
-            } => {
-                self.replace(source_endpoint, image, completion);
+            TransferMessage::Replace(replacement) => {
+                let Replacement {
+                    target,
+                    target_endpoint,
+                    source_endpoint,
+                    image,
+                    completion,
+                } = *replacement;
+                self.replace(target, target_endpoint, source_endpoint, image, completion);
             }
             TransferMessage::Request { context, command } => {
                 trace!(
@@ -215,6 +230,8 @@ impl Transfer {
     /// Replace the current image without replacing the destination task.
     fn replace(
         &mut self,
+        target: FullAddress,
+        target_endpoint: IndividualEndpoint,
         source_endpoint: IndividualEndpoint,
         image: Image,
         completion: oneshot::Sender<UpdateResult>,
@@ -224,6 +241,8 @@ impl Transfer {
         if let Some(previous) = self.completion.replace(completion) {
             let _result = previous.send(Err(UpdateError::Superseded));
         }
+        self.target = target;
+        self.target_endpoint = target_endpoint;
         self.source_endpoint = source_endpoint;
         self.image = image.into_transfer();
         self.notify();
@@ -232,7 +251,7 @@ impl Transfer {
     /// Announce the currently offered image and track its hardware response.
     fn notify(&mut self) {
         let image_id = self.image.id();
-        let destination = self.destination;
+        let destination = self.destination();
         let zcl = self.zcl.clone();
         trace!("Offering OTA image {image_id:?} to {destination}");
         let query_jitter =
@@ -276,7 +295,7 @@ impl Transfer {
     /// Answer a destination-restricted query after validating its metadata.
     fn query_specific_file(&mut self, context: RequestContext, request: QuerySpecificFileRequest) {
         let request_address = request.request_node_address();
-        let authorized = context.source_ieee_address == Some(request_address)
+        let authorized = self.target.ieee_address() == request_address
             && self.image.upgrade_file_destination() == Some(request_address);
         let response = if !authorized {
             QueryResponse::NotAuthorized
@@ -294,7 +313,7 @@ impl Transfer {
     async fn image_block(&mut self, context: RequestContext, request: &ImageBlockRequest) {
         let request_command_id = <ImageBlockRequest as Command>::ID;
         let data = match requested_data(
-            context,
+            self.target,
             &self.image,
             request.image(),
             request.file_offset(),
@@ -332,7 +351,7 @@ impl Transfer {
             return;
         }
         let first_block = match requested_data(
-            context,
+            self.target,
             &self.image,
             request.image(),
             request.file_offset(),
@@ -487,6 +506,10 @@ impl Transfer {
             operation_outcome(result, completion)
         });
     }
+
+    const fn destination(&self) -> Device {
+        Device::new(self.target.short_id(), self.target_endpoint.get())
+    }
 }
 
 const fn query_success(image: &ImageTransfer) -> QueryResponse {
@@ -522,7 +545,7 @@ async fn transmit_reply(
 }
 
 async fn requested_data(
-    context: RequestContext,
+    target: FullAddress,
     image: &ImageTransfer,
     requested_image: ImageId,
     file_offset: u32,
@@ -536,7 +559,7 @@ async fn requested_data(
     if maximum_data_size == 0 {
         return Err(Status::MalformedCommand);
     }
-    if !request_address_is_authorized(context, image, request_node_address) {
+    if !request_address_is_authorized(target, image, request_node_address) {
         return Err(Status::NotAuthorized);
     }
 
@@ -564,18 +587,17 @@ pub(super) async fn read_image_range(
 }
 
 fn request_address_is_authorized(
-    context: RequestContext,
+    target: FullAddress,
     image: &ImageTransfer,
     request_node_address: Option<IeeeAddress>,
 ) -> bool {
     if let Some(request_address) = request_node_address
-        && context.source_ieee_address != Some(request_address)
+        && target.ieee_address() != request_address
     {
         return false;
     }
 
-    image.upgrade_file_destination().is_none_or(|destination| {
-        context.source_ieee_address == Some(destination)
-            && request_node_address == Some(destination)
-    })
+    image
+        .upgrade_file_destination()
+        .is_none_or(|destination| target.ieee_address() == destination)
 }

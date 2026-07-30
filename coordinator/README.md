@@ -106,6 +106,8 @@ The NCP driver must implement `zb_hw::Driver::get_endpoints()` and return a comp
 descriptors for local-node queries and ZDP match handling; endpoint descriptors are no longer
 passed to `Coordinator::start(...)`. ZCL does not use the descriptors to select an endpoint.
 Applications select the local source endpoint explicitly for every ZCL operation.
+The OTA server also uses `Driver::short_id_to_ieee_address()` to validate every request against the
+full device identity supplied when its update was scheduled.
 
 ```rust,no_run
 use apis_saltans_coordinator::{Coordinator, Event};
@@ -163,12 +165,12 @@ use apis_saltans_coordinator::{Coordinator, Ota, ParseImage};
 use std::fs::File;
 use std::path::Path;
 use zb_aps::apsde::IndividualEndpoint;
-use zb_core::destination::Device;
-use zb_core::{Application, Endpoint};
+use zb_core::{Application, Endpoint, FullAddress};
 
 async fn offer_update(
     coordinator: &Coordinator,
-    destination: Device,
+    target: FullAddress,
+    target_endpoint: IndividualEndpoint,
     ota_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let image = File::open(ota_path)?.parse()?;
@@ -177,7 +179,7 @@ async fn offer_update(
     ))
     .expect("application endpoints are individual");
     coordinator
-        .update(destination, source_endpoint, image)
+        .update(target, target_endpoint, source_endpoint, image)
         .await?;
     Ok(())
 }
@@ -189,6 +191,13 @@ published as general `Event::Zcl` values. The server selects the scheduled image
 and file metadata, streams blocks (including paced page responses), preserves or advances ZCL
 transaction numbers as required, and emits the appropriate command or default response. Scheduling
 another image for the same device endpoint replaces its current offer.
+
+Every update is scheduled with a `FullAddress`, pinning the client's IEEE identity to its current
+NWK short address. Before routing an inbound request to that transfer, the OTA server resolves the
+request's short address through the NCP and requires it to match the pinned IEEE address. Optional
+request-node addresses and an image's `upgrade_file_destination` are checked against the same
+identity. A different device that later acquires the short address therefore cannot inherit the
+offer.
 
 The OTA subsystem receives those requests through an internal ZCL subscription filtered by a typed
 cluster variant, command scope, and direction. ZCL has no OTA-specific routing logic or OTA actor
