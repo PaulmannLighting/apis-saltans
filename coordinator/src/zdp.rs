@@ -39,6 +39,7 @@ use self::node_desc::{
 use super::index::Index;
 use crate::aps::{Aps, Metadata};
 use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token};
+use crate::event_sink::EventSink;
 use crate::response::ApsProtocolResponse;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
@@ -52,7 +53,7 @@ mod node_desc;
 pub struct Transceiver {
     ncp: NcpHandle,
     aps: Aps,
-    events: Sender<Event>,
+    events: EventSink,
     descriptor: Descriptor,
     /// Whether the hardware has reported that joining is open.
     joining_permitted: bool,
@@ -66,7 +67,7 @@ impl Transceiver {
     pub const fn new(
         ncp: NcpHandle,
         aps: Aps,
-        events: Sender<Event>,
+        events: EventSink,
         descriptor: Descriptor,
         inbox: WeakSender<Message>,
     ) -> Self {
@@ -180,7 +181,7 @@ impl Transceiver {
             Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::DeviceAnnce(
                 device_annce,
             )) => {
-                self.handle_device_annce(*device_annce).await;
+                self.handle_device_annce(device_annce.as_ref());
             }
             Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescReq(
                 node_desc_req,
@@ -533,7 +534,7 @@ impl Transceiver {
         }
     }
 
-    async fn handle_device_annce(&self, device_annce: DeviceAnnce) {
+    fn handle_device_annce(&self, device_annce: &DeviceAnnce) {
         let Ok(short_id) = device_annce.nwk_addr().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
         }) else {
@@ -541,14 +542,10 @@ impl Transceiver {
         };
 
         self.events
-            .send(Event::Device(DeviceEvent::Announced(FullAddress::new(
+            .emit(Event::Device(DeviceEvent::Announced(FullAddress::new(
                 device_annce.ieee_addr(),
                 short_id,
-            ))))
-            .await
-            .unwrap_or_else(|error| {
-                error!("Failed to send device announcement: {error:?}");
-            });
+            ))));
     }
 
     /// Respond to a Node Descriptor request with the descriptor or an appropriate status.
@@ -614,7 +611,7 @@ impl Transceiver {
     pub fn spawn(
         ncp: NcpHandle,
         aps: Aps,
-        events: Sender<Event>,
+        events: EventSink,
         descriptor: Descriptor,
     ) -> Sender<Message> {
         let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);

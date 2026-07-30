@@ -21,6 +21,7 @@ pub use self::subscription::{
 use super::index::Index;
 use crate::aps::{Aps, TransmissionResponse};
 use crate::correlation::{Cancellation, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token};
+use crate::event_sink::EventSink;
 use crate::response::ApsProtocolResponse;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
@@ -31,7 +32,7 @@ mod subscription;
 #[derive(Debug)]
 pub struct Transceiver {
     aps: Aps,
-    events: Sender<Event>,
+    events: EventSink,
     subscriptions: Vec<Subscription>,
     responses: Registry<Cluster>,
     inbox: WeakSender<Message>,
@@ -39,7 +40,7 @@ pub struct Transceiver {
 
 impl Transceiver {
     /// Create a ZCL transceiver.
-    pub const fn new(aps: Aps, events: Sender<Event>, inbox: WeakSender<Message>) -> Self {
+    pub const fn new(aps: Aps, events: EventSink, inbox: WeakSender<Message>) -> Self {
         Self {
             aps,
             events,
@@ -68,7 +69,7 @@ impl Transceiver {
                 });
             }
             Message::Received { indication } => {
-                self.handle_message_received(indication).await;
+                self.handle_message_received(indication);
             }
             Message::NetworkDown => {
                 self.responses
@@ -109,10 +110,7 @@ impl Transceiver {
     }
 
     /// Handle a received ZCL message.
-    async fn handle_message_received(
-        &mut self,
-        indication: DataIndication<Frame<Cluster>, (), ()>,
-    ) {
+    fn handle_message_received(&mut self, indication: DataIndication<Frame<Cluster>, (), ()>) {
         let Some((source, aps_frame)) = crate::apsde::into_legacy_data(indication) else {
             warn!("Discarding ZCL indication with unsupported addressing");
             return;
@@ -146,15 +144,10 @@ impl Transceiver {
             return;
         };
 
-        self.events
-            .send(Event::Zcl {
-                src_address: short_id,
-                aps_frame,
-            })
-            .await
-            .unwrap_or_else(|error| {
-                debug!("Failed to send command: {error:?}");
-            });
+        self.events.emit(Event::Zcl {
+            src_address: short_id,
+            aps_frame,
+        });
     }
 
     /// Deliver a received frame to every matching live subscription.
@@ -344,7 +337,7 @@ const fn response_direction(request_direction: Direction) -> Direction {
 
 impl Transceiver {
     /// Start the ZCL transceiver.
-    pub fn spawn(aps: Aps, events: Sender<Event>) -> Sender<Message> {
+    pub fn spawn(aps: Aps, events: EventSink) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
         spawn(Self::new(aps, events, zcl_tx.downgrade()).run(zcl_rx));
         zcl_tx
@@ -369,6 +362,7 @@ mod tests {
 
     use super::{Message, Subscription, SubscriptionFilter, SubscriptionMessage, Transceiver};
     use crate::aps::Aps;
+    use crate::event_sink::EventSink;
     use crate::index::Index;
     use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
@@ -467,8 +461,12 @@ mod tests {
                 let (subscription, mut subscribed_frames) = Subscription::channel(filter);
                 let (transceiver, messages) = channel(MPSC_CHANNEL_SIZE);
                 tokio::spawn(
-                    Transceiver::new(Aps::new(aps_sender), events, transceiver.downgrade())
-                        .run(messages),
+                    Transceiver::new(
+                        Aps::new(aps_sender),
+                        EventSink::new(events),
+                        transceiver.downgrade(),
+                    )
+                    .run(messages),
                 );
                 let source = source();
 
@@ -519,9 +517,7 @@ mod tests {
                     .register(|_| response_index)
                     .expect("response correlation can be registered");
 
-                transceiver
-                    .handle_message_received(subscribed_indication())
-                    .await;
+                transceiver.handle_message_received(subscribed_indication());
 
                 assert!(matches!(
                     response.await,
@@ -561,9 +557,7 @@ mod tests {
                     .register(|_| response_index)
                     .expect("response correlation can be registered");
 
-                transceiver
-                    .handle_message_received(subscribed_indication())
-                    .await;
+                transceiver.handle_message_received(subscribed_indication());
 
                 assert!(subscribed_frames.recv().await.is_some());
                 assert!(response.try_recv().is_err());
@@ -587,8 +581,12 @@ mod tests {
                 let subscription_messages = subscribed_frames.sender();
                 let (transceiver, messages) = channel(MPSC_CHANNEL_SIZE);
                 tokio::spawn(
-                    Transceiver::new(Aps::new(aps_sender), events, transceiver.downgrade())
-                        .run(messages),
+                    Transceiver::new(
+                        Aps::new(aps_sender),
+                        EventSink::new(events),
+                        transceiver.downgrade(),
+                    )
+                    .run(messages),
                 );
 
                 transceiver
@@ -655,9 +653,7 @@ mod tests {
                 let (mut transceiver, mut events) = unstarted_transceiver();
                 transceiver.subscriptions.push(subscription);
 
-                transceiver
-                    .handle_message_received(subscribed_indication())
-                    .await;
+                transceiver.handle_message_received(subscribed_indication());
 
                 assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
                 assert_eq!(transceiver.subscriptions.len(), 1);
@@ -669,7 +665,11 @@ mod tests {
         let (events, application_events) = channel(MPSC_CHANNEL_SIZE);
         let (inbox, _messages) = channel(MPSC_CHANNEL_SIZE);
         (
-            Transceiver::new(Aps::new(aps_sender), events, inbox.downgrade()),
+            Transceiver::new(
+                Aps::new(aps_sender),
+                EventSink::new(events),
+                inbox.downgrade(),
+            ),
             application_events,
         )
     }

@@ -4,6 +4,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use zb_core::node::Descriptor;
 use zb_hw::{Error, NcpHandle};
 
+use crate::event_sink::EventSink;
 use crate::mux::Mux;
 use crate::{DEFAULT_OTA_UPDATE_TASK_LIMIT, Event, aps, ota, zcl, zdp};
 
@@ -66,11 +67,12 @@ impl Coordinator {
         T: Send + 'static,
         K: Send + 'static,
     {
+        let events = EventSink::new(events_out);
         let aps = aps::Transceiver::spawn(ncp.clone());
-        let zcl = zcl::Transceiver::spawn(aps.clone(), events_out.clone());
+        let zcl = zcl::Transceiver::spawn(aps.clone(), events.clone());
         let ota = ota::Server::spawn(zcl.clone(), ota_update_task_limit);
-        let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events_out.clone(), descriptor);
-        Mux::spawn(hw_events, events_out, aps, zcl.clone(), zdp.clone());
+        let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events.clone(), descriptor);
+        Mux::spawn(hw_events, events, aps, zcl.clone(), zdp.clone());
         Ok(Self { ncp, ota, zcl, zdp })
     }
 }

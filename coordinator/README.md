@@ -90,6 +90,11 @@ It takes:
 - a receiver for translated hardware `zb_hw::Event` values
 - a sender for outbound coordinator `Event` values
 
+Application-event delivery is non-blocking. When that sender's channel is full or closed, the
+coordinator drops the new event and logs the condition so application backpressure cannot stall
+hardware-event routing or the protocol actors. Applications should drain the event channel
+promptly and treat it as a lossy notification stream rather than durable state.
+
 By default, the OTA server runs at most `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` concurrent
 destination transfer tasks. Use `Coordinator::start_with_ota_update_task_limit(...)` to select a
 different limit. Each task lasts for the complete OTA exchange and owns its transmission

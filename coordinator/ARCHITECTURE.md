@@ -292,7 +292,10 @@ to `()`; APS addressing, profile, cluster, status, security mode, key index, lin
 parsed ASDU remain attached.
 
 Unmatched ZCL commands and supported device notifications remain application-visible. The
-coordinator does not maintain a persistent device table.
+coordinator does not maintain a persistent device table. Application-event delivery uses
+non-blocking channel sends. A new event is dropped and logged if the application channel is full
+or closed, ensuring application backpressure cannot stall the mux or protocol actors. Applications
+must therefore treat events as lossy notifications rather than durable state.
 
 ## Public Trait Composition
 

@@ -4,9 +4,10 @@
 //! a Zigbee transceiver regardless of the underlying hardware.
 //!
 //! The application supplies a `tokio::sync::mpsc::Sender<Event>` at startup to receive coordinator
-//! [`Event`] values. Discovery, binding, address resolution, and persistence are application-owned
-//! workflows built from traits such as [`Node`], [`Endpoints`], [`Binding`],
-//! [`AddressTranslation`], [`Zcl`], and [`Zdp`].
+//! [`Event`] values. Delivery is non-blocking: an event is dropped if that channel is full or
+//! closed, so application backpressure cannot stall protocol processing. Discovery, binding,
+//! address resolution, and persistence are application-owned workflows built from traits such as
+//! [`Node`], [`Endpoints`], [`Binding`], [`AddressTranslation`], [`Zcl`], and [`Zdp`].
 //! The built-in [`Ota`] service validates complete OTA image files and automatically serves the
 //! OTA Upgrade cluster exchange for individually scheduled device endpoints.
 //!
@@ -45,6 +46,7 @@ mod coordinator;
 mod correlation;
 mod error;
 mod event;
+mod event_sink;
 mod index;
 mod mux;
 pub mod ota;

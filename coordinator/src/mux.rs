@@ -11,14 +11,15 @@ use zb_hw::{
 };
 
 use self::aps_payload::ApsPayload;
-use crate::{Device, Event as ApplicationEvent, Event, Network, NetworkError, aps, zcl, zdp};
+use crate::event_sink::EventSink;
+use crate::{Device, Event, Network, NetworkError, aps, zcl, zdp};
 
 mod aps_payload;
 
 /// Event multiplexer.
 #[derive(Debug)]
 pub struct Mux {
-    events: Sender<ApplicationEvent>,
+    events: EventSink,
     aps: aps::Aps,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
@@ -27,7 +28,7 @@ pub struct Mux {
 impl Mux {
     /// Create a new multiplexer.
     pub const fn new(
-        events: Sender<ApplicationEvent>,
+        events: EventSink,
         aps: aps::Aps,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
@@ -43,7 +44,7 @@ impl Mux {
     /// Start the multiplexer.
     pub fn spawn<T, K>(
         hw_events: Receiver<HardwareEvent<T, K>>,
-        events_out: Sender<ApplicationEvent>,
+        events: EventSink,
         aps: aps::Aps,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
@@ -51,7 +52,7 @@ impl Mux {
         T: Send + 'static,
         K: Send + 'static,
     {
-        spawn(Self::new(events_out, aps, zcl_tx, zdp_tx).run(hw_events));
+        spawn(Self::new(events, aps, zcl_tx, zdp_tx).run(hw_events));
     }
 
     /// Run the multiplexer.
@@ -68,7 +69,7 @@ impl Mux {
     async fn multiplex<T, K>(&self, event: HardwareEvent<T, K>) {
         match event {
             HardwareEvent::Network(event) => self.multiplex_network_event(event).await,
-            HardwareEvent::Device(event) => self.multiplex_device_event(event).await,
+            HardwareEvent::Device(event) => self.multiplex_device_event(&event),
             HardwareEvent::Apsde(event) => self.multiplex_apsde_event(event).await,
             _ => trace!("Ignoring unsupported hardware event"),
         }
@@ -78,10 +79,7 @@ impl Mux {
         match event {
             HardwareNetworkEvent::Up => {
                 trace!("Network is up");
-                self.events
-                    .send(ApplicationEvent::Network(Network::Up))
-                    .await
-                    .unwrap_or_else(drop);
+                self.events.emit(Event::Network(Network::Up));
             }
             HardwareNetworkEvent::Down => {
                 trace!("Network is down");
@@ -100,10 +98,7 @@ impl Mux {
                     .unwrap_or_else(|error| {
                         trace!("Failed to notify ZDP actor that the network is down: {error}");
                     });
-                self.events
-                    .send(ApplicationEvent::Network(Network::Down))
-                    .await
-                    .unwrap_or_else(drop);
+                self.events.emit(Event::Network(Network::Down));
             }
             HardwareNetworkEvent::Opened => {
                 trace!("Network has been opened");
@@ -113,10 +108,7 @@ impl Mux {
                     .unwrap_or_else(|error| {
                         trace!("Failed to send ZDP message: {error}");
                     });
-                self.events
-                    .send(ApplicationEvent::Network(Network::Opened))
-                    .await
-                    .unwrap_or_else(drop);
+                self.events.emit(Event::Network(Network::Opened));
             }
             HardwareNetworkEvent::Closed => {
                 trace!("Network has been closed");
@@ -126,49 +118,33 @@ impl Mux {
                     .unwrap_or_else(|error| {
                         trace!("Failed to send ZDP message: {error}");
                     });
-                self.events
-                    .send(ApplicationEvent::Network(Network::Closed))
-                    .await
-                    .unwrap_or_else(drop);
+                self.events.emit(Event::Network(Network::Closed));
             }
             HardwareNetworkEvent::RouteError(error) => {
                 trace!("Route error: {error}");
                 self.events
-                    .send(ApplicationEvent::Network(Network::Error(
-                        NetworkError::Route(error),
-                    )))
-                    .await
-                    .unwrap_or_else(drop);
+                    .emit(Event::Network(Network::Error(NetworkError::Route(error))));
             }
             _ => trace!("Ignoring unsupported hardware network event"),
         }
     }
 
-    async fn multiplex_device_event(&self, event: HardwareDeviceEvent) {
+    fn multiplex_device_event(&self, event: &HardwareDeviceEvent) {
         match event {
             HardwareDeviceEvent::Joined(address) => {
                 trace!("Device joined: {address}");
-                self.events
-                    .send(ApplicationEvent::Device(Device::Joined(address)))
-                    .await
-                    .unwrap_or_else(drop);
+                self.events.emit(Event::Device(Device::Joined(*address)));
             }
             HardwareDeviceEvent::Rejoined { address, secured } => {
                 trace!("Device joined: {address} (secured: {secured})");
-                self.events
-                    .send(ApplicationEvent::Device(Device::Rejoined {
-                        address,
-                        secured,
-                    }))
-                    .await
-                    .unwrap_or_else(drop);
+                self.events.emit(Event::Device(Device::Rejoined {
+                    address: *address,
+                    secured: *secured,
+                }));
             }
             HardwareDeviceEvent::Left(address) => {
                 trace!("Device left: {address}");
-                self.events
-                    .send(ApplicationEvent::Device(Device::Left(address)))
-                    .await
-                    .unwrap_or_else(drop);
+                self.events.emit(Event::Device(Device::Left(*address)));
             }
             _ => trace!("Ignoring unsupported hardware device event"),
         }
@@ -266,12 +242,10 @@ impl Mux {
                 };
 
                 self.events
-                    .send(Event::Device(Device::KeepAlive(destination::Device::new(
+                    .emit(Event::Device(Device::KeepAlive(destination::Device::new(
                         device_id,
                         header.source_endpoint(),
-                    ))))
-                    .await
-                    .unwrap_or_else(drop);
+                    ))));
             }
         }
     }
@@ -279,9 +253,12 @@ impl Mux {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use le_stream::ToLeStream;
     use tokio::runtime::Runtime;
     use tokio::sync::mpsc::channel;
+    use tokio::time::timeout;
     use zb_aps::apsde::{
         ConfirmStatus, DataConfirm, DataIndication, Destination, IndicationMetadata,
         IndicationStatus, IndividualEndpoint, NetworkAddress, ReceivedDestination, Security,
@@ -289,7 +266,7 @@ mod tests {
     };
     use zb_core::endpoint::Application;
     use zb_core::{Cluster, ClusterSpecific, Direction, Endpoint, Profile};
-    use zb_hw::ApsdeEvent;
+    use zb_hw::{ApsdeEvent, NetworkEvent};
     use zb_zcl::on_off::{Command as OnOffCommand, On};
     use zb_zcl::{Command, Frame as ZclFrame, Header as ZclHeader, Scope};
     use zb_zdp::{
@@ -298,8 +275,11 @@ mod tests {
 
     use super::Mux;
     use crate::aps::{Aps, Message as ApsMessage};
-    use crate::{MPSC_CHANNEL_SIZE, zcl, zdp};
+    use crate::event_sink::EventSink;
+    use crate::{Event, MPSC_CHANNEL_SIZE, Network, zcl, zdp};
 
+    const TEST_TIMEOUT: Duration = Duration::from_millis(100);
+    const APPLICATION_EVENT_CHANNEL_SIZE: usize = 1;
     const LINK_QUALITY: u8 = 255;
     const LOCAL_ADDRESS: u16 = 0;
     const REMOTE_ADDRESS: u16 = 0x1234;
@@ -454,6 +434,56 @@ mod tests {
             });
     }
 
+    #[test]
+    fn full_application_event_channel_does_not_block_hardware_event_routing() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let (events, _application_events) = channel(APPLICATION_EVENT_CHANNEL_SIZE);
+                events
+                    .send(Event::Network(Network::Down))
+                    .await
+                    .expect("application event receiver remains available");
+                let (aps_messages, mut aps_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (zcl_messages, _zcl_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (zdp_messages, _zdp_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let mux = Mux::new(
+                    EventSink::new(events),
+                    Aps::new(aps_messages),
+                    zcl_messages,
+                    zdp_messages,
+                );
+                let confirmation = DataConfirm::new(
+                    Destination::Network {
+                        address: network_address(REMOTE_ADDRESS),
+                        endpoint: application_endpoint(),
+                    },
+                    individual_endpoint(),
+                    ConfirmStatus::success(),
+                    TX_TIME,
+                );
+
+                timeout(TEST_TIMEOUT, async {
+                    mux.multiplex_network_event(NetworkEvent::Up).await;
+                    mux.multiplex_apsde_event(ApsdeEvent::<u64>::DataConfirm {
+                        counter: APS_COUNTER,
+                        confirmation,
+                    })
+                    .await;
+                })
+                .await
+                .expect("application backpressure must not block the mux");
+
+                assert!(matches!(
+                    aps_receiver.recv().await,
+                    Some(ApsMessage::Confirm {
+                        counter: APS_COUNTER,
+                        status
+                    }) if status.is_success()
+                ));
+            });
+    }
+
     fn test_mux() -> (
         Mux,
         tokio::sync::mpsc::Receiver<ApsMessage>,
@@ -465,7 +495,12 @@ mod tests {
         let (zcl_messages, zcl_receiver) = channel(MPSC_CHANNEL_SIZE);
         let (zdp_messages, zdp_receiver) = channel(MPSC_CHANNEL_SIZE);
         (
-            Mux::new(events, Aps::new(aps_messages), zcl_messages, zdp_messages),
+            Mux::new(
+                EventSink::new(events),
+                Aps::new(aps_messages),
+                zcl_messages,
+                zdp_messages,
+            ),
             aps_receiver,
             zcl_receiver,
             zdp_receiver,
