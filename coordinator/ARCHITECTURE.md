@@ -276,9 +276,17 @@ already occupied, the new request is logged and dropped rather than allowing wor
 bound.
 
 Outgoing ZDP communication similarly reserves its correlation identity synchronously and performs
-the possibly backpressured APS actor handoff in a bounded background submission. This keeps
-response correlation, cancellation, timeout, and lifecycle messages moving through the ZDP actor
-while another actor is congested.
+the possibly backpressured APS actor handoff in a bounded background submission. The actor retains
+the submission's caller channel, protocol receiver, correlation token, and abort handle until the
+handoff completion returns through its inbox. This keeps response correlation, cancellation,
+timeout, and lifecycle messages moving through the ZDP actor while another actor is congested.
+
+At a network-down boundary, the actor aborts all unfinished handoffs and fails their callers
+immediately. A handoff may already have exposed its encoded transaction sequence to APS before its
+completion message is processed, so the actor preserves those wire identities in protocol
+quarantine while resetting the rest of the response epoch. Each preserved identity follows the
+normal quarantine timeout or is released by its late response. A stale handoff-completion message
+therefore cannot return an old response object or let an old response complete a new request.
 
 For local `Active_EP_req` and `Simple_Desc_req` commands, the actor uses the NCP's current endpoint
 descriptors. Single-device address requests use the NCP's address-translation operations.

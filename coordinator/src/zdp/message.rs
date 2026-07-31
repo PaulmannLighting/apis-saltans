@@ -55,12 +55,8 @@ pub enum Message {
 
     /// Complete background handoff of a communicating request to the APS actor.
     CommunicationSubmissionFinished {
-        /// Correlation identity reserved for the request.
-        token: Token,
-        /// Receiver for the correlated ZDP command.
-        protocol_response: tokio::sync::oneshot::Receiver<Result<Command, Error>>,
-        /// Channel used to return the combined deferred response.
-        response: Sender<Result<ApsProtocolResponse<Command>, Error>>,
+        /// Coordinator-private identity of the completed submission.
+        id: u64,
         /// APS actor handoff result.
         result: Result<crate::aps::TransmissionResponse, Error>,
     },

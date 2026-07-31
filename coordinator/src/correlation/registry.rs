@@ -134,6 +134,46 @@ impl<T> Registry<T> {
         self.fail_all(|| zb_hw::Error::from(error.clone()).into());
     }
 
+    /// Fail every pending response at a network boundary while preserving selected identities.
+    ///
+    /// The preserved tokens identify background submissions that may reach the wire after the
+    /// boundary. Matching identities remain quarantined so their late responses cannot complete a
+    /// request from the new network epoch. All unrelated quarantine is released.
+    pub fn network_down_preserving<I>(
+        &mut self,
+        error: &zb_hw::TransmissionError,
+        tokens: I,
+    ) -> Vec<Token>
+    where
+        I: IntoIterator<Item = Token>,
+    {
+        let protected: BTreeMap<_, _> = tokens
+            .into_iter()
+            .map(|token| (token.key(), token))
+            .collect();
+        let pending = std::mem::take(&mut self.pending);
+        self.quarantined.clear();
+        self.next_sequence = INITIAL_SEQUENCE;
+        let mut preserved = Vec::new();
+
+        for (key, pending) in pending {
+            if let Some(token) = protected
+                .get(&key)
+                .copied()
+                .filter(|token| token.generation() == pending.generation)
+            {
+                self.quarantined.insert(key, token.generation());
+                preserved.push(token);
+            }
+            pending
+                .response
+                .send(Err(zb_hw::Error::from(error.clone()).into()))
+                .unwrap_or_else(drop);
+        }
+
+        preserved
+    }
+
     /// Fail every pending response because the hardware event source is unavailable.
     pub fn hardware_unavailable(&mut self) {
         self.fail_all(|| zb_hw::Error::ActorUnavailable.into());
@@ -318,6 +358,47 @@ mod tests {
             u8::MIN
         );
         assert_eq!(responses.len(), TRANSACTION_SEQUENCE_COUNT);
+    }
+
+    #[test]
+    fn protected_network_boundary_retains_only_selected_identities() {
+        let mut registry = Registry::<()>::new();
+        let (preserved_sequence, token, preserved_response) = registry
+            .register(key)
+            .expect("transaction sequence is available");
+        let (_, _, pending_response) = registry
+            .register(key)
+            .expect("another transaction sequence is available");
+        let (released_sequence, released_token, _released_response) = registry
+            .register(key)
+            .expect("a third transaction sequence is available");
+        assert!(registry.cancel(released_token));
+
+        let preserved =
+            registry.network_down_preserving(&zb_hw::TransmissionError::NoRoute, [token]);
+
+        assert_eq!(preserved, [token]);
+        assert!(registry.quarantined.contains_key(&key(preserved_sequence)));
+        assert!(!registry.quarantined.contains_key(&key(released_sequence)));
+        assert!(matches!(
+            preserved_response.blocking_recv(),
+            Ok(Err(Error::Hardware(zb_hw::Error::Transmission(
+                zb_hw::TransmissionError::NoRoute
+            ))))
+        ));
+        assert!(matches!(
+            pending_response.blocking_recv(),
+            Ok(Err(Error::Hardware(zb_hw::Error::Transmission(
+                zb_hw::TransmissionError::NoRoute
+            ))))
+        ));
+        registry.next_sequence = preserved_sequence;
+        assert_ne!(
+            registry
+                .allocate_untracked_sequence(|sequence| Some(key(sequence)))
+                .expect("a non-quarantined sequence remains available"),
+            preserved_sequence
+        );
     }
 
     #[test]

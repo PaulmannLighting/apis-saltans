@@ -52,6 +52,7 @@ mod message;
 mod node_desc;
 
 const INITIAL_SERVER_OPERATION_ID: u64 = 0;
+const INITIAL_COMMUNICATION_SUBMISSION_ID: u64 = 0;
 const COMMUNICATION_SUBMISSION_LIMIT: usize = MPSC_CHANNEL_SIZE;
 const SERVER_OPERATION_LIMIT: usize = MPSC_CHANNEL_SIZE;
 
@@ -62,9 +63,19 @@ pub struct Transceiver {
     events: EventSink,
     responses: Registry<Command>,
     inbox: WeakSender<Message>,
-    communication_submissions: usize,
+    communication_submissions: BTreeMap<u64, CommunicationSubmission>,
+    next_communication_submission_id: u64,
     server_operations: BTreeMap<u64, AbortHandle>,
     next_server_operation_id: u64,
+}
+
+/// Actor-owned state retained while a ZDP request is being handed to APS.
+#[derive(Debug)]
+struct CommunicationSubmission {
+    token: Token,
+    protocol_response: tokio::sync::oneshot::Receiver<Result<Command, crate::Error>>,
+    response: tokio::sync::oneshot::Sender<Result<ApsProtocolResponse<Command>, crate::Error>>,
+    task: AbortHandle,
 }
 
 /// Cloneable context used by bounded background ZDP request-serving operations.
@@ -105,7 +116,8 @@ impl Transceiver {
             events,
             responses: Registry::new(),
             inbox,
-            communication_submissions: 0,
+            communication_submissions: BTreeMap::new(),
+            next_communication_submission_id: INITIAL_COMMUNICATION_SUBMISSION_ID,
             server_operations: BTreeMap::new(),
             next_server_operation_id: INITIAL_SERVER_OPERATION_ID,
         }
@@ -119,6 +131,7 @@ impl Transceiver {
             }
         }
         self.abort_server_operations();
+        self.abort_communication_submissions();
     }
 
     fn handle_actor_message(&mut self, message: Message) -> bool {
@@ -128,11 +141,11 @@ impl Transceiver {
             }
             Message::NetworkDown => {
                 self.abort_server_operations();
-                self.responses
-                    .network_down(&zb_hw::TransmissionError::NoRoute);
+                self.handle_network_down();
             }
             Message::HardwareUnavailable => {
                 self.abort_server_operations();
+                self.fail_communication_submissions_for_hardware_unavailability();
                 self.responses.hardware_unavailable();
                 return false;
             }
@@ -157,16 +170,17 @@ impl Transceiver {
                     debug!("Ignoring completion for unknown ZDP server operation {id}");
                 }
             }
-            Message::CommunicationSubmissionFinished {
-                token,
-                protocol_response,
-                response,
-                result,
-            } => {
-                self.communication_submissions = self
-                    .communication_submissions
-                    .checked_sub(1)
-                    .expect("a ZDP communication submission is pending");
+            Message::CommunicationSubmissionFinished { id, result } => {
+                let Some(submission) = self.communication_submissions.remove(&id) else {
+                    debug!("Ignoring completion for unknown ZDP communication submission {id}");
+                    return true;
+                };
+                let CommunicationSubmission {
+                    token,
+                    protocol_response,
+                    response,
+                    task: _,
+                } = submission;
                 let result = match result {
                     Ok(transmission) => Ok(ApsProtocolResponse::new(
                         transmission,
@@ -288,7 +302,7 @@ impl Transceiver {
         request: DataRequest<Bytes>,
         response: tokio::sync::oneshot::Sender<Result<ApsProtocolResponse<Command>, crate::Error>>,
     ) {
-        if self.communication_submissions >= COMMUNICATION_SUBMISSION_LIMIT {
+        if self.communication_submissions.len() >= COMMUNICATION_SUBMISSION_LIMIT {
             warn!(
                 "Rejecting ZDP communication because the submission limit of \
                  {COMMUNICATION_SUBMISSION_LIMIT} has been reached"
@@ -312,24 +326,80 @@ impl Transceiver {
         let request = request.map_asdu(|payload| Frame::new(seq, payload).to_le_stream().collect());
         let aps = self.server.aps.clone();
         let inbox = self.inbox.clone();
-        self.communication_submissions += 1;
-        spawn(async move {
+        let id = self.allocate_communication_submission_id();
+        let task = spawn(async move {
             let result = aps.transmit(request).await;
             let Some(inbox) = inbox.upgrade() else {
                 return;
             };
             inbox
-                .send(Message::CommunicationSubmissionFinished {
-                    token,
-                    protocol_response,
-                    response,
-                    result,
-                })
+                .send(Message::CommunicationSubmissionFinished { id, result })
                 .await
                 .unwrap_or_else(|error| {
                     debug!("Failed to complete ZDP communication submission: {error}");
                 });
         });
+        let previous = self.communication_submissions.insert(
+            id,
+            CommunicationSubmission {
+                token,
+                protocol_response,
+                response,
+                task: task.abort_handle(),
+            },
+        );
+        debug_assert!(previous.is_none());
+    }
+
+    fn handle_network_down(&mut self) {
+        let submissions = std::mem::take(&mut self.communication_submissions);
+        let protected = submissions
+            .values()
+            .map(|submission| submission.token)
+            .collect::<Vec<_>>();
+        let quarantined = self
+            .responses
+            .network_down_preserving(&zb_hw::TransmissionError::NoRoute, protected);
+        for token in quarantined {
+            self.schedule_quarantine_timeout(token);
+        }
+
+        for submission in submissions.into_values() {
+            submission.task.abort();
+            submission
+                .response
+                .send(Err(
+                    zb_hw::Error::from(zb_hw::TransmissionError::NoRoute).into()
+                ))
+                .unwrap_or_else(drop);
+        }
+    }
+
+    fn fail_communication_submissions_for_hardware_unavailability(&mut self) {
+        for submission in std::mem::take(&mut self.communication_submissions).into_values() {
+            submission.task.abort();
+            submission
+                .response
+                .send(Err(zb_hw::Error::ActorUnavailable.into()))
+                .unwrap_or_else(drop);
+        }
+    }
+
+    fn abort_communication_submissions(&mut self) {
+        for submission in std::mem::take(&mut self.communication_submissions).into_values() {
+            submission.task.abort();
+        }
+    }
+
+    fn allocate_communication_submission_id(&mut self) -> u64 {
+        loop {
+            let id = self.next_communication_submission_id;
+            self.next_communication_submission_id =
+                self.next_communication_submission_id.wrapping_add(1);
+            if !self.communication_submissions.contains_key(&id) {
+                return id;
+            }
+        }
     }
 
     fn cancellation(&self, token: Token) -> Cancellation {
@@ -841,6 +911,7 @@ mod tests {
     use std::time::Duration;
 
     use bytes::Bytes;
+    use le_stream::ToLeStream;
     use tokio::runtime::Runtime;
     use tokio::sync::mpsc::channel;
     use tokio::sync::oneshot;
@@ -851,7 +922,7 @@ mod tests {
     };
     use zb_core::node::Descriptor;
     use zb_core::short_id::Device;
-    use zb_core::{Endpoint, IeeeAddress, Profile};
+    use zb_core::{ClusterSpecific, Destination, Endpoint, IeeeAddress, Profile, destination};
     use zb_hw::{
         ChannelMask, Driver, Error as HardwareError, FoundNetwork, Operation, ScanDuration,
         ScannedChannel,
@@ -861,7 +932,9 @@ mod tests {
     };
 
     use super::{Message, Transceiver, permit_joining_response, track_reply_completion};
-    use crate::aps::{Aps, Message as ApsMessage, TransmissionResponse};
+    use crate::Error;
+    use crate::aps::{Aps, Message as ApsMessage, Metadata, TransmissionResponse};
+    use crate::correlation::Key;
     use crate::event::EventSink;
 
     const CHANNEL_SIZE: usize = 1;
@@ -1051,6 +1124,87 @@ mod tests {
             });
     }
 
+    #[test]
+    fn network_down_quarantines_a_submission_that_completed_outside_the_actor() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let (started, _query_started) = oneshot::channel();
+                let (_release_query, release) = oneshot::channel();
+                let (ncp, driver) = DelayedEndpointDriver {
+                    started: Mutex::new(Some(started)),
+                    release: Mutex::new(Some(release)),
+                }
+                .into_actor(NCP_CHANNEL_SIZE);
+                let driver = tokio::spawn(driver);
+                let (aps_inbox, mut aps_messages) = channel(CHANNEL_SIZE);
+                let (events, _event_receiver) = channel(CHANNEL_SIZE);
+                let (zdp_inbox, mut zdp_messages) = channel(CHANNEL_SIZE);
+                let mut transceiver = Transceiver::new(
+                    ncp,
+                    Aps::new(aps_inbox.clone()),
+                    EventSink::new(events),
+                    Descriptor::default(),
+                    zdp_inbox.downgrade(),
+                );
+                let device = Device::new(REMOTE_ADDRESS).expect("test device ID is valid");
+                let request = communication_request(device);
+                let (response, result) = oneshot::channel();
+
+                transceiver.communicate(device, request, response);
+                let original_sequence = transceiver
+                    .communication_submissions
+                    .values()
+                    .next()
+                    .expect("communication submission is tracked")
+                    .token
+                    .key()
+                    .sequence();
+                let ApsMessage::Transmit { response, .. } = aps_messages
+                    .recv()
+                    .await
+                    .expect("submission reaches the APS actor")
+                else {
+                    panic!("expected APS transmission");
+                };
+                let (_completion, deferred) = oneshot::channel();
+                let transmission =
+                    TransmissionResponse::test_new(deferred, APS_COUNTER, aps_inbox.downgrade());
+                response
+                    .send(Ok(transmission))
+                    .expect("submission task still waits for APS handoff");
+                let stale_completion = timeout(TEST_TIMEOUT, zdp_messages.recv())
+                    .await
+                    .expect("submission completion must be queued")
+                    .expect("ZDP actor inbox remains available");
+
+                assert!(transceiver.handle_actor_message(Message::NetworkDown));
+                assert!(matches!(
+                    result.await,
+                    Ok(Err(Error::Hardware(HardwareError::Transmission(
+                        zb_hw::TransmissionError::NoRoute
+                    ))))
+                ));
+                assert!(transceiver.handle_actor_message(stale_completion));
+
+                let request = communication_request(device);
+                let (next_sequence, token, _response) = transceiver
+                    .responses
+                    .register(|sequence| Key::from_zdp_command(device, sequence, &request))
+                    .expect("another transaction sequence remains available");
+                assert_ne!(next_sequence, original_sequence);
+                transceiver.responses.discard(token);
+
+                drop(transceiver);
+                drop(aps_inbox);
+                drop(zdp_inbox);
+                timeout(TEST_TIMEOUT, driver)
+                    .await
+                    .expect("driver actor must stop after transceiver shutdown")
+                    .expect("driver actor task must not panic");
+            });
+    }
+
     async fn tracked_reply_failure(error: zb_hw::Error) -> Message {
         let (aps_inbox, _aps_messages) = channel::<ApsMessage>(CHANNEL_SIZE);
         let (completion, result) = oneshot::channel();
@@ -1089,6 +1243,15 @@ mod tests {
         );
 
         DataIndication::new(metadata, Frame::new(SEQUENCE, command))
+    }
+
+    fn communication_request(device: Device) -> zb_aps::apsde::DataRequest<Bytes> {
+        crate::aps::data_request(
+            Destination::Device(destination::Device::new(device, Endpoint::Data)),
+            Endpoint::Data,
+            Metadata::new(Profile::Network, <ActiveEpReq as ClusterSpecific>::ID),
+            ActiveEpReq::new(REMOTE_ADDRESS).to_le_stream().collect(),
+        )
     }
 
     fn data_endpoint() -> IndividualEndpoint {

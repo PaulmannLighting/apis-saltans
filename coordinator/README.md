@@ -361,7 +361,10 @@ request messages all use that inbox. APS backend submissions run in spawned oper
 for NCP acceptance cannot prevent the APS actor from draining confirmations or lifecycle messages.
 ZDP endpoint and address queries, locally generated replies, and outgoing APS handoffs likewise run
 in bounded background operations whose completions return through the ZDP inbox. Network-down and
-hardware-unavailable messages abort active request-serving operations.
+hardware-unavailable messages abort active request-serving operations. The ZDP actor owns every
+unfinished outgoing handoff and, on network-down, quarantines its potentially exposed transaction
+identity before the remaining response epoch is reset. A late response from that handoff therefore
+cannot collide with a new request that would otherwise reuse the same on-wire sequence.
 Timeout tasks retain only a weak sender and enqueue a timeout message after the configured
 duration; the actors do not use auxiliary receivers.
 
