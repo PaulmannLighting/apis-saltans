@@ -47,6 +47,24 @@ pub enum Message {
         error: zb_hw::Error,
     },
 
+    /// Retire a completed background ZDP server operation.
+    ServerOperationFinished {
+        /// Coordinator-private identity of the completed operation.
+        id: u64,
+    },
+
+    /// Complete background handoff of a communicating request to the APS actor.
+    CommunicationSubmissionFinished {
+        /// Correlation identity reserved for the request.
+        token: Token,
+        /// Receiver for the correlated ZDP command.
+        protocol_response: tokio::sync::oneshot::Receiver<Result<Command, Error>>,
+        /// Channel used to return the combined deferred response.
+        response: Sender<Result<ApsProtocolResponse<Command>, Error>>,
+        /// APS actor handoff result.
+        result: Result<crate::aps::TransmissionResponse, Error>,
+    },
+
     /// Communicate a unicast with an expected response.
     Communicate {
         /// Remote device expected to answer the request.

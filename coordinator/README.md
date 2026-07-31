@@ -359,6 +359,9 @@ Each APS, ZCL, and ZDP actor consumes one bounded message inbox. Confirmation, c
 response and quarantine timeout, network lifecycle, backend submission completion, and ordinary
 request messages all use that inbox. APS backend submissions run in spawned operations, so waiting
 for NCP acceptance cannot prevent the APS actor from draining confirmations or lifecycle messages.
+ZDP endpoint and address queries, locally generated replies, and outgoing APS handoffs likewise run
+in bounded background operations whose completions return through the ZDP inbox. Network-down and
+hardware-unavailable messages abort active request-serving operations.
 Timeout tasks retain only a weak sender and enqueue a timeout message after the configured
 duration; the actors do not use auxiliary receivers.
 
@@ -424,7 +427,9 @@ The mux forwards parsed ZCL and ZDP frames to their protocol actors inside
 profile, cluster, and link quality while normalizing the backend-specific timestamp and
 device-key-pair handle to `()`. Parsing reads the profile, cluster, source endpoint, and destination
 endpoint directly from the indication metadata; the coordinator does not construct a synthetic
-received APS frame header.
+received APS frame header. ZDP delivery is non-blocking: when the bounded ZDP inbox is full, the
+mux logs and drops that frame so congestion cannot delay a later APS confirmation. A dropped
+correlated response is reported to its caller by the existing protocol-response timeout.
 
 ## Joining Control
 

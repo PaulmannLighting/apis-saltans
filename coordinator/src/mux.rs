@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use log::{trace, warn};
 use tokio::spawn;
+use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::apsde::DataIndication;
 use zb_core::destination;
@@ -246,12 +247,15 @@ impl Mux {
             ApsPayload::Zdp(frame) => {
                 let indication = DataIndication::new(metadata, frame);
 
-                self.zdp
-                    .send(zdp::Message::Received { indication })
-                    .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send ZDP message: {error}");
-                    });
+                match self.zdp.try_send(zdp::Message::Received { indication }) {
+                    Ok(()) => {}
+                    Err(TrySendError::Full(_)) => {
+                        warn!("Discarding received ZDP frame because the actor inbox is full");
+                    }
+                    Err(TrySendError::Closed(_)) => {
+                        trace!("Failed to send ZDP message: actor unavailable");
+                    }
+                }
             }
             ApsPayload::KeepAlive => {
                 let source = metadata.source();
@@ -518,6 +522,84 @@ mod tests {
                         counter: APS_COUNTER,
                         status
                     }) if status.is_success()
+                ));
+            });
+    }
+
+    #[test]
+    fn full_zdp_inbox_does_not_delay_aps_confirmation() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let (events, _application_events) = channel(MPSC_CHANNEL_SIZE);
+                let (aps_messages, mut aps_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (ota_messages, _ota_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (zcl_messages, _zcl_receiver) = channel(MPSC_CHANNEL_SIZE);
+                let (zdp_messages, mut zdp_receiver) = channel(1);
+                zdp_messages
+                    .send(zdp::Message::NetworkDown)
+                    .await
+                    .expect("ZDP inbox remains available");
+                let mux = Mux::new(
+                    EventSink::new(events),
+                    Aps::new(aps_messages),
+                    ota_messages,
+                    zcl_messages,
+                    zdp_messages,
+                );
+                let source_endpoint =
+                    IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
+                let metadata = IndicationMetadata::new(
+                    ReceivedDestination::Broadcast {
+                        address: Broadcast::RxOnWhenIdle,
+                        endpoint: Endpoint::Data,
+                    },
+                    ApsdeSource::Network {
+                        address: network_address(REMOTE_ADDRESS),
+                        endpoint: source_endpoint,
+                    },
+                    Profile::Network.as_u16(),
+                    <ActiveEpReq as ClusterSpecific>::ID,
+                    IndicationStatus::success(),
+                    Security::<()>::Unsecured,
+                    LINK_QUALITY,
+                    RX_TIME,
+                );
+                let asdu = ZdpFrame::new(ZDP_SEQUENCE, ActiveEpReq::new(REMOTE_ADDRESS))
+                    .to_le_stream()
+                    .collect();
+                let confirmation = DataConfirm::new(
+                    Destination::Network {
+                        address: network_address(REMOTE_ADDRESS),
+                        endpoint: application_endpoint(),
+                    },
+                    individual_endpoint(),
+                    ConfirmStatus::success(),
+                    TX_TIME,
+                );
+
+                timeout(TEST_TIMEOUT, async {
+                    mux.handle_data_indication(DataIndication::new(metadata, asdu))
+                        .await;
+                    mux.multiplex_apsde_event(ApsdeEvent::<u64>::DataConfirm {
+                        counter: APS_COUNTER,
+                        confirmation,
+                    })
+                    .await;
+                })
+                .await
+                .expect("ZDP backpressure must not block the hardware event mux");
+
+                assert!(matches!(
+                    aps_receiver.recv().await,
+                    Some(ApsMessage::Confirm {
+                        counter: APS_COUNTER,
+                        status
+                    }) if status.is_success()
+                ));
+                assert!(matches!(
+                    zdp_receiver.recv().await,
+                    Some(zdp::Message::NetworkDown)
                 ));
             });
     }

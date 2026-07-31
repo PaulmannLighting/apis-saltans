@@ -1,5 +1,7 @@
 //! Transceiver to send and receive ZDP messages.
 
+use std::collections::BTreeMap;
+
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, error, trace, warn};
@@ -7,6 +9,7 @@ use tokio::runtime::Handle;
 use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
+use tokio::task::AbortHandle;
 use tokio::time::sleep;
 use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress, ReceivedDestination};
 use zb_core::node::Descriptor;
@@ -48,21 +51,44 @@ mod match_desc;
 mod message;
 mod node_desc;
 
+const INITIAL_SERVER_OPERATION_ID: u64 = 0;
+const COMMUNICATION_SUBMISSION_LIMIT: usize = MPSC_CHANNEL_SIZE;
+const SERVER_OPERATION_LIMIT: usize = MPSC_CHANNEL_SIZE;
+
 /// Zigbee transceiver actor.
 #[derive(Debug)]
 pub struct Transceiver {
-    ncp: NcpHandle,
-    aps: Aps,
+    server: Server,
     events: EventSink,
-    descriptor: Descriptor,
     responses: Registry<Command>,
     inbox: WeakSender<Message>,
+    communication_submissions: usize,
+    server_operations: BTreeMap<u64, AbortHandle>,
+    next_server_operation_id: u64,
+}
+
+/// Cloneable context used by bounded background ZDP request-serving operations.
+#[derive(Clone, Debug)]
+struct Server {
+    ncp: NcpHandle,
+    aps: Aps,
+    descriptor: Descriptor,
+    inbox: WeakSender<Message>,
+}
+
+/// A received ZDP request that may require asynchronous NCP or APS work.
+#[derive(Debug)]
+struct ServerRequest {
+    source: NetworkAddress,
+    request_was_broadcast: bool,
+    sequence: u8,
+    command: Command,
 }
 
 impl Transceiver {
     /// Create a new transceiver.
     #[must_use]
-    pub const fn new(
+    pub fn new(
         ncp: NcpHandle,
         aps: Aps,
         events: EventSink,
@@ -70,34 +96,43 @@ impl Transceiver {
         inbox: WeakSender<Message>,
     ) -> Self {
         Self {
-            ncp,
-            aps,
+            server: Server {
+                ncp,
+                aps,
+                descriptor,
+                inbox: inbox.clone(),
+            },
             events,
-            descriptor,
             responses: Registry::new(),
             inbox,
+            communication_submissions: 0,
+            server_operations: BTreeMap::new(),
+            next_server_operation_id: INITIAL_SERVER_OPERATION_ID,
         }
     }
 
     /// Run the transceiver.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
-            if !self.handle_actor_message(message).await {
+            if !self.handle_actor_message(message) {
                 break;
             }
         }
+        self.abort_server_operations();
     }
 
-    async fn handle_actor_message(&mut self, message: Message) -> bool {
+    fn handle_actor_message(&mut self, message: Message) -> bool {
         match message {
             Message::Received { indication } => {
-                self.handle_message_received(indication).await;
+                self.handle_message_received(indication);
             }
             Message::NetworkDown => {
+                self.abort_server_operations();
                 self.responses
                     .network_down(&zb_hw::TransmissionError::NoRoute);
             }
             Message::HardwareUnavailable => {
+                self.abort_server_operations();
                 self.responses.hardware_unavailable();
                 return false;
             }
@@ -117,25 +152,46 @@ impl Transceiver {
             Message::ReplyTransmissionFailed { error } => {
                 error!("ZDP server response transmission failed: {error}");
             }
+            Message::ServerOperationFinished { id } => {
+                if self.server_operations.remove(&id).is_none() {
+                    debug!("Ignoring completion for unknown ZDP server operation {id}");
+                }
+            }
+            Message::CommunicationSubmissionFinished {
+                token,
+                protocol_response,
+                response,
+                result,
+            } => {
+                self.communication_submissions = self
+                    .communication_submissions
+                    .checked_sub(1)
+                    .expect("a ZDP communication submission is pending");
+                let result = match result {
+                    Ok(transmission) => Ok(ApsProtocolResponse::new(
+                        transmission,
+                        protocol_response,
+                        self.cancellation(token),
+                    )),
+                    Err(error) => {
+                        self.responses.discard(token);
+                        Err(error)
+                    }
+                };
+                response.send(result).unwrap_or_else(drop);
+            }
             Message::Communicate {
                 device,
                 request,
                 response,
             } => {
-                response
-                    .send(self.communicate(device, request).await)
-                    .unwrap_or_else(|error| {
-                        debug!("Failed to send unicast response: {error:?}");
-                    });
+                self.communicate(device, request, response);
             }
         }
         true
     }
 
-    async fn handle_message_received(
-        &mut self,
-        indication: DataIndication<Frame<Command>, (), ()>,
-    ) {
+    fn handle_message_received(&mut self, indication: DataIndication<Frame<Command>, (), ()>) {
         let Some((source_address, key)) = received_key(&indication) else {
             return;
         };
@@ -147,84 +203,75 @@ impl Transceiver {
         let (_, zdp_frame) = indication.into_parts();
         let (seq, command) = zdp_frame.into_parts();
 
-        match command {
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NwkAddrReq(
-                nwk_addr_req,
-            )) => {
-                self.handle_nwk_addr_req(source_address, seq, *nwk_addr_req)
-                    .await;
-            }
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::IeeeAddrReq(
-                ieee_addr_req,
-            )) => {
-                self.handle_ieee_addr_req(source_address, seq, *ieee_addr_req)
-                    .await;
-            }
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::PowerDescReq(
-                power_desc_req,
-            )) => {
-                self.handle_power_desc_req(source_address, seq, *power_desc_req)
-                    .await;
-            }
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::SimpleDescReq(
-                simple_desc_req,
-            )) => {
-                self.handle_simple_desc_req(source_address, seq, *simple_desc_req)
-                    .await;
-            }
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::ActiveEpReq(
-                active_ep_req,
-            )) => {
-                self.handle_active_ep_req(source_address, seq, *active_ep_req)
-                    .await;
-            }
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
-                match_desc_req,
-            )) => {
-                self.handle_match_desc_req(
-                    source_address,
-                    request_was_broadcast,
-                    seq,
-                    *match_desc_req,
-                )
-                .await;
-            }
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::DeviceAnnce(
-                device_annce,
-            )) => {
-                self.handle_device_annce(device_annce.as_ref());
-            }
-            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescReq(
-                node_desc_req,
-            )) => {
-                self.handle_node_desc_req(source_address, seq, *node_desc_req)
-                    .await;
-            }
-            Command::DeviceAndServiceDiscovery(
-                DeviceAndServiceDiscovery::SystemServerDiscoveryReq(system_server_discovery_req),
-            ) => {
-                self.handle_system_server_discovery_req(
-                    source_address,
-                    seq,
-                    *system_server_discovery_req,
-                )
-                .await;
-            }
-            Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_)) => {
-                self.handle_mgmt_permit_joining_req(source_address, request_was_broadcast, seq)
-                    .await;
-            }
-            command => {
-                if self.responses.complete(key, command.clone()) {
-                    debug!(
-                        "Answering ZDP request: seq={seq} cluster_id={:#06X}",
-                        command.cluster_id()
-                    );
-                } else if self.responses.release_quarantine(key) {
-                    debug!("Discarding late ZDP response with quarantined sequence {seq}");
-                } else {
-                    warn!("Unexpected ZDP response: {command:?}");
-                }
+        if let Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::DeviceAnnce(
+            device_annce,
+        )) = &command
+        {
+            handle_device_annce(&self.events, device_annce.as_ref());
+            return;
+        }
+        if is_server_request(&command) {
+            self.spawn_server_operation(ServerRequest {
+                source: source_address,
+                request_was_broadcast,
+                sequence: seq,
+                command,
+            });
+            return;
+        }
+
+        if self.responses.complete(key, command.clone()) {
+            debug!(
+                "Answering ZDP request: seq={seq} cluster_id={:#06X}",
+                command.cluster_id()
+            );
+        } else if self.responses.release_quarantine(key) {
+            debug!("Discarding late ZDP response with quarantined sequence {seq}");
+        } else {
+            warn!("Unexpected ZDP response: {command:?}");
+        }
+    }
+
+    fn spawn_server_operation(&mut self, request: ServerRequest) {
+        if self.server_operations.len() >= SERVER_OPERATION_LIMIT {
+            warn!(
+                "Discarding ZDP server request because the operation limit of \
+                 {SERVER_OPERATION_LIMIT} has been reached"
+            );
+            return;
+        }
+
+        let id = self.allocate_server_operation_id();
+        let server = self.server.clone();
+        let inbox = self.inbox.clone();
+        let task = spawn(async move {
+            server.handle(request).await;
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            inbox
+                .send(Message::ServerOperationFinished { id })
+                .await
+                .unwrap_or_else(|error| {
+                    debug!("Failed to retire ZDP server operation: {error}");
+                });
+        });
+        let previous = self.server_operations.insert(id, task.abort_handle());
+        debug_assert!(previous.is_none());
+    }
+
+    fn abort_server_operations(&mut self) {
+        for operation in std::mem::take(&mut self.server_operations).into_values() {
+            operation.abort();
+        }
+    }
+
+    fn allocate_server_operation_id(&mut self) -> u64 {
+        loop {
+            let id = self.next_server_operation_id;
+            self.next_server_operation_id = self.next_server_operation_id.wrapping_add(1);
+            if !self.server_operations.contains_key(&id) {
+                return id;
             }
         }
     }
@@ -233,32 +280,56 @@ impl Transceiver {
     ///
     /// # Returns
     ///
-    /// Returns the response receiver.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the unicast message could not be sent.
-    async fn communicate(
+    /// The result is returned through `response` after the request has been handed to the APS
+    /// actor.
+    fn communicate(
         &mut self,
         device: Device,
         request: DataRequest<Bytes>,
-    ) -> Result<ApsProtocolResponse<Command>, crate::Error> {
-        let (seq, token, rx) = self
+        response: tokio::sync::oneshot::Sender<Result<ApsProtocolResponse<Command>, crate::Error>>,
+    ) {
+        if self.communication_submissions >= COMMUNICATION_SUBMISSION_LIMIT {
+            warn!(
+                "Rejecting ZDP communication because the submission limit of \
+                 {COMMUNICATION_SUBMISSION_LIMIT} has been reached"
+            );
+            response
+                .send(Err(crate::Error::SendError))
+                .unwrap_or_else(drop);
+            return;
+        }
+        let (seq, token, protocol_response) = match self
             .responses
-            .register(|sequence| Key::from_zdp_command(device, sequence, &request))?;
-        self.schedule_response_timeout(token);
-        let request = request.map_asdu(|payload| Frame::new(seq, payload).to_le_stream().collect());
-
-        let transmission = match self.aps.transmit(request).await {
-            Ok(transmission) => transmission,
+            .register(|sequence| Key::from_zdp_command(device, sequence, &request))
+        {
+            Ok(registration) => registration,
             Err(error) => {
-                self.responses.discard(token);
-                return Err(error);
+                response.send(Err(error)).unwrap_or_else(drop);
+                return;
             }
         };
-        let cancellation = self.cancellation(token);
-
-        Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
+        self.schedule_response_timeout(token);
+        let request = request.map_asdu(|payload| Frame::new(seq, payload).to_le_stream().collect());
+        let aps = self.server.aps.clone();
+        let inbox = self.inbox.clone();
+        self.communication_submissions += 1;
+        spawn(async move {
+            let result = aps.transmit(request).await;
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            inbox
+                .send(Message::CommunicationSubmissionFinished {
+                    token,
+                    protocol_response,
+                    response,
+                    result,
+                })
+                .await
+                .unwrap_or_else(|error| {
+                    debug!("Failed to complete ZDP communication submission: {error}");
+                });
+        });
     }
 
     fn cancellation(&self, token: Token) -> Cancellation {
@@ -314,6 +385,72 @@ impl Transceiver {
                     debug!("Failed to enqueue ZDP quarantine timeout: {error}");
                 });
         });
+    }
+
+    /// Start the ZDP transceiver.
+    pub fn spawn(
+        ncp: NcpHandle,
+        aps: Aps,
+        events: EventSink,
+        descriptor: Descriptor,
+    ) -> Sender<Message> {
+        let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
+        spawn(Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx));
+        zdp_tx
+    }
+}
+
+impl Server {
+    async fn handle(&self, request: ServerRequest) {
+        let ServerRequest {
+            source,
+            request_was_broadcast,
+            sequence,
+            command,
+        } = request;
+
+        match command {
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NwkAddrReq(request)) => {
+                self.handle_nwk_addr_req(source, sequence, *request).await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::IeeeAddrReq(request)) => {
+                self.handle_ieee_addr_req(source, sequence, *request).await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::PowerDescReq(
+                request,
+            )) => {
+                self.handle_power_desc_req(source, sequence, *request).await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::SimpleDescReq(
+                request,
+            )) => {
+                self.handle_simple_desc_req(source, sequence, *request)
+                    .await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::ActiveEpReq(request)) => {
+                self.handle_active_ep_req(source, sequence, *request).await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::MatchDescReq(
+                request,
+            )) => {
+                self.handle_match_desc_req(source, request_was_broadcast, sequence, *request)
+                    .await;
+            }
+            Command::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::NodeDescReq(request)) => {
+                self.handle_node_desc_req(source, sequence, *request).await;
+            }
+            Command::DeviceAndServiceDiscovery(
+                DeviceAndServiceDiscovery::SystemServerDiscoveryReq(request),
+            ) => {
+                self.handle_system_server_discovery_req(source, sequence, *request)
+                    .await;
+            }
+            Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_)) => {
+                self.handle_mgmt_permit_joining_req(source, request_was_broadcast, sequence)
+                    .await;
+            }
+            _ => unreachable!("only recognized ZDP server requests are spawned"),
+        }
     }
 
     async fn handle_nwk_addr_req(&self, source: NetworkAddress, seq: u8, request: NwkAddrReq) {
@@ -559,20 +696,6 @@ impl Transceiver {
         }
     }
 
-    fn handle_device_annce(&self, device_annce: &DeviceAnnce) {
-        let Ok(short_id) = device_annce.nwk_addr().try_into().inspect_err(|error| {
-            warn!("Invalid node ID: {error:?}");
-        }) else {
-            return;
-        };
-
-        self.events
-            .emit(Event::Device(DeviceEvent::Announced(FullAddress::new(
-                device_annce.ieee_addr(),
-                short_id,
-            ))));
-    }
-
     /// Respond to a Node Descriptor request with the descriptor or an appropriate status.
     async fn handle_node_desc_req(
         &self,
@@ -633,18 +756,35 @@ impl Transceiver {
             error!("Failed to send Mgmt_Permit_Joining_rsp: {error:?}");
         }
     }
+}
 
-    /// Start the ZDP transceiver.
-    pub fn spawn(
-        ncp: NcpHandle,
-        aps: Aps,
-        events: EventSink,
-        descriptor: Descriptor,
-    ) -> Sender<Message> {
-        let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx));
-        zdp_tx
-    }
+fn handle_device_annce(events: &EventSink, device_annce: &DeviceAnnce) {
+    let Ok(short_id) = device_annce.nwk_addr().try_into().inspect_err(|error| {
+        warn!("Invalid node ID: {error:?}");
+    }) else {
+        return;
+    };
+
+    events.emit(Event::Device(DeviceEvent::Announced(FullAddress::new(
+        device_annce.ieee_addr(),
+        short_id,
+    ))));
+}
+
+const fn is_server_request(command: &Command) -> bool {
+    matches!(
+        command,
+        Command::DeviceAndServiceDiscovery(
+            DeviceAndServiceDiscovery::NwkAddrReq(_)
+                | DeviceAndServiceDiscovery::IeeeAddrReq(_)
+                | DeviceAndServiceDiscovery::PowerDescReq(_)
+                | DeviceAndServiceDiscovery::SimpleDescReq(_)
+                | DeviceAndServiceDiscovery::ActiveEpReq(_)
+                | DeviceAndServiceDiscovery::MatchDescReq(_)
+                | DeviceAndServiceDiscovery::NodeDescReq(_)
+                | DeviceAndServiceDiscovery::SystemServerDiscoveryReq(_)
+        ) | Command::NetworkManagement(NetworkManagement::MgmtPermitJoiningReq(_))
+    )
 }
 
 /// Validate an indication's ZDP addressing and derive its response-correlation key.
@@ -696,17 +836,124 @@ const fn permit_joining_response(request_was_broadcast: bool) -> Option<MgmtPerm
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroUsize;
+    use std::sync::Mutex;
+    use std::time::Duration;
+
+    use bytes::Bytes;
     use tokio::runtime::Runtime;
     use tokio::sync::mpsc::channel;
     use tokio::sync::oneshot;
-    use zb_aps::apsde::{ConfirmStatus, Status as ApsStatus};
-    use zb_zdp::Status;
+    use tokio::time::timeout;
+    use zb_aps::apsde::{
+        ConfirmStatus, DataIndication, IndicationMetadata, IndicationStatus, IndividualEndpoint,
+        NetworkAddress, ReceivedDestination, Security, Source, Status as ApsStatus,
+    };
+    use zb_core::node::Descriptor;
+    use zb_core::short_id::Device;
+    use zb_core::{Endpoint, IeeeAddress, Profile};
+    use zb_hw::{
+        ChannelMask, Driver, Error as HardwareError, FoundNetwork, Operation, ScanDuration,
+        ScannedChannel,
+    };
+    use zb_zdp::{
+        ActiveEpReq, Command, DeviceAndServiceDiscovery, Frame, SimpleDescriptor, Status,
+    };
 
-    use super::{Message, permit_joining_response, track_reply_completion};
-    use crate::aps::{Message as ApsMessage, TransmissionResponse};
+    use super::{Message, Transceiver, permit_joining_response, track_reply_completion};
+    use crate::aps::{Aps, Message as ApsMessage, TransmissionResponse};
+    use crate::event::EventSink;
 
     const CHANNEL_SIZE: usize = 1;
     const APS_COUNTER: u8 = 1;
+    const LINK_QUALITY: u8 = u8::MAX;
+    const LOCAL_ADDRESS: u16 = 0;
+    const REMOTE_ADDRESS: u16 = 1;
+    const SEQUENCE: u8 = 42;
+    const NCP_CHANNEL_SIZE: NonZeroUsize = NonZeroUsize::MIN;
+    const TEST_TIMEOUT: Duration = Duration::from_millis(100);
+
+    #[derive(Debug)]
+    struct DelayedEndpointDriver {
+        started: Mutex<Option<oneshot::Sender<()>>>,
+        release: Mutex<Option<oneshot::Receiver<()>>>,
+    }
+
+    impl Driver for DelayedEndpointDriver {
+        async fn get_endpoints(&self) -> Result<Box<[SimpleDescriptor]>, HardwareError> {
+            self.started
+                .lock()
+                .expect("test driver start lock is available")
+                .take()
+                .expect("test driver receives one endpoint query")
+                .send(())
+                .expect("test waits for the endpoint query");
+            let release = self
+                .release
+                .lock()
+                .expect("test driver release lock is available")
+                .take()
+                .expect("test driver receives one endpoint query");
+            release
+                .await
+                .expect("test controls endpoint query completion");
+            Ok(Vec::new().into_boxed_slice())
+        }
+
+        async fn get_pan_id(&mut self) -> Result<u16, HardwareError> {
+            unsupported(Operation::GetPanId)
+        }
+
+        async fn get_ieee_address(&mut self) -> Result<IeeeAddress, HardwareError> {
+            unsupported(Operation::GetIeeeAddress)
+        }
+
+        async fn scan_networks(
+            &mut self,
+            _channel_mask: ChannelMask,
+            _duration: ScanDuration,
+        ) -> Result<Vec<FoundNetwork>, HardwareError> {
+            unsupported(Operation::ScanNetworks)
+        }
+
+        async fn scan_channels(
+            &mut self,
+            _channel_mask: ChannelMask,
+            _duration: ScanDuration,
+        ) -> Result<Vec<ScannedChannel>, HardwareError> {
+            unsupported(Operation::ScanChannels)
+        }
+
+        async fn allow_joins(&mut self, _duration: Duration) -> Result<Duration, HardwareError> {
+            unsupported(Operation::AllowJoins)
+        }
+
+        async fn route_request(&mut self, _radius: u8) -> Result<(), HardwareError> {
+            unsupported(Operation::RouteRequest)
+        }
+
+        async fn short_id_to_ieee_address(
+            &mut self,
+            _short_id: Device,
+        ) -> Result<IeeeAddress, HardwareError> {
+            unsupported(Operation::ShortIdToIeeeAddress)
+        }
+
+        async fn ieee_address_to_short_id(
+            &mut self,
+            _ieee_address: IeeeAddress,
+        ) -> Result<Device, HardwareError> {
+            unsupported(Operation::IeeeAddressToShortId)
+        }
+
+        async fn transmit(
+            &mut self,
+            _request: zb_aps::apsde::DataRequest<Bytes>,
+            _counter: u8,
+        ) -> Result<(), HardwareError> {
+            unsupported(Operation::Transmit)
+        }
+    }
 
     #[test]
     fn permit_joining_rejects_unicast_and_ignores_broadcast_requests() {
@@ -755,6 +1002,55 @@ mod tests {
             });
     }
 
+    #[test]
+    fn actor_handles_hardware_shutdown_while_endpoint_query_is_pending() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let (started, query_started) = oneshot::channel();
+                let (release_query, release) = oneshot::channel();
+                let (ncp, driver) = DelayedEndpointDriver {
+                    started: Mutex::new(Some(started)),
+                    release: Mutex::new(Some(release)),
+                }
+                .into_actor(NCP_CHANNEL_SIZE);
+                let driver = tokio::spawn(driver);
+                let (aps_messages, _aps_receiver) = channel(CHANNEL_SIZE);
+                let (events, _event_receiver) = channel(CHANNEL_SIZE);
+                let zdp = Transceiver::spawn(
+                    ncp,
+                    Aps::new(aps_messages),
+                    EventSink::new(events),
+                    Descriptor::default(),
+                );
+
+                zdp.send(Message::Received {
+                    indication: active_endpoint_request(),
+                })
+                .await
+                .expect("ZDP actor accepts the request");
+                timeout(TEST_TIMEOUT, query_started)
+                    .await
+                    .expect("endpoint query must start")
+                    .expect("endpoint query start sender remains available");
+                zdp.send(Message::HardwareUnavailable)
+                    .await
+                    .expect("ZDP actor accepts hardware shutdown");
+                timeout(TEST_TIMEOUT, zdp.closed())
+                    .await
+                    .expect("pending endpoint query must not block actor shutdown");
+
+                release_query
+                    .send(())
+                    .expect("driver still waits for endpoint query completion");
+                drop(zdp);
+                timeout(TEST_TIMEOUT, driver)
+                    .await
+                    .expect("driver actor must stop after ZDP shutdown")
+                    .expect("driver actor task must not panic");
+            });
+    }
+
     async fn tracked_reply_failure(error: zb_hw::Error) -> Message {
         let (aps_inbox, _aps_messages) = channel::<ApsMessage>(CHANNEL_SIZE);
         let (completion, result) = oneshot::channel();
@@ -770,5 +1066,40 @@ mod tests {
             .recv()
             .await
             .expect("deferred failure must reach the ZDP actor inbox")
+    }
+
+    fn active_endpoint_request() -> DataIndication<Frame<Command>, (), ()> {
+        let command: Command =
+            DeviceAndServiceDiscovery::from(ActiveEpReq::new(LOCAL_ADDRESS)).into();
+        let metadata = IndicationMetadata::new(
+            ReceivedDestination::Network {
+                address: network_address(LOCAL_ADDRESS),
+                endpoint: data_endpoint(),
+            },
+            Source::Network {
+                address: network_address(REMOTE_ADDRESS),
+                endpoint: data_endpoint(),
+            },
+            Profile::Network.as_u16(),
+            command.cluster_id(),
+            IndicationStatus::success(),
+            Security::<()>::Unsecured,
+            LINK_QUALITY,
+            (),
+        );
+
+        DataIndication::new(metadata, Frame::new(SEQUENCE, command))
+    }
+
+    fn data_endpoint() -> IndividualEndpoint {
+        IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual")
+    }
+
+    fn network_address(address: u16) -> NetworkAddress {
+        NetworkAddress::new(address).expect("test NWK address is valid")
+    }
+
+    fn unsupported<T>(operation: Operation) -> Result<T, HardwareError> {
+        Err(HardwareError::Unsupported(operation))
     }
 }

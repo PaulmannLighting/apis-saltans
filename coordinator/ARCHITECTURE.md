@@ -12,6 +12,7 @@ flowchart TD
     APS[APS actor]
     ZCL[ZCL actor]
     ZDP[ZDP actor]
+    ZDPO[Bounded ZDP server operations]
     OTA[OTA server]
     OTAA[OTA API forwarder]
     OTAS[OTA subscription forwarder]
@@ -26,7 +27,10 @@ flowchart TD
     ZCL -->|Data&lt;Bytes&gt;| APS
     ZDP -->|Data&lt;Bytes&gt;| APS
     ZCL -->|endpoint descriptor query| HW
-    ZDP -->|endpoint and address queries| HW
+    ZDP -->|spawn received request| ZDPO
+    ZDPO -->|endpoint and address queries| HW
+    ZDPO -->|response frame| APS
+    ZDPO -->|completion through inbox| ZDP
     APS -->|NcpHandle::transmit| HW
     HW -->|zb_hw::Event| M
     M -->|received ZCL frame| ZCL
@@ -253,15 +257,28 @@ spacing and advances the ZCL transaction sequence between blocks.
 
 The ZDP actor:
 
-- stores a concrete `zb_hw::NcpHandle` for NCP queries
+- owns the cloneable context used for NCP queries and APS replies
 - receives parsed ZDP frames as normalized `DataIndication<Frame<Command>, (), ()>` values
 - owns a collision-safe ZDP transaction-sequence allocator
 - uses profile `0x0000` and endpoint `0x00`
 - sends APS metadata and serialized ZDP frames through the APS actor
 - correlates request and response commands
-- queries the NCP directly for endpoint and address information needed while serving ZDP requests
+- dispatches incoming requests to bounded background operations for endpoint and address queries
 - handles device announcements and incoming address, descriptor, endpoint, match-descriptor,
   system-server-discovery, and permit-joining requests
+
+Received response commands and device announcements are handled synchronously in the actor.
+Requests that can query the NCP or enqueue an APS reply run in tracked background operations, with
+at most `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` operations active at once. Each normal completion is
+returned through the actor's ordinary inbox. Network-down, hardware-unavailable, actor-inbox
+closure, and actor shutdown abort all active request-serving operations. If the operation limit is
+already occupied, the new request is logged and dropped rather than allowing work to grow without
+bound.
+
+Outgoing ZDP communication similarly reserves its correlation identity synchronously and performs
+the possibly backpressured APS actor handoff in a bounded background submission. This keeps
+response correlation, cancellation, timeout, and lifecycle messages moving through the ZDP actor
+while another actor is congested.
 
 For local `Active_EP_req` and `Simple_Desc_req` commands, the actor uses the NCP's current endpoint
 descriptors. Single-device address requests use the NCP's address-translation operations.
@@ -313,7 +330,10 @@ down. Both intervals default to 30 seconds and must be greater than zero.
 
 APS, ZCL, and ZDP each own exactly one bounded message receiver. Hardware events, API requests,
 cancellations, response and quarantine timeout notifications, and network lifecycle notifications
-are serialized through that actor's single inbox.
+are serialized through that actor's single inbox. The mux uses non-blocking delivery for received
+ZDP frames. If the ZDP inbox is full, it logs and drops the frame so protocol overload cannot delay
+APS confirmations or other hardware events. The request's normal response timeout reports a
+missing dropped response to a waiting caller.
 
 ```mermaid
 sequenceDiagram
