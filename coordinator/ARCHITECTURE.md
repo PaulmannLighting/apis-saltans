@@ -63,8 +63,8 @@ For every outgoing message it:
 3. forwards the request and counter to the hardware actor
 4. resolves an unacknowledged caller after hardware acceptance, or stores an acknowledged caller
    under the counter
-5. quarantines counters released by dropped callers, missing-confirmation timeouts, or network
-   loss until the corresponding late confirmation arrives
+5. quarantines counters released by dropped callers or network loss until the corresponding late
+   confirmation arrives or its confirmation deadline makes the actor terminal
 
 Its command protocol contains:
 
@@ -97,13 +97,18 @@ message from removing a newer transmission after successful counter reuse.
 - Unacknowledged, group, or broadcast frame: resolve the caller response after backend acceptance.
 
 The allocator scans all 256 counter values and never reuses one while it is pending or quarantined.
-Cancellation, confirmation timeout, and network loss quarantine an accepted acknowledged
-transmission's counter until a late confirmation for that counter arrives. The quarantine has no
-clock-based expiry, because the hardware API makes no promise about maximum confirmation latency.
-When every counter is unavailable, the actor returns `Error::ApsCounterExhausted` rather than
-risking a stale confirmation completing a new transmission. Successful or failed confirmations
-release their counters immediately. Unacknowledged transmissions resolve without storing their
-response, and rejected transmissions never reach the pending-confirmation map.
+Cancellation and network loss quarantine an accepted acknowledged transmission's counter until a
+late confirmation for that counter arrives. The quarantine has no clock-based expiry, because the
+hardware API makes no promise about maximum confirmation latency or a reset boundary after which
+old confirmations cannot arrive. If the confirmation is still missing at its deadline, the APS
+actor stops and requires coordinator reconstruction instead of ever reusing the counter. Timeout
+messages retain the allocation generation, including while a counter is quarantined, so a stale
+timeout cannot stop the actor for a newer allocation.
+
+`Error::ApsCounterExhausted` can still report that all counters are concurrently pending or
+quarantined before their deadlines. Successful or failed confirmations release their counters
+immediately. Unacknowledged transmissions resolve without storing their response, and rejected
+transmissions never reach the pending-confirmation map.
 
 ```mermaid
 sequenceDiagram

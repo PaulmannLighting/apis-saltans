@@ -30,9 +30,9 @@ pub enum Message {
         token: TransmissionToken,
     },
 
-    /// Expire a pending hardware confirmation.
+    /// Check an accepted transmission at its hardware-confirmation deadline.
     ConfirmationTimeout {
-        /// Coordinator-private identity whose confirmation timeout elapsed.
+        /// Coordinator-private identity that makes the actor terminal if still unconfirmed.
         token: TransmissionToken,
     },
 

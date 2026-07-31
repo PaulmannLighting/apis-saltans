@@ -1,6 +1,6 @@
 //! Actor for transmitting APS data frames.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use bytes::Bytes;
@@ -162,7 +162,7 @@ struct TransmissionState {
     next_counter: u8,
     next_generation: u64,
     responses: BTreeMap<u8, PendingConfirmation>,
-    quarantined: BTreeSet<u8>,
+    quarantined: BTreeMap<u8, u64>,
 }
 
 #[derive(Debug)]
@@ -177,7 +177,7 @@ impl TransmissionState {
             next_counter: INITIAL_COUNTER,
             next_generation: INITIAL_GENERATION,
             responses: BTreeMap::new(),
-            quarantined: BTreeSet::new(),
+            quarantined: BTreeMap::new(),
         }
     }
 
@@ -186,7 +186,7 @@ impl TransmissionState {
         for _ in 0..APS_COUNTER_COUNT {
             let counter = self.next_counter;
             self.next_counter = self.next_counter.wrapping_add(1);
-            if !self.responses.contains_key(&counter) && !self.quarantined.contains(&counter) {
+            if !self.responses.contains_key(&counter) && !self.quarantined.contains_key(&counter) {
                 let token = TransmissionToken {
                     counter,
                     generation: self.next_generation,
@@ -201,7 +201,7 @@ impl TransmissionState {
 
     fn handle_confirm(&mut self, counter: u8, status: ConfirmStatus) {
         let Some(pending) = self.responses.remove(&counter) else {
-            if self.quarantined.remove(&counter) {
+            if self.quarantined.remove(&counter).is_some() {
                 log::debug!("Released quarantined APS counter after late confirmation: {counter}");
                 return;
             }
@@ -226,7 +226,7 @@ impl TransmissionState {
             },
         );
         debug_assert!(previous.is_none());
-        debug_assert!(!self.quarantined.contains(&token.counter));
+        debug_assert!(!self.quarantined.contains_key(&token.counter));
     }
 
     /// Complete an accepted transmission or retain it for its APS acknowledgement.
@@ -251,23 +251,25 @@ impl TransmissionState {
     fn cancel(&mut self, token: TransmissionToken) {
         if self.pending_generation_matches(token) {
             self.responses.remove(&token.counter);
-            self.quarantined.insert(token.counter);
+            self.quarantined.insert(token.counter, token.generation);
         }
     }
 
-    fn timeout(&mut self, token: TransmissionToken) {
-        if !self.pending_generation_matches(token) {
-            return;
+    /// Expire an accepted transmission and report whether its confirmation is still missing.
+    fn timeout(&mut self, token: TransmissionToken) -> bool {
+        if self.pending_generation_matches(token) {
+            let pending = self
+                .responses
+                .remove(&token.counter)
+                .expect("matching pending generation remains present");
+            self.quarantined.insert(token.counter, token.generation);
+            pending
+                .response
+                .send(Err(zb_hw::TransmissionError::Timeout.into()))
+                .unwrap_or_else(drop);
         }
-        let pending = self
-            .responses
-            .remove(&token.counter)
-            .expect("matching pending generation remains present");
-        self.quarantined.insert(token.counter);
-        pending
-            .response
-            .send(Err(zb_hw::TransmissionError::Timeout.into()))
-            .unwrap_or_else(drop);
+
+        self.quarantined.get(&token.counter) == Some(&token.generation)
     }
 
     fn pending_generation_matches(&self, token: TransmissionToken) -> bool {
@@ -279,7 +281,7 @@ impl TransmissionState {
     fn fail_all(&mut self, error: &zb_hw::Error) {
         let responses = std::mem::take(&mut self.responses);
         for (counter, pending) in responses {
-            self.quarantined.insert(counter);
+            self.quarantined.insert(counter, pending.generation);
             pending
                 .response
                 .send(Err(error.clone()))
@@ -328,7 +330,14 @@ impl Transceiver {
                 self.state.cancel(token);
             }
             Message::ConfirmationTimeout { token } => {
-                self.state.timeout(token);
+                if self.state.timeout(token) {
+                    warn!(
+                        "APS confirmation for counter {} did not arrive before its deadline; \
+                         stopping the APS actor to prevent unsafe counter reuse",
+                        token.counter
+                    );
+                    return false;
+                }
             }
         }
         true
@@ -402,8 +411,8 @@ mod tests {
     use zb_core::{Endpoint, GroupId, Profile, short_id};
 
     use super::{
-        Aps, Message, PendingResponse, TransmissionState, TransmissionToken, acknowledged,
-        data_request,
+        Aps, INITIAL_GENERATION, Message, PendingResponse, TransmissionState, TransmissionToken,
+        acknowledged, data_request,
     };
     use crate::aps::{Metadata, TransmissionResponse};
 
@@ -763,7 +772,7 @@ mod tests {
 
         state.cancel(token);
 
-        assert!(state.quarantined.contains(&FIRST_COUNTER));
+        assert!(state.quarantined.contains_key(&FIRST_COUNTER));
         state.next_counter = FIRST_COUNTER;
         assert_eq!(
             state.allocate().map(|allocated| allocated.counter),
@@ -772,12 +781,44 @@ mod tests {
 
         state.handle_confirm(FIRST_COUNTER, ConfirmStatus::success());
 
-        assert!(!state.quarantined.contains(&FIRST_COUNTER));
+        assert!(!state.quarantined.contains_key(&FIRST_COUNTER));
+        assert!(!state.timeout(token));
         state.next_counter = FIRST_COUNTER;
         assert_eq!(
             state.allocate().map(|allocated| allocated.counter),
             Some(FIRST_COUNTER)
         );
+    }
+
+    #[test]
+    fn missing_confirmation_at_deadline_is_terminal() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let mut state = TransmissionState::new();
+                let token = transmission_token(FIRST_COUNTER);
+                let (response, result) = tokio::sync::oneshot::channel();
+                state.store_pending_response(token, response);
+
+                assert!(state.timeout(token));
+                assert!(matches!(
+                    result.await.expect("response is available"),
+                    Err(zb_hw::Error::Transmission(
+                        zb_hw::TransmissionError::Timeout
+                    ))
+                ));
+            });
+    }
+
+    #[test]
+    fn cancelled_transmission_with_missing_confirmation_is_terminal() {
+        let mut state = TransmissionState::new();
+        let token = transmission_token(FIRST_COUNTER);
+        let (response, _result) = tokio::sync::oneshot::channel();
+        state.store_pending_response(token, response);
+        state.cancel(token);
+
+        assert!(state.timeout(token));
     }
 
     #[test]
@@ -792,16 +833,37 @@ mod tests {
         state.store_pending_response(current, response);
 
         state.cancel(stale_token);
-        state.timeout(stale_token);
+        assert!(!state.timeout(stale_token));
 
         assert!(state.responses.contains_key(&FIRST_COUNTER));
         assert!(result.try_recv().is_err());
     }
 
     #[test]
+    fn stale_timeout_does_not_match_newer_quarantine_generation() {
+        let mut state = TransmissionState::new();
+        let stale_token = transmission_token(FIRST_COUNTER);
+        let current = TransmissionToken {
+            counter: FIRST_COUNTER,
+            generation: SECOND_GENERATION,
+        };
+        state
+            .quarantined
+            .insert(current.counter, current.generation);
+
+        assert!(!state.timeout(stale_token));
+        assert_eq!(
+            state.quarantined.get(&current.counter),
+            Some(&current.generation)
+        );
+    }
+
+    #[test]
     fn allocator_reports_exhaustion_when_every_counter_is_unavailable() {
         let mut state = TransmissionState::new();
-        state.quarantined.extend(u8::MIN..=u8::MAX);
+        state
+            .quarantined
+            .extend((u8::MIN..=u8::MAX).map(|counter| (counter, INITIAL_GENERATION)));
 
         assert_eq!(state.allocate(), None);
     }
@@ -828,8 +890,8 @@ mod tests {
                     ));
                 }
                 assert!(state.responses.is_empty());
-                assert!(state.quarantined.contains(&FIRST_COUNTER));
-                assert!(state.quarantined.contains(&SECOND_COUNTER));
+                assert!(state.quarantined.contains_key(&FIRST_COUNTER));
+                assert!(state.quarantined.contains_key(&SECOND_COUNTER));
             });
     }
 
@@ -853,8 +915,8 @@ mod tests {
                     ));
                 }
                 assert!(state.responses.is_empty());
-                assert!(state.quarantined.contains(&FIRST_COUNTER));
-                assert!(state.quarantined.contains(&SECOND_COUNTER));
+                assert!(state.quarantined.contains_key(&FIRST_COUNTER));
+                assert!(state.quarantined.contains_key(&SECOND_COUNTER));
             });
     }
 
@@ -870,7 +932,7 @@ mod tests {
     const fn transmission_token(counter: u8) -> TransmissionToken {
         TransmissionToken {
             counter,
-            generation: super::INITIAL_GENERATION,
+            generation: INITIAL_GENERATION,
         }
     }
 }

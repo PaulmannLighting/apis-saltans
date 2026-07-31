@@ -320,11 +320,15 @@ transmission with `TransmissionError::NoRoute`. Dropping a deferred APS result r
 confirmation entry; work already accepted by the hardware is not recalled.
 
 The APS actor allocates counters from the complete 256-value Zigbee counter space. It never
-replaces a pending transmission. A counter released by cancellation, timeout, or network loss is
-quarantined until its late hardware confirmation arrives, so an old confirmation cannot complete a
-new transmission. Quarantine has no time-based expiry because the hardware contract does not
-define a maximum completion latency. If all counters are pending or quarantined, transmission
-fails with `Error::ApsCounterExhausted`.
+replaces a pending transmission. A counter released by cancellation or network loss is quarantined
+until its late hardware confirmation arrives, so an old confirmation cannot complete a new
+transmission. The hardware contract defines neither a maximum completion latency nor a reset
+boundary that invalidates old confirmations, so quarantine cannot safely expire. If a confirmation
+is still missing at its 30-second deadline, the APS actor stops; the coordinator must be
+reconstructed before further traffic is sent. This also applies when the caller dropped its
+response or a network-down event already failed it. A late confirmation received before the
+deadline releases the quarantine normally. If all counters are concurrently pending or
+quarantined before their deadlines, transmission fails with `Error::ApsCounterExhausted`.
 
 ZCL accepts a complete `DataRequest<zb_zcl::UnsequencedFrame<Bytes>>` from its caller. The ZCL actor
 consumes the unsequenced frame with its assigned transaction sequence and serializes the resulting
