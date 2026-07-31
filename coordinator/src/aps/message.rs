@@ -16,6 +16,14 @@ pub enum Message {
         response: Sender<Result<TransmissionResponse, Error>>,
     },
 
+    /// Complete a background submission to the hardware backend.
+    SubmissionFinished {
+        /// Coordinator-private identity of the submitted transmission.
+        token: TransmissionToken,
+        /// Backend acceptance or rejection.
+        result: Result<(), zb_hw::Error>,
+    },
+
     /// Data confirmation reported by the hardware event stream.
     Confirm {
         /// APS counter of the confirmed transmission.

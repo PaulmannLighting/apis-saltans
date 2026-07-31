@@ -75,30 +75,41 @@ impl Mux {
         self.events.emit(Event::Network(Network::Error(
             NetworkError::HardwareEventStreamClosed,
         )));
-        self.aps
-            .hardware_unavailable()
-            .await
-            .unwrap_or_else(|error| {
+        let aps = self.aps.clone();
+        let aps_shutdown = spawn(async move {
+            aps.hardware_unavailable().await.unwrap_or_else(|error| {
                 trace!("Failed to stop APS actor after hardware stream closure: {error}");
             });
-        self.zcl
-            .send(zcl::Message::HardwareUnavailable)
-            .await
-            .unwrap_or_else(|error| {
-                trace!("Failed to stop ZCL actor after hardware stream closure: {error}");
+        });
+        let zcl = self.zcl.clone();
+        let zcl_shutdown = spawn(async move {
+            zcl.send(zcl::Message::HardwareUnavailable)
+                .await
+                .unwrap_or_else(|error| {
+                    trace!("Failed to stop ZCL actor after hardware stream closure: {error}");
+                });
+        });
+        let zdp = self.zdp.clone();
+        let zdp_shutdown = spawn(async move {
+            zdp.send(zdp::Message::HardwareUnavailable)
+                .await
+                .unwrap_or_else(|error| {
+                    trace!("Failed to stop ZDP actor after hardware stream closure: {error}");
+                });
+        });
+        let ota = self.ota.clone();
+        let ota_shutdown = spawn(async move {
+            ota.send(ota::Message::HardwareUnavailable)
+                .await
+                .unwrap_or_else(|error| {
+                    trace!("Failed to stop OTA actor after hardware stream closure: {error}");
+                });
+        });
+        for shutdown in [aps_shutdown, zcl_shutdown, zdp_shutdown, ota_shutdown] {
+            shutdown.await.unwrap_or_else(|error| {
+                trace!("Terminal notification task failed: {error}");
             });
-        self.zdp
-            .send(zdp::Message::HardwareUnavailable)
-            .await
-            .unwrap_or_else(|error| {
-                trace!("Failed to stop ZDP actor after hardware stream closure: {error}");
-            });
-        self.ota
-            .send(ota::Message::HardwareUnavailable)
-            .await
-            .unwrap_or_else(|error| {
-                trace!("Failed to stop OTA actor after hardware stream closure: {error}");
-            });
+        }
     }
 
     async fn multiplex<T, K>(&self, event: HardwareEvent<T, K>) {
@@ -555,6 +566,62 @@ mod tests {
                         NetworkError::HardwareEventStreamClosed
                     )))
                 ));
+            });
+    }
+
+    #[test]
+    fn full_aps_inbox_does_not_delay_other_terminal_notifications() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let (events, _application_events) = channel(MPSC_CHANNEL_SIZE);
+                let (aps_messages, mut aps_receiver) = channel(1);
+                let (ota_messages, mut ota_receiver) = channel(1);
+                let (zcl_messages, mut zcl_receiver) = channel(1);
+                let (zdp_messages, mut zdp_receiver) = channel(1);
+                aps_messages
+                    .send(ApsMessage::NetworkDown)
+                    .await
+                    .expect("APS inbox remains available");
+                let mux = Mux::new(
+                    EventSink::new(events),
+                    Aps::new(aps_messages),
+                    ota_messages,
+                    zcl_messages,
+                    zdp_messages,
+                );
+
+                let shutdown = tokio::spawn(async move {
+                    mux.hardware_event_stream_closed().await;
+                });
+
+                timeout(TEST_TIMEOUT, async {
+                    assert!(matches!(
+                        ota_receiver.recv().await,
+                        Some(ota::Message::HardwareUnavailable)
+                    ));
+                    assert!(matches!(
+                        zcl_receiver.recv().await,
+                        Some(zcl::Message::HardwareUnavailable)
+                    ));
+                    assert!(matches!(
+                        zdp_receiver.recv().await,
+                        Some(zdp::Message::HardwareUnavailable)
+                    ));
+                })
+                .await
+                .expect("one full actor inbox must not delay the other terminal notifications");
+                assert!(!shutdown.is_finished());
+
+                assert!(matches!(
+                    aps_receiver.recv().await,
+                    Some(ApsMessage::NetworkDown)
+                ));
+                assert!(matches!(
+                    aps_receiver.recv().await,
+                    Some(ApsMessage::HardwareUnavailable)
+                ));
+                shutdown.await.expect("mux shutdown must complete");
             });
     }
 

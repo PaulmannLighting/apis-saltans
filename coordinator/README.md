@@ -96,8 +96,9 @@ hardware-event routing or the protocol actors. Applications should drain the eve
 promptly and treat it as a lossy notification stream rather than durable state.
 
 Closing the hardware-event receiver is a fatal coordinator boundary. The mux notifies every
-protocol actor through its inbox and then stops. Pending APS, ZCL, and ZDP operations fail with
-`zb_hw::Error::ActorUnavailable`, active OTA updates fail with
+protocol actor concurrently through its inbox and then stops. A full or stalled actor inbox
+therefore cannot delay terminal notification of the other actors. Pending APS, ZCL, and ZDP
+operations fail with `zb_hw::Error::ActorUnavailable`, active OTA updates fail with
 `OtaUpdateError::HardwareEventStreamClosed`, and the application event stream receives
 `Event::Network(Network::Error(NetworkError::HardwareEventStreamClosed))`. Because application
 events are lossy, applications should also treat operation failures as evidence that the
@@ -317,7 +318,9 @@ result; an unsuccessful APS or propagated NWK status becomes
 `TransmissionError::Confirmation`. An acknowledged transmission times out after 30 seconds if its
 confirmation does not arrive. A network-down event resolves every pending acknowledged
 transmission with `TransmissionError::NoRoute`. Dropping a deferred APS result removes its pending
-confirmation entry; work already accepted by the hardware is not recalled.
+confirmation entry; work already accepted by the hardware is not recalled. If backend acceptance
+is still in flight, the actor retains the counter reservation until the backend result establishes
+whether the counter can be released or must be quarantined.
 
 The APS actor allocates counters from the complete 256-value Zigbee counter space. It never
 replaces a pending transmission. A counter released by cancellation or network loss is quarantined
@@ -353,8 +356,10 @@ allocation generation. The generation never appears in a Zigbee frame; it only p
 lifecycle message from removing a newer transaction after successful sequence reuse.
 
 Each APS, ZCL, and ZDP actor consumes one bounded message inbox. Confirmation, cancellation,
-response and quarantine timeout, network lifecycle, and ordinary request messages all use that
-inbox. Timeout tasks retain only a weak sender and enqueue a timeout message after the configured
+response and quarantine timeout, network lifecycle, backend submission completion, and ordinary
+request messages all use that inbox. APS backend submissions run in spawned operations, so waiting
+for NCP acceptance cannot prevent the APS actor from draining confirmations or lifecycle messages.
+Timeout tasks retain only a weak sender and enqueue a timeout message after the configured
 duration; the actors do not use auxiliary receivers.
 
 `Error` implements `std::error::Error`. Hardware, one-shot receive, and timeout variants retain and

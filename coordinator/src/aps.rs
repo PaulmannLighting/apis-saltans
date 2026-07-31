@@ -161,14 +161,66 @@ pub struct Transceiver {
 struct TransmissionState {
     next_counter: u8,
     next_generation: u64,
-    responses: BTreeMap<u8, PendingConfirmation>,
+    responses: BTreeMap<u8, PendingTransmission>,
     quarantined: BTreeMap<u8, u64>,
 }
 
 #[derive(Debug)]
-struct PendingConfirmation {
+struct PendingTransmission {
     generation: u64,
-    response: PendingResponse,
+    acknowledged: bool,
+    phase: TransmissionPhase,
+    response: Option<PendingResponse>,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum TransmissionPhase {
+    Submitting { confirmation: Option<ConfirmStatus> },
+    AwaitingConfirmation,
+}
+
+impl PendingTransmission {
+    const fn submitting(
+        token: TransmissionToken,
+        acknowledged: bool,
+        response: PendingResponse,
+    ) -> Self {
+        Self {
+            generation: token.generation,
+            acknowledged,
+            phase: TransmissionPhase::Submitting { confirmation: None },
+            response: Some(response),
+        }
+    }
+
+    #[cfg(test)]
+    const fn awaiting_confirmation(token: TransmissionToken, response: PendingResponse) -> Self {
+        Self {
+            generation: token.generation,
+            acknowledged: true,
+            phase: TransmissionPhase::AwaitingConfirmation,
+            response: Some(response),
+        }
+    }
+
+    fn complete(&mut self, result: Result<(), zb_hw::Error>) {
+        if let Some(response) = self.response.take() {
+            response.send(result).unwrap_or_else(drop);
+        }
+    }
+
+    fn complete_confirmation(&mut self, status: ConfirmStatus) {
+        let result = if status.is_success() {
+            Ok(())
+        } else {
+            Err(zb_hw::TransmissionError::Confirmation(status).into())
+        };
+        self.complete(result);
+    }
+
+    fn fail(&mut self, error: &zb_hw::Error) {
+        self.complete(Err(error.clone()));
+    }
 }
 
 impl TransmissionState {
@@ -200,7 +252,7 @@ impl TransmissionState {
     }
 
     fn handle_confirm(&mut self, counter: u8, status: ConfirmStatus) {
-        let Some(pending) = self.responses.remove(&counter) else {
+        let Some(pending) = self.responses.get_mut(&counter) else {
             if self.quarantined.remove(&counter).is_some() {
                 log::debug!("Released quarantined APS counter after late confirmation: {counter}");
                 return;
@@ -208,48 +260,119 @@ impl TransmissionState {
             warn!("Received APS data confirmation for unknown counter: {counter}");
             return;
         };
-        let result = if status.is_success() {
-            Ok(())
-        } else {
-            Err(zb_hw::TransmissionError::Confirmation(status).into())
-        };
-        pending.response.send(result).unwrap_or_else(drop);
+
+        match &mut pending.phase {
+            TransmissionPhase::Submitting { confirmation } if pending.acknowledged => {
+                if confirmation.replace(status).is_some() {
+                    warn!("Received duplicate APS data confirmation for counter: {counter}");
+                }
+                return;
+            }
+            TransmissionPhase::Submitting { .. } => {
+                warn!(
+                    "Received APS data confirmation for unacknowledged transmission counter: \
+                     {counter}"
+                );
+                return;
+            }
+            TransmissionPhase::AwaitingConfirmation => {}
+        }
+
+        let mut pending = self
+            .responses
+            .remove(&counter)
+            .expect("pending confirmation remains present");
+        pending.complete_confirmation(status);
     }
 
-    /// Store a response under its allocated Zigbee APS counter.
-    fn store_pending_response(&mut self, token: TransmissionToken, response: PendingResponse) {
-        let previous = self.responses.insert(
-            token.counter,
-            PendingConfirmation {
-                generation: token.generation,
-                response,
-            },
-        );
-        debug_assert!(previous.is_none());
-        debug_assert!(!self.quarantined.contains_key(&token.counter));
-    }
-
-    /// Complete an accepted transmission or retain it for its APS acknowledgement.
-    fn handle_accepted_transmission(
+    /// Store a backend submission under its allocated Zigbee APS counter.
+    fn store_submission(
         &mut self,
         token: TransmissionToken,
         acknowledged: bool,
         response: PendingResponse,
     ) {
-        if acknowledged {
-            self.store_pending_response(token, response);
-        } else {
-            response.send(Ok(())).unwrap_or_else(drop);
-        }
+        let previous = self.responses.insert(
+            token.counter,
+            PendingTransmission::submitting(token, acknowledged, response),
+        );
+        debug_assert!(previous.is_none());
+        debug_assert!(!self.quarantined.contains_key(&token.counter));
     }
 
-    /// Return a hardware rejection to the caller.
-    fn handle_rejected_transmission(response: PendingResponse, error: zb_hw::Error) {
-        response.send(Err(error)).unwrap_or_else(drop);
+    /// Store an accepted acknowledged response under its allocated Zigbee APS counter.
+    #[cfg(test)]
+    fn store_pending_response(&mut self, token: TransmissionToken, response: PendingResponse) {
+        let previous = self.responses.insert(
+            token.counter,
+            PendingTransmission::awaiting_confirmation(token, response),
+        );
+        debug_assert!(previous.is_none());
+        debug_assert!(!self.quarantined.contains_key(&token.counter));
+    }
+
+    /// Complete a backend submission and report whether to schedule its confirmation deadline.
+    fn finish_submission(
+        &mut self,
+        token: TransmissionToken,
+        result: Result<(), zb_hw::Error>,
+    ) -> bool {
+        if !self.pending_generation_matches(token) {
+            return false;
+        }
+        let mut pending = self
+            .responses
+            .remove(&token.counter)
+            .expect("matching pending generation remains present");
+
+        if let Err(error) = result {
+            pending.complete(Err(error));
+            return false;
+        }
+        if !pending.acknowledged {
+            pending.complete(Ok(()));
+            return false;
+        }
+
+        let TransmissionPhase::Submitting { confirmation } = pending.phase else {
+            warn!(
+                "Received duplicate APS backend submission completion for counter: {}",
+                token.counter
+            );
+            self.responses.insert(token.counter, pending);
+            return false;
+        };
+        if let Some(status) = confirmation {
+            pending.complete_confirmation(status);
+            return false;
+        }
+
+        if pending.response.is_none() {
+            self.quarantined.insert(token.counter, token.generation);
+        } else {
+            pending.phase = TransmissionPhase::AwaitingConfirmation;
+            self.responses.insert(token.counter, pending);
+        }
+        true
     }
 
     fn cancel(&mut self, token: TransmissionToken) {
-        if self.pending_generation_matches(token) {
+        if !self.pending_generation_matches(token) {
+            return;
+        }
+        let submitting = matches!(
+            self.responses
+                .get(&token.counter)
+                .expect("matching pending generation remains present")
+                .phase,
+            TransmissionPhase::Submitting { .. }
+        );
+        if submitting {
+            self.responses
+                .get_mut(&token.counter)
+                .expect("matching pending generation remains present")
+                .response = None;
+        } else {
             self.responses.remove(&token.counter);
             self.quarantined.insert(token.counter, token.generation);
         }
@@ -258,15 +381,12 @@ impl TransmissionState {
     /// Expire an accepted transmission and report whether its confirmation is still missing.
     fn timeout(&mut self, token: TransmissionToken) -> bool {
         if self.pending_generation_matches(token) {
-            let pending = self
+            let mut pending = self
                 .responses
                 .remove(&token.counter)
                 .expect("matching pending generation remains present");
             self.quarantined.insert(token.counter, token.generation);
-            pending
-                .response
-                .send(Err(zb_hw::TransmissionError::Timeout.into()))
-                .unwrap_or_else(drop);
+            pending.complete(Err(zb_hw::TransmissionError::Timeout.into()));
         }
 
         self.quarantined.get(&token.counter) == Some(&token.generation)
@@ -278,14 +398,21 @@ impl TransmissionState {
             .is_some_and(|pending| pending.generation == token.generation)
     }
 
-    fn fail_all(&mut self, error: &zb_hw::Error) {
+    fn network_down(&mut self, error: &zb_hw::Error) {
         let responses = std::mem::take(&mut self.responses);
-        for (counter, pending) in responses {
-            self.quarantined.insert(counter, pending.generation);
-            pending
-                .response
-                .send(Err(error.clone()))
-                .unwrap_or_else(drop);
+        for (counter, mut pending) in responses {
+            pending.fail(error);
+            if matches!(pending.phase, TransmissionPhase::Submitting { .. }) {
+                self.responses.insert(counter, pending);
+            } else {
+                self.quarantined.insert(counter, pending.generation);
+            }
+        }
+    }
+
+    fn stop(&mut self, error: &zb_hw::Error) {
+        for mut pending in std::mem::take(&mut self.responses).into_values() {
+            pending.fail(error);
         }
     }
 }
@@ -304,26 +431,31 @@ impl Transceiver {
     /// Run the APS actor.
     pub async fn run(mut self, mut messages: Receiver<Message>) {
         while let Some(message) = messages.recv().await {
-            if !self.handle_actor_message(message).await {
+            if !self.handle_actor_message(message) {
                 break;
             }
         }
     }
 
-    async fn handle_actor_message(&mut self, message: Message) -> bool {
+    fn handle_actor_message(&mut self, message: Message) -> bool {
         match message {
             Message::Transmit { request, response } => {
-                self.transmit(request, response).await;
+                self.transmit(request, response);
+            }
+            Message::SubmissionFinished { token, result } => {
+                if self.state.finish_submission(token, result) {
+                    self.schedule_confirmation_timeout(token);
+                }
             }
             Message::Confirm { counter, status } => {
                 self.state.handle_confirm(counter, status);
             }
             Message::NetworkDown => {
                 self.state
-                    .fail_all(&zb_hw::TransmissionError::NoRoute.into());
+                    .network_down(&zb_hw::TransmissionError::NoRoute.into());
             }
             Message::HardwareUnavailable => {
-                self.state.fail_all(&zb_hw::Error::ActorUnavailable);
+                self.state.stop(&zb_hw::Error::ActorUnavailable);
                 return false;
             }
             Message::Cancel { token } => {
@@ -344,7 +476,7 @@ impl Transceiver {
     }
 
     /// Assign an APS counter and submit a data-service request to the hardware actor.
-    async fn transmit(
+    fn transmit(
         &mut self,
         request: DataRequest<Bytes>,
         response: OneshotSender<Result<TransmissionResponse, crate::Error>>,
@@ -363,16 +495,25 @@ impl Transceiver {
             return;
         }
 
-        match self.ncp.transmit(request, token.counter).await {
-            Ok(()) => {
-                self.state
-                    .handle_accepted_transmission(token, acknowledged, completion);
-                if acknowledged {
-                    self.schedule_confirmation_timeout(token);
-                }
-            }
-            Err(error) => TransmissionState::handle_rejected_transmission(completion, error),
-        }
+        self.state.store_submission(token, acknowledged, completion);
+        self.spawn_transmission(request, token);
+    }
+
+    fn spawn_transmission(&self, request: DataRequest<Bytes>, token: TransmissionToken) {
+        let ncp = self.ncp.clone();
+        let inbox = self.inbox.clone();
+        spawn(async move {
+            let result = ncp.transmit(request, token.counter).await;
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            inbox
+                .send(Message::SubmissionFinished { token, result })
+                .await
+                .unwrap_or_else(|error| {
+                    log::debug!("Failed to enqueue APS backend submission completion: {error}");
+                });
+        });
     }
 
     fn schedule_confirmation_timeout(&self, token: TransmissionToken) {
@@ -401,6 +542,9 @@ impl Transceiver {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZeroUsize;
+    use std::time::Duration;
+
     use bytes::Bytes;
     use tokio::runtime::Runtime;
     use tokio::sync::mpsc::channel;
@@ -408,11 +552,17 @@ mod tests {
     use zb_aps::apsde::{ConfirmStatus, Status as ApsStatus};
     use zb_core::destination::{Broadcast, Destination, Device};
     use zb_core::endpoint::Application;
-    use zb_core::{Endpoint, GroupId, Profile, short_id};
+    use zb_core::short_id::Device as ShortDevice;
+    use zb_core::{Endpoint, GroupId, IeeeAddress, Profile, short_id};
+    use zb_hw::{
+        ChannelMask, Driver, Error as HardwareError, FoundNetwork, Operation, ScanDuration,
+        ScannedChannel,
+    };
+    use zb_zdp::SimpleDescriptor;
 
     use super::{
-        Aps, INITIAL_GENERATION, Message, PendingResponse, TransmissionState, TransmissionToken,
-        acknowledged, data_request,
+        Aps, INITIAL_COUNTER, INITIAL_GENERATION, Message, PendingResponse, Transceiver,
+        TransmissionState, TransmissionToken, acknowledged, data_request,
     };
     use crate::aps::{Metadata, TransmissionResponse};
 
@@ -424,6 +574,82 @@ mod tests {
     const GROUP_ID: u16 = 0x2345;
     const SECOND_COUNTER: u8 = 2;
     const PAYLOAD: &[u8] = &[0x12, 0x34];
+    const NCP_CHANNEL_SIZE: NonZeroUsize = NonZeroUsize::MIN;
+    const TEST_TIMEOUT: Duration = Duration::from_millis(100);
+
+    #[derive(Debug)]
+    struct DelayedDriver {
+        acceptance: Option<tokio::sync::oneshot::Receiver<()>>,
+    }
+
+    impl Driver for DelayedDriver {
+        async fn get_endpoints(&self) -> Result<Box<[SimpleDescriptor]>, HardwareError> {
+            unsupported(Operation::GetEndpoints)
+        }
+
+        async fn get_pan_id(&mut self) -> Result<u16, HardwareError> {
+            unsupported(Operation::GetPanId)
+        }
+
+        async fn get_ieee_address(&mut self) -> Result<IeeeAddress, HardwareError> {
+            unsupported(Operation::GetIeeeAddress)
+        }
+
+        async fn scan_networks(
+            &mut self,
+            _channel_mask: ChannelMask,
+            _duration: ScanDuration,
+        ) -> Result<Vec<FoundNetwork>, HardwareError> {
+            unsupported(Operation::ScanNetworks)
+        }
+
+        async fn scan_channels(
+            &mut self,
+            _channel_mask: ChannelMask,
+            _duration: ScanDuration,
+        ) -> Result<Vec<ScannedChannel>, HardwareError> {
+            unsupported(Operation::ScanChannels)
+        }
+
+        async fn allow_joins(&mut self, _duration: Duration) -> Result<Duration, HardwareError> {
+            unsupported(Operation::AllowJoins)
+        }
+
+        async fn route_request(&mut self, _radius: u8) -> Result<(), HardwareError> {
+            unsupported(Operation::RouteRequest)
+        }
+
+        async fn short_id_to_ieee_address(
+            &mut self,
+            _short_id: ShortDevice,
+        ) -> Result<IeeeAddress, HardwareError> {
+            unsupported(Operation::ShortIdToIeeeAddress)
+        }
+
+        async fn ieee_address_to_short_id(
+            &mut self,
+            _ieee_address: IeeeAddress,
+        ) -> Result<ShortDevice, HardwareError> {
+            unsupported(Operation::IeeeAddressToShortId)
+        }
+
+        async fn transmit(
+            &mut self,
+            _request: zb_aps::apsde::DataRequest<Bytes>,
+            _counter: u8,
+        ) -> Result<(), HardwareError> {
+            self.acceptance
+                .take()
+                .expect("test driver receives one transmission")
+                .await
+                .expect("test controls backend acceptance");
+            Ok(())
+        }
+    }
+
+    fn unsupported<T>(operation: Operation) -> Result<T, HardwareError> {
+        Err(HardwareError::Unsupported(operation))
+    }
 
     const fn application_endpoint() -> Endpoint {
         Endpoint::Application(Application::MIN)
@@ -655,6 +881,50 @@ mod tests {
     }
 
     #[test]
+    fn actor_routes_confirmation_while_backend_acceptance_is_pending() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let (acceptance, accepted) = tokio::sync::oneshot::channel();
+                let (ncp, driver) = DelayedDriver {
+                    acceptance: Some(accepted),
+                }
+                .into_actor(NCP_CHANNEL_SIZE);
+                let driver = tokio::spawn(driver);
+                let aps = Transceiver::spawn(ncp);
+                let transmission = aps
+                    .transmit(request(
+                        unicast_destination(),
+                        TxOptions::ACKNOWLEDGED_TRANSMISSION,
+                        Bytes::new(),
+                    ))
+                    .await
+                    .expect("APS actor accepts the transmission");
+
+                tokio::time::timeout(
+                    TEST_TIMEOUT,
+                    aps.confirm(INITIAL_COUNTER, ConfirmStatus::success()),
+                )
+                .await
+                .expect("pending backend acceptance must not block confirmation routing")
+                .expect("APS actor remains available");
+                acceptance
+                    .send(())
+                    .expect("driver still waits for backend acceptance");
+                tokio::time::timeout(TEST_TIMEOUT, transmission)
+                    .await
+                    .expect("buffered confirmation must resolve after backend acceptance")
+                    .expect("transmission must succeed");
+
+                drop(aps);
+                tokio::time::timeout(TEST_TIMEOUT, driver)
+                    .await
+                    .expect("driver actor must stop after APS shutdown")
+                    .expect("driver actor task must not panic");
+            });
+    }
+
+    #[test]
     fn backend_acceptance_completes_unacknowledged_transmission() {
         Runtime::new()
             .expect("runtime must be available")
@@ -663,12 +933,10 @@ mod tests {
                 let (pending_response, _pending_result) = tokio::sync::oneshot::channel();
                 let (response, result) = tokio::sync::oneshot::channel();
                 state.store_pending_response(transmission_token(FIRST_COUNTER), pending_response);
+                let token = transmission_token(SECOND_COUNTER);
+                state.store_submission(token, false, response);
 
-                state.handle_accepted_transmission(
-                    transmission_token(SECOND_COUNTER),
-                    false,
-                    response,
-                );
+                assert!(!state.finish_submission(token, Ok(())));
 
                 assert!(result.await.expect("response must be available").is_ok());
                 assert!(state.responses.contains_key(&FIRST_COUNTER));
@@ -681,10 +949,13 @@ mod tests {
             .expect("runtime must be available")
             .block_on(async {
                 let (response, result) = tokio::sync::oneshot::channel();
+                let mut state = TransmissionState::new();
+                let token = transmission_token(FIRST_COUNTER);
+                state.store_submission(token, false, response);
 
-                TransmissionState::handle_rejected_transmission(
-                    response,
-                    zb_hw::TransmissionError::Rejected.into(),
+                assert!(
+                    !state
+                        .finish_submission(token, Err(zb_hw::TransmissionError::Rejected.into()),)
                 );
 
                 assert!(matches!(
@@ -693,6 +964,85 @@ mod tests {
                         zb_hw::TransmissionError::Rejected
                     ))
                 ));
+            });
+    }
+
+    #[test]
+    fn confirmation_can_arrive_before_backend_submission_completion() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let mut state = TransmissionState::new();
+                let token = transmission_token(FIRST_COUNTER);
+                let (response, mut result) = tokio::sync::oneshot::channel();
+                state.store_submission(token, true, response);
+
+                state.handle_confirm(FIRST_COUNTER, ConfirmStatus::success());
+
+                assert!(result.try_recv().is_err());
+                assert!(!state.finish_submission(token, Ok(())));
+                assert!(result.await.expect("response must be available").is_ok());
+                assert!(state.responses.is_empty());
+            });
+    }
+
+    #[test]
+    fn cancellation_while_submitting_waits_for_acceptance_before_quarantine() {
+        let mut state = TransmissionState::new();
+        let token = transmission_token(FIRST_COUNTER);
+        let (response, _result) = tokio::sync::oneshot::channel();
+        state.store_submission(token, true, response);
+
+        state.cancel(token);
+
+        assert!(state.responses.contains_key(&FIRST_COUNTER));
+        assert!(!state.quarantined.contains_key(&FIRST_COUNTER));
+        assert!(state.finish_submission(token, Ok(())));
+        assert!(!state.responses.contains_key(&FIRST_COUNTER));
+        assert_eq!(
+            state.quarantined.get(&FIRST_COUNTER),
+            Some(&token.generation)
+        );
+    }
+
+    #[test]
+    fn cancelled_unacknowledged_submission_releases_counter_after_acceptance() {
+        let mut state = TransmissionState::new();
+        let token = transmission_token(FIRST_COUNTER);
+        let (response, _result) = tokio::sync::oneshot::channel();
+        state.store_submission(token, false, response);
+
+        state.cancel(token);
+
+        assert!(!state.finish_submission(token, Ok(())));
+        assert!(!state.responses.contains_key(&FIRST_COUNTER));
+        assert!(!state.quarantined.contains_key(&FIRST_COUNTER));
+    }
+
+    #[test]
+    fn network_down_while_submitting_quarantines_after_acceptance() {
+        Runtime::new()
+            .expect("runtime must be available")
+            .block_on(async {
+                let mut state = TransmissionState::new();
+                let token = transmission_token(FIRST_COUNTER);
+                let (response, result) = tokio::sync::oneshot::channel();
+                state.store_submission(token, true, response);
+
+                state.network_down(&zb_hw::TransmissionError::NoRoute.into());
+
+                assert!(matches!(
+                    result.await.expect("response must be available"),
+                    Err(zb_hw::Error::Transmission(
+                        zb_hw::TransmissionError::NoRoute
+                    ))
+                ));
+                assert!(state.responses.contains_key(&FIRST_COUNTER));
+                assert!(state.finish_submission(token, Ok(())));
+                assert_eq!(
+                    state.quarantined.get(&FIRST_COUNTER),
+                    Some(&token.generation)
+                );
             });
     }
 
@@ -879,7 +1229,7 @@ mod tests {
                 state.store_pending_response(transmission_token(FIRST_COUNTER), first_response);
                 state.store_pending_response(transmission_token(SECOND_COUNTER), second_response);
 
-                state.fail_all(&zb_hw::TransmissionError::NoRoute.into());
+                state.network_down(&zb_hw::TransmissionError::NoRoute.into());
 
                 for result in [first_result, second_result] {
                     assert!(matches!(
@@ -906,7 +1256,7 @@ mod tests {
                 state.store_pending_response(transmission_token(FIRST_COUNTER), first_response);
                 state.store_pending_response(transmission_token(SECOND_COUNTER), second_response);
 
-                state.fail_all(&zb_hw::Error::ActorUnavailable);
+                state.stop(&zb_hw::Error::ActorUnavailable);
 
                 for result in [first_result, second_result] {
                     assert!(matches!(
@@ -915,8 +1265,7 @@ mod tests {
                     ));
                 }
                 assert!(state.responses.is_empty());
-                assert!(state.quarantined.contains_key(&FIRST_COUNTER));
-                assert!(state.quarantined.contains_key(&SECOND_COUNTER));
+                assert!(state.quarantined.is_empty());
             });
     }
 

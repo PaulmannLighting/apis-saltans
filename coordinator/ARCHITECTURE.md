@@ -60,10 +60,12 @@ For every outgoing message it:
 
 1. consumes the supplied `zb_aps::apsde::DataRequest<bytes::Bytes>`
 2. assigns a counter that is neither pending nor quarantined
-3. forwards the request and counter to the hardware actor
-4. resolves an unacknowledged caller after hardware acceptance, or stores an acknowledged caller
+3. reserves the counter and spawns a background operation that forwards the request to the
+   hardware actor
+4. receives backend acceptance or rejection from that operation through its ordinary inbox
+5. resolves an unacknowledged caller after hardware acceptance, or retains an acknowledged caller
    under the counter
-5. quarantines counters released by dropped callers or network loss until the corresponding late
+6. quarantines counters released by dropped callers or network loss until the corresponding late
    confirmation arrives or its confirmation deadline makes the actor terminal
 
 Its command protocol contains:
@@ -73,10 +75,12 @@ Transmit {
     request: zb_aps::apsde::DataRequest<bytes::Bytes>,
     response: oneshot::Sender<Result<TransmissionResponse, crate::Error>>,
 }
+SubmissionFinished { token, result }
 Confirm { counter, status }
-Cancel { counter }
-ConfirmationTimeout { counter }
+Cancel { token }
+ConfirmationTimeout { token }
 NetworkDown
+HardwareUnavailable
 ```
 
 The `Aps` handle wraps the APS actor's `Sender<Message>`. Its inherent `transmit` method queues the
@@ -86,11 +90,19 @@ unacknowledged request. When its options contain `TxOptions::ACKNOWLEDGED_TRANSM
 destination is an individual network or extended address, hardware acceptance instead stores the
 sender until the APS result arrives. Group and broadcast transmissions never await APS
 acknowledgements. Its completion method forwards hardware APSDE confirmations from the mux.
-The actor reads exactly one bounded message inbox. Cancellation and confirmation-timeout events use
-that same inbox; timeout tasks hold a weak sender, sleep, and enqueue `ConfirmationTimeout`.
-Cancellation and timeout messages carry a coordinator-private allocation generation in addition to
-the counter. That generation never crosses the hardware boundary and prevents an old lifecycle
-message from removing a newer transmission after successful counter reuse.
+The actor never awaits backend acceptance in its message loop. Each submission runs in a spawned
+operation and posts `SubmissionFinished` back into the actor's one bounded inbox. This keeps the
+actor available for confirmations, cancellation, and network or hardware lifecycle messages while
+the NCP is slow. The counter remains reserved during submission. A confirmation that overtakes the
+submission-completion message is buffered until acceptance is known. Cancellation or network loss
+during submission drops or fails the caller but retains the reservation until rejection makes
+reuse safe or acceptance requires quarantine.
+
+Cancellation and confirmation-timeout events use the same inbox; timeout tasks hold a weak sender,
+sleep, and enqueue `ConfirmationTimeout`. Submission-completion, cancellation, and timeout
+messages carry a coordinator-private allocation generation in addition to the counter. That
+generation never crosses the hardware boundary and prevents an old lifecycle message from
+affecting a newer transmission after successful counter reuse.
 
 - Acknowledged unicast frame: retain the caller's response sender under the APS counter and await
   `ApsdeEvent::DataConfirm`.
@@ -107,13 +119,15 @@ timeout cannot stop the actor for a newer allocation.
 
 `Error::ApsCounterExhausted` can still report that all counters are concurrently pending or
 quarantined before their deadlines. Successful or failed confirmations release their counters
-immediately. Unacknowledged transmissions resolve without storing their response, and rejected
-transmissions never reach the pending-confirmation map.
+immediately. Unacknowledged transmissions release their reservation after backend acceptance
+without awaiting a confirmation, and rejected transmissions never enter the
+awaiting-confirmation phase.
 
 ```mermaid
 sequenceDiagram
     participant P as ZCL or ZDP actor
     participant A as APS actor
+    participant O as Submission operation
     participant H as Hardware actor
     participant M as Event mux
 
@@ -122,8 +136,10 @@ sequenceDiagram
     P->>A: Transmit request
     A-->>P: deferred transmission response
     A->>A: assign APS counter
-    A->>H: transmit request and counter
-    H-->>A: accepted
+    A->>O: spawn transmit request and counter
+    O->>H: transmit request and counter
+    H-->>O: accepted
+    O-->>A: SubmissionFinished
     alt unacknowledged transmission
         A-->>P: resolve deferred APS result
     else acknowledged transmission
