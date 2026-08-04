@@ -37,6 +37,7 @@ pub struct Transceiver {
     inbox: WeakSender<Message>,
 }
 
+/// Construction, startup, and actor-inbox processing.
 impl Transceiver {
     /// Create a ZCL transceiver.
     pub const fn new(aps: Aps, events: EventSink, inbox: WeakSender<Message>) -> Self {
@@ -47,6 +48,13 @@ impl Transceiver {
             responses: Registry::new(),
             inbox,
         }
+    }
+
+    /// Start the ZCL transceiver.
+    pub fn spawn(aps: Aps, events: EventSink) -> Sender<Message> {
+        let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
+        spawn(Self::new(aps, events, zcl_tx.downgrade()).run(zcl_rx));
+        zcl_tx
     }
 
     /// Run the transceiver.
@@ -121,7 +129,10 @@ impl Transceiver {
         }
         true
     }
+}
 
+/// Inbound response correlation, subscription delivery, and application-event routing.
+impl Transceiver {
     /// Handle a received ZCL message.
     fn handle_message_received(&mut self, indication: DataIndication<Frame<Cluster>, (), ()>) {
         let source = indication.metadata().source();
@@ -185,7 +196,10 @@ impl Transceiver {
 
         delivered
     }
+}
 
+/// Outbound ZCL transmission and request-response communication.
+impl Transceiver {
     /// Queue a ZCL message and return its deferred APS transmission result.
     ///
     /// # Returns
@@ -256,7 +270,10 @@ impl Transceiver {
 
         Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
     }
+}
 
+/// Pending-response cancellation, timeout, and quarantine lifecycle management.
+impl Transceiver {
     fn cancellation(&self, token: Token) -> Cancellation {
         let inbox = self.inbox.clone();
         let runtime = Handle::current();
@@ -312,7 +329,10 @@ impl Transceiver {
                 });
         });
     }
+}
 
+/// Outbound frame encoding and response-correlation key derivation.
+impl Transceiver {
     fn encode_request(
         request: DataRequest<UnsequencedFrame<Bytes>>,
         sequence_number: u8,
@@ -346,15 +366,6 @@ impl Transceiver {
             !request.asdu().header().control().direction(),
             sequence_number,
         ))
-    }
-}
-
-impl Transceiver {
-    /// Start the ZCL transceiver.
-    pub fn spawn(aps: Aps, events: EventSink) -> Sender<Message> {
-        let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(aps, events, zcl_tx.downgrade()).run(zcl_rx));
-        zcl_tx
     }
 }
 
