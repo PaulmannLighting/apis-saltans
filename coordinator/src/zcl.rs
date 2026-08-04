@@ -241,6 +241,7 @@ impl Transceiver {
             .responses
             .try_register(|sequence| Self::request_key(&request, sequence))?;
         self.schedule_response_timeout(token);
+
         let request = Self::encode_request(request, sequence_number);
 
         let transmission = match self.aps.transmit(request).await {
@@ -250,6 +251,7 @@ impl Transceiver {
                 return Err(error);
             }
         };
+
         let cancellation = self.cancellation(token);
 
         Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
@@ -258,6 +260,7 @@ impl Transceiver {
     fn cancellation(&self, token: Token) -> Cancellation {
         let inbox = self.inbox.clone();
         let runtime = Handle::current();
+
         Cancellation::new(token, move |token| {
             let Some(inbox) = inbox.upgrade() else {
                 return;
