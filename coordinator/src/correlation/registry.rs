@@ -37,10 +37,29 @@ impl<T> Registry<T> {
         }
     }
 
-    /// Allocate and register a response correlation.
+    /// Allocate and register an infallibly constructed response correlation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::TransactionSequenceExhausted`] when every identity is
+    /// pending or quarantined.
     pub fn register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
     where
         F: Fn(u8) -> Key,
+    {
+        self.try_register(|sequence| Ok(key_for_sequence(sequence)))
+    }
+
+    /// Allocate and register a fallibly constructed response correlation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error produced while constructing the key for the selected
+    /// sequence, or [`Error::TransactionSequenceExhausted`] when every identity
+    /// is pending or quarantined.
+    pub fn try_register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
+    where
+        F: Fn(u8) -> Result<Key, Error>,
     {
         let (sequence, key) = self.allocate(&key_for_sequence)?;
         let token = Token::new(key, self.next_generation);
@@ -194,11 +213,11 @@ impl<T> Registry<T> {
 
     fn allocate<F>(&mut self, key_for_sequence: &F) -> Result<(u8, Key), Error>
     where
-        F: Fn(u8) -> Key,
+        F: Fn(u8) -> Result<Key, Error>,
     {
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
             let sequence = self.take_next_sequence();
-            let key = key_for_sequence(sequence);
+            let key = key_for_sequence(sequence)?;
             if self.key_is_available(key) {
                 return Ok((sequence, key));
             }
@@ -265,6 +284,17 @@ mod tests {
             Err(Error::TransactionSequenceExhausted)
         ));
         assert_eq!(responses.len(), TRANSACTION_SEQUENCE_COUNT);
+    }
+
+    #[test]
+    fn registration_propagates_key_construction_errors() {
+        let mut registry = Registry::<()>::new();
+
+        assert!(matches!(
+            registry.try_register(|_| Err(Error::SendError)),
+            Err(Error::SendError)
+        ));
+        assert!(registry.pending.is_empty());
     }
 
     #[test]

@@ -237,11 +237,9 @@ impl Transceiver {
         &mut self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<ApsProtocolResponse<Cluster>, Error> {
-        Self::request_key(&request, u8::MIN)?;
-        let (sequence_number, token, rx) = self.responses.register(|sequence| {
-            Self::request_key(&request, sequence)
-                .expect("ZCL communication destination was validated")
-        })?;
+        let (sequence_number, token, rx) = self
+            .responses
+            .try_register(|sequence| Self::request_key(&request, sequence))?;
         self.schedule_response_timeout(token);
         let request = Self::encode_request(request, sequence_number);
 
