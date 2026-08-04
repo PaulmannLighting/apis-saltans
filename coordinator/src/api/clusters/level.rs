@@ -1,5 +1,4 @@
-use zb_aps::apsde::IndividualEndpoint;
-use zb_core::Destination;
+use zb_aps::apsde::{IndividualEndpoint, RequestDestination};
 use zb_core::units::{Deciseconds, UnitsPerSecond};
 use zb_zcl::Options;
 use zb_zcl::level::{
@@ -23,7 +22,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_level(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         level: u8,
         transition_time: Deciseconds,
@@ -37,7 +36,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn r#move(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         mode: Mode<UnitsPerSecond>,
         options: Options,
@@ -50,7 +49,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn step(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         mode: Mode<u8>,
         transition_time: Deciseconds,
@@ -64,7 +63,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn stop(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -76,7 +75,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_level_with_on_off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         level: u8,
         transition_time: Deciseconds,
@@ -90,7 +89,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_with_on_off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         mode: Mode<UnitsPerSecond>,
         options: Options,
@@ -103,7 +102,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn step_with_on_off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         mode: Mode<u8>,
         transition_time: Deciseconds,
@@ -117,7 +116,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn stop_with_on_off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -129,7 +128,7 @@ pub trait Level {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_closest_frequency(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         frequency: u16,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -141,7 +140,7 @@ where
 {
     async fn move_to_level(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         level: u8,
         transition_time: Deciseconds,
@@ -157,7 +156,7 @@ where
 
     async fn r#move(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         mode: Mode<UnitsPerSecond>,
         options: Options,
@@ -172,7 +171,7 @@ where
 
     async fn step(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         mode: Mode<u8>,
         transition_time: Deciseconds,
@@ -188,7 +187,7 @@ where
 
     async fn stop(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> Result<(), Error> {
@@ -202,7 +201,7 @@ where
 
     async fn move_to_level_with_on_off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         level: u8,
         transition_time: Deciseconds,
@@ -218,7 +217,7 @@ where
 
     async fn move_with_on_off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         mode: Mode<UnitsPerSecond>,
         options: Options,
@@ -233,7 +232,7 @@ where
 
     async fn step_with_on_off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         mode: Mode<u8>,
         transition_time: Deciseconds,
@@ -249,7 +248,7 @@ where
 
     async fn stop_with_on_off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         options: Options,
     ) -> Result<(), Error> {
@@ -263,7 +262,7 @@ where
 
     async fn move_to_closest_frequency(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         frequency: u16,
     ) -> Result<(), Error> {

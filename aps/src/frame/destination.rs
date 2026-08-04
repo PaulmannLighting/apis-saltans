@@ -26,16 +26,6 @@ impl Display for Destination {
     }
 }
 
-impl From<zb_core::Destination> for Destination {
-    fn from(destination: zb_core::Destination) -> Self {
-        match destination {
-            zb_core::Destination::Device(device) => Self::Unicast(device.endpoint()),
-            zb_core::Destination::Broadcast(broadcast) => Self::Broadcast(broadcast.endpoint()),
-            zb_core::Destination::Group(group_id) => Self::Group(group_id.into()),
-        }
-    }
-}
-
 impl ToLeStream for Destination {
     type Iter = iterator::DestinationIterator;
 

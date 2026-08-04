@@ -6,7 +6,7 @@ This crate provides:
 - protocol-level data types (`types::Type`, scalar wrappers, strings, dates/times)
 - Type-Length-Value (TLV) structures (`types::tlv`)
 - core identifiers and enums (`Endpoint`, `ShortId`, `Device`, `Profile`, `Direction`, `Cluster`)
-- destination, address, group, and node representation (`Destination`, `FullAddress`, `GroupId`, `node::Node`, descriptor bitfields)
+- address, group, and node representation (`FullAddress`, `GroupId`, `node::Node`, descriptor bitfields)
 - utility traits used across protocol layers (`ExpectResponse`, `ClusterSpecific`, `Profiled`, `TypeId`)
 
 ## Status
@@ -42,7 +42,6 @@ zb-core = { path = "../core", features = ["serde"] }
 Top-level re-exports from `apis-saltans-core`:
 - `ByteSizedVec`
 - `Cluster`, `ClusterSpecific`
-- `Destination`
 - `Device`
 - `Direction`
 - `Endpoint`, `Application`
@@ -52,7 +51,7 @@ Top-level re-exports from `apis-saltans-core`:
 - `Profile`, `Profiled`
 - `ShortId`
 - `ExpectResponse`, `TypeId`
-- modules: `constants`, `destination`, `endpoint`, `node`, `short_id`, `types`, `units`
+- modules: `constants`, `endpoint`, `node`, `short_id`, `types`, `units`
 
 Applying the logical-not operator to a `Direction` returns its opposite, so
 `!Direction::ClientToServer` evaluates to `Direction::ServerToClient`.
@@ -63,12 +62,10 @@ Key modules:
 - `node`: node descriptors and capability flags
 - `short_id`: device, coordinator, and broadcast NWK short-address values
 - `endpoint`: data, application, and broadcast endpoint values
-- `destination`: outbound device, broadcast, and group destinations
 - `units`: shared unit wrappers (`Deciseconds`, `Mireds`, `UnitsPerSecond`)
 
 Nested domain helpers:
-- `destination::Device` and `destination::Broadcast`: destination payloads for `Destination`.
-- `endpoint::Broadcast` and `endpoint::Reserved`: endpoint selectors used for broadcast delivery and rejected reserved IDs.
+- `endpoint::Application`: the validated application-endpoint subrange.
 - `short_id::Device` and `short_id::Broadcast`: validated NWK short-address subranges.
 - `FullAddress`: a resolved pair of IEEE address and NWK short address for one device.
 

@@ -5,8 +5,9 @@ use log::{debug, warn};
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
-use zb_aps::apsde::{DataIndication, IndividualEndpoint, ReceivedDestination, Source};
-use zb_core::destination::Device;
+use zb_aps::apsde::{
+    DataIndication, IndividualEndpoint, NetworkDestination, ReceivedDestination, Source,
+};
 use zb_core::{Cluster, Direction, FullAddress, IeeeAddress};
 use zb_hw::NcpHandle;
 use zb_zcl::global::default_response::DefaultResponse;
@@ -20,7 +21,10 @@ use zb_zcl::{
 
 use super::state::RequestContext;
 use super::transfer::{Offer, Transfer, TransferExit, TransferMessage};
-use super::{Message, OTA_PROFILE, UpdateError, reply_zcl, request_from_unsequenced_frame, zcl};
+use super::{
+    Message, OTA_PROFILE, UpdateError, network_destination, reply_zcl,
+    request_from_unsequenced_frame, zcl,
+};
 
 /// Handle used by the OTA server to route messages to one destination transfer.
 #[derive(Debug)]
@@ -72,7 +76,7 @@ pub struct Server {
     sender: WeakSender<ServerEvent>,
     inbound: Receiver<ServerEvent>,
     subscription: Option<ActiveSubscription>,
-    transfers: BTreeMap<Device, ActiveTransfer>,
+    transfers: BTreeMap<NetworkDestination, ActiveTransfer>,
     update_task_limit: usize,
 }
 
@@ -194,7 +198,7 @@ impl Server {
 
     /// Replace an existing destination update or admit a new destination transfer task.
     async fn update(&mut self, offer: Offer) {
-        let destination = Device::new(offer.target.short_id(), offer.target_endpoint.get());
+        let destination = network_destination(offer.target.short_id(), offer.target_endpoint);
         let existing_transfer = self
             .transfers
             .get(&destination)
@@ -280,7 +284,7 @@ impl Server {
 
     /// Spawn and register the sole destination task for a newly admitted update.
     fn start_transfer(&mut self, offer: Offer) {
-        let destination = Device::new(offer.target.short_id(), offer.target_endpoint.get());
+        let destination = network_destination(offer.target.short_id(), offer.target_endpoint);
         let target = offer.target;
         let (messages, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
         let transfer = Transfer::new(self.zcl.clone(), messages.downgrade(), offer, inbound);
@@ -352,7 +356,7 @@ impl Server {
         let (_, zcl_frame) = indication.into_parts();
         let (zcl_header, command) = zcl_frame.into_parts();
         let context = RequestContext {
-            destination: Device::new(short_id, endpoint.get()),
+            destination: NetworkDestination::new(source_address, endpoint),
             source_endpoint,
             sequence_number: zcl_header.seq(),
         };
@@ -430,7 +434,7 @@ impl Server {
     }
 
     /// Remove `destination` only when it still names `task_id`.
-    fn remove_transfer(&mut self, destination: Device, task_id: Id) {
+    fn remove_transfer(&mut self, destination: NetworkDestination, task_id: Id) {
         let is_current = self
             .transfers
             .get(&destination)

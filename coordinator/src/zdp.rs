@@ -11,12 +11,13 @@ use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::task::AbortHandle;
 use tokio::time::sleep;
-use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress, ReceivedDestination};
+use zb_aps::apsde::{
+    DataIndication, DataRequest, IndividualEndpoint, NetworkAddress, NetworkDestination,
+    ReceivedDestination, RequestDestination,
+};
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
-use zb_core::{
-    ClusterSpecific, Destination, Endpoint, FullAddress, IeeeAddress, Profile, destination,
-};
+use zb_core::{ClusterSpecific, Endpoint, FullAddress, IeeeAddress, Profile};
 use zb_hw::NcpHandle;
 use zb_zdp::{
     ActiveEpReq, ActiveEpRsp, Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame, IeeeAddrReq,
@@ -686,10 +687,15 @@ impl Server {
     where
         T: ClusterSpecific + ToLeStream,
     {
-        let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
+        let destination: RequestDestination = NetworkDestination::new(
+            NetworkAddress::new(device.as_u16())
+                .expect("device short addresses are valid APSDE network addresses"),
+            IndividualEndpoint::new(Endpoint::Data).expect("ZDO endpoint is individual"),
+        )
+        .into();
         let request = crate::aps::data_request(
             destination,
-            Endpoint::Data,
+            IndividualEndpoint::new(Endpoint::Data).expect("ZDO endpoint is individual"),
             Metadata::new(Profile::Network, T::ID),
             Frame::new(seq, payload).to_le_stream().collect(),
         );
@@ -918,11 +924,12 @@ mod tests {
     use tokio::time::timeout;
     use zb_aps::apsde::{
         ConfirmStatus, DataIndication, IndicationMetadata, IndicationStatus, IndividualEndpoint,
-        NetworkAddress, ReceivedDestination, Security, Source, Status as ApsStatus,
+        NetworkAddress, NetworkDestination, ReceivedDestination, RequestDestination, Security,
+        Source, Status as ApsStatus,
     };
     use zb_core::node::Descriptor;
     use zb_core::short_id::Device;
-    use zb_core::{ClusterSpecific, Destination, Endpoint, IeeeAddress, Profile, destination};
+    use zb_core::{ClusterSpecific, Endpoint, IeeeAddress, Profile};
     use zb_hw::{
         ChannelMask, Driver, Error as HardwareError, FoundNetwork, Operation, ScanDuration,
         ScannedChannel,
@@ -1246,9 +1253,11 @@ mod tests {
     }
 
     fn communication_request(device: Device) -> zb_aps::apsde::DataRequest<Bytes> {
+        let destination: RequestDestination =
+            NetworkDestination::new(network_address(device.as_u16()), data_endpoint()).into();
         crate::aps::data_request(
-            Destination::Device(destination::Device::new(device, Endpoint::Data)),
-            Endpoint::Data,
+            destination,
+            data_endpoint(),
             Metadata::new(Profile::Network, <ActiveEpReq as ClusterSpecific>::ID),
             ActiveEpReq::new(REMOTE_ADDRESS).to_le_stream().collect(),
         )

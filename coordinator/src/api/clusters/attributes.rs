@@ -1,5 +1,4 @@
-use zb_aps::apsde::IndividualEndpoint;
-use zb_core::destination::Device;
+use zb_aps::apsde::{IndividualEndpoint, NetworkDestination};
 use zb_core::{ClusterSpecific, Profiled};
 use zb_zcl::global::{configure_reporting, read_attributes, write_attributes};
 use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
@@ -22,7 +21,7 @@ pub type WriteAttributeResult = Result<u16, u16>;
 
 /// Trait for ZCL global attribute operations.
 ///
-/// The `device` argument contains the target short address and endpoint. Applications are
+/// The `destination` argument contains the target NWK address and individual endpoint. Applications are
 /// responsible for discovering and storing those addresses before using this trait. Every
 /// operation also requires the local APS source endpoint.
 pub trait Attributes {
@@ -40,7 +39,7 @@ pub trait Attributes {
     /// transmission, reception, and response-conversion errors when awaited.
     fn configure_reporting<T>(
         &self,
-        device: Device,
+        destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: T,
     ) -> impl Future<Output = Result<ZclResponse<configure_reporting::Response>, Error>> + Send
@@ -58,7 +57,7 @@ pub trait Attributes {
     /// Returns an [Error] if communication fails or the response is invalid.
     fn read<T>(
         &self,
-        device: Device,
+        destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: T,
     ) -> impl Future<Output = Result<Box<[ReadAttributeResult<T::Item>]>, Error>> + Send
@@ -75,7 +74,7 @@ pub trait Attributes {
     /// Returns an [`Error`] if communication fails or the response is invalid.
     fn write<T>(
         &self,
-        device: Device,
+        destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: T,
     ) -> impl Future<Output = Result<Vec<WriteAttributeResult>, Error>> + Send
@@ -90,7 +89,7 @@ where
 {
     async fn configure_reporting<U>(
         &self,
-        device: Device,
+        destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: U,
     ) -> Result<ZclResponse<configure_reporting::Response>, Error>
@@ -98,7 +97,7 @@ where
         U: IntoIterator<Item: Reportable, IntoIter: Send> + Send,
     {
         self.communicate(crate::api::zcl::request_with_ids(
-            device.into(),
+            destination.into(),
             source_endpoint,
             <U::Item as Profiled>::PROFILE.as_u16(),
             <U::Item as ClusterSpecific>::ID,
@@ -109,7 +108,7 @@ where
 
     async fn read<U>(
         &self,
-        device: Device,
+        destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: U,
     ) -> Result<Box<[ReadAttributeResult<U::Item>]>, Error>
@@ -118,7 +117,7 @@ where
     {
         Ok(self
             .communicate::<read_attributes::Response>(crate::api::zcl::request_with_ids(
-                device.into(),
+                destination.into(),
                 source_endpoint,
                 <U::Item as Profiled>::PROFILE.as_u16(),
                 <U::Item as ClusterSpecific>::ID,
@@ -131,7 +130,7 @@ where
 
     async fn write<U>(
         &self,
-        device: Device,
+        destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: U,
     ) -> Result<Vec<WriteAttributeResult>, Error>
@@ -140,7 +139,7 @@ where
     {
         Ok(self
             .communicate::<write_attributes::Response>(crate::api::zcl::request_with_ids(
-                device.into(),
+                destination.into(),
                 source_endpoint,
                 <U::Item as Profiled>::PROFILE.as_u16(),
                 <U::Item as ClusterSpecific>::ID,

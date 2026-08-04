@@ -1,5 +1,4 @@
-use zb_aps::apsde::IndividualEndpoint;
-use zb_core::Destination;
+use zb_aps::apsde::{IndividualEndpoint, RequestDestination};
 use zb_core::units::{Deciseconds, Mireds};
 use zb_zcl::Options;
 use zb_zcl::color_control::{MoveToColor, MoveToColorTemperature};
@@ -20,7 +19,7 @@ pub trait ColorControl {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_xy(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         color_x: u16,
         color_y: u16,
@@ -35,7 +34,7 @@ pub trait ColorControl {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn move_to_color_temperature(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         color_temperature: Mireds,
         transition_time: Deciseconds,
@@ -49,7 +48,7 @@ where
 {
     async fn move_to_xy(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         color_x: u16,
         color_y: u16,
@@ -66,7 +65,7 @@ where
 
     async fn move_to_color_temperature(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         color_temperature: Mireds,
         transition_time: Deciseconds,

@@ -12,7 +12,7 @@
 
 pub use self::address::{
     AddressMode, BroadcastAddress, Destination, IndividualEndpoint, NetworkAddress,
-    ReceivedDestination, RequestDestination, Source,
+    NetworkDestination, ReceivedDestination, RequestDestination, Source,
 };
 pub use self::alias::Alias;
 pub use self::confirm::{ConfirmStatus, DataConfirm};

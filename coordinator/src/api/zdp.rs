@@ -2,9 +2,11 @@ use bytes::Bytes;
 use le_stream::ToLeStream;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
-use zb_aps::apsde::DataRequest;
+use zb_aps::apsde::{
+    DataRequest, IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination,
+};
 use zb_core::short_id::Device;
-use zb_core::{ClusterSpecific, Destination, Endpoint, ExpectResponse, Profile, destination};
+use zb_core::{ClusterSpecific, Endpoint, ExpectResponse, Profile};
 use zb_zdp::Command;
 
 use crate::aps::Metadata;
@@ -52,10 +54,15 @@ impl Zdp for Sender<Message> {
         T: ClusterSpecific + ExpectResponse<Command> + ToLeStream,
     {
         let (response, result) = channel();
-        let destination = Destination::Device(destination::Device::new(device, Endpoint::Data));
+        let destination: RequestDestination = NetworkDestination::new(
+            NetworkAddress::new(device.as_u16())
+                .expect("device short addresses are valid APSDE network addresses"),
+            IndividualEndpoint::new(Endpoint::Data).expect("ZDO endpoint is individual"),
+        )
+        .into();
         let request: DataRequest<Bytes> = crate::aps::data_request(
             destination,
-            Endpoint::Data,
+            IndividualEndpoint::new(Endpoint::Data).expect("ZDO endpoint is individual"),
             Metadata::new(Profile::Network, T::ID),
             command.to_le_stream().collect(),
         );

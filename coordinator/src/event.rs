@@ -1,7 +1,7 @@
 use zb_aps::apsde::DataIndication;
 use zb_zcl::{Cluster, Frame};
 
-pub use self::device::Device;
+pub use self::device::{Device, KeepAlive};
 pub use self::network::{Error as NetworkError, Network};
 pub use self::sink::EventSink;
 

@@ -6,8 +6,8 @@ use log::trace;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zb_aps::TxOptions;
-use zb_aps::apsde::{DataRequest, IndividualEndpoint};
-use zb_core::{ClusterSpecific, Destination, Profiled};
+use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination};
+use zb_core::{ClusterSpecific, Profiled};
 use zb_zcl::global::default_response::DefaultResponse;
 use zb_zcl::{Cluster, Command, Directed, Scoped, UnsequencedFrame};
 
@@ -24,7 +24,7 @@ pub type ZclResponse<T> = CommunicationResponse<Cluster, T>;
 
 /// Construct a ZCL data request using a command's profile and cluster identifiers.
 pub fn request<T>(
-    destination: Destination,
+    destination: RequestDestination,
     source_endpoint: IndividualEndpoint,
     command: T,
 ) -> DataRequest<UnsequencedFrame<Bytes>>
@@ -45,7 +45,7 @@ where
 /// This sets the disable-default-response flag explicitly. Use [`request`] with
 /// [`Zcl::communicate`] when the command has a cluster-specific response.
 pub fn request_without_response<T>(
-    destination: Destination,
+    destination: RequestDestination,
     source_endpoint: IndividualEndpoint,
     command: T,
 ) -> DataRequest<UnsequencedFrame<Bytes>>
@@ -58,20 +58,14 @@ where
 
 /// Construct a ZCL data request using explicitly selected profile and cluster identifiers.
 pub const fn request_with_ids(
-    destination: Destination,
+    destination: RequestDestination,
     source_endpoint: IndividualEndpoint,
     profile_id: u16,
     cluster_id: u16,
     frame: UnsequencedFrame<Bytes>,
 ) -> DataRequest<UnsequencedFrame<Bytes>> {
-    DataRequest::new(
-        crate::aps::request_destination(destination),
-        profile_id,
-        cluster_id,
-        source_endpoint,
-        frame,
-    )
-    .with_tx_options(DEFAULT_TX_OPTIONS)
+    DataRequest::new(destination, profile_id, cluster_id, source_endpoint, frame)
+        .with_tx_options(DEFAULT_TX_OPTIONS)
 }
 
 /// Trait for sending ZCL commands.
@@ -215,10 +209,11 @@ fn validate_default_response(command_id: u8, response: &DefaultResponse) -> Resu
 
 #[cfg(test)]
 mod tests {
-    use zb_aps::apsde::IndividualEndpoint;
-    use zb_core::destination::Device;
+    use zb_aps::apsde::{
+        IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination,
+    };
+    use zb_core::Endpoint;
     use zb_core::endpoint::Application;
-    use zb_core::{Endpoint, short_id};
     use zb_zcl::Command;
     use zb_zcl::global::default_response::DefaultResponse;
     use zb_zcl::on_off::On;
@@ -263,10 +258,10 @@ mod tests {
         ));
     }
 
-    fn destination() -> zb_core::Destination {
-        Device::new(
-            short_id::Device::new(DEVICE_ID).expect("test device ID is valid"),
-            Endpoint::Application(Application::MIN),
+    fn destination() -> RequestDestination {
+        NetworkDestination::new(
+            NetworkAddress::new(DEVICE_ID).expect("test device ID is valid"),
+            source_endpoint(),
         )
         .into()
     }

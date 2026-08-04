@@ -31,10 +31,6 @@ crate::zdp_command! {
         }
 
         /// Returns the endpoint.
-        ///
-        /// # Errors
-        ///
-        /// Returns [`Reserved`] if the raw endpoint value is reserved.
         #[must_use]
         pub fn endpoint(self) -> Endpoint {
             self.endpoint.into()

@@ -15,7 +15,6 @@
 
 pub use self::byte_sized_vec::ByteSizedVec;
 pub use self::cluster::{Cluster, ClusterSpecific, ParseClusterError};
-pub use self::destination::Destination;
 pub use self::device::{Device, ParseDeviceError};
 pub use self::direction::Direction;
 pub use self::endpoint::{Application, Endpoint, ParseApplicationError, ParseEndpointError};
@@ -31,8 +30,6 @@ mod cluster;
 pub mod constants;
 #[macro_use]
 mod macros;
-/// Outbound Zigbee destination types.
-pub mod destination;
 mod device;
 mod direction;
 /// Zigbee endpoint domain types.

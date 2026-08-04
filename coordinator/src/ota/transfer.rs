@@ -9,8 +9,7 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot;
 use tokio::task::{AbortHandle, Id, JoinError, JoinSet};
 use tokio::time::sleep;
-use zb_aps::apsde::IndividualEndpoint;
-use zb_core::destination::Device;
+use zb_aps::apsde::{IndividualEndpoint, NetworkDestination};
 use zb_core::{Cluster, Direction, FullAddress, IeeeAddress};
 use zb_zcl::global::default_response::DefaultResponse;
 use zb_zcl::ota_upgrade::{
@@ -27,8 +26,8 @@ use super::page_transfer::PageTransfer;
 use super::state::RequestContext;
 use super::{
     CURRENT_TIME_IMMEDIATE, Image, OTA_PROFILE, Request, UPGRADE_TIME_IMMEDIATE, UpdateError,
-    UpdateResult, UpdateTimeouts, reply_zcl, request, request_from_unsequenced_frame, send_zcl,
-    zcl,
+    UpdateResult, UpdateTimeouts, network_destination, reply_zcl, request,
+    request_from_unsequenced_frame, send_zcl, zcl,
 };
 
 const INITIAL_GENERATION: u64 = 0;
@@ -79,7 +78,7 @@ pub(super) struct Offer {
 
 /// Normal completion notification from a destination transfer task.
 pub(super) struct TransferExit {
-    pub(super) destination: Device,
+    pub(super) destination: NetworkDestination,
     pub(super) completion: oneshot::Sender<UpdateResult>,
     pub(super) result: UpdateResult,
 }
@@ -612,8 +611,8 @@ impl Transfer {
         });
     }
 
-    const fn destination(&self) -> Device {
-        Device::new(self.target.short_id(), self.target_endpoint.get())
+    const fn destination(&self) -> NetworkDestination {
+        network_destination(self.target.short_id(), self.target_endpoint)
     }
 }
 

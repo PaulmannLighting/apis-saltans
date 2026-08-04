@@ -10,11 +10,7 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot::{Sender as OneshotSender, channel};
 use tokio::time::sleep;
 use zb_aps::TxOptions;
-use zb_aps::apsde::{
-    BroadcastAddress, ConfirmStatus, DataRequest, IndividualEndpoint, NetworkAddress,
-    RequestDestination,
-};
-use zb_core::{Destination, Endpoint, short_id};
+use zb_aps::apsde::{ConfirmStatus, DataRequest, IndividualEndpoint, RequestDestination};
 use zb_hw::NcpHandle;
 
 pub use self::message::Message;
@@ -28,7 +24,6 @@ mod transmission_response;
 
 const CONFIRMATION_TIMEOUT: Duration = Duration::from_secs(30);
 const APS_COUNTER_COUNT: usize = 1_usize << u8::BITS;
-const GROUP_BROADCAST_ADDRESS: u16 = short_id::Broadcast::AllDevices.as_u16();
 const INITIAL_COUNTER: u8 = 0;
 const INITIAL_GENERATION: u64 = 0;
 
@@ -43,15 +38,11 @@ pub struct TransmissionToken {
 
 /// Construct an APS data-service request from coordinator destination metadata.
 pub const fn data_request(
-    destination: Destination,
-    source_endpoint: Endpoint,
+    destination: RequestDestination,
+    source_endpoint: IndividualEndpoint,
     metadata: Metadata,
     asdu: Bytes,
 ) -> DataRequest<Bytes> {
-    let destination = request_destination(destination);
-    let source_endpoint = IndividualEndpoint::new(source_endpoint)
-        .expect("coordinator transmissions use an individual source endpoint");
-
     DataRequest::new(
         destination,
         metadata.profile().as_u16(),
@@ -60,27 +51,6 @@ pub const fn data_request(
         asdu,
     )
     .with_tx_options(metadata.tx_options())
-}
-
-/// Convert a coordinator destination into APSDE request addressing.
-#[must_use]
-pub const fn request_destination(destination: Destination) -> RequestDestination {
-    match destination {
-        Destination::Device(device) => RequestDestination::Network {
-            address: NetworkAddress::new(device.device().as_u16())
-                .expect("device short addresses are valid APSDE network addresses"),
-            endpoint: device.endpoint(),
-        },
-        Destination::Broadcast(broadcast) => RequestDestination::Broadcast {
-            address: broadcast.address(),
-            endpoint: broadcast.endpoint(),
-        },
-        Destination::Group(address) => RequestDestination::Group {
-            address,
-            broadcast_address: BroadcastAddress::new(GROUP_BROADCAST_ADDRESS)
-                .expect("the all-devices address is a valid APSDE broadcast address"),
-        },
-    }
 }
 
 const fn acknowledged<T>(request: &DataRequest<T>) -> bool {
@@ -549,8 +519,10 @@ mod tests {
     use tokio::runtime::Runtime;
     use tokio::sync::mpsc::channel;
     use zb_aps::TxOptions;
-    use zb_aps::apsde::{ConfirmStatus, Status as ApsStatus};
-    use zb_core::destination::{Broadcast, Destination, Device};
+    use zb_aps::apsde::{
+        BroadcastAddress, ConfirmStatus, IndividualEndpoint, NetworkAddress, NetworkDestination,
+        RequestDestination, Status as ApsStatus,
+    };
     use zb_core::endpoint::Application;
     use zb_core::short_id::Device as ShortDevice;
     use zb_core::{Endpoint, GroupId, IeeeAddress, Profile, short_id};
@@ -655,19 +627,31 @@ mod tests {
         Endpoint::Application(Application::MIN)
     }
 
-    fn unicast_destination() -> Destination {
-        let device = short_id::Device::new(DEVICE_ID).expect("test device ID is valid");
-        Device::new(device, application_endpoint()).into()
+    const fn individual_endpoint() -> IndividualEndpoint {
+        IndividualEndpoint::new(application_endpoint()).expect("application endpoint is individual")
     }
 
-    fn broadcast_destination() -> Destination {
-        Broadcast::new(short_id::Broadcast::AllDevices, Endpoint::Broadcast).into()
+    fn unicast_destination() -> RequestDestination {
+        NetworkDestination::new(
+            NetworkAddress::new(DEVICE_ID).expect("test device ID is valid"),
+            individual_endpoint(),
+        )
+        .into()
     }
 
-    fn group_destination() -> Destination {
-        GroupId::new(GROUP_ID)
-            .expect("test group ID is valid")
-            .into()
+    const fn broadcast_destination() -> RequestDestination {
+        RequestDestination::Broadcast {
+            address: short_id::Broadcast::AllDevices,
+            endpoint: Endpoint::Broadcast,
+        }
+    }
+
+    fn group_destination() -> RequestDestination {
+        RequestDestination::Group {
+            address: GroupId::new(GROUP_ID).expect("test group ID is valid"),
+            broadcast_address: BroadcastAddress::new(short_id::Broadcast::AllDevices.as_u16())
+                .expect("all-devices is a valid APSDE group broadcast selector"),
+        }
     }
 
     const fn metadata() -> Metadata {
@@ -675,11 +659,11 @@ mod tests {
     }
 
     fn request(
-        destination: Destination,
+        destination: RequestDestination,
         tx_options: TxOptions,
         payload: Bytes,
     ) -> zb_aps::apsde::DataRequest<Bytes> {
-        data_request(destination, application_endpoint(), metadata(), payload)
+        data_request(destination, individual_endpoint(), metadata(), payload)
             .with_tx_options(tx_options)
     }
 
@@ -696,7 +680,7 @@ mod tests {
                     aps.transmit(
                         data_request(
                             unicast_destination(),
-                            application_endpoint(),
+                            individual_endpoint(),
                             metadata,
                             Bytes::from_static(PAYLOAD),
                         )

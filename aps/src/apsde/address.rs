@@ -46,11 +46,22 @@ pub struct NetworkAddress(u16);
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct BroadcastAddress(u16);
 
-/// An endpoint that addresses one local application or the ZDO data service.
+/// "An endpoint that addresses one local application or the ZDO data service".
 ///
 /// The APS broadcast endpoint is deliberately excluded.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct IndividualEndpoint(Endpoint);
+
+/// An individually addressed 16-bit NWK destination.
+///
+/// This type is useful for APS operations that require a response-capable
+/// unicast destination. Unlike [`RequestDestination::Network`], it excludes
+/// the APS broadcast endpoint.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct NetworkDestination {
+    address: NetworkAddress,
+    endpoint: IndividualEndpoint,
+}
 
 /// Destination fields accepted by an `APSDE-DATA.request`.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -227,6 +238,50 @@ impl IndividualEndpoint {
     }
 }
 
+impl NetworkDestination {
+    /// Create an individually addressed NWK destination.
+    #[must_use]
+    pub const fn new(address: NetworkAddress, endpoint: IndividualEndpoint) -> Self {
+        Self { address, endpoint }
+    }
+
+    /// Return the destination NWK address.
+    #[must_use]
+    pub const fn address(self) -> NetworkAddress {
+        self.address
+    }
+
+    /// Return the destination endpoint.
+    #[must_use]
+    pub const fn endpoint(self) -> IndividualEndpoint {
+        self.endpoint
+    }
+}
+
+impl Display for NetworkDestination {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.address, formatter)?;
+        formatter.write_str(":")?;
+        Display::fmt(&self.endpoint.get(), formatter)
+    }
+}
+
+impl LowerHex for NetworkDestination {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        LowerHex::fmt(&self.address, formatter)?;
+        formatter.write_str(":")?;
+        LowerHex::fmt(&self.endpoint.get(), formatter)
+    }
+}
+
+impl UpperHex for NetworkDestination {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        UpperHex::fmt(&self.address, formatter)?;
+        formatter.write_str(":")?;
+        UpperHex::fmt(&self.endpoint.get(), formatter)
+    }
+}
+
 impl RequestDestination {
     /// Return the APSDE destination addressing mode.
     #[must_use]
@@ -236,6 +291,15 @@ impl RequestDestination {
             Self::Group { .. } => AddressMode::Group,
             Self::Broadcast { .. } | Self::Network { .. } => AddressMode::Network,
             Self::Extended { .. } => AddressMode::Extended,
+        }
+    }
+}
+
+impl From<NetworkDestination> for RequestDestination {
+    fn from(destination: NetworkDestination) -> Self {
+        Self::Network {
+            address: destination.address,
+            endpoint: destination.endpoint.get(),
         }
     }
 }
@@ -395,6 +459,26 @@ mod tests {
     fn individual_endpoint_rejects_the_broadcast_endpoint() {
         assert!(IndividualEndpoint::new(Endpoint::Data).is_some());
         assert!(IndividualEndpoint::new(Endpoint::Broadcast).is_none());
+    }
+
+    #[test]
+    fn network_destination_converts_to_an_individual_request_destination() {
+        const NETWORK_ADDRESS: u16 = 0x1234;
+
+        let address = NetworkAddress::new(NETWORK_ADDRESS).expect("test NWK address is valid");
+        let endpoint =
+            IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
+        let destination = super::NetworkDestination::new(address, endpoint);
+
+        assert_eq!(destination.address(), address);
+        assert_eq!(destination.endpoint(), endpoint);
+        assert_eq!(
+            RequestDestination::from(destination),
+            RequestDestination::Network {
+                address,
+                endpoint: Endpoint::Data,
+            }
+        );
     }
 
     #[test]

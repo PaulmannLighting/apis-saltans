@@ -131,27 +131,3 @@ macro_rules! impl_fmt_pair {
         }
     };
 }
-
-macro_rules! impl_fmt_enum {
-    ($ty:ty { $($variant:ident($inner_ty:ty) => $label:literal),+ $(,)? }) => {
-        impl_fmt_enum!(@one, $ty, core::fmt::Display { $($variant($inner_ty) => $label),+ });
-        impl_fmt_enum!(@one, $ty, core::fmt::LowerHex { $($variant($inner_ty) => $label),+ });
-        impl_fmt_enum!(@one, $ty, core::fmt::UpperHex { $($variant($inner_ty) => $label),+ });
-    };
-    (@one, $ty:ty, $tr:path { $($variant:ident($inner_ty:ty) => $label:literal),+ }) => {
-        impl $tr for $ty {
-            fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                match self {
-                    $(
-                        Self::$variant(value) => {
-                            formatter.write_str($label)?;
-                            formatter.write_str("(")?;
-                            <$inner_ty as $tr>::fmt(value, formatter)?;
-                            formatter.write_str(")")
-                        }
-                    )+
-                }
-            }
-        }
-    };
-}

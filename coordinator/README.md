@@ -398,8 +398,12 @@ async fn receive_events(mut events: tokio::sync::mpsc::Receiver<Event>) {
             }
             Event::Device(Device::Left(address)) => println!("left: {address}"),
             Event::Device(Device::Announced(address)) => println!("announced: {address}"),
-            Event::Device(Device::KeepAlive(device)) => {
-                println!("keep-alive from {device}");
+            Event::Device(Device::KeepAlive(keep_alive)) => {
+                println!(
+                    "keep-alive from {}:{}",
+                    keep_alive.device(),
+                    keep_alive.endpoint().get()
+                );
             }
             Event::Zcl { indication } => {
                 println!(
@@ -421,7 +425,7 @@ and link quality alongside the parsed ZCL frame.
 
 An APS packet with cluster ID `0x0025` (`Cluster::KeepAlive`) under a supported application profile
 is handled before ZCL payload decoding and produces `Device::KeepAlive`. The contained
-`zb_core::destination::Device` identifies the sender by its NWK short address and APS source
+`KeepAlive` value identifies the sender by its NWK short address and individual APS source
 endpoint. Packets whose source is not an allocated device short address or whose source endpoint is
 reserved are logged and dropped instead of producing an event.
 
@@ -621,16 +625,19 @@ Commands that do not expect an application-level response use `transmit(...)`.
 
 ```rust,no_run
 use apis_saltans_coordinator::OnOff;
-use zb_core::destination::Device as DeviceDestination;
-use zb_core::short_id::Device;
-use zb_aps::apsde::IndividualEndpoint;
-use zb_core::{Application, Destination, Endpoint};
+use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, NetworkDestination};
+use zb_core::{Application, Endpoint};
 
 async fn switch_on(api: &impl OnOff) -> Result<(), apis_saltans_coordinator::Error> {
-    let short_id = Device::try_from(0x1234).expect("valid short address");
-    let remote_endpoint = Application::try_from(1).expect("valid remote endpoint");
-    let destination =
-        Destination::from(DeviceDestination::new(short_id, remote_endpoint.into()));
+    let remote_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid remote endpoint"),
+    ))
+    .expect("application endpoints are individual");
+    let destination = NetworkDestination::new(
+        NetworkAddress::new(0x1234).expect("valid NWK address"),
+        remote_endpoint,
+    )
+    .into();
     let source_endpoint = IndividualEndpoint::new(Endpoint::from(
         Application::try_from(1).expect("valid local endpoint"),
     ))
@@ -660,20 +667,23 @@ The `OnOff` trait provides `on`, `off`, `off_with_effect`, and `toggle`.
 
 ```rust,no_run
 use apis_saltans_coordinator::ColorControl;
-use zb_core::destination::Device as DeviceDestination;
-use zb_core::short_id::Device;
 use zb_core::units::{Deciseconds, Mireds};
-use zb_aps::apsde::IndividualEndpoint;
-use zb_core::{Application, Destination, Endpoint};
+use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, NetworkDestination};
+use zb_core::{Application, Endpoint};
 use zb_zcl::Options;
 
 async fn set_color_temperature(
     api: &impl ColorControl,
 ) -> Result<(), apis_saltans_coordinator::Error> {
-    let short_id = Device::try_from(0x1234).expect("valid short address");
-    let remote_endpoint = Application::try_from(1).expect("valid remote endpoint");
-    let destination =
-        Destination::from(DeviceDestination::new(short_id, remote_endpoint.into()));
+    let remote_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid remote endpoint"),
+    ))
+    .expect("application endpoints are individual");
+    let destination = NetworkDestination::new(
+        NetworkAddress::new(0x1234).expect("valid NWK address"),
+        remote_endpoint,
+    )
+    .into();
     let source_endpoint = IndividualEndpoint::new(Endpoint::from(
         Application::try_from(1).expect("valid local endpoint"),
     ))
@@ -697,32 +707,33 @@ async fn set_color_temperature(
 
 `Attributes` provides typed ZCL global attribute operations.
 
-The target is a `zb_core::destination::Device`, which contains the short address and endpoint.
+The target is an `apsde::NetworkDestination`, which contains the NWK address and individual endpoint.
 Build or look this up from your own discovery state before calling the trait.
 
 ### Reads
 
 ```rust,no_run
 use apis_saltans_coordinator::{Attributes, ReadAttributeResult};
-use zb_core::destination::Device as DeviceDestination;
-use zb_core::short_id::Device;
-use zb_aps::apsde::IndividualEndpoint;
+use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, NetworkDestination};
 use zb_core::{Application, Endpoint};
 use zb_zcl::general::basic::readable::Id as BasicReadableId;
 
 async fn read_basic(
     api: &impl Attributes,
-    short_id: Device,
+    address: NetworkAddress,
 ) -> Result<Box<[ReadAttributeResult<BasicReadableId>]>, apis_saltans_coordinator::Error> {
-    let endpoint = Application::try_from(1).expect("valid endpoint");
-    let device = DeviceDestination::new(short_id, endpoint.into());
+    let target_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid target endpoint"),
+    ))
+    .expect("application endpoints are individual");
+    let destination = NetworkDestination::new(address, target_endpoint);
     let source_endpoint = IndividualEndpoint::new(Endpoint::from(
         Application::try_from(1).expect("valid local endpoint"),
     ))
     .expect("application endpoints are individual");
 
     api.read(
-        device,
+        destination,
         source_endpoint,
         [
             BasicReadableId::ModelIdentifier,
@@ -737,19 +748,20 @@ async fn read_basic(
 
 ```rust,no_run
 use apis_saltans_coordinator::Attributes;
-use zb_core::destination::Device as DeviceDestination;
-use zb_core::short_id::Device;
 use zb_core::types::String;
-use zb_aps::apsde::IndividualEndpoint;
+use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, NetworkDestination};
 use zb_core::{Application, Endpoint};
 use zb_zcl::general::basic::writable::Attribute as BasicWritable;
 
 async fn write_location(
     api: &impl Attributes,
-    short_id: Device,
+    address: NetworkAddress,
 ) -> Result<(), apis_saltans_coordinator::Error> {
-    let endpoint = Application::try_from(1).expect("valid endpoint");
-    let device = DeviceDestination::new(short_id, endpoint.into());
+    let target_endpoint = IndividualEndpoint::new(Endpoint::from(
+        Application::try_from(1).expect("valid target endpoint"),
+    ))
+    .expect("application endpoints are individual");
+    let destination = NetworkDestination::new(address, target_endpoint);
     let source_endpoint = IndividualEndpoint::new(Endpoint::from(
         Application::try_from(1).expect("valid local endpoint"),
     ))
@@ -758,7 +770,7 @@ async fn write_location(
 
     let result = api
         .write(
-            device,
+            destination,
             source_endpoint,
             [BasicWritable::LocationDescription(location)],
         )

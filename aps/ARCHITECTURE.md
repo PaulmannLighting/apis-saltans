@@ -69,6 +69,8 @@ device.
 `IndividualEndpoint` excludes the APS broadcast endpoint, while request and
 confirmation destinations use `zb_core::Endpoint` where the specification
 permits it.
+`NetworkDestination` is the narrower address-and-endpoint pair used by APIs
+that require an individually addressed NWK peer.
 
 `DataIndication::map_context` allows a consumer to normalize the implementation-defined timestamp
 and link-key device-pair handle without rebuilding or discarding the remaining indication

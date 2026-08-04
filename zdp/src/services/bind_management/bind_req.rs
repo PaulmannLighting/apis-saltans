@@ -57,10 +57,6 @@ crate::zdp_command! {
         }
 
         /// Returns the source endpoint.
-        ///
-        /// # Errors
-        ///
-        /// Returns [`Reserved`] if the raw endpoint value is reserved.
         #[must_use]
         pub fn src_endpoint(&self) -> Endpoint {
             self.src_endpoint.into()
@@ -78,10 +74,6 @@ crate::zdp_command! {
         }
 
         /// Returns the destination.
-        ///
-        /// # Errors
-        ///
-        /// Returns [`Reserved`] if the raw destination endpoint value is reserved.
         #[expect(clippy::missing_panics_doc)]
         #[must_use]
         pub fn destination(&self) -> Destination {

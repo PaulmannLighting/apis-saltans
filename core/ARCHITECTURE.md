@@ -11,7 +11,7 @@ protocol crates can share.
 ```mermaid
 flowchart TD
     Addressing["Addressing<br/>FullAddress, ShortId, IeeeAddress, GroupId"]
-    Routing["Routing metadata<br/>Endpoint, Destination, Device, Profile, Cluster"]
+    Routing["Protocol metadata<br/>Endpoint, Device, Profile, Cluster"]
     Traits["Type metadata traits<br/>ClusterSpecific, Profiled, ExpectResponse, TypeId"]
     Values["Zigbee values<br/>types::Type, units"]
     Tlv["TLVs<br/>types::tlv"]
@@ -31,7 +31,7 @@ flowchart TD
 | Area | Files and modules | Responsibility |
 | --- | --- | --- |
 | Addressing | `full_address.rs`, `ieee_address.rs`, `short_id.rs`, `group_id.rs` | IEEE addresses, NWK short addresses, complete device addresses, and APS group identifiers. |
-| Routing metadata | `endpoint.rs`, `destination.rs`, `device.rs`, `profile.rs`, `cluster.rs`, `direction.rs` | Endpoint, destination, application device, profile, cluster, and command-direction domain values. |
+| Protocol metadata | `endpoint.rs`, `device.rs`, `profile.rs`, `cluster.rs`, `direction.rs` | Endpoint, application device, profile, cluster, and command-direction domain values. |
 | Traits | `traits.rs`, `cluster.rs`, `profile.rs` | Cross-crate metadata traits such as `ExpectResponse`, `ClusterSpecific`, `Profiled`, and `TypeId`. |
 | Typed values | `types.rs`, `types/*` | Zigbee primitive, discrete, analog, composite, and tagged value representations. |
 | TLVs | `types/tlv.rs`, `types/tlv/*` | Local, global, and encapsulated TLV representations. |
@@ -66,29 +66,20 @@ flowchart LR
 ## Routing Metadata
 
 `Endpoint` models the ZDO data endpoint, application endpoints, and the endpoint
-broadcast value. The `endpoint` module also exposes `Application`,
-`endpoint::Broadcast`, and `endpoint::Reserved` to keep accepted endpoint
-subranges distinct.
+broadcast value. The `endpoint` module also exposes `Application` to keep the
+application-endpoint subrange distinct.
 
-`Destination` models outbound addressing as one of:
-
-- a device destination,
-- a broadcast destination,
-- a group destination.
-
-The device and broadcast variants wrap `destination::Device` and
-`destination::Broadcast`, which pair the relevant short-address selector with an
-endpoint selector. Group destinations carry only `GroupId` because group
-membership is endpoint-local on receiving nodes.
+APS service destinations belong to `apis-saltans-aps::apsde`, where separate
+request, confirmation, and indication types encode the fields legal for each
+primitive. Core supplies the address, endpoint, and group values embedded by
+those APSDE types.
 
 `Endpoint` parses the `Data` and `Broadcast` variant names as well as decimal and `0x`-prefixed
 numeric IDs, while `Application` accepts the two numeric forms and enforces the application range.
-Reserved endpoint IDs remain representable only through `Reserved` errors and are never accepted as
-an `Endpoint`.
+Every raw endpoint byte maps to one of these domains.
 
 The root-level `Device` enum represents known Zigbee application device identifiers. It is distinct
-from the validated network address in `short_id::Device` and the outbound addressing payload in
-`destination::Device`. Application device identifiers support numeric access through `as_u16`,
+from the validated network address in `short_id::Device`. Application device identifiers support numeric access through `as_u16`,
 stable text formatting, and parsing from canonical names or numeric identifiers.
 
 `Profile` is the Zigbee profile identifier enum. It supports numeric access through `as_u16`,

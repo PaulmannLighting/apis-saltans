@@ -4,7 +4,6 @@ use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::apsde::DataIndication;
-use zb_core::destination;
 use zb_hw::{
     ApsdeEvent as HardwareApsdeEvent, DeviceEvent as HardwareDeviceEvent, Event as HardwareEvent,
     NetworkEvent as HardwareNetworkEvent,
@@ -273,11 +272,9 @@ impl Mux {
                     return;
                 };
 
-                self.events
-                    .emit(Event::Device(Device::KeepAlive(destination::Device::new(
-                        device_id,
-                        source_endpoint.get(),
-                    ))));
+                self.events.emit(Event::Device(Device::KeepAlive(
+                    crate::event::KeepAlive::new(device_id, source_endpoint),
+                )));
             }
         }
     }

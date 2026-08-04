@@ -64,6 +64,8 @@ address and endpoint fields permitted by each primitive:
 - `Source` models indication source addressing;
 - `NetworkAddress`, `BroadcastAddress`, and `IndividualEndpoint` reject values
   outside their respective APSDE ranges.
+- `NetworkDestination` pairs a network address with an individual endpoint for
+  operations that require response-capable unicast addressing.
 
 `Alias` groups the alias source address and sequence number.
 `Security<K>` groups the key index and implementation-defined device-key-pair

@@ -6,7 +6,9 @@ use log::warn;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
 use zb_aps::TxOptions;
-use zb_aps::apsde::{DataRequest, IndividualEndpoint};
+use zb_aps::apsde::{
+    DataRequest, IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination,
+};
 use zb_core::{Cluster, Direction, Profile};
 use zb_zcl::{Command, Directed, Scope, Scoped, UnsequencedFrame};
 
@@ -39,8 +41,19 @@ const TEST_IEEE_ADDRESS: zb_core::IeeeAddress =
 
 type Request = DataRequest<UnsequencedFrame<Bytes>>;
 
+const fn network_destination(
+    short_id: zb_core::short_id::Device,
+    endpoint: IndividualEndpoint,
+) -> NetworkDestination {
+    NetworkDestination::new(
+        NetworkAddress::new(short_id.as_u16())
+            .expect("device short addresses are valid APSDE network addresses"),
+        endpoint,
+    )
+}
+
 fn request<T>(
-    destination: zb_core::Destination,
+    destination: RequestDestination,
     source_endpoint: IndividualEndpoint,
     profile: Profile,
     cluster_id: u16,
@@ -59,14 +72,14 @@ where
 }
 
 const fn request_from_unsequenced_frame(
-    destination: zb_core::Destination,
+    destination: RequestDestination,
     source_endpoint: IndividualEndpoint,
     profile: Profile,
     cluster_id: u16,
     frame: UnsequencedFrame<Bytes>,
 ) -> Request {
     DataRequest::new(
-        crate::aps::request_destination(destination),
+        destination,
         profile.as_u16(),
         cluster_id,
         source_endpoint,
@@ -149,9 +162,8 @@ mod tests {
     use tokio::time::timeout;
     use zb_aps::apsde::{
         DataIndication, IndicationMetadata, IndicationStatus, IndividualEndpoint, NetworkAddress,
-        ReceivedDestination, Security, Source,
+        NetworkDestination, ReceivedDestination, Security, Source,
     };
-    use zb_core::destination::Device;
     use zb_core::endpoint::Application;
     use zb_core::{Cluster, Direction, Endpoint, FullAddress, IeeeAddress, Profile, short_id};
     use zb_zcl::ota_upgrade::{
@@ -170,7 +182,7 @@ mod tests {
 
     const TEST_TIMEOUT: Duration = Duration::from_secs(1);
     const TEST_LIFECYCLE_TIMEOUT: Duration = Duration::from_millis(100);
-    const LONG_LIFECYCLE_TIMEOUT: Duration = Duration::from_secs(60);
+    const LONG_LIFECYCLE_TIMEOUT: Duration = Duration::from_mins(1);
     const MANUFACTURER_CODE: u16 = 0x1234;
     const IMAGE_TYPE: u16 = 0x5678;
     const FILE_VERSION: u32 = 0x0102_0304;
@@ -283,10 +295,7 @@ mod tests {
             let ObservedZcl::Transmit { request } = message else {
                 panic!("expected Image Notify transmission");
             };
-            assert_eq!(
-                request.destination(),
-                crate::aps::request_destination(destination.into())
-            );
+            assert_eq!(request.destination(), destination.into());
             assert_eq!(request.profile_id(), OTA_PROFILE.as_u16());
             let (_, bytes) = request.into_asdu().into_parts();
             let notification =
@@ -407,10 +416,7 @@ mod tests {
             let ObservedZcl::Transmit { request } = receive_zcl(&mut zcl_receiver).await else {
                 panic!("expected Image Notify transmission");
             };
-            assert_eq!(
-                request.destination(),
-                crate::aps::request_destination(second_test_destination().into())
-            );
+            assert_eq!(request.destination(), second_test_destination().into());
             second_update.abort();
         });
     }
@@ -543,10 +549,7 @@ mod tests {
             let ObservedZcl::Transmit { request } = receive_zcl(&mut zcl_receiver).await else {
                 panic!("expected Image Notify transmission");
             };
-            assert_eq!(
-                request.destination(),
-                crate::aps::request_destination(second_test_destination().into())
-            );
+            assert_eq!(request.destination(), second_test_destination().into());
         });
     }
 
@@ -940,24 +943,32 @@ mod tests {
     }
 
     fn test_address() -> FullAddress {
-        FullAddress::new(TEST_IEEE_ADDRESS, test_destination().device())
+        FullAddress::new(TEST_IEEE_ADDRESS, test_short_id())
     }
 
     fn second_test_address() -> FullAddress {
-        FullAddress::new(TEST_IEEE_ADDRESS, second_test_destination().device())
+        FullAddress::new(TEST_IEEE_ADDRESS, second_test_short_id())
     }
 
-    fn test_destination() -> Device {
-        Device::new(
-            short_id::Device::new(0x1234).expect("valid short ID"),
-            ENDPOINT,
+    fn test_short_id() -> short_id::Device {
+        short_id::Device::new(0x1234).expect("valid short ID")
+    }
+
+    fn second_test_short_id() -> short_id::Device {
+        short_id::Device::new(SECOND_DEVICE_SHORT_ID).expect("valid short ID")
+    }
+
+    fn test_destination() -> NetworkDestination {
+        NetworkDestination::new(
+            NetworkAddress::new(test_short_id().as_u16()).expect("valid NWK address"),
+            test_target_endpoint(),
         )
     }
 
-    fn second_test_destination() -> Device {
-        Device::new(
-            short_id::Device::new(SECOND_DEVICE_SHORT_ID).expect("valid short ID"),
-            ENDPOINT,
+    fn second_test_destination() -> NetworkDestination {
+        NetworkDestination::new(
+            NetworkAddress::new(second_test_short_id().as_u16()).expect("valid NWK address"),
+            test_target_endpoint(),
         )
     }
 
@@ -1094,8 +1105,7 @@ mod tests {
 
     fn test_source() -> Source {
         Source::Network {
-            address: NetworkAddress::new(test_destination().device().as_u16())
-                .expect("test destination is a valid NWK address"),
+            address: test_destination().address(),
             endpoint: IndividualEndpoint::new(ENDPOINT)
                 .expect("test endpoint is an individual endpoint"),
         }
@@ -1198,10 +1208,7 @@ mod tests {
         else {
             panic!("expected OTA reply");
         };
-        assert_eq!(
-            request.destination(),
-            crate::aps::request_destination(test_destination().into())
-        );
+        assert_eq!(request.destination(), test_destination().into());
         let tx_options = request.tx_options();
         let (_, bytes) = request.into_asdu().into_parts();
         (sequence_number, tx_options, bytes)

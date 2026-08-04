@@ -4,9 +4,8 @@ use log::warn;
 use tokio::sync::mpsc::Sender;
 use tokio::time::sleep;
 use zb_aps::TxOptions;
-use zb_aps::apsde::IndividualEndpoint;
+use zb_aps::apsde::{IndividualEndpoint, NetworkDestination};
 use zb_core::Cluster;
-use zb_core::destination::Device;
 use zb_zcl::ota_upgrade::{ImageBlock, ImageBlockResponse, ImageBlockResponsePayload, ImageId};
 
 use super::image::ImageTransfer;
@@ -20,7 +19,7 @@ use super::{OTA_PROFILE, UpdateError, UpdateResult, reply_zcl, request, zcl};
 pub(super) struct PageTransfer {
     pub(super) zcl: Sender<zcl::Message>,
     pub(super) image: ImageTransfer,
-    pub(super) destination: Device,
+    pub(super) destination: NetworkDestination,
     pub(super) source_endpoint: IndividualEndpoint,
     pub(super) image_id: ImageId,
     pub(super) maximum_data_size: usize,

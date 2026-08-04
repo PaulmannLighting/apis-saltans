@@ -1,5 +1,4 @@
-use zb_aps::apsde::IndividualEndpoint;
-use zb_core::Destination;
+use zb_aps::apsde::{IndividualEndpoint, RequestDestination};
 use zb_zcl::on_off::{Effect, Off, OffWithEffect, On, Toggle};
 
 use crate::Error;
@@ -18,7 +17,7 @@ pub trait OnOff {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn on(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -29,7 +28,7 @@ pub trait OnOff {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
@@ -40,7 +39,7 @@ pub trait OnOff {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn off_with_effect(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         effect: Effect,
     ) -> impl Future<Output = Result<(), Error>> + Send;
@@ -52,7 +51,7 @@ pub trait OnOff {
     /// Returns an [`Error`] if the command cannot be queued or transmitted.
     fn toggle(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 }
@@ -63,7 +62,7 @@ where
 {
     async fn on(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
     ) -> Result<(), Error> {
         self.transmit(request_without_response(destination, source_endpoint, On))
@@ -72,7 +71,7 @@ where
 
     async fn off(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
     ) -> Result<(), Error> {
         self.transmit(request_without_response(destination, source_endpoint, Off))
@@ -81,7 +80,7 @@ where
 
     async fn off_with_effect(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
         effect: Effect,
     ) -> Result<(), Error> {
@@ -95,7 +94,7 @@ where
 
     async fn toggle(
         &self,
-        destination: Destination,
+        destination: RequestDestination,
         source_endpoint: IndividualEndpoint,
     ) -> Result<(), Error> {
         self.transmit(request_without_response(
