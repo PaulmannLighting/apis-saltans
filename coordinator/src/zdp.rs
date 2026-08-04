@@ -39,6 +39,8 @@ pub use self::message::Message;
 use self::node_desc::{
     Action as NodeDescAction, action as node_desc_action, unavailable_child_status,
 };
+use self::server::{Server, ServerRequest};
+use self::submission::CommunicationSubmission;
 use crate::aps::{Aps, Metadata, TransmissionResponse};
 use crate::correlation::{
     Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
@@ -51,6 +53,8 @@ mod discovery;
 mod match_desc;
 mod message;
 mod node_desc;
+mod server;
+mod submission;
 
 const INITIAL_SERVER_OPERATION_ID: u64 = 0;
 const INITIAL_COMMUNICATION_SUBMISSION_ID: u64 = 0;
@@ -68,33 +72,6 @@ pub struct Transceiver {
     next_communication_submission_id: u64,
     server_operations: BTreeMap<u64, AbortHandle>,
     next_server_operation_id: u64,
-}
-
-/// Actor-owned state retained while a ZDP request is being handed to APS.
-#[derive(Debug)]
-struct CommunicationSubmission {
-    token: Token,
-    protocol_response: tokio::sync::oneshot::Receiver<Result<Command, crate::Error>>,
-    response: tokio::sync::oneshot::Sender<Result<ApsProtocolResponse<Command>, crate::Error>>,
-    task: AbortHandle,
-}
-
-/// Cloneable context used by bounded background ZDP request-serving operations.
-#[derive(Clone, Debug)]
-struct Server {
-    ncp: NcpHandle,
-    aps: Aps,
-    descriptor: Descriptor,
-    inbox: WeakSender<Message>,
-}
-
-/// A received ZDP request that may require asynchronous NCP or APS work.
-#[derive(Debug)]
-struct ServerRequest {
-    source: NetworkAddress,
-    request_was_broadcast: bool,
-    sequence: u8,
-    command: Command,
 }
 
 impl Transceiver {
