@@ -74,6 +74,7 @@ pub struct Transceiver {
     next_server_operation_id: u64,
 }
 
+/// Construction, startup, and actor-inbox processing.
 impl Transceiver {
     /// Create a new transceiver.
     #[must_use]
@@ -99,6 +100,18 @@ impl Transceiver {
             server_operations: BTreeMap::new(),
             next_server_operation_id: INITIAL_SERVER_OPERATION_ID,
         }
+    }
+
+    /// Start the ZDP transceiver.
+    pub fn spawn(
+        ncp: NcpHandle,
+        aps: Aps,
+        events: EventSink,
+        descriptor: Descriptor,
+    ) -> Sender<Message> {
+        let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
+        spawn(Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx));
+        zdp_tx
     }
 
     /// Run the transceiver.
@@ -182,7 +195,10 @@ impl Transceiver {
         }
         true
     }
+}
 
+/// Inbound message routing and background ZDP server-operation management.
+impl Transceiver {
     fn handle_message_received(&mut self, indication: DataIndication<Frame<Command>, (), ()>) {
         let Some((source_address, key)) = received_key(&indication) else {
             return;
@@ -267,7 +283,10 @@ impl Transceiver {
             }
         }
     }
+}
 
+/// Outbound ZDP communication and APS submission lifecycle management.
+impl Transceiver {
     /// Send a ZDP unicast message with back-channel communication.
     ///
     /// # Returns
@@ -379,7 +398,10 @@ impl Transceiver {
             }
         }
     }
+}
 
+/// Pending-response cancellation, timeout, and quarantine lifecycle management.
+impl Transceiver {
     fn cancellation(&self, token: Token) -> Cancellation {
         let inbox = self.inbox.clone();
         let runtime = Handle::current();
@@ -433,18 +455,6 @@ impl Transceiver {
                     debug!("Failed to enqueue ZDP quarantine timeout: {error}");
                 });
         });
-    }
-
-    /// Start the ZDP transceiver.
-    pub fn spawn(
-        ncp: NcpHandle,
-        aps: Aps,
-        events: EventSink,
-        descriptor: Descriptor,
-    ) -> Sender<Message> {
-        let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx));
-        zdp_tx
     }
 }
 
