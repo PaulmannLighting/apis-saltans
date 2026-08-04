@@ -161,12 +161,15 @@ impl Transceiver {
             if !subscription.is_open() {
                 return false;
             }
+
             if !subscription.matches(indication) {
                 return true;
             }
+
             let message = SubscriptionMessage {
                 indication: indication.clone(),
             };
+
             match subscription.try_send(message) {
                 Ok(()) => {
                     delivered = true;
@@ -200,11 +203,14 @@ impl Transceiver {
         if is_individual_unicast && !request.asdu().header().control().disable_default_response() {
             return Err(Error::ZclDefaultResponseEnabled);
         }
+
         let sequence_number = self
             .responses
             .allocate_untracked_sequence(|sequence| Self::request_key(&request, sequence).ok())?;
-        let request = Self::encode_request(request, sequence_number);
-        self.aps.transmit(request).await
+
+        self.aps
+            .transmit(Self::encode_request(request, sequence_number))
+            .await
     }
 
     /// Queue a ZCL command with an explicitly selected transaction sequence number.
@@ -213,8 +219,9 @@ impl Transceiver {
         request: DataRequest<UnsequencedFrame<Bytes>>,
         sequence_number: u8,
     ) -> Result<TransmissionResponse, Error> {
-        let request = Self::encode_request(request, sequence_number);
-        self.aps.transmit(request).await
+        self.aps
+            .transmit(Self::encode_request(request, sequence_number))
+            .await
     }
 
     /// Send a ZCL unicast message with back-channel communication.
