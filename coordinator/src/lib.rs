@@ -7,7 +7,7 @@
 //! [`Event`] values. Delivery is non-blocking: an event is dropped if that channel is full or
 //! closed, so application backpressure cannot stall protocol processing. Discovery, binding,
 //! address resolution, and persistence are application-owned workflows built from traits such as
-//! [`Node`], [`Endpoints`], [`Binding`], [`AddressTranslation`], [`Zcl`], and [`Zdp`].
+//! [`Node`], [`Endpoints`], [`Binding`], [`Leaving`], [`AddressTranslation`], [`Zcl`], and [`Zdp`].
 //! Closing the hardware event stream is fatal: protocol actors fail pending work and stop, and the
 //! coordinator emits [`NetworkError::HardwareEventStreamClosed`]. Applications must start a new
 //! coordinator with a live hardware event stream after that boundary.
@@ -28,9 +28,10 @@ use const_env::env_item;
 
 pub use self::api::{
     AddressTranslation, Attributes, Binding, CancellableOtaUpdate, Channel, ChannelMask,
-    ColorControl, Endpoints, FoundNetwork, Groups, Joining, Level, LocalNode, NetworkDescriptor,
-    Node, OnOff, Ota, ReadAttributeResult, Routing, ScanDuration, ScannedChannel, Scanning,
-    SimpleDescriptor, WriteAttributeResult, Zcl, ZclResponse, Zdp, ZdpResponse,
+    ColorControl, Endpoints, FoundNetwork, Groups, Joining, Leaving, Level, LocalNode,
+    NetworkDescriptor, Node, OnOff, Ota, ReadAttributeResult, Routing, ScanDuration,
+    ScannedChannel, Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclResponse, Zdp,
+    ZdpResponse,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};

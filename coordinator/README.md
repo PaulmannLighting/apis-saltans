@@ -37,6 +37,7 @@ Public API exports:
   - `Node`
   - `Endpoints`
   - `Binding`
+  - `Leaving`
 - cluster traits:
   - `OnOff`
   - `ColorControl`
@@ -269,8 +270,8 @@ on `Coordinator`.
 
 ```rust,no_run
 use apis_saltans_coordinator::{
-    AddressTranslation, Attributes, Binding, ColorControl, Coordinator, Endpoints, Joining, Level,
-    LocalNode, Node, OnOff, Routing, Scanning, Zcl, Zdp,
+    AddressTranslation, Attributes, Binding, ColorControl, Coordinator, Endpoints, Joining, Leaving,
+    Level, LocalNode, Node, OnOff, Routing, Scanning, Zcl, Zdp,
 };
 ```
 
@@ -565,6 +566,25 @@ Non-success ZDP statuses are returned as `Error::Zdp(...)`.
 `descriptors(...)` first calls `endpoints(...)`. If active endpoint discovery fails, the outer
 `Result` is `Err(...)`. If endpoint discovery succeeds, the returned map contains one descriptor
 result per endpoint, so callers can keep partial results from endpoints that succeeded.
+
+### Leaving
+
+Use `Leaving::leave(...)` to ask a device to leave the network. The helper sends a `MgmtLeaveReq`
+directly to the device's NWK short address with a null IEEE device-address payload and waits for a
+successful `MgmtLeaveRsp`. Pass `None` for empty leave flags or `Some(LeaveReqFlags)` to request
+rejoining, child removal, or both.
+
+```rust,no_run
+use apis_saltans_coordinator::Leaving;
+use zb_core::short_id::Device;
+
+async fn remove_device(
+    api: &impl Leaving,
+    device: Device,
+) -> Result<(), apis_saltans_coordinator::Error> {
+    api.leave(device, None).await
+}
+```
 
 ### Binding
 

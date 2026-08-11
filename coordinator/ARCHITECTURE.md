@@ -409,7 +409,7 @@ flowchart TD
     ZCL[Zcl]
     ZDP[Zdp]
     CL[OnOff ColorControl Level Attributes]
-    DS[Node Endpoints Binding]
+    DS[Node Endpoints Binding Leaving]
     ZCLR[ZclResponse]
     ZDPR[ZdpResponse]
 

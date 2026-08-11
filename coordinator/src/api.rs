@@ -8,6 +8,7 @@ pub use self::clusters::{
 };
 pub use self::endpoints::{Endpoints, SimpleDescriptor};
 pub use self::joining::Joining;
+pub use self::leaving::Leaving;
 pub use self::local_node::LocalNode;
 pub use self::node::Node;
 pub use self::routing::Routing;
@@ -22,6 +23,7 @@ mod binding;
 mod clusters;
 mod endpoints;
 mod joining;
+mod leaving;
 mod local_node;
 mod node;
 mod routing;
