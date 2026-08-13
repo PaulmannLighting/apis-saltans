@@ -1,6 +1,6 @@
 pub use self::acknowledgement::AckFmt;
 pub use self::control::{Control, DeliveryMode, FrameType};
-pub use self::destination::Destination;
+pub use self::destination::{Destination, WeakDestination};
 pub use self::extended::{Control as ExtendedControl, Extended, Fragmentation};
 
 pub mod acknowledgement;

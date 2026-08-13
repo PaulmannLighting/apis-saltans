@@ -65,9 +65,9 @@ flowchart LR
 
 ## Routing Metadata
 
-`Endpoint` models the ZDO data endpoint, application endpoints, and the endpoint
-broadcast value. The `endpoint` module also exposes `Application` to keep the
-application-endpoint subrange distinct.
+`Endpoint` models the ZDO data endpoint, application endpoints in `0x01..=0xF0`, and the endpoint
+broadcast value. The `endpoint` module exposes `Application` for the application subrange and
+`Reserved` for rejected raw IDs in `0xF1..=0xFE`.
 
 APS service destinations belong to `apis-saltans-aps::apsde`, where separate
 request, confirmation, and indication types encode the fields legal for each
@@ -76,7 +76,8 @@ those APSDE types.
 
 `Endpoint` parses the `Data` and `Broadcast` variant names as well as decimal and `0x`-prefixed
 numeric IDs, while `Application` accepts the two numeric forms and enforces the application range.
-Every raw endpoint byte maps to one of these domains.
+Converting a reserved raw endpoint returns its lossless `Reserved` value instead of treating it as
+an application endpoint.
 
 The root-level `Device` enum represents known Zigbee application device identifiers. It is distinct
 from the validated network address in `short_id::Device`. Application device identifiers support numeric access through `as_u16`,

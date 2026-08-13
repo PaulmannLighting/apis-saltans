@@ -37,7 +37,9 @@ pub(super) fn active_endpoints(
     let mut endpoints = ByteSizedVec::new();
 
     for descriptor in descriptors {
-        let endpoint = descriptor.endpoint();
+        let Ok(endpoint) = descriptor.endpoint() else {
+            continue;
+        };
 
         if !matches!(endpoint, Endpoint::Application(_)) || endpoints.contains(&endpoint) {
             continue;
@@ -61,7 +63,7 @@ pub(super) fn simple_descriptor(
 
     descriptors
         .iter()
-        .find(|descriptor| descriptor.endpoint() == endpoint)
+        .find(|descriptor| descriptor.endpoint() == Ok(endpoint))
         .cloned()
         .ok_or(Status::InvalidEndpoint)
 }
@@ -119,8 +121,8 @@ mod tests {
         assert_eq!(
             active_endpoints(&descriptors).as_deref(),
             Ok(&[
-                Endpoint::from(FIRST_ENDPOINT),
-                Endpoint::from(SECOND_ENDPOINT),
+                Endpoint::try_from(FIRST_ENDPOINT).expect("first endpoint is valid"),
+                Endpoint::try_from(SECOND_ENDPOINT).expect("second endpoint is valid"),
             ][..])
         );
     }
@@ -131,13 +133,16 @@ mod tests {
 
         assert_eq!(
             simple_descriptor(
-                Endpoint::from(FIRST_ENDPOINT),
+                Endpoint::try_from(FIRST_ENDPOINT).expect("first endpoint is valid"),
                 std::slice::from_ref(&descriptor),
             ),
             Ok(descriptor)
         );
         assert_eq!(
-            simple_descriptor(Endpoint::from(SECOND_ENDPOINT), &[]),
+            simple_descriptor(
+                Endpoint::try_from(SECOND_ENDPOINT).expect("second endpoint is valid"),
+                &[],
+            ),
             Err(Status::InvalidEndpoint)
         );
         assert_eq!(
@@ -163,7 +168,7 @@ mod tests {
 
     fn descriptor(endpoint: u8) -> SimpleDescriptor {
         SimpleDescriptor::new(
-            Endpoint::from(endpoint),
+            Endpoint::try_from(endpoint).expect("test endpoint is valid"),
             Profile::ZigbeeHomeAutomation,
             MANUFACTURER_CODE,
             AppFlags::empty(),

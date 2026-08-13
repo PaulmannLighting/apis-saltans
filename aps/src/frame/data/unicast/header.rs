@@ -2,6 +2,7 @@
 
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::Endpoint;
+use zb_core::endpoint::Reserved;
 
 use crate::{Control, DeliveryMode, Extended, FrameType};
 
@@ -9,10 +10,10 @@ use crate::{Control, DeliveryMode, Extended, FrameType};
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Header {
     control: Control,
-    dst_endpoint: Endpoint,
+    dst_endpoint: u8,
     cluster_id: u16,
     profile_id: u16,
-    source_endpoint: Endpoint,
+    source_endpoint: u8,
     counter: u8,
     extended: Option<Extended>,
 }
@@ -46,10 +47,10 @@ impl Header {
 
         Self {
             control,
-            dst_endpoint,
+            dst_endpoint: dst_endpoint.into(),
             cluster_id,
             profile_id,
-            source_endpoint,
+            source_endpoint: source_endpoint.into(),
             counter,
             extended,
         }
@@ -62,9 +63,12 @@ impl Header {
     }
 
     /// Return the destination endpoint ID.
-    #[must_use]
-    pub const fn dst_endpoint(&self) -> Endpoint {
-        self.dst_endpoint
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] if the stored endpoint ID is reserved.
+    pub fn dst_endpoint(&self) -> Result<Endpoint, Reserved> {
+        self.dst_endpoint.try_into()
     }
 
     /// Return the cluster ID.
@@ -80,9 +84,12 @@ impl Header {
     }
 
     /// Return the source endpoint ID.
-    #[must_use]
-    pub const fn source_endpoint(&self) -> Endpoint {
-        self.source_endpoint
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] if the stored endpoint ID is reserved.
+    pub fn source_endpoint(&self) -> Result<Endpoint, Reserved> {
+        self.source_endpoint.try_into()
     }
 
     /// Return the APS counter.
@@ -104,10 +111,10 @@ impl FromLeStream for Header {
         T: Iterator<Item = u8>,
     {
         let control = Control::from_le_stream(&mut bytes)?;
-        let dst_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+        let dst_endpoint = u8::from_le_stream(&mut bytes)?;
         let cluster_id = u16::from_le_stream(&mut bytes)?;
         let profile_id = u16::from_le_stream(&mut bytes)?;
-        let source_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+        let source_endpoint = u8::from_le_stream(&mut bytes)?;
         let counter = u8::from_le_stream(&mut bytes)?;
         let extended = control.deserialize_extended_header(&mut bytes).ok()?;
 

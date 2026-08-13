@@ -180,7 +180,10 @@ impl Server {
         let nwk_addr_of_interest = request.nwk_address_of_interest();
         let descriptor = match descriptor_target(nwk_addr_of_interest) {
             DescriptorTarget::Local => match self.ncp.get_endpoints().await {
-                Ok(descriptors) => simple_descriptor(request.endpoint(), &descriptors),
+                Ok(descriptors) => request
+                    .endpoint()
+                    .map_err(|_| Status::InvalidEndpoint)
+                    .and_then(|endpoint| simple_descriptor(endpoint, &descriptors)),
                 Err(error) => {
                     error!("Failed to read local endpoints for Simple_Desc_req: {error}");
                     Err(Status::NoDescriptor)

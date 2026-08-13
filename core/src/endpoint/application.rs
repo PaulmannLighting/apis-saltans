@@ -6,7 +6,7 @@ use thiserror::Error;
 /// A Zigbee application endpoint ID.
 ///
 /// Application endpoints can be parsed from a decimal ID or a hexadecimal ID with a `0x` prefix.
-/// Values outside `1..=254` are rejected.
+/// Values outside `0x01..=0xF0` are rejected.
 #[cfg_attr(
     feature = "serde",
     expect(clippy::unsafe_derive_deserialize),
@@ -25,7 +25,7 @@ impl Application {
     pub const MIN: Self = Self(Self::MIN_ID);
 
     /// The maximum valid application endpoint ID.
-    pub const MAX_ID: u8 = 0xFE;
+    pub const MAX_ID: u8 = 0xF0;
 
     /// The maximum valid application endpoint.
     pub const MAX: Self = Self(Self::MAX_ID);
@@ -53,7 +53,7 @@ impl Application {
     ///
     /// # Safety
     ///
-    /// The caller must ensure that the given ID is within the valid range (1..=254).
+    /// The caller must ensure that the given ID is within the valid range (`0x01..=0xF0`).
     #[expect(unsafe_code)]
     #[must_use]
     pub const unsafe fn new_unchecked(id: u8) -> Self {
@@ -115,6 +115,7 @@ mod tests {
     use alloc::string::ToString;
 
     use super::{Application, ParseApplicationError};
+    use crate::endpoint::Reserved;
 
     const APPLICATION_ID: u8 = 10;
 
@@ -149,7 +150,17 @@ mod tests {
     #[test]
     fn rejects_out_of_range_ids() {
         assert_eq!("0".parse::<Application>(), Err(ParseApplicationError));
+        assert_eq!("241".parse::<Application>(), Err(ParseApplicationError));
+        assert_eq!("254".parse::<Application>(), Err(ParseApplicationError));
         assert_eq!("255".parse::<Application>(), Err(ParseApplicationError));
+    }
+
+    #[test]
+    fn rejects_and_clamps_reserved_ids() {
+        assert_eq!(Application::new(Reserved::MIN_ID), None);
+        assert_eq!(Application::new(Reserved::MAX_ID), None);
+        assert_eq!(Application::new_clamped(Reserved::MIN_ID), Application::MAX);
+        assert_eq!(Application::new_clamped(Reserved::MAX_ID), Application::MAX);
     }
 
     #[test]

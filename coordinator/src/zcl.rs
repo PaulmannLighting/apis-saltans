@@ -408,10 +408,12 @@ mod tests {
             NetworkAddress::new(APS_COUNTER.into()).expect("test alias address is valid");
         let destination = RequestDestination::Network {
             address: destination_address,
-            endpoint: Endpoint::from(REMOTE_ENDPOINT_ID),
+            endpoint: Endpoint::try_from(REMOTE_ENDPOINT_ID).expect("remote endpoint is valid"),
         };
-        let source_endpoint = IndividualEndpoint::new(Endpoint::from(LOCAL_ENDPOINT_ID))
-            .expect("application endpoint is individual");
+        let source_endpoint = IndividualEndpoint::new(
+            Endpoint::try_from(LOCAL_ENDPOINT_ID).expect("local endpoint is valid"),
+        )
+        .expect("application endpoint is individual");
         let tx_options = TxOptions::SECURITY_ENABLED | TxOptions::ACKNOWLEDGED_TRANSMISSION;
         let alias = Alias::Use {
             source: alias_address,
@@ -451,8 +453,10 @@ mod tests {
 
     #[test]
     fn communication_rejects_a_non_network_destination() {
-        let source_endpoint = IndividualEndpoint::new(Endpoint::from(LOCAL_ENDPOINT_ID))
-            .expect("application endpoint is individual");
+        let source_endpoint = IndividualEndpoint::new(
+            Endpoint::try_from(LOCAL_ENDPOINT_ID).expect("local endpoint is valid"),
+        )
+        .expect("application endpoint is individual");
         let request = DataRequest::new(
             RequestDestination::Bound,
             Profile::ZigbeeHomeAutomation.as_u16(),
@@ -479,10 +483,13 @@ mod tests {
                 let destination = RequestDestination::Network {
                     address: NetworkAddress::new(SOURCE_NODE_ID)
                         .expect("test NWK address is valid"),
-                    endpoint: Endpoint::from(REMOTE_ENDPOINT_ID),
+                    endpoint: Endpoint::try_from(REMOTE_ENDPOINT_ID)
+                        .expect("remote endpoint is valid"),
                 };
-                let source_endpoint = IndividualEndpoint::new(Endpoint::from(LOCAL_ENDPOINT_ID))
-                    .expect("application endpoint is individual");
+                let source_endpoint = IndividualEndpoint::new(
+                    Endpoint::try_from(LOCAL_ENDPOINT_ID).expect("local endpoint is valid"),
+                )
+                .expect("application endpoint is individual");
                 let request = DataRequest::new(
                     destination,
                     Profile::ZigbeeHomeAutomation.as_u16(),

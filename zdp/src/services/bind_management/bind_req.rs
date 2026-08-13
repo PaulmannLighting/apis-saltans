@@ -1,3 +1,4 @@
+use zb_core::endpoint::Reserved;
 use zb_core::{Endpoint, IeeeAddress};
 
 pub use self::address::Address;
@@ -57,9 +58,12 @@ crate::zdp_command! {
         }
 
         /// Returns the source endpoint.
-        #[must_use]
-        pub fn src_endpoint(&self) -> Endpoint {
-            self.src_endpoint.into()
+        ///
+        /// # Errors
+        ///
+        /// Returns [`Reserved`] if the raw endpoint value is reserved.
+        pub fn src_endpoint(&self) -> Result<Endpoint, Reserved> {
+            self.src_endpoint.try_into()
         }
 
         /// Returns the cluster ID.
@@ -69,23 +73,26 @@ crate::zdp_command! {
         }
 
         /// Returns the destination endpoint, if present.
-        pub fn dst_endpoint(&self) -> Option<Endpoint> {
-            self.dst_endpoint.map(Into::into)
+        pub fn dst_endpoint(&self) -> Option<Result<Endpoint, Reserved>> {
+            self.dst_endpoint.map(TryInto::try_into)
         }
 
         /// Returns the destination.
+        ///
+        /// # Errors
+        ///
+        /// Returns [`Reserved`] if the raw destination endpoint value is reserved.
         #[expect(clippy::missing_panics_doc)]
-        #[must_use]
-        pub fn destination(&self) -> Destination {
+        pub fn destination(&self) -> Result<Destination, Reserved> {
             match &self.dst_address {
-                Address::Group(addr) => Destination::Group(*addr),
-                Address::Extended(addr) => Destination::Extended {
+                Address::Group(addr) => Ok(Destination::Group(*addr)),
+                Address::Extended(addr) => Ok(Destination::Extended {
                     address: *addr,
                     endpoint: self
                         .dst_endpoint
                         .expect("Extended address is guaranteed to have an endpoint")
-                        .into(),
-                },
+                        .try_into()?,
+                }),
             }
         }
     }
@@ -98,7 +105,7 @@ crate::zdp_command! {
                 self.src_address,
                 self.src_endpoint,
                 self.cluster_id,
-                self.destination(),
+                self.destination().map_err(|_| std::fmt::Error)?,
             )
         }
     }

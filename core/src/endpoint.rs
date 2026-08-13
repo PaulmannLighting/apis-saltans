@@ -5,8 +5,10 @@ use le_stream::{FromLeStream, ToLeStream};
 use thiserror::Error;
 
 pub use self::application::{Application, ParseApplicationError};
+pub use self::reserved::Reserved;
 
 mod application;
+mod reserved;
 
 const DATA: u8 = 0x00;
 const BROADCAST: u8 = 0xff;
@@ -15,7 +17,7 @@ const BROADCAST: u8 = 0xff;
 ///
 /// Endpoints can be parsed from the exact `Data` or `Broadcast` variant name, a decimal endpoint
 /// ID, or a hexadecimal endpoint ID with a `0x` prefix. Numeric application endpoint IDs produce
-/// [`Endpoint::Application`].
+/// [`Endpoint::Application`]; reserved IDs are rejected.
 #[cfg_attr(
     feature = "serde",
     derive(serde::Deserialize, serde::Serialize),
@@ -35,12 +37,16 @@ pub enum Endpoint {
 
 impl Endpoint {
     /// Create a new `Endpoint` from a raw value.
-    #[must_use]
-    pub const fn new(value: u8) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] when `value` is in the reserved endpoint range.
+    pub const fn try_new(value: u8) -> Result<Self, Reserved> {
         match value {
-            DATA => Self::Data,
-            Application::MIN_ID..=Application::MAX_ID => Self::Application(Application(value)),
-            BROADCAST => Self::Broadcast,
+            DATA => Ok(Self::Data),
+            Application::MIN_ID..=Application::MAX_ID => Ok(Self::Application(Application(value))),
+            Reserved::MIN_ID..=Reserved::MAX_ID => Err(Reserved(value)),
+            BROADCAST => Ok(Self::Broadcast),
         }
     }
 
@@ -86,7 +92,7 @@ impl FromStr for Endpoint {
         match value {
             "Data" => Ok(Self::Data),
             "Broadcast" => Ok(Self::Broadcast),
-            _ => Ok(Self::from(parse_endpoint_id(value)?)),
+            _ => Self::try_from(parse_endpoint_id(value)?).map_err(|_| ParseEndpointError),
         }
     }
 }
@@ -97,9 +103,11 @@ impl From<Endpoint> for u8 {
     }
 }
 
-impl From<u8> for Endpoint {
-    fn from(value: u8) -> Self {
-        Self::new(value)
+impl TryFrom<u8> for Endpoint {
+    type Error = Reserved;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Self::try_new(value)
     }
 }
 
@@ -108,7 +116,7 @@ impl FromLeStream for Endpoint {
     where
         T: Iterator<Item = u8>,
     {
-        u8::from_le_stream(bytes).map(Self::new)
+        u8::from_le_stream(bytes).and_then(|value| Self::try_new(value).ok())
     }
 }
 
@@ -138,7 +146,7 @@ mod tests {
 
     use alloc::string::ToString;
 
-    use super::{Application, Endpoint, ParseEndpointError};
+    use super::{Application, Endpoint, ParseEndpointError, Reserved};
 
     const APPLICATION_ID: u8 = 10;
     const APPLICATION_HEX: &str = "0x0A";
@@ -173,6 +181,22 @@ mod tests {
     fn parses_numeric_data_and_broadcast_ids() {
         assert_eq!("0".parse(), Ok(Endpoint::Data));
         assert_eq!("0xff".parse(), Ok(Endpoint::Broadcast));
+    }
+
+    #[test]
+    fn rejects_reserved_ids_without_losing_the_raw_value() {
+        assert_eq!(
+            Endpoint::try_from(Reserved::MIN_ID),
+            Err(Reserved(Reserved::MIN_ID))
+        );
+        assert_eq!(
+            Endpoint::try_from(Reserved::MAX_ID),
+            Err(Reserved(Reserved::MAX_ID))
+        );
+        assert_eq!(
+            Reserved::MIN_ID.to_string().parse::<Endpoint>(),
+            Err(ParseEndpointError)
+        );
     }
 
     #[test]

@@ -147,7 +147,7 @@ where
 
 /// Return the application endpoint declared by a local simple descriptor.
 fn application_endpoint(descriptor: &zb_zdp::SimpleDescriptor) -> Option<Application> {
-    let Endpoint::Application(endpoint) = descriptor.endpoint() else {
+    let Ok(Endpoint::Application(endpoint)) = descriptor.endpoint() else {
         return None;
     };
     Some(endpoint)
@@ -166,7 +166,8 @@ mod tests {
 
     #[test]
     fn uses_endpoint_declared_by_descriptor() {
-        let descriptor = descriptor(Endpoint::from(DECLARED_ENDPOINT));
+        let descriptor =
+            descriptor(Endpoint::try_from(DECLARED_ENDPOINT).expect("declared endpoint is valid"));
 
         assert_eq!(
             application_endpoint(&descriptor),

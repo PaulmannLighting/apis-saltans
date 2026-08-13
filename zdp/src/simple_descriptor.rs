@@ -1,4 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::endpoint::Reserved;
 use zb_core::{ByteSizedVec, Endpoint, Profile};
 
 pub use self::app_flags::AppFlags;
@@ -67,9 +68,12 @@ impl SimpleDescriptor {
     }
 
     /// Return the validated endpoint.
-    #[must_use]
-    pub fn endpoint(&self) -> Endpoint {
-        self.endpoint.into()
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] if the raw endpoint value is reserved.
+    pub fn endpoint(&self) -> Result<Endpoint, Reserved> {
+        self.endpoint.try_into()
     }
 
     /// Return the raw profile ID from the descriptor.
@@ -134,5 +138,31 @@ impl SimpleDescriptor {
             self.input_clusters.into_iter().collect(),
             self.output_clusters.into_iter().collect(),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use le_stream::FromLeStream;
+    use zb_core::endpoint::Reserved;
+
+    use super::SimpleDescriptor;
+
+    const RAW_RESERVED_DESCRIPTOR: [u8; 8] =
+        [Reserved::MIN_ID, 0x04, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00];
+
+    #[test]
+    fn preserves_and_reports_a_reserved_endpoint() {
+        let descriptor = SimpleDescriptor::from_le_stream(RAW_RESERVED_DESCRIPTOR.into_iter())
+            .expect("simple descriptor must parse");
+
+        assert_eq!(descriptor.endpoint_id(), Reserved::MIN_ID);
+        assert_eq!(
+            descriptor
+                .endpoint()
+                .expect_err("reserved endpoint must be rejected")
+                .as_u8(),
+            Reserved::MIN_ID
+        );
     }
 }

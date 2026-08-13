@@ -152,6 +152,10 @@ assert!(matches!(value, Type::Uint16(_)));
 
 ### Convert Endpoints, Devices, Profiles, and Clusters
 
+`Application` accepts endpoint IDs from `0x01` through `0xF0`. Converting raw IDs from `0xF1`
+through `0xFE` into `Endpoint` returns `endpoint::Reserved`, preserving the rejected byte for
+diagnostics. `0x00` remains the ZDO data endpoint and `0xFF` the broadcast endpoint.
+
 ```rust
 use zb_core::{Application, Cluster, Device, Endpoint, Profile};
 

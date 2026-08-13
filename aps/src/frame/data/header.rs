@@ -1,19 +1,20 @@
 //! Header definitions for a generic APS Data frame.
 
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::endpoint::Reserved;
 use zb_core::{Cluster, Endpoint, Profile};
 
-use crate::frame::destination::Destination;
+use crate::frame::destination::{Destination, WeakDestination};
 use crate::{Control, Extended, Fragmentation, FrameType};
 
 /// A data frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Header {
     control: Control,
-    destination: Destination,
+    destination: WeakDestination,
     cluster_id: u16,
     profile_id: u16,
-    source_endpoint: Endpoint,
+    source_endpoint: u8,
     counter: u8,
     extended: Option<Extended>,
 }
@@ -31,7 +32,7 @@ impl Header {
     ) -> Self {
         let mut control = Control::empty();
         control.set_frame_type(FrameType::Data);
-        control.set_destination(destination);
+        control.set_destination(destination.into());
 
         if extended.is_some() {
             control.insert(Control::EXTENDED_HEADER);
@@ -39,10 +40,10 @@ impl Header {
 
         Self {
             control,
-            destination,
+            destination: destination.into(),
             cluster_id,
             profile_id,
-            source_endpoint,
+            source_endpoint: source_endpoint.into(),
             counter,
             extended,
         }
@@ -56,7 +57,7 @@ impl Header {
 
     /// Return the destination.
     #[must_use]
-    pub const fn destination(&self) -> Destination {
+    pub const fn destination(&self) -> WeakDestination {
         self.destination
     }
 
@@ -91,9 +92,12 @@ impl Header {
     }
 
     /// Return the source endpoint.
-    #[must_use]
-    pub const fn source_endpoint(&self) -> Endpoint {
-        self.source_endpoint
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Reserved`] if the stored endpoint ID is reserved.
+    pub fn source_endpoint(&self) -> Result<Endpoint, Reserved> {
+        self.source_endpoint.try_into()
     }
 
     /// Return the APS frame counter.
@@ -161,7 +165,7 @@ impl FromLeStream for Header {
         let destination = control.deserialize_destination(&mut bytes)?;
         let cluster_id = u16::from_le_stream(&mut bytes)?;
         let profile_id = u16::from_le_stream(&mut bytes)?;
-        let source_endpoint = Endpoint::from_le_stream(&mut bytes)?;
+        let source_endpoint = u8::from_le_stream(&mut bytes)?;
         let counter = u8::from_le_stream(&mut bytes)?;
         let extended = control.deserialize_extended_header(&mut bytes).ok()?;
 
@@ -174,5 +178,59 @@ impl FromLeStream for Header {
             counter,
             extended,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use le_stream::{FromLeStream, ToLeStream};
+    use zb_core::endpoint::Reserved;
+    use zb_core::{Application, Endpoint, Profile};
+
+    use super::Header;
+    use crate::{Destination, WeakDestination};
+
+    const CLUSTER_ID: u16 = 0x0006;
+    const COUNTER: u8 = 0x2A;
+    const DESTINATION_ENDPOINT_INDEX: usize = 1;
+    const PROFILE_ID: u16 = Profile::ZigbeeHomeAutomation.as_u16();
+    const SOURCE_ENDPOINT_INDEX: usize = 6;
+
+    #[test]
+    fn parsing_preserves_a_reserved_destination_endpoint() {
+        let mut bytes: Vec<_> = header().to_le_stream().collect();
+        bytes[DESTINATION_ENDPOINT_INDEX] = Reserved::MIN_ID;
+        let parsed = Header::from_le_stream(bytes.into_iter()).expect("header must parse");
+
+        assert_eq!(
+            parsed.destination(),
+            WeakDestination::Unicast(Reserved::MIN_ID)
+        );
+    }
+
+    #[test]
+    fn parsing_reports_a_reserved_source_endpoint() {
+        let mut bytes: Vec<_> = header().to_le_stream().collect();
+        bytes[SOURCE_ENDPOINT_INDEX] = Reserved::MAX_ID;
+        let parsed = Header::from_le_stream(bytes.into_iter()).expect("header must parse");
+
+        assert_eq!(
+            parsed
+                .source_endpoint()
+                .expect_err("reserved source endpoint must be rejected")
+                .as_u8(),
+            Reserved::MAX_ID
+        );
+    }
+
+    fn header() -> Header {
+        Header::new(
+            Destination::Unicast(Application::MIN.into()),
+            CLUSTER_ID,
+            PROFILE_ID,
+            Endpoint::Application(Application::MIN),
+            COUNTER,
+            None,
+        )
     }
 }

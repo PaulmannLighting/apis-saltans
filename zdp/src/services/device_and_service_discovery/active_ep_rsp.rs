@@ -1,3 +1,4 @@
+use zb_core::endpoint::Reserved;
 use zb_core::{ByteSizedVec, Endpoint};
 
 use crate::Status;
@@ -50,8 +51,8 @@ crate::zdp_command! {
         }
 
         /// Return the active endpoints.
-        pub fn active_eps(&self) -> impl Iterator<Item = Endpoint> + '_ {
-            self.active_eps.iter().copied().map(Into::into)
+        pub fn active_eps(&self) -> impl Iterator<Item = Result<Endpoint, Reserved>> + '_ {
+            self.active_eps.iter().copied().map(TryInto::try_into)
         }
 
         /// Return the raw active endpoint IDs.
@@ -61,8 +62,8 @@ crate::zdp_command! {
         }
 
         /// Return the active endpoints, consuming the [`ActiveEpRsp`].
-        pub fn into_active_eps(self) -> impl Iterator<Item = Endpoint> {
-            self.active_eps.into_iter().map(Into::into)
+        pub fn into_active_eps(self) -> impl Iterator<Item = Result<Endpoint, Reserved>> {
+            self.active_eps.into_iter().map(TryInto::try_into)
         }
 
         /// Return the raw active endpoint IDs, consuming the [`ActiveEpRsp`].

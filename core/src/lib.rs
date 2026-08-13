@@ -6,8 +6,8 @@
 //! types, TLVs, and protocol unit wrappers.
 //!
 //! Address-like values encode Zigbee invariants where practical. For example,
-//! [`Endpoint`] separates the ZDO data endpoint, application endpoints, the
-//! broadcast endpoint, and the reserved endpoint range. APIs that deserialize
+//! [`Endpoint`] separates the ZDO data endpoint, application endpoints, and the
+//! broadcast endpoint, while endpoint conversion reports the reserved range. APIs that deserialize
 //! raw protocol bytes can keep those bytes losslessly and expose fallible
 //! getters when a reserved value must be reported to callers.
 

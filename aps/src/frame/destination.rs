@@ -3,20 +3,26 @@ use std::fmt::{self, Display};
 use le_stream::ToLeStream;
 use zb_core::Endpoint;
 
+/// A destination that preserves raw endpoint IDs while parsing APS frames.
+pub type WeakDestination = Destination<u8>;
+
 /// Represents the destination of an APS frame.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum Destination {
+pub enum Destination<E = Endpoint> {
     /// A unicast endpoint ID.
-    Unicast(Endpoint),
+    Unicast(E),
 
     /// A broadcast endpoint ID.
-    Broadcast(Endpoint),
+    Broadcast(E),
 
     /// A group address.
     Group(u16),
 }
 
-impl Display for Destination {
+impl<E> Display for Destination<E>
+where
+    E: Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unicast(value) => write!(f, "Unicast({value})"),
@@ -26,12 +32,22 @@ impl Display for Destination {
     }
 }
 
-impl ToLeStream for Destination {
+impl From<Destination> for WeakDestination {
+    fn from(destination: Destination) -> Self {
+        match destination {
+            Destination::Unicast(endpoint) => Self::Unicast(endpoint.into()),
+            Destination::Broadcast(endpoint) => Self::Broadcast(endpoint.into()),
+            Destination::Group(group) => Self::Group(group),
+        }
+    }
+}
+
+impl ToLeStream for WeakDestination {
     type Iter = iterator::DestinationIterator;
 
     fn to_le_stream(self) -> Self::Iter {
         match self {
-            Self::Unicast(value) | Self::Broadcast(value) => value.as_u8().into(),
+            Self::Unicast(value) | Self::Broadcast(value) => value.into(),
             Self::Group(value) => value.into(),
         }
     }

@@ -77,7 +77,7 @@ where
         response
             .status()
             .ensure_success()
-            .map(|()| response.into_active_eps().collect())
+            .map(|()| response.into_active_eps().filter_map(Result::ok).collect())
     }
 
     async fn descriptor(
