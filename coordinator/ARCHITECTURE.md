@@ -258,7 +258,8 @@ spacing and advances the ZCL transaction sequence between blocks.
 The ZDP actor:
 
 - owns the cloneable context used for NCP queries and APS replies
-- receives parsed ZDP frames as normalized `DataIndication<Frame<Command>, (), ()>` values
+- receives parsed ZDP frames as normalized `DataIndication<Frame<Command>, (), ()>` values together
+  with the hardware backend's ZDO response-required flag
 - owns a collision-safe ZDP transaction-sequence allocator
 - uses profile `0x0000` and endpoint `0x00`
 - sends APS metadata and serialized ZDP frames through the APS actor
@@ -273,7 +274,8 @@ at most `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` operations active at once. Each n
 returned through the actor's ordinary inbox. Network-down, hardware-unavailable, actor-inbox
 closure, and actor shutdown abort all active request-serving operations. If the operation limit is
 already occupied, the new request is logged and dropped rather than allowing work to grow without
-bound.
+bound. A recognized request is dispatched only when the hardware backend marks its ZDO response as
+application-owned; otherwise the NCP remains responsible for any response.
 
 Outgoing ZDP communication similarly reserves its correlation identity synchronously and performs
 the possibly backpressured APS actor handoff in a bounded background submission. The actor retains

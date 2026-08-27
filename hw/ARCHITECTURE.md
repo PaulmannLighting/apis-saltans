@@ -117,7 +117,9 @@ flowchart TD
 
 Hardware integrations translate backend-specific events into the common `Event` model. `Event`
 groups notifications into `NetworkEvent`, `DeviceEvent`, and `ApsdeEvent<T, K>` values. Incoming
-application-service data uses `DataIndication<bytes::Bytes, T, K>`, and acknowledged completion uses
-`DataConfirm<T>` plus the coordinator correlation counter. The generic timestamp and key-pair
-handle preserve backend-native representations. Startup, event-task ownership, and backend
-configuration remain outside this crate.
+application-service data uses the `ApsdeEvent::DataIndication` variant, which carries a
+`DataIndication<bytes::Bytes, T, K>` and a `zdo_response_required` flag derived from backend NCP
+metadata. The coordinator uses the flag only for incoming ZDO requests when deciding whether to
+generate a response. Acknowledged completion uses `DataConfirm<T>` plus the coordinator correlation
+counter. The generic timestamp and key-pair handle preserve backend-native representations.
+Startup, event-task ownership, and backend configuration remain outside this crate.

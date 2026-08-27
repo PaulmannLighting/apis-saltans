@@ -20,7 +20,8 @@
 //!
 //! `NcpHandle::transmit` returns after the hardware backend accepts an APS data request. Hardware
 //! backends report incoming ASDUs and acknowledged transmission completion asynchronously through
-//! [`Event::Apsde`] using [`ApsdeEvent::DataIndication`] and [`ApsdeEvent::DataConfirm`].
+//! [`Event::Apsde`] using [`ApsdeEvent::DataIndication`] and [`ApsdeEvent::DataConfirm`]. Incoming
+//! indications include whether the application is responsible for answering a ZDO request.
 //!
 //! Every `Driver` implementation must provide the NCP's local application endpoints through
 //! `Driver::get_endpoints`. Each endpoint is represented by a complete

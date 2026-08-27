@@ -15,6 +15,9 @@ pub enum Message {
     Received {
         /// APSDE indication containing the parsed ZDP frame.
         indication: DataIndication<Frame<Command>, (), ()>,
+
+        /// Whether the hardware backend requires the coordinator to send a ZDO response.
+        response_required: bool,
     },
 
     /// Fail pending protocol responses because the Zigbee network went down.

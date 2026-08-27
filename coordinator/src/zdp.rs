@@ -102,8 +102,11 @@ impl Transceiver {
 
     fn handle_actor_message(&mut self, message: Message) -> bool {
         match message {
-            Message::Received { indication } => {
-                self.handle_message_received(indication);
+            Message::Received {
+                indication,
+                response_required,
+            } => {
+                self.handle_message_received(indication, response_required);
             }
             Message::NetworkDown => {
                 self.abort_server_operations();
@@ -174,7 +177,11 @@ impl Transceiver {
 
 /// Inbound message routing and background ZDP server-operation management.
 impl Transceiver {
-    fn handle_message_received(&mut self, indication: DataIndication<Frame<Command>, (), ()>) {
+    fn handle_message_received(
+        &mut self,
+        indication: DataIndication<Frame<Command>, (), ()>,
+        response_required: bool,
+    ) {
         let Some((source_address, key)) = received_key(&indication) else {
             return;
         };
@@ -194,12 +201,14 @@ impl Transceiver {
             return;
         }
         if is_server_request(&command) {
-            self.spawn_server_operation(ServerRequest::new(
-                source_address,
-                request_was_broadcast,
-                seq,
-                command,
-            ));
+            if response_required {
+                self.spawn_server_operation(ServerRequest::new(
+                    source_address,
+                    request_was_broadcast,
+                    seq,
+                    command,
+                ));
+            }
             return;
         }
 
@@ -663,6 +672,7 @@ mod tests {
 
                 zdp.send(Message::Received {
                     indication: active_endpoint_request(),
+                    response_required: true,
                 })
                 .await
                 .expect("ZDP actor accepts the request");
@@ -686,6 +696,31 @@ mod tests {
                     .expect("driver actor must stop after ZDP shutdown")
                     .expect("driver actor task must not panic");
             });
+    }
+
+    #[test]
+    fn ignores_server_request_when_hardware_does_not_require_a_response() {
+        let (started, _query_started) = oneshot::channel();
+        let (_release_query, release) = oneshot::channel();
+        let (ncp, _driver) = DelayedEndpointDriver {
+            started: Mutex::new(Some(started)),
+            release: Mutex::new(Some(release)),
+        }
+        .into_actor(NCP_CHANNEL_SIZE);
+        let (aps_messages, _aps_receiver) = channel(CHANNEL_SIZE);
+        let (events, _event_receiver) = channel(CHANNEL_SIZE);
+        let (zdp_inbox, _zdp_messages) = channel(CHANNEL_SIZE);
+        let mut transceiver = Transceiver::new(
+            ncp,
+            Aps::new(aps_messages),
+            EventSink::new(events),
+            Descriptor::default(),
+            zdp_inbox.downgrade(),
+        );
+
+        transceiver.handle_message_received(active_endpoint_request(), false);
+
+        assert!(transceiver.server_operations.is_empty());
     }
 
     #[test]

@@ -435,9 +435,12 @@ The mux forwards parsed ZCL and ZDP frames to their protocol actors inside
 profile, cluster, and link quality while normalizing the backend-specific timestamp and
 device-key-pair handle to `()`. Parsing reads the profile, cluster, source endpoint, and destination
 endpoint directly from the indication metadata; the coordinator does not construct a synthetic
-received APS frame header. ZDP delivery is non-blocking: when the bounded ZDP inbox is full, the
-mux logs and drops that frame so congestion cannot delay a later APS confirmation. A dropped
-correlated response is reported to its caller by the existing protocol-response timeout.
+received APS frame header. For ZDP frames, it also retains the hardware event's
+`zdo_response_required` value. The ZDP actor serves an incoming request only when this flag assigns
+response generation to the application; the NCP remains responsible otherwise. ZDP delivery is
+non-blocking: when the bounded ZDP inbox is full, the mux logs and drops that frame so congestion
+cannot delay a later APS confirmation. A dropped correlated response is reported to its caller by
+the existing protocol-response timeout.
 
 ## Joining Control
 

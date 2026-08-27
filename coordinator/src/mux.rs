@@ -186,8 +186,12 @@ impl Mux {
 
     async fn multiplex_apsde_event<T, K>(&self, event: HardwareApsdeEvent<T, K>) {
         match event {
-            HardwareApsdeEvent::DataIndication(indication) => {
-                self.handle_data_indication(indication).await;
+            HardwareApsdeEvent::DataIndication {
+                indication,
+                zdo_response_required,
+            } => {
+                self.handle_data_indication(indication, zdo_response_required)
+                    .await;
             }
             HardwareApsdeEvent::DataConfirm {
                 counter,
@@ -209,7 +213,11 @@ impl Mux {
         }
     }
 
-    async fn handle_data_indication<T, K>(&self, indication: DataIndication<Bytes, T, K>) {
+    async fn handle_data_indication<T, K>(
+        &self,
+        indication: DataIndication<Bytes, T, K>,
+        zdo_response_required: bool,
+    ) {
         let indication = indication.map_context(drop, drop);
         if !indication.metadata().status().is_success() {
             warn!(
@@ -222,14 +230,21 @@ impl Mux {
         let (metadata, asdu) = indication.into_parts();
         match ApsPayload::parse(&metadata, asdu) {
             Ok(payload) => {
-                self.forward_received_message(DataIndication::new(metadata, payload))
-                    .await;
+                self.forward_received_message(
+                    DataIndication::new(metadata, payload),
+                    zdo_response_required,
+                )
+                .await;
             }
             Err(error) => warn!("Failed to parse APS data indication: {error}"),
         }
     }
 
-    async fn forward_received_message(&self, indication: DataIndication<ApsPayload, (), ()>) {
+    async fn forward_received_message(
+        &self,
+        indication: DataIndication<ApsPayload, (), ()>,
+        zdo_response_required: bool,
+    ) {
         let (metadata, payload) = indication.into_parts();
 
         match payload {
@@ -246,7 +261,10 @@ impl Mux {
             ApsPayload::Zdp(frame) => {
                 let indication = DataIndication::new(metadata, frame);
 
-                match self.zdp.try_send(zdp::Message::Received { indication }) {
+                match self.zdp.try_send(zdp::Message::Received {
+                    indication,
+                    response_required: zdo_response_required,
+                }) {
                     Ok(()) => {}
                     Err(TrySendError::Full(_)) => {
                         warn!("Discarding received ZDP frame because the actor inbox is full");
@@ -353,7 +371,7 @@ mod tests {
                 );
                 let asdu = ZclFrame::new(header, On).to_le_stream().collect();
 
-                mux.handle_data_indication(DataIndication::new(metadata, asdu))
+                mux.handle_data_indication(DataIndication::new(metadata, asdu), false)
                     .await;
 
                 let zcl::Message::Received { indication } = zcl_messages
@@ -411,16 +429,20 @@ mod tests {
                     .to_le_stream()
                     .collect();
 
-                mux.handle_data_indication(DataIndication::new(metadata, asdu))
+                mux.handle_data_indication(DataIndication::new(metadata, asdu), true)
                     .await;
 
-                let zdp::Message::Received { indication } = zdp_messages
+                let zdp::Message::Received {
+                    indication,
+                    response_required,
+                } = zdp_messages
                     .recv()
                     .await
                     .expect("ZDP message must be routed")
                 else {
                     panic!("expected received ZDP message");
                 };
+                assert!(response_required);
                 assert!(matches!(
                     indication.metadata().destination(),
                     ReceivedDestination::Broadcast {
@@ -576,7 +598,7 @@ mod tests {
                 );
 
                 timeout(TEST_TIMEOUT, async {
-                    mux.handle_data_indication(DataIndication::new(metadata, asdu))
+                    mux.handle_data_indication(DataIndication::new(metadata, asdu), true)
                         .await;
                     mux.multiplex_apsde_event(ApsdeEvent::<u64>::DataConfirm {
                         counter: APS_COUNTER,

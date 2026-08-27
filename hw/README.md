@@ -78,7 +78,10 @@ use apis_saltans_hw::{ApsdeEvent, DeviceEvent, Event, NetworkEvent};
 
 let network_up = Event::Network(NetworkEvent::Up);
 let device_joined = Event::Device(DeviceEvent::Joined(address));
-let indication = Event::Apsde(ApsdeEvent::DataIndication(indication));
+let indication = Event::Apsde(ApsdeEvent::DataIndication {
+    indication,
+    zdo_response_required,
+});
 let confirmation = Event::Apsde(ApsdeEvent::DataConfirm {
     counter,
     confirmation,
@@ -180,7 +183,10 @@ through a Tokio MPSC channel and wait for the one-shot response associated with 
 Every proxy method creates and awaits a response channel. `NcpHandle::transmit(...)` returns after
 backend acceptance; eventual APS completion returns through the hardware event stream and is
 identified by the APS counter supplied with the request. Incoming application-service data is
-reported as `ApsdeEvent::DataIndication(aps::apsde::DataIndication<Bytes, T, K>)`.
+reported as `ApsdeEvent::DataIndication { indication, zdo_response_required }`. The `indication`
+field contains an `aps::apsde::DataIndication<Bytes, T, K>`. For an incoming ZDO request, the backend
+sets `zdo_response_required` from its NCP metadata to tell the coordinator whether it must generate
+the response. The flag is ignored for other profiles.
 
 ### Local Endpoint Descriptors
 
