@@ -18,7 +18,7 @@ thiserror = { version = "2", default-features = false }
 tokio = "1"
 zb-aps = { package = "apis-saltans-aps", version = "0.9", path = "aps" }
 zb-core = { package = "apis-saltans-core", version = "0.10", path = "core" }
-zb-hw = { package = "apis-saltans-hw", version = "0.14", path = "hw" }
+zb-hw = { package = "apis-saltans-hw", version = "0.15", path = "hw" }
 zb-zcl = { package = "apis-saltans-zcl", version = "0.10", path = "zcl" }
 zb-zdp = { package = "apis-saltans-zdp", version = "0.9", path = "zdp" }
 
