@@ -15,17 +15,17 @@ pub struct MacCapabilityFlags(u8);
 bitflags! {
     impl MacCapabilityFlags: u8 {
         /// Indicates whether the node is capable of becoming a PAN coordinator.
-        const ALTERNATE_PAN_COORDINATOR = 0b1000_0000;
+        const ALTERNATE_PAN_COORDINATOR = 0b0000_0001;
         /// Indicates the node is a full-function device (FFD) or reduced-function device (RFD).
-        const DEVICE_TYPE = 0b0100_0000;
+        const DEVICE_TYPE = 0b0000_0010;
         /// Indicates the current power source of the node.
-        const POWER_SOURCE = 0b0010_0000;
+        const POWER_SOURCE = 0b0000_0100;
         /// Indicates whether the receiver is on when the device is idle.
-        const RECEIVER_ON_WHEN_IDLE = 0b0001_0000;
+        const RECEIVER_ON_WHEN_IDLE = 0b0000_1000;
         /// Indicates whether the node is capable of sending and receiving frames secured using the security suite.
-        const SECURITY_CAPABLE = 0b0000_0010;
+        const SECURITY_CAPABLE = 0b0100_0000;
         /// Indicates whether the recipient shall allocate a network address for the node.
-        const ALLOCATE_ADDRESS = 0b0000_0001;
+        const ALLOCATE_ADDRESS = 0b1000_0000;
     }
 }
 
@@ -79,9 +79,42 @@ impl MacCapabilityFlags {
         self.contains(Self::SECURITY_CAPABLE)
     }
 
-    /// Returns whether the node is capable of allocating addresses.
+    /// Returns whether the recipient shall allocate a network address for the node.
     #[must_use]
     pub const fn allocate_address(self) -> bool {
         self.contains(Self::ALLOCATE_ADDRESS)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use le_stream::{FromLeStream, ToLeStream};
+
+    use super::MacCapabilityFlags;
+
+    #[test]
+    fn flags_when_read_then_match_zigbee_bit_assignments() {
+        assert_eq!(MacCapabilityFlags::ALTERNATE_PAN_COORDINATOR.bits(), 0x01);
+        assert_eq!(MacCapabilityFlags::DEVICE_TYPE.bits(), 0x02);
+        assert_eq!(MacCapabilityFlags::POWER_SOURCE.bits(), 0x04);
+        assert_eq!(MacCapabilityFlags::RECEIVER_ON_WHEN_IDLE.bits(), 0x08);
+        assert_eq!(MacCapabilityFlags::SECURITY_CAPABLE.bits(), 0x40);
+        assert_eq!(MacCapabilityFlags::ALLOCATE_ADDRESS.bits(), 0x80);
+    }
+
+    #[test]
+    fn flags_when_serialized_then_match_zigbee_wire_layout() {
+        let flags = MacCapabilityFlags::DEVICE_TYPE
+            | MacCapabilityFlags::POWER_SOURCE
+            | MacCapabilityFlags::RECEIVER_ON_WHEN_IDLE
+            | MacCapabilityFlags::ALLOCATE_ADDRESS;
+
+        let mut bytes = flags.to_le_stream();
+        assert_eq!(bytes.next(), Some(0x8E));
+        assert_eq!(bytes.next(), None);
+        assert_eq!(
+            MacCapabilityFlags::from_le_stream([0x8E].into_iter()),
+            Some(flags)
+        );
     }
 }
