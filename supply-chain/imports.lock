@@ -1,6 +1,30 @@
 
 # cargo-vet imports lock
 
+[[unpublished.apis-saltans-aps]]
+version = "0.10.0"
+audited_as = "0.9.0"
+
+[[unpublished.apis-saltans-coordinator]]
+version = "0.16.0"
+audited_as = "0.15.0"
+
+[[unpublished.apis-saltans-core]]
+version = "0.11.0"
+audited_as = "0.10.0"
+
+[[unpublished.apis-saltans-hw]]
+version = "0.16.0"
+audited_as = "0.15.0"
+
+[[unpublished.apis-saltans-zcl]]
+version = "0.11.0"
+audited_as = "0.10.0"
+
+[[unpublished.apis-saltans-zdp]]
+version = "0.10.0"
+audited_as = "0.9.0"
+
 [[publisher.apis-saltans-aps]]
 version = "0.9.0"
 when = "2026-08-27"
