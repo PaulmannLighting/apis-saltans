@@ -15,10 +15,6 @@ bitflags! {
         /// From 868 MHz to 868.6 MHz.
         const FROM_868_TO_868_6_MHZ = 0b0000_0001;
 
-        /// Deprecated incorrectly named alias of [`Self::FROM_868_TO_868_6_MHZ`].
-        #[deprecated(note = "use FROM_868_TO_868_6_MHZ")]
-        const FROM_863_TO_868_MHZ = Self::FROM_868_TO_868_6_MHZ.bits();
-
         /// From 902 MHz to 928 MHz.
         const FROM_902_TO_928_MHZ = 0b0000_0100;
 
