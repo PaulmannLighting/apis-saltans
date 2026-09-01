@@ -9,11 +9,11 @@ pub struct KeyNegotiationProtocols(u8);
 bitflags! {
     impl KeyNegotiationProtocols: u8 {
         /// Static Key Request (Zigbee 3.0 Mechanism, TCLK procedure).
-        const STATIC_KEY_REQUEST = 0b1000_0000;
+        const STATIC_KEY_REQUEST = 0b0000_0001;
         /// SPEKE using Curve25519 with Hash AES-MMO-128.
-        const SPEKE_USING_CURVE25519_WITH_HASH_AES_MMO_128 = 0b0100_0000;
+        const SPEKE_USING_CURVE25519_WITH_HASH_AES_MMO_128 = 0b0000_0010;
         /// SPEKE using Curve25519 with Hash SHA-256.
-        const SPEKE_USING_CURVE25519_WITH_HASH_SHA256 = 0b0010_0000;
+        const SPEKE_USING_CURVE25519_WITH_HASH_SHA256 = 0b0000_0100;
     }
 }
 

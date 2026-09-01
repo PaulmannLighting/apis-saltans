@@ -8,17 +8,17 @@ pub struct Control(u8);
 
 bitflags! {
     impl Control: u8 {
-        /// Indicates whether the extended header is present.
-        const FRAGMENTATION = 0b1100_0000;
+        /// Fragmentation sub-field mask.
+        const FRAGMENTATION = 0b0000_0011;
 
         /// Reserved.
-        const RESERVED = 0b0011_1111;
+        const RESERVED = 0b1111_1100;
 
         /// Frame is the first frame of a fragmented transmission.
-        const FIRST_FRAGMENT = 0b0100_0000;
+        const FIRST_FRAGMENT = 0b0000_0001;
 
         /// Frame is a follow-up frame of a fragmented transmission.
-        const FOLLOWUP_FRAGMENT = 0b1000_0000;
+        const FOLLOWUP_FRAGMENT = 0b0000_0010;
     }
 }
 
@@ -33,5 +33,18 @@ impl core::str::FromStr for Control {
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
         bitflags::parser::from_str(flags)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Control;
+
+    #[test]
+    fn bit_assignments_match_wire_format() {
+        assert_eq!(Control::FRAGMENTATION.bits(), 0b0000_0011);
+        assert_eq!(Control::FIRST_FRAGMENT.bits(), 0b0000_0001);
+        assert_eq!(Control::FOLLOWUP_FRAGMENT.bits(), 0b0000_0010);
+        assert_eq!(Control::RESERVED.bits(), 0b1111_1100);
     }
 }

@@ -9,9 +9,9 @@ pub struct LeaveReqFlags(u8);
 bitflags! {
     impl LeaveReqFlags: u8 {
         /// Rejoin flag.
-        const REJOIN = 0b0000_0001;
+        const REJOIN = 0b1000_0000;
         /// Remove children flag.
-        const REMOVE_CHILDREN = 0b0000_0010;
+        const REMOVE_CHILDREN = 0b0100_0000;
     }
 }
 
@@ -35,5 +35,28 @@ impl FromLeStream for LeaveReqFlags {
         T: Iterator<Item = u8>,
     {
         u8::from_le_stream(bytes).map(Self::from_bits_truncate)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use le_stream::FromLeStream;
+
+    use super::LeaveReqFlags;
+
+    #[test]
+    fn bit_assignments_match_wire_format() {
+        assert_eq!(LeaveReqFlags::REMOVE_CHILDREN.bits(), 0b0100_0000);
+        assert_eq!(LeaveReqFlags::REJOIN.bits(), 0b1000_0000);
+    }
+
+    #[test]
+    fn parses_wire_flags() {
+        let flags = LeaveReqFlags::from_le_stream([0b1100_0000].into_iter());
+
+        assert_eq!(
+            flags,
+            Some(LeaveReqFlags::REMOVE_CHILDREN | LeaveReqFlags::REJOIN)
+        );
     }
 }

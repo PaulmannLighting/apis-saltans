@@ -99,7 +99,7 @@ impl SimpleDescriptor {
 
     /// Return the raw application flags byte.
     ///
-    /// The version is stored in the high nibble. Use [`Self::version`] to
+    /// The version is stored in the low nibble. Use [`Self::version`] to
     /// extract it directly.
     #[must_use]
     pub const fn app_flags(&self) -> u8 {

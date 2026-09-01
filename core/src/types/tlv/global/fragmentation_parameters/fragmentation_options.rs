@@ -8,8 +8,8 @@ pub struct FragmentationOptions(u8);
 
 bitflags! {
     impl FragmentationOptions: u8 {
-        /// If this bit is set, fragmentation is supported.
-        const FRAGMENTATION_SUPPORTED = 0b1000_0000;
+        /// If this bit is set, application fragmentation is supported.
+        const FRAGMENTATION_SUPPORTED = 0b0000_0001;
     }
 }
 

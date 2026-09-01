@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn supported_key_negotiation_methods_to_le_stream() {
         let bytes: Vec<_> = SUPPORTED_KEY_NEGOTIATION_METHODS.to_le_stream().collect();
-        assert_eq!(bytes, vec![65, 1, 0b1000_0000, 0b0100_0000]);
+        assert_eq!(bytes, vec![65, 1, 0b0000_0001, 0b0000_0010]);
     }
 
     #[test]
@@ -122,23 +122,35 @@ mod tests {
             .collect();
         assert_eq!(
             bytes,
-            vec![65, 9, 0b1000_0000, 0b0100_0000, 8, 7, 6, 5, 4, 3, 2, 1]
+            vec![65, 9, 0b0000_0001, 0b0000_0010, 8, 7, 6, 5, 4, 3, 2, 1]
         );
     }
     #[test]
     fn supported_key_negotiation_methods_from_le_stream() {
-        let bytes = vec![65, 1, 0b1000_0000, 0b0100_0000];
+        let bytes = vec![65, 1, 0b0000_0001, 0b0000_0010];
         let tlv: Option<Tlv> = Tlv::from_le_stream(bytes.into_iter());
         assert_eq!(tlv, Some(SUPPORTED_KEY_NEGOTIATION_METHODS));
     }
 
     #[test]
     fn supported_key_negotiation_methods_with_source_device_eui64_from_le_stream() {
-        let bytes = vec![65, 9, 0b1000_0000, 0b0100_0000, 8, 7, 6, 5, 4, 3, 2, 1];
+        let bytes = vec![65, 9, 0b0000_0001, 0b0000_0010, 8, 7, 6, 5, 4, 3, 2, 1];
         let tlv: Option<Tlv> = Tlv::from_le_stream(bytes.into_iter());
         assert_eq!(
             tlv,
             Some(SUPPORTED_KEY_NEGOTIATION_METHODS_WITH_SOURCE_DEVICE_EUI64)
+        );
+    }
+
+    #[test]
+    fn global_bit_assignments_match_wire_format() {
+        assert_eq!(KeyNegotiationProtocols::all().bits(), 0b0000_0111);
+        assert_eq!(PreSharedSecrets::all().bits(), 0b0001_1111);
+        assert_eq!(RouterInformation::all().bits(), 0b0000_0000_1111_1111);
+        assert_eq!(FragmentationOptions::all().bits(), 0b0000_0001);
+        assert_eq!(
+            global::ConfigurationParameters::all().bits(),
+            0b0000_0000_0000_0111
         );
     }
 }

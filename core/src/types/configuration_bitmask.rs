@@ -9,7 +9,7 @@ pub struct ConfigurationBitmask(u8);
 bitflags! {
     impl ConfigurationBitmask: u8 {
         /// If this bit is set, indicates that an enhanced scan instead of an active scan should be performed.
-        const ENHANCED = 0b100_0000;
+        const ENHANCED = 0b0000_0001;
     }
 }
 
@@ -21,5 +21,15 @@ impl FromLeStream for ConfigurationBitmask {
         T: Iterator<Item = u8>,
     {
         u8::from_le_stream(bytes).map(Self::from_bits_truncate)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ConfigurationBitmask;
+
+    #[test]
+    fn enhanced_scan_is_wire_bit_zero() {
+        assert_eq!(ConfigurationBitmask::ENHANCED.bits(), 0b0000_0001);
     }
 }

@@ -6,7 +6,7 @@ use le_stream::{FromLeStream, ToLeStream};
 
 /// Simple Descriptor application flags.
 ///
-/// ZDP stores the application version in the high nibble and reserves the low
+/// ZDP stores the application version in the low nibble and reserves the high
 /// nibble.
 #[cfg_attr(
     feature = "serde",
@@ -19,10 +19,10 @@ pub struct AppFlags(u8);
 bitflags! {
     impl AppFlags: u8 {
         /// Version nibble.
-        const VERSION = 0b1111_0000;
+        const VERSION = 0b0000_1111;
 
         /// Reserved nibble.
-        const RESERVED = 0b0000_1111;
+        const RESERVED = 0b1111_0000;
     }
 }
 
@@ -38,7 +38,7 @@ impl AppFlags {
         Self((self.bits() & !Self::VERSION.bits()) | (version & Self::VERSION.bits()))
     }
 
-    /// Return the application version stored in the high nibble.
+    /// Return the application version stored in the low nibble.
     #[must_use]
     pub fn version(self) -> u8 {
         (self & Self::VERSION).bits() >> Self::VERSION.bits().trailing_zeros()
@@ -67,10 +67,16 @@ mod tests {
 
     use super::AppFlags;
 
-    const PARTIAL_VERSION_BITS: u8 = 0x10;
+    const PARTIAL_VERSION_BITS: u8 = 0x01;
     const REPLACEMENT_VERSION: u8 = 0x05;
     const VERSION_WITH_HIGH_BITS: u8 = 0xF5;
     const VERSION_AND_RESERVED: &str = "VERSION | RESERVED";
+
+    #[test]
+    fn bit_assignments_match_wire_format() {
+        assert_eq!(AppFlags::VERSION.bits(), 0x0F);
+        assert_eq!(AppFlags::RESERVED.bits(), 0xF0);
+    }
 
     #[test]
     fn replaces_existing_version_and_preserves_reserved_bits() {
@@ -99,7 +105,7 @@ mod tests {
     fn displays_partial_flags_as_hexadecimal_bits() {
         assert_eq!(
             AppFlags::from_bits_retain(PARTIAL_VERSION_BITS).to_string(),
-            "0x10"
+            "0x1"
         );
     }
 
@@ -115,7 +121,7 @@ mod tests {
 
     #[test]
     fn parses_hexadecimal_bits() {
-        let parsed = "0x10".parse::<AppFlags>();
+        let parsed = "0x1".parse::<AppFlags>();
 
         assert!(matches!(
             parsed,

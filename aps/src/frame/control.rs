@@ -16,22 +16,22 @@ pub struct Control(u8);
 bitflags! {
     impl Control: u8 {
         /// Frame type mask.
-        const FRAME_TYPE = 0b1100_0000;
+        const FRAME_TYPE = 0b0000_0011;
 
         /// Delivery mode mask.
-        const DELIVERY_MODE = 0b0011_0000;
+        const DELIVERY_MODE = 0b0000_1100;
 
-        /// Indicate if the frame is a command frame.
-        const ACK_FORMAT = 0b0000_1000;
+        /// Acknowledgment format flag.
+        const ACK_FORMAT = 0b0001_0000;
 
         /// Security provider flag.
-        const SECURITY = 0b0000_0100;
+        const SECURITY = 0b0010_0000;
 
         /// Acknowledgment request flag.
-        const ACK_REQUEST = 0b0000_0010;
+        const ACK_REQUEST = 0b0100_0000;
 
         /// Extended header flag.
-        const EXTENDED_HEADER = 0b0000_0001;
+        const EXTENDED_HEADER = 0b1000_0000;
     }
 }
 
@@ -136,5 +136,31 @@ impl Control {
                 }
                 DeliveryMode::Group => u16::from_le_stream(&mut bytes).map(WeakDestination::Group),
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Control, DeliveryMode, FrameType};
+
+    #[test]
+    fn bit_assignments_match_wire_format() {
+        assert_eq!(Control::FRAME_TYPE.bits(), 0b0000_0011);
+        assert_eq!(Control::DELIVERY_MODE.bits(), 0b0000_1100);
+        assert_eq!(Control::ACK_FORMAT.bits(), 0b0001_0000);
+        assert_eq!(Control::SECURITY.bits(), 0b0010_0000);
+        assert_eq!(Control::ACK_REQUEST.bits(), 0b0100_0000);
+        assert_eq!(Control::EXTENDED_HEADER.bits(), 0b1000_0000);
+    }
+
+    #[test]
+    fn fields_are_encoded_at_their_wire_positions() {
+        let mut control = Control::SECURITY | Control::ACK_REQUEST | Control::EXTENDED_HEADER;
+        control.set_frame_type(FrameType::Command);
+        control.set_delivery_mode(DeliveryMode::Broadcast);
+
+        assert_eq!(control.bits(), 0b1110_1001);
+        assert_eq!(control.frame_type(), FrameType::Command);
+        assert_eq!(control.delivery_mode(), Some(DeliveryMode::Broadcast));
     }
 }

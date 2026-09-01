@@ -9,15 +9,15 @@ pub struct PreSharedSecrets(u8);
 bitflags! {
     impl PreSharedSecrets: u8 {
         /// Symmetric Authentication Token
-        const SYMMETRIC_AUTHENTICATION_TOKEN = 0b1000_0000;
+        const SYMMETRIC_AUTHENTICATION_TOKEN = 0b0000_0001;
         /// Install Code Key
-        const INSTALL_CODE_KEY = 0b0100_0000;
+        const INSTALL_CODE_KEY = 0b0000_0010;
         /// Passcode Key
-        const PASSCODE_KEY = 0b0010_0000;
+        const PASSCODE_KEY = 0b0000_0100;
         /// Basic Access Key
-        const BASIC_ACCESS_KEY = 0b0001_0000;
+        const BASIC_ACCESS_KEY = 0b0000_1000;
         /// Administrative Access Key
-        const ADMINISTRATIVE_ACCESS_KEY = 0b0000_1000;
+        const ADMINISTRATIVE_ACCESS_KEY = 0b0001_0000;
     }
 }
 

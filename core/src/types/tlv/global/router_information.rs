@@ -11,21 +11,21 @@ pub struct RouterInformation(u16);
 bitflags! {
     impl RouterInformation: u16 {
         /// If this bit is set, there is hub connectivity.
-        const HUB_CONNECTIVITY = 0b1000_0000_0000_0000;
+        const HUB_CONNECTIVITY = 0b0000_0000_0000_0001;
         /// If this bit is set, the router is up for more than 24 hours.
-        const UPTIME = 0b0100_0000_0000_0000;
+        const UPTIME = 0b0000_0000_0000_0010;
         /// If this bit is set, this device is a preferred parent.
-        const PREFERRED_PARENT = 0b0010_0000_0000_0000;
+        const PREFERRED_PARENT = 0b0000_0000_0000_0100;
         /// If this bit is set, the device has battery backup.
-        const BATTERY_BACKUP = 0b0001_0000_0000_0000;
+        const BATTERY_BACKUP = 0b0000_0000_0000_1000;
         /// If this bit is set, the device supports enhanced beacon requests.
-        const ENHANCED_BEACON_REQUEST_SUPPORT = 0b0000_1000_0000_0000;
+        const ENHANCED_BEACON_REQUEST_SUPPORT = 0b0000_0000_0001_0000;
         /// If this bit is set, the device supports MAC data poll keepalive.
-        const MAC_DATA_POLL_KEEPALIVE_SUPPORT = 0b0000_0100_0000_0000;
+        const MAC_DATA_POLL_KEEPALIVE_SUPPORT = 0b0000_0000_0010_0000;
         /// If this bit is set, the device supports end device keepalive.
-        const END_DEVICE_KEEPALIVE_SUPPORT = 0b0000_0010_0000_0000;
+        const END_DEVICE_KEEPALIVE_SUPPORT = 0b0000_0000_0100_0000;
         /// If this bit is set, the device supports power negotiation.
-        const POWER_NEGOTIATION_SUPPORT = 0b0000_0001_0000_0000;
+        const POWER_NEGOTIATION_SUPPORT = 0b0000_0000_1000_0000;
     }
 }
 

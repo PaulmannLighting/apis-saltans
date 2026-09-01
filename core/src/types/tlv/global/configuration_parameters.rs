@@ -11,11 +11,11 @@ pub struct ConfigurationParameters(u16);
 bitflags! {
     impl ConfigurationParameters: u16 {
         /// If this bit is set, AIB configuration is supported.
-        const AIB = 0b1000_0000_0000_0000;
+        const AIB = 0b0000_0000_0000_0001;
         /// If this bit is set, Security Policy configuration is supported.
-        const DEVICE_SECURITY_POLICY = 0b0100_0000_0000_0000;
+        const DEVICE_SECURITY_POLICY = 0b0000_0000_0000_0010;
         /// If this bit is set, Network Information Base configuration is supported.
-        const NIB = 0b0010_0000_0000_0000;
+        const NIB = 0b0000_0000_0000_0100;
     }
 }
 
