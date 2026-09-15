@@ -427,3 +427,10 @@ flowchart TD
 Command helpers that do not expect a protocol response return `Result<(), Error>` after completing
 the deferred APS result outside the protocol actor. Communication methods return `ZclResponse<T>`
 or `ZdpResponse<T>` containing both the deferred APS completion and the application-level response.
+
+### Shared protocol lifecycle delivery
+
+`correlation::inbox` implements cancellation delivery and delayed inbox messages for ZCL and
+ZDP. Each actor chooses its message variant and deadline; the shared helpers retain weak senders
+until delivery and preserve generation-tagged tokens. Cancellation uses immediate delivery with
+a runtime task as the fallback when the bounded inbox is full.

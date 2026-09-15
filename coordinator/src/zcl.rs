@@ -3,11 +3,9 @@
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
-use tokio::runtime::Handle;
 use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
-use tokio::time::sleep;
 use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
@@ -19,6 +17,7 @@ pub use self::subscription::{
 use crate::aps::{Aps, TransmissionResponse};
 use crate::correlation::{
     Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
+    cancellation, schedule_timeout,
 };
 use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
@@ -275,59 +274,30 @@ impl Transceiver {
 /// Pending-response cancellation, timeout, and quarantine lifecycle management.
 impl Transceiver {
     fn cancellation(&self, token: Token) -> Cancellation {
-        let inbox = self.inbox.clone();
-        let runtime = Handle::current();
-
-        Cancellation::new(token, move |token| {
-            let Some(inbox) = inbox.upgrade() else {
-                return;
-            };
-            match inbox.try_send(Message::Cancel { token }) {
-                Ok(()) => {}
-                Err(TrySendError::Full(message)) => {
-                    runtime.spawn(async move {
-                        inbox.send(message).await.unwrap_or_else(|error| {
-                            debug!("Failed to enqueue ZCL response cancellation: {error}");
-                        });
-                    });
-                }
-                Err(TrySendError::Closed(_)) => {
-                    debug!("Failed to enqueue ZCL response cancellation: actor unavailable");
-                }
-            }
-        })
+        cancellation(
+            self.inbox.clone(),
+            token,
+            |token| Message::Cancel { token },
+            "ZCL",
+        )
     }
 
     fn schedule_response_timeout(&self, token: Token) {
-        let inbox = self.inbox.clone();
-        spawn(async move {
-            sleep(PROTOCOL_RESPONSE_TIMEOUT).await;
-            let Some(inbox) = inbox.upgrade() else {
-                return;
-            };
-            inbox
-                .send(Message::ResponseTimeout { token })
-                .await
-                .unwrap_or_else(|error| {
-                    debug!("Failed to enqueue ZCL response timeout: {error}");
-                });
-        });
+        schedule_timeout(
+            self.inbox.clone(),
+            PROTOCOL_RESPONSE_TIMEOUT,
+            Message::ResponseTimeout { token },
+            "ZCL response timeout",
+        );
     }
 
     fn schedule_quarantine_timeout(&self, token: Token) {
-        let inbox = self.inbox.clone();
-        spawn(async move {
-            sleep(PROTOCOL_QUARANTINE_TIMEOUT).await;
-            let Some(inbox) = inbox.upgrade() else {
-                return;
-            };
-            inbox
-                .send(Message::QuarantineTimeout { token })
-                .await
-                .unwrap_or_else(|error| {
-                    debug!("Failed to enqueue ZCL quarantine timeout: {error}");
-                });
-        });
+        schedule_timeout(
+            self.inbox.clone(),
+            PROTOCOL_QUARANTINE_TIMEOUT,
+            Message::QuarantineTimeout { token },
+            "ZCL quarantine timeout",
+        );
     }
 }
 

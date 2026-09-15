@@ -5,12 +5,9 @@ use std::collections::BTreeMap;
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, error, trace, warn};
-use tokio::runtime::Handle;
 use tokio::spawn;
-use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::task::AbortHandle;
-use tokio::time::sleep;
 use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress, ReceivedDestination};
 use zb_core::FullAddress;
 use zb_core::node::Descriptor;
@@ -24,6 +21,7 @@ use self::submission::CommunicationSubmission;
 use crate::aps::Aps;
 use crate::correlation::{
     Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
+    cancellation, schedule_timeout,
 };
 use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
@@ -387,58 +385,30 @@ impl Transceiver {
 /// Pending-response cancellation, timeout, and quarantine lifecycle management.
 impl Transceiver {
     fn cancellation(&self, token: Token) -> Cancellation {
-        let inbox = self.inbox.clone();
-        let runtime = Handle::current();
-        Cancellation::new(token, move |token| {
-            let Some(inbox) = inbox.upgrade() else {
-                return;
-            };
-            match inbox.try_send(Message::Cancel { token }) {
-                Ok(()) => {}
-                Err(TrySendError::Full(message)) => {
-                    runtime.spawn(async move {
-                        inbox.send(message).await.unwrap_or_else(|error| {
-                            debug!("Failed to enqueue ZDP response cancellation: {error}");
-                        });
-                    });
-                }
-                Err(TrySendError::Closed(_)) => {
-                    debug!("Failed to enqueue ZDP response cancellation: actor unavailable");
-                }
-            }
-        })
+        cancellation(
+            self.inbox.clone(),
+            token,
+            |token| Message::Cancel { token },
+            "ZDP",
+        )
     }
 
     fn schedule_response_timeout(&self, token: Token) {
-        let inbox = self.inbox.clone();
-        spawn(async move {
-            sleep(PROTOCOL_RESPONSE_TIMEOUT).await;
-            let Some(inbox) = inbox.upgrade() else {
-                return;
-            };
-            inbox
-                .send(Message::ResponseTimeout { token })
-                .await
-                .unwrap_or_else(|error| {
-                    debug!("Failed to enqueue ZDP response timeout: {error}");
-                });
-        });
+        schedule_timeout(
+            self.inbox.clone(),
+            PROTOCOL_RESPONSE_TIMEOUT,
+            Message::ResponseTimeout { token },
+            "ZDP response timeout",
+        );
     }
 
     fn schedule_quarantine_timeout(&self, token: Token) {
-        let inbox = self.inbox.clone();
-        spawn(async move {
-            sleep(PROTOCOL_QUARANTINE_TIMEOUT).await;
-            let Some(inbox) = inbox.upgrade() else {
-                return;
-            };
-            inbox
-                .send(Message::QuarantineTimeout { token })
-                .await
-                .unwrap_or_else(|error| {
-                    debug!("Failed to enqueue ZDP quarantine timeout: {error}");
-                });
-        });
+        schedule_timeout(
+            self.inbox.clone(),
+            PROTOCOL_QUARANTINE_TIMEOUT,
+            Message::QuarantineTimeout { token },
+            "ZDP quarantine timeout",
+        );
     }
 }
 
