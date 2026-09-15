@@ -258,3 +258,10 @@ payload parsing to that group. If no group recognizes the cluster ID, parsing re
 
 `src/macros.rs` preserves the existing crate-local macro paths. Implementations live in
 `src/macros/`, with separate modules for commands, service groups, and the top-level command enum.
+
+### Address-response payload
+
+Network Address and IEEE Address responses retain distinct public commands, response enums,
+service names, and cluster IDs. Both delegate to the private `address_response::AddressResponse`
+payload for construction and wire encoding. Tests cover status-only, single-device, and empty
+or nonempty extended responses, unknown statuses, and incomplete required fields.

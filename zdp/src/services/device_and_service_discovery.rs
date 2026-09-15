@@ -22,6 +22,7 @@ pub use self::system_server_discovery_rsp::SystemServerDiscoveryRsp;
 
 mod active_ep_req;
 mod active_ep_rsp;
+mod address_response;
 mod device_annce;
 mod ieee_addr_req;
 mod ieee_addr_rsp;
@@ -39,6 +40,8 @@ mod simple_desc_req;
 mod simple_desc_rsp;
 mod system_server_discovery_req;
 mod system_server_discovery_rsp;
+#[cfg(test)]
+mod tests;
 
 crate::zdp_command_group! {
     /// Device and Service Discovery Commands.
