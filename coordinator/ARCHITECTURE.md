@@ -24,9 +24,8 @@ flowchart TD
     C -->|schedule update| OTAA
     OTAA -->|ServerEvent::Message| OTA
     C -->|NCP helper APIs| HW
-    ZCL -->|Data&lt;Bytes&gt;| APS
-    ZDP -->|Data&lt;Bytes&gt;| APS
-    ZCL -->|endpoint descriptor query| HW
+    ZCL -->|DataRequest&lt;Bytes&gt;| APS
+    ZDP -->|DataRequest&lt;Bytes&gt;| APS
     ZDP -->|spawn received request| ZDPO
     ZDPO -->|endpoint and address queries| HW
     ZDPO -->|response frame| APS
@@ -53,7 +52,9 @@ mux and protocol actors without exposing that delivery mechanism through the cra
 ZDP commands enter their actor as complete `DataRequest<Bytes>` values because their local source
 endpoint is always the ZDO data endpoint. ZCL commands enter their actor as complete
 `DataRequest<UnsequencedFrame<Bytes>>` values; the actor assigns the ZCL transaction sequence,
-serializes the resulting regular frame, and preserves all APS fields.
+serializes the resulting regular frame, and preserves all APS fields. The ZCL actor has no hardware
+handle; callers choose its source endpoint. ZDP server operations query endpoint descriptors
+through the hardware handle when answering discovery requests.
 
 ## APS Actor
 
@@ -93,7 +94,7 @@ every transmission. The APS actor resolves that channel when the hardware reject
 unacknowledged request. When its options contain `TxOptions::ACKNOWLEDGED_TRANSMISSION` and its
 destination is an individual network or extended address, hardware acceptance instead stores the
 sender until the APS result arrives. Group and broadcast transmissions never await APS
-acknowledgements. Its completion method forwards hardware APSDE confirmations from the mux.
+acknowledgements. Its `confirm` method forwards hardware APSDE confirmations from the mux.
 The actor never awaits backend acceptance in its message loop. Each submission runs in a spawned
 operation and posts `SubmissionFinished` back into the actor's one bounded inbox. This keeps the
 actor available for confirmations, cancellation, and network or hardware lifecycle messages while
