@@ -142,3 +142,11 @@ The core crate is intentionally below all protocol and runtime crates:
 - It must not depend on APS, ZCL, ZDP, coordinator, or hardware crates.
 - Higher-level crates attach behavior to these values through their own command,
   frame, and dispatch types.
+
+## Composite String Capacity
+
+`String<CAPACITY>` delegates storage and capacity conversions to `OctStr<CAPACITY>`.
+Both expose `try_resize_capacity` as a lossless, fallible capacity conversion; failure returns
+the original value. `truncate` forwards to this method for source compatibility. Conversions
+from the runtime `Type` enum also use `try_resize_capacity`. Wire parsing retains its existing
+behavior of consuming the encoded length and discarding bytes that exceed capacity.

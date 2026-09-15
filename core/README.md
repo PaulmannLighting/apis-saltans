@@ -217,3 +217,14 @@ Key dependencies:
 ## Legal
 
 This project is independent and not affiliated with the Zigbee Alliance.
+
+## Changing String Capacity
+
+`types::OctStr` and `types::String` provide `try_resize_capacity::<NEW_CAPACITY>()` to
+change their capacity while preserving every byte. If the contents do not fit, the method
+returns the original value in `Err`. The existing `truncate` method remains a compatibility
+alias with the same behavior. Use `widen` when the new capacity is known to be at least the
+old capacity.
+
+This differs from `OctStr::from_le_stream`, which consumes the encoded bytes and discards
+bytes beyond the destination capacity.

@@ -34,13 +34,29 @@ impl<const CAPACITY: usize> String<CAPACITY> {
         str::from_utf8(self.0.as_ref())
     }
 
-    /// Attempt to truncate the string to a new size.
+    /// Change the capacity while preserving every byte of the string.
     ///
     /// # Errors
     ///
-    /// Returns the original string if the new capacity is smaller than the current size.
+    /// Returns the original string unchanged if its contents exceed the new capacity.
+    pub fn try_resize_capacity<const NEW_CAPACITY: usize>(
+        self,
+    ) -> Result<String<NEW_CAPACITY>, Self> {
+        self.0
+            .try_resize_capacity()
+            .map_err(Self)
+            .map(String::<NEW_CAPACITY>)
+    }
+
+    /// Compatibility alias for [`Self::try_resize_capacity`].
+    ///
+    /// This method preserves all bytes; it does not truncate the contents.
+    ///
+    /// # Errors
+    ///
+    /// Returns the original string unchanged if its contents exceed the new capacity.
     pub fn truncate<const NEW_CAPACITY: usize>(self) -> Result<String<NEW_CAPACITY>, Self> {
-        self.0.truncate().map_err(Self).map(String::<NEW_CAPACITY>)
+        self.try_resize_capacity()
     }
 
     /// Attempt to widen a string to a new, larger capacity.
@@ -81,7 +97,7 @@ impl<const CAPACITY: usize> TryFrom<Type> for String<CAPACITY> {
 
     fn try_from(typ: Type) -> Result<Self, Self::Error> {
         if let Type::String(string) = typ {
-            string.truncate().map_err(Type::String)
+            string.try_resize_capacity().map_err(Type::String)
         } else {
             Err(typ)
         }

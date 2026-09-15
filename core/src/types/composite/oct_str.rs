@@ -28,17 +28,30 @@ impl<const CAPACITY: usize> OctStr<CAPACITY> {
         self.0.is_empty()
     }
 
-    /// Attempt to truncate the string to a new size.
+    /// Change the capacity while preserving every byte of the string.
     ///
     /// # Errors
     ///
-    /// Returns the original string if the new capacity is smaller than the current size.
-    pub fn truncate<const NEW_CAPACITY: usize>(self) -> Result<OctStr<NEW_CAPACITY>, Self> {
+    /// Returns the original string unchanged if its contents exceed the new capacity.
+    pub fn try_resize_capacity<const NEW_CAPACITY: usize>(
+        self,
+    ) -> Result<OctStr<NEW_CAPACITY>, Self> {
         if self.len() <= NEW_CAPACITY {
             Ok(OctStr(self.0.into_iter().collect()))
         } else {
             Err(self)
         }
+    }
+
+    /// Compatibility alias for [`Self::try_resize_capacity`].
+    ///
+    /// This method preserves all bytes; it does not truncate the contents.
+    ///
+    /// # Errors
+    ///
+    /// Returns the original string unchanged if its contents exceed the new capacity.
+    pub fn truncate<const NEW_CAPACITY: usize>(self) -> Result<OctStr<NEW_CAPACITY>, Self> {
+        self.try_resize_capacity()
     }
 
     /// Attempt to widen a string to a new, larger capacity.
@@ -102,7 +115,7 @@ impl<const CAPACITY: usize> TryFrom<Type> for OctStr<CAPACITY> {
 
     fn try_from(typ: Type) -> Result<Self, Self::Error> {
         if let Type::OctetString(string) = typ {
-            string.truncate().map_err(Type::OctetString)
+            string.try_resize_capacity().map_err(Type::OctetString)
         } else {
             Err(typ)
         }
