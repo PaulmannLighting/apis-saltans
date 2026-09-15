@@ -28,7 +28,7 @@ service group enum is declared with `zdp_command_group!`, and the crate-wide enu
 - `src/simple_descriptor.rs` and `src/simple_descriptor/` model the Simple Descriptor payload,
   including raw endpoint/profile IDs, application flags, and input/output cluster lists.
 - `src/status.rs` and `src/status/` model ZDP status values and display helpers.
-- `src/macros.rs` contains the crate-local declarative macros used by the service modules.
+- `src/macros.rs` re-exports the crate-local declarative macros from `src/macros/` used by the service modules.
 
 ## Runtime Command Flow
 
@@ -95,7 +95,7 @@ is exposed through `SimpleDescriptor::version()`.
 
 ## Macro Conventions
 
-The macros in `src/macros.rs` are crate-local and re-exported from `lib.rs` with `pub(crate) use`.
+The macros under `src/macros/` are crate-local and re-exported from `lib.rs` with `pub(crate) use`.
 Call sites use `crate::zdp_command!`, `crate::zdp_command_group!`, and `crate::zdp_command_enum!`.
 
 Macro call sites should describe protocol shape. Hand-written code should be limited to constructors
@@ -253,3 +253,8 @@ payload parsing to that group. If no group recognizes the cluster ID, parsing re
   conversions.
 - Length-prefixed lists should use existing sized-vector helpers when the length byte directly
   precedes the list; otherwise, use custom stream implementations.
+
+### Macro module layout
+
+`src/macros.rs` preserves the existing crate-local macro paths. Implementations live in
+`src/macros/`, with separate modules for commands, service groups, and the top-level command enum.
