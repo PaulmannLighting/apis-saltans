@@ -235,6 +235,11 @@ previous generation's lifecycle tasks and start new deadlines; generation checks
 queued stale messages harmless. Discovery ends only after a compatible query or valid data
 request, block activity resets its deadline, and the total-transfer deadline never resets.
 
+Typed query and upgrade-end replies and global default responses share a prepared-request
+helper that spawns a generation-tagged operation. It reports transmission failures before
+applying any terminal update result. Image Page operations reuse the validated request range's
+offset for both their initial position and page boundary calculation.
+
 Each update carries a `FullAddress` plus its remote endpoint. The transfer pins the IEEE identity
 and current NWK short address for Image Notify transmission and destination-restricted image
 checks. Before the server routes any inbound OTA request, it resolves the request's NWK source

@@ -529,7 +529,7 @@ impl Transfer {
             return;
         }
 
-        match request.status() {
+        let error = match request.status() {
             UpgradeEndStatus::Success => {
                 let response = UpgradeEndResponse::new(
                     request.image(),
@@ -537,24 +537,18 @@ impl Transfer {
                     UPGRADE_TIME_IMMEDIATE,
                 );
                 self.spawn_reply(context, response, Some(Ok(())));
+                return;
             }
-            status @ (UpgradeEndStatus::Abort
-            | UpgradeEndStatus::InvalidImage
-            | UpgradeEndStatus::RequireMoreImage) => {
-                let error = match status {
-                    UpgradeEndStatus::Abort => UpdateError::Aborted,
-                    UpgradeEndStatus::InvalidImage => UpdateError::InvalidImage,
-                    UpgradeEndStatus::RequireMoreImage => UpdateError::RequireMoreImage,
-                    UpgradeEndStatus::Success => unreachable!("success is handled separately"),
-                };
-                self.spawn_default_response(
-                    context,
-                    request_command_id,
-                    Status::Success,
-                    Some(Err(error)),
-                );
-            }
-        }
+            UpgradeEndStatus::Abort => UpdateError::Aborted,
+            UpgradeEndStatus::InvalidImage => UpdateError::InvalidImage,
+            UpgradeEndStatus::RequireMoreImage => UpdateError::RequireMoreImage,
+        };
+        self.spawn_default_response(
+            context,
+            request_command_id,
+            Status::Success,
+            Some(Err(error)),
+        );
     }
 
     /// Spawn one reply operation inside this destination transfer.
@@ -566,7 +560,6 @@ impl Transfer {
     ) where
         T: Command + zb_zcl::Directed + zb_zcl::Scoped + ToLeStream,
     {
-        let zcl = self.zcl.clone();
         let request = request(
             context.destination.into(),
             context.source_endpoint,
@@ -574,10 +567,7 @@ impl Transfer {
             Cluster::OtaUpgrade.as_u16(),
             command,
         );
-        self.spawn_operation(async move {
-            let result = transmit_reply(&zcl, context.sequence_number, request).await;
-            operation_outcome(result, completion)
-        });
+        self.spawn_reply_request(context.sequence_number, request, completion);
     }
 
     /// Spawn a generation-tagged operation owned by this destination transfer.
@@ -604,9 +594,19 @@ impl Transfer {
         completion: Option<UpdateResult>,
     ) {
         let request = default_response_request(context, request_command_id, status);
+        self.spawn_reply_request(context.sequence_number, request, completion);
+    }
+
+    /// Send a prepared reply in a generation-owned operation and apply its completion policy.
+    fn spawn_reply_request(
+        &mut self,
+        sequence_number: u8,
+        request: Request,
+        completion: Option<UpdateResult>,
+    ) {
         let zcl = self.zcl.clone();
         self.spawn_operation(async move {
-            let result = transmit_reply(&zcl, context.sequence_number, request).await;
+            let result = transmit_reply(&zcl, sequence_number, request).await;
             operation_outcome(result, completion)
         });
     }
@@ -732,8 +732,8 @@ async fn image_page_operation(
 
     let image_id = page_request.image();
     let maximum_data_size = usize::from(page_request.maximum_data_size());
-    let page_end = usize::try_from(page_request.file_offset())
-        .unwrap_or(usize::MAX)
+    let page_end = range
+        .offset
         .saturating_add(usize::from(page_request.page_size()))
         .min(image.len());
     let spacing = Duration::from_millis(u64::from(page_request.response_spacing()));
@@ -746,8 +746,7 @@ async fn image_page_operation(
         maximum_data_size,
         page_end,
         spacing,
-        offset: usize::try_from(page_request.file_offset())
-            .expect("validated OTA file offset fits usize"),
+        offset: range.offset,
         sequence_number: context.sequence_number,
         block_data: first_block,
     };
