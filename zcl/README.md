@@ -193,6 +193,18 @@ let parsed = Frame::parse(0x0006, bytes.into_iter());
 assert!(parsed.is_ok());
 ```
 
+## Configure Reporting Responses
+
+`global::configure_reporting::Response` accepts the one-byte `0x00` success payload.
+Use `response.is_success()` to check whether all requested attributes were configured.
+For a decoded success response, `response.status()` contains one success record whose
+`direction()` and `attribute_id()` are `None`; failure records return `Some` for both.
+`AttributeStatus::success()` constructs a success record, while `AttributeStatus::new`
+retains direction and attribute ID only for failure statuses. `Response::new` normalizes
+an empty list or a list of successes to one success record, and removes successes
+when failures are present. Serde deserialization uses the same normalization.
+Serialization writes these records directly, producing `0x00` for success.
+
 ## Attribute Traits
 
 The crate provides type-safe patterns for attribute access:

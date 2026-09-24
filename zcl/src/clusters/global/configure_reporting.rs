@@ -1,7 +1,5 @@
 //! Reporting configuration commands for the Global cluster.
 
-use std::boxed::Box;
-
 use zb_core::Direction;
 
 pub use self::attribute_status::AttributeStatus;
@@ -16,24 +14,86 @@ pub mod send;
 const COMMAND_ID: u8 = 0x06;
 
 zcl_command! {
-    /// Status of an attribute reporting configuration.
+    /// Configure Reporting response containing success or failed attribute configurations.
+    ///
+    /// Success contains one record with no direction or attribute ID.
     Response {
         Global;
         command_id: 0x07;
         direction: Direction::ServerToClient;
         => crate::global::ConfigureReportingResponse;
         fields {
+            #[cfg_attr(feature = "serde", serde(deserialize_with = "deserialize_status"))]
             status: Box<[AttributeStatus]>,
         }
 
+        constructor {
+            /// Creates a response containing only failures, or one success record.
+            ///
+            /// Success records are removed when failures are present. Empty lists and
+            /// lists containing only successes become a single success record.
+            #[must_use]
+            pub fn new(status: Box<[AttributeStatus]>) -> Self {
+                let mut status = status.into_vec();
+                status.retain(|record| record.status() != crate::Status::Success as u8);
+                if status.is_empty() {
+                    status.push(AttributeStatus::success());
+                }
+                Self { status: status.into_boxed_slice() }
+            }
+        }
+
         getters {
-            /// Returns the status.
+            /// Returns attribute status records.
+            ///
+            /// Success contains one success record; otherwise records describe failures.
             #[must_use]
             pub fn status(&self) -> &[AttributeStatus] {
                 &self.status
             }
+
+            /// Returns whether all requested attributes were configured successfully.
+            #[must_use]
+            pub fn is_success(&self) -> bool {
+                self.status.iter().all(|record| record.status() == crate::Status::Success as u8)
+            }
         }
+
+        from_le_stream {
+            fn from_le_stream<T>(mut stream: T) -> Option<Self>
+            where
+                T: Iterator<Item = u8>,
+            {
+                let first = AttributeStatus::from_le_stream(&mut stream)?;
+                if first.status() == crate::Status::Success as u8 {
+                    return stream.next().is_none().then(|| Self::new(Box::new([first])));
+                }
+
+                let mut stream = stream.peekable();
+                let mut status = vec![first];
+                while stream.peek().is_some() {
+                    let record = AttributeStatus::from_le_stream(&mut stream)?;
+                    if record.status() == crate::Status::Success as u8 {
+                        return None;
+                    }
+                    status.push(record);
+                }
+                Some(Self::new(status.into_boxed_slice()))
+            }
+        }
+
+
     }
+}
+
+/// Deserializes response records and applies the constructor's normalization.
+#[cfg(feature = "serde")]
+fn deserialize_status<'de, D>(deserializer: D) -> Result<Box<[AttributeStatus]>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let status = serde::Deserialize::deserialize(deserializer)?;
+    Ok(Response::new(status).status)
 }
 
 #[cfg(test)]
@@ -42,7 +102,7 @@ mod tests {
     use zb_core::Direction;
     use zb_core::types::{Bool, Uint16};
 
-    use super::{Receive, Send, receive};
+    use super::{AttributeStatus, Receive, Response, Send, receive};
     use crate::clusters::general::{level, on_off};
     use crate::{Analog, Directed, Discrete};
 
@@ -53,6 +113,103 @@ mod tests {
     const MINIMUM_REPORTING_INTERVAL: u16 = 0x0102;
     const MAXIMUM_REPORTING_INTERVAL: u16 = 0x0304;
     const TIMEOUT_PERIOD: u16 = 0x0506;
+
+    #[test]
+    fn parses_and_serializes_success_response() {
+        let response = Response::from_le_stream([0x00].into_iter()).unwrap();
+        assert!(response.is_success());
+        assert_eq!(response.status(), [AttributeStatus::success()]);
+        assert_eq!(response.to_le_stream().collect::<Vec<_>>(), [0x00]);
+    }
+
+    #[test]
+    fn parses_success_response_through_frame_dispatch() {
+        const CLUSTER_ID: u16 = 0x0006;
+        let frame = crate::Frame::parse(CLUSTER_ID, [0x18, 0x42, 0x07, 0x00].into_iter()).unwrap();
+        let response = Response::try_from(frame.into_payload()).unwrap();
+        assert!(response.is_success());
+        assert_eq!(response.status(), [AttributeStatus::success()]);
+    }
+
+    #[test]
+    fn preserves_failure_response_records() {
+        const PAYLOAD: [u8; 8] = [0x86, 0x00, 0x34, 0x12, 0x8c, 0x01, 0x78, 0x56];
+        let response = Response::from_le_stream(PAYLOAD.into_iter()).unwrap();
+        assert!(!response.is_success());
+        assert_eq!(
+            response.status(),
+            [
+                AttributeStatus::new(0x86, 0x00, 0x1234),
+                AttributeStatus::new(0x8c, 0x01, 0x5678),
+            ]
+        );
+        assert_eq!(response.to_le_stream().collect::<Vec<_>>(), PAYLOAD);
+    }
+
+    #[test]
+    fn serializes_only_failures_or_single_success() {
+        let success = AttributeStatus::new(0x00, 0x00, 0x1234);
+        let failure = AttributeStatus::new(0x86, 0x01, 0x5678);
+        assert_eq!(
+            Response::new(Box::default())
+                .to_le_stream()
+                .collect::<Vec<_>>(),
+            [0x00],
+        );
+        assert_eq!(
+            Response::new(Box::new([success]))
+                .to_le_stream()
+                .collect::<Vec<_>>(),
+            [0x00],
+        );
+        assert_eq!(
+            Response::new(Box::new([success, failure]))
+                .to_le_stream()
+                .collect::<Vec<_>>(),
+            [0x86, 0x01, 0x78, 0x56],
+        );
+    }
+
+    #[test]
+    fn constructor_normalizes_records_before_serialization() {
+        let success = AttributeStatus::success();
+        let failure = AttributeStatus::new(0x86, 0x01, 0x5678);
+        let inputs: [Box<[AttributeStatus]>; 4] = [
+            Box::default(),
+            Box::new([success, success]),
+            Box::new([success, failure, success]),
+            Box::new([failure, failure]),
+        ];
+        for input in inputs {
+            let response = Response::new(input);
+            if response.is_success() {
+                assert_eq!(response.status(), [success]);
+            } else {
+                assert!(response.status().iter().all(|record| *record == failure));
+            }
+            assert_eq!(
+                Response::from_le_stream(response.clone().to_le_stream()),
+                Some(response),
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_empty_truncated_and_mixed_responses() {
+        const INVALID_PAYLOADS: &[&[u8]] = &[
+            &[],
+            &[0x86],
+            &[0x86, 0x00],
+            &[0x86, 0x00, 0x34],
+            &[0x86, 0x00, 0x34, 0x12, 0x8c],
+            &[0x00, 0x86, 0x00, 0x34, 0x12],
+            &[0x86, 0x00, 0x34, 0x12, 0x00],
+            &[0x86, 0x00, 0x34, 0x12, 0x00, 0x00, 0x00, 0x00],
+        ];
+        for payload in INVALID_PAYLOADS {
+            assert_eq!(Response::from_le_stream(payload.iter().copied()), None);
+        }
+    }
 
     #[test]
     fn send_command_has_client_to_server_direction() {

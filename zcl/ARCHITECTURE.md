@@ -335,6 +335,18 @@ reportable attributes, it must implement `TryFrom<Type>`.
 7. If any attribute is reportable and should be parsed globally, add the cluster's `Reportable` enum
    to the crate-wide `AttributeReport` enum in `src/attributes.rs`.
 
+## Configure Reporting Response Encoding
+
+`configure_reporting::Response` uses custom decoding to validate its two payload forms:
+a single success status byte, or a nonempty list of four-byte failure records. It rejects
+incomplete records and success mixed with other records. The `AttributeStatus` codec reads
+the status first and requires direction and attribute ID only for failures; success keeps
+both optional fields as `None`.
+
+`Response::new` normalizes record lists to failures only, or a single success record when
+no failures remain. Serde deserialization also uses this constructor. With valid lists
+ensured at construction, response serialization is derived and concatenates record encodings.
+
 ## Implementation Boundaries
 
 - Generated macros should express protocol tables and repeated trait boilerplate.
