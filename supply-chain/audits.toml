@@ -7,6 +7,12 @@ criteria = "safe-to-deploy"
 version = "0.1.5"
 notes = "AI-assisted audit"
 
+[[audits.android_system_properties]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.1.5 -> 0.1.6"
+notes = "AI-assisted delta audit. Reviewed C callback ABI and void return correction, live Option<String> cookie, non-UTF-8 handling without unwind, and property buffer initialization. The synchronous callback retains its stack cookie lifetime; no new loader targets or I/O capabilities."
+
 [[audits.apis-saltans-aps]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -217,6 +223,12 @@ criteria = "safe-to-deploy"
 delta = "2.13.0 -> 2.13.1"
 notes = "AI-assisted delta audit; reviewed the const-context refactor of the public `all` macro. It preserves flag aggregation while removing runtime local state; no unsafe code, build scripts, or ambient capabilities were added."
 
+[[audits.bitflags]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "2.13.1 -> 2.13.2"
+notes = "AI-assisted delta audit. Reviewed generated flag constants moving out of nested const blocks to avoid a compiler ICE, lint allowances, and documentation/test ordering. Flag values and bit operations are unchanged; no new unsafe code or ambient capabilities."
+
 [[audits.bumpalo]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -265,11 +277,23 @@ criteria = "safe-to-deploy"
 delta = "1.2.67 -> 1.3.0"
 notes = "AI-assisted delta audit; reviewed the Cargo -Ztrim-paths integration. It reads Cargo-provided scope and remap environment variables and translates recognized entries into compiler prefix-map flags after checking compiler support. No unsafe code was added, and it introduces no ambient capability beyond cc's existing build-tool environment, filesystem, and process access."
 
+[[audits.cc]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.3.0 -> 1.5.1"
+notes = "AI-assisted delta audit. Reviewed compiler-family and flag-support probes inheriting Build::env, environment-sensitive cache keys with a NUL separator, unique temporary probe files and cleanup, MSVC /link filtering and per-file -Tp handling, static C++ library emission deduplication, x86 feature allowlist, target mappings and BorrowedFd changes. Commands remain explicit compiler/archiver invocations and paths/environment are caller-controlled; no network behavior added. Native cross-platform changes reviewed statically."
+
 [[audits.cfg-if]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "1.0.4"
 notes = "AI-assisted audit"
+
+[[audits.cfg-if]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.0.4 -> 1.0.5"
+notes = "AI-assisted delta audit. Only deprecation documentation, CI checkout references and package metadata changed; macro implementation is unchanged."
 
 [[audits.cfg_eval]]
 who = "Codex AI"
@@ -307,11 +331,23 @@ criteria = "safe-to-deploy"
 version = "0.23.0"
 notes = "AI-assisted full audit; reviewed the facade crate, public helper macros, and re-exports. It contains no unsafe code, build script, or ambient capability and adds no behavior beyond the audited darling_core and darling_macro crates."
 
+[[audits.darling]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.23.0 -> 0.24.1"
+notes = "AI-assisted delta audit. Reviewed syn 3 dependency migration, hidden exports for TryFrom, Clone, PhantomData and autoref specialization, plus examples and regression-test coverage. Production changes only expose supporting macro APIs; no new I/O or unsafe code."
+
 [[audits.darling_core]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.23.0"
 notes = "AI-assisted full audit; reviewed the attribute/meta parsing, error handling, usage analysis, options validation, and derive code generation modules. The crate contains no unsafe code, build script, or ambient filesystem, network, or process capability, and generated code uses ordinary trait implementations."
+
+[[audits.darling_core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.23.0 -> 0.24.1"
+notes = "AI-assisted delta audit. Reviewed syn 3 AST migration, crate-path aliasing inside generated const blocks, transparent wrappers, forwarded field conversions, ident callbacks, default fallback via autoref specialization, token-preserving recovery for invalid attribute expressions, collection parsing and duplicate checks. Parser loops advance token cursors; errors are accumulated before field extraction. Option extraction validates shape and argument count. No filesystem/process/network behavior or new unsafe code."
 
 [[audits.darling_macro]]
 who = "Codex AI"
@@ -319,17 +355,35 @@ criteria = "safe-to-deploy"
 version = "0.23.0"
 notes = "AI-assisted full audit; reviewed all procedural-macro entry points. They parse derive inputs and delegate safe token generation to darling_core; there is no unsafe code, build script, or ambient capability."
 
+[[audits.darling_macro]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.23.0 -> 0.24.1"
+notes = "AI-assisted delta audit. Only version requirements changed to darling_core 0.24.1 and syn 3; procedural macro entry-point source is unchanged. Dependency implementations audited separately."
+
 [[audits.either]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "1.16.0"
 notes = "AI-assisted audit"
 
+[[audits.either]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.16.0 -> 1.18.0"
+notes = "AI-assisted delta audit. Reviewed formatting-trait forwarding and partitioning Extend/FromIterator implementations: variants select the corresponding collection, each input is consumed once, and formatting delegates to the matching trait. Remaining changes are documentation and CI; no new unsafe code or I/O."
+
 [[audits.find-msvc-tools]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.1.9"
 notes = "AI-assisted audit"
+
+[[audits.find-msvc-tools]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.1.9 -> 0.1.14"
+notes = "AI-assisted delta audit. Reviewed equivalent iterator/Option simplifications, moved MSBuild discovery helpers, pointer-cast modernization, generated Windows binding updates and reduced visibility. Registry and COM calls retain pointer lifetimes and layouts; changed integer conversions use representable constants. Existing local installation discovery remains the only ambient access; no network or new process behavior. Windows paths reviewed statically."
 
 [[audits.futures-core]]
 who = "Codex AI"
@@ -343,6 +397,12 @@ criteria = "safe-to-deploy"
 delta = "0.3.32 -> 0.3.33"
 notes = "AI-assisted delta audit; reviewed the version and package-metadata-only update. No source, unsafe code, build scripts, or ambient capability changes were introduced."
 
+[[audits.futures-core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.33 -> 0.3.34"
+notes = "AI-assisted delta audit. Only release metadata and lockfile version changes; library source unchanged."
+
 [[audits.futures-task]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -355,6 +415,12 @@ criteria = "safe-to-deploy"
 delta = "0.3.32 -> 0.3.33"
 notes = "AI-assisted delta audit; reviewed target-atomic cfg simplifications and the alloc::task::Wake re-export. No unsafe code, build scripts, or ambient capabilities were added."
 
+[[audits.futures-task]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.33 -> 0.3.34"
+notes = "AI-assisted delta audit. The only source change adds inline(always) to the existing no-op RawWaker clone callback; ownership and vtable operations are unchanged."
+
 [[audits.futures-util]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -366,6 +432,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.3.32 -> 0.3.33"
 notes = "AI-assisted delta audit; reviewed the Miri-oriented UnsafeCell-backed transparent NotifyWaker change in the futures 0.1 compatibility layer. The pointer conversions retain the Box allocation and Waker layout, with unsafe accesses limited to the cell dereferences and Box reclamation required by UnsafeNotify01. Other changes are target-atomic cfg cleanup, optional portable-atomic feature plumbing, and documentation. No new ambient capabilities were added."
+
+[[audits.futures-util]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.3.33 -> 0.3.34"
+notes = "AI-assisted delta audit. Reviewed inline(always) additions to existing RawWaker clone callbacks, Miri-only doctest skips for legacy compatibility code, and coordinated futures version requirements. Reference counting and task behavior are unchanged."
 
 [[audits.hash32]]
 who = "Codex AI"
@@ -475,6 +547,12 @@ criteria = "safe-to-deploy"
 version = "0.4.33"
 notes = "AI-assisted audit"
 
+[[audits.log]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.4.33 -> 0.4.34"
+notes = "AI-assisted delta audit. Reviewed new alloc feature and std implying alloc, boxed logger trait implementation and set_boxed_logger becoming available with alloc. Initialization and Box::leak logic are unchanged and atomic-target gating is retained; no new output destinations."
+
 [[audits.macaddr]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -565,11 +643,23 @@ criteria = "safe-to-deploy"
 version = "3.21.0"
 notes = "AI-assisted full audit; reviewed the serialization adapters, duplicate handling, content buffering, time/chrono conversions, feature integrations, and all unsafe blocks. Array initialization tracks and drops only initialized elements before transferring ownership, DropGuard takes its ManuallyDrop value exactly once, allocation hints are capped, and no build script or ambient capability is present."
 
+[[audits.serde_with]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "3.21.0 -> 3.24.0"
+notes = "AI-assisted delta audit. Reviewed bounded collection preallocation via size_hint_cautious, reordered visitor methods, checked timestamp arithmetic replacing panicking additions, shared duration conversion macros preserving feature gates, optional jiff conversions with checked ranges, and schema forwarding for NoneAsEmptyString. New jiff dependency is optional and absent from this workspace graph. No new unsafe code or unrelated I/O; workspace serialization tests pass."
+
 [[audits.serde_with_macros]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "3.21.0"
 notes = "AI-assisted full audit; reviewed the procedural macro parsing and rewriting for serde_as, apply, and skip-serializing-none behavior. The crate contains no unsafe code, build script, or ambient capability and emits ordinary Serde adapter attributes and trait plumbing."
+
+[[audits.serde_with_macros]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "3.21.0 -> 3.24.0"
+notes = "AI-assisted delta audit. Reviewed syn 3 AST adaptations for function pointers, named arguments, path attributes and punctuated pop; boolean cfg_attr conditions parse and emit explicit true/false tokens. Generated serialization transformations retain recursive type traversal; no new unsafe code or ambient access."
 
 [[audits.shlex]]
 who = "Codex AI"
@@ -613,11 +703,23 @@ criteria = "safe-to-deploy"
 version = "2.0.19"
 notes = "AI-assisted full audit; reviewed the no_std runtime support, Error/Display/source/From generation interface, and build script. The build script writes only generated module/probe artifacts under OUT_DIR, invokes Cargo-provided rustc and wrapper commands solely for feature detection, and removes its probe directory. No network access, unrelated filesystem access, unsafe code, or runtime ambient capabilities were found."
 
+[[audits.thiserror]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "2.0.19 -> 2.0.21"
+notes = "AI-assisted delta audit. Reviewed MSRV increase to 1.77, paired implementation version, turbofish regression tests, and updated diagnostic snapshots/docs. Runtime library source is unchanged apart from documentation; no new ambient behavior."
+
 [[audits.thiserror-impl]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "2.0.19"
 notes = "AI-assisted full audit; reviewed derive input parsing, attribute validation, generic-bound inference, format-expression scanning, and generated Error, Display, source, provide, and From implementations. The procedural macro performs deterministic token parsing and generation only; it has no build script, network/process/filesystem access, unsafe code, or generated unsafe operations."
+
+[[audits.thiserror-impl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "2.0.19 -> 2.0.21"
+notes = "AI-assisted delta audit. Reviewed generic-argument nesting tracking in display expressions, distinction between closing angle brackets and function arrows, and generated From lint allowances. Token access is checked and parsing remains bounded by input; no new unsafe code or ambient behavior."
 
 [[audits.tokio]]
 who = "Codex AI"
@@ -643,6 +745,12 @@ criteria = "safe-to-deploy"
 version = "1.0.24"
 notes = "AI-assisted audit"
 
+[[audits.unicode-ident]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.0.24 -> 1.0.26"
+notes = "AI-assisted delta audit. Reviewed Unicode 18 trie/table regeneration and zero-chunk fallback reuse. Independently evaluated both trie lookups for every non-ASCII Unicode scalar in Python: all leaf offsets are in bounds and all results match the packaged reference range tables; ASCII fast path is unchanged. No new I/O or unsafe operations; existing unchecked lookup remains bounded."
+
 [[audits.wasm-bindgen]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -667,6 +775,12 @@ criteria = "safe-to-deploy"
 delta = "0.2.125 -> 0.2.126"
 notes = "AI-assisted delta audit; the only changes are the package version and the exact wasm-bindgen-macro-support dependency pin from 0.2.125 to the separately audited 0.2.126."
 
+[[audits.wasm-bindgen-macro]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.126 -> 0.2.129"
+notes = "AI-assisted delta audit. Reviewed the additional __wasm_bindgen_retried helper attribute accepted by the struct marker derive, paired macro-support version requirement, and MSRV increase. Expansion continues to delegate to macro-support; no new I/O or unsafe code in this crate. This does not certify macro-support or the runtime."
+
 [[audits.wasm-bindgen-macro-support]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -690,6 +804,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.2.125 -> 0.2.126"
 notes = "AI-assisted delta audit; the only changes are the package version fields from 0.2.125 to 0.2.126."
+
+[[audits.wasm-bindgen-shared]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.126 -> 0.2.129"
+notes = "AI-assisted delta audit. Reviewed schema fields for suspending imports, JSPI exports and monomorphized imports, schema version/hash updates, and symbol-name helpers. Build-time hashing now reads both fixed schema source paths under CARGO_MANIFEST_DIR and emits rerun directives; no additional process or network capability. String helpers use checked safe operations. Runtime and macro generation require separate audits."
 
 [[audits.windows-core]]
 who = "Codex AI"
@@ -780,6 +900,18 @@ criteria = "safe-to-deploy"
 user-id = 3618 # David Tolnay (dtolnay)
 start = "2019-04-09"
 end = "2027-07-19"
+
+[[trusted.repr-discriminant]]
+criteria = "safe-to-deploy"
+user-id = 290593 # Richard Neumann (neumann-paulmann)
+start = "2025-07-16"
+end = "2027-09-29"
+
+[[trusted.repr-discriminant-derive]]
+criteria = "safe-to-deploy"
+user-id = 290593 # Richard Neumann (neumann-paulmann)
+start = "2025-11-04"
+end = "2027-09-29"
 
 [[trusted.serde]]
 criteria = "safe-to-deploy"
