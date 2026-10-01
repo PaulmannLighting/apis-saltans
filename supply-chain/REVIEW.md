@@ -2,7 +2,8 @@
 
 AI-assisted review of the dependency updates in `Cargo.lock`. Successful delta
 audits are recorded in `audits.toml`; no exemptions were added. The following
-findings prevent certification of the complete updated dependency graph.
+findings prevented certification of the complete updated dependency graph.
+The affected lockfile updates were reverted on 2026-10-01, as described below.
 
 ## wasm-bindgen 0.2.126 → 0.2.129
 
@@ -56,3 +57,21 @@ not resolve the platform-specific findings above.
 `wasm-bindgen` 0.2.129, `js-sys` 0.3.106, and
 `wasm-bindgen-macro-support` 0.2.129. The user's dependency updates are retained
 pending a decision about restoring previously audited versions.
+
+## Resolution, 2026-10-01
+
+Restored the previously audited lockfile versions: `libc` 0.2.186,
+`js-sys` 0.3.103, and `wasm-bindgen`, `wasm-bindgen-macro`,
+`wasm-bindgen-macro-support`, and `wasm-bindgen-shared` 0.2.126. The wasm
+packages move together because of their exact dependency requirements.
+The source findings above remain unresolved in the rejected versions; no
+new certifications, publisher trust, or exemptions were added to bypass them.
+
+These are lockfile resolutions, not manifest pins. Future dependency updates
+must resolve the findings before those versions can be certified.
+
+Ran `cargo vet regenerate unpublished` and `cargo vet prune` after restoring
+the versions. Both `cargo vet check` and `cargo vet check --locked` pass
+with 77 fully audited dependencies. `cargo +nightly fmt --check`,
+`cargo clippy --all-features --locked`, and
+`cargo test --workspace --all-features --locked` also pass on the host.
