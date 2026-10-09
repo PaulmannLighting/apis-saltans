@@ -293,7 +293,7 @@ Supported access flags:
 
 - `R`: readable.
 - `W`: writable.
-- `P`: reportable.
+- `P`: reporting required by the attribute definition; absence permits manufacturer-option reporting.
 - `S`: scene-storable.
 
 Generated items:
@@ -301,7 +301,7 @@ Generated items:
 - `Id`, containing all readable attribute IDs plus global readable attributes.
 - `Readable`, containing all readable attribute values plus global readable attributes.
 - `Writable`, containing all writable attribute values.
-- `Reportable`, containing all reportable attribute values.
+- `Reportable`, containing all declared attribute values and globals, regardless of `P`.
 - `SendReport`, containing the same variants as `Reportable`, with each attribute ID as its `u16` discriminant and an
   implementation of the crate's `Reportable` trait that returns the attribute and wire type IDs.
 - `Scene`, containing all scene-storable attribute values.
@@ -321,8 +321,16 @@ Generated items:
 - `TryFrom<(u16, Type)> for Reportable`, returning `ParseAttributeError<u16>`.
 
 The type used for an attribute must be convertible from/to `zb_core::types::Type` as needed
-by its access flags. For writable attributes, the type must convert into `Type`; for readable or
-reportable attributes, it must implement `TryFrom<Type>`.
+by its access flags. For writable attributes, the type must convert into `Type`; every attribute
+must implement `TryFrom<Type>` for report decoding, including write-only attributes. This conversion
+does not add the attribute to the readable API.
+
+Reporting generation intentionally does not filter on `P` (ZCL §2.5.7.3). `R`, `W`, and `S` filtering
+is unchanged. Device capabilities and attribute-specific restrictions remain runtime concerns;
+Discover Attributes Extended reports actual access bits. Reporting configurations classify numeric
+wire types as analog and strings, enums, and bitmaps as discrete; generic string types retain their
+length parameter. Numeric wrappers without stream serialization use their underlying wire type for
+the reportable change. The macro recursion limit accommodates the larger generated reporting enums.
 
 ## Adding a Cluster
 

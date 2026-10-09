@@ -3,7 +3,7 @@ use zb_core::{Cluster, Profile, Profiled};
 
 use crate::macros::zcl_attributes;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Custom(Uint8);
 
 impl zb_core::TypeId for Custom {
@@ -13,6 +13,14 @@ impl zb_core::TypeId for Custom {
 impl From<Custom> for Type {
     fn from(value: Custom) -> Self {
         value.0.into()
+    }
+}
+
+impl TryFrom<Type> for Custom {
+    type Error = Type;
+
+    fn try_from(value: Type) -> Result<Self, Self::Error> {
+        Uint8::try_from(value).map(Self)
     }
 }
 
@@ -176,4 +184,60 @@ mod required_cluster {
         );
         let _ = Scene::Writable(Uint8::new(4));
     }
+}
+
+#[test]
+fn optional_reporting_preserves_read_and_write_permissions() {
+    const WRITE_ONLY_ID: u16 = 0x0002;
+    const VALUE: Uint8 = Uint8::new(7);
+
+    assert_eq!(Id::try_from(WRITE_ONLY_ID), Err(WRITE_ONLY_ID));
+    assert_eq!(
+        Reportable::try_from((WRITE_ONLY_ID, Type::Uint8(VALUE))),
+        Ok(Reportable::WriteOnly(Custom(VALUE)))
+    );
+    // An exhaustive match ensures reporting did not introduce a read-only writable variant.
+    let writable = Writable::WriteOnly(Custom(VALUE));
+    match writable {
+        Writable::Writable(_) | Writable::WriteOnly(_) => {}
+    }
+}
+
+#[test]
+fn optional_reporting_encodes_analog_discrete_and_global_attributes() {
+    use le_stream::ToLeStream;
+    use zb_core::types::{Int32, String, Uint16};
+
+    use crate::global::configure_reporting::send::AttributeReportingConfiguration;
+    use crate::{Analog, Discrete, basic, level, time};
+
+    const MINIMUM: u16 = 10;
+    const MAXIMUM: u16 = 60;
+    const CHANGE: Uint16 = Uint16::new(2);
+    const TIME_CHANGE: Int32 = Int32::new(2);
+
+    let remaining_time: AttributeReportingConfiguration =
+        level::SendReport::RemainingTime(Analog::new(MINIMUM, MAXIMUM, CHANGE)).into();
+    assert_eq!(
+        remaining_time.to_le_stream().collect::<Vec<_>>(),
+        [0x00, 0x01, 0x00, 0x21, 10, 0, 60, 0, 2, 0]
+    );
+    let manufacturer: AttributeReportingConfiguration =
+        basic::SendReport::ManufacturerName(Discrete::<String<32>>::new(MINIMUM, MAXIMUM)).into();
+    assert_eq!(
+        manufacturer.to_le_stream().collect::<Vec<_>>(),
+        [0x00, 0x04, 0x00, 0x42, 10, 0, 60, 0]
+    );
+    let revision: AttributeReportingConfiguration =
+        basic::SendReport::ClusterRevision(Analog::new(MINIMUM, MAXIMUM, CHANGE)).into();
+    assert_eq!(
+        revision.to_le_stream().collect::<Vec<_>>(),
+        [0x00, 0xfd, 0xff, 0x21, 10, 0, 60, 0, 2, 0]
+    );
+    let timezone: AttributeReportingConfiguration =
+        time::SendReport::TimeZone(Analog::new(MINIMUM, MAXIMUM, TIME_CHANGE)).into();
+    assert_eq!(
+        timezone.to_le_stream().collect::<Vec<_>>(),
+        [0x00, 0x02, 0x00, 0x2b, 10, 0, 60, 0, 2, 0, 0, 0]
+    );
 }

@@ -3,7 +3,10 @@
 /// The macro generates fixed enum names in the invocation module:
 /// `Id` for readable attribute IDs, plus `Readable`, `Writable`,
 /// `Reportable`, and `Scene` for access-specific attribute values. `SendReport`
-/// associates reportable attributes with their ZCL wire types. The
+/// associates all declared attributes, including globals, with their ZCL wire types.
+/// Reporting is allowed as a manufacturer option without `P` (ZCL §2.5.7.3),
+/// subject to attribute-specific restrictions. These enums do not guarantee device
+/// support. Read and write access remain controlled by `R` and `W`. The
 /// cluster ID is required and is used to implement `Cluster` for the generated
 /// enums. The global readable attributes `ClusterRevision` and
 /// `AttributeReportingStatus` are always included.
@@ -170,7 +173,13 @@ macro_rules! zcl_attributes {
             $cluster
             [$($manufacturer_code)?]
             [] []
-            [$([$(#[$variant_attr])*] [$variant] [$id] [$ty $(<$ty_argument>)?] [$($access)*];)*]
+            [
+                [/// The revision of the cluster specification that the cluster instance supports.
+                ] [ClusterRevision] [0xfffd] [zb_core::types::Uint16] [R];
+                [/// The reporting status of the cluster instance.
+                ] [AttributeReportingStatus] [0xfffe] [zb_core::types::Uint8] [R];
+                $([$(#[$variant_attr])*] [$variant] [$id] [$ty $(<$ty_argument>)?] [$($access)*];)*
+            ]
         }
 
         $crate::macros::zcl_attributes! {
@@ -639,7 +648,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @emit_value_enum
             [Reportable]
-            ["Attributes that can be reported."]
+            ["Attribute values accepted in reports, including optional reporting."]
             [$($variants)*]
         }
 
@@ -684,7 +693,7 @@ macro_rules! zcl_attributes {
         $crate::macros::zcl_attributes! {
             @emit_value_enum
             [Reportable]
-            ["Attributes that can be reported."]
+            ["Attribute values accepted in reports, including optional reporting."]
             [$($variants)*]
         }
 
@@ -731,82 +740,14 @@ macro_rules! zcl_attributes {
         [$($manufacturer_code:expr)?]
         [$($variants:tt)*]
         [$($try_from_arms:tt)*]
-        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ident] [R, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$($ty:tt)+] [$($access:tt)*]; $($rest:tt)*]
     ) => {
         $crate::macros::zcl_attributes! {
             @define_reportable
             $cluster
             [$($manufacturer_code)?]
-            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
-            [$($try_from_arms)* [$variant] [$id] [$ty];]
-            [$($rest)*]
-        }
-    };
-    (
-        @define_reportable
-        $cluster:tt
-        [$($manufacturer_code:expr)?]
-        [$($variants:tt)*]
-        [$($try_from_arms:tt)*]
-        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ident] [R, W, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @define_reportable
-            $cluster
-            [$($manufacturer_code)?]
-            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
-            [$($try_from_arms)* [$variant] [$id] [$ty];]
-            [$($rest)*]
-        }
-    };
-    (
-        @define_reportable
-        $cluster:tt
-        [$($manufacturer_code:expr)?]
-        [$($variants:tt)*]
-        [$($try_from_arms:tt)*]
-        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ident] [W, P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @define_reportable
-            $cluster
-            [$($manufacturer_code)?]
-            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
-            [$($try_from_arms)* [$variant] [$id] [$ty];]
-            [$($rest)*]
-        }
-    };
-    (
-        @define_reportable
-        $cluster:tt
-        [$($manufacturer_code:expr)?]
-        [$($variants:tt)*]
-        [$($try_from_arms:tt)*]
-        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ident] [P $(, $($access_tail:tt)*)?]; $($rest:tt)*]
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @define_reportable
-            $cluster
-            [$($manufacturer_code)?]
-            [$($variants)* $($variant_attr)* $variant($ty) = $id,]
-            [$($try_from_arms)* [$variant] [$id] [$ty];]
-            [$($rest)*]
-        }
-    };
-    (
-        @define_reportable
-        $cluster:tt
-        [$($manufacturer_code:expr)?]
-        [$($variants:tt)*]
-        [$($try_from_arms:tt)*]
-        [[$($variant_attr:tt)*] [$variant:ident] [$id:tt] [$ty:ty] [$($access:tt)*]; $($rest:tt)*]
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @define_reportable
-            $cluster
-            [$($manufacturer_code)?]
-            [$($variants)*]
-            [$($try_from_arms)*]
+            [$($variants)* $($variant_attr)* $variant($($ty)+) = $id,]
+            [$($try_from_arms)* [$variant] [$id] [$($ty)+];]
             [$($rest)*]
         }
     };
@@ -1093,7 +1034,9 @@ macro_rules! zcl_attributes {
         }
     };
     (@emit_send_report_enum [$($manufacturer_code:expr)?] []) => {
-        /// ZCL wire types associated with reportable attributes.
+        /// Typed reporting configurations, including attributes without mandatory reporting.
+        ///
+        /// Device support and attribute-specific restrictions must be checked separately.
         #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
         pub enum SendReport {}
 
@@ -1125,7 +1068,7 @@ macro_rules! zcl_attributes {
         [
             $(
                 $(#[$variant_attr:meta])*
-                $variant:ident($ty:ident) = $id:tt,
+                $variant:ident($($ty:tt)+) = $id:tt,
             )+
         ]
     ) => {
@@ -1137,7 +1080,7 @@ macro_rules! zcl_attributes {
             []
             [
                 $(
-                    [$(#[$variant_attr])*] [$variant] [$ty] [$id];
+                    [$(#[$variant_attr])*] [$variant] [$($ty)+] [$id];
                 )+
             ]
         }
@@ -1150,7 +1093,9 @@ macro_rules! zcl_attributes {
         [$($conversion_arms:tt)*]
         []
     ) => {
-        /// ZCL wire types associated with reportable attributes.
+        /// Typed reporting configurations, including attributes without mandatory reporting.
+        ///
+        /// Device support and attribute-specific restrictions must be checked separately.
         #[derive(
             Clone,
             Debug,
@@ -1198,7 +1143,7 @@ macro_rules! zcl_attributes {
         $variants:tt
         $type_id_arms:tt
         $conversion_arms:tt
-        [[$($variant_attr:tt)*] [$variant:ident] [$ty:ident] [$id:tt]; $($rest:tt)*]
+        [[$($variant_attr:tt)*] [$variant:ident] [$($ty:tt)+] [$id:tt]; $($rest:tt)*]
     ) => {
         $crate::macros::zcl_attributes! {
             @classify_send_report_variant
@@ -1209,9 +1154,54 @@ macro_rules! zcl_attributes {
             [$($rest)*]
             [$($variant_attr)*]
             [$variant]
-            [$ty]
+            [$($ty)+]
             [$id]
         }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [AlarmCount] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [AlarmCount] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [CurrentGroup] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint16] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Time] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [TimeZone] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Int32] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [DstStart] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [DstEnd] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [DstShift] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Int32] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [StandardTime] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Int32] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [LocalTime] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Int32] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [LastSetTime] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [ValidUntilTime] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Level] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint8] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [StartupColorTemperature] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint16] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [zb_core::types::Uint8] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint8] $id }
+    };
+    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [zb_core::types::Uint16] $id:tt) => {
+        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint16] $id }
     };
     (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint8] $id:tt) => {
         $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint8] $id }

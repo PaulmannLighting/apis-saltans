@@ -28,7 +28,10 @@ pub trait Attributes {
     /// Configure a device to send reports for attributes.
     ///
     /// The attributes supply their own cluster, profile, manufacturer, attribute ID, and type
-    /// metadata through the ZCL `Reportable` implementation.
+    /// metadata through the ZCL `Reportable` implementation. Generated configurations include
+    /// attributes without mandatory reporting. Check the device's discovered reportable bit and
+    /// configure-reporting response; this API does not guarantee support or waive attribute-specific
+    /// restrictions.
     ///
     /// The first await queues the request and returns a [`ZclResponse`]. Await that response to
     /// confirm transmission and receive the device's configure-reporting response.

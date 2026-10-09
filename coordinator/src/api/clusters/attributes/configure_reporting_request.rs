@@ -69,4 +69,24 @@ mod tests {
         assert_eq!(manufacturer_code, None);
         assert_eq!(bytes.as_ref(), expected);
     }
+
+    #[test]
+    fn configures_reporting_without_mandatory_reporting_access() {
+        use zb_core::types::Uint16;
+        use zb_zcl::Analog;
+        use zb_zcl::level::SendReport;
+
+        const CHANGE: Uint16 = Uint16::new(2);
+
+        let frame = frame([SendReport::RemainingTime(Analog::new(
+            MINIMUM_REPORTING_INTERVAL,
+            MAXIMUM_REPORTING_INTERVAL,
+            CHANGE,
+        ))]);
+
+        assert_eq!(
+            frame.into_payload().as_ref(),
+            [0x00, 0x01, 0x00, 0x21, 10, 0, 60, 0, 2, 0]
+        );
+    }
 }

@@ -19,6 +19,7 @@ use crate::illuminance_measurement::Reportable as IlluminanceMeasurementAttribut
 use crate::level::Reportable as LevelAttributes;
 use crate::occupancy_sensing::Reportable as OccupancySensingAttributes;
 use crate::on_off::Reportable as OnOffAttributes;
+use crate::ota_upgrade::Reportable as OtaUpgradeAttributes;
 use crate::power_configuration::Reportable as PowerConfigurationAttributes;
 use crate::scenes::Reportable as ScenesAttributes;
 use crate::time::Reportable as TimeAttributes;
@@ -45,7 +46,11 @@ pub trait Writable: ClusterSpecific + Profiled + Into<Record> {
     fn id(&self) -> u16;
 }
 
-/// A trait for reportable attribute identifiers and their ZCL wire types.
+/// A trait for reporting configurations and their ZCL wire types.
+///
+/// Generated implementations include attributes without `P`: reporting may be a manufacturer
+/// option (ZCL §2.5.7.3). Availability here does not guarantee device support or override
+/// attribute-specific restrictions. Discover Attributes Extended describes actual device access.
 pub trait Reportable:
     ClusterSpecific + Profiled + Into<configure_reporting::send::AttributeReportingConfiguration>
 {
@@ -64,34 +69,52 @@ pub trait Reportable:
 pub enum AttributeReport {
     /// Reportable attributes of the Basic cluster.
     Basic(BasicAttributes),
+
     /// Reportable attributes of the Power Configuration cluster.
     PowerConfiguration(PowerConfigurationAttributes),
+
     /// Reportable attributes of the Device Temperature Configuration cluster.
     DeviceTemperatureConfiguration(DeviceTemperatureConfigurationAttributes),
+
     /// Reportable attributes of the Identify cluster.
     Identify(IdentifyAttributes),
+
     /// Reportable attributes of the Groups cluster.
     Groups(GroupsAttributes),
+
     /// Reportable attributes of the Scenes cluster.
     Scenes(ScenesAttributes),
+
     /// Reportable attributes of the On/Off cluster.
     OnOff(OnOffAttributes),
+
     /// Reportable attributes of the Level Control cluster.
     Level(LevelAttributes),
+
     /// Reportable attributes of the Alarms cluster.
     Alarms(AlarmsAttributes),
+
     /// Reportable attributes of the Time cluster.
     Time(TimeAttributes),
+
     /// Reportable attributes of the Illuminance Measurement cluster.
     IlluminanceMeasurement(IlluminanceMeasurementAttributes),
+
     /// Reportable attributes of the Illuminance Level Sensing cluster.
     IlluminanceLevelSensing(IlluminanceLevelSensingAttributes),
+
     /// Reportable attributes of the Occupancy Sensing cluster.
     OccupancySensing(OccupancySensingAttributes),
+
     /// Reportable attributes of the Ballast Configuration cluster.
     BallastConfiguration(BallastConfigurationAttributes),
+
     /// Reportable attributes of the Color Control cluster.
     ColorControl(ColorControlAttributes),
+
+    /// Reportable attributes of the OTA Upgrade cluster.
+    OtaUpgrade(OtaUpgradeAttributes),
+
     /// Reportable attributes of the IAS Zone cluster.
     IasZone(IasZoneAttributes),
 }
@@ -102,7 +125,7 @@ impl AttributeReport {
     /// # Errors
     ///
     /// Returns a [`ParseAttributeError`] if the cluster or attribute is unsupported, or if the
-    /// provided type does not match the reportable attribute.
+    /// provided type does not match the attribute. Attributes without `P` are accepted too.
     pub fn parse(
         cluster_id: u16,
         attribute_id: u16,
@@ -147,6 +170,9 @@ impl AttributeReport {
             <ColorControlAttributes as ClusterSpecific>::ID => {
                 parse_cluster!(ColorControlAttributes, ColorControl)
             }
+            <OtaUpgradeAttributes as ClusterSpecific>::ID => {
+                parse_cluster!(OtaUpgradeAttributes, OtaUpgrade)
+            }
             <IasZoneAttributes as ClusterSpecific>::ID => {
                 parse_cluster!(IasZoneAttributes, IasZone)
             }
@@ -170,7 +196,7 @@ impl AttributeReport {
 #[cfg(test)]
 mod tests {
     use zb_core::Cluster;
-    use zb_core::types::{Bool, Type, Uint8};
+    use zb_core::types::{Bool, Type, Uint8, Uint16};
 
     use super::{AttributeReport, ParseAttributeError};
     use crate::clusters::general;
@@ -188,12 +214,51 @@ mod tests {
     }
 
     #[test]
-    fn rejects_non_reportable_attribute_id() {
-        let error =
-            AttributeReport::parse(Cluster::Level.as_u16(), 0x0001, Type::Uint8(Uint8::new(42)))
-                .expect_err("non-reportable attribute should fail");
+    fn parses_optionally_reported_attribute() {
+        const REMAINING_TIME_ID: u16 = 0x0001;
+        const REMAINING_TIME: Uint16 = Uint16::new(42);
 
-        assert_eq!(error, ParseAttributeError::InvalidId(0x0001));
+        let attribute = AttributeReport::parse(
+            Cluster::Level.as_u16(),
+            REMAINING_TIME_ID,
+            Type::Uint16(REMAINING_TIME),
+        )
+        .expect("reporting without P is a manufacturer option");
+
+        assert_eq!(
+            attribute,
+            AttributeReport::Level(general::level::Reportable::RemainingTime(REMAINING_TIME))
+        );
+        assert!(matches!(
+            AttributeReport::parse(
+                Cluster::Level.as_u16(),
+                REMAINING_TIME_ID,
+                Type::Boolean(Bool::TRUE)
+            ),
+            Err(ParseAttributeError::InvalidType(_))
+        ));
+    }
+
+    #[test]
+    fn parses_global_report_and_rejects_unknown_attribute() {
+        const CLUSTER_REVISION_ID: u16 = 0xfffd;
+        const UNKNOWN_ID: u16 = 0xeeee;
+        const REVISION: Uint16 = Uint16::new(8);
+
+        assert_eq!(
+            AttributeReport::parse(
+                Cluster::Basic.as_u16(),
+                CLUSTER_REVISION_ID,
+                Type::Uint16(REVISION)
+            ),
+            Ok(AttributeReport::Basic(
+                general::basic::Reportable::ClusterRevision(REVISION)
+            ))
+        );
+        assert_eq!(
+            AttributeReport::parse(Cluster::Basic.as_u16(), UNKNOWN_ID, Type::Uint16(REVISION)),
+            Err(ParseAttributeError::InvalidId(UNKNOWN_ID))
+        );
     }
 
     #[test]

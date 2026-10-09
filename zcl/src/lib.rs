@@ -13,6 +13,9 @@
 //! specify their own default-response behavior set the disable-default-response bit in outgoing
 //! frame control fields.
 
+// Reporting enums cover optional attributes as well as mandatory ones.
+#![recursion_limit = "512"]
+
 pub use self::attributes::{
     Analog, AttributeReport, Discrete, InvalidType, ParseAttributeError, Readable, Reportable,
     Writable,

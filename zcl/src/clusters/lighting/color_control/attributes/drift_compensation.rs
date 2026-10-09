@@ -3,18 +3,24 @@ use zb_core::types::{Enum8, Type, Uint8};
 
 /// Mechanism used for compensating color or color intensity drift over time.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, IntoPrimitive, PartialEq, TryFromPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, IntoPrimitive, Ord, PartialEq, PartialOrd, TryFromPrimitive,
+)]
 #[num_enum(error_type(name = u8, constructor = core::convert::identity))]
 #[repr(u8)]
 pub enum DriftCompensation {
     /// No drift compensation.
     None = 0x00,
+
     /// Other or unknown drift compensation.
     Other = 0x01,
+
     /// Temperature monitoring.
     Temperature = 0x02,
+
     /// Optical luminance monitoring and feedback.
     OpticalLuminance = 0x03,
+
     /// Optical color monitoring and feedback.
     OpticalColor = 0x04,
 }

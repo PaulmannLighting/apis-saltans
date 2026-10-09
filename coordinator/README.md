@@ -806,9 +806,11 @@ async fn write_location(
 
 ### Reporting
 
-Use `configure_reporting(...)` with generated ZCL `Reportable` values. The ZCL attribute value
+Use `configure_reporting(...)` with generated ZCL `SendReport` values implementing `Reportable`. The ZCL attribute value
 supplies cluster/profile/manufacturer and data type metadata; the coordinator only transports the
-request.
+request. These values also cover attributes without `P`, for which reporting is a manufacturer option.
+Check Discover Attributes Extended and the Configure Reporting response for actual support, and
+respect attribute-specific restrictions. Read and write permissions are not extended by this API.
 
 ## Raw Transports
 

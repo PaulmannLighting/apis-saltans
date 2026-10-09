@@ -96,7 +96,14 @@ The repository also contains additional cluster and attribute modules that are n
 ## Attribute Coverage
 
 Implemented attribute modules generate typed `Id`, `Readable`, `Writable`, `Reportable`, `SendReport`, and `Scene`
-enums according to the access flags present for each attribute. `SendReport` associates reportable attribute names with
+enums. `Id`/`Readable`, `Writable`, and `Scene` follow the declared access flags. `Reportable` and
+`SendReport` cover all declared attributes and globals, including attributes without `P`: ZCL §2.5.7.3
+allows reporting as a manufacturer option. Attribute-specific restrictions still apply, and a typed
+configuration does not guarantee device support. Check Discover Attributes Extended access bits and
+the Configure Reporting response. This does not grant extra read or write access: ordinary `R` remains
+read-only; optional writing requires an explicit exception such as `R*W` in the specification.
+
+`SendReport` associates attribute names with
 their ZCL wire types; its variants use the attribute IDs as `u16` discriminants, while its `Reportable` implementation
 returns the attribute and wire type IDs. The global readable attributes `ClusterRevision` and
 `AttributeReportingStatus` are included in every cluster attribute module.
