@@ -7,7 +7,8 @@ use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zb_aps::apsde::{DataIndication, DataRequest};
-use zb_zcl::{Cluster, Frame, UnsequencedFrame};
+use zb_zcl::global::report_attributes::Command as ReportAttributes;
+use zb_zcl::{Cluster, Command, Frame, Scope, UnsequencedFrame};
 
 pub use self::message::Message;
 pub use self::subscription::{
@@ -143,10 +144,13 @@ impl Transceiver {
 
         let zcl_frame = indication.asdu().clone();
         let (_, cluster) = zcl_frame.into_parts();
-        if self.responses.complete(key, cluster) {
+        let header = indication.asdu().header();
+        let is_report = header.control().typ() == Ok(Scope::Global)
+            && header.command_id() == ReportAttributes::ID;
+        if !is_report && self.responses.complete(key, cluster) {
             return;
         }
-        if self.responses.release_quarantine(key) {
+        if !is_report && self.responses.release_quarantine(key) {
             debug!(
                 "Discarding late ZCL response with quarantined sequence {}",
                 key.sequence()
