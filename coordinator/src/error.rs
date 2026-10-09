@@ -35,6 +35,13 @@ pub enum Error {
     #[error("Invalid response type: {0}")]
     InvalidResponseType(String),
 
+    /// The device reported success without the command-specific response required by the request.
+    #[error("Unexpected successful Default Response for command {command_id:#04X}")]
+    UnexpectedDefaultResponse {
+        /// The outgoing command identified by the Default Response.
+        command_id: u8,
+    },
+
     /// Unknown device.
     #[error("Unknown device: {0}")]
     UnknownDevice(IeeeAddress),

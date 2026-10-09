@@ -66,11 +66,11 @@ where
         destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
     ) -> Result<ZclResponse<GetGroupMembershipResponse>, Error> {
-        self.communicate(crate::api::zcl::request(
+        self.communicate_command(
             destination.into(),
             source_endpoint,
             GetGroupMembership::default(),
-        ))
+        )
         .await
     }
 
@@ -82,13 +82,14 @@ where
         name: Option<String>,
     ) -> Result<Uint16, Error> {
         let response = self
-            .communicate::<AddGroupResponse>(crate::api::zcl::request(
+            .communicate_command::<_, AddGroupResponse>(
                 destination.into(),
                 source_endpoint,
                 AddGroup::new(group_id, name.unwrap_or_default()),
-            ))
+            )
             .await?
-            .await?;
+            .await?
+            .into_specific()?;
 
         response
             .status()
@@ -103,13 +104,14 @@ where
         group_id: GroupId,
     ) -> Result<Uint16, Error> {
         let response = self
-            .communicate::<RemoveGroupResponse>(crate::api::zcl::request(
+            .communicate_command::<_, RemoveGroupResponse>(
                 destination.into(),
                 source_endpoint,
                 RemoveGroup::new(group_id),
-            ))
+            )
             .await?
-            .await?;
+            .await?
+            .into_specific()?;
         response
             .status()
             .ensure_success()

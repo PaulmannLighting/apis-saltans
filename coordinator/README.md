@@ -299,8 +299,8 @@ api.communicate_default(request).await?;
 Communication remains split at the protocol boundary:
 
 ```rust,ignore
-let response = api.communicate(request).await?;
-let typed_response = response.await?;
+let response = api.communicate(request, DefaultResponsePolicy::SpecificRequired).await?;
+let typed_response = response.await?.into_specific()?;
 ```
 
 The communication method queues the command and returns `ZclResponse<T>` or `ZdpResponse<T>`
@@ -829,11 +829,24 @@ Use `Zcl::communicate_default(...)` for an individual unicast that expects a ZCL
 It enables Default Responses, waits for APS completion and the correlated response, verifies the
 response's original command ID, and returns non-success status values as `Error::Zcl`.
 
-Use `Zcl::communicate::<T>(...)` with the same request type when a typed response is expected. Its
-first await queues the complete request and returns `ZclResponse<T>`. The destination must be one
-16-bit network address and individual endpoint so it can be correlated. Awaiting that response
-completes the APS transmission, waits for a correlated ZCL frame, and converts the received cluster
-to `T` through `TryFrom`.
+Use `Zcl::communicate::<T>(request, policy)` for encoded requests. The explicit
+`DefaultResponsePolicy` belongs to the request, not its expected response type. The first await
+queues the request and returns `ZclResponse<T>`; the second returns `Result<ZclOutcome<T>, Error>`.
+`ZclOutcome::Specific(T)` carries command-specific data and `ZclOutcome::Default(DefaultResponse)`
+carries a permitted Default Response, preserving its status. The destination must be one individual
+16-bit network endpoint.
+
+Use `communicate_command::<_, T>(destination, source_endpoint, command)` for typed cluster commands
+implementing `ZclRequestPolicy`. It derives the policy before encoding. Supported policies cover
+Groups commands and OTA Upgrade End: successful download completion requires an Upgrade End
+Response, whereas abort/invalid-image/more-image outcomes permit a Default Response (ZCL §11.13.9.4).
+Global read/write/configure-reporting commands also implement `ZclRequestPolicy`; their attribute
+helpers supply cluster/profile metadata and select `SpecificRequired` directly.
+
+Groups add/remove/list helpers require their specified responses. Remove All Groups and Add Group
+If Identifying allow Default Responses. `communicate_default` selects `DefaultAllowed` and maps
+unsuccessful statuses to `Error::Zcl`. Helpers requiring returned data use `into_specific()`; they do
+not manufacture a response value from a successful Default Response.
 
 Use `Zdp::communicate(...)` for ZDP requests implementing `ExpectResponse<zb_zdp::Command>`. It
 returns the equivalent `ZdpResponse<T::Response>`. The composed traits above are thin wrappers over
@@ -886,8 +899,19 @@ that build discovery or binding workflows should apply their own retry and persi
 Commands implementing ZCL `Command` and `Scoped` satisfy this automatically: their scope and
 command ID identify the expected response. Custom response enums accepting several command forms
 must implement `ZclResponseType::matches_response` and a corresponding `TryFrom<Cluster>` conversion.
-Include both scope and command ID in each accepted form. A Default Response is accepted only if
-it is one of those forms and its embedded command ID names the original request.
+Include both scope and command ID in each accepted form. Default Responses must name the original
+request in their embedded command ID. Request policy takes precedence even if a custom response
+type's header matcher accepts Default Responses:
+
+- `DefaultAllowed` returns `ZclOutcome::Default` for success, failure, and unknown status codes.
+  This means the response form is allowed; callers still need to inspect the device status.
+- `SpecificRequired` returns `Error::Zcl(status)` for rejection or unknown status, and
+  `Error::UnexpectedDefaultResponse { command_id }` for success without the required typed data.
+
+Every correctly correlated Default Response resolves the one-response transaction immediately and
+releases a quarantined transaction if applicable. This does not depend on the outgoing
+disable-default-response bit. Deferred workflows such as metering mirroring with
+`NOTIFICATION_PENDING` require a separate state machine rather than this one-response API.
 
 Correlation also matches the local APS endpoint. Unrelated commands, including attribute reports
 with a matching transaction sequence, continue to subscription/event routing without completing a

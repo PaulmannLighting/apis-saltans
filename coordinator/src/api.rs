@@ -15,7 +15,9 @@ pub use self::routing::Routing;
 pub use self::scanning::{
     Channel, ChannelMask, FoundNetwork, NetworkDescriptor, ScanDuration, ScannedChannel, Scanning,
 };
-pub use self::zcl::{Zcl, ZclResponse, ZclResponseType};
+pub use self::zcl::{
+    DefaultResponsePolicy, Zcl, ZclOutcome, ZclRequestPolicy, ZclResponse, ZclResponseType,
+};
 pub use self::zdp::{Zdp, ZdpResponse};
 
 mod address_translation;

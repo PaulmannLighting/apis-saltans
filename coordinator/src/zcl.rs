@@ -10,7 +10,7 @@ use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::message::Message;
-pub use self::response_expectation::ResponseExpectation;
+pub use self::response_expectation::{ResponseExpectation, ResponseMatch};
 pub use self::subscription::{
     Filter as SubscriptionFilter, Received as SubscriptionMessage, Subscription,
     SubscriptionReceiver,
@@ -144,23 +144,27 @@ impl Transceiver {
         trace!("Received ZCL message from {source:?}: {indication:?}");
 
         if let Some(key) = Key::from_received_zcl_indication(&indication)
-            && self
-                .responses
-                .metadata(key)
-                .is_some_and(|expected| expected.matches(indication.asdu()))
+            && let Some(expected) = self.responses.metadata(key)
         {
-            if self
-                .responses
-                .complete(key, indication.asdu().payload().clone())
-            {
-                return;
-            }
-            if self.responses.release_quarantine(key) {
-                debug!(
-                    "Discarding late ZCL response with quarantined sequence {}",
-                    key.sequence()
-                );
-                return;
+            let result = match expected.classify(indication.asdu()) {
+                ResponseMatch::Expected => Some(Ok(indication.asdu().payload().clone())),
+                ResponseMatch::Rejected(status) => Some(Err(Error::Zcl(status))),
+                ResponseMatch::UnexpectedDefault(command_id) => {
+                    Some(Err(Error::UnexpectedDefaultResponse { command_id }))
+                }
+                ResponseMatch::Unrelated => None,
+            };
+            if let Some(result) = result {
+                if self.responses.complete_result(key, result) {
+                    return;
+                }
+                if self.responses.release_quarantine(key) {
+                    debug!(
+                        "Discarding late ZCL response with quarantined sequence {}",
+                        key.sequence()
+                    );
+                    return;
+                }
             }
         }
         if self.forward_to_subscribers(&indication) {

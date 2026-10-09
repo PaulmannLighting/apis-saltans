@@ -200,7 +200,10 @@ fn matching_subscription_does_not_consume_correlated_response() {
                 .responses
                 .try_register_with_metadata(
                     |_| Ok(response_key),
-                    super::ResponseExpectation::new::<On>(<On as Command>::ID),
+                    super::ResponseExpectation::new::<On>(
+                        <On as Command>::ID,
+                        crate::DefaultResponsePolicy::SpecificRequired,
+                    ),
                 )
                 .expect("response correlation can be registered");
 
@@ -243,7 +246,10 @@ fn subscription_request_does_not_complete_opposite_direction_response() {
                 .responses
                 .try_register_with_metadata(
                     |_| Ok(response_key),
-                    super::ResponseExpectation::new::<On>(<On as Command>::ID),
+                    super::ResponseExpectation::new::<On>(
+                        <On as Command>::ID,
+                        crate::DefaultResponsePolicy::SpecificRequired,
+                    ),
                 )
                 .expect("response correlation can be registered");
 
@@ -436,7 +442,8 @@ fn unrelated_reports_preserve_pending_responses_and_reach_normal_routing() {
                             super::ResponseExpectation::new::<
                                 zb_zcl::global::read_attributes::Response,
                             >(
-                                <zb_zcl::global::read_attributes::Command as Command>::ID
+                                <zb_zcl::global::read_attributes::Command as Command>::ID,
+                                crate::DefaultResponsePolicy::SpecificRequired,
                             ),
                         )
                         .unwrap();
@@ -484,7 +491,8 @@ fn unrelated_reports_do_not_release_cancelled_or_timed_out_transactions() {
                             super::ResponseExpectation::new::<
                                 zb_zcl::global::read_attributes::Response,
                             >(
-                                <zb_zcl::global::read_attributes::Command as Command>::ID
+                                <zb_zcl::global::read_attributes::Command as Command>::ID,
+                                crate::DefaultResponsePolicy::SpecificRequired,
                             ),
                         )
                         .unwrap();
@@ -522,7 +530,10 @@ fn default_response_must_name_the_original_command() {
                         |_| Ok(key),
                         super::ResponseExpectation::new::<
                             zb_zcl::global::default_response::DefaultResponse,
-                        >(<On as Command>::ID),
+                        >(
+                            <On as Command>::ID,
+                            crate::DefaultResponsePolicy::DefaultAllowed,
+                        ),
                     )
                     .unwrap();
                 if quarantined {
@@ -612,4 +623,169 @@ fn read_response_indication() -> DataIndication<Frame<Cluster>, (), ()> {
 fn report_indication() -> DataIndication<Frame<Cluster>, (), ()> {
     const PAYLOAD: [u8; 7] = [0x18, TRANSACTION_SEQUENCE, 0x0a, 0x00, 0x00, 0x10, 0x01];
     incoming_frame(&PAYLOAD)
+}
+
+#[test]
+fn error_default_responses_fail_typed_requests_and_release_quarantine() {
+    const UNKNOWN_STATUS: u8 = 0xff;
+    const REQUEST_ID: u8 = <zb_zcl::global::read_attributes::Command as Command>::ID;
+    const DEFAULT_ID: u8 = <zb_zcl::global::default_response::DefaultResponse as Command>::ID;
+    const FRAME_CONTROL: u8 = 0x18;
+    Builder::new_current_thread()
+        .build()
+        .expect("Tokio runtime")
+        .block_on(async {
+            assert!(zb_zcl::Status::try_from(UNKNOWN_STATUS).is_err());
+            for status in [zb_zcl::Status::Failure as u8, UNKNOWN_STATUS] {
+                for quarantined in [false, true] {
+                    let (mut transceiver, mut events) = unstarted_transceiver();
+                    let response = incoming_frame(&[
+                        FRAME_CONTROL,
+                        TRANSACTION_SEQUENCE,
+                        DEFAULT_ID,
+                        REQUEST_ID,
+                        status,
+                    ]);
+                    let key = Key::from_received_zcl_indication(&response).unwrap();
+                    let (_, token, mut receiver) = transceiver
+                        .responses
+                        .try_register_with_metadata(
+                            |_| Ok(key),
+                            super::ResponseExpectation::new::<
+                                zb_zcl::global::read_attributes::Response,
+                            >(
+                                REQUEST_ID, crate::DefaultResponsePolicy::SpecificRequired
+                            ),
+                        )
+                        .unwrap();
+                    if quarantined {
+                        assert!(transceiver.responses.timeout(token));
+                        assert!(matches!(
+                            receiver.try_recv(),
+                            Ok(Err(Error::ProtocolResponseTimeout))
+                        ));
+                    }
+                    transceiver.handle_message_received(response);
+                    assert!(transceiver.responses.metadata(key).is_none());
+                    assert!(events.try_recv().is_err());
+                    if !quarantined {
+                        let Err(Error::Zcl(actual)) = receiver.try_recv().unwrap() else {
+                            panic!("expected the device's ZCL error");
+                        };
+                        assert_eq!(actual, zb_zcl::Status::try_from(status));
+                    }
+                }
+            }
+        });
+}
+
+#[test]
+fn unrelated_defaults_preserve_transactions_but_unexpected_success_resolves_them() {
+    const SUCCESS: [u8; 5] = [0x18, TRANSACTION_SEQUENCE, 0x0b, 0x00, 0x00];
+    const WRONG_COMMAND: [u8; 5] = [0x18, TRANSACTION_SEQUENCE, 0x0b, 0x01, 0x86];
+    Builder::new_current_thread()
+        .build()
+        .expect("Tokio runtime")
+        .block_on(async {
+            for quarantined in [false, true] {
+                let (mut transceiver, mut events) = unstarted_transceiver();
+                let response = read_response_indication();
+                let key = Key::from_received_zcl_indication(&response).unwrap();
+                let (_, token, mut receiver) =
+                    transceiver
+                        .responses
+                        .try_register_with_metadata(
+                            |_| Ok(key),
+                            super::ResponseExpectation::new::<
+                                zb_zcl::global::read_attributes::Response,
+                            >(
+                                <zb_zcl::global::read_attributes::Command as Command>::ID,
+                                crate::DefaultResponsePolicy::SpecificRequired,
+                            ),
+                        )
+                        .unwrap();
+                if quarantined {
+                    assert!(transceiver.responses.cancel(token));
+                }
+                for bytes in [WRONG_COMMAND] {
+                    transceiver.handle_message_received(incoming_frame(&bytes));
+                    assert!(transceiver.responses.metadata(key).is_some());
+                    assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
+                    if !quarantined {
+                        assert!(matches!(
+                            receiver.try_recv(),
+                            Err(tokio::sync::oneshot::error::TryRecvError::Empty)
+                        ));
+                    }
+                }
+                transceiver.handle_message_received(incoming_frame(&SUCCESS));
+                assert!(transceiver.responses.metadata(key).is_none());
+                assert!(events.try_recv().is_err());
+                if !quarantined {
+                    assert!(matches!(
+                        receiver.try_recv(),
+                        Ok(Err(Error::UnexpectedDefaultResponse { command_id: 0x00 }))
+                    ));
+                }
+            }
+        });
+}
+
+#[test]
+fn allowed_defaults_resolve_specific_requests_for_all_statuses() {
+    const FRAME_CONTROL: u8 = 0x18;
+    const DEFAULT_ID: u8 = 0x0b;
+    const REQUEST_ID: u8 = 0x00;
+    const UNKNOWN_STATUS: u8 = 0xff;
+    Builder::new_current_thread()
+        .build()
+        .expect("Tokio runtime")
+        .block_on(async {
+            for status in [
+                zb_zcl::Status::Success as u8,
+                zb_zcl::Status::Failure as u8,
+                UNKNOWN_STATUS,
+            ] {
+                for quarantined in [false, true] {
+                    let (mut transceiver, mut events) = unstarted_transceiver();
+                    let response = incoming_frame(&[
+                        FRAME_CONTROL,
+                        TRANSACTION_SEQUENCE,
+                        DEFAULT_ID,
+                        REQUEST_ID,
+                        status,
+                    ]);
+                    let key = Key::from_received_zcl_indication(&response).unwrap();
+                    let (_, token, mut receiver) = transceiver
+                        .responses
+                        .try_register_with_metadata(
+                            |_| Ok(key),
+                            super::ResponseExpectation::new::<
+                                zb_zcl::global::read_attributes::Response,
+                            >(
+                                REQUEST_ID, crate::DefaultResponsePolicy::DefaultAllowed
+                            ),
+                        )
+                        .unwrap();
+                    if quarantined {
+                        assert!(transceiver.responses.cancel(token));
+                    }
+                    transceiver.handle_message_received(response);
+                    assert!(transceiver.responses.metadata(key).is_none());
+                    assert!(events.try_recv().is_err());
+                    if !quarantined {
+                        let raw = receiver.try_recv().unwrap().unwrap();
+                        let crate::ZclOutcome::Default(response) = crate::ZclOutcome::<
+                            zb_zcl::global::read_attributes::Response,
+                        >::try_from(
+                            raw
+                        )
+                        .unwrap() else {
+                            panic!("expected a permitted Default Response");
+                        };
+                        assert_eq!(response.status(), status);
+                    }
+                }
+            }
+        });
 }

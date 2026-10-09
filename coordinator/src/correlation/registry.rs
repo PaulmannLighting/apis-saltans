@@ -101,11 +101,16 @@ where
 
     /// Complete a pending response and release its transaction identity.
     pub fn complete(&mut self, key: Key, value: T) -> bool {
+        self.complete_result(key, Ok(value))
+    }
+
+    /// Complete a pending transaction with a response or protocol error.
+    pub fn complete_result(&mut self, key: Key, result: Result<T, Error>) -> bool {
         let Some(pending) = self.pending.remove(&key) else {
             return false;
         };
 
-        pending.response.send(Ok(value)).unwrap_or_else(drop);
+        pending.response.send(result).unwrap_or_else(drop);
         true
     }
 

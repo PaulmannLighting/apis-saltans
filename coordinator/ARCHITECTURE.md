@@ -330,13 +330,26 @@ The `correlation.rs` façade exposes the correlation types and timeout policy. I
 `lifecycle`, and `registry` submodules respectively own protocol identity construction,
 cancellation tokens, and actor-owned response state.
 
-ZCL registration carries a `ResponseExpectation` derived from the public `ZclResponseType` trait.
-Its header predicate matches expected command scope and ID; individual command types receive a
-blanket implementation, while response enums can accept several forms. The expectation also
-stores the outgoing command ID and checks it against the payload of accepted Default Responses.
+ZCL registration carries a `ResponseExpectation` with a command-header predicate, the original
+request command ID, and an explicit `DefaultResponsePolicy`. `ZclResponseType` supplies the scope/ID
+predicate; `ZclRequestPolicy` derives the policy from a typed command before encoding. The raw
+`communicate` API requires the policy explicitly. The typed `communicate_command` API derives it,
+including payload-dependent OTA Upgrade End behavior. Attribute helpers select their specified
+command-specific response policies when constructing global requests with explicit cluster IDs.
+
+Classification distinguishes expected responses, device rejection, unexpected successful Default
+Responses, and unrelated frames. Default Response policy takes precedence over the header predicate:
+`DefaultAllowed` delivers any correctly correlated Default Response as `ZclOutcome::Default`,
+including failure/unknown statuses. `SpecificRequired` produces `Error::Zcl` for a non-success status
+or `UnexpectedDefaultResponse` for success without the required data. Every matching Default
+Response terminates the one-response exchange regardless of the disable-default-response bit.
+`ZclResponse<T>` uses `CommunicationResponse<Cluster, ZclOutcome<T>>`; conversion recognizes Default
+Responses before trying `T::try_from`, preserving both response forms without converting success
+into missing data. Deferred multi-response protocols require their own state machine.
 `Registry<T, M>` retains this copyable metadata with the pending entry and transfers it into
 quarantine on cancellation or timeout. ZDP uses unit metadata and keeps its existing matching.
-The ZCL actor checks the expectation before removing either entry. A mismatch follows normal
+The ZCL actor checks the expectation before removing either entry. Expected responses, protocol rejections, and unexpected successful Default Responses all
+complete pending transactions or release quarantined ones. A mismatch follows normal
 subscription/event routing and leaves transaction state untouched. Indications without an
 individual destination endpoint cannot produce a ZCL correlation key, but are still routed.
 
@@ -344,7 +357,7 @@ individual destination endpoint cannot produce a ZCL correlation key, but are st
 flowchart TD
     Received[Incoming ZCL frame] --> Identity{Transaction identity matches?}
     Identity -->|No| Route[Subscription and event routing]
-    Identity -->|Yes| Expected{Expected command and original command ID match?}
+    Identity -->|Yes| Expected{Expected response or matching Default Response?}
     Expected -->|No| Route
     Expected -->|Yes| Consume[Complete pending response or release quarantine]
 ```

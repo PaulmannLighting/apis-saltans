@@ -11,16 +11,21 @@ use zb_core::{ClusterSpecific, Profiled};
 use zb_zcl::global::default_response::DefaultResponse;
 use zb_zcl::{Cluster, Command, Directed, Scoped, UnsequencedFrame};
 
+pub use self::outcome::{DefaultResponsePolicy, ZclOutcome};
+pub use self::request_policy::ZclRequestPolicy;
 use crate::zcl::Message;
 use crate::{CommunicationResponse, Coordinator, Error, StatusExt};
+
+mod outcome;
+mod request_policy;
 
 const DEFAULT_TX_OPTIONS: TxOptions = TxOptions::ACKNOWLEDGED_TRANSMISSION;
 
 /// A deferred typed ZCL response.
 ///
 /// Awaiting this future completes the APS transmission, waits for the correlated ZCL frame, and
-/// converts it to `T`.
-pub type ZclResponse<T> = CommunicationResponse<Cluster, T>;
+/// returns a [`ZclOutcome<T>`] containing the specific response or a permitted Default Response.
+pub type ZclResponse<T> = CommunicationResponse<Cluster, ZclOutcome<T>>;
 
 /// Defines which command headers can satisfy a typed ZCL response.
 ///
@@ -124,6 +129,25 @@ pub trait Zcl {
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
+    /// Send a typed cluster command using the policy derived from its request payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same queueing and response errors as [`Self::communicate`].
+    fn communicate_command<C, T>(
+        &self,
+        destination: RequestDestination,
+        source_endpoint: IndividualEndpoint,
+        command: C,
+    ) -> impl Future<Output = Result<ZclResponse<T>, Error>> + Send
+    where
+        C: ZclRequestPolicy + ClusterSpecific + Command + Directed + Profiled + Scoped + ToLeStream,
+        T: ZclResponseType + TryFrom<Cluster, Error: Debug> + Send,
+    {
+        let policy = command.default_response_policy();
+        self.communicate(request(destination, source_endpoint, command), policy)
+    }
+
     /// Send a ZCL command and wait for its typed response.
     ///
     /// The request destination must be one individual 16-bit NWK endpoint. The returned outer
@@ -131,7 +155,13 @@ pub trait Zcl {
     /// complete APS transmission, receive the correlated ZCL response frame, and convert it.
     /// `T` supplies the accepted command scope and ID through [`ZclResponseType`]. Unrelated
     /// frames leave the request pending. Default Responses must additionally name the original
-    /// command and are accepted only when `T` explicitly permits that response form.
+    /// command. The explicit request policy controls their treatment, independently of `T`:
+    /// [`DefaultResponsePolicy::DefaultAllowed`] returns [`ZclOutcome::Default`] for any status;
+    /// [`DefaultResponsePolicy::SpecificRequired`] returns [`Error::Zcl`] for device rejection
+    /// or [`Error::UnexpectedDefaultResponse`] for success without the required typed response.
+    /// A matching Default Response always resolves this one-response exchange immediately,
+    /// even when the outgoing disable-default-response bit is set. For payload-dependent rules,
+    /// derive the policy before encoding or use [`Self::communicate_command`].
     ///
     /// # Errors
     ///
@@ -142,6 +172,7 @@ pub trait Zcl {
     fn communicate<T>(
         &self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
+        default_response_policy: DefaultResponsePolicy,
     ) -> impl Future<Output = Result<ZclResponse<T>, Error>> + Send
     where
         T: ZclResponseType + TryFrom<Cluster, Error: Debug> + Send;
@@ -170,7 +201,13 @@ impl Zcl for Sender<Message> {
         let request = request.map_asdu(|frame| frame.with_disable_default_response(false));
 
         async move {
-            let response = self.communicate::<DefaultResponse>(request).await?.await?;
+            let response = self
+                .communicate::<DefaultResponse>(request, DefaultResponsePolicy::DefaultAllowed)
+                .await?
+                .await?;
+            let response = match response {
+                ZclOutcome::Default(response) | ZclOutcome::Specific(response) => response,
+            };
             validate_default_response(command_id, &response)
         }
     }
@@ -178,13 +215,16 @@ impl Zcl for Sender<Message> {
     fn communicate<T>(
         &self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
+        default_response_policy: DefaultResponsePolicy,
     ) -> impl Future<Output = Result<ZclResponse<T>, Error>> + Send
     where
         T: ZclResponseType + TryFrom<Cluster, Error: Debug> + Send,
     {
         let (response, result) = channel();
-        let expected =
-            crate::zcl::ResponseExpectation::new::<T>(request.asdu().header().command_id());
+        let expected = crate::zcl::ResponseExpectation::new::<T>(
+            request.asdu().header().command_id(),
+            default_response_policy,
+        );
 
         async move {
             self.send(Message::Communicate {
@@ -217,11 +257,12 @@ impl Zcl for Coordinator {
     fn communicate<T>(
         &self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
+        default_response_policy: DefaultResponsePolicy,
     ) -> impl Future<Output = Result<ZclResponse<T>, Error>> + Send
     where
         T: ZclResponseType + TryFrom<Cluster, Error: Debug> + Send,
     {
-        self.zcl.communicate(request)
+        self.zcl.communicate(request, default_response_policy)
     }
 }
 
@@ -303,11 +344,10 @@ mod tests {
         const UNRELATED_DEFAULT: [u8; 5] = [0x18, SEQUENCE, 0x0b, 0x00, 0x00];
         const EXPECTED_DEFAULT: [u8; 5] = [0x18, SEQUENCE, 0x0b, 0x01, 0x00];
         let (sender, mut messages) = tokio::sync::mpsc::channel(CHANNEL_CAPACITY);
-        let mut response = pin!(sender.communicate::<DefaultResponse>(request(
-            destination(),
-            source_endpoint(),
-            On
-        )));
+        let mut response = pin!(sender.communicate::<DefaultResponse>(
+            request(destination(), source_endpoint(), On),
+            super::DefaultResponsePolicy::DefaultAllowed
+        ));
         let mut context = Context::from_waker(Waker::noop());
         assert!(matches!(
             response.as_mut().poll(&mut context),
@@ -321,13 +361,19 @@ mod tests {
             EXPECTED_DEFAULT.into_iter(),
         )
         .unwrap();
-        assert!(expected.matches(&frame));
+        assert!(matches!(
+            expected.classify(&frame),
+            crate::zcl::ResponseMatch::Expected
+        ));
         let frame = Frame::parse(
             zb_core::Cluster::OnOff.as_u16(),
             UNRELATED_DEFAULT.into_iter(),
         )
         .unwrap();
-        assert!(!expected.matches(&frame));
+        assert!(matches!(
+            expected.classify(&frame),
+            crate::zcl::ResponseMatch::Unrelated
+        ));
         let unrelated = Frame::new(
             Header::new(
                 Scope::Global,
@@ -339,7 +385,68 @@ mod tests {
             ),
             frame.into_payload(),
         );
-        assert!(!expected.matches(&unrelated));
+        assert!(matches!(
+            expected.classify(&unrelated),
+            crate::zcl::ResponseMatch::Unrelated
+        ));
+    }
+
+    #[test]
+    fn typed_requests_accept_error_defaults_even_when_default_responses_are_disabled() {
+        use std::future::Future;
+        use std::pin::pin;
+        use std::task::{Context, Poll, Waker};
+
+        use zb_zcl::Frame;
+        use zb_zcl::global::read_attributes;
+
+        use super::{Zcl, request_with_ids};
+        use crate::zcl::{Message, ResponseMatch};
+
+        const CHANNEL_CAPACITY: usize = 1;
+        const FAILURE_RESPONSE: [u8; 5] = [0x18, 0x07, 0x0b, 0x00, 0x01];
+        for disabled in [false, true] {
+            let (sender, mut messages) = tokio::sync::mpsc::channel(CHANNEL_CAPACITY);
+            let frame = zb_zcl::UnsequencedFrame::from_command(read_attributes::Command::new(
+                Box::default(),
+            ))
+            .with_disable_default_response(disabled);
+            let request = request_with_ids(
+                destination(),
+                source_endpoint(),
+                zb_core::Profile::ZigbeeHomeAutomation.as_u16(),
+                zb_core::Cluster::OnOff.as_u16(),
+                frame,
+            );
+            let mut response = pin!(sender.communicate::<read_attributes::Response>(
+                request,
+                super::DefaultResponsePolicy::SpecificRequired
+            ));
+            let mut context = Context::from_waker(Waker::noop());
+            assert!(matches!(
+                response.as_mut().poll(&mut context),
+                Poll::Pending
+            ));
+            let Message::Communicate {
+                expected, request, ..
+            } = messages.try_recv().unwrap()
+            else {
+                panic!("expected a ZCL communication request");
+            };
+            assert_eq!(
+                request.asdu().header().control().disable_default_response(),
+                disabled
+            );
+            let frame = Frame::parse(
+                zb_core::Cluster::OnOff.as_u16(),
+                FAILURE_RESPONSE.into_iter(),
+            )
+            .unwrap();
+            assert_eq!(
+                expected.classify(&frame),
+                ResponseMatch::Rejected(Ok(zb_zcl::Status::Failure))
+            );
+        }
     }
 
     fn destination() -> RequestDestination {
