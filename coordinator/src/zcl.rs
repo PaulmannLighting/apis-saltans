@@ -9,23 +9,21 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
+pub use self::correlation::ResponseExpectation;
+#[cfg(test)]
+pub(crate) use self::correlation::ResponseMatch;
+use self::correlation::Responses;
 pub use self::message::Message;
-pub use self::response_expectation::{ResponseExpectation, ResponseMatch};
 pub use self::subscription::{
     Filter as SubscriptionFilter, Received as SubscriptionMessage, Subscription,
     SubscriptionReceiver,
 };
 use crate::aps::{Aps, TransmissionResponse};
-use crate::correlation::{
-    Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
-    cancellation, schedule_timeout,
-};
 use crate::event::EventSink;
-use crate::response::ApsProtocolResponse;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
+mod correlation;
 mod message;
-mod response_expectation;
 mod subscription;
 
 /// Zigbee transceiver actor.
@@ -34,8 +32,7 @@ pub struct Transceiver {
     aps: Aps,
     events: EventSink,
     subscriptions: Vec<Subscription>,
-    responses: Registry<Cluster, ResponseExpectation>,
-    inbox: WeakSender<Message>,
+    responses: Responses,
 }
 
 /// Construction, startup, and actor-inbox processing.
@@ -46,8 +43,7 @@ impl Transceiver {
             aps,
             events,
             subscriptions: Vec::new(),
-            responses: Registry::new(),
-            inbox,
+            responses: Responses::new(inbox),
         }
     }
 
@@ -82,22 +78,17 @@ impl Transceiver {
                 self.handle_message_received(indication);
             }
             Message::NetworkDown => {
-                self.responses
-                    .network_down(&zb_hw::TransmissionError::NoRoute);
+                self.responses.network_down();
             }
             Message::HardwareUnavailable => {
                 self.responses.hardware_unavailable();
                 return false;
             }
             Message::Cancel { token } => {
-                if self.responses.cancel(token) {
-                    self.schedule_quarantine_timeout(token);
-                }
+                self.responses.cancel(token);
             }
             Message::ResponseTimeout { token } => {
-                if self.responses.timeout(token) {
-                    self.schedule_quarantine_timeout(token);
-                }
+                self.responses.timeout(token);
             }
             Message::QuarantineTimeout { token } => {
                 self.responses.expire_quarantine(token);
@@ -126,7 +117,11 @@ impl Transceiver {
                 response,
             } => {
                 response
-                    .send(self.communicate(request, expected).await)
+                    .send(
+                        self.responses
+                            .communicate(&self.aps, request, expected)
+                            .await,
+                    )
                     .unwrap_or_else(|error| {
                         debug!("Failed to send unicast response: {error:?}");
                     });
@@ -143,29 +138,8 @@ impl Transceiver {
         let source = indication.metadata().source();
         trace!("Received ZCL message from {source:?}: {indication:?}");
 
-        if let Some(key) = Key::from_received_zcl_indication(&indication)
-            && let Some(expected) = self.responses.metadata(key)
-        {
-            let result = match expected.classify(indication.asdu()) {
-                ResponseMatch::Expected => Some(Ok(indication.asdu().payload().clone())),
-                ResponseMatch::Rejected(status) => Some(Err(Error::Zcl(status))),
-                ResponseMatch::UnexpectedDefault(command_id) => {
-                    Some(Err(Error::UnexpectedDefaultResponse { command_id }))
-                }
-                ResponseMatch::Unrelated => None,
-            };
-            if let Some(result) = result {
-                if self.responses.complete_result(key, result) {
-                    return;
-                }
-                if self.responses.release_quarantine(key) {
-                    debug!(
-                        "Discarding late ZCL response with quarantined sequence {}",
-                        key.sequence()
-                    );
-                    return;
-                }
-            }
+        if self.responses.handle_received(&indication) {
+            return;
         }
         if self.forward_to_subscribers(&indication) {
             return;
@@ -226,14 +200,7 @@ impl Transceiver {
         &mut self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<TransmissionResponse, Error> {
-        let is_individual_unicast = Self::request_key(&request, u8::MIN).is_ok();
-        if is_individual_unicast && !request.asdu().header().control().disable_default_response() {
-            return Err(Error::ZclDefaultResponseEnabled);
-        }
-
-        let sequence_number = self
-            .responses
-            .allocate_untracked_sequence(|sequence| Self::request_key(&request, sequence).ok())?;
+        let sequence_number = self.responses.allocate_untracked(&request)?;
 
         self.aps
             .transmit(Self::encode_request(request, sequence_number))
@@ -250,108 +217,15 @@ impl Transceiver {
             .transmit(Self::encode_request(request, sequence_number))
             .await
     }
-
-    /// Send a ZCL unicast message with back-channel communication.
-    ///
-    /// # Returns
-    ///
-    /// Returns the response receiver.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the unicast message could not be sent.
-    async fn communicate(
-        &mut self,
-        request: DataRequest<UnsequencedFrame<Bytes>>,
-        expected: ResponseExpectation,
-    ) -> Result<ApsProtocolResponse<Cluster>, Error> {
-        let (sequence_number, token, rx) = self.responses.try_register_with_metadata(
-            |sequence| Self::request_key(&request, sequence),
-            expected,
-        )?;
-        self.schedule_response_timeout(token);
-
-        let request = Self::encode_request(request, sequence_number);
-
-        let transmission = match self.aps.transmit(request).await {
-            Ok(transmission) => transmission,
-            Err(error) => {
-                self.responses.discard(token);
-                return Err(error);
-            }
-        };
-
-        let cancellation = self.cancellation(token);
-
-        Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
-    }
 }
 
-/// Pending-response cancellation, timeout, and quarantine lifecycle management.
-impl Transceiver {
-    fn cancellation(&self, token: Token) -> Cancellation {
-        cancellation(
-            self.inbox.clone(),
-            token,
-            |token| Message::Cancel { token },
-            "ZCL",
-        )
-    }
-
-    fn schedule_response_timeout(&self, token: Token) {
-        schedule_timeout(
-            self.inbox.clone(),
-            PROTOCOL_RESPONSE_TIMEOUT,
-            Message::ResponseTimeout { token },
-            "ZCL response timeout",
-        );
-    }
-
-    fn schedule_quarantine_timeout(&self, token: Token) {
-        schedule_timeout(
-            self.inbox.clone(),
-            PROTOCOL_QUARANTINE_TIMEOUT,
-            Message::QuarantineTimeout { token },
-            "ZCL quarantine timeout",
-        );
-    }
-}
-
-/// Outbound frame encoding and response-correlation key derivation.
+/// Outbound frame encoding.
 impl Transceiver {
     fn encode_request(
         request: DataRequest<UnsequencedFrame<Bytes>>,
         sequence_number: u8,
     ) -> DataRequest<Bytes> {
         request.map_asdu(|frame| frame.into_frame(sequence_number).to_le_stream().collect())
-    }
-
-    fn request_key(
-        request: &DataRequest<UnsequencedFrame<Bytes>>,
-        sequence_number: u8,
-    ) -> Result<Key, Error> {
-        let zb_aps::apsde::RequestDestination::Network { address, endpoint } =
-            request.destination()
-        else {
-            return Err(Error::InvalidZclCommunicationDestination(
-                request.destination(),
-            ));
-        };
-        if zb_aps::apsde::IndividualEndpoint::new(endpoint).is_none() {
-            return Err(Error::InvalidZclCommunicationDestination(
-                request.destination(),
-            ));
-        }
-
-        Ok(Key::new_zcl(
-            address.as_u16(),
-            (endpoint, request.source_endpoint().get()),
-            request.cluster_id(),
-            request.profile_id(),
-            request.asdu().header().manufacturer_code(),
-            !request.asdu().header().control().direction(),
-            sequence_number,
-        ))
     }
 }
 

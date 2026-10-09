@@ -92,7 +92,7 @@ fn communication_rejects_a_non_network_destination() {
     );
 
     assert!(matches!(
-        Transceiver::request_key(&request, TRANSACTION_SEQUENCE),
+        super::correlation::Responses::request_key(&request, TRANSACTION_SEQUENCE),
         Err(Error::InvalidZclCommunicationDestination(
             RequestDestination::Bound
         ))
@@ -198,6 +198,7 @@ fn matching_subscription_does_not_consume_correlated_response() {
                 .expect("test indication has a network source");
             let (_, _, response) = transceiver
                 .responses
+                .registry()
                 .try_register_with_metadata(
                     |_| Ok(response_key),
                     super::ResponseExpectation::new::<On>(
@@ -244,6 +245,7 @@ fn subscription_request_does_not_complete_opposite_direction_response() {
             );
             let (_, _, mut response) = transceiver
                 .responses
+                .registry()
                 .try_register_with_metadata(
                     |_| Ok(response_key),
                     super::ResponseExpectation::new::<On>(
@@ -437,6 +439,7 @@ fn unrelated_reports_preserve_pending_responses_and_reach_normal_routing() {
                 let (_, _, mut receiver) =
                     transceiver
                         .responses
+                        .registry()
                         .try_register_with_metadata(
                             |_| Ok(key),
                             super::ResponseExpectation::new::<
@@ -454,7 +457,7 @@ fn unrelated_reports_preserve_pending_responses_and_reach_normal_routing() {
                     receiver.try_recv(),
                     Err(tokio::sync::oneshot::error::TryRecvError::Empty)
                 ));
-                assert!(transceiver.responses.metadata(key).is_some());
+                assert!(transceiver.responses.registry().metadata(key).is_some());
                 if subscribe {
                     assert!(reports.try_recv().is_ok());
                     assert!(events.try_recv().is_err());
@@ -468,7 +471,7 @@ fn unrelated_reports_preserve_pending_responses_and_reach_normal_routing() {
                         zb_zcl::global::Command::ReadAttributesResponse(_)
                     )))
                 ));
-                assert!(transceiver.responses.metadata(key).is_none());
+                assert!(transceiver.responses.registry().metadata(key).is_none());
             }
         });
 }
@@ -486,6 +489,7 @@ fn unrelated_reports_do_not_release_cancelled_or_timed_out_transactions() {
                 let (_, token, _receiver) =
                     transceiver
                         .responses
+                        .registry()
                         .try_register_with_metadata(
                             |_| Ok(key),
                             super::ResponseExpectation::new::<
@@ -497,15 +501,15 @@ fn unrelated_reports_do_not_release_cancelled_or_timed_out_transactions() {
                         )
                         .unwrap();
                 if timeout {
-                    assert!(transceiver.responses.timeout(token));
+                    assert!(transceiver.responses.registry().timeout(token));
                 } else {
-                    assert!(transceiver.responses.cancel(token));
+                    assert!(transceiver.responses.registry().cancel(token));
                 }
                 transceiver.handle_message_received(report_indication());
-                assert!(transceiver.responses.metadata(key).is_some());
+                assert!(transceiver.responses.registry().metadata(key).is_some());
                 assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
                 transceiver.handle_message_received(response);
-                assert!(transceiver.responses.metadata(key).is_none());
+                assert!(transceiver.responses.registry().metadata(key).is_none());
                 assert!(events.try_recv().is_err());
             }
         });
@@ -526,6 +530,7 @@ fn default_response_must_name_the_original_command() {
                 let key = Key::from_received_zcl_indication(&response).unwrap();
                 let (_, token, mut receiver) = transceiver
                     .responses
+                    .registry()
                     .try_register_with_metadata(
                         |_| Ok(key),
                         super::ResponseExpectation::new::<
@@ -537,10 +542,10 @@ fn default_response_must_name_the_original_command() {
                     )
                     .unwrap();
                 if quarantined {
-                    assert!(transceiver.responses.cancel(token));
+                    assert!(transceiver.responses.registry().cancel(token));
                 }
                 transceiver.handle_message_received(unrelated);
-                assert!(transceiver.responses.metadata(key).is_some());
+                assert!(transceiver.responses.registry().metadata(key).is_some());
                 assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
                 if !quarantined {
                     assert!(matches!(
@@ -549,7 +554,7 @@ fn default_response_must_name_the_original_command() {
                     ));
                 }
                 transceiver.handle_message_received(response);
-                assert!(transceiver.responses.metadata(key).is_none());
+                assert!(transceiver.responses.registry().metadata(key).is_none());
                 if !quarantined {
                     assert!(matches!(
                         receiver.try_recv(),
@@ -578,7 +583,8 @@ fn local_endpoint_is_part_of_response_identity() {
         local_endpoint,
         UnsequencedFrame::from_command(On),
     );
-    let expected = Transceiver::request_key(&request, TRANSACTION_SEQUENCE).unwrap();
+    let expected =
+        super::correlation::Responses::request_key(&request, TRANSACTION_SEQUENCE).unwrap();
     let response = read_response_indication();
     assert_ne!(Key::from_received_zcl_indication(&response), Some(expected));
     let metadata = IndicationMetadata::new(
@@ -649,6 +655,7 @@ fn error_default_responses_fail_typed_requests_and_release_quarantine() {
                     let key = Key::from_received_zcl_indication(&response).unwrap();
                     let (_, token, mut receiver) = transceiver
                         .responses
+                        .registry()
                         .try_register_with_metadata(
                             |_| Ok(key),
                             super::ResponseExpectation::new::<
@@ -659,14 +666,14 @@ fn error_default_responses_fail_typed_requests_and_release_quarantine() {
                         )
                         .unwrap();
                     if quarantined {
-                        assert!(transceiver.responses.timeout(token));
+                        assert!(transceiver.responses.registry().timeout(token));
                         assert!(matches!(
                             receiver.try_recv(),
                             Ok(Err(Error::ProtocolResponseTimeout))
                         ));
                     }
                     transceiver.handle_message_received(response);
-                    assert!(transceiver.responses.metadata(key).is_none());
+                    assert!(transceiver.responses.registry().metadata(key).is_none());
                     assert!(events.try_recv().is_err());
                     if !quarantined {
                         let Err(Error::Zcl(actual)) = receiver.try_recv().unwrap() else {
@@ -694,6 +701,7 @@ fn unrelated_defaults_preserve_transactions_but_unexpected_success_resolves_them
                 let (_, token, mut receiver) =
                     transceiver
                         .responses
+                        .registry()
                         .try_register_with_metadata(
                             |_| Ok(key),
                             super::ResponseExpectation::new::<
@@ -705,11 +713,11 @@ fn unrelated_defaults_preserve_transactions_but_unexpected_success_resolves_them
                         )
                         .unwrap();
                 if quarantined {
-                    assert!(transceiver.responses.cancel(token));
+                    assert!(transceiver.responses.registry().cancel(token));
                 }
                 for bytes in [WRONG_COMMAND] {
                     transceiver.handle_message_received(incoming_frame(&bytes));
-                    assert!(transceiver.responses.metadata(key).is_some());
+                    assert!(transceiver.responses.registry().metadata(key).is_some());
                     assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
                     if !quarantined {
                         assert!(matches!(
@@ -719,7 +727,7 @@ fn unrelated_defaults_preserve_transactions_but_unexpected_success_resolves_them
                     }
                 }
                 transceiver.handle_message_received(incoming_frame(&SUCCESS));
-                assert!(transceiver.responses.metadata(key).is_none());
+                assert!(transceiver.responses.registry().metadata(key).is_none());
                 assert!(events.try_recv().is_err());
                 if !quarantined {
                     assert!(matches!(
@@ -758,6 +766,7 @@ fn allowed_defaults_resolve_specific_requests_for_all_statuses() {
                     let key = Key::from_received_zcl_indication(&response).unwrap();
                     let (_, token, mut receiver) = transceiver
                         .responses
+                        .registry()
                         .try_register_with_metadata(
                             |_| Ok(key),
                             super::ResponseExpectation::new::<
@@ -768,10 +777,10 @@ fn allowed_defaults_resolve_specific_requests_for_all_statuses() {
                         )
                         .unwrap();
                     if quarantined {
-                        assert!(transceiver.responses.cancel(token));
+                        assert!(transceiver.responses.registry().cancel(token));
                     }
                     transceiver.handle_message_received(response);
-                    assert!(transceiver.responses.metadata(key).is_none());
+                    assert!(transceiver.responses.registry().metadata(key).is_none());
                     assert!(events.try_recv().is_err());
                     if !quarantined {
                         let raw = receiver.try_recv().unwrap().unwrap();

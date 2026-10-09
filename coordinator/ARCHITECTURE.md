@@ -330,6 +330,13 @@ The `correlation.rs` façade exposes the correlation types and timeout policy. I
 `lifecycle`, and `registry` submodules respectively own protocol identity construction,
 cancellation tokens, and actor-owned response state.
 
+The `zcl::correlation` submodule owns ZCL response state through `Responses`: request-key
+construction, shared sequence allocation, transaction registration, and incoming response
+completion. Its `expectation` submodule classifies command-specific and Default Responses;
+`lifecycle` handles cancellation, network failures, response deadlines, and quarantine expiry.
+The transceiver delegates to this component before subscription and application-event routing.
+The generic `crate::correlation` registry remains shared with ZDP.
+
 ZCL registration carries a `ResponseExpectation` with a command-header predicate, the original
 request command ID, and an explicit `DefaultResponsePolicy`. `ZclResponseType` supplies the scope/ID
 predicate; `ZclRequestPolicy` derives the policy from a typed command before encoding. The raw

@@ -45,27 +45,31 @@ impl ResponseExpectation {
 
     /// Classify a response, including error Default Responses to typed requests.
     pub fn classify(self, frame: &Frame<Cluster>) -> ResponseMatch {
-        let accepted = (self.matches_header)(frame.header());
         if let Cluster::Global(global::Command::DefaultResponse(response)) = frame.payload() {
-            if !DefaultResponse::matches_response(frame.header())
-                || response.command_id() != self.request_command_id
-            {
-                return ResponseMatch::Unrelated;
-            }
-            if self.default_response_policy == DefaultResponsePolicy::DefaultAllowed {
-                return ResponseMatch::Expected;
-            }
-            let status = Status::try_from(response.status());
-            return if status == Ok(Status::Success) {
-                ResponseMatch::UnexpectedDefault(self.request_command_id)
-            } else {
-                ResponseMatch::Rejected(status)
-            };
+            return self.classify_default(frame.header(), response);
         }
-        if accepted {
+        if (self.matches_header)(frame.header()) {
             ResponseMatch::Expected
         } else {
             ResponseMatch::Unrelated
+        }
+    }
+
+    /// Validate the original command before applying the request's Default Response policy.
+    fn classify_default(self, header: Header, response: &DefaultResponse) -> ResponseMatch {
+        if !DefaultResponse::matches_response(header)
+            || response.command_id() != self.request_command_id
+        {
+            return ResponseMatch::Unrelated;
+        }
+        if self.default_response_policy == DefaultResponsePolicy::DefaultAllowed {
+            return ResponseMatch::Expected;
+        }
+        let status = Status::try_from(response.status());
+        if status == Ok(Status::Success) {
+            ResponseMatch::UnexpectedDefault(self.request_command_id)
+        } else {
+            ResponseMatch::Rejected(status)
         }
     }
 }
