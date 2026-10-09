@@ -21,3 +21,4 @@ assets/
 .idea/
 .cargo-home/
 .cargo-vet-cache/
+/design/
