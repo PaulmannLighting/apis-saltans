@@ -2,14 +2,14 @@
 
 use bytes::Bytes;
 use le_stream::ToLeStream;
-use log::{debug, trace, warn};
+use log::debug;
 use tokio::spawn;
-use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
-use zb_aps::apsde::{DataIndication, DataRequest};
-use zb_zcl::{Cluster, Frame, UnsequencedFrame};
+use zb_aps::apsde::DataRequest;
+use zb_zcl::{Cluster, UnsequencedFrame};
 
 pub use self::message::Message;
+use self::response::ExpectedResponse;
 pub use self::subscription::{
     Filter as SubscriptionFilter, Received as SubscriptionMessage, Subscription,
     SubscriptionReceiver,
@@ -20,10 +20,10 @@ use crate::correlation::{
     cancellation, schedule_timeout,
 };
 use crate::event::EventSink;
-use crate::response::ApsProtocolResponse;
-use crate::{Error, Event, MPSC_CHANNEL_SIZE};
+use crate::{Error, MPSC_CHANNEL_SIZE};
 
 mod message;
+mod response;
 mod subscription;
 
 /// Zigbee transceiver actor.
@@ -32,7 +32,7 @@ pub struct Transceiver {
     aps: Aps,
     events: EventSink,
     subscriptions: Vec<Subscription>,
-    responses: Registry<Cluster>,
+    responses: Registry<Cluster, ExpectedResponse>,
     inbox: WeakSender<Message>,
 }
 
@@ -125,75 +125,19 @@ impl Transceiver {
                         debug!("Failed to send unicast response: {error:?}");
                     });
             }
+            Message::CommunicateRaw {
+                request,
+                expected_response,
+                response,
+            } => {
+                response
+                    .send(self.communicate_raw(request, expected_response).await)
+                    .unwrap_or_else(|error| {
+                        debug!("Failed to send raw unicast response: {error:?}");
+                    });
+            }
         }
         true
-    }
-}
-
-/// Inbound response correlation, subscription delivery, and application-event routing.
-impl Transceiver {
-    /// Handle a received ZCL message.
-    fn handle_message_received(&mut self, indication: DataIndication<Frame<Cluster>, (), ()>) {
-        let source = indication.metadata().source();
-        let Some(key) = Key::from_received_zcl_indication(&indication) else {
-            warn!("Discarding ZCL indication from unsupported source: {source:?}");
-            return;
-        };
-        trace!("Received ZCL message from {source:?}: {indication:?}");
-
-        let zcl_frame = indication.asdu().clone();
-        let (_, cluster) = zcl_frame.into_parts();
-        if self.responses.complete(key, cluster) {
-            return;
-        }
-        if self.responses.release_quarantine(key) {
-            debug!(
-                "Discarding late ZCL response with quarantined sequence {}",
-                key.sequence()
-            );
-            return;
-        }
-        if self.forward_to_subscribers(&indication) {
-            return;
-        }
-
-        self.events.emit(Event::Zcl { indication });
-    }
-
-    /// Deliver a received frame to every matching live subscription.
-    fn forward_to_subscribers(
-        &mut self,
-        indication: &DataIndication<Frame<Cluster>, (), ()>,
-    ) -> bool {
-        let mut delivered = false;
-
-        self.subscriptions.retain(|subscription| {
-            if !subscription.is_open() {
-                return false;
-            }
-
-            if !subscription.matches(indication) {
-                return true;
-            }
-
-            let message = SubscriptionMessage {
-                indication: indication.clone(),
-            };
-
-            match subscription.try_send(message) {
-                Ok(()) => {
-                    delivered = true;
-                    true
-                }
-                Err(TrySendError::Full(_)) => {
-                    warn!("ZCL subscription channel is full; forwarding frame to normal routing");
-                    true
-                }
-                Err(TrySendError::Closed(_)) => false,
-            }
-        });
-
-        delivered
     }
 }
 
@@ -235,39 +179,6 @@ impl Transceiver {
         self.aps
             .transmit(Self::encode_request(request, sequence_number))
             .await
-    }
-
-    /// Send a ZCL unicast message with back-channel communication.
-    ///
-    /// # Returns
-    ///
-    /// Returns the response receiver.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the unicast message could not be sent.
-    async fn communicate(
-        &mut self,
-        request: DataRequest<UnsequencedFrame<Bytes>>,
-    ) -> Result<ApsProtocolResponse<Cluster>, Error> {
-        let (sequence_number, token, rx) = self
-            .responses
-            .try_register(|sequence| Self::request_key(&request, sequence))?;
-        self.schedule_response_timeout(token);
-
-        let request = Self::encode_request(request, sequence_number);
-
-        let transmission = match self.aps.transmit(request).await {
-            Ok(transmission) => transmission,
-            Err(error) => {
-                self.responses.discard(token);
-                return Err(error);
-            }
-        };
-
-        let cancellation = self.cancellation(token);
-
-        Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
     }
 }
 
