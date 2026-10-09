@@ -1,4 +1,6 @@
 use core::iter;
+use std::iter::{Chain, Once, once};
+use std::option::IntoIter;
 
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -57,10 +59,8 @@ impl AttributeStatus {
 }
 
 impl ToLeStream for AttributeStatus {
-    type Iter = iter::Chain<
-        iter::Chain<iter::Once<u8>, std::option::IntoIter<u8>>,
-        iter::Flatten<std::option::IntoIter<[u8; size_of::<u16>()]>>,
-    >;
+    type Iter =
+        Chain<Chain<Once<u8>, IntoIter<u8>>, iter::Flatten<IntoIter<[u8; size_of::<u16>()]>>>;
 
     fn to_le_stream(self) -> Self::Iter {
         let (direction, attribute_id) = if self.status == Status::Success as u8 {
@@ -68,7 +68,8 @@ impl ToLeStream for AttributeStatus {
         } else {
             (self.direction, self.attribute_id)
         };
-        iter::once(self.status)
+
+        once(self.status)
             .chain(direction)
             .chain(attribute_id.map(u16::to_le_bytes).into_iter().flatten())
     }
