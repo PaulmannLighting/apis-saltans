@@ -4,11 +4,10 @@ use le_stream::{FromLeStream, ToLeStream};
 
 /// Status of an attribute reporting configuration.
 ///
-/// Success applies to the entire request and omits direction and attribute ID.
-/// Failure records contain both fields.
+/// Deserialization reads the status and optional direction and attribute ID without
+/// status-dependent validation. Byte serialization omits both optional fields on success.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(try_from = "StatusFields"))]
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, FromLeStream)]
 pub struct AttributeStatus {
     status: u8,
     direction: Option<u8>,
@@ -46,34 +45,16 @@ impl AttributeStatus {
         self.status
     }
 
-    /// Returns the direction for a failure, or `None` on success.
+    /// Returns the direction, if present.
     #[must_use]
     pub const fn direction(&self) -> Option<u8> {
         self.direction
     }
 
-    /// Returns the attribute ID for a failure, or `None` on success.
+    /// Returns the attribute ID, if present.
     #[must_use]
     pub const fn attribute_id(&self) -> Option<u16> {
         self.attribute_id
-    }
-}
-
-impl FromLeStream for AttributeStatus {
-    fn from_le_stream<T>(mut stream: T) -> Option<Self>
-    where
-        T: Iterator<Item = u8>,
-    {
-        let status = stream.next()?;
-        if status == crate::Status::Success as u8 {
-            Some(Self::success())
-        } else {
-            Some(Self::new(
-                status,
-                stream.next()?,
-                u16::from_le_stream(stream)?,
-            ))
-        }
     }
 }
 
@@ -84,40 +65,14 @@ impl ToLeStream for AttributeStatus {
     >;
 
     fn to_le_stream(self) -> Self::Iter {
-        iter::once(self.status).chain(self.direction).chain(
-            self.attribute_id
-                .map(u16::to_le_bytes)
-                .into_iter()
-                .flatten(),
-        )
-    }
-}
-
-/// Intermediate serde representation validated before constructing a record.
-#[cfg(feature = "serde")]
-#[derive(serde::Deserialize)]
-struct StatusFields {
-    status: u8,
-    direction: Option<u8>,
-    attribute_id: Option<u16>,
-}
-
-#[cfg(feature = "serde")]
-impl TryFrom<StatusFields> for AttributeStatus {
-    type Error = &'static str;
-
-    fn try_from(fields: StatusFields) -> Result<Self, Self::Error> {
-        match (fields.status, fields.direction, fields.attribute_id) {
-            (status, None, None) if status == crate::Status::Success as u8 => Ok(Self::success()),
-            (status, Some(direction), Some(attribute_id))
-                if status != crate::Status::Success as u8 =>
-            {
-                Ok(Self::new(status, direction, attribute_id))
-            }
-            _ => Err(
-                "direction and attribute ID must both be absent on success and present on failure",
-            ),
-        }
+        let (direction, attribute_id) = if self.status == crate::Status::Success as u8 {
+            (None, None)
+        } else {
+            (self.direction, self.attribute_id)
+        };
+        iter::once(self.status)
+            .chain(direction)
+            .chain(attribute_id.map(u16::to_le_bytes).into_iter().flatten())
     }
 }
 
@@ -128,29 +83,52 @@ mod tests {
     use super::AttributeStatus;
 
     #[test]
-    fn success_omits_fields_and_consumes_only_status() {
-        let mut bytes = [0x00, 0x86].into_iter();
+    fn success_reads_fields_but_omits_them_on_serialization() {
+        let mut bytes = [0x00, 0x01, 0x34, 0x12, 0x86].into_iter();
         let record = AttributeStatus::from_le_stream(&mut bytes).unwrap();
-        assert_eq!(record, AttributeStatus::success());
-        assert_eq!(record.direction(), None);
-        assert_eq!(record.attribute_id(), None);
+        assert_eq!(record.status(), 0x00);
+        assert_eq!(record.direction(), Some(0x01));
+        assert_eq!(record.attribute_id(), Some(0x1234));
         assert_eq!(bytes.next(), Some(0x86));
         assert_eq!(record.to_le_stream().collect::<Vec<_>>(), [0x00]);
-        assert_eq!(AttributeStatus::new(0x00, 0x01, 0x1234), record);
     }
 
     #[test]
-    fn failure_requires_both_fields() {
+    fn parses_status_without_optional_fields() {
+        assert_eq!(
+            AttributeStatus::from_le_stream([0x00].into_iter()),
+            Some(AttributeStatus::success()),
+        );
+        assert_eq!(AttributeStatus::from_le_stream([].into_iter()), None);
+    }
+
+    #[test]
+    fn rejects_partial_attribute_id() {
+        assert_eq!(
+            AttributeStatus::from_le_stream([0x86, 0x01, 0x34].into_iter()),
+            None
+        );
+        assert_eq!(
+            AttributeStatus::from_le_stream([0x00, 0x01, 0x34].into_iter()),
+            None
+        );
+    }
+
+    #[test]
+    fn failure_preserves_available_fields() {
         const PAYLOAD: [u8; 4] = [0x86, 0x01, 0x34, 0x12];
-        let record = AttributeStatus::from_le_stream(PAYLOAD.into_iter()).unwrap();
-        assert_eq!(record.direction(), Some(0x01));
-        assert_eq!(record.attribute_id(), Some(0x1234));
-        assert_eq!(record.to_le_stream().collect::<Vec<_>>(), PAYLOAD);
-        for length in 0..PAYLOAD.len() {
+        const STATUS_LENGTH: usize = 1;
+        const STATUS_AND_DIRECTION_LENGTH: usize = 2;
+        for length in [STATUS_LENGTH, STATUS_AND_DIRECTION_LENGTH, PAYLOAD.len()] {
+            let record =
+                AttributeStatus::from_le_stream(PAYLOAD[..length].iter().copied()).unwrap();
+            assert_eq!(record.status(), 0x86);
+            assert_eq!(record.direction(), (length > STATUS_LENGTH).then_some(0x01));
             assert_eq!(
-                AttributeStatus::from_le_stream(PAYLOAD[..length].iter().copied()),
-                None
+                record.attribute_id(),
+                (length == PAYLOAD.len()).then_some(0x1234)
             );
+            assert_eq!(record.to_le_stream().collect::<Vec<_>>(), PAYLOAD[..length]);
         }
     }
 }

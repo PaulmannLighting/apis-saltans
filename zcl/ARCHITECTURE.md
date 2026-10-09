@@ -337,15 +337,17 @@ reportable attributes, it must implement `TryFrom<Type>`.
 
 ## Configure Reporting Response Encoding
 
-`configure_reporting::Response` uses custom decoding to validate its two payload forms:
-a single success status byte, or a nonempty list of four-byte failure records. It rejects
-incomplete records and success mixed with other records. The `AttributeStatus` codec reads
-the status first and requires direction and attribute ID only for failures; success keeps
-both optional fields as `None`.
+`configure_reporting::Response` delegates encoding and decoding to `Box<[AttributeStatus]>`
+through the standard command macro. It imposes no response-level validation or normalization:
+empty lists, repeated successes, and mixed success/failure records are preserved in order.
+The constructor and Serde deserialization also preserve these lists.
 
-`Response::new` normalizes record lists to failures only, or a single success record when
-no failures remain. Serde deserialization also uses this constructor. With valid lists
-ensured at construction, response serialization is derived and concatenates record encodings.
+`AttributeStatus` derives `FromLeStream` and Serde deserialization without status-dependent
+validation. Byte decoding reads status, then optional direction and attribute ID in field
+order. Absent optional fields become `None`; a partial attribute ID fails decoding. Available bytes are consumed
+regardless of status, so trailing bytes after success can be read as its optional fields.
+Byte serialization emits only the status for success, and includes available optional
+fields for other statuses. Encoding and decoding are intentionally asymmetric.
 
 ## Implementation Boundaries
 

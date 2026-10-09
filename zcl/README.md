@@ -197,13 +197,14 @@ assert!(parsed.is_ok());
 
 `global::configure_reporting::Response` accepts the one-byte `0x00` success payload.
 Use `response.is_success()` to check whether all requested attributes were configured.
-For a decoded success response, `response.status()` contains one success record whose
-`direction()` and `attribute_id()` are `None`; failure records return `Some` for both.
+`AttributeStatus` deserialization reads the status, then attempts to read direction and
+attribute ID regardless of status. Absent optional fields become `None`; a partial attribute ID fails decoding.
+Success records may therefore retain fields supplied by a device; byte serialization
+always omits those fields on success. Failure records serialize whichever fields are present.
 `AttributeStatus::success()` constructs a success record, while `AttributeStatus::new`
-retains direction and attribute ID only for failure statuses. `Response::new` normalizes
-an empty list or a list of successes to one success record, and removes successes
-when failures are present. Serde deserialization uses the same normalization.
-Serialization writes these records directly, producing `0x00` for success.
+retains direction and attribute ID only for failure statuses.
+`Response::new` and Serde deserialization preserve record lists without normalization.
+`is_success()` returns true when all records indicate success, including an empty list.
 
 ## Attribute Traits
 
