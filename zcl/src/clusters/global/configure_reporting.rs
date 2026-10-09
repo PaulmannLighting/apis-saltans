@@ -53,7 +53,7 @@ mod tests {
 
     use super::{AttributeStatus, Receive, Response, Send, receive};
     use crate::clusters::general::{level, on_off};
-    use crate::{Analog, Directed, Discrete};
+    use crate::{Analog, Directed, Discrete, Status};
 
     const SEND_ATTRIBUTE_ID: u16 = 0x0000;
     const ANALOG_SEND_ATTRIBUTE_ID: u16 = 0x0004;
@@ -88,8 +88,8 @@ mod tests {
         assert_eq!(
             response.status(),
             [
-                AttributeStatus::new(0x86, 0x00, 0x1234),
-                AttributeStatus::new(0x8c, 0x01, 0x5678),
+                AttributeStatus::new(Status::UnsupportedAttribute, Some(0x00), Some(0x1234)),
+                AttributeStatus::new(Status::UnreportableAttribute, Some(0x01), Some(0x5678)),
             ]
         );
         assert_eq!(response.to_le_stream().collect::<Vec<_>>(), PAYLOAD);
@@ -104,7 +104,7 @@ mod tests {
         assert_eq!(response.status()[0].attribute_id(), Some(0x1234));
         assert_eq!(
             response.status()[1],
-            AttributeStatus::new(0x86, 0x00, 0x5678)
+            AttributeStatus::new(Status::UnsupportedAttribute, Some(0x00), Some(0x5678))
         );
         assert_eq!(response.status()[2], AttributeStatus::success());
         assert!(!response.is_success());

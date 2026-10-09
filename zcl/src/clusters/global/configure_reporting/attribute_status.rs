@@ -17,17 +17,13 @@ pub struct AttributeStatus {
 }
 
 impl AttributeStatus {
-    /// Creates a status record, omitting direction and attribute ID on success.
+    /// Creates a status record, preserving the supplied optional fields.
     #[must_use]
-    pub const fn new(status: u8, direction: u8, attribute_id: u16) -> Self {
-        if status == Status::Success as u8 {
-            Self::success()
-        } else {
-            Self {
-                status,
-                direction: Some(direction),
-                attribute_id: Some(attribute_id),
-            }
+    pub const fn new(status: Status, direction: Option<u8>, attribute_id: Option<u16>) -> Self {
+        Self {
+            status: status as u8,
+            direction,
+            attribute_id,
         }
     }
 

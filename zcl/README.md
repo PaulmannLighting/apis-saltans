@@ -202,7 +202,7 @@ attribute ID regardless of status. Absent optional fields become `None`; a parti
 Success records may therefore retain fields supplied by a device; byte serialization
 always omits those fields on success. Failure records serialize whichever fields are present.
 `AttributeStatus::success()` constructs a success record, while `AttributeStatus::new`
-retains direction and attribute ID only for failure statuses.
+preserves the supplied optional direction and attribute ID for any status.
 `Response::new` and Serde deserialization preserve record lists without normalization.
 `is_success()` returns true when all records indicate success, including an empty list.
 
