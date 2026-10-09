@@ -2,6 +2,8 @@ use core::iter;
 
 use le_stream::{FromLeStream, ToLeStream};
 
+use crate::Status;
+
 /// Status of an attribute reporting configuration.
 ///
 /// Deserialization reads the status and optional direction and attribute ID without
@@ -18,7 +20,7 @@ impl AttributeStatus {
     /// Creates a status record, omitting direction and attribute ID on success.
     #[must_use]
     pub const fn new(status: u8, direction: u8, attribute_id: u16) -> Self {
-        if status == crate::Status::Success as u8 {
+        if status == Status::Success as u8 {
             Self::success()
         } else {
             Self {
@@ -33,7 +35,7 @@ impl AttributeStatus {
     #[must_use]
     pub const fn success() -> Self {
         Self {
-            status: crate::Status::Success as u8,
+            status: Status::Success as u8,
             direction: None,
             attribute_id: None,
         }
@@ -65,7 +67,7 @@ impl ToLeStream for AttributeStatus {
     >;
 
     fn to_le_stream(self) -> Self::Iter {
-        let (direction, attribute_id) = if self.status == crate::Status::Success as u8 {
+        let (direction, attribute_id) = if self.status == Status::Success as u8 {
             (None, None)
         } else {
             (self.direction, self.attribute_id)
