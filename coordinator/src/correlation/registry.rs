@@ -1,9 +1,12 @@
 use std::collections::BTreeMap;
 
-use tokio::sync::oneshot::{Receiver, Sender, channel};
+use tokio::sync::oneshot::Receiver;
 
+use self::response::{Pending, Quarantined, Response};
 use super::{Key, Token};
 use crate::Error;
+
+mod response;
 
 const INITIAL_GENERATION: u64 = 0;
 const INITIAL_SEQUENCE: u8 = 0;
@@ -11,32 +14,17 @@ const TRANSACTION_SEQUENCE_COUNT: usize = 1_usize << u8::BITS;
 
 type RegisteredResponse<T> = (u8, Token, Receiver<Result<T, Error>>);
 
-#[derive(Debug)]
-struct Pending<T> {
-    generation: u64,
-    response: Sender<Result<T, Error>>,
-}
-
 /// Actor-owned protocol-response correlations and transaction sequences.
 #[derive(Debug)]
-pub struct Registry<T> {
+pub struct Registry<T, Matcher = ()> {
     next_sequence: u8,
     next_generation: u64,
-    pending: BTreeMap<Key, Pending<T>>,
-    quarantined: BTreeMap<Key, u64>,
+    pending: BTreeMap<Key, Pending<T, Matcher>>,
+    quarantined: BTreeMap<Key, Quarantined<Matcher>>,
 }
 
+/// Default typed response handling, unchanged for ZDP.
 impl<T> Registry<T> {
-    /// Create an empty response registry.
-    pub const fn new() -> Self {
-        Self {
-            next_sequence: INITIAL_SEQUENCE,
-            next_generation: INITIAL_GENERATION,
-            pending: BTreeMap::new(),
-            quarantined: BTreeMap::new(),
-        }
-    }
-
     /// Allocate and register an infallibly constructed response correlation.
     ///
     /// # Errors
@@ -61,19 +49,29 @@ impl<T> Registry<T> {
     where
         F: Fn(u8) -> Result<Key, Error>,
     {
-        let (sequence, key) = self.allocate(&key_for_sequence)?;
-        let token = Token::new(key, self.next_generation);
-        self.next_generation = self.next_generation.wrapping_add(1);
-        let (response, receiver) = channel();
-        let pending = Pending {
-            generation: token.generation(),
-            response,
-        };
+        self.try_register_matching(key_for_sequence, ())
+    }
 
-        let previous = self.pending.insert(key, pending);
-        debug_assert!(previous.is_none());
+    /// Complete a pending response and release its transaction identity.
+    pub fn complete(&mut self, key: Key, value: T) -> bool {
+        self.complete_matching(key, value, |_| true)
+    }
 
-        Ok((sequence, token, receiver))
+    /// Consume a late response and release its quarantined transaction identity.
+    pub fn release_quarantine(&mut self, key: Key) -> bool {
+        self.release_quarantine_matching(key, |_| true)
+    }
+}
+
+impl<T, Matcher> Registry<T, Matcher> {
+    /// Create an empty response registry.
+    pub const fn new() -> Self {
+        Self {
+            next_sequence: INITIAL_SEQUENCE,
+            next_generation: INITIAL_GENERATION,
+            pending: BTreeMap::new(),
+            quarantined: BTreeMap::new(),
+        }
     }
 
     /// Allocate a sequence for a frame that does not expect a correlated response.
@@ -97,16 +95,6 @@ impl<T> Registry<T> {
         Err(Error::TransactionSequenceExhausted)
     }
 
-    /// Complete a pending response and release its transaction identity.
-    pub fn complete(&mut self, key: Key, value: T) -> bool {
-        let Some(pending) = self.pending.remove(&key) else {
-            return false;
-        };
-
-        pending.response.send(Ok(value)).unwrap_or_else(drop);
-        true
-    }
-
     /// Cancel a pending response and quarantine its identity for late-response handling.
     pub fn cancel(&mut self, token: Token) -> bool {
         self.remove_and_quarantine(token).is_some()
@@ -119,17 +107,12 @@ impl<T> Registry<T> {
         }
     }
 
-    /// Consume a late response and release its quarantined transaction identity.
-    pub fn release_quarantine(&mut self, key: Key) -> bool {
-        self.quarantined.remove(&key).is_some()
-    }
-
     /// Release a quarantined identity after its bounded late-response grace period.
     pub fn expire_quarantine(&mut self, token: Token) -> bool {
         let generation_matches = self
             .quarantined
             .get(&token.key())
-            .is_some_and(|generation| *generation == token.generation());
+            .is_some_and(|entry| entry.generation == token.generation());
         if generation_matches {
             self.quarantined.remove(&token.key());
         }
@@ -138,13 +121,10 @@ impl<T> Registry<T> {
 
     /// Fail one pending response whose actor-owned timeout message arrived.
     pub fn timeout(&mut self, token: Token) -> bool {
-        let Some(pending) = self.remove_and_quarantine(token) else {
+        let Some(response) = self.remove_and_quarantine(token) else {
             return false;
         };
-        pending
-            .response
-            .send(Err(Error::ProtocolResponseTimeout))
-            .unwrap_or_else(drop);
+        response.fail(Error::ProtocolResponseTimeout);
         true
     }
 
@@ -181,13 +161,18 @@ impl<T> Registry<T> {
                 .copied()
                 .filter(|token| token.generation() == pending.generation)
             {
-                self.quarantined.insert(key, token.generation());
+                self.quarantined.insert(
+                    key,
+                    Quarantined {
+                        generation: token.generation(),
+                        matcher: pending.matcher,
+                    },
+                );
                 preserved.push(token);
             }
             pending
                 .response
-                .send(Err(zb_hw::Error::from(error.clone()).into()))
-                .unwrap_or_else(drop);
+                .fail(zb_hw::Error::from(error.clone()).into());
         }
 
         preserved
@@ -207,8 +192,32 @@ impl<T> Registry<T> {
         self.next_sequence = INITIAL_SEQUENCE;
 
         for pending in pending.into_values() {
-            pending.response.send(Err(error())).unwrap_or_else(drop);
+            pending.response.fail(error());
         }
+    }
+
+    fn insert<F>(
+        &mut self,
+        key_for_sequence: F,
+        response: Response<T>,
+        matcher: Matcher,
+    ) -> Result<(u8, Token), Error>
+    where
+        F: Fn(u8) -> Result<Key, Error>,
+    {
+        let (sequence, key) = self.allocate(&key_for_sequence)?;
+        let token = Token::new(key, self.next_generation);
+        self.next_generation = self.next_generation.wrapping_add(1);
+        let previous = self.pending.insert(
+            key,
+            Pending {
+                generation: token.generation(),
+                response,
+                matcher,
+            },
+        );
+        debug_assert!(previous.is_none());
+        Ok((sequence, token))
     }
 
     fn allocate<F>(&mut self, key_for_sequence: &F) -> Result<(u8, Key), Error>
@@ -236,18 +245,24 @@ impl<T> Registry<T> {
         !self.pending.contains_key(&key) && !self.quarantined.contains_key(&key)
     }
 
-    fn remove_and_quarantine(&mut self, token: Token) -> Option<Pending<T>> {
+    fn remove_and_quarantine(&mut self, token: Token) -> Option<Response<T>> {
         if !self.pending_generation_matches(token) {
             return None;
         }
 
-        let pending = self.pending.remove(&token.key());
+        let pending = self.pending.remove(&token.key())?;
         let newly_quarantined = self
             .quarantined
-            .insert(token.key(), token.generation())
+            .insert(
+                token.key(),
+                Quarantined {
+                    generation: token.generation(),
+                    matcher: pending.matcher,
+                },
+            )
             .is_none();
         debug_assert!(newly_quarantined);
-        pending
+        Some(pending.response)
     }
 
     fn pending_generation_matches(&self, token: Token) -> bool {

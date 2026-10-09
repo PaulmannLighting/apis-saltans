@@ -160,12 +160,14 @@ sequenceDiagram
 The ZCL actor:
 
 - owns a collision-safe ZCL transaction-sequence allocator
-- receives parsed ZCL frames as normalized `DataIndication<Frame<Cluster>, (), ()>` values
+- receives original ZCL ASDUs as normalized `DataIndication<Bytes, (), ()>` values
+- validates headers and correlates raw replies before typed command-body decoding
 - accepts complete `DataRequest<UnsequencedFrame<Bytes>>` values
 - consumes each unsequenced frame with the assigned transaction sequence and serializes the
   resulting `Frame<Bytes>` while preserving every APS request field
 - sends the resulting `DataRequest<Bytes>` through the APS actor
-- stores response correlation channels for `communicate`
+- stores typed and raw response sinks in one correlation registry for `communicate` and
+  `communicate_raw` (see the owning [`Zcl` Rustdoc](src/api/zcl.rs))
 - registers generic filtered subscriptions received through its actor inbox
 - unregisters subscriptions by channel identity and prunes subscriptions whose receivers have closed
 - correlates responses before delivering unmatched frames to generic internal subscriptions
@@ -175,9 +177,9 @@ The ZCL actor:
 For response-free `transmit` messages and replies, the actor forwards the deferred APS result to
 the caller. An individual `transmit` must disable ZCL Default Responses; its sequence allocator
 skips pending and quarantined identities but does not retain the selected identity. For
-`communicate`, including the public `communicate_default` helper, the actor inserts the correlation
-entry before transmitting and returns an `ApsProtocolResponse` containing both the deferred APS
-result and protocol receiver. The actor therefore continues processing commands while
+`communicate` and `communicate_raw`, including the public `communicate_default` helper, the actor
+inserts the correlation entry before transmitting and returns an `ApsProtocolResponse` containing
+both the deferred APS result and protocol receiver. The actor therefore continues processing commands while
 acknowledgements are pending. Awaiting the internal response completes APS transmission before
 polling the correlated protocol response. Reply transmission preserves the request transaction
 sequence instead of allocating a new one.
@@ -333,10 +335,12 @@ Received ZDP indications can produce a correlation key only when both their sour
 use endpoint `0x00`. This validation is repeated at the ZDP actor boundary so malformed
 profile-zero traffic cannot complete a pending exchange even if it bypasses normal mux parsing.
 
-The mux parses successful APSDE data indications and forwards them to the appropriate protocol
-actor. Each actor derives the key directly from the received indication metadata and parsed frame
-and removes the matching one-shot sender. Each protocol actor permits up to 256 unavailable
-identities within one correlation domain. It returns `TransactionSequenceExhausted` when no
+The mux validates successful APSDE indication profiles and forwards ZCL ASDUs unchanged; it still
+parses ZDP frames. ZCL derives the key from the native header and indication metadata before body
+decoding, while ZDP derives it from the parsed frame. Raw matching policy is retained in quarantine
+and checked before either completion or reservation release. Global Report Attributes frames bypass
+both operations and remain eligible for normal typed subscription/event routing. Each protocol
+actor permits up to 256 unavailable identities within one correlation domain. It returns `TransactionSequenceExhausted` when no
 sequence is available and expires pending responses after the compile-time
 `ZIGBEE_COORDINATOR_PROTOCOL_RESPONSE_TIMEOUT_SECS` interval. Response-free ZCL transmissions skip
 unavailable identities without reserving the selected sequence. Cancelled and timed-out tracked
@@ -371,7 +375,7 @@ sequenceDiagram
     P-->>API: protocol response future
     API->>R: await
     H->>M: DataIndication with received ASDU
-    M->>P: parsed protocol frame
+    M->>P: ZCL ASDU or parsed ZDP frame
     P->>P: match and remove correlation
     P-->>R: raw response
     R-->>API: converted typed response
@@ -385,13 +389,13 @@ applies `TryFrom`.
 
 The mux consumes generic `zb_hw::Event<T, K>` values. It forwards network and device lifecycle
 events to the application, accepts successful `DataIndication<Bytes, T, K>` values, parses
-network-profile ASDUs as ZDP, parses supported application-profile ASDUs as ZCL, and recognizes
-Keep-Alive traffic before ZCL parsing. APS reassembly and security processing have already happened
-before the hardware backend emits the indication. Before forwarding parsed indications to the
+network-profile ASDUs as ZDP, forwards supported application-profile ZCL ASDUs unchanged, and
+recognizes Keep-Alive traffic before ZCL routing. APS reassembly and security processing have already
+happened before the hardware backend emits the indication. Before forwarding indications to the
 protocol actors, the mux normalizes only the backend-defined timestamp and device-key-pair handle
 to `()`; APS addressing, profile, cluster, status, security mode, key index, link quality, and the
-parsed ASDU remain attached. The mux selects and parses ZCL, ZDP, and Keep-Alive payloads directly
-from that metadata and ASDU; it does not synthesize a legacy received APS header.
+ASDU remain attached. Protocol selection uses that metadata directly; it does not synthesize a
+legacy received APS header.
 
 Unmatched ZCL commands remain application-visible as normalized
 `DataIndication<Frame<Cluster>, (), ()>` values, preserving the APSDE receive metadata with the

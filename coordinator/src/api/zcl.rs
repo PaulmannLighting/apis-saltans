@@ -9,7 +9,7 @@ use zb_aps::TxOptions;
 use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination};
 use zb_core::{ClusterSpecific, Profiled};
 use zb_zcl::global::default_response::DefaultResponse;
-use zb_zcl::{Cluster, Command, Directed, Scoped, UnsequencedFrame};
+use zb_zcl::{Cluster, Command, Directed, Scope, Scoped, UnsequencedFrame};
 
 use crate::zcl::Message;
 use crate::{CommunicationResponse, Coordinator, Error, StatusExt};
@@ -21,6 +21,36 @@ const DEFAULT_TX_OPTIONS: TxOptions = TxOptions::ACKNOWLEDGED_TRANSMISSION;
 /// Awaiting this future completes the APS transmission, waits for the correlated ZCL frame, and
 /// converts it to `T`.
 pub type ZclResponse<T> = CommunicationResponse<Cluster, T>;
+
+/// Expected command scope and command ID for a single raw ZCL response.
+///
+/// Addressing, profile, cluster, manufacturer, opposite direction, and transaction sequence
+/// are correlated by the native ZCL actor, not selected here.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RawExpectedPacket {
+    scope: Scope,
+    command_id: u8,
+}
+
+impl RawExpectedPacket {
+    /// Select exactly one response scope and command ID; no Default Response fallback is added.
+    #[must_use]
+    pub const fn new(scope: Scope, command_id: u8) -> Self {
+        Self { scope, command_id }
+    }
+
+    /// Return the expected command scope.
+    #[must_use]
+    pub const fn scope(self) -> Scope {
+        self.scope
+    }
+
+    /// Return the expected command ID.
+    #[must_use]
+    pub const fn command_id(self) -> u8 {
+        self.command_id
+    }
+}
 
 /// Construct a ZCL data request using a command's profile and cluster identifiers.
 pub fn request<T>(
@@ -123,6 +153,34 @@ pub trait Zcl {
     ) -> impl Future<Output = Result<ZclResponse<T>, Error>> + Send
     where
         T: TryFrom<Cluster, Error: Debug> + Send;
+
+    /// Send an individual NWK unicast and receive exactly one original, complete ZCL ASDU.
+    ///
+    /// The first await queues the request using the native actor's TSN allocator and APS path.
+    /// Await the returned future separately: it completes APS transmission first, then returns
+    /// the received bytes unchanged, including the ZCL header, without decoding/re-encoding the
+    /// body. This is not raw RF access, an observer, or an event subscription.
+    ///
+    /// The response must match `expected_response` and the native correlation identity, including
+    /// the direction opposite the request. Unknown/unsupported bodies can match a valid header.
+    /// Global Report Attributes notifications never match. There is no automatic Default Response
+    /// fallback; explicitly expecting global `0x0b` also requires its first body byte to name the
+    /// outgoing command. Status bytes are returned unchanged, not converted into ZCL errors.
+    ///
+    /// The returned future shares typed communication's cancellation, response timeout, and TSN
+    /// quarantine lifetime. Dropping it cancels the waiter, not traffic already handed to APS.
+    ///
+    /// # Errors
+    ///
+    /// The first await preserves native queue, destination validation, actor-handoff, and TSN
+    /// exhaustion errors. The second preserves APS/hardware, receive-channel, and
+    /// [`Error::ProtocolResponseTimeout`] errors. Malformed headers and nonmatching replies cannot
+    /// complete the waiter or release its quarantine.
+    fn communicate_raw(
+        &self,
+        request: DataRequest<UnsequencedFrame<Bytes>>,
+        expected_response: RawExpectedPacket,
+    ) -> impl Future<Output = Result<CommunicationResponse<Bytes, Bytes>, Error>> + Send;
 }
 
 impl Zcl for Sender<Message> {
@@ -169,6 +227,23 @@ impl Zcl for Sender<Message> {
             Ok(result.await??.into())
         }
     }
+
+    fn communicate_raw(
+        &self,
+        request: DataRequest<UnsequencedFrame<Bytes>>,
+        expected_response: RawExpectedPacket,
+    ) -> impl Future<Output = Result<CommunicationResponse<Bytes, Bytes>, Error>> + Send {
+        let (response, result) = channel();
+        async move {
+            self.send(Message::CommunicateRaw {
+                request,
+                expected_response,
+                response,
+            })
+            .await?;
+            Ok(result.await??.into())
+        }
+    }
 }
 
 impl Zcl for Coordinator {
@@ -194,6 +269,14 @@ impl Zcl for Coordinator {
         T: TryFrom<Cluster, Error: Debug> + Send,
     {
         self.zcl.communicate(request)
+    }
+
+    fn communicate_raw(
+        &self,
+        request: DataRequest<UnsequencedFrame<Bytes>>,
+        expected_response: RawExpectedPacket,
+    ) -> impl Future<Output = Result<CommunicationResponse<Bytes, Bytes>, Error>> + Send {
+        self.zcl.communicate_raw(request, expected_response)
     }
 }
 

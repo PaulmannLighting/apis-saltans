@@ -1,4 +1,4 @@
-use zb_aps::apsde::{DataIndication, DataRequest, ReceivedDestination, Source};
+use zb_aps::apsde::{DataIndication, DataRequest, IndicationMetadata, ReceivedDestination, Source};
 use zb_core::{Direction, Endpoint, short_id};
 use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
 
@@ -106,20 +106,30 @@ impl Key {
     pub const fn from_received_zcl_indication<T, K>(
         indication: &DataIndication<zb_zcl::Frame<zb_zcl::Cluster>, T, K>,
     ) -> Option<Self> {
+        Self::from_received_zcl_header(indication.metadata(), indication.asdu().header())
+    }
+
+    /// Derive the native ZCL identity before command-body decoding.
+    ///
+    /// Uses the same source and header fields as typed indication correlation.
+    #[must_use]
+    pub const fn from_received_zcl_header<T, K>(
+        metadata: &IndicationMetadata<T, K>,
+        header: zb_zcl::Header,
+    ) -> Option<Self> {
         let Source::Network {
             address: source,
             endpoint,
-        } = indication.metadata().source()
+        } = metadata.source()
         else {
             return None;
         };
-        let header = indication.asdu().header();
 
         Some(Self::new_zcl(
             source.as_u16(),
             endpoint.get(),
-            indication.metadata().cluster_id(),
-            indication.metadata().profile_id(),
+            metadata.cluster_id(),
+            metadata.profile_id(),
             header.manufacturer_code(),
             header.control().direction(),
             header.seq(),

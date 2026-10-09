@@ -7,7 +7,6 @@ pub use self::error::ParseApsPayloadError;
 mod error;
 
 type ZdpFrame = zb_zdp::Frame<zb_zdp::Command>;
-type ZclFrame = zb_zcl::Frame<zb_zcl::Cluster>;
 
 /// Payloads received on the APS layer.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -15,8 +14,8 @@ pub enum ApsPayload {
     /// A ZDP frame was received.
     Zdp(ZdpFrame),
 
-    /// A ZCL command was received.
-    Zcl(ZclFrame),
+    /// A ZCL ASDU was received; the ZCL actor owns header validation and body decoding.
+    Zcl(Bytes),
 
     /// A Keep-Alive packet was received.
     KeepAlive,
@@ -47,9 +46,7 @@ impl ApsPayload {
             | Profile::HealthCare
             | Profile::RemoteControl => match metadata.cluster() {
                 Ok(Cluster::KeepAlive) => Ok(Self::KeepAlive),
-                _ => ZclFrame::parse(metadata.cluster_id(), asdu.into_iter())
-                    .map(Self::Zcl)
-                    .map_err(ParseApsPayloadError::ParseZclFrameError),
+                _ => Ok(Self::Zcl(asdu)),
             },
         }
     }

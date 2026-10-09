@@ -2,13 +2,13 @@ use bytes::Bytes;
 use tokio::sync::mpsc::Sender as MpscSender;
 use tokio::sync::oneshot::Sender;
 use zb_aps::apsde::{DataIndication, DataRequest};
-use zb_zcl::{Cluster, Frame, UnsequencedFrame};
+use zb_zcl::{Cluster, UnsequencedFrame};
 
 use super::{Subscription, SubscriptionMessage};
-use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::correlation::Token;
 use crate::response::ApsProtocolResponse;
+use crate::{Error, RawExpectedPacket};
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -27,8 +27,8 @@ pub enum Message {
 
     /// A hardware-level event.
     Received {
-        /// APSDE indication containing the parsed ZCL frame.
-        indication: DataIndication<Frame<Cluster>, (), ()>,
+        /// Normalized APSDE indication containing the original complete ZCL ASDU.
+        indication: DataIndication<Bytes, (), ()>,
     },
 
     /// Fail pending protocol responses because the Zigbee network went down.
@@ -79,5 +79,15 @@ pub enum Message {
         request: DataRequest<UnsequencedFrame<Bytes>>,
         /// The response channel.
         response: Sender<Result<ApsProtocolResponse<Cluster>, Error>>,
+    },
+
+    /// Communicate a unicast with one explicitly selected raw response.
+    CommunicateRaw {
+        /// APS request containing the outgoing ZCL command.
+        request: DataRequest<UnsequencedFrame<Bytes>>,
+        /// Command scope and ID required for raw completion.
+        expected_response: RawExpectedPacket,
+        /// Channel returning the deferred native APS and protocol response.
+        response: Sender<Result<ApsProtocolResponse<Bytes>, Error>>,
     },
 }
