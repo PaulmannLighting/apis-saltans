@@ -198,7 +198,10 @@ fn matching_subscription_does_not_consume_correlated_response() {
                 .expect("test indication has a network source");
             let (_, _, response) = transceiver
                 .responses
-                .register(|_| response_key)
+                .try_register_with_metadata(
+                    |_| Ok(response_key),
+                    super::ResponseExpectation::new::<On>(<On as Command>::ID),
+                )
                 .expect("response correlation can be registered");
 
             transceiver.handle_message_received(indication);
@@ -229,7 +232,7 @@ fn subscription_request_does_not_complete_opposite_direction_response() {
             let endpoint = Endpoint::Application(Application::MIN);
             let response_key = Key::new_zcl(
                 SOURCE_NODE_ID,
-                endpoint,
+                (endpoint, endpoint),
                 ClusterId::OnOff.as_u16(),
                 Profile::ZigbeeHomeAutomation.as_u16(),
                 None,
@@ -238,7 +241,10 @@ fn subscription_request_does_not_complete_opposite_direction_response() {
             );
             let (_, _, mut response) = transceiver
                 .responses
-                .register(|_| response_key)
+                .try_register_with_metadata(
+                    |_| Ok(response_key),
+                    super::ResponseExpectation::new::<On>(<On as Command>::ID),
+                )
                 .expect("response correlation can be registered");
 
             transceiver.handle_message_received(subscribed_indication());
@@ -378,7 +384,7 @@ fn subscribed_indication() -> DataIndication<Frame<Cluster>, (), ()> {
         Profile::ZigbeeHomeAutomation.as_u16(),
         ClusterId::OnOff.as_u16(),
         IndicationStatus::success(),
-        Security::Unsecured,
+        Security::<()>::Unsecured,
         LINK_QUALITY,
         (),
     );
@@ -402,4 +408,208 @@ fn source() -> Source {
             .expect("source address is a valid NWK address"),
         endpoint,
     }
+}
+
+#[test]
+fn unrelated_reports_preserve_pending_responses_and_reach_normal_routing() {
+    Builder::new_current_thread()
+        .build()
+        .expect("Tokio runtime")
+        .block_on(async {
+            for subscribe in [false, true] {
+                let (mut transceiver, mut events) = unstarted_transceiver();
+                let (subscription, mut reports) = Subscription::channel(SubscriptionFilter::new(
+                    ClusterId::OnOff,
+                    Scope::Global,
+                    Direction::ServerToClient,
+                ));
+                if subscribe {
+                    transceiver.subscriptions.push(subscription);
+                }
+                let response = read_response_indication();
+                let key = Key::from_received_zcl_indication(&response).unwrap();
+                let (_, _, mut receiver) =
+                    transceiver
+                        .responses
+                        .try_register_with_metadata(
+                            |_| Ok(key),
+                            super::ResponseExpectation::new::<
+                                zb_zcl::global::read_attributes::Response,
+                            >(
+                                <zb_zcl::global::read_attributes::Command as Command>::ID
+                            ),
+                        )
+                        .unwrap();
+                let report = report_indication();
+                assert_eq!(Key::from_received_zcl_indication(&report), Some(key));
+                transceiver.handle_message_received(report);
+                assert!(matches!(
+                    receiver.try_recv(),
+                    Err(tokio::sync::oneshot::error::TryRecvError::Empty)
+                ));
+                assert!(transceiver.responses.metadata(key).is_some());
+                if subscribe {
+                    assert!(reports.try_recv().is_ok());
+                    assert!(events.try_recv().is_err());
+                } else {
+                    assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
+                }
+                transceiver.handle_message_received(response);
+                assert!(matches!(
+                    receiver.try_recv(),
+                    Ok(Ok(Cluster::Global(
+                        zb_zcl::global::Command::ReadAttributesResponse(_)
+                    )))
+                ));
+                assert!(transceiver.responses.metadata(key).is_none());
+            }
+        });
+}
+
+#[test]
+fn unrelated_reports_do_not_release_cancelled_or_timed_out_transactions() {
+    Builder::new_current_thread()
+        .build()
+        .expect("Tokio runtime")
+        .block_on(async {
+            for timeout in [false, true] {
+                let (mut transceiver, mut events) = unstarted_transceiver();
+                let response = read_response_indication();
+                let key = Key::from_received_zcl_indication(&response).unwrap();
+                let (_, token, _receiver) =
+                    transceiver
+                        .responses
+                        .try_register_with_metadata(
+                            |_| Ok(key),
+                            super::ResponseExpectation::new::<
+                                zb_zcl::global::read_attributes::Response,
+                            >(
+                                <zb_zcl::global::read_attributes::Command as Command>::ID
+                            ),
+                        )
+                        .unwrap();
+                if timeout {
+                    assert!(transceiver.responses.timeout(token));
+                } else {
+                    assert!(transceiver.responses.cancel(token));
+                }
+                transceiver.handle_message_received(report_indication());
+                assert!(transceiver.responses.metadata(key).is_some());
+                assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
+                transceiver.handle_message_received(response);
+                assert!(transceiver.responses.metadata(key).is_none());
+                assert!(events.try_recv().is_err());
+            }
+        });
+}
+
+#[test]
+fn default_response_must_name_the_original_command() {
+    const DEFAULT_RESPONSE: [u8; 5] = [0x18, TRANSACTION_SEQUENCE, 0x0b, 0x01, 0x00];
+    const UNRELATED_DEFAULT_RESPONSE: [u8; 5] = [0x18, TRANSACTION_SEQUENCE, 0x0b, 0x00, 0x00];
+    Builder::new_current_thread()
+        .build()
+        .expect("Tokio runtime")
+        .block_on(async {
+            for quarantined in [false, true] {
+                let (mut transceiver, mut events) = unstarted_transceiver();
+                let response = incoming_frame(&DEFAULT_RESPONSE);
+                let unrelated = incoming_frame(&UNRELATED_DEFAULT_RESPONSE);
+                let key = Key::from_received_zcl_indication(&response).unwrap();
+                let (_, token, mut receiver) = transceiver
+                    .responses
+                    .try_register_with_metadata(
+                        |_| Ok(key),
+                        super::ResponseExpectation::new::<
+                            zb_zcl::global::default_response::DefaultResponse,
+                        >(<On as Command>::ID),
+                    )
+                    .unwrap();
+                if quarantined {
+                    assert!(transceiver.responses.cancel(token));
+                }
+                transceiver.handle_message_received(unrelated);
+                assert!(transceiver.responses.metadata(key).is_some());
+                assert!(matches!(events.try_recv(), Ok(Event::Zcl { .. })));
+                if !quarantined {
+                    assert!(matches!(
+                        receiver.try_recv(),
+                        Err(tokio::sync::oneshot::error::TryRecvError::Empty)
+                    ));
+                }
+                transceiver.handle_message_received(response);
+                assert!(transceiver.responses.metadata(key).is_none());
+                if !quarantined {
+                    assert!(matches!(
+                        receiver.try_recv(),
+                        Ok(Ok(Cluster::Global(
+                            zb_zcl::global::Command::DefaultResponse(_)
+                        )))
+                    ));
+                }
+                assert!(events.try_recv().is_err());
+            }
+        });
+}
+
+#[test]
+fn local_endpoint_is_part_of_response_identity() {
+    let local_endpoint =
+        IndividualEndpoint::new(Endpoint::try_from(LOCAL_ENDPOINT_ID).unwrap()).unwrap();
+    let remote_endpoint = IndividualEndpoint::new(Endpoint::Application(Application::MIN)).unwrap();
+    let request = DataRequest::new(
+        RequestDestination::Network {
+            address: NetworkAddress::new(SOURCE_NODE_ID).unwrap(),
+            endpoint: remote_endpoint.get(),
+        },
+        Profile::ZigbeeHomeAutomation.as_u16(),
+        ClusterId::OnOff.as_u16(),
+        local_endpoint,
+        UnsequencedFrame::from_command(On),
+    );
+    let expected = Transceiver::request_key(&request, TRANSACTION_SEQUENCE).unwrap();
+    let response = read_response_indication();
+    assert_ne!(Key::from_received_zcl_indication(&response), Some(expected));
+    let metadata = IndicationMetadata::new(
+        ReceivedDestination::Network {
+            address: NetworkAddress::new(LOCAL_NODE_ID).unwrap(),
+            endpoint: local_endpoint,
+        },
+        source(),
+        Profile::ZigbeeHomeAutomation.as_u16(),
+        ClusterId::OnOff.as_u16(),
+        IndicationStatus::success(),
+        Security::<()>::Unsecured,
+        LINK_QUALITY,
+        (),
+    );
+    let corrected = DataIndication::new(metadata, response.into_parts().1);
+    assert_eq!(
+        Key::from_received_zcl_indication(&corrected),
+        Some(expected)
+    );
+}
+
+fn incoming_frame(bytes: &[u8]) -> DataIndication<Frame<Cluster>, (), ()> {
+    subscribed_indication()
+        .map_asdu(|_| Frame::parse(ClusterId::OnOff.as_u16(), bytes.iter().copied()).unwrap())
+}
+
+fn read_response_indication() -> DataIndication<Frame<Cluster>, (), ()> {
+    const PAYLOAD: [u8; 8] = [
+        0x18,
+        TRANSACTION_SEQUENCE,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x10,
+        0x01,
+    ];
+    incoming_frame(&PAYLOAD)
+}
+
+fn report_indication() -> DataIndication<Frame<Cluster>, (), ()> {
+    const PAYLOAD: [u8; 7] = [0x18, TRANSACTION_SEQUENCE, 0x0a, 0x00, 0x00, 0x10, 0x01];
+    incoming_frame(&PAYLOAD)
 }

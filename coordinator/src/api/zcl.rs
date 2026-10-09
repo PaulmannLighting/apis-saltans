@@ -22,6 +22,25 @@ const DEFAULT_TX_OPTIONS: TxOptions = TxOptions::ACKNOWLEDGED_TRANSMISSION;
 /// converts it to `T`.
 pub type ZclResponse<T> = CommunicationResponse<Cluster, T>;
 
+/// Defines which command headers can satisfy a typed ZCL response.
+///
+/// Individual command types implement this automatically through `Command` and `Scoped`.
+/// Response enums accepting multiple command forms can implement this trait explicitly.
+/// Implementations should match both scope and command ID and must not accept unrelated commands.
+pub trait ZclResponseType {
+    /// Whether this header describes an accepted response command.
+    fn matches_response(header: zb_zcl::Header) -> bool;
+}
+
+impl<T> ZclResponseType for T
+where
+    T: Command + Scoped,
+{
+    fn matches_response(header: zb_zcl::Header) -> bool {
+        header.control().typ() == Ok(T::SCOPE) && header.command_id() == T::ID
+    }
+}
+
 /// Construct a ZCL data request using a command's profile and cluster identifiers.
 pub fn request<T>(
     destination: RequestDestination,
@@ -110,6 +129,9 @@ pub trait Zcl {
     /// The request destination must be one individual 16-bit NWK endpoint. The returned outer
     /// future queues the request and yields a [`ZclResponse`]. Await that response separately to
     /// complete APS transmission, receive the correlated ZCL response frame, and convert it.
+    /// `T` supplies the accepted command scope and ID through [`ZclResponseType`]. Unrelated
+    /// frames leave the request pending. Default Responses must additionally name the original
+    /// command and are accepted only when `T` explicitly permits that response form.
     ///
     /// # Errors
     ///
@@ -122,7 +144,7 @@ pub trait Zcl {
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> impl Future<Output = Result<ZclResponse<T>, Error>> + Send
     where
-        T: TryFrom<Cluster, Error: Debug> + Send;
+        T: ZclResponseType + TryFrom<Cluster, Error: Debug> + Send;
 }
 
 impl Zcl for Sender<Message> {
@@ -158,13 +180,19 @@ impl Zcl for Sender<Message> {
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> impl Future<Output = Result<ZclResponse<T>, Error>> + Send
     where
-        T: TryFrom<Cluster, Error: Debug> + Send,
+        T: ZclResponseType + TryFrom<Cluster, Error: Debug> + Send,
     {
         let (response, result) = channel();
+        let expected =
+            crate::zcl::ResponseExpectation::new::<T>(request.asdu().header().command_id());
 
         async move {
-            self.send(Message::Communicate { request, response })
-                .await?;
+            self.send(Message::Communicate {
+                request,
+                expected,
+                response,
+            })
+            .await?;
 
             Ok(result.await??.into())
         }
@@ -191,7 +219,7 @@ impl Zcl for Coordinator {
         request: DataRequest<UnsequencedFrame<Bytes>>,
     ) -> impl Future<Output = Result<ZclResponse<T>, Error>> + Send
     where
-        T: TryFrom<Cluster, Error: Debug> + Send,
+        T: ZclResponseType + TryFrom<Cluster, Error: Debug> + Send,
     {
         self.zcl.communicate(request)
     }
@@ -256,6 +284,62 @@ mod tests {
             validate_default_response(<On as Command>::ID, &response),
             Err(Error::Zcl(Ok(zb_zcl::Status::Failure)))
         ));
+    }
+
+    #[test]
+    fn communication_carries_typed_response_expectation_to_actor() {
+        use std::future::Future;
+        use std::pin::pin;
+        use std::task::{Context, Poll, Waker};
+
+        use zb_zcl::global::read_attributes;
+        use zb_zcl::{Frame, Header, Scope};
+
+        use super::{Zcl, request};
+        use crate::zcl::Message;
+
+        const SEQUENCE: u8 = 7;
+        const CHANNEL_CAPACITY: usize = 1;
+        const UNRELATED_DEFAULT: [u8; 5] = [0x18, SEQUENCE, 0x0b, 0x00, 0x00];
+        const EXPECTED_DEFAULT: [u8; 5] = [0x18, SEQUENCE, 0x0b, 0x01, 0x00];
+        let (sender, mut messages) = tokio::sync::mpsc::channel(CHANNEL_CAPACITY);
+        let mut response = pin!(sender.communicate::<DefaultResponse>(request(
+            destination(),
+            source_endpoint(),
+            On
+        )));
+        let mut context = Context::from_waker(Waker::noop());
+        assert!(matches!(
+            response.as_mut().poll(&mut context),
+            Poll::Pending
+        ));
+        let Message::Communicate { expected, .. } = messages.try_recv().unwrap() else {
+            panic!("expected a ZCL communication request");
+        };
+        let frame = Frame::parse(
+            zb_core::Cluster::OnOff.as_u16(),
+            EXPECTED_DEFAULT.into_iter(),
+        )
+        .unwrap();
+        assert!(expected.matches(&frame));
+        let frame = Frame::parse(
+            zb_core::Cluster::OnOff.as_u16(),
+            UNRELATED_DEFAULT.into_iter(),
+        )
+        .unwrap();
+        assert!(!expected.matches(&frame));
+        let unrelated = Frame::new(
+            Header::new(
+                Scope::Global,
+                zb_core::Direction::ServerToClient,
+                false,
+                None,
+                SEQUENCE,
+                <read_attributes::Response as Command>::ID,
+            ),
+            frame.into_payload(),
+        );
+        assert!(!expected.matches(&unrelated));
     }
 
     fn destination() -> RequestDestination {

@@ -4,7 +4,7 @@ use tokio::sync::oneshot::Sender;
 use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
-use super::{Subscription, SubscriptionMessage};
+use super::{ResponseExpectation, Subscription, SubscriptionMessage};
 use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::correlation::Token;
@@ -75,6 +75,8 @@ pub enum Message {
 
     /// Communicate a unicast with an expected response.
     Communicate {
+        /// Expected response command forms and original command ID.
+        expected: ResponseExpectation,
         /// APS request containing the outgoing ZCL command.
         request: DataRequest<UnsequencedFrame<Bytes>>,
         /// The response channel.

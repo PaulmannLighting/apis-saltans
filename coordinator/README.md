@@ -239,7 +239,7 @@ cannot keep the server alive after external OTA handles are dropped.
 
 ZCL delivers subscription frames without awaiting channel capacity. If a subscription channel is
 full, the current frame continues through application-event routing. Response correlation checks
-the expected response direction before subscription delivery, so a correlated response cannot be
+the local endpoint, expected response direction, scope, and command ID before subscription delivery, so a correlated response cannot be
 consumed by a subscription while unrelated client requests continue to reach it. Closed
 subscription channels are removed automatically. Each subscription message retains the complete
 normalized `DataIndication`, so OTA validation and routing use the original APSDE source,
@@ -879,3 +879,18 @@ when they require a shorter runtime deadline.
 
 Retry behavior for discovery or binding is intentionally not configured here anymore. Applications
 that build discovery or binding workflows should apply their own retry and persistence policy.
+
+### ZCL response matching
+
+`Zcl::communicate::<T>` requires `T: ZclResponseType` in addition to its conversion from `Cluster`.
+Commands implementing ZCL `Command` and `Scoped` satisfy this automatically: their scope and
+command ID identify the expected response. Custom response enums accepting several command forms
+must implement `ZclResponseType::matches_response` and a corresponding `TryFrom<Cluster>` conversion.
+Include both scope and command ID in each accepted form. A Default Response is accepted only if
+it is one of those forms and its embedded command ID names the original request.
+
+Correlation also matches the local APS endpoint. Unrelated commands, including attribute reports
+with a matching transaction sequence, continue to subscription/event routing without completing a
+pending request or releasing quarantine. Broadcast/group indications cannot complete individual
+requests and continue to normal routing. Fully identical delayed responses still rely on sequence
+allocation and the quarantine interval for protection.

@@ -319,7 +319,8 @@ actor while the hardware result is pending.
 Pending ZCL and ZDP requests are keyed by an internal correlation `Key` containing:
 
 - remote short address
-- endpoint
+- remote endpoint and, for ZCL, local endpoint
+- expected ZCL response direction
 - cluster ID
 - profile ID
 - optional ZCL manufacturer code
@@ -328,6 +329,25 @@ Pending ZCL and ZDP requests are keyed by an internal correlation `Key` containi
 The `correlation.rs` façade exposes the correlation types and timeout policy. Its `key`,
 `lifecycle`, and `registry` submodules respectively own protocol identity construction,
 cancellation tokens, and actor-owned response state.
+
+ZCL registration carries a `ResponseExpectation` derived from the public `ZclResponseType` trait.
+Its header predicate matches expected command scope and ID; individual command types receive a
+blanket implementation, while response enums can accept several forms. The expectation also
+stores the outgoing command ID and checks it against the payload of accepted Default Responses.
+`Registry<T, M>` retains this copyable metadata with the pending entry and transfers it into
+quarantine on cancellation or timeout. ZDP uses unit metadata and keeps its existing matching.
+The ZCL actor checks the expectation before removing either entry. A mismatch follows normal
+subscription/event routing and leaves transaction state untouched. Indications without an
+individual destination endpoint cannot produce a ZCL correlation key, but are still routed.
+
+```mermaid
+flowchart TD
+    Received[Incoming ZCL frame] --> Identity{Transaction identity matches?}
+    Identity -->|No| Route[Subscription and event routing]
+    Identity -->|Yes| Expected{Expected command and original command ID match?}
+    Expected -->|No| Route
+    Expected -->|Yes| Consume[Complete pending response or release quarantine]
+```
 
 Received ZDP indications can produce a correlation key only when both their source and destination
 use endpoint `0x00`. This validation is repeated at the ZDP actor boundary so malformed

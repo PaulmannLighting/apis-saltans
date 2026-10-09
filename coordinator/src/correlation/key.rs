@@ -7,7 +7,7 @@ use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
 /// The coordinator stores outstanding ZCL and ZDP requests under a `Key` and
 /// removes the matching entry again when a response frame arrives. The key uses
 /// the addressing and protocol fields that are expected to be mirrored by the
-/// response: the remote node id, endpoint, cluster id, profile id, optional
+/// response: the remote node id, remote and local endpoints, cluster id, profile id, optional
 /// manufacturer code, expected ZCL direction where applicable, and transaction sequence number.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Key {
@@ -15,6 +15,8 @@ pub struct Key {
     short_id: u16,
     /// The endpoint used for the request/response exchange.
     endpoint: Endpoint,
+    /// Local APS endpoint for ZCL transactions.
+    local_endpoint: Option<Endpoint>,
     /// The request cluster id used for response matching.
     cluster_id: u16,
     /// The application profile id used for the exchange.
@@ -42,6 +44,7 @@ impl Key {
         Self {
             short_id,
             endpoint,
+            local_endpoint: None,
             cluster_id,
             profile_id,
             manufacturer_code,
@@ -50,11 +53,11 @@ impl Key {
         }
     }
 
-    /// Create a ZCL response-correlation key with its expected frame direction.
+    /// Create a ZCL response-correlation key with remote/local endpoints and expected direction.
     #[must_use]
     pub const fn new_zcl(
         short_id: u16,
-        endpoint: Endpoint,
+        (endpoint, local_endpoint): (Endpoint, Endpoint),
         cluster_id: u16,
         profile_id: u16,
         manufacturer_code: Option<u16>,
@@ -64,6 +67,7 @@ impl Key {
         Self {
             short_id,
             endpoint,
+            local_endpoint: Some(local_endpoint),
             cluster_id,
             profile_id,
             manufacturer_code,
@@ -101,7 +105,8 @@ impl Key {
 
     /// Create the response correlation key for a received ZCL indication.
     ///
-    /// Returns `None` when the indication source is not a 16-bit NWK address with an endpoint.
+    /// Returns `None` unless the source is a 16-bit NWK address with an endpoint and the
+    /// destination is an individual address with a local endpoint.
     #[must_use]
     pub const fn from_received_zcl_indication<T, K>(
         indication: &DataIndication<zb_zcl::Frame<zb_zcl::Cluster>, T, K>,
@@ -113,11 +118,16 @@ impl Key {
         else {
             return None;
         };
+        let local_endpoint = match indication.metadata().destination() {
+            ReceivedDestination::Network { endpoint, .. }
+            | ReceivedDestination::Extended { endpoint, .. } => endpoint.get(),
+            _ => return None,
+        };
         let header = indication.asdu().header();
 
         Some(Self::new_zcl(
             source.as_u16(),
-            endpoint.get(),
+            (endpoint.get(), local_endpoint),
             indication.metadata().cluster_id(),
             indication.metadata().profile_id(),
             header.manufacturer_code(),

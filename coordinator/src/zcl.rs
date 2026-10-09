@@ -10,6 +10,7 @@ use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::message::Message;
+pub use self::response_expectation::ResponseExpectation;
 pub use self::subscription::{
     Filter as SubscriptionFilter, Received as SubscriptionMessage, Subscription,
     SubscriptionReceiver,
@@ -24,6 +25,7 @@ use crate::response::ApsProtocolResponse;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
 mod message;
+mod response_expectation;
 mod subscription;
 
 /// Zigbee transceiver actor.
@@ -32,7 +34,7 @@ pub struct Transceiver {
     aps: Aps,
     events: EventSink,
     subscriptions: Vec<Subscription>,
-    responses: Registry<Cluster>,
+    responses: Registry<Cluster, ResponseExpectation>,
     inbox: WeakSender<Message>,
 }
 
@@ -118,9 +120,13 @@ impl Transceiver {
                         debug!("Failed to return ZCL reply transmission result: {error:?}");
                     });
             }
-            Message::Communicate { request, response } => {
+            Message::Communicate {
+                request,
+                expected,
+                response,
+            } => {
                 response
-                    .send(self.communicate(request).await)
+                    .send(self.communicate(request, expected).await)
                     .unwrap_or_else(|error| {
                         debug!("Failed to send unicast response: {error:?}");
                     });
@@ -135,23 +141,27 @@ impl Transceiver {
     /// Handle a received ZCL message.
     fn handle_message_received(&mut self, indication: DataIndication<Frame<Cluster>, (), ()>) {
         let source = indication.metadata().source();
-        let Some(key) = Key::from_received_zcl_indication(&indication) else {
-            warn!("Discarding ZCL indication from unsupported source: {source:?}");
-            return;
-        };
         trace!("Received ZCL message from {source:?}: {indication:?}");
 
-        let zcl_frame = indication.asdu().clone();
-        let (_, cluster) = zcl_frame.into_parts();
-        if self.responses.complete(key, cluster) {
-            return;
-        }
-        if self.responses.release_quarantine(key) {
-            debug!(
-                "Discarding late ZCL response with quarantined sequence {}",
-                key.sequence()
-            );
-            return;
+        if let Some(key) = Key::from_received_zcl_indication(&indication)
+            && self
+                .responses
+                .metadata(key)
+                .is_some_and(|expected| expected.matches(indication.asdu()))
+        {
+            if self
+                .responses
+                .complete(key, indication.asdu().payload().clone())
+            {
+                return;
+            }
+            if self.responses.release_quarantine(key) {
+                debug!(
+                    "Discarding late ZCL response with quarantined sequence {}",
+                    key.sequence()
+                );
+                return;
+            }
         }
         if self.forward_to_subscribers(&indication) {
             return;
@@ -249,10 +259,12 @@ impl Transceiver {
     async fn communicate(
         &mut self,
         request: DataRequest<UnsequencedFrame<Bytes>>,
+        expected: ResponseExpectation,
     ) -> Result<ApsProtocolResponse<Cluster>, Error> {
-        let (sequence_number, token, rx) = self
-            .responses
-            .try_register(|sequence| Self::request_key(&request, sequence))?;
+        let (sequence_number, token, rx) = self.responses.try_register_with_metadata(
+            |sequence| Self::request_key(&request, sequence),
+            expected,
+        )?;
         self.schedule_response_timeout(token);
 
         let request = Self::encode_request(request, sequence_number);
@@ -329,7 +341,7 @@ impl Transceiver {
 
         Ok(Key::new_zcl(
             address.as_u16(),
-            endpoint,
+            (endpoint, request.source_endpoint().get()),
             request.cluster_id(),
             request.profile_id(),
             request.asdu().header().manufacturer_code(),

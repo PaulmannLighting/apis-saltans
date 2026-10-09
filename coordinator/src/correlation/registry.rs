@@ -12,21 +12,25 @@ const TRANSACTION_SEQUENCE_COUNT: usize = 1_usize << u8::BITS;
 type RegisteredResponse<T> = (u8, Token, Receiver<Result<T, Error>>);
 
 #[derive(Debug)]
-struct Pending<T> {
+struct Pending<T, M> {
+    metadata: M,
     generation: u64,
     response: Sender<Result<T, Error>>,
 }
 
 /// Actor-owned protocol-response correlations and transaction sequences.
 #[derive(Debug)]
-pub struct Registry<T> {
+pub struct Registry<T, M = ()> {
     next_sequence: u8,
     next_generation: u64,
-    pending: BTreeMap<Key, Pending<T>>,
-    quarantined: BTreeMap<Key, u64>,
+    pending: BTreeMap<Key, Pending<T, M>>,
+    quarantined: BTreeMap<Key, (u64, M)>,
 }
 
-impl<T> Registry<T> {
+impl<T, M> Registry<T, M>
+where
+    M: Copy,
+{
     /// Create an empty response registry.
     pub const fn new() -> Self {
         Self {
@@ -37,27 +41,16 @@ impl<T> Registry<T> {
         }
     }
 
-    /// Allocate and register an infallibly constructed response correlation.
+    /// Register a transaction with metadata retained through quarantine.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::TransactionSequenceExhausted`] when every identity is
-    /// pending or quarantined.
-    pub fn register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
-    where
-        F: Fn(u8) -> Key,
-    {
-        self.try_register(|sequence| Ok(key_for_sequence(sequence)))
-    }
-
-    /// Allocate and register a fallibly constructed response correlation.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error produced while constructing the key for the selected
-    /// sequence, or [`Error::TransactionSequenceExhausted`] when every identity
-    /// is pending or quarantined.
-    pub fn try_register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
+    /// Returns key construction errors or sequence exhaustion.
+    pub fn try_register_with_metadata<F>(
+        &mut self,
+        key_for_sequence: F,
+        metadata: M,
+    ) -> Result<RegisteredResponse<T>, Error>
     where
         F: Fn(u8) -> Result<Key, Error>,
     {
@@ -67,6 +60,7 @@ impl<T> Registry<T> {
         let (response, receiver) = channel();
         let pending = Pending {
             generation: token.generation(),
+            metadata,
             response,
         };
 
@@ -74,6 +68,14 @@ impl<T> Registry<T> {
         debug_assert!(previous.is_none());
 
         Ok((sequence, token, receiver))
+    }
+
+    /// Return metadata for a pending or quarantined transaction.
+    pub fn metadata(&self, key: Key) -> Option<&M> {
+        self.pending
+            .get(&key)
+            .map(|pending| &pending.metadata)
+            .or_else(|| self.quarantined.get(&key).map(|(_, metadata)| metadata))
     }
 
     /// Allocate a sequence for a frame that does not expect a correlated response.
@@ -129,7 +131,7 @@ impl<T> Registry<T> {
         let generation_matches = self
             .quarantined
             .get(&token.key())
-            .is_some_and(|generation| *generation == token.generation());
+            .is_some_and(|(generation, _)| *generation == token.generation());
         if generation_matches {
             self.quarantined.remove(&token.key());
         }
@@ -181,7 +183,8 @@ impl<T> Registry<T> {
                 .copied()
                 .filter(|token| token.generation() == pending.generation)
             {
-                self.quarantined.insert(key, token.generation());
+                self.quarantined
+                    .insert(key, (token.generation(), pending.metadata));
                 preserved.push(token);
             }
             pending
@@ -236,24 +239,50 @@ impl<T> Registry<T> {
         !self.pending.contains_key(&key) && !self.quarantined.contains_key(&key)
     }
 
-    fn remove_and_quarantine(&mut self, token: Token) -> Option<Pending<T>> {
+    fn remove_and_quarantine(&mut self, token: Token) -> Option<Pending<T, M>> {
         if !self.pending_generation_matches(token) {
             return None;
         }
 
-        let pending = self.pending.remove(&token.key());
+        let pending = self.pending.remove(&token.key())?;
         let newly_quarantined = self
             .quarantined
-            .insert(token.key(), token.generation())
+            .insert(token.key(), (token.generation(), pending.metadata))
             .is_none();
         debug_assert!(newly_quarantined);
-        pending
+        Some(pending)
     }
 
     fn pending_generation_matches(&self, token: Token) -> bool {
         self.pending
             .get(&token.key())
             .is_some_and(|pending| pending.generation == token.generation())
+    }
+}
+
+impl<T> Registry<T> {
+    /// Register a response using an infallible key constructor.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when all transaction sequences are occupied.
+    pub fn register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
+    where
+        F: Fn(u8) -> Key,
+    {
+        self.try_register(|sequence| Ok(key_for_sequence(sequence)))
+    }
+
+    /// Register a response using a fallible key constructor.
+    ///
+    /// # Errors
+    ///
+    /// Returns key construction errors or sequence exhaustion.
+    pub fn try_register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
+    where
+        F: Fn(u8) -> Result<Key, Error>,
+    {
+        self.try_register_with_metadata(key_for_sequence, ())
     }
 }
 
