@@ -59,6 +59,8 @@ const LOCAL_NWK_ADDRESS: u16 = 0;
 const SECOND_DEVICE_SHORT_ID: u16 = 0x5678;
 const OTHER_IEEE_ADDRESS: IeeeAddress =
     IeeeAddress::new(0x00, 0x12, 0x4b, 0x00, 0x02, 0xdd, 0xee, 0xff);
+const EMPTY_BLOCK: u8 = 0;
+const IMAGE_START: u32 = 0;
 const ENDPOINT: Endpoint = Endpoint::Application(Application::MIN);
 
 enum ObservedZcl {
@@ -380,6 +382,39 @@ fn replaces_an_update_in_the_existing_destination_task() {
 }
 
 #[test]
+fn replacement_survives_an_aborted_in_flight_transmission() {
+    run_test(async {
+        let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+        let (ota_sender, server) = Server::test_new(zcl_sender, SINGLE_UPDATE_LIMIT);
+        tokio::spawn(server.run());
+        let previous = schedule(&ota_sender, test_image()).await;
+        let transmission = hold_next_transmission(&mut zcl_receiver).await;
+        let image = test_image();
+        let image_id = image.id();
+        let replacement = schedule(&ota_sender, image).await;
+        receive_zcl(&mut zcl_receiver).await;
+        assert!(matches!(previous.await, Ok(Err(UpdateError::Superseded))));
+        drop(transmission);
+
+        ota_sender
+            .send(incoming(
+                TEST_SEQUENCE_NUMBER,
+                UpgradeComplete::new(image_id),
+            ))
+            .await
+            .expect("OTA server is running");
+        let (_, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+        let response = UpgradeEndResponse::from_le_stream(bytes.into_iter())
+            .expect("replacement still responds to upgrade completion");
+        assert_eq!(response.image(), image_id);
+        assert!(matches!(
+            timeout(TEST_TIMEOUT, replacement).await,
+            Ok(Ok(Ok(())))
+        ));
+    });
+}
+
+#[test]
 fn admits_a_new_destination_after_a_transfer_task_finishes() {
     run_test(async {
         let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
@@ -566,6 +601,67 @@ fn handles_query_block_and_upgrade_end_flow() {
         assert_eq!(response.current_time(), 0);
         assert_eq!(response.upgrade_time(), 0);
         assert!(matches!(completion.await, Ok(Ok(()))));
+    });
+}
+
+#[test]
+fn rejects_invalid_image_block_ranges() {
+    run_test(async {
+        let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+        let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+        tokio::spawn(server.run());
+        let image = test_image();
+        let image_id = image.id();
+        let image_size = u32::try_from(image.len()).expect("test image length fits u32");
+        let _completion = schedule(&ota_sender, image).await;
+        receive_zcl(&mut zcl_receiver).await;
+
+        for (offset, size) in [
+            (IMAGE_START, EMPTY_BLOCK),
+            (image_size, PAGE_MAXIMUM_DATA_SIZE),
+        ] {
+            ota_sender
+                .send(incoming(
+                    TEST_SEQUENCE_NUMBER,
+                    ImageBlockRequest::new(image_id, offset, size, None, None),
+                ))
+                .await
+                .expect("OTA server is running");
+            let (_, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+            let response =
+                DefaultResponse::from_le_stream(bytes.into_iter()).expect("valid Default Response");
+            assert_eq!(response.command_id(), ImageBlockRequest::ID);
+            assert_eq!(response.status(), u8::from(Status::MalformedCommand));
+        }
+    });
+}
+
+#[test]
+fn clips_image_blocks_at_the_end_of_the_image() {
+    run_test(async {
+        let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+        let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+        tokio::spawn(server.run());
+        let image = test_image();
+        let image_id = image.id();
+        let _completion = schedule(&ota_sender, image).await;
+        receive_zcl(&mut zcl_receiver).await;
+        let offset = u32::try_from(BASE_HEADER_LENGTH).expect("header length fits u32");
+        ota_sender
+            .send(incoming(
+                TEST_SEQUENCE_NUMBER,
+                ImageBlockRequest::new(image_id, offset, u8::MAX, None, None),
+            ))
+            .await
+            .expect("OTA server is running");
+        let (_, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+        let response = ImageBlockResponse::from_le_stream(bytes.into_iter())
+            .expect("valid Image Block Response");
+        let ImageBlockResponsePayload::Success(block) = response.payload() else {
+            panic!("expected image data truncated at the image boundary");
+        };
+        assert_eq!(block.file_offset(), offset);
+        assert_eq!(block.image_data(), TEST_IMAGE_DATA);
     });
 }
 

@@ -18,28 +18,27 @@ flowchart TD
     OTAS[OTA subscription forwarder]
     M[Mux task]
     APP[Application event receiver]
-
     C -->|ZCL API| ZCL
     C -->|ZDP API| ZDP
     C -->|schedule update| OTAA
     OTAA -->|ServerEvent::Message| OTA
     C -->|NCP helper APIs| HW
-    ZCL -->|DataRequest&lt;Bytes&gt;| APS
-    ZDP -->|DataRequest&lt;Bytes&gt;| APS
-    ZDP -->|spawn received request| ZDPO
-    ZDPO -->|endpoint and address queries| HW
-    ZDPO -->|response frame| APS
-    ZDPO -->|completion through inbox| ZDP
-    APS -->|NcpHandle::transmit| HW
-    HW -->|zb_hw::Event| M
-    M -->|received ZCL frame| ZCL
-    M -->|received ZDP frame| ZDP
-    M -->|network and device events| APP
-    ZCL -->|unmatched ZCL frame| APP
-    ZCL -.->|lazy filtered weak subscription| OTAS
-    OTAS -->|Message::Received through weak sender| OTA
-    OTA -->|commands and replies| ZCL
-    ZDP -->|device announcements| APP
+    ZCL -->|DataRequest&lt ;Bytes&gt ;|APS
+ZDP -->|DataRequest&lt ;Bytes&gt ;|APS
+ZDP -->|spawn received request|ZDPO
+ZDPO -->|endpoint and address queries|HW
+ZDPO -->|response frame| APS
+ZDPO -->|completion through inbox|ZDP
+APS -->|NcpHandle::transmit|HW
+HW -->|zb_hw::Event|M
+M -->|received ZCL frame|ZCL
+M -->|received ZDP frame|ZDP
+M -->|network and device events|APP
+ZCL -->|unmatched ZCL frame| APP
+ZCL -.->|lazy filtered weak subscription| OTAS
+OTAS -->|Message::Received through weak sender| OTA
+OTA -->|commands and replies|ZCL
+ZDP -->|device announcements|APP
 ```
 
 `Coordinator::start` creates the APS, ZCL, ZDP, and OTA actors plus the event mux. Actor inboxes
@@ -135,24 +134,23 @@ sequenceDiagram
     participant O as Submission operation
     participant H as Hardware actor
     participant M as Event mux
-
-    P->>P: serialize protocol payload
-    P->>P: construct DataRequest&lt;Bytes&gt;
-    P->>A: Transmit request
-    A-->>P: deferred transmission response
-    A->>A: assign APS counter
-    A->>O: spawn transmit request and counter
-    O->>H: transmit request and counter
-    H-->>O: accepted
-    O-->>A: SubmissionFinished
-    alt unacknowledged transmission
-        A-->>P: resolve deferred APS result
-    else acknowledged transmission
-        A->>A: store response under counter
-        H-->>M: Event::Apsde with counter and DataConfirm
-        M-->>A: counter and confirmation status
-        A-->>P: resolve deferred APS result
-    end
+    P ->> P: serialize protocol payload
+    P ->> P: construct DataRequest&lt;Bytes&gt;
+P->>A: Transmit request
+A-->>P: deferred transmission response
+A->>A: assign APS counter
+A->>O: spawn transmit request and counter
+O->>H: transmit request and counter
+H-->>O: accepted
+O-->>A: SubmissionFinished
+alt unacknowledged transmission
+A-->>P: resolve deferred APS result
+else acknowledged transmission
+A->>A: store response under counter
+H-->>M: Event::Apsde with counter and DataConfirm
+M-->>A: counter and confirmation status
+A-->>P: resolve deferred APS result
+end
 ```
 
 ## ZCL Actor
@@ -238,11 +236,15 @@ request, block activity resets its deadline, and the total-transfer deadline nev
 Typed query and upgrade-end replies and global default responses share a prepared-request
 helper that spawns a generation-tagged operation. It reports transmission failures before
 applying any terminal update result. Image Page operations reuse the validated request range's
-offset for both their initial position and page boundary calculation.
+offset for both their initial position and page boundary calculation. Block and page requests
+supply named `RequestedRange` fields to shared range validation. Operation completion handling
+retires task bookkeeping and filters stale generations separately from the transfer event loop;
+the loop continues to poll queued messages before operation completions.
 
 Each update carries a `FullAddress` plus its remote endpoint. The transfer pins the IEEE identity
 and current NWK short address for Image Notify transmission and destination-restricted image
-checks. Before the server routes any inbound OTA request, it resolves the request's NWK source
+checks. Inbound requests first validate transport addressing and profile metadata into an
+`InboundRequest`. Authorization then looks up the destination transfer and resolves the request's NWK source
 through the NCP and compares the result with the pinned IEEE address. A stale offer cannot therefore
 be inherited by a different device after NWK short-address reuse. Query Specific File requests,
 optional request-node addresses, and OTA image header destinations are validated against that same
@@ -362,7 +364,8 @@ explicit classifier or header-matcher function pointers. The shared classificati
 over the response type. The adapter's `PhantomData<T>` marker is zero-sized and retains no response
 value. It inherits the response type's auto traits, so actor-owned contracts require the response
 type (`C::Response` or raw `T`) to be `Send + Sync + 'static`, without requiring `Debug`. Dynamic
-dispatch uses Rust's trait-object vtable; the adapter contains no explicit function-pointer type. Both constructors box an adapter containing the command ID,
+dispatch uses Rust's trait-object vtable; the adapter contains no explicit function-pointer type. Both constructors box
+an adapter containing the command ID,
 allocating storage for that field. Packet identity and response validation
 remain runtime operations. Default-only commands use `DefaultResponse` directly.
 
@@ -376,8 +379,10 @@ the one-response exchange regardless of the disable-default-response bit.
 `MaybeDefault<T>` converts either response form when requested; no unconditional outcome wrapper
 is applied by the coordinator. Deferred multi-response protocols require their own state machine.
 `Registry<T, M>` owns metadata with the pending entry and moves it into quarantine on cancellation
-or timeout; metadata no longer needs to implement `Copy` or `Clone`. ZDP uses unit metadata and keeps its existing matching.
-The ZCL actor checks the expectation before removing either entry. Expected responses, protocol rejections, and unexpected successful Default Responses all
+or timeout; metadata no longer needs to implement `Copy` or `Clone`. ZDP uses unit metadata and keeps its existing
+matching.
+The ZCL actor checks the expectation before removing either entry. Expected responses, protocol rejections, and
+unexpected successful Default Responses all
 complete pending transactions or release quarantined ones. A mismatch follows normal
 subscription/event routing and leaves transaction state untouched. Indications without an
 individual destination endpoint cannot produce a ZCL correlation key, but are still routed.
@@ -421,22 +426,21 @@ sequenceDiagram
     participant H as Hardware
     participant M as Mux
     participant R as Protocol response
-
-    API->>P: communicate
-    P->>P: allocate sequence and store correlation
-    P->>A: acknowledged APS frame
-    A->>H: frame with assigned APS counter
-    H-->>A: accepted
-    H-->>M: Event::Apsde with counter and DataConfirm
-    M-->>A: counter and confirmation status
-    A-->>P: correlated APS result
-    P-->>API: protocol response future
-    API->>R: await
-    H->>M: DataIndication with received ASDU
-    M->>P: parsed protocol frame
-    P->>P: match and remove correlation
-    P-->>R: raw response
-    R-->>API: converted typed response
+    API ->> P: communicate
+    P ->> P: allocate sequence and store correlation
+    P ->> A: acknowledged APS frame
+    A ->> H: frame with assigned APS counter
+    H -->> A: accepted
+    H -->> M: Event::Apsde with counter and DataConfirm
+    M -->> A: counter and confirmation status
+    A -->> P: correlated APS result
+    P -->> API: protocol response future
+    API ->> R: await
+    H ->> M: DataIndication with received ASDU
+    M ->> P: parsed protocol frame
+    P ->> P: match and remove correlation
+    P -->> R: raw response
+    R -->> API: converted typed response
 ```
 
 `CommunicationResponse<Raw, T>` contains the deferred APS completion and the correlated protocol
@@ -482,7 +486,6 @@ flowchart TD
     DS[Node Endpoints Binding Leaving]
     ZCLR[ZclResponse]
     ZDPR[ZdpResponse]
-
     C --> N
     C --> ZCL
     C --> ZDP

@@ -137,6 +137,16 @@ struct ImageRange {
     length: usize,
 }
 
+/// Fields shared by image block and page requests when validating a byte range.
+#[derive(Clone, Copy)]
+struct RequestedRange {
+    image: ImageId,
+    file_offset: u32,
+    maximum_data_size: u8,
+    node_address: Option<IeeeAddress>,
+    page_size: Option<u16>,
+}
+
 enum TransferEvent {
     Message(Option<TransferMessage>),
 
@@ -219,30 +229,11 @@ impl Transfer {
                         message => self.handle_message(message),
                     }
                 }
-                TransferEvent::Operation(operation) => match operation {
-                    Some(Ok((task_id, operation))) => {
-                        self.operation_generations.remove(&task_id);
-                        if operation.generation != self.generation {
-                            continue;
-                        }
-                        match operation.outcome {
-                            OperationOutcome::Continue => {}
-                            OperationOutcome::Complete(result) => break result,
-                        }
+                TransferEvent::Operation(operation) => {
+                    if let Some(result) = self.finish_operation(operation) {
+                        break result;
                     }
-                    Some(Err(error)) if error.is_cancelled() => {
-                        self.operation_generations.remove(&error.id());
-                    }
-                    Some(Err(error)) => {
-                        let operation_generation = self.operation_generations.remove(&error.id());
-                        if operation_generation != Some(self.generation) {
-                            continue;
-                        }
-                        warn!("OTA transfer operation failed: {error}");
-                        break Err(UpdateError::TransferTask);
-                    }
-                    None => {}
-                },
+                }
             }
         };
         self.abort_lifecycle_tasks();
@@ -254,6 +245,38 @@ impl Transfer {
                 .take()
                 .expect("an active destination transfer retains its completion sender"),
             result,
+        }
+    }
+
+    /// Retire completed operations, ignoring outcomes from replaced update generations.
+    fn finish_operation(
+        &mut self,
+        operation: Option<Result<(Id, OperationResult), JoinError>>,
+    ) -> Option<UpdateResult> {
+        match operation {
+            Some(Ok((task_id, operation))) => {
+                self.operation_generations.remove(&task_id);
+                if operation.generation != self.generation {
+                    return None;
+                }
+                match operation.outcome {
+                    OperationOutcome::Continue => None,
+                    OperationOutcome::Complete(result) => Some(result),
+                }
+            }
+            Some(Err(error)) if error.is_cancelled() => {
+                self.operation_generations.remove(&error.id());
+                None
+            }
+            Some(Err(error)) => {
+                let operation_generation = self.operation_generations.remove(&error.id());
+                if operation_generation != Some(self.generation) {
+                    return None;
+                }
+                warn!("OTA transfer operation failed: {error}");
+                Some(Err(UpdateError::TransferTask))
+            }
+            None => None,
         }
     }
 
@@ -463,11 +486,13 @@ impl Transfer {
         let range = match requested_range(
             self.target,
             &self.image,
-            request.image(),
-            request.file_offset(),
-            request.maximum_data_size(),
-            request.request_node_address(),
-            None,
+            RequestedRange {
+                image: request.image(),
+                file_offset: request.file_offset(),
+                maximum_data_size: request.maximum_data_size(),
+                node_address: request.request_node_address(),
+                page_size: None,
+            },
         ) {
             Ok(range) => range,
             Err(status) => {
@@ -504,11 +529,13 @@ impl Transfer {
         let range = match requested_range(
             self.target,
             &self.image,
-            request.image(),
-            request.file_offset(),
-            request.maximum_data_size(),
-            request.request_node_address(),
-            Some(request.page_size()),
+            RequestedRange {
+                image: request.image(),
+                file_offset: request.file_offset(),
+                maximum_data_size: request.maximum_data_size(),
+                node_address: request.request_node_address(),
+                page_size: Some(request.page_size()),
+            },
         ) {
             Ok(range) => range,
             Err(status) => {
@@ -837,28 +864,24 @@ async fn transmit_reply(
 fn requested_range(
     target: FullAddress,
     image: &ImageTransfer,
-    requested_image: ImageId,
-    file_offset: u32,
-    maximum_data_size: u8,
-    request_node_address: Option<IeeeAddress>,
-    page_size: Option<u16>,
+    request: RequestedRange,
 ) -> Result<ImageRange, Status> {
-    if image.id() != requested_image {
+    if image.id() != request.image {
         return Err(Status::NoImageAvailable);
     }
-    if maximum_data_size == 0 {
+    if request.maximum_data_size == 0 {
         return Err(Status::MalformedCommand);
     }
-    if !request_address_is_authorized(target, image, request_node_address) {
+    if !request_address_is_authorized(target, image, request.node_address) {
         return Err(Status::NotAuthorized);
     }
 
-    let offset = usize::try_from(file_offset).map_err(|_| Status::MalformedCommand)?;
+    let offset = usize::try_from(request.file_offset).map_err(|_| Status::MalformedCommand)?;
     if offset >= image.len() {
         return Err(Status::MalformedCommand);
     }
-    let mut length = usize::from(maximum_data_size);
-    if let Some(page_size) = page_size {
+    let mut length = usize::from(request.maximum_data_size);
+    if let Some(page_size) = request.page_size {
         length = length.min(usize::from(page_size));
     }
     let end = offset.saturating_add(length).min(image.len());

@@ -71,6 +71,75 @@ enum ServerEvent {
     Transfer(Result<(Id, TransferExit), JoinError>),
 }
 
+/// An inbound OTA request with validated addressing and profile metadata.
+struct InboundRequest {
+    source: Device,
+    context: RequestContext,
+    command: OtaCommand,
+}
+
+impl InboundRequest {
+    /// Validate transport metadata before looking up or authorizing a transfer.
+    fn parse(indication: DataIndication<Frame<OtaCommand>, (), ()>) -> Option<Self> {
+        let metadata = indication.metadata();
+        let source_endpoint = match metadata.destination() {
+            ReceivedDestination::Network { endpoint, .. }
+            | ReceivedDestination::Extended { endpoint, .. } => endpoint,
+            ReceivedDestination::Broadcast { endpoint, .. } => {
+                let Some(endpoint) = IndividualEndpoint::new(endpoint) else {
+                    warn!("Discarding OTA command addressed to a non-individual local endpoint");
+                    return None;
+                };
+                endpoint
+            }
+            ReceivedDestination::Group(_) => {
+                warn!("Discarding group-addressed OTA command");
+                return None;
+            }
+            ReceivedDestination::ExtendedWithoutEndpoint(_) => {
+                warn!("Discarding OTA command addressed without a local endpoint");
+                return None;
+            }
+        };
+        let Ok(profile) = metadata.profile().inspect_err(|profile_id| {
+            warn!("Discarding OTA command with unknown profile {profile_id:#06x}");
+        }) else {
+            return None;
+        };
+        if profile != OTA_PROFILE {
+            warn!("Discarding OTA command with unsupported profile {profile}");
+            return None;
+        }
+        let source = metadata.source();
+        let Source::Network {
+            address: source_address,
+            endpoint,
+        } = source
+        else {
+            warn!("Discarding OTA command from non-network source: {source:?}");
+            return None;
+        };
+        let Ok(short_id) = source_address.as_u16().try_into().inspect_err(|node_id| {
+            warn!("Discarding OTA command from invalid node ID {node_id:#06x}");
+        }) else {
+            return None;
+        };
+
+        let (_, zcl_frame) = indication.into_parts();
+        let (zcl_header, command) = zcl_frame.into_parts();
+        let context = RequestContext {
+            destination: NetworkDestination::new(source_address, endpoint),
+            source_endpoint,
+            sequence_number: zcl_header.seq(),
+        };
+        Some(Self {
+            source: short_id,
+            context,
+            command,
+        })
+    }
+}
+
 /// Stateful OTA Upgrade server actor.
 #[derive(Debug)]
 pub struct Server {
@@ -312,56 +381,13 @@ impl Server {
 
     /// Validate an inbound OTA frame and route its command to the matching destination task.
     async fn received_ota(&mut self, indication: DataIndication<Frame<OtaCommand>, (), ()>) {
-        let metadata = indication.metadata();
-        let source_endpoint = match metadata.destination() {
-            ReceivedDestination::Network { endpoint, .. }
-            | ReceivedDestination::Extended { endpoint, .. } => endpoint,
-            ReceivedDestination::Broadcast { endpoint, .. } => {
-                let Some(endpoint) = IndividualEndpoint::new(endpoint) else {
-                    warn!("Discarding OTA command addressed to a non-individual local endpoint");
-                    return;
-                };
-                endpoint
-            }
-            ReceivedDestination::Group(_) => {
-                warn!("Discarding group-addressed OTA command");
-                return;
-            }
-            ReceivedDestination::ExtendedWithoutEndpoint(_) => {
-                warn!("Discarding OTA command addressed without a local endpoint");
-                return;
-            }
-        };
-        let Ok(profile) = metadata.profile().inspect_err(|profile_id| {
-            warn!("Discarding OTA command with unknown profile {profile_id:#06x}");
-        }) else {
-            return;
-        };
-        if profile != OTA_PROFILE {
-            warn!("Discarding OTA command with unsupported profile {profile}");
-            return;
-        }
-        let source = metadata.source();
-        let Source::Network {
-            address: source_address,
-            endpoint,
-        } = source
+        let Some(InboundRequest {
+            source,
+            context,
+            command,
+        }) = InboundRequest::parse(indication)
         else {
-            warn!("Discarding OTA command from non-network source: {source:?}");
             return;
-        };
-        let Ok(short_id) = source_address.as_u16().try_into().inspect_err(|node_id| {
-            warn!("Discarding OTA command from invalid node ID {node_id:#06x}");
-        }) else {
-            return;
-        };
-
-        let (_, zcl_frame) = indication.into_parts();
-        let (zcl_header, command) = zcl_frame.into_parts();
-        let context = RequestContext {
-            destination: NetworkDestination::new(source_address, endpoint),
-            source_endpoint,
-            sequence_number: zcl_header.seq(),
         };
         if is_server_command(&command) {
             debug!(
@@ -371,33 +397,10 @@ impl Server {
             return;
         }
 
-        let Some((messages, target)) = self
-            .transfers
-            .get(&context.destination)
-            .map(|transfer| (transfer.messages.clone(), transfer.target))
-        else {
+        let Some(messages) = self.authorized_transfer(source, context.destination).await else {
             self.reject_unauthorized(context, command).await;
             return;
         };
-        let resolved_address = match self.addresses.resolve(short_id).await {
-            Ok(address) => address,
-            Err(error) => {
-                warn!(
-                    "Failed to resolve the IEEE address for OTA request source {short_id}: {error}"
-                );
-                self.reject_unauthorized(context, command).await;
-                return;
-            }
-        };
-        if resolved_address != target.ieee_address() {
-            warn!(
-                "Rejecting OTA request from {short_id}: resolved IEEE address {resolved_address} \
-                 does not match scheduled target {}",
-                target.ieee_address()
-            );
-            self.reject_unauthorized(context, command).await;
-            return;
-        }
         let request = TransferMessage::Request { context, command };
         if let Err(error) = messages.send(request).await {
             self.transfers.remove(&context.destination);
@@ -407,6 +410,36 @@ impl Server {
             self.reject_unauthorized(context, command).await;
             self.unsubscribe_if_idle().await;
         }
+    }
+
+    /// Resolve the source identity and return the mailbox of its authorized transfer.
+    async fn authorized_transfer(
+        &self,
+        source: Device,
+        destination: NetworkDestination,
+    ) -> Option<Sender<TransferMessage>> {
+        let (messages, target) = self
+            .transfers
+            .get(&destination)
+            .map(|transfer| (transfer.messages.clone(), transfer.target))?;
+        let resolved_address = match self.addresses.resolve(source).await {
+            Ok(address) => address,
+            Err(error) => {
+                warn!(
+                    "Failed to resolve the IEEE address for OTA request source {source}: {error}"
+                );
+                return None;
+            }
+        };
+        if resolved_address != target.ieee_address() {
+            warn!(
+                "Rejecting OTA request from {source}: resolved IEEE address {resolved_address} \
+                 does not match scheduled target {}",
+                target.ieee_address()
+            );
+            return None;
+        }
+        Some(messages)
     }
 
     /// Remove a completed task if it is still the registered task for its destination.
