@@ -6,6 +6,19 @@ use zb_zdp::{BindReq, Destination, SimpleDescriptor};
 
 use crate::{Error, LocalNode, StatusExt, Zdp};
 
+/// Outcome of one attempted binding, including its complete endpoint and cluster identity.
+#[derive(Debug)]
+pub struct BindingResult {
+    /// Remote endpoint producing the cluster's messages.
+    pub source_endpoint: Endpoint,
+    /// Cluster bound by this attempt.
+    pub cluster: Cluster,
+    /// Destination of the binding.
+    pub destination: Destination,
+    /// Success or failure of this individual attempt.
+    pub result: Result<(), Error>,
+}
+
 /// Bindings selected for one local application endpoint.
 struct EndpointBindings {
     destination: Application,
@@ -30,26 +43,28 @@ pub trait Binding {
 
     /// Bind multiple endpoint/cluster pairs to the same destination.
     ///
-    /// The returned map contains one result per source endpoint. If an endpoint has multiple
-    /// clusters, the last cluster result for that endpoint is stored.
+    /// Returns one identified result per attempted binding, in endpoint and cluster order.
+    /// A later success never overwrites an earlier failure.
     fn bind_all(
         &self,
         address: FullAddress,
         src_endpoint_clusters: BTreeMap<Endpoint, BTreeSet<Cluster>>,
         destination: Destination,
-    ) -> impl Future<Output = BTreeMap<Endpoint, Result<(), Error>>> + Send
+    ) -> impl Future<Output = Vec<BindingResult>> + Send
     where
         Self: Sync,
     {
         async move {
-            let mut results = BTreeMap::new();
+            let mut results = Vec::new();
 
             for (endpoint, clusters) in src_endpoint_clusters {
                 for cluster in clusters {
-                    results.insert(
-                        endpoint,
-                        self.bind(address, endpoint, cluster, destination).await,
-                    );
+                    results.push(BindingResult {
+                        source_endpoint: endpoint,
+                        cluster,
+                        destination,
+                        result: self.bind(address, endpoint, cluster, destination).await,
+                    });
                 }
             }
 
@@ -65,22 +80,19 @@ pub trait Binding {
     /// matching clusters only.
     ///
     /// The outer `Result` represents local coordinator lookup failures, such as failing to read the
-    /// coordinator IEEE address or local endpoint descriptors. The returned map contains per-source
-    /// endpoint bind results for requests that were attempted.
-    ///
-    /// If several local endpoints can receive clusters from the same remote source endpoint, later
-    /// local endpoint results overwrite earlier results for that source endpoint in the returned
-    /// map.
+    /// coordinator IEEE address or local endpoint descriptors. Each attempted binding retains its
+    /// source endpoint, cluster, destination, and result. Results follow local descriptor order,
+    /// then source endpoint and cluster order.
     fn bind_all_to_self(
         &self,
         address: FullAddress,
         src_endpoint_clusters: BTreeMap<Endpoint, BTreeSet<Cluster>>,
-    ) -> impl Future<Output = Result<BTreeMap<Endpoint, Result<(), Error>>, Error>> + Send
+    ) -> impl Future<Output = Result<Vec<BindingResult>, Error>> + Send
     where
         Self: LocalNode + Sync,
     {
         async move {
-            let mut results = BTreeMap::new();
+            let mut results = Vec::new();
             let dst_address = self.get_ieee_address().await?;
 
             let descriptors = self.get_endpoints().await?;
@@ -171,14 +183,89 @@ fn application_endpoint(descriptor: &SimpleDescriptor) -> Option<Application> {
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
+    use tokio::runtime::Runtime;
     use zb_core::endpoint::Application;
-    use zb_core::{Cluster, Endpoint, Profile};
-    use zb_zdp::{AppFlags, Clusters, SimpleDescriptor};
+    use zb_core::short_id::Device;
+    use zb_core::{Cluster, Endpoint, FullAddress, IeeeAddress, Profile};
+    use zb_zdp::{AppFlags, Clusters, Destination, SimpleDescriptor};
 
-    use super::{application_endpoint, binding_plan};
+    use super::{Binding, application_endpoint, binding_plan};
+    use crate::{Error, LocalNode};
 
     const DECLARED_ENDPOINT: u8 = 0x0B;
     const DEVICE_ID: u16 = 0x0100;
+
+    const ADDRESS: FullAddress = FullAddress::new(
+        IeeeAddress::new(1, 2, 3, 4, 5, 6, 7, 8),
+        Device::new(0x1234).expect("valid device address"),
+    );
+
+    struct TestBindings;
+
+    impl Binding for TestBindings {
+        async fn bind(
+            &self,
+            _: FullAddress,
+            _: Endpoint,
+            cluster: Cluster,
+            _: Destination,
+        ) -> Result<(), Error> {
+            if cluster == Cluster::OnOff {
+                Err(Error::ProtocolResponseTimeout)
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    impl LocalNode for TestBindings {
+        async fn get_endpoints(&self) -> Result<Box<[SimpleDescriptor]>, Error> {
+            Ok([
+                Endpoint::Application(Application::MIN),
+                Endpoint::try_from(DECLARED_ENDPOINT).unwrap(),
+            ]
+            .into_iter()
+            .map(|endpoint| {
+                descriptor_with_inputs(
+                    endpoint,
+                    &[Cluster::OnOff.as_u16(), Cluster::Level.as_u16()],
+                )
+            })
+            .collect())
+        }
+        async fn get_pan_id(&self) -> Result<u16, Error> {
+            Ok(DEVICE_ID)
+        }
+        async fn get_ieee_address(&self) -> Result<IeeeAddress, Error> {
+            Ok(ADDRESS.ieee_address())
+        }
+    }
+
+    #[test]
+    fn batch_results_preserve_failures_across_clusters_and_destinations() {
+        Runtime::new().unwrap().block_on(async {
+            let endpoint = Endpoint::Application(Application::MIN);
+            let sources =
+                BTreeMap::from([(endpoint, BTreeSet::from([Cluster::OnOff, Cluster::Level]))]);
+            let results = TestBindings
+                .bind_all_to_self(ADDRESS, sources)
+                .await
+                .unwrap();
+            assert_eq!(results.len(), 4);
+            for pair in results.chunks_exact(2) {
+                assert_eq!(pair[0].source_endpoint, endpoint);
+                assert_eq!(pair[0].cluster, Cluster::OnOff);
+                assert!(matches!(
+                    pair[0].result,
+                    Err(Error::ProtocolResponseTimeout)
+                ));
+                assert_eq!(pair[1].cluster, Cluster::Level);
+                assert!(pair[1].result.is_ok());
+                assert_eq!(pair[0].destination, pair[1].destination);
+            }
+            assert_ne!(results[0].destination, results[2].destination);
+        });
+    }
 
     #[test]
     fn uses_endpoint_declared_by_descriptor() {

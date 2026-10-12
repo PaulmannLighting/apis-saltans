@@ -626,15 +626,14 @@ async fn bind_matching_clusters_to_coordinator(
     api: &(impl Binding + apis_saltans_coordinator::LocalNode),
     address: FullAddress,
     source_endpoint_clusters: BTreeMap<Endpoint, BTreeSet<Cluster>>,
-) -> Result<BTreeMap<Endpoint, Result<(), apis_saltans_coordinator::Error>>, apis_saltans_coordinator::Error> {
+) -> Result<Vec<apis_saltans_coordinator::BindingResult>, apis_saltans_coordinator::Error> {
     api.bind_all_to_self(address, source_endpoint_clusters).await
 }
 ```
 
-The outer `Result` reports local coordinator lookup failures. The returned map contains per-source
-endpoint bind results for requests that were attempted. If multiple local endpoints can receive
-clusters from the same remote source endpoint, later local endpoint results overwrite earlier
-results for that source endpoint in the returned map.
+The outer `Result` reports local coordinator lookup failures. Both binding batch methods return
+`Vec<BindingResult>` with a source endpoint, cluster, destination, and result for every attempt.
+Failures remain visible even if another cluster or local destination succeeds later.
 
 Use `bind_all(...)` when you already know the exact ZDP binding destination and want to bind an
 endpoint-to-clusters map to that destination.

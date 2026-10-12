@@ -27,8 +27,8 @@
 use const_env::env_item;
 
 pub use self::api::{
-    AddressTranslation, Attributes, Binding, CancellableOtaUpdate, Channel, ChannelMask,
-    ColorControl, Endpoints, FoundNetwork, Groups, Joining, Leaving, Level, LocalNode,
+    AddressTranslation, Attributes, Binding, BindingResult, CancellableOtaUpdate, Channel,
+    ChannelMask, ColorControl, Endpoints, FoundNetwork, Groups, Joining, Leaving, Level, LocalNode,
     NetworkDescriptor, Node, OnOff, Ota, ReadAttributeResult, Routing, ScanDuration,
     ScannedChannel, Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclRequest, ZclResponse,
     ZclResponseType, Zdp, ZdpResponse,

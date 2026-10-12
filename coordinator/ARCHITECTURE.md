@@ -513,5 +513,5 @@ a runtime task as the fallback when the bounded inbox is full.
 
 Binding selection is computed by a pure `binding_plan` helper before requests are sent.
 The plan retains local descriptor order and intersects local input clusters with remote output
-clusters. Execution retains the existing per-source-endpoint result aggregation and overwrite
-semantics; callers needing per-cluster results can invoke `bind` for each desired binding.
+clusters. Execution returns one `BindingResult` per attempt, preserving source endpoint, cluster,
+destination, and outcome without overwriting earlier failures.

@@ -1,7 +1,7 @@
 //! Trait-based Zigbee API and protocol-specific deferred response aliases.
 
 pub use self::address_translation::AddressTranslation;
-pub use self::binding::Binding;
+pub use self::binding::{Binding, BindingResult};
 pub use self::clusters::{
     Attributes, CancellableOtaUpdate, ColorControl, Groups, Level, OnOff, Ota, ReadAttributeResult,
     WriteAttributeResult,
