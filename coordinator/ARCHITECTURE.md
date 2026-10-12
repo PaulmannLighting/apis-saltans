@@ -522,11 +522,13 @@ destination, and outcome without overwriting earlier failures.
 ## Runtime ownership
 
 Managed startup installs a task-local task group while spawning the actors. Internal spawning
-inherits that group, including protocol deadlines, OTA operations, forwarding tasks, and blocking
-image reads. Registrations are removed when task futures or closures are dropped. The supervisor
+inherits that group, including protocol deadlines, OTA operations, forwarding tasks, and asynchronous
+image reads. Registrations are removed when task futures are dropped. The supervisor
 closes registration to new running work, cancels asynchronous tasks, and waits for the group to
 empty before publishing `Stopped`. Tasks racing with shutdown are registered and immediately
-cancelled. Running blocking reads cannot be interrupted and are awaited. Hardware drivers remain
+cancelled. Image sources implement `AsyncRead + AsyncSeek + Unpin + Send`; their owning
+transfer tasks serialize seeks and reads and can be cancelled while I/O is pending. Reader-owned
+background work (such as Tokio filesystem workers) is outside this task group. Hardware drivers remain
 externally owned. Lifecycle notifications use a watch channel; event-loss counters use atomics and
 are independent of the application event channel's capacity.
 

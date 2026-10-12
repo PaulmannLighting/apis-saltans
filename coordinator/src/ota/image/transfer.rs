@@ -18,7 +18,7 @@ pub struct ImageTransfer {
 }
 
 struct ImageTransferTask {
-    source: Option<Box<dyn ImageSource>>,
+    source: Box<dyn ImageSource>,
     inbound: Receiver<ReadRequest>,
 }
 
@@ -32,11 +32,7 @@ impl ImageTransfer {
     pub(super) fn spawn(header: Header, source: Box<dyn ImageSource>) -> Self {
         let (requests, inbound) = mpsc::channel(TRANSFER_CHANNEL_SIZE);
         drop(crate::runtime::spawn(
-            ImageTransferTask {
-                source: Some(source),
-                inbound,
-            }
-            .run(),
+            ImageTransferTask { source, inbound }.run(),
         ));
         Self { header, requests }
     }
@@ -100,35 +96,8 @@ impl ImageTransfer {
 impl ImageTransferTask {
     async fn run(mut self) {
         while let Some(request) = self.inbound.recv().await {
-            let Some(source) = self.source.take() else {
-                return;
-            };
-            let ReadRequest {
-                offset,
-                length,
-                response,
-            } = request;
-            match crate::runtime::spawn_blocking(move || Self::read_source(source, offset, length))
-                .await
-            {
-                Ok((source, result)) => {
-                    self.source = Some(source);
-                    drop(response.send(result));
-                }
-                Err(error) => {
-                    drop(response.send(Err(Error::other(error))));
-                    return;
-                }
-            }
+            let result = self.source.read_range(request.offset, request.length).await;
+            drop(request.response.send(result));
         }
-    }
-
-    fn read_source(
-        mut source: Box<dyn ImageSource>,
-        offset: usize,
-        length: usize,
-    ) -> (Box<dyn ImageSource>, io::Result<Box<[u8]>>) {
-        let result = source.read_range(offset, length);
-        (source, result)
     }
 }

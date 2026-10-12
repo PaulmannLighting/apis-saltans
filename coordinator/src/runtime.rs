@@ -46,8 +46,8 @@ pub enum RuntimeStatus {
 /// Owns a coordinator runtime independently of its cloneable command handles.
 ///
 /// Dropping this handle requests shutdown. Use `shutdown().await` to also wait for cleanup,
-/// or `wait().await` to observe termination. Already-running blocking image reads must finish
-/// before cleanup completes. The externally owned hardware driver is not stopped.
+/// or `wait().await` to observe termination. Pending asynchronous image reads are cancelled
+/// during cleanup. The externally owned hardware driver is not stopped.
 #[derive(Debug)]
 pub struct CoordinatorRuntime {
     tasks: TaskGroup,
@@ -304,25 +304,6 @@ where
     task
 }
 
-/// Track blocking reads too; running reads finish naturally even during shutdown.
-pub fn spawn_blocking<F, T>(operation: F) -> JoinHandle<T>
-where
-    F: FnOnce() -> T + Send + 'static,
-    T: Send + 'static,
-{
-    let Ok(group) = TASKS.try_with(Clone::clone) else {
-        return tokio::task::spawn_blocking(operation);
-    };
-    let registration = group.register();
-    let id = registration.id;
-    let task = tokio::task::spawn_blocking(move || {
-        let _registration = registration;
-        operation()
-    });
-    group.attach(id, task.abort_handle());
-    task
-}
-
 #[cfg(test)]
 mod tests {
     use std::future::pending;
@@ -333,10 +314,7 @@ mod tests {
     use tokio::task::JoinSet;
     use tokio::time::timeout;
 
-    use super::{
-        CoordinatorRuntime, RuntimeExit, RuntimeStatus, spawn, spawn_actor, spawn_blocking,
-        spawn_in,
-    };
+    use super::{CoordinatorRuntime, RuntimeExit, RuntimeStatus, spawn, spawn_actor, spawn_in};
     use crate::event::EventSink;
     use crate::{Event, Network};
 
@@ -405,34 +383,6 @@ mod tests {
             assert_eq!(
                 timeout(DEADLINE, runtime.wait()).await.unwrap(),
                 RuntimeExit::ActorStopped("test")
-            );
-        });
-    }
-
-    #[test]
-    fn shutdown_waits_for_a_running_blocking_read() {
-        Runtime::new().unwrap().block_on(async {
-            let (events, _received) = mpsc::channel(CAPACITY);
-            let runtime = CoordinatorRuntime::new(EventSink::new(events));
-            let (release, blocked) = std::sync::mpsc::channel();
-            let (ready, started) = oneshot::channel();
-            runtime.enter(|| {
-                spawn_blocking(move || {
-                    ready.send(()).unwrap();
-                    blocked.recv_timeout(DEADLINE).unwrap();
-                })
-            });
-            started.await.unwrap();
-            let mut status = runtime.subscribe();
-            let shutdown = tokio::spawn(runtime.shutdown());
-            while matches!(*status.borrow_and_update(), RuntimeStatus::Running) {
-                status.changed().await.unwrap();
-            }
-            assert!(!shutdown.is_finished());
-            release.send(()).unwrap();
-            assert_eq!(
-                timeout(DEADLINE, shutdown).await.unwrap().unwrap(),
-                RuntimeExit::Shutdown
             );
         });
     }

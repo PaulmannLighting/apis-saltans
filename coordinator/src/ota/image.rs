@@ -22,7 +22,7 @@ mod transfer;
 #[cfg(test)]
 mod tests;
 
-/// A validated Zigbee OTA image backed by an owned seekable reader.
+/// A validated Zigbee OTA image backed by an owned asynchronous seekable reader.
 pub struct Image {
     header: Header,
     source: Box<dyn ImageSource>,

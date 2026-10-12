@@ -1,12 +1,24 @@
 use std::fs::{self, File, OpenOptions};
-use std::io::{Cursor, Write};
+use std::io::{self, Cursor, SeekFrom, Write};
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::task::{Context, Poll};
+use std::time::Duration;
 
 use bytes::{BufMut, Bytes, BytesMut};
+use tokio::io::{AsyncRead, AsyncSeek, ReadBuf};
 use tokio::runtime::Builder;
+use tokio::spawn;
+use tokio::sync::{mpsc, oneshot};
+use tokio::time::timeout;
 
 use super::{FieldControl, ParseImage, ParseImageError};
+use crate::event::EventSink;
+use crate::{CoordinatorRuntime, RuntimeExit};
+
+const CHANNEL_CAPACITY: usize = 1;
+const TEST_DEADLINE: Duration = Duration::from_secs(2);
 
 const MANUFACTURER_CODE: u16 = 0x1234;
 const IMAGE_TYPE: u16 = 0x5678;
@@ -66,21 +78,29 @@ impl Drop for TemporaryImageFile {
 
 #[test]
 fn parses_complete_file() {
-    let mut source = TemporaryImageFile::new(&image_bytes(FieldControl::empty(), None));
-    let image = source.take().parse().expect("valid OTA image");
+    Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let mut source = TemporaryImageFile::new(&image_bytes(FieldControl::empty(), None));
+            let image = tokio::fs::File::from_std(source.take())
+                .parse()
+                .await
+                .expect("valid OTA image");
 
-    assert_eq!(image.id().manufacturer_code(), MANUFACTURER_CODE);
-    assert_eq!(image.id().image_type(), IMAGE_TYPE);
-    assert_eq!(image.id().file_version(), FILE_VERSION);
-    assert_eq!(image.zigbee_stack_version(), STACK_VERSION);
-    assert_eq!(image.header_string().as_str(), HEADER_STRING);
-    assert_eq!(
-        image.header_length(),
-        u16::try_from(BASE_HEADER_LENGTH).expect("fixed header length fits u16")
-    );
-    assert_eq!(image.header().as_bytes().len(), BASE_HEADER_LENGTH);
-    assert!(image.header().field_control().is_empty());
-    assert_eq!(image.len(), BASE_HEADER_LENGTH + PAYLOAD.len());
+            assert_eq!(image.id().manufacturer_code(), MANUFACTURER_CODE);
+            assert_eq!(image.id().image_type(), IMAGE_TYPE);
+            assert_eq!(image.id().file_version(), FILE_VERSION);
+            assert_eq!(image.zigbee_stack_version(), STACK_VERSION);
+            assert_eq!(image.header_string().as_str(), HEADER_STRING);
+            assert_eq!(
+                image.header_length(),
+                u16::try_from(BASE_HEADER_LENGTH).expect("fixed header length fits u16")
+            );
+            assert_eq!(image.header().as_bytes().len(), BASE_HEADER_LENGTH);
+            assert!(image.header().field_control().is_empty());
+            assert_eq!(image.len(), BASE_HEADER_LENGTH + PAYLOAD.len());
+        });
 }
 
 #[test]
@@ -90,8 +110,10 @@ fn reads_header_and_payload_ranges_from_the_source() {
         .expect("test runtime can be built")
         .block_on(async {
             let bytes = image_bytes(FieldControl::empty(), None);
-            let transfer = Cursor::new(bytes.clone())
+            let mut source = TemporaryImageFile::new(&bytes);
+            let transfer = tokio::fs::File::from_std(source.take())
                 .parse()
+                .await
                 .expect("valid OTA image")
                 .into_transfer();
             let crossing_offset = BASE_HEADER_LENGTH - 2;
@@ -126,64 +148,90 @@ fn reads_header_and_payload_ranges_from_the_source() {
 
 #[test]
 fn validates_hardware_range() {
-    let image = Cursor::new(image_bytes(FieldControl::HARDWARE_VERSIONS, Some((10, 20))))
-        .parse()
-        .expect("valid OTA image");
+    Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let image = Cursor::new(image_bytes(FieldControl::HARDWARE_VERSIONS, Some((10, 20))))
+                .parse()
+                .await
+                .expect("valid OTA image");
 
-    assert_eq!(
-        image.header().field_control(),
-        FieldControl::HARDWARE_VERSIONS
-    );
-    assert!(image.header().supports_hardware(Some(10)));
-    assert!(image.header().supports_hardware(Some(20)));
-    assert!(!image.header().supports_hardware(Some(9)));
-    assert!(!image.header().supports_hardware(None));
+            assert_eq!(
+                image.header().field_control(),
+                FieldControl::HARDWARE_VERSIONS
+            );
+            assert!(image.header().supports_hardware(Some(10)));
+            assert!(image.header().supports_hardware(Some(20)));
+            assert!(!image.header().supports_hardware(Some(9)));
+            assert!(!image.header().supports_hardware(None));
+        });
 }
 
 #[test]
 fn rejects_inconsistent_total_size() {
-    let mut bytes = image_bytes(FieldControl::empty(), None).to_vec();
-    bytes.push(0);
+    Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let mut bytes = image_bytes(FieldControl::empty(), None).to_vec();
+            bytes.push(0);
 
-    assert!(matches!(
-        Cursor::new(bytes).parse(),
-        Err(ParseImageError::InvalidImageSize { .. })
-    ));
+            assert!(matches!(
+                Cursor::new(bytes).parse().await,
+                Err(ParseImageError::InvalidImageSize { .. })
+            ));
+        });
 }
 
 #[test]
 fn rejects_unknown_field_control_flags() {
-    let mut bytes = image_bytes(FieldControl::empty(), None).to_vec();
-    bytes[FIELD_CONTROL_OFFSET..FIELD_CONTROL_OFFSET + size_of::<u16>()]
-        .copy_from_slice(&UNSUPPORTED_FIELD_CONTROL.to_le_bytes());
+    Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let mut bytes = image_bytes(FieldControl::empty(), None).to_vec();
+            bytes[FIELD_CONTROL_OFFSET..FIELD_CONTROL_OFFSET + size_of::<u16>()]
+                .copy_from_slice(&UNSUPPORTED_FIELD_CONTROL.to_le_bytes());
 
-    assert!(matches!(
-        Cursor::new(bytes).parse(),
-        Err(ParseImageError::UnsupportedFieldControl(bits))
-            if bits == UNSUPPORTED_FIELD_CONTROL
-    ));
+            assert!(matches!(
+                Cursor::new(bytes).parse().await,
+                Err(ParseImageError::UnsupportedFieldControl(bits))
+                    if bits == UNSUPPORTED_FIELD_CONTROL
+            ));
+        });
 }
 
 #[test]
 fn rejects_non_ascii_header_string() {
-    let mut bytes = image_bytes(FieldControl::empty(), None).to_vec();
-    bytes[HEADER_STRING_OFFSET] = u8::MAX;
+    Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let mut bytes = image_bytes(FieldControl::empty(), None).to_vec();
+            bytes[HEADER_STRING_OFFSET] = u8::MAX;
 
-    assert!(matches!(
-        Cursor::new(bytes).parse(),
-        Err(ParseImageError::InvalidHeaderString)
-    ));
+            assert!(matches!(
+                Cursor::new(bytes).parse().await,
+                Err(ParseImageError::InvalidHeaderString)
+            ));
+        });
 }
 
 #[test]
 fn rejects_unterminated_header_string() {
-    let mut bytes = image_bytes(FieldControl::empty(), None).to_vec();
-    bytes[HEADER_STRING_OFFSET..HEADER_STRING_OFFSET + HEADER_STRING_LENGTH].fill(b'A');
+    Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let mut bytes = image_bytes(FieldControl::empty(), None).to_vec();
+            bytes[HEADER_STRING_OFFSET..HEADER_STRING_OFFSET + HEADER_STRING_LENGTH].fill(b'A');
 
-    assert!(matches!(
-        Cursor::new(bytes).parse(),
-        Err(ParseImageError::InvalidHeaderString)
-    ));
+            assert!(matches!(
+                Cursor::new(bytes).parse().await,
+                Err(ParseImageError::InvalidHeaderString)
+            ));
+        });
 }
 
 fn image_bytes(field_control: FieldControl, hardware: Option<(u16, u16)>) -> Bytes {
@@ -207,4 +255,83 @@ fn image_bytes(field_control: FieldControl, hardware: Option<(u16, u16)>) -> Byt
     }
     bytes.extend_from_slice(PAYLOAD);
     bytes.freeze()
+}
+
+/// Reader that parses normally, then leaves payload reads pending indefinitely.
+struct PendingPayload {
+    bytes: Cursor<Bytes>,
+    started: Option<oneshot::Sender<()>>,
+    dropped: Option<oneshot::Sender<()>>,
+}
+
+impl AsyncRead for PendingPayload {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        context: &mut Context<'_>,
+        buffer: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
+        if self.bytes.position() >= u64::try_from(BASE_HEADER_LENGTH).unwrap() {
+            if let Some(started) = self.started.take() {
+                let _result = started.send(());
+            }
+            return Poll::Pending;
+        }
+        Pin::new(&mut self.bytes).poll_read(context, buffer)
+    }
+}
+
+impl AsyncSeek for PendingPayload {
+    fn start_seek(mut self: Pin<&mut Self>, position: SeekFrom) -> io::Result<()> {
+        Pin::new(&mut self.bytes).start_seek(position)
+    }
+
+    fn poll_complete(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<io::Result<u64>> {
+        Pin::new(&mut self.bytes).poll_complete(context)
+    }
+}
+
+impl ParseImage for PendingPayload {}
+
+impl Drop for PendingPayload {
+    fn drop(&mut self) {
+        if let Some(dropped) = self.dropped.take() {
+            let _result = dropped.send(());
+        }
+    }
+}
+
+#[test]
+fn shutdown_cancels_a_pending_payload_read_and_drops_its_source() {
+    Builder::new_current_thread()
+        .enable_time()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let (started, ready) = oneshot::channel();
+            let (dropped, released) = oneshot::channel();
+            let source = PendingPayload {
+                bytes: Cursor::new(image_bytes(FieldControl::empty(), None)),
+                started: Some(started),
+                dropped: Some(dropped),
+            };
+            let image = source.parse().await.unwrap();
+            let (events, _received) = mpsc::channel(CHANNEL_CAPACITY);
+            let runtime = CoordinatorRuntime::new(EventSink::new(events));
+            let transfer = runtime.enter(|| image.into_transfer());
+            let read =
+                spawn(async move { transfer.read_range(BASE_HEADER_LENGTH, PAYLOAD.len()).await });
+            timeout(TEST_DEADLINE, ready).await.unwrap().unwrap();
+            assert_eq!(
+                timeout(TEST_DEADLINE, runtime.shutdown()).await.unwrap(),
+                RuntimeExit::Shutdown
+            );
+            timeout(TEST_DEADLINE, released).await.unwrap().unwrap();
+            assert!(
+                timeout(TEST_DEADLINE, read)
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .is_err()
+            );
+        });
 }

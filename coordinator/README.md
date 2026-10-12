@@ -166,20 +166,21 @@ version, null-terminated ASCII header string, declared header and file sizes, op
 and hardware-version range before the image can be scheduled.
 
 `OtaImage` keeps its parsed `OtaHeader` in memory and retains the supplied
-`Read + Seek + Send + 'static` source for payload reads; it does not copy the payload into an image
+`AsyncRead + AsyncSeek + Unpin + Send + 'static` source for payload reads; it does not copy the payload into an image
 buffer. Seeking is required because clients can request blocks out of order or retry an earlier
 file offset. When the image is scheduled, a dedicated transfer task takes ownership of the reader.
 Lightweight transfer handles send range requests to that task, which serializes access to the file
 cursor without a shared mutex.
 
-`ParseImage` is implemented for `std::fs::File`. Its `parse(self)` method composes default methods
+`ParseImage` is implemented for `tokio::fs::File` and compatible `std::io::Cursor` types.
+Its asynchronous `parse(self)` method composes default methods
 for seeking to the image start, reading the fixed and optional header sections, determining the
 source length, and positioning the retained source at the payload. Implementations for other
 reader types can override any of these stages while retaining the default parser workflow.
 
 ```rust,no_run
 use apis_saltans_coordinator::{Coordinator, Ota, ParseImage};
-use std::fs::File;
+use tokio::fs::File;
 use std::path::Path;
 use zb_aps::apsde::IndividualEndpoint;
 use zb_core::{Application, Endpoint, FullAddress};
@@ -190,7 +191,7 @@ async fn offer_update(
     target_endpoint: IndividualEndpoint,
     ota_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let image = File::open(ota_path)?.parse()?;
+    let image = File::open(ota_path).await?.parse().await?;
     let source_endpoint = IndividualEndpoint::new(Endpoint::from(
         Application::try_from(1).expect("valid local endpoint"),
     ))
@@ -944,8 +945,9 @@ The existing startup methods detach automatically.
 relying on the application event queue. `runtime.dropped_events()` reports cumulative losses from
 full and closed event channels. Terminal reasons distinguish requested shutdown, hardware event
 stream closure, actor exit, and task panic. Pending operations fail on shutdown. The externally
-owned hardware driver is not stopped, and already-running blocking image reads must finish before
-shutdown can return.
+owned hardware driver is not stopped. Pending async image reads are cancelled during shutdown.
+A reader implementation may own background I/O independently; for example, Tokio files use
+blocking workers internally, whose already-started operations can finish after coordinator shutdown.
 
 ## Runtime configuration
 
