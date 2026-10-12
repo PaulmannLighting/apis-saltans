@@ -98,8 +98,8 @@ mod required_cluster {
     use zb_core::types::Uint16;
 
     use super::{Cluster, Profile, Profiled, Uint8};
+    use crate::Analog;
     use crate::macros::zcl_attributes;
-    use crate::{Analog, Discrete, ReportingType};
 
     zcl_attributes! {
         cluster: Cluster::Basic;

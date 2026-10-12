@@ -391,3 +391,8 @@ fields for other statuses. Encoding and decoding are intentionally asymmetric.
 `src/macros.rs` preserves the existing crate-local macro paths. Implementations live in
 `src/macros/`, with separate modules for commands, command enums, attribute newtypes, attribute tables,
 bitflag formatting, and profile defaults. Attribute macro tests live in `macros/tests.rs`.
+
+Read Reporting Configuration construction uses separate reported, received, and failed
+constructors. Reported attributes use named `ReportedConfiguration` fields. Each constructor
+populates the existing flat record with the applicable fields and reporting direction, leaving
+the record's stream and serde representation unchanged.

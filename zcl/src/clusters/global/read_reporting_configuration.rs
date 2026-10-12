@@ -3,7 +3,7 @@
 use zb_core::Direction;
 
 pub use self::record::Record;
-pub use self::status::Status;
+pub use self::status::{ReportedConfiguration, Status};
 use crate::macros::zcl_command;
 
 mod record;

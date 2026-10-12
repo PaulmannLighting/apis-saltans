@@ -277,3 +277,8 @@ Response acceptance is independent of the outgoing disable-default-response flag
 Attribute value types implement `ReportingType` to select their reporting parameters.
 Type aliases inherit this choice; custom types explicitly choose `Analog<T>` or `Discrete<T>`
 through the associated `Configuration` type.
+
+Read Reporting Configuration response records use `Status::reported`, `Status::received`, or
+`Status::failed`. `reported` accepts an attribute ID and a `ReportedConfiguration` with named
+fields; the other constructors take only their relevant values. These replace the former
+eight-argument `Status::new` constructor. The record's serialized representation is unchanged.
