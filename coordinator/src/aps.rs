@@ -138,16 +138,35 @@ struct TransmissionState {
 #[derive(Debug)]
 struct PendingTransmission {
     generation: u64,
-    acknowledged: bool,
     phase: TransmissionPhase,
     response: Option<PendingResponse>,
 }
 
 #[derive(Clone, Copy, Debug)]
 enum TransmissionPhase {
-    Submitting { confirmation: Option<ConfirmStatus> },
+    SubmittingAcknowledged { confirmation: Option<ConfirmStatus> },
+
+    SubmittingUnacknowledged,
 
     AwaitingConfirmation,
+}
+
+impl TransmissionPhase {
+    /// Whether hardware acceptance is still outstanding.
+    const fn is_submitting(self) -> bool {
+        !matches!(self, Self::AwaitingConfirmation)
+    }
+}
+
+/// State changes resulting from a hardware submission completion.
+enum SubmissionOutcome {
+    Complete,
+
+    AwaitingConfirmation(PendingTransmission),
+
+    Quarantine,
+
+    Duplicate(PendingTransmission),
 }
 
 impl PendingTransmission {
@@ -158,8 +177,11 @@ impl PendingTransmission {
     ) -> Self {
         Self {
             generation: token.generation,
-            acknowledged,
-            phase: TransmissionPhase::Submitting { confirmation: None },
+            phase: if acknowledged {
+                TransmissionPhase::SubmittingAcknowledged { confirmation: None }
+            } else {
+                TransmissionPhase::SubmittingUnacknowledged
+            },
             response: Some(response),
         }
     }
@@ -168,9 +190,37 @@ impl PendingTransmission {
     const fn awaiting_confirmation(token: TransmissionToken, response: PendingResponse) -> Self {
         Self {
             generation: token.generation,
-            acknowledged: true,
             phase: TransmissionPhase::AwaitingConfirmation,
             response: Some(response),
+        }
+    }
+
+    /// Resolve hardware acceptance while retaining early confirmations and cancelled identities.
+    fn finish_submission(mut self, result: Result<(), zb_hw::Error>) -> SubmissionOutcome {
+        if let Err(error) = result {
+            self.complete(Err(error));
+            return SubmissionOutcome::Complete;
+        }
+        match self.phase {
+            TransmissionPhase::SubmittingUnacknowledged => {
+                self.complete(Ok(()));
+                SubmissionOutcome::Complete
+            }
+            TransmissionPhase::SubmittingAcknowledged {
+                confirmation: Some(status),
+            } => {
+                self.complete_confirmation(status);
+                SubmissionOutcome::Complete
+            }
+            TransmissionPhase::SubmittingAcknowledged { confirmation: None } => {
+                if self.response.is_none() {
+                    SubmissionOutcome::Quarantine
+                } else {
+                    self.phase = TransmissionPhase::AwaitingConfirmation;
+                    SubmissionOutcome::AwaitingConfirmation(self)
+                }
+            }
+            TransmissionPhase::AwaitingConfirmation => SubmissionOutcome::Duplicate(self),
         }
     }
 
@@ -233,13 +283,13 @@ impl TransmissionState {
         };
 
         match &mut pending.phase {
-            TransmissionPhase::Submitting { confirmation } if pending.acknowledged => {
+            TransmissionPhase::SubmittingAcknowledged { confirmation } => {
                 if confirmation.replace(status).is_some() {
                     warn!("Received duplicate APS data confirmation for counter: {counter}");
                 }
                 return;
             }
-            TransmissionPhase::Submitting { .. } => {
+            TransmissionPhase::SubmittingUnacknowledged => {
                 warn!(
                     "Received APS data confirmation for unacknowledged transmission counter: \
                      {counter}"
@@ -291,53 +341,41 @@ impl TransmissionState {
         if !self.pending_generation_matches(token) {
             return false;
         }
-        let mut pending = self
+        let pending = self
             .responses
             .remove(&token.counter)
             .expect("matching pending generation remains present");
-
-        if let Err(error) = result {
-            pending.complete(Err(error));
-            return false;
+        match pending.finish_submission(result) {
+            SubmissionOutcome::Complete => false,
+            SubmissionOutcome::AwaitingConfirmation(pending) => {
+                self.responses.insert(token.counter, pending);
+                true
+            }
+            SubmissionOutcome::Quarantine => {
+                self.quarantined.insert(token.counter, token.generation);
+                true
+            }
+            SubmissionOutcome::Duplicate(pending) => {
+                warn!(
+                    "Received duplicate APS backend submission completion for counter: {}",
+                    token.counter
+                );
+                self.responses.insert(token.counter, pending);
+                false
+            }
         }
-        if !pending.acknowledged {
-            pending.complete(Ok(()));
-            return false;
-        }
-
-        let TransmissionPhase::Submitting { confirmation } = pending.phase else {
-            warn!(
-                "Received duplicate APS backend submission completion for counter: {}",
-                token.counter
-            );
-            self.responses.insert(token.counter, pending);
-            return false;
-        };
-        if let Some(status) = confirmation {
-            pending.complete_confirmation(status);
-            return false;
-        }
-
-        if pending.response.is_none() {
-            self.quarantined.insert(token.counter, token.generation);
-        } else {
-            pending.phase = TransmissionPhase::AwaitingConfirmation;
-            self.responses.insert(token.counter, pending);
-        }
-        true
     }
 
     fn cancel(&mut self, token: TransmissionToken) {
         if !self.pending_generation_matches(token) {
             return;
         }
-        let submitting = matches!(
-            self.responses
-                .get(&token.counter)
-                .expect("matching pending generation remains present")
-                .phase,
-            TransmissionPhase::Submitting { .. }
-        );
+        let submitting = self
+            .responses
+            .get(&token.counter)
+            .expect("matching pending generation remains present")
+            .phase
+            .is_submitting();
         if submitting {
             self.responses
                 .get_mut(&token.counter)
@@ -373,7 +411,7 @@ impl TransmissionState {
         let responses = std::mem::take(&mut self.responses);
         for (counter, mut pending) in responses {
             pending.fail(error);
-            if matches!(pending.phase, TransmissionPhase::Submitting { .. }) {
+            if pending.phase.is_submitting() {
                 self.responses.insert(counter, pending);
             } else {
                 self.quarantined.insert(counter, pending.generation);

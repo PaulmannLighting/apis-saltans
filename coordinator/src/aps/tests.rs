@@ -453,6 +453,22 @@ fn confirmation_can_arrive_before_backend_submission_completion() {
 }
 
 #[test]
+fn duplicate_acceptance_preserves_the_pending_confirmation() {
+    let mut state = TransmissionState::new();
+    let token = transmission_token(FIRST_COUNTER);
+    let (response, mut result) = tokio::sync::oneshot::channel();
+    state.store_submission(token, true, response);
+
+    assert!(state.finish_submission(token, Ok(())));
+    assert!(!state.finish_submission(token, Ok(())));
+    assert!(result.try_recv().is_err());
+    state.handle_confirm(FIRST_COUNTER, ConfirmStatus::success());
+    assert!(matches!(result.try_recv(), Ok(Ok(()))));
+    assert!(state.responses.is_empty());
+    assert!(state.quarantined.is_empty());
+}
+
+#[test]
 fn cancellation_while_submitting_waits_for_acceptance_before_quarantine() {
     let mut state = TransmissionState::new();
     let token = transmission_token(FIRST_COUNTER);

@@ -97,7 +97,9 @@ acknowledgements. Its `confirm` method forwards hardware APSDE confirmations fro
 The actor never awaits backend acceptance in its message loop. Each submission runs in a spawned
 operation and posts `SubmissionFinished` back into the actor's one bounded inbox. This keeps the
 actor available for confirmations, cancellation, and network or hardware lifecycle messages while
-the NCP is slow. The counter remains reserved during submission. A confirmation that overtakes the
+the NCP is slow. The counter remains reserved during submission. `TransmissionPhase` distinguishes acknowledged
+and unacknowledged submissions from accepted transmissions awaiting confirmation. Submission
+completion returns an explicit outcome: completion, awaiting confirmation, quarantine, or duplicate. A confirmation that overtakes the
 submission-completion message is buffered until acceptance is known. Cancellation or network loss
 during submission drops or fails the caller but retains the reservation until rejection makes
 reuse safe or acceptance requires quarantine.
