@@ -1,17 +1,29 @@
 //! Runtime-selectable coordinator settings.
 
-use std::num::NonZeroUsize;
+use std::num::{NonZero, NonZeroUsize};
 use std::time::Duration;
+
+use const_env::env_lit;
 
 use crate::correlation::PROTOCOL_RESPONSE_TIMEOUT;
 use crate::{DEFAULT_OTA_UPDATE_TASK_LIMIT, MPSC_CHANNEL_SIZE};
 
+const CONFIRMATION_TIMEOUT_SECS: NonZero<u64> = NonZero::new(env_lit!(
+    "ZIGBEE_COORDINATOR_APS_CONFIRMATION_TIMEOUT_SECS",
+    30
+))
+.expect("ZIGBEE_COORDINATOR_APS_CONFIRMATION_TIMEOUT_SECS must be greater than zero");
+
 /// Default time to await an APS confirmation after backend acceptance.
-pub const DEFAULT_CONFIRMATION_TIMEOUT: Duration = Duration::from_secs(30);
+///
+/// Set at compile time by `ZIGBEE_COORDINATOR_APS_CONFIRMATION_TIMEOUT_SECS`;
+/// defaults to 30 seconds and must be greater than zero.
+pub const DEFAULT_CONFIRMATION_TIMEOUT: Duration =
+    Duration::from_secs(CONFIRMATION_TIMEOUT_SECS.get());
 
 /// Settings fixed for the lifetime of one coordinator runtime.
 ///
-/// Defaults retain the historical build-time inbox and protocol response timeout settings.
+/// Defaults use the build-time inbox, protocol response, and APS confirmation timeout settings.
 /// Deadlines may be zero for immediate expiry. Late-response quarantine remains an independent
 /// internal safeguard and is not shortened by these deadlines.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

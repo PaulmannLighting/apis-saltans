@@ -898,10 +898,13 @@ Behavior is configurable through environment variables read while compiling the 
 - `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` supplies the default actor inbox capacity. The default is `128`.
 - `ZIGBEE_COORDINATOR_PROTOCOL_RESPONSE_TIMEOUT_SECS` supplies the default time a correlated ZCL or ZDP
   response may remain pending. The default is `30`.
+- `ZIGBEE_COORDINATOR_APS_CONFIRMATION_TIMEOUT_SECS` supplies the default time to await an APS
+  confirmation after hardware acceptance. The default is `30`; an explicit
+  `CoordinatorConfig::aps_confirmation_timeout` overrides it at startup.
 - `ZIGBEE_COORDINATOR_PROTOCOL_QUARANTINE_TIMEOUT_SECS` selects how long a timed-out or cancelled
   ZCL or ZDP correlation remains quarantined against late responses. The default is `30`.
 
-Both timeout values must be greater than zero. Changing any of these variables requires rebuilding
+All compile-time timeout values must be greater than zero. Changing any of these variables requires rebuilding
 the application. Applications may still wrap either await boundary with `tokio::time::timeout`
 when they require a shorter runtime deadline.
 

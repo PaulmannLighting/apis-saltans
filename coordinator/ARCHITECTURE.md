@@ -544,5 +544,7 @@ counters use atomics and are independent of the application event channel's capa
 duration; timeout tasks capture that duration when scheduled. Startup creates actor channels using
 the configured nonzero inbox capacity. The OTA server retains that capacity for its later-created
 transfer and subscription channels. ZDP admission limits remain independent of queue capacity.
-Legacy environment variables provide defaults. Quarantine durations are internal and independent
+Build-time environment variables provide defaults, including
+`ZIGBEE_COORDINATOR_APS_CONFIRMATION_TIMEOUT_SECS` for APS confirmations (30 seconds by default).
+Explicit runtime settings take precedence. Quarantine durations are internal and independent
 of caller-selected response deadlines.
