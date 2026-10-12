@@ -613,7 +613,7 @@ impl Transfer {
         T: Future<Output = OperationOutcome> + Send + 'static,
     {
         let generation = self.generation;
-        let task = self.operations.spawn(async move {
+        let task = crate::runtime::spawn_in(&mut self.operations, async move {
             OperationResult {
                 generation,
                 outcome: operation.await,
@@ -674,7 +674,7 @@ fn spawn_cancellation(
     generation: u64,
     cancellation: oneshot::Receiver<()>,
 ) -> AbortHandle {
-    let task = tokio::spawn(async move {
+    let task = crate::runtime::spawn(async move {
         let _result = cancellation.await;
         let Some(sender) = sender.upgrade() else {
             return;
@@ -690,7 +690,7 @@ fn spawn_deadline(
     deadline: Deadline,
     duration: Duration,
 ) -> AbortHandle {
-    let task = tokio::spawn(async move {
+    let task = crate::runtime::spawn(async move {
         sleep(duration).await;
         let Some(sender) = sender.upgrade() else {
             return;

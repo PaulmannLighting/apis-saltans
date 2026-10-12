@@ -5,7 +5,6 @@ use std::time::Duration;
 
 use bytes::Bytes;
 use log::warn;
-use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot::{Sender as OneshotSender, channel};
 use tokio::time::sleep;
@@ -17,6 +16,7 @@ pub use self::message::Message;
 pub use self::metadata::Metadata;
 pub use self::transmission_response::TransmissionResponse;
 use crate::MPSC_CHANNEL_SIZE;
+use crate::runtime::spawn;
 
 mod message;
 mod metadata;
@@ -543,8 +543,14 @@ impl Transceiver {
     /// Spawn the APS actor.
     pub fn spawn(ncp: NcpHandle) -> Aps {
         let (aps_tx, aps_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, aps_tx.downgrade()).run(aps_rx));
+        crate::runtime::spawn_actor("APS", Self::new(ncp, aps_tx.downgrade()).run(aps_rx));
         Aps::new(aps_tx)
+    }
+}
+
+impl Drop for Transceiver {
+    fn drop(&mut self) {
+        self.state.stop(&zb_hw::Error::ActorUnavailable);
     }
 }
 

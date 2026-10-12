@@ -5,7 +5,6 @@ use std::collections::BTreeMap;
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, error, trace, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::task::AbortHandle;
 use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress, ReceivedDestination};
@@ -25,6 +24,7 @@ use crate::correlation::{
 };
 use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
+use crate::runtime::spawn;
 use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
 mod discovery;
@@ -83,7 +83,10 @@ impl Transceiver {
         descriptor: Descriptor,
     ) -> Sender<Message> {
         let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx));
+        crate::runtime::spawn_actor(
+            "ZDP",
+            Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx),
+        );
         zdp_tx
     }
 
@@ -433,3 +436,11 @@ fn received_key<T, K>(
 
 #[cfg(test)]
 mod tests;
+
+impl Drop for Transceiver {
+    fn drop(&mut self) {
+        self.abort_server_operations();
+        self.fail_communication_submissions_for_hardware_unavailability();
+        self.responses.hardware_unavailable();
+    }
+}

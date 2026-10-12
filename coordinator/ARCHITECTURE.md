@@ -515,3 +515,14 @@ Binding selection is computed by a pure `binding_plan` helper before requests ar
 The plan retains local descriptor order and intersects local input clusters with remote output
 clusters. Execution returns one `BindingResult` per attempt, preserving source endpoint, cluster,
 destination, and outcome without overwriting earlier failures.
+
+## Runtime ownership
+
+Managed startup installs a task-local task group while spawning the actors. Internal spawning
+inherits that group, including protocol deadlines, OTA operations, forwarding tasks, and blocking
+image reads. Registrations are removed when task futures or closures are dropped. The supervisor
+closes registration to new running work, cancels asynchronous tasks, and waits for the group to
+empty before publishing `Stopped`. Tasks racing with shutdown are registered and immediately
+cancelled. Running blocking reads cannot be interrupted and are awaited. Hardware drivers remain
+externally owned. Lifecycle notifications use a watch channel; event-loss counters use atomics and
+are independent of the application event channel's capacity.

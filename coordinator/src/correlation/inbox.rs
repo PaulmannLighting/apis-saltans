@@ -4,12 +4,12 @@ use std::time::Duration;
 
 use log::debug;
 use tokio::runtime::Handle;
-use tokio::spawn;
 use tokio::sync::mpsc::WeakSender;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::time::sleep;
 
 use super::{Cancellation, Token};
+use crate::runtime::spawn;
 
 #[cfg(test)]
 mod tests;

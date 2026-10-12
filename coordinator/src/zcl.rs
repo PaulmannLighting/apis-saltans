@@ -3,7 +3,6 @@
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use zb_aps::apsde::{DataIndication, DataRequest};
@@ -50,7 +49,10 @@ impl Transceiver {
     /// Start the ZCL transceiver.
     pub fn spawn(aps: Aps, events: EventSink) -> Sender<Message> {
         let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        spawn(Self::new(aps, events, zcl_tx.downgrade()).run(zcl_rx));
+        crate::runtime::spawn_actor(
+            "ZCL",
+            Self::new(aps, events, zcl_tx.downgrade()).run(zcl_rx),
+        );
         zcl_tx
     }
 

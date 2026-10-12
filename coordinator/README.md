@@ -931,3 +931,18 @@ with a matching transaction sequence, continue to subscription/event routing wit
 pending request or releasing quarantine. Broadcast/group indications cannot complete individual
 requests and continue to normal routing. Fully identical delayed responses still rely on sequence
 allocation and the quarantine interval for protection.
+
+## Managed runtime lifecycle
+
+`Coordinator::start_managed(...)` returns `(Coordinator, CoordinatorRuntime)`. Keep the runtime
+handle while using cloned command handles. `runtime.shutdown().await` cancels coordinator work
+and waits for owned tasks to release their resources; `runtime.wait().await` reports termination.
+Dropping the runtime requests shutdown. `runtime.detach()` retains legacy background operation.
+The existing startup methods detach automatically.
+
+`runtime.status()` and `runtime.subscribe()` expose running, stopping, and stopped states without
+relying on the application event queue. `runtime.dropped_events()` reports cumulative losses from
+full and closed event channels. Terminal reasons distinguish requested shutdown, hardware event
+stream closure, actor exit, and task panic. Pending operations fail on shutdown. The externally
+owned hardware driver is not stopped, and already-running blocking image reads must finish before
+shutdown can return.

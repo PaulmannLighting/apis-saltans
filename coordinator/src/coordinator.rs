@@ -7,7 +7,7 @@ use zb_hw::{Error, NcpHandle};
 use crate::event::EventSink;
 use crate::mux::Mux;
 use crate::ota::Server;
-use crate::{DEFAULT_OTA_UPDATE_TASK_LIMIT, Event, aps, ota, zcl, zdp};
+use crate::{CoordinatorRuntime, DEFAULT_OTA_UPDATE_TASK_LIMIT, Event, aps, ota, zcl, zdp};
 
 /// External Zigbee API struct.
 #[derive(Clone, Debug)]
@@ -68,19 +68,52 @@ impl Coordinator {
         T: Send + 'static,
         K: Send + 'static,
     {
-        let events = EventSink::new(events_out);
-        let aps = aps::Transceiver::spawn(ncp.clone());
-        let zcl = zcl::Transceiver::spawn(aps.clone(), events.clone());
-        let ota = Server::spawn(ncp.clone(), zcl.clone(), ota_update_task_limit);
-        let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events.clone(), descriptor);
-        Mux::spawn(
+        let (coordinator, runtime) = Self::start_managed(
+            ncp,
+            descriptor,
             hw_events,
-            events,
-            aps,
-            ota.clone(),
-            zcl.clone(),
-            zdp.clone(),
-        );
-        Ok(Self { ncp, ota, zcl, zdp })
+            events_out,
+            ota_update_task_limit,
+        )?;
+        runtime.detach();
+        Ok(coordinator)
+    }
+
+    /// Start a coordinator with an owning lifecycle handle.
+    ///
+    /// Dropping the runtime requests shutdown. Command handles may be cloned independently.
+    /// Shutdown cancels pending work; callers observe errors from their pending futures.
+    ///
+    /// # Errors
+    /// Returns a hardware error if actor setup fails.
+    pub fn start_managed<T, K>(
+        ncp: NcpHandle,
+        descriptor: Descriptor,
+        hw_events: Receiver<zb_hw::Event<T, K>>,
+        events_out: Sender<Event>,
+        ota_update_task_limit: usize,
+    ) -> Result<(Self, CoordinatorRuntime), Error>
+    where
+        T: Send + 'static,
+        K: Send + 'static,
+    {
+        let events = EventSink::new(events_out);
+        let runtime = CoordinatorRuntime::new(events.clone());
+        let coordinator = runtime.enter(|| {
+            let aps = aps::Transceiver::spawn(ncp.clone());
+            let zcl = zcl::Transceiver::spawn(aps.clone(), events.clone());
+            let ota = Server::spawn(ncp.clone(), zcl.clone(), ota_update_task_limit);
+            let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events.clone(), descriptor);
+            Mux::spawn(
+                hw_events,
+                events,
+                aps,
+                ota.clone(),
+                zcl.clone(),
+                zdp.clone(),
+            );
+            Self { ncp, ota, zcl, zdp }
+        });
+        Ok((coordinator, runtime))
     }
 }

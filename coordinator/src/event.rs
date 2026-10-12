@@ -3,7 +3,7 @@ use zb_zcl::{Cluster, Frame};
 
 pub use self::device::{Device, KeepAlive};
 pub use self::network::{Error as NetworkError, Network};
-pub use self::sink::EventSink;
+pub use self::sink::{DroppedEvents, EventSink};
 
 mod device;
 mod network;

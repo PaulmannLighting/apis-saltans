@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
 use zb_aps::apsde::{
@@ -28,6 +27,7 @@ use super::{
     Message, OTA_PROFILE, UpdateError, network_destination, reply_zcl,
     request_from_unsequenced_frame, zcl,
 };
+use crate::runtime::spawn;
 
 /// Handle used by the OTA server to route messages to one destination transfer.
 #[derive(Debug)]
@@ -264,7 +264,7 @@ impl Server {
             update_task_limit,
         );
         spawn(forward_api_messages(messages, events));
-        spawn(server.run());
+        crate::runtime::spawn_actor("OTA", server.run());
         sender
     }
 

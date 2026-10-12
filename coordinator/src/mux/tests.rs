@@ -364,6 +364,27 @@ fn hardware_event_stream_closure_stops_every_actor_and_emits_a_failure() {
 }
 
 #[test]
+fn managed_hardware_closure_reports_termination_without_event_delivery() {
+    Runtime::new().unwrap().block_on(async {
+        let (events, _application_events) = channel(MPSC_CHANNEL_SIZE);
+        let sink = EventSink::new(events);
+        let runtime = crate::CoordinatorRuntime::new(sink.clone());
+        let (aps, _aps) = channel(MPSC_CHANNEL_SIZE);
+        let (ota, _ota) = channel(MPSC_CHANNEL_SIZE);
+        let (zcl, _zcl) = channel(MPSC_CHANNEL_SIZE);
+        let (zdp, _zdp) = channel(MPSC_CHANNEL_SIZE);
+        let mux = Mux::new(sink, Aps::new(aps), ota, zcl, zdp);
+        let (hardware, incoming) = channel::<zb_hw::Event<(), ()>>(MPSC_CHANNEL_SIZE);
+        drop(hardware);
+        runtime.enter(|| crate::runtime::spawn_actor("multiplexer", mux.run(incoming)));
+        assert_eq!(
+            timeout(TEST_TIMEOUT, runtime.wait()).await.unwrap(),
+            crate::RuntimeExit::HardwareEventStreamClosed
+        );
+    });
+}
+
+#[test]
 fn full_aps_inbox_does_not_delay_other_terminal_notifications() {
     Runtime::new()
         .expect("runtime must be available")

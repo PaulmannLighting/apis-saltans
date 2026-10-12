@@ -2,7 +2,6 @@
 
 use le_stream::ToLeStream;
 use log::{error, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::WeakSender;
 use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination};
 use zb_core::node::Descriptor;
@@ -31,6 +30,7 @@ use super::node_desc::{
 };
 use crate::Error;
 use crate::aps::{Aps, Metadata, TransmissionResponse};
+use crate::runtime::spawn;
 
 /// Cloneable context used by bounded background ZDP request-serving operations.
 #[derive(Clone, Debug)]

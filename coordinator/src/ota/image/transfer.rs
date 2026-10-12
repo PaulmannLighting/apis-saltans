@@ -31,7 +31,7 @@ struct ReadRequest {
 impl ImageTransfer {
     pub(super) fn spawn(header: Header, source: Box<dyn ImageSource>) -> Self {
         let (requests, inbound) = mpsc::channel(TRANSFER_CHANNEL_SIZE);
-        drop(tokio::spawn(
+        drop(crate::runtime::spawn(
             ImageTransferTask {
                 source: Some(source),
                 inbound,
@@ -108,7 +108,7 @@ impl ImageTransferTask {
                 length,
                 response,
             } = request;
-            match tokio::task::spawn_blocking(move || Self::read_source(source, offset, length))
+            match crate::runtime::spawn_blocking(move || Self::read_source(source, offset, length))
                 .await
             {
                 Ok((source, result)) => {

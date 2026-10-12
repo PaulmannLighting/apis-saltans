@@ -146,3 +146,9 @@ impl Responses {
         ))
     }
 }
+
+impl Drop for Responses {
+    fn drop(&mut self) {
+        self.registry.hardware_unavailable();
+    }
+}

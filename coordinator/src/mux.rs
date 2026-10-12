@@ -1,6 +1,5 @@
 use bytes::Bytes;
 use log::{trace, warn};
-use tokio::spawn;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use zb_aps::apsde::DataIndication;
@@ -12,6 +11,7 @@ use zb_hw::{
 use self::aps_payload::ApsPayload;
 use crate::aps::Aps;
 use crate::event::{EventSink, KeepAlive};
+use crate::runtime::spawn;
 use crate::{Device, Event, Network, NetworkError, ota, zcl, zdp};
 
 mod aps_payload;
@@ -56,7 +56,10 @@ impl Mux {
         T: Send + 'static,
         K: Send + 'static,
     {
-        spawn(Self::new(events, aps, ota_tx, zcl_tx, zdp_tx).run(hw_events));
+        crate::runtime::spawn_actor(
+            "multiplexer",
+            Self::new(events, aps, ota_tx, zcl_tx, zdp_tx).run(hw_events),
+        );
     }
 
     /// Run the multiplexer.
@@ -76,6 +79,7 @@ impl Mux {
         self.events.emit(Event::Network(Network::Error(
             NetworkError::HardwareEventStreamClosed,
         )));
+        crate::runtime::request_stop(crate::RuntimeExit::HardwareEventStreamClosed);
         let aps = self.aps.clone();
         let aps_shutdown = spawn(async move {
             aps.hardware_unavailable().await.unwrap_or_else(|error| {

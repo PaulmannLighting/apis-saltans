@@ -9,7 +9,8 @@
 //! address resolution, and persistence are application-owned workflows built from traits such as
 //! [`Node`], [`Endpoints`], [`Binding`], [`Leaving`], [`AddressTranslation`], [`Zcl`], and [`Zdp`].
 //! Closing the hardware event stream is fatal: protocol actors fail pending work and stop, and the
-//! coordinator emits [`NetworkError::HardwareEventStreamClosed`]. Applications must start a new
+//! coordinator emits [`NetworkError::HardwareEventStreamClosed`]. Managed startup also exposes
+//! termination through [`CoordinatorRuntime`], independently of event delivery. Applications must start a new
 //! coordinator with a live hardware event stream after that boundary.
 //! The built-in [`Ota`] service validates complete OTA image files and automatically serves the
 //! OTA Upgrade cluster exchange for individually scheduled device endpoints.
@@ -35,7 +36,7 @@ pub use self::api::{
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};
-pub use self::event::{Device, Event, KeepAlive, Network, NetworkError};
+pub use self::event::{Device, DroppedEvents, Event, KeepAlive, Network, NetworkError};
 pub use self::ota::{
     BaseHeaderBytes as OtaBaseHeaderBytes, FieldControl as OtaFieldControl, Header as OtaHeader,
     HeaderString as OtaHeaderString, Image as OtaImage, Message as OtaMessage, ParseImage,
@@ -53,6 +54,8 @@ mod event;
 mod mux;
 pub mod ota;
 mod response;
+mod runtime;
+pub use self::runtime::{CoordinatorRuntime, RuntimeExit, RuntimeStatus};
 mod zcl;
 mod zdp;
 
