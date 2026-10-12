@@ -299,8 +299,8 @@ api.communicate_default(request).await?;
 Communication remains split at the protocol boundary:
 
 ```rust,ignore
-let response = api.communicate(request, DefaultResponsePolicy::SpecificRequired).await?;
-let typed_response = response.await?.into_specific()?;
+let response = api.communicate::<Response>(request).await?;
+let typed_response = response.await?;
 ```
 
 The communication method queues the command and returns `ZclResponse<T>` or `ZdpResponse<T>`
@@ -829,25 +829,25 @@ Use `Zcl::communicate_default(...)` for an individual unicast that expects a ZCL
 It enables Default Responses, waits for APS completion and the correlated response, verifies the
 response's original command ID, and returns non-success status values as `Error::Zcl`.
 
-Use `Zcl::communicate::<T>(request, policy)` for encoded requests. The explicit
-`DefaultResponsePolicy` belongs to the request, not its expected response type. The first await
-queues the request and returns `ZclResponse<T>`; the second returns `Result<ZclOutcome<T>, Error>`.
-`ZclOutcome::Specific(T)` carries command-specific data and `ZclOutcome::Default(DefaultResponse)`
-carries a permitted Default Response, preserving its status. The destination must be one individual
-16-bit network endpoint.
+Use `Zcl::communicate::<T>(request)` for encoded requests. The first await queues the request and
+returns `ZclResponse<T>`; the second returns `Result<T, Error>` directly. Select a concrete response
+for required data, `DefaultResponse` for a default-only exchange, or `zb_zcl::MaybeDefault<T>` to
+accept either response form. Its `Default` variant preserves the device status for inspection.
+The destination must be one individual 16-bit network endpoint.
 
 Use `communicate_command(destination, source_endpoint, command)` for typed cluster commands
-implementing `ExpectResponse<Cluster>` and `zb_zcl::RequestPolicy` (re-exported here as
-`ZclRequestPolicy`). The response is inferred from the
+implementing `Command` and `ExpectResponse<Cluster>`. The response is inferred from the
 command's associated `Response` type, so an Add Group request cannot select a Remove Group response.
-The original command ID, response matcher, and `DEFAULT_RESPONSE_POLICY` are derived from the
-request type. Prepared requests expose their encoded data only for inspection; their response
+The original command ID and complete response type are derived from the request type. Custom
+requests express permitted alternatives in `ExpectResponse<Cluster>::Response`, using
+`MaybeDefault<T>` where either response form is valid. Prepared requests expose their encoded data
+only for inspection; their response
 contract is derived from the type when submitted. OTA clients send `UpgradeComplete::new(image)` to await an
 `UpgradeEndResponse`, or `UpgradeIncomplete::new(reason, image)` to await a Default Response
 (ZCL §11.13.9.4). `UpgradeIncompleteReason` contains only abort, invalid-image, and more-image
 reasons. The coordinator decodes both into `UpgradeEndRequest::{Complete, Incomplete}` and replies
 according to the variant. This outer wire enum has no single typed response contract.
-Global read/write/configure-reporting commands also implement `ZclRequestPolicy`; their attribute
+Global read/write/configure-reporting commands also implement `ExpectResponse<Cluster>`; their attribute
 helpers construct `ZclRequest<C>` with explicit cluster/profile metadata and retain manufacturer
 context. For custom global requests, build `ZclRequest::new(DataRequest<C>)`, optionally apply
 `with_manufacturer_code(...)`, and send it with `communicate_request(...)`. APS options are preserved.
@@ -859,10 +859,9 @@ completion or late-response quarantine. These bounds concern the types; command 
 and are not retained by the contracts.
 
 Groups add/remove/list helpers require their specified responses. Remove All Groups and Add Group
-If Identifying use `NoSpecificResponse` as their associated response and allow Default Responses;
-these return `ZclOutcome::Default`, with no constructible `Specific` value. `communicate_default` selects `DefaultAllowed` and maps
-unsuccessful statuses to `Error::Zcl`. Helpers requiring returned data use `into_specific()`; they do
-not manufacture a response value from a successful Default Response.
+If Identifying use `DefaultResponse` as their associated response. `communicate_default` validates
+the returned status and maps unsuccessful statuses to `Error::Zcl`. Helpers requiring returned data
+receive that data directly, without an unconditional outcome wrapper.
 
 Use `Zdp::communicate(...)` for ZDP requests implementing `ExpectResponse<zb_zdp::Command>`. It
 returns the equivalent `ZdpResponse<T::Response>`. The composed traits above are thin wrappers over
@@ -916,13 +915,12 @@ Commands implementing ZCL `Command` and `Scoped` satisfy this automatically: the
 command ID identify the expected response. Custom response enums accepting several command forms
 must implement `ZclResponseType::matches_response` and a corresponding `TryFrom<Cluster>` conversion.
 Include both scope and command ID in each accepted form. Default Responses must name the original
-request in their embedded command ID. Request policy takes precedence even if a custom response
-type's header matcher accepts Default Responses:
+request in their embedded command ID. The response type's header matcher determines acceptance:
 
-- `DefaultAllowed` returns `ZclOutcome::Default` for success, failure, and unknown status codes.
-  This means the response form is allowed; callers still need to inspect the device status.
-- `SpecificRequired` returns `Error::Zcl(status)` for rejection or unknown status, and
-  `Error::UnexpectedDefaultResponse { command_id }` for success without the required typed data.
+- `MaybeDefault<T>` and `DefaultResponse` deliver accepted defaults for success, failure, and
+  unknown status codes. Callers still need to inspect the device status.
+- Types that do not accept Default Responses produce `Error::Zcl(status)` for rejection or unknown
+  status, and `Error::UnexpectedDefaultResponse { command_id }` for success without required data.
 
 Every correctly correlated Default Response resolves the one-response transaction immediately and
 releases a quarantined transaction if applicable. This does not depend on the outgoing

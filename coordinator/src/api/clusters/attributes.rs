@@ -123,7 +123,6 @@ where
             ))
             .await?
             .await?
-            .into_specific()?
             .into())
     }
 
@@ -144,7 +143,6 @@ where
             ))
             .await?
             .await?
-            .into_specific()?
             .into_iter()
             .map(TryInto::try_into)
             .collect())

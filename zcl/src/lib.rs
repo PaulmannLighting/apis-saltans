@@ -34,8 +34,7 @@ pub use self::frame::{
     Control, Direction, Frame, Header, ParseFrameError, Scope, UnsequencedFrame, UnsequencedHeader,
 };
 pub use self::options::Options;
-pub use self::request_policy::{DefaultResponsePolicy, RequestPolicy};
-pub use self::response::{NoSpecificResponse, ZclResponseType};
+pub use self::response::{MaybeDefault, ZclResponseType};
 pub use self::status::Status;
 
 mod attributes;
@@ -44,6 +43,5 @@ mod command;
 mod frame;
 mod macros;
 mod options;
-mod request_policy;
 mod response;
 mod status;

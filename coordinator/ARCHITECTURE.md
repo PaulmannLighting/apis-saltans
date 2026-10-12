@@ -339,19 +339,18 @@ The generic `crate::correlation` registry remains shared with ZDP.
 
 ZCL registration carries an erased `ResponseExpectation` owning a `Box<dyn ResponseContract>`.
 The private, object-safe trait classifies frames by reference and requires `Debug + Send + Sync`.
-`ResponseTypeContract<T>` holds the request's command ID and policy alongside a response type
+`ResponseTypeContract<T>` holds the request's command ID alongside a response type
 marker. Both typed and encoded request constructors use this same adapter.
 `ZclResponseType` supplies the scope/ID predicate and is defined in the ZCL crate, re-exported by
-the coordinator. ZCL's `RequestPolicy` requires `Command` and `ExpectResponse<Cluster>` and supplies
-a fixed `DEFAULT_RESPONSE_POLICY` using ZCL's `DefaultResponsePolicy` enum. The coordinator
-re-exports the trait as `ZclRequestPolicy` and re-exports the enum under its original name.
-Command definitions select policies through `zcl_command!`, with direct implementations for the
-handwritten OTA request types. The typed constructor derives all three from that one type;
-there is no independently supplied command ID, response type, or policy in the typed path.
+the coordinator. Core's `ExpectResponse<Cluster>` supplies the complete response type. Commands
+select a specific response, `DefaultResponse`, or `MaybeDefault<T>` through `zcl_command!` or a
+handwritten implementation. Typed submission requires `Command + ExpectResponse<Cluster>`;
+there is no separate policy value. The typed constructor derives command identity and response
+matching from that one request type.
 
 `ZclRequest<C>` keeps its encoded request and command marker private and carries no separate
 expectation field. `into_parts` creates the specialized classifier when submitting to the actor.
-The raw `communicate` API still requires a response type and policy; `for_encoded` obtains the
+The raw `communicate` API still requires a response type; `for_encoded` obtains the
 original command ID from its encoded request header. The typed `communicate_command` API derives it,
 using the concrete OTA client types `UpgradeComplete` and `UpgradeIncomplete` for their distinct
 response contracts. The decoded `UpgradeEndRequest` enum selects the corresponding type from the
@@ -363,19 +362,19 @@ explicit classifier or header-matcher function pointers. The shared classificati
 over the response type. The adapter's `PhantomData<T>` marker is zero-sized and retains no response
 value. It inherits the response type's auto traits, so actor-owned contracts require the response
 type (`C::Response` or raw `T`) to be `Send + Sync + 'static`, without requiring `Debug`. Dynamic
-dispatch uses Rust's trait-object vtable; the adapter contains no explicit function-pointer type. Both constructors box an adapter containing the command ID and policy,
-allocating storage for those fields. Packet identity and response validation
-remain runtime operations. Default-only commands use the uninhabited `NoSpecificResponse` marker.
+dispatch uses Rust's trait-object vtable; the adapter contains no explicit function-pointer type. Both constructors box an adapter containing the command ID,
+allocating storage for that field. Packet identity and response validation
+remain runtime operations. Default-only commands use `DefaultResponse` directly.
 
 Classification distinguishes expected responses, device rejection, unexpected successful Default
-Responses, and unrelated frames. Default Response policy takes precedence over the header predicate:
-`DefaultAllowed` delivers any correctly correlated Default Response as `ZclOutcome::Default`,
-including failure/unknown statuses. `SpecificRequired` produces `Error::Zcl` for a non-success status
-or `UnexpectedDefaultResponse` for success without the required data. Every matching Default
-Response terminates the one-response exchange regardless of the disable-default-response bit.
-`ZclResponse<T>` uses `CommunicationResponse<Cluster, ZclOutcome<T>>`; conversion recognizes Default
-Responses before trying `T::try_from`, preserving both response forms without converting success
-into missing data. Deferred multi-response protocols require their own state machine.
+Responses, and unrelated frames. Default Responses first validate the original command ID, then
+use `T::matches_response` to decide acceptance. Accepted defaults are delivered with their original
+status. For types requiring a specific result, a default produces `Error::Zcl` for non-success or
+`UnexpectedDefaultResponse` for success without the data. Every matching Default Response terminates
+the one-response exchange regardless of the disable-default-response bit.
+`ZclResponse<T>` uses `CommunicationResponse<Cluster, T>` and returns `T` directly. ZCL's
+`MaybeDefault<T>` converts either response form when requested; no unconditional outcome wrapper
+is applied by the coordinator. Deferred multi-response protocols require their own state machine.
 `Registry<T, M>` owns metadata with the pending entry and moves it into quarantine on cancellation
 or timeout; metadata no longer needs to implement `Copy` or `Clone`. ZDP uses unit metadata and keeps its existing matching.
 The ZCL actor checks the expectation before removing either entry. Expected responses, protocol rejections, and unexpected successful Default Responses all

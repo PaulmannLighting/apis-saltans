@@ -201,10 +201,9 @@ fn matching_subscription_does_not_consume_correlated_response() {
                 .registry()
                 .try_register_with_metadata(
                     |_| Ok(response_key),
-                    super::ResponseExpectation::for_encoded::<On>(
-                        &encoded_request(<On as Command>::ID),
-                        crate::DefaultResponsePolicy::SpecificRequired,
-                    ),
+                    super::ResponseExpectation::for_encoded::<On>(&encoded_request(
+                        <On as Command>::ID,
+                    )),
                 )
                 .expect("response correlation can be registered");
 
@@ -248,10 +247,9 @@ fn subscription_request_does_not_complete_opposite_direction_response() {
                 .registry()
                 .try_register_with_metadata(
                     |_| Ok(response_key),
-                    super::ResponseExpectation::for_encoded::<On>(
-                        &encoded_request(<On as Command>::ID),
-                        crate::DefaultResponsePolicy::SpecificRequired,
-                    ),
+                    super::ResponseExpectation::for_encoded::<On>(&encoded_request(
+                        <On as Command>::ID,
+                    )),
                 )
                 .expect("response correlation can be registered");
 
@@ -527,10 +525,7 @@ fn default_response_must_name_the_original_command() {
                         |_| Ok(key),
                         super::ResponseExpectation::for_encoded::<
                             zb_zcl::global::default_response::DefaultResponse,
-                        >(
-                            &encoded_request(<On as Command>::ID),
-                            crate::DefaultResponsePolicy::DefaultAllowed,
-                        ),
+                        >(&encoded_request(<On as Command>::ID)),
                     )
                     .unwrap();
                 if quarantined {
@@ -652,10 +647,7 @@ fn error_default_responses_fail_typed_requests_and_release_quarantine() {
                             |_| Ok(key),
                             super::ResponseExpectation::for_encoded::<
                                 zb_zcl::global::read_attributes::Response,
-                            >(
-                                &encoded_request(REQUEST_ID),
-                                crate::DefaultResponsePolicy::SpecificRequired,
-                            ),
+                            >(&encoded_request(REQUEST_ID)),
                         )
                         .unwrap();
                     if quarantined {
@@ -759,11 +751,8 @@ fn allowed_defaults_resolve_specific_requests_for_all_statuses() {
                         .try_register_with_metadata(
                             |_| Ok(key),
                             super::ResponseExpectation::for_encoded::<
-                                zb_zcl::global::read_attributes::Response,
-                            >(
-                                &encoded_request(REQUEST_ID),
-                                crate::DefaultResponsePolicy::DefaultAllowed,
-                            ),
+                                zb_zcl::MaybeDefault<zb_zcl::global::read_attributes::Response>,
+                            >(&encoded_request(REQUEST_ID)),
                         )
                         .unwrap();
                     if quarantined {
@@ -774,7 +763,7 @@ fn allowed_defaults_resolve_specific_requests_for_all_statuses() {
                     assert!(events.try_recv().is_err());
                     if !quarantined {
                         let raw = receiver.try_recv().unwrap().unwrap();
-                        let crate::ZclOutcome::Default(response) = crate::ZclOutcome::<
+                        let zb_zcl::MaybeDefault::Default(response) = zb_zcl::MaybeDefault::<
                             zb_zcl::global::read_attributes::Response,
                         >::try_from(
                             raw

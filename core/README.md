@@ -190,7 +190,8 @@ wrapped source errors remain available through `Error::source` where applicable.
 
 ## Traits
 
-- `ExpectResponse<T>`: associates command/request types with response types.
+- `ExpectResponse<T>`: associates command/request types with their complete response type.
+  Protocol-specific alternatives are represented by that type, such as ZCL's `MaybeDefault<T>`.
 - `ClusterSpecific<T = u16>`: associates a type with a Zigbee cluster ID.
 - `Profiled`: associates a type with a Zigbee profile.
 - `TypeId`: associates a value type with its Zigbee data type ID.

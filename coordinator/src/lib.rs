@@ -28,10 +28,10 @@ use const_env::env_item;
 
 pub use self::api::{
     AddressTranslation, Attributes, Binding, CancellableOtaUpdate, Channel, ChannelMask,
-    ColorControl, DefaultResponsePolicy, Endpoints, FoundNetwork, Groups, Joining, Leaving, Level,
-    LocalNode, NetworkDescriptor, Node, OnOff, Ota, ReadAttributeResult, Routing, ScanDuration,
-    ScannedChannel, Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclOutcome, ZclRequest,
-    ZclRequestPolicy, ZclResponse, ZclResponseType, Zdp, ZdpResponse,
+    ColorControl, Endpoints, FoundNetwork, Groups, Joining, Leaving, Level, LocalNode,
+    NetworkDescriptor, Node, OnOff, Ota, ReadAttributeResult, Routing, ScanDuration,
+    ScannedChannel, Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclRequest, ZclResponse,
+    ZclResponseType, Zdp, ZdpResponse,
 };
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};

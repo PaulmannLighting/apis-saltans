@@ -146,7 +146,7 @@ protocol's one-octet data-size field.
 OTA clients construct `UpgradeComplete::new(image)` after successful validation, or
 `UpgradeIncomplete::new(reason, image)` with an `UpgradeIncompleteReason`. Both encode command
 `0x06`; the successful type expects `UpgradeEndResponse`, while the incomplete type expects only
-a Default Response (`NoSpecificResponse`). Incoming packets decode into
+a `DefaultResponse`. Incoming packets decode into
 `UpgradeEndRequest::Complete` or `UpgradeEndRequest::Incomplete` based on the status byte.
 Unknown statuses and truncated payloads are rejected. Checked `TryFrom<UpgradeEndRequest>`
 conversions extract a concrete request and return the original enum on a variant mismatch.
@@ -254,15 +254,22 @@ Key dependencies:
 
 ## Typed response contracts
 
-Commands declaring a response implement `apis_saltans_core::ExpectResponse<Cluster>` with an
-associated `Response` type. `ZclResponseType` matches response headers by scope and command ID;
-custom response enums can implement it to accept multiple forms. Remove All Groups and Add Group
-If Identifying declare `NoSpecificResponse`, an uninhabited marker that matches no specific reply.
-`RequestPolicy` defines a command's `DEFAULT_RESPONSE_POLICY`: `SpecificRequired` requires its
-command-specific result, while `DefaultAllowed` permits a Default Response with any status.
-These policies are independent of the outgoing disable-default-response flag. Transaction
-correlation and applying the policy remain the coordinator's responsibility.
+Commands declaring a response implement `apis_saltans_core::ExpectResponse<Cluster>`. The associated
+`Response` type defines all accepted response forms:
 
-Command definitions opt into the trait by adding `default_response_policy:` immediately after
-`response:` in the crate's `zcl_command!` macro. Handwritten command types implement `RequestPolicy`
-directly; the OTA types `UpgradeComplete` and `UpgradeIncomplete` select distinct policies.
+- A concrete response type requires that specific result.
+- `global::default_response::DefaultResponse` accepts only a Default Response. Remove All Groups,
+  Add Group If Identifying, and `UpgradeIncomplete` use this type.
+- `MaybeDefault<T>` accepts either `Specific(T)` or `Default(DefaultResponse)`. Default Responses
+  preserve success, failure, and unknown statuses for the caller to inspect.
+
+`ZclResponseType` matches headers by scope and command ID. `MaybeDefault<T>` accepts the headers
+matched by `T` plus Default Response headers, and its `TryFrom<Cluster>` implementation converts
+either variant. Custom response enums can implement the same traits for other alternatives.
+The coordinator separately checks transaction identity and the embedded original command ID.
+A Default Response not accepted by the response type produces a device-status error, or an
+unexpected-default error when it reports success without the required specific result.
+
+Use the `response:` declaration in `zcl_command!` to select the complete response type, for example
+`response: MaybeDefault<Response>;`. No policy constant or macro policy declaration is needed.
+Response acceptance is independent of the outgoing disable-default-response flag.

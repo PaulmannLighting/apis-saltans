@@ -85,8 +85,7 @@ where
                 AddGroup::new(group_id, name.unwrap_or_default()),
             )
             .await?
-            .await?
-            .into_specific()?;
+            .await?;
 
         response
             .status()
@@ -107,8 +106,7 @@ where
                 RemoveGroup::new(group_id),
             )
             .await?
-            .await?
-            .into_specific()?;
+            .await?;
         response
             .status()
             .ensure_success()

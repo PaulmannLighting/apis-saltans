@@ -4,9 +4,7 @@ use bytes::Bytes;
 use le_stream::ToLeStream;
 use zb_aps::apsde::DataRequest;
 use zb_core::ExpectResponse;
-use zb_zcl::{
-    Cluster, Command, Directed, RequestPolicy, Scoped, UnsequencedFrame, UnsequencedHeader,
-};
+use zb_zcl::{Cluster, Command, Directed, Scoped, UnsequencedFrame, UnsequencedHeader};
 
 use super::ZclResponseType;
 use crate::zcl::ResponseExpectation;
@@ -38,7 +36,7 @@ pub struct ZclRequest<C> {
 
 impl<C> ZclRequest<C>
 where
-    C: Command + Directed + Scoped + ToLeStream + ExpectResponse<Cluster> + RequestPolicy,
+    C: Command + Directed + Scoped + ToLeStream + ExpectResponse<Cluster>,
     C::Response: ZclResponseType,
 {
     /// Encode a command while preserving all APS request metadata and its response contract.
@@ -52,7 +50,7 @@ where
 
 impl<C> ZclRequest<C>
 where
-    C: RequestPolicy,
+    C: Command + ExpectResponse<Cluster>,
     C::Response: ZclResponseType + Send + Sync + 'static,
 {
     /// Erase the type contract only when passing this request to the actor.

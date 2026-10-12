@@ -6,11 +6,9 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::{ClusterSpecific, ExpectResponse, Profile, Profiled};
 
 use super::{UpgradeComplete, UpgradeEndRequest, UpgradeIncomplete, UpgradeIncompleteReason};
+use crate::global::default_response::DefaultResponse;
 use crate::ota_upgrade::{ImageId, UpgradeEndResponse, UpgradeEndStatus};
-use crate::{
-    Cluster, Command, DefaultResponsePolicy, Directed, Direction, NoSpecificResponse,
-    ParseDirection, RequestPolicy,
-};
+use crate::{Cluster, Command, Directed, Direction, ParseDirection};
 
 const COMMAND_ID: u8 = 0x06;
 
@@ -164,7 +162,7 @@ impl ToLeStream for UpgradeComplete {
 }
 
 impl ExpectResponse<Cluster> for UpgradeIncomplete {
-    type Response = NoSpecificResponse;
+    type Response = DefaultResponse;
 }
 
 impl From<UpgradeIncomplete> for UpgradeEndRequest {
@@ -217,12 +215,4 @@ impl From<UpgradeIncomplete> for crate::ota_upgrade::Command {
     fn from(request: UpgradeIncomplete) -> Self {
         UpgradeEndRequest::from(request).into()
     }
-}
-
-impl RequestPolicy for UpgradeComplete {
-    const DEFAULT_RESPONSE_POLICY: DefaultResponsePolicy = DefaultResponsePolicy::SpecificRequired;
-}
-
-impl RequestPolicy for UpgradeIncomplete {
-    const DEFAULT_RESPONSE_POLICY: DefaultResponsePolicy = DefaultResponsePolicy::DefaultAllowed;
 }

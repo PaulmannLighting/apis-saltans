@@ -143,6 +143,10 @@ The core crate is intentionally below all protocol and runtime crates:
 - Higher-level crates attach behavior to these values through their own command,
   frame, and dispatch types.
 
+`ExpectResponse<T>` associates a request with its complete response type. ZCL-specific response
+alternatives live in ZCL's `MaybeDefault<T>` enum; core contains no Default Response policy.
+ZDP continues to associate each request with its concrete response type.
+
 ## Composite String Capacity
 
 `String<CAPACITY>` delegates storage and capacity conversions to `OctStr<CAPACITY>`.
