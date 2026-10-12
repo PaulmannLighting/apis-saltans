@@ -240,6 +240,12 @@ previous generation's lifecycle tasks and start new deadlines; generation checks
 queued stale messages harmless. Discovery ends only after a compatible query or valid data
 request, block activity resets its deadline, and the total-transfer deadline never resets.
 
+`transfer::Lifecycle` owns generation numbering, cancellation, and all deadline tasks; dropping it
+aborts those tasks. `transfer::Operations` owns the reply `JoinSet` and generation attribution,
+including aborted tasks whose completions have not yet been collected. The destination transfer
+retains the current offer and completion sender and delegates lifecycle and operation bookkeeping
+to these components.
+
 Typed query and upgrade-end replies and global default responses share a prepared-request
 helper that spawns a generation-tagged operation. It reports transmission failures before
 applying any terminal update result. Image Page operations reuse the validated request range's

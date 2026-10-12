@@ -1,14 +1,11 @@
-use std::collections::HashMap;
-use std::future::{Future, poll_fn};
+use std::future::poll_fn;
+use std::mem::replace;
 use std::task::Poll;
-use std::time::Duration;
 
 use le_stream::ToLeStream;
 use log::{debug, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot;
-use tokio::task::{AbortHandle, Id, JoinError, JoinSet};
-use tokio::time::sleep;
 use zb_aps::apsde::{IndividualEndpoint, NetworkDestination};
 use zb_core::{Cluster, Direction, FullAddress, IeeeAddress};
 use zb_zcl::global::default_response::DefaultResponse;
@@ -21,6 +18,8 @@ use zb_zcl::ota_upgrade::{
 };
 use zb_zcl::{Command, Directed, Scope, Scoped, Status, UnsequencedFrame, UnsequencedHeader};
 
+use self::lifecycle::Lifecycle;
+use self::operations::{OperationCompletion, OperationOutcome, Operations};
 use super::image::ImageTransfer;
 use super::page_transfer::{PageProgress, PageTransfer};
 use super::state::RequestContext;
@@ -30,8 +29,8 @@ use super::{
     request_from_unsequenced_frame, send_zcl, zcl,
 };
 
-const INITIAL_GENERATION: u64 = 0;
-const GENERATION_STEP: u64 = 1;
+mod lifecycle;
+mod operations;
 
 /// Command routed from the OTA server to one destination transfer task.
 pub(super) enum TransferMessage {
@@ -90,22 +89,14 @@ pub(super) struct TransferExit {
 /// One long-lived OTA update task for a single destination endpoint.
 pub(super) struct Transfer {
     zcl: Sender<zcl::Message>,
-    sender: WeakSender<TransferMessage>,
     target: FullAddress,
     target_endpoint: IndividualEndpoint,
     source_endpoint: IndividualEndpoint,
     image: ImageTransfer,
-    timeouts: UpdateTimeouts,
-    cancellation: Option<oneshot::Receiver<()>>,
-    completion: Option<oneshot::Sender<UpdateResult>>,
+    completion: oneshot::Sender<UpdateResult>,
     messages: Receiver<TransferMessage>,
-    operations: JoinSet<Option<OperationResult>>,
-    operation_generations: HashMap<Id, u64>,
-    cancellation_task: Option<AbortHandle>,
-    discovery_deadline_task: Option<AbortHandle>,
-    inactivity_deadline_task: Option<AbortHandle>,
-    total_deadline_task: Option<AbortHandle>,
-    generation: u64,
+    operations: Operations,
+    lifecycle: Lifecycle,
 }
 
 /// Lifecycle deadline enforced for an OTA update.
@@ -119,17 +110,6 @@ pub(super) enum Deadline {
 
     /// The complete exchange exceeded its maximum duration.
     TotalTransfer,
-}
-
-enum OperationOutcome {
-    Continue,
-
-    Complete(UpdateResult),
-}
-
-struct OperationResult {
-    generation: u64,
-    outcome: OperationOutcome,
 }
 
 struct ImageRange {
@@ -150,7 +130,7 @@ struct RequestedRange {
 enum TransferEvent {
     Message(Option<TransferMessage>),
 
-    Operation(Option<Result<(Id, Option<OperationResult>), JoinError>>),
+    Operation(OperationCompletion),
 }
 
 impl Transfer {
@@ -172,28 +152,20 @@ impl Transfer {
         } = offer;
         Self {
             zcl,
-            sender,
             target,
             target_endpoint,
             source_endpoint,
             image: image.into_transfer(),
-            timeouts,
-            cancellation: Some(cancellation),
-            completion: Some(completion),
+            completion,
             messages,
-            operations: JoinSet::new(),
-            operation_generations: HashMap::new(),
-            cancellation_task: None,
-            discovery_deadline_task: None,
-            inactivity_deadline_task: None,
-            total_deadline_task: None,
-            generation: INITIAL_GENERATION,
+            operations: Operations::default(),
+            lifecycle: Lifecycle::new(sender, timeouts, cancellation),
         }
     }
 
     /// Run the destination transfer until it reaches a terminal outcome.
     pub(super) async fn run(mut self) -> TransferExit {
-        self.start_lifecycle();
+        self.lifecycle.start();
         self.notify();
         let result = loop {
             let event = poll_fn(|context| {
@@ -201,7 +173,7 @@ impl Transfer {
                     return Poll::Ready(TransferEvent::Message(message));
                 }
                 if !self.operations.is_empty()
-                    && let Poll::Ready(operation) = self.operations.poll_join_next_with_id(context)
+                    && let Poll::Ready(operation) = self.operations.poll_finished(context)
                 {
                     return Poll::Ready(TransferEvent::Operation(operation));
                 }
@@ -217,67 +189,36 @@ impl Transfer {
                         TransferMessage::HardwareUnavailable => {
                             break Err(UpdateError::HardwareEventStreamClosed);
                         }
-                        TransferMessage::Cancel { generation } if generation == self.generation => {
+                        TransferMessage::Cancel { generation }
+                            if generation == self.lifecycle.generation() =>
+                        {
                             break Err(UpdateError::Cancelled);
                         }
                         TransferMessage::Deadline {
                             generation,
                             deadline,
-                        } if generation == self.generation => {
+                        } if generation == self.lifecycle.generation() => {
                             break Err(deadline.error());
                         }
                         message => self.handle_message(message),
                     }
                 }
                 TransferEvent::Operation(operation) => {
-                    if let Some(result) = self.finish_operation(operation) {
+                    if let Some(result) = self
+                        .operations
+                        .finish(operation, self.lifecycle.generation())
+                    {
                         break result;
                     }
                 }
             }
         };
-        self.abort_lifecycle_tasks();
-        self.operations.abort_all();
+        self.lifecycle.abort();
+        self.operations.abort();
         TransferExit {
             destination: self.destination(),
-            completion: self
-                .completion
-                .take()
-                .expect("an active destination transfer retains its completion sender"),
+            completion: self.completion,
             result,
-        }
-    }
-
-    /// Retire completed operations, ignoring outcomes from replaced update generations.
-    fn finish_operation(
-        &mut self,
-        operation: Option<Result<(Id, Option<OperationResult>), JoinError>>,
-    ) -> Option<UpdateResult> {
-        match operation {
-            Some(Ok((task_id, operation))) => {
-                self.operation_generations.remove(&task_id);
-                let operation = operation?;
-                if operation.generation != self.generation {
-                    return None;
-                }
-                match operation.outcome {
-                    OperationOutcome::Continue => None,
-                    OperationOutcome::Complete(result) => Some(result),
-                }
-            }
-            Some(Err(error)) if error.is_cancelled() => {
-                self.operation_generations.remove(&error.id());
-                None
-            }
-            Some(Err(error)) => {
-                let operation_generation = self.operation_generations.remove(&error.id());
-                if operation_generation != Some(self.generation) {
-                    return None;
-                }
-                warn!("OTA transfer operation failed: {error}");
-                Some(Err(UpdateError::TransferTask))
-            }
-            None => None,
         }
     }
 
@@ -301,17 +242,17 @@ impl Transfer {
                 match command {
                     OtaCommand::QueryNextImageRequest(request) => {
                         if self.query_next_image(context, &request) {
-                            self.record_transfer_activity();
+                            self.lifecycle.record_activity();
                         }
                     }
                     OtaCommand::ImageBlockRequest(request) => {
                         if self.image_block(context, *request) {
-                            self.record_transfer_activity();
+                            self.lifecycle.record_activity();
                         }
                     }
                     OtaCommand::ImagePageRequest(request) => {
                         if self.image_page(context, *request) {
-                            self.record_transfer_activity();
+                            self.lifecycle.record_activity();
                         }
                     }
                     OtaCommand::UpgradeEndRequest(request) => {
@@ -319,7 +260,7 @@ impl Transfer {
                     }
                     OtaCommand::QuerySpecificFileRequest(request) => {
                         if self.query_specific_file(context, *request) {
-                            self.record_transfer_activity();
+                            self.lifecycle.record_activity();
                         }
                     }
                     OtaCommand::ImageNotify(_)
@@ -348,66 +289,15 @@ impl Transfer {
             cancellation,
             completion,
         } = offer;
-        self.abort_lifecycle_tasks();
-        self.operations.abort_all();
-        self.generation = self.generation.wrapping_add(GENERATION_STEP);
-        if let Some(previous) = self.completion.replace(completion) {
-            let _result = previous.send(Err(UpdateError::Superseded));
-        }
+        self.operations.abort();
+        let previous = replace(&mut self.completion, completion);
+        let _result = previous.send(Err(UpdateError::Superseded));
         self.target = target;
         self.target_endpoint = target_endpoint;
         self.source_endpoint = source_endpoint;
         self.image = image.into_transfer();
-        self.timeouts = timeouts;
-        self.cancellation = Some(cancellation);
-        self.start_lifecycle();
+        self.lifecycle.replace(timeouts, cancellation);
         self.notify();
-    }
-
-    /// Start cancellation, discovery, and total-transfer lifecycle tasks for this generation.
-    fn start_lifecycle(&mut self) {
-        let generation = self.generation;
-        let cancellation = self
-            .cancellation
-            .take()
-            .expect("a new OTA generation retains its cancellation receiver");
-        self.cancellation_task = Some(spawn_cancellation(
-            self.sender.clone(),
-            generation,
-            cancellation,
-        ));
-        self.discovery_deadline_task = Some(spawn_deadline(
-            self.sender.clone(),
-            generation,
-            Deadline::Discovery,
-            self.timeouts.discovery(),
-        ));
-        self.total_deadline_task = Some(spawn_deadline(
-            self.sender.clone(),
-            generation,
-            Deadline::TotalTransfer,
-            self.timeouts.total_transfer(),
-        ));
-    }
-
-    /// Move from discovery into transfer activity and reset the inactivity deadline.
-    fn record_transfer_activity(&mut self) {
-        abort_task(&mut self.discovery_deadline_task);
-        abort_task(&mut self.inactivity_deadline_task);
-        self.inactivity_deadline_task = Some(spawn_deadline(
-            self.sender.clone(),
-            self.generation,
-            Deadline::BlockInactivity,
-            self.timeouts.block_inactivity(),
-        ));
-    }
-
-    /// Abort every lifecycle task owned by the current generation.
-    fn abort_lifecycle_tasks(&mut self) {
-        abort_task(&mut self.cancellation_task);
-        abort_task(&mut self.discovery_deadline_task);
-        abort_task(&mut self.inactivity_deadline_task);
-        abort_task(&mut self.total_deadline_task);
     }
 
     /// Announce the currently offered image and track its hardware response.
@@ -608,19 +498,13 @@ impl Transfer {
         self.spawn_reply_request(context.sequence_number, request, completion);
     }
 
-    /// Spawn a generation-tagged operation owned by this destination transfer.
+    /// Spawn an operation attributed to the current offer.
     fn spawn_operation<T>(&mut self, operation: T)
     where
         T: Future<Output = OperationOutcome> + Send + 'static,
     {
-        let generation = self.generation;
-        let task = crate::runtime::spawn_in(&mut self.operations, async move {
-            OperationResult {
-                generation,
-                outcome: operation.await,
-            }
-        });
-        self.operation_generations.insert(task.id(), generation);
+        self.operations
+            .spawn(self.lifecycle.generation(), operation);
     }
 
     /// Spawn a global default-response operation inside this destination transfer.
@@ -654,12 +538,6 @@ impl Transfer {
     }
 }
 
-impl Drop for Transfer {
-    fn drop(&mut self) {
-        self.abort_lifecycle_tasks();
-    }
-}
-
 impl Deadline {
     const fn error(self) -> UpdateError {
         match self {
@@ -667,48 +545,6 @@ impl Deadline {
             Self::BlockInactivity => UpdateError::BlockInactivityTimeout,
             Self::TotalTransfer => UpdateError::TotalTransferTimeout,
         }
-    }
-}
-
-fn spawn_cancellation(
-    sender: WeakSender<TransferMessage>,
-    generation: u64,
-    cancellation: oneshot::Receiver<()>,
-) -> AbortHandle {
-    let task = crate::runtime::spawn(async move {
-        let _result = cancellation.await;
-        let Some(sender) = sender.upgrade() else {
-            return;
-        };
-        let _result = sender.send(TransferMessage::Cancel { generation }).await;
-    });
-    task.abort_handle()
-}
-
-fn spawn_deadline(
-    sender: WeakSender<TransferMessage>,
-    generation: u64,
-    deadline: Deadline,
-    duration: Duration,
-) -> AbortHandle {
-    let task = crate::runtime::spawn(async move {
-        sleep(duration).await;
-        let Some(sender) = sender.upgrade() else {
-            return;
-        };
-        let _result = sender
-            .send(TransferMessage::Deadline {
-                generation,
-                deadline,
-            })
-            .await;
-    });
-    task.abort_handle()
-}
-
-fn abort_task(task: &mut Option<AbortHandle>) {
-    if let Some(task) = task.take() {
-        task.abort();
     }
 }
 
