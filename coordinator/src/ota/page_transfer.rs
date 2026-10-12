@@ -1,75 +1,123 @@
+use std::num::NonZeroUsize;
+use std::ops::Range;
 use std::time::Duration;
 
 use log::warn;
 use tokio::sync::mpsc::Sender;
 use tokio::time::sleep;
 use zb_aps::TxOptions;
-use zb_aps::apsde::{IndividualEndpoint, NetworkDestination};
 use zb_core::Cluster;
-use zb_zcl::ota_upgrade::{ImageBlock, ImageBlockResponse, ImageBlockResponsePayload, ImageId};
+use zb_zcl::ota_upgrade::{
+    ImageBlock, ImageBlockResponse, ImageBlockResponsePayload, ImagePageRequest,
+};
 
 use super::image::ImageTransfer;
+use super::state::RequestContext;
 use super::transfer::read_image_range;
 use super::zcl::Message;
 use super::{OTA_PROFILE, UpdateError, UpdateResult, reply_zcl, request};
 
-/// State owned by a paced OTA Image Page transfer task.
-///
-/// The task sends consecutive Image Block responses without blocking the server actor and reports
-/// its first read or transmission failure to its owning destination transfer task.
+const SEQUENCE_STEP: u8 = 1;
+
+/// Validated page bounds and the position of its next block.
+pub(super) struct PageProgress {
+    remaining: Range<usize>,
+    maximum_data_size: NonZeroUsize,
+    spacing: Duration,
+}
+
+impl PageProgress {
+    /// Validate page dimensions and clip the requested page to the image length.
+    pub(super) fn new(request: &ImagePageRequest, image_length: usize) -> Option<Self> {
+        let offset = usize::try_from(request.file_offset()).ok()?;
+        let page_size = NonZeroUsize::new(usize::from(request.page_size()))?;
+        let maximum_data_size = NonZeroUsize::new(usize::from(request.maximum_data_size()))?;
+        if offset >= image_length {
+            return None;
+        }
+        Some(Self {
+            remaining: offset..offset.saturating_add(page_size.get()).min(image_length),
+            maximum_data_size,
+            spacing: Duration::from_millis(u64::from(request.response_spacing())),
+        })
+    }
+
+    /// Current block, clipped to both the page and image boundary.
+    fn block_range(&self) -> Range<usize> {
+        let end = self
+            .remaining
+            .start
+            .saturating_add(self.maximum_data_size.get());
+        self.remaining.start..end.min(self.remaining.end)
+    }
+
+    /// Advance past the current block, returning whether another block remains.
+    fn advance(&mut self) -> bool {
+        self.remaining.start = self.block_range().end;
+        !self.remaining.is_empty()
+    }
+}
+
+/// Sends paced Image Block responses for one validated page request.
 pub(super) struct PageTransfer {
-    pub(super) zcl: Sender<Message>,
-    pub(super) image: ImageTransfer,
-    pub(super) destination: NetworkDestination,
-    pub(super) source_endpoint: IndividualEndpoint,
-    pub(super) image_id: ImageId,
-    pub(super) maximum_data_size: usize,
-    pub(super) page_end: usize,
-    pub(super) spacing: Duration,
-    pub(super) offset: usize,
-    pub(super) sequence_number: u8,
-    pub(super) block_data: Box<[u8]>,
+    zcl: Sender<Message>,
+    image: ImageTransfer,
+    context: RequestContext,
+    progress: PageProgress,
 }
 
 impl PageTransfer {
-    /// Send all remaining blocks in the requested page, respecting response spacing.
-    pub(super) async fn run(mut self) -> UpdateResult {
-        loop {
-            let file_offset =
-                u32::try_from(self.offset).expect("validated OTA image offset fits u32");
-            let block = ImageBlock::try_new(self.image_id, file_offset, self.block_data)
-                .expect("requested OTA blocks never exceed the client's u8 maximum data size");
-            let response = ImageBlockResponse::new(ImageBlockResponsePayload::Success(block));
-            let request = request(
-                self.destination.into(),
-                self.source_endpoint,
-                OTA_PROFILE,
-                Cluster::OtaUpgrade.as_u16(),
-                response,
-            )
-            .with_tx_options(TxOptions::empty());
-            let Some(()) = reply_zcl(&self.zcl, self.sequence_number, request).await else {
-                return Err(UpdateError::Transmission);
-            };
+    /// Retain the request's addressing and validated page progress.
+    pub(super) const fn new(
+        zcl: Sender<Message>,
+        image: ImageTransfer,
+        context: RequestContext,
+        progress: PageProgress,
+    ) -> Self {
+        Self {
+            zcl,
+            image,
+            context,
+            progress,
+        }
+    }
 
-            self.offset = self.offset.saturating_add(self.maximum_data_size);
-            if self.offset >= self.page_end {
+    /// Send the already-read first block and remaining blocks, respecting response spacing.
+    pub(super) async fn run(mut self, mut block_data: Box<[u8]>) -> UpdateResult {
+        loop {
+            self.send_block(block_data).await?;
+            if !self.progress.advance() {
                 return Ok(());
             }
-            sleep(self.spacing).await;
-            self.sequence_number = self.sequence_number.wrapping_add(1);
-            let block_end = self
-                .offset
-                .saturating_add(self.maximum_data_size)
-                .min(self.page_end);
-            self.block_data =
-                match read_image_range(&self.image, self.offset, block_end - self.offset).await {
-                    Ok(data) => data,
-                    Err(status) => {
-                        warn!("Failed to read OTA page data: {status}");
-                        return Err(UpdateError::ImageTransfer);
-                    }
-                };
+            sleep(self.progress.spacing).await;
+            self.context.sequence_number = self.context.sequence_number.wrapping_add(SEQUENCE_STEP);
+            let range = self.progress.block_range();
+            block_data = read_image_range(&self.image, range.start, range.len())
+                .await
+                .map_err(|status| {
+                    warn!("Failed to read OTA page data: {status}");
+                    UpdateError::ImageTransfer
+                })?;
         }
+    }
+
+    /// Submit one block without requesting an APS acknowledgement.
+    async fn send_block(&self, data: Box<[u8]>) -> UpdateResult {
+        let file_offset = u32::try_from(self.progress.block_range().start)
+            .expect("validated OTA image offset fits u32");
+        let block = ImageBlock::try_new(self.image.id(), file_offset, data)
+            .expect("requested OTA blocks never exceed the client's u8 maximum data size");
+        let response = ImageBlockResponse::new(ImageBlockResponsePayload::Success(block));
+        let request = request(
+            self.context.destination.into(),
+            self.context.source_endpoint,
+            OTA_PROFILE,
+            Cluster::OtaUpgrade.as_u16(),
+            response,
+        )
+        .with_tx_options(TxOptions::empty());
+        reply_zcl(&self.zcl, self.context.sequence_number, request)
+            .await
+            .ok_or(UpdateError::Transmission)
     }
 }

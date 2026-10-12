@@ -22,7 +22,7 @@ use zb_zcl::ota_upgrade::{
 use zb_zcl::{Command, Directed, Scope, Scoped, Status, UnsequencedFrame, UnsequencedHeader};
 
 use super::image::ImageTransfer;
-use super::page_transfer::PageTransfer;
+use super::page_transfer::{PageProgress, PageTransfer};
 use super::state::RequestContext;
 use super::{
     CURRENT_TIME_IMMEDIATE, Image, OTA_PROFILE, Request, UPGRADE_TIME_IMMEDIATE, UpdateError,
@@ -768,27 +768,10 @@ async fn image_page_operation(
         }
     };
 
-    let image_id = page_request.image();
-    let maximum_data_size = usize::from(page_request.maximum_data_size());
-    let page_end = range
-        .offset
-        .saturating_add(usize::from(page_request.page_size()))
-        .min(image.len());
-    let spacing = Duration::from_millis(u64::from(page_request.response_spacing()));
-    let operation = PageTransfer {
-        zcl,
-        image,
-        destination: context.destination,
-        source_endpoint: context.source_endpoint,
-        image_id,
-        maximum_data_size,
-        page_end,
-        spacing,
-        offset: range.offset,
-        sequence_number: context.sequence_number,
-        block_data: first_block,
-    };
-    operation_outcome(operation.run().await, None)
+    let progress = PageProgress::new(&page_request, image.len())
+        .expect("page dimensions were validated before starting the operation");
+    let operation = PageTransfer::new(zcl, image, context, progress);
+    operation_outcome(operation.run(first_block).await, None)
 }
 
 async fn transmit_request_error(

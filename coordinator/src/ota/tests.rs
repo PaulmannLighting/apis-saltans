@@ -844,44 +844,57 @@ fn update_reports_the_clients_terminal_failure() {
 }
 
 #[test]
-fn image_page_uses_consecutive_transaction_sequence_numbers() {
-    run_test(async {
-        let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-        let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
-        tokio::spawn(server.run());
-        let image = test_image().await;
-        let image_id = image.id();
-        let _completion = schedule(&ota_sender, image).await;
-        receive_zcl(&mut zcl_receiver).await;
+fn image_pages_clip_blocks_and_wrap_transaction_sequences() {
+    for (initial_sequence, page_size) in [(TEST_SEQUENCE_NUMBER, PAGE_SIZE), (u8::MAX, u16::MAX)] {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let image = test_image().await;
+            let image_id = image.id();
+            let _completion = schedule(&ota_sender, image).await;
+            receive_zcl(&mut zcl_receiver).await;
 
-        ota_sender
-            .send(incoming(
-                TEST_SEQUENCE_NUMBER,
-                ImagePageRequest::new(
-                    image_id,
-                    u32::try_from(BASE_HEADER_LENGTH).expect("fixed header length fits u32"),
-                    PAGE_MAXIMUM_DATA_SIZE,
-                    PAGE_SIZE,
-                    PAGE_RESPONSE_SPACING,
-                    None,
-                ),
-            ))
-            .await
-            .expect("OTA server is running");
+            ota_sender
+                .send(incoming(
+                    initial_sequence,
+                    ImagePageRequest::new(
+                        image_id,
+                        u32::try_from(BASE_HEADER_LENGTH).expect("fixed header length fits u32"),
+                        PAGE_MAXIMUM_DATA_SIZE,
+                        page_size,
+                        PAGE_RESPONSE_SPACING,
+                        None,
+                    ),
+                ))
+                .await
+                .expect("OTA server is running");
 
-        for index in 0..3 {
-            let (sequence_number, tx_options, bytes) =
-                reply_parts(receive_zcl(&mut zcl_receiver).await);
-            assert_eq!(sequence_number, TEST_SEQUENCE_NUMBER.wrapping_add(index));
-            assert!(tx_options.is_empty());
-            let response = ImageBlockResponse::from_le_stream(bytes.into_iter())
-                .expect("valid Image Block Response");
-            assert!(matches!(
-                response.payload(),
-                ImageBlockResponsePayload::Success(_)
-            ));
-        }
-    });
+            let expected = &TEST_IMAGE_DATA[..usize::from(page_size).min(TEST_IMAGE_DATA.len())];
+            let mut offset = BASE_HEADER_LENGTH;
+            for (index, block_bytes) in expected
+                .chunks(usize::from(PAGE_MAXIMUM_DATA_SIZE))
+                .enumerate()
+            {
+                let (sequence_number, tx_options, bytes) =
+                    reply_parts(receive_zcl(&mut zcl_receiver).await);
+                assert_eq!(
+                    sequence_number,
+                    initial_sequence.wrapping_add(u8::try_from(index).unwrap())
+                );
+                assert!(tx_options.is_empty());
+                let response = ImageBlockResponse::from_le_stream(bytes.into_iter())
+                    .expect("valid Image Block Response");
+                let ImageBlockResponsePayload::Success(block) = response.payload() else {
+                    panic!("expected a successful page block");
+                };
+                assert_eq!(block.file_offset(), u32::try_from(offset).unwrap());
+                assert_eq!(block.image(), image_id);
+                assert_eq!(block.image_data(), block_bytes);
+                offset += block_bytes.len();
+            }
+        });
+    }
 }
 
 async fn test_image() -> Image {

@@ -265,8 +265,10 @@ ZCL-to-OTA-to-ZCL actor cycle.
 
 Normal OTA commands and replies retain the default acknowledged APS transmission option. Image Page
 block responses use empty `TxOptions`; their deferred APS result therefore completes after hardware
-backend acceptance instead of waiting for an acknowledgement. The page task applies the requested
-spacing and advances the ZCL transaction sequence between blocks.
+backend acceptance instead of waiting for an acknowledgement. The page task reuses `RequestContext` for addressing and sequence state. `PageProgress` validates
+page dimensions, clips block ranges to the page and image boundaries, and advances the current
+position. The task applies the requested spacing and advances the ZCL transaction sequence between
+blocks. The first block remains pre-read so an initial read failure can receive a Default Response.
 
 ## ZDP Actor
 
