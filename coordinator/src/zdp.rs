@@ -18,7 +18,7 @@ use zb_zdp::{Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame};
 pub use self::message::Message;
 use self::server::{Server, ServerRequest, is_server_request};
 use self::submission::CommunicationSubmission;
-use crate::aps::Aps;
+use crate::aps::{Aps, TransmissionResponse};
 use crate::correlation::{
     Cancellation, CancellationMessage, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT,
     Registry, Token, schedule_timeout,
@@ -138,28 +138,7 @@ impl Transceiver {
                 }
             }
             Message::CommunicationSubmissionFinished { id, result } => {
-                let Some(submission) = self.communication_submissions.remove(&id) else {
-                    debug!("Ignoring completion for unknown ZDP communication submission {id}");
-                    return true;
-                };
-                let CommunicationSubmission {
-                    token,
-                    protocol_response,
-                    response,
-                    task: _,
-                } = submission;
-                let result = match result {
-                    Ok(transmission) => Ok(ApsProtocolResponse::new(
-                        transmission,
-                        protocol_response,
-                        self.cancellation(token),
-                    )),
-                    Err(error) => {
-                        self.responses.discard(token);
-                        Err(error)
-                    }
-                };
-                response.send(result).unwrap_or_else(drop);
+                self.finish_communication_submission(id, result);
             }
             Message::Communicate {
                 device,
@@ -330,6 +309,28 @@ impl Transceiver {
         debug_assert!(previous.is_none());
     }
 
+    /// Retire a submission and complete its caller, releasing failed correlations.
+    fn finish_communication_submission(
+        &mut self,
+        id: u64,
+        result: Result<TransmissionResponse, crate::Error>,
+    ) {
+        let Some(submission) = self.communication_submissions.remove(&id) else {
+            debug!("Ignoring completion for unknown ZDP communication submission {id}");
+            return;
+        };
+        match result {
+            Ok(transmission) => {
+                let cancellation = self.cancellation(submission.token);
+                submission.complete(transmission, cancellation);
+            }
+            Err(error) => {
+                self.responses.discard(submission.token);
+                submission.fail(error);
+            }
+        }
+    }
+
     fn handle_network_down(&mut self) {
         let submissions = std::mem::take(&mut self.communication_submissions);
         let protected = submissions
@@ -344,21 +345,13 @@ impl Transceiver {
         }
 
         for submission in submissions.into_values() {
-            submission.task.abort();
-            submission
-                .response
-                .send(Err(zb_hw::Error::from(TransmissionError::NoRoute).into()))
-                .unwrap_or_else(drop);
+            submission.fail(zb_hw::Error::from(TransmissionError::NoRoute).into());
         }
     }
 
     fn fail_communication_submissions_for_hardware_unavailability(&mut self) {
         for submission in std::mem::take(&mut self.communication_submissions).into_values() {
-            submission.task.abort();
-            submission
-                .response
-                .send(Err(zb_hw::Error::ActorUnavailable.into()))
-                .unwrap_or_else(drop);
+            submission.fail(zb_hw::Error::ActorUnavailable.into());
         }
     }
 
