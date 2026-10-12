@@ -26,13 +26,20 @@ pub struct Header {
     id: ImageId,
     zigbee_stack_version: u16,
     description: HeaderString,
-    security_credential_version: Option<u8>,
-    upgrade_file_destination: Option<IeeeAddress>,
-    hardware_versions: Option<(u16, u16)>,
+    optional: OptionalFields,
     total_image_size: u32,
     image_length: usize,
 }
 
+/// Optional header metadata decoded according to the field-control flags.
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct OptionalFields {
+    security_credential_version: Option<u8>,
+    upgrade_file_destination: Option<IeeeAddress>,
+    hardware_versions: Option<(u16, u16)>,
+}
+
+/// Validated mandatory header awaiting optional metadata and source-length validation.
 pub(super) struct HeaderBuilder {
     bytes: BaseHeaderBytes,
     length: u16,
@@ -83,19 +90,19 @@ impl Header {
     /// Return the optional security credential version.
     #[must_use]
     pub const fn security_credential_version(&self) -> Option<u8> {
-        self.security_credential_version
+        self.optional.security_credential_version
     }
 
     /// Return the optional IEEE address to which this file is restricted.
     #[must_use]
     pub const fn upgrade_file_destination(&self) -> Option<IeeeAddress> {
-        self.upgrade_file_destination
+        self.optional.upgrade_file_destination
     }
 
     /// Return the optional inclusive hardware-version range.
     #[must_use]
     pub const fn hardware_versions(&self) -> Option<(u16, u16)> {
-        self.hardware_versions
+        self.optional.hardware_versions
     }
 
     /// Return the complete OTA image size, including this header.
@@ -118,6 +125,7 @@ impl Header {
 }
 
 impl HeaderBuilder {
+    /// Decode and validate the fixed-size header.
     pub(super) fn parse(bytes: BaseHeaderBytes) -> Result<Self, ParseImageError> {
         let mut cursor = bytes.iter().copied();
         let file_identifier = read::<u32, _>(&mut cursor)?;
@@ -165,15 +173,39 @@ impl HeaderBuilder {
         })
     }
 
+    /// Number of optional bytes required by the validated field-control flags.
     pub(super) const fn optional_header_length(&self) -> usize {
         self.field_control.optional_header_length()
     }
 
+    /// Validate the complete source and assemble its parsed and serialized header.
     pub(super) fn finish(
         self,
         optional_bytes: &[u8],
         image_length: usize,
     ) -> Result<Header, ParseImageError> {
+        self.validate_image_size(image_length)?;
+        let optional = OptionalFields::parse(self.field_control, optional_bytes)?;
+
+        let mut bytes = BytesMut::with_capacity(usize::from(self.length));
+        bytes.extend_from_slice(&self.bytes);
+        bytes.extend_from_slice(optional_bytes);
+
+        Ok(Header {
+            bytes: bytes.freeze(),
+            length: self.length,
+            field_control: self.field_control,
+            id: self.id,
+            zigbee_stack_version: self.zigbee_stack_version,
+            description: self.description,
+            optional,
+            total_image_size: self.total_image_size,
+            image_length,
+        })
+    }
+
+    /// Require the declared file size to match the complete source length.
+    fn validate_image_size(&self, image_length: usize) -> Result<(), ParseImageError> {
         let actual_image_size =
             u32::try_from(image_length).map_err(|_| ParseImageError::ImageTooLarge)?;
         if self.total_image_size != actual_image_size {
@@ -183,19 +215,23 @@ impl HeaderBuilder {
             });
         }
 
-        let mut cursor = optional_bytes.iter().copied();
-        let security_credential_version = self
-            .field_control
+        Ok(())
+    }
+}
+
+impl OptionalFields {
+    /// Decode optional fields in wire order and validate the hardware-version range.
+    fn parse(field_control: FieldControl, bytes: &[u8]) -> Result<Self, ParseImageError> {
+        let mut cursor = bytes.iter().copied();
+        let security_credential_version = field_control
             .contains(FieldControl::SECURITY_CREDENTIAL_VERSION)
             .then(|| read::<u8, _>(&mut cursor))
             .transpose()?;
-        let upgrade_file_destination = self
-            .field_control
+        let upgrade_file_destination = field_control
             .contains(FieldControl::UPGRADE_FILE_DESTINATION)
             .then(|| read::<IeeeAddress, _>(&mut cursor))
             .transpose()?;
-        let hardware_versions = self
-            .field_control
+        let hardware_versions = field_control
             .contains(FieldControl::HARDWARE_VERSIONS)
             .then(|| {
                 Ok::<_, ParseImageError>((
@@ -209,23 +245,10 @@ impl HeaderBuilder {
         {
             return Err(ParseImageError::InvalidHardwareVersionRange { minimum, maximum });
         }
-
-        let mut bytes = BytesMut::with_capacity(usize::from(self.length));
-        bytes.extend_from_slice(&self.bytes);
-        bytes.extend_from_slice(optional_bytes);
-
-        Ok(Header {
-            bytes: bytes.freeze(),
-            length: self.length,
-            field_control: self.field_control,
-            id: self.id,
-            zigbee_stack_version: self.zigbee_stack_version,
-            description: self.description,
+        Ok(Self {
             security_credential_version,
             upgrade_file_destination,
             hardware_versions,
-            total_image_size: self.total_image_size,
-            image_length,
         })
     }
 }

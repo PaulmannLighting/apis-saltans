@@ -223,6 +223,10 @@ removes the subscription immediately. Subscription setup is no longer part of co
 or constructor wiring. Subscription messages contain the complete normalized `DataIndication`;
 the OTA forwarder narrows only its parsed ZCL command payload and preserves the original metadata.
 
+OTA image parsing separates mandatory header validation, optional-field decoding, and complete
+source-length validation. `OptionalFields` owns optional metadata and validates the hardware-version
+range; `HeaderBuilder::finish` assembles the validated metadata and original header bytes.
+
 The OTA server awaits one private event inbox. A small API task forwards public `Message` values
 into it, subscription forwarding tasks send received frames into it, and destination supervisors
 send transfer completion into it. When the public OTA channel closes, the API task queues a shutdown
