@@ -490,6 +490,10 @@ protocol actors, the mux normalizes only the backend-defined timestamp and devic
 to `()`; APS addressing, profile, cluster, status, security mode, key index, link quality, and the
 parsed ASDU remain attached. The mux selects and parses ZCL, ZDP, and Keep-Alive payloads directly
 from that metadata and ASDU; it does not synthesize a legacy received APS header.
+The parsed-payload dispatch delegates to separate ZCL forwarding, ZDP forwarding, and Keep-Alive
+helpers. ZCL forwarding awaits inbox capacity, while ZDP forwarding drops frames when its inbox
+is full so hardware confirmations can continue through the mux. Keep-Alive handling validates the
+source device address and endpoint before emitting application activity events.
 
 Unmatched ZCL commands remain application-visible as normalized
 `DataIndication<Frame<Cluster>, (), ()>` values, preserving the APSDE receive metadata with the

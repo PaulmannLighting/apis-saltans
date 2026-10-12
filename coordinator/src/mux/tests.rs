@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use bytes::Bytes;
 use le_stream::ToLeStream;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{Receiver, channel};
@@ -19,7 +20,7 @@ use zb_zdp::{ActiveEpReq, Command as ZdpCommand, DeviceAndServiceDiscovery, Fram
 use super::Mux;
 use crate::aps::{Aps, Message as ApsMessage};
 use crate::event::EventSink;
-use crate::{Event, MPSC_CHANNEL_SIZE, Network, NetworkError, ota, zcl, zdp};
+use crate::{Device, Event, MPSC_CHANNEL_SIZE, Network, NetworkError, ota, zcl, zdp};
 
 const TEST_TIMEOUT: Duration = Duration::from_millis(100);
 const APPLICATION_EVENT_CHANNEL_SIZE: usize = 1;
@@ -31,6 +32,53 @@ const TX_TIME: u64 = 43;
 const APS_COUNTER: u8 = 8;
 const ZCL_SEQUENCE: u8 = 9;
 const ZDP_SEQUENCE: u8 = 10;
+
+#[test]
+fn keep_alive_routes_only_valid_device_sources_to_application_events() {
+    Runtime::new()
+        .expect("runtime must be available")
+        .block_on(async {
+            let (mut mux, _aps_messages, mut zcl_messages, mut zdp_messages) = test_mux();
+            let (events, mut application_events) = channel(APPLICATION_EVENT_CHANNEL_SIZE);
+            mux.events = EventSink::new(events);
+
+            for address in [LOCAL_ADDRESS, REMOTE_ADDRESS] {
+                let metadata = IndicationMetadata::new(
+                    ReceivedDestination::Network {
+                        address: network_address(LOCAL_ADDRESS),
+                        endpoint: individual_endpoint(),
+                    },
+                    ApsdeSource::Network {
+                        address: network_address(address),
+                        endpoint: individual_endpoint(),
+                    },
+                    Profile::ZigbeeHomeAutomation.as_u16(),
+                    Cluster::KeepAlive.as_u16(),
+                    IndicationStatus::success(),
+                    Security::<()>::Unsecured,
+                    LINK_QUALITY,
+                    RX_TIME,
+                );
+                mux.handle_data_indication(DataIndication::new(metadata, Bytes::new()), false)
+                    .await;
+
+                if address == LOCAL_ADDRESS {
+                    assert!(application_events.try_recv().is_err());
+                } else {
+                    let Event::Device(Device::KeepAlive(activity)) = application_events
+                        .try_recv()
+                        .expect("device activity must reach the application")
+                    else {
+                        panic!("expected Keep-Alive event");
+                    };
+                    assert_eq!(activity.device().as_u16(), REMOTE_ADDRESS);
+                    assert_eq!(activity.endpoint(), individual_endpoint());
+                }
+                assert!(zcl_messages.try_recv().is_err());
+                assert!(zdp_messages.try_recv().is_err());
+            }
+        });
+}
 
 #[test]
 fn routes_data_indication_to_zcl() {

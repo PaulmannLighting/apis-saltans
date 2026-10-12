@@ -2,11 +2,13 @@ use bytes::Bytes;
 use log::{trace, warn};
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
-use zb_aps::apsde::DataIndication;
+use zb_aps::apsde::{DataIndication, Source};
 use zb_hw::{
     ApsdeEvent as HardwareApsdeEvent, DeviceEvent as HardwareDeviceEvent, Event as HardwareEvent,
     NetworkEvent as HardwareNetworkEvent,
 };
+use zb_zcl::{Cluster, Frame as ZclFrame};
+use zb_zdp::{Command, Frame as ZdpFrame};
 
 use self::aps_payload::ApsPayload;
 use crate::aps::Aps;
@@ -254,54 +256,66 @@ impl Mux {
 
         match payload {
             ApsPayload::Zcl(frame) => {
-                let indication = DataIndication::new(metadata, frame);
-
-                self.zcl
-                    .send(zcl::Message::Received { indication })
-                    .await
-                    .unwrap_or_else(|error| {
-                        trace!("Failed to send ZCL message: {error}");
-                    });
+                self.forward_zcl(DataIndication::new(metadata, frame)).await;
             }
             ApsPayload::Zdp(frame) => {
-                let indication = DataIndication::new(metadata, frame);
-
-                match self.zdp.try_send(zdp::Message::Received {
-                    indication,
-                    response_required: zdo_response_required,
-                }) {
-                    Ok(()) => {}
-                    Err(TrySendError::Full(_)) => {
-                        warn!("Discarding received ZDP frame because the actor inbox is full");
-                    }
-                    Err(TrySendError::Closed(_)) => {
-                        trace!("Failed to send ZDP message: actor unavailable");
-                    }
-                }
+                self.forward_zdp(DataIndication::new(metadata, frame), zdo_response_required);
             }
-            ApsPayload::KeepAlive => {
-                let source = metadata.source();
-                let Some(source_address) = source.network_address() else {
-                    warn!("Keep-Alive packet from non-network source: {source:?}");
-                    return;
-                };
-                let Some(source_endpoint) = source.endpoint() else {
-                    warn!("Keep-Alive packet from source without endpoint: {source:?}");
-                    return;
-                };
-                let Ok(device_id) = source_address.as_u16().try_into().inspect_err(|id| {
-                    warn!("Keep-Alive packet from invalid device id: {id:#06X}");
-                }) else {
-                    return;
-                };
+            ApsPayload::KeepAlive => self.handle_keep_alive(metadata.source()),
+        }
+    }
 
-                self.events
-                    .emit(Event::Device(Device::KeepAlive(KeepAlive::new(
-                        device_id,
-                        source_endpoint,
-                    ))));
+    /// Forward a parsed ZCL frame, waiting for capacity in the actor inbox.
+    async fn forward_zcl(&self, indication: DataIndication<ZclFrame<Cluster>, (), ()>) {
+        self.zcl
+            .send(zcl::Message::Received { indication })
+            .await
+            .unwrap_or_else(|error| {
+                trace!("Failed to send ZCL message: {error}");
+            });
+    }
+
+    /// Forward a parsed ZDP frame without allowing inbox pressure to stall hardware events.
+    fn forward_zdp(
+        &self,
+        indication: DataIndication<ZdpFrame<Command>, (), ()>,
+        response_required: bool,
+    ) {
+        match self.zdp.try_send(zdp::Message::Received {
+            indication,
+            response_required,
+        }) {
+            Ok(()) => {}
+            Err(TrySendError::Full(_)) => {
+                warn!("Discarding received ZDP frame because the actor inbox is full");
+            }
+            Err(TrySendError::Closed(_)) => {
+                trace!("Failed to send ZDP message: actor unavailable");
             }
         }
+    }
+
+    /// Emit a Keep-Alive event only for a device network address with a source endpoint.
+    fn handle_keep_alive(&self, source: Source) {
+        let Some(source_address) = source.network_address() else {
+            warn!("Keep-Alive packet from non-network source: {source:?}");
+            return;
+        };
+        let Some(source_endpoint) = source.endpoint() else {
+            warn!("Keep-Alive packet from source without endpoint: {source:?}");
+            return;
+        };
+        let Ok(device_id) = source_address.as_u16().try_into().inspect_err(|id| {
+            warn!("Keep-Alive packet from invalid device id: {id:#06X}");
+        }) else {
+            return;
+        };
+
+        self.events
+            .emit(Event::Device(Device::KeepAlive(KeepAlive::new(
+                device_id,
+                source_endpoint,
+            ))));
     }
 }
 
