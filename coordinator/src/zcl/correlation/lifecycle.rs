@@ -4,8 +4,7 @@ use zb_hw::TransmissionError;
 
 use super::Responses;
 use crate::correlation::{
-    Cancellation, CancellationMessage, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT,
-    Token, schedule_timeout,
+    Cancellation, CancellationMessage, PROTOCOL_QUARANTINE_TIMEOUT, Token, schedule_timeout,
 };
 use crate::zcl::Message;
 
@@ -48,7 +47,7 @@ impl Responses {
     pub(super) fn schedule_response_timeout(&self, token: Token) {
         schedule_timeout(
             self.inbox.clone(),
-            PROTOCOL_RESPONSE_TIMEOUT,
+            self.response_timeout,
             Message::ResponseTimeout { token },
             "ZCL response timeout",
         );

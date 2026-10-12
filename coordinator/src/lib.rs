@@ -34,6 +34,7 @@ pub use self::api::{
     ScannedChannel, Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclRequest, ZclResponse,
     ZclResponseType, Zdp, ZdpResponse,
 };
+pub use self::config::CoordinatorConfig;
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};
 pub use self::event::{Device, DroppedEvents, Event, KeepAlive, Network, NetworkError};
@@ -47,6 +48,7 @@ pub use self::response::CommunicationResponse;
 
 mod api;
 mod aps;
+mod config;
 mod coordinator;
 mod correlation;
 mod error;

@@ -362,7 +362,7 @@ fn actor_routes_confirmation_while_backend_acceptance_is_pending() {
             }
             .into_actor(NCP_CHANNEL_SIZE);
             let driver = tokio::spawn(driver);
-            let aps = Transceiver::spawn(ncp);
+            let aps = Transceiver::spawn(ncp, &crate::CoordinatorConfig::default());
             let transmission = aps
                 .transmit(request(
                     unicast_destination(),
@@ -393,6 +393,43 @@ fn actor_routes_confirmation_while_backend_acceptance_is_pending() {
                 .expect("driver actor must stop after APS shutdown")
                 .expect("driver actor task must not panic");
         });
+}
+
+#[test]
+fn configured_confirmation_deadline_expires_without_hardware_confirmation() {
+    Runtime::new().unwrap().block_on(async {
+        let (acceptance, accepted) = tokio::sync::oneshot::channel();
+        let (ncp, driver) = DelayedDriver {
+            acceptance: Some(accepted),
+        }
+        .into_actor(NCP_CHANNEL_SIZE);
+        let driver = tokio::spawn(driver);
+        let config = crate::CoordinatorConfig {
+            aps_confirmation_timeout: Duration::ZERO,
+            ..crate::CoordinatorConfig::default()
+        };
+        let aps = Transceiver::spawn(ncp, &config);
+        let transmission = aps
+            .transmit(request(
+                unicast_destination(),
+                TxOptions::ACKNOWLEDGED_TRANSMISSION,
+                Bytes::new(),
+            ))
+            .await
+            .unwrap();
+        acceptance.send(()).unwrap();
+        assert!(matches!(
+            tokio::time::timeout(TEST_TIMEOUT, transmission)
+                .await
+                .unwrap(),
+            Err(HardwareError::Transmission(TransmissionError::Timeout))
+        ));
+        drop(aps);
+        tokio::time::timeout(TEST_TIMEOUT, driver)
+            .await
+            .unwrap()
+            .unwrap();
+    });
 }
 
 #[test]

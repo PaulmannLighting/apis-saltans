@@ -6,6 +6,7 @@ use zb_aps::apsde::DataIndication;
 use zb_core::{Cluster, Direction};
 use zb_zcl::{Cluster as ZclCluster, Frame, Scope};
 
+#[cfg(test)]
 use crate::MPSC_CHANNEL_SIZE;
 
 /// A received ZCL frame delivered to an internal subscriber.
@@ -62,8 +63,14 @@ impl Filter {
 
 impl Subscription {
     /// Create a bounded subscription channel for the given filter.
+    #[cfg(test)]
     pub fn channel(filter: Filter) -> (Self, SubscriptionReceiver) {
-        let (sender, messages) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
+        Self::channel_with_capacity(filter, MPSC_CHANNEL_SIZE)
+    }
+
+    /// Create a subscription with the configured coordinator inbox capacity.
+    pub fn channel_with_capacity(filter: Filter, capacity: usize) -> (Self, SubscriptionReceiver) {
+        let (sender, messages) = tokio::sync::mpsc::channel(capacity);
         let subscription = Self {
             filter,
             messages: sender.downgrade(),

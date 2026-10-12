@@ -1,6 +1,7 @@
 //! Transceiver to send and receive ZDP messages.
 
 use std::collections::BTreeMap;
+use std::time::Duration;
 
 use bytes::Bytes;
 use le_stream::ToLeStream;
@@ -25,7 +26,7 @@ use crate::correlation::{
 use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
 use crate::runtime::spawn;
-use crate::{Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
+use crate::{CoordinatorConfig, Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
 mod discovery;
 mod match_desc;
@@ -36,8 +37,6 @@ mod submission;
 
 const INITIAL_SERVER_OPERATION_ID: u64 = 0;
 const INITIAL_COMMUNICATION_SUBMISSION_ID: u64 = 0;
-const COMMUNICATION_SUBMISSION_LIMIT: usize = MPSC_CHANNEL_SIZE;
-const SERVER_OPERATION_LIMIT: usize = MPSC_CHANNEL_SIZE;
 
 /// Zigbee transceiver actor.
 #[derive(Debug)]
@@ -50,6 +49,9 @@ pub struct Transceiver {
     next_communication_submission_id: u64,
     server_operations: BTreeMap<u64, AbortHandle>,
     next_server_operation_id: u64,
+    response_timeout: Duration,
+    submission_limit: usize,
+    server_operation_limit: usize,
 }
 
 /// Construction, startup, and actor-inbox processing.
@@ -72,6 +74,9 @@ impl Transceiver {
             next_communication_submission_id: INITIAL_COMMUNICATION_SUBMISSION_ID,
             server_operations: BTreeMap::new(),
             next_server_operation_id: INITIAL_SERVER_OPERATION_ID,
+            response_timeout: PROTOCOL_RESPONSE_TIMEOUT,
+            submission_limit: MPSC_CHANNEL_SIZE,
+            server_operation_limit: MPSC_CHANNEL_SIZE,
         }
     }
 
@@ -81,12 +86,14 @@ impl Transceiver {
         aps: Aps,
         events: EventSink,
         descriptor: Descriptor,
+        config: &CoordinatorConfig,
     ) -> Sender<Message> {
-        let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        crate::runtime::spawn_actor(
-            "ZDP",
-            Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade()).run(zdp_rx),
-        );
+        let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(config.inbox_capacity.get());
+        let mut actor = Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade());
+        actor.response_timeout = config.protocol_response_timeout;
+        actor.submission_limit = config.zdp_submission_limit;
+        actor.server_operation_limit = config.zdp_server_operation_limit;
+        crate::runtime::spawn_actor("ZDP", actor.run(zdp_rx));
         zdp_tx
     }
 
@@ -205,10 +212,11 @@ impl Transceiver {
     }
 
     fn spawn_server_operation(&mut self, request: ServerRequest) {
-        if self.server_operations.len() >= SERVER_OPERATION_LIMIT {
+        if self.server_operations.len() >= self.server_operation_limit {
             warn!(
                 "Discarding ZDP server request because the operation limit of \
-                 {SERVER_OPERATION_LIMIT} has been reached"
+                 {} has been reached",
+                self.server_operation_limit
             );
             return;
         }
@@ -263,10 +271,11 @@ impl Transceiver {
         request: DataRequest<Bytes>,
         response: tokio::sync::oneshot::Sender<Result<ApsProtocolResponse<Command>, crate::Error>>,
     ) {
-        if self.communication_submissions.len() >= COMMUNICATION_SUBMISSION_LIMIT {
+        if self.communication_submissions.len() >= self.submission_limit {
             warn!(
                 "Rejecting ZDP communication because the submission limit of \
-                 {COMMUNICATION_SUBMISSION_LIMIT} has been reached"
+                 {} has been reached",
+                self.submission_limit
             );
             response
                 .send(Err(crate::Error::SendError))
@@ -385,7 +394,7 @@ impl Transceiver {
     fn schedule_response_timeout(&self, token: Token) {
         schedule_timeout(
             self.inbox.clone(),
-            PROTOCOL_RESPONSE_TIMEOUT,
+            self.response_timeout,
             Message::ResponseTimeout { token },
             "ZDP response timeout",
         );

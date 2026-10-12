@@ -1,5 +1,7 @@
 //! ZCL transaction identity, response matching, and lifecycle management.
 
+use std::time::Duration;
+
 use bytes::Bytes;
 use log::debug;
 use tokio::sync::mpsc::WeakSender;
@@ -10,7 +12,7 @@ pub use self::expectation::{ResponseExpectation, ResponseMatch};
 use super::{Message, Transceiver};
 use crate::Error;
 use crate::aps::Aps;
-use crate::correlation::{Key, Registry};
+use crate::correlation::{Key, PROTOCOL_RESPONSE_TIMEOUT, Registry};
 use crate::response::ApsProtocolResponse;
 
 mod expectation;
@@ -20,6 +22,7 @@ mod lifecycle;
 #[derive(Debug)]
 pub(super) struct Responses {
     registry: Registry<Cluster, ResponseExpectation>,
+    pub(super) response_timeout: Duration,
     inbox: WeakSender<Message>,
 }
 
@@ -28,6 +31,7 @@ impl Responses {
     pub(super) const fn new(inbox: WeakSender<Message>) -> Self {
         Self {
             registry: Registry::new(),
+            response_timeout: PROTOCOL_RESPONSE_TIMEOUT,
             inbox,
         }
     }

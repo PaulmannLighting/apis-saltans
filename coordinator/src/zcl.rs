@@ -19,7 +19,7 @@ pub use self::subscription::{
 };
 use crate::aps::{Aps, TransmissionResponse};
 use crate::event::EventSink;
-use crate::{Error, Event, MPSC_CHANNEL_SIZE};
+use crate::{CoordinatorConfig, Error, Event};
 
 mod correlation;
 mod message;
@@ -47,12 +47,11 @@ impl Transceiver {
     }
 
     /// Start the ZCL transceiver.
-    pub fn spawn(aps: Aps, events: EventSink) -> Sender<Message> {
-        let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        crate::runtime::spawn_actor(
-            "ZCL",
-            Self::new(aps, events, zcl_tx.downgrade()).run(zcl_rx),
-        );
+    pub fn spawn(aps: Aps, events: EventSink, config: &CoordinatorConfig) -> Sender<Message> {
+        let (zcl_tx, zcl_rx) = tokio::sync::mpsc::channel(config.inbox_capacity.get());
+        let mut actor = Self::new(aps, events, zcl_tx.downgrade());
+        actor.responses.response_timeout = config.protocol_response_timeout;
+        crate::runtime::spawn_actor("ZCL", actor.run(zcl_rx));
         zcl_tx
     }
 

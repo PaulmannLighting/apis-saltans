@@ -27,6 +27,7 @@ use super::{
     Message, OTA_PROFILE, UpdateError, network_destination, reply_zcl,
     request_from_unsequenced_frame, zcl,
 };
+use crate::CoordinatorConfig;
 use crate::runtime::spawn;
 
 /// Handle used by the OTA server to route messages to one destination transfer.
@@ -150,6 +151,7 @@ pub struct Server {
     subscription: Option<ActiveSubscription>,
     transfers: BTreeMap<NetworkDestination, ActiveTransfer>,
     update_task_limit: usize,
+    inbox_capacity: usize,
 }
 
 impl Server {
@@ -169,6 +171,7 @@ impl Server {
             subscription: None,
             transfers: BTreeMap::new(),
             update_task_limit,
+            inbox_capacity: crate::MPSC_CHANNEL_SIZE,
         }
     }
 
@@ -252,17 +255,18 @@ impl Server {
     pub(crate) fn spawn(
         ncp: NcpHandle,
         zcl: Sender<zcl::Message>,
-        update_task_limit: usize,
+        config: &CoordinatorConfig,
     ) -> Sender<Message> {
-        let (sender, messages) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
-        let (events, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
-        let server = Self::new(
+        let (sender, messages) = tokio::sync::mpsc::channel(config.inbox_capacity.get());
+        let (events, inbound) = tokio::sync::mpsc::channel(config.inbox_capacity.get());
+        let mut server = Self::new(
             AddressResolver::Ncp(ncp),
             zcl,
             events.downgrade(),
             inbound,
-            update_task_limit,
+            config.ota_update_task_limit,
         );
+        server.inbox_capacity = config.inbox_capacity.get();
         spawn(forward_api_messages(messages, events));
         crate::runtime::spawn_actor("OTA", server.run());
         sender
@@ -318,7 +322,7 @@ impl Server {
             return Ok(());
         }
 
-        let (subscription, frames) = super::subscription();
+        let (subscription, frames) = super::subscription(self.inbox_capacity);
         let messages = frames.sender();
         self.zcl
             .send(zcl::Message::Subscribe { subscription })
@@ -358,7 +362,7 @@ impl Server {
     fn start_transfer(&mut self, offer: Offer) {
         let destination = network_destination(offer.target.short_id(), offer.target_endpoint);
         let target = offer.target;
-        let (messages, inbound) = tokio::sync::mpsc::channel(crate::MPSC_CHANNEL_SIZE);
+        let (messages, inbound) = tokio::sync::mpsc::channel(self.inbox_capacity);
         let transfer = Transfer::new(self.zcl.clone(), messages.downgrade(), offer, inbound);
         let task = spawn(transfer.run());
         let task_id = task.id();

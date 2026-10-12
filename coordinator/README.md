@@ -316,8 +316,8 @@ Acknowledged results arrive as hardware
 `Event::Apsde(ApsdeEvent::DataConfirm { counter, confirmation })` values and are correlated by the
 eight-bit APS counter supplied to the hardware. A successful confirmation resolves the deferred
 result; an unsuccessful APS or propagated NWK status becomes
-`TransmissionError::Confirmation`. An acknowledged transmission times out after 30 seconds if its
-confirmation does not arrive. A network-down event resolves every pending acknowledged
+`TransmissionError::Confirmation`. An acknowledged transmission times out after
+`CoordinatorConfig::aps_confirmation_timeout` (30 seconds by default) if its confirmation does not arrive. A network-down event resolves every pending acknowledged
 transmission with `TransmissionError::NoRoute`. Dropping a deferred APS result removes its pending
 confirmation entry; work already accepted by the hardware is not recalled. If backend acceptance
 is still in flight, the actor retains the counter reservation until the backend result establishes
@@ -328,7 +328,7 @@ replaces a pending transmission. A counter released by cancellation or network l
 until its late hardware confirmation arrives, so an old confirmation cannot complete a new
 transmission. The hardware contract defines neither a maximum completion latency nor a reset
 boundary that invalidates old confirmations, so quarantine cannot safely expire. If a confirmation
-is still missing at its 30-second deadline, the APS actor stops; the coordinator must be
+is still missing at its configured confirmation deadline, the APS actor stops; the coordinator must be
 reconstructed before further traffic is sent. This also applies when the caller dropped its
 response or a network-down event already failed it. A late confirmation received before the
 deadline releases the quarantine normally. If all counters are concurrently pending or
@@ -894,8 +894,8 @@ response future.
 
 Behavior is configurable through environment variables read while compiling the crate:
 
-- `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` selects each actor inbox capacity. The default is `128`.
-- `ZIGBEE_COORDINATOR_PROTOCOL_RESPONSE_TIMEOUT_SECS` selects how long a correlated ZCL or ZDP
+- `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` supplies the default actor inbox capacity. The default is `128`.
+- `ZIGBEE_COORDINATOR_PROTOCOL_RESPONSE_TIMEOUT_SECS` supplies the default time a correlated ZCL or ZDP
   response may remain pending. The default is `30`.
 - `ZIGBEE_COORDINATOR_PROTOCOL_QUARANTINE_TIMEOUT_SECS` selects how long a timed-out or cancelled
   ZCL or ZDP correlation remains quarantined against late responses. The default is `30`.
@@ -934,7 +934,7 @@ allocation and the quarantine interval for protection.
 
 ## Managed runtime lifecycle
 
-`Coordinator::start_managed(...)` returns `(Coordinator, CoordinatorRuntime)`. Keep the runtime
+`Coordinator::start_managed(ncp, descriptor, hw_events, events_out, config)` returns `(Coordinator, CoordinatorRuntime)`. Keep the runtime
 handle while using cloned command handles. `runtime.shutdown().await` cancels coordinator work
 and waits for owned tasks to release their resources; `runtime.wait().await` reports termination.
 Dropping the runtime requests shutdown. `runtime.detach()` retains legacy background operation.
@@ -946,3 +946,31 @@ full and closed event channels. Terminal reasons distinguish requested shutdown,
 stream closure, actor exit, and task panic. Pending operations fail on shutdown. The externally
 owned hardware driver is not stopped, and already-running blocking image reads must finish before
 shutdown can return.
+
+## Runtime configuration
+
+Pass `CoordinatorConfig` to `Coordinator::start_with_config` or `Coordinator::start_managed`:
+
+```rust
+use std::num::NonZeroUsize;
+use std::time::Duration;
+use apis_saltans_coordinator::CoordinatorConfig;
+
+let config = CoordinatorConfig {
+    inbox_capacity: NonZeroUsize::new(64).unwrap(),
+    ota_update_task_limit: 4,
+    protocol_response_timeout: Duration::from_secs(10),
+    aps_confirmation_timeout: Duration::from_secs(20),
+    ..CoordinatorConfig::default()
+};
+```
+
+The inbox capacity also applies to OTA transfer inboxes and subscriptions. ZDP submission and
+server-operation limits are independently selectable. Zero task limits reject new work; zero
+deadlines expire immediately. Existing `start` and `start_with_ota_update_task_limit` retain their
+default behavior. Build-time environment settings supply defaults, not runtime overrides.
+
+Protocol response deadlines begin at correlation registration; APS confirmation deadlines begin
+after hardware acceptance. Late-response quarantine remains independently controlled internally,
+so reducing a response deadline does not permit early reuse of an old transaction identity.
+OTA per-offer discovery, inactivity, and total-transfer deadlines remain in `OtaUpdateTimeouts`.

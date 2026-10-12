@@ -185,6 +185,7 @@ fn actor_handles_hardware_shutdown_while_endpoint_query_is_pending() {
                 Aps::new(aps_messages),
                 EventSink::new(events),
                 Descriptor::default(),
+                &crate::CoordinatorConfig::default(),
             );
 
             zdp.send(Message::Received {

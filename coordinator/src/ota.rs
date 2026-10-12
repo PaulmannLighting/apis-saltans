@@ -90,12 +90,15 @@ const fn request_from_unsequenced_frame(
     .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION)
 }
 
-pub(crate) fn subscription() -> (Subscription, SubscriptionReceiver) {
-    Subscription::channel(SubscriptionFilter::new(
-        Cluster::OtaUpgrade,
-        Scope::ClusterSpecific,
-        Direction::ClientToServer,
-    ))
+pub(crate) fn subscription(capacity: usize) -> (Subscription, SubscriptionReceiver) {
+    Subscription::channel_with_capacity(
+        SubscriptionFilter::new(
+            Cluster::OtaUpgrade,
+            Scope::ClusterSpecific,
+            Direction::ClientToServer,
+        ),
+        capacity,
+    )
 }
 
 async fn reply_zcl(

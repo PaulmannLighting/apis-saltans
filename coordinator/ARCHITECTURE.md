@@ -185,7 +185,8 @@ sequence instead of allocating a new one.
 The allocator scans the complete 256-value sequence space for the request's correlation domain and
 never replaces a pending entry. Successful responses release their correlation identity
 immediately. Response-free transmissions do not enter protocol quarantine. The actor expires
-pending protocol responses after 30 seconds. Timed-out and cancelled tracked responses remain
+pending protocol responses after the configured response timeout (30 seconds by default).
+Timed-out and cancelled tracked responses remain
 quarantined until a late frame arrives or a further 30-second grace period expires. Dropping an
 `ApsProtocolResponse` enqueues `Cancel` through the actor's ordinary bounded inbox. Per-response
 and quarantine timer tasks hold a weak sender and enqueue `ResponseTimeout` or
@@ -406,12 +407,14 @@ The mux parses successful APSDE data indications and forwards them to the approp
 actor. Each actor derives the key directly from the received indication metadata and parsed frame
 and removes the matching one-shot sender. Each protocol actor permits up to 256 unavailable
 identities within one correlation domain. It returns `TransactionSequenceExhausted` when no
-sequence is available and expires pending responses after the compile-time
-`ZIGBEE_COORDINATOR_PROTOCOL_RESPONSE_TIMEOUT_SECS` interval. Response-free ZCL transmissions skip
+sequence is available and expires pending responses after
+`CoordinatorConfig::protocol_response_timeout`. The compile-time
+`ZIGBEE_COORDINATOR_PROTOCOL_RESPONSE_TIMEOUT_SECS` setting supplies its default. Response-free ZCL transmissions skip
 unavailable identities without reserving the selected sequence. Cancelled and timed-out tracked
 identities remain quarantined until a late frame arrives, the compile-time
 `ZIGBEE_COORDINATOR_PROTOCOL_QUARANTINE_TIMEOUT_SECS` grace period expires, or the network goes
-down. Both intervals default to 30 seconds and must be greater than zero.
+down. Both intervals default to 30 seconds. Build-time defaults must be greater than zero;
+the runtime response timeout may be zero for immediate expiry.
 
 APS, ZCL, and ZDP each own exactly one bounded message receiver. Hardware events, API requests,
 cancellations, response and quarantine timeout notifications, and network lifecycle notifications
@@ -526,3 +529,12 @@ empty before publishing `Stopped`. Tasks racing with shutdown are registered and
 cancelled. Running blocking reads cannot be interrupted and are awaited. Hardware drivers remain
 externally owned. Lifecycle notifications use a watch channel; event-loss counters use atomics and
 are independent of the application event channel's capacity.
+
+## Runtime settings
+
+`CoordinatorConfig` is applied at startup. Each actor retains its own response or confirmation
+duration; timeout tasks capture that duration when scheduled. Startup creates actor channels using
+the configured nonzero inbox capacity. The OTA server retains that capacity for its later-created
+transfer and subscription channels. ZDP admission limits remain independent of queue capacity.
+Legacy environment variables provide defaults. Quarantine durations are internal and independent
+of caller-selected response deadlines.

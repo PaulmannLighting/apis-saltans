@@ -15,14 +15,14 @@ use zb_hw::{NcpHandle, TransmissionError};
 pub use self::message::Message;
 pub use self::metadata::Metadata;
 pub use self::transmission_response::TransmissionResponse;
-use crate::MPSC_CHANNEL_SIZE;
+use crate::CoordinatorConfig;
+use crate::config::DEFAULT_CONFIRMATION_TIMEOUT;
 use crate::runtime::spawn;
 
 mod message;
 mod metadata;
 mod transmission_response;
 
-const CONFIRMATION_TIMEOUT: Duration = Duration::from_secs(30);
 const APS_COUNTER_COUNT: usize = 1_usize << u8::BITS;
 const INITIAL_COUNTER: u8 = 0;
 const INITIAL_GENERATION: u64 = 0;
@@ -124,6 +124,7 @@ impl Aps {
 pub struct Transceiver {
     ncp: NcpHandle,
     state: TransmissionState,
+    confirmation_timeout: Duration,
     inbox: WeakSender<Message>,
 }
 
@@ -433,6 +434,7 @@ impl Transceiver {
         Self {
             ncp,
             state: TransmissionState::new(),
+            confirmation_timeout: DEFAULT_CONFIRMATION_TIMEOUT,
             inbox,
         }
     }
@@ -526,8 +528,9 @@ impl Transceiver {
 
     fn schedule_confirmation_timeout(&self, token: TransmissionToken) {
         let inbox = self.inbox.clone();
+        let duration = self.confirmation_timeout;
         spawn(async move {
-            sleep(CONFIRMATION_TIMEOUT).await;
+            sleep(duration).await;
             let Some(inbox) = inbox.upgrade() else {
                 return;
             };
@@ -541,9 +544,11 @@ impl Transceiver {
     }
 
     /// Spawn the APS actor.
-    pub fn spawn(ncp: NcpHandle) -> Aps {
-        let (aps_tx, aps_rx) = tokio::sync::mpsc::channel(MPSC_CHANNEL_SIZE);
-        crate::runtime::spawn_actor("APS", Self::new(ncp, aps_tx.downgrade()).run(aps_rx));
+    pub fn spawn(ncp: NcpHandle, config: &CoordinatorConfig) -> Aps {
+        let (aps_tx, aps_rx) = tokio::sync::mpsc::channel(config.inbox_capacity.get());
+        let mut actor = Self::new(ncp, aps_tx.downgrade());
+        actor.confirmation_timeout = config.aps_confirmation_timeout;
+        crate::runtime::spawn_actor("APS", actor.run(aps_rx));
         Aps::new(aps_tx)
     }
 }
