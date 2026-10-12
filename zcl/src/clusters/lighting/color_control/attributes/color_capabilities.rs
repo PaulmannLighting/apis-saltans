@@ -3,6 +3,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::TypeId;
 use zb_core::types::{Map16, Type};
 
+use crate::{Discrete, ReportingType};
+
 /// Color-related capabilities of a device.
 #[cfg_attr(
     feature = "serde",
@@ -52,4 +54,8 @@ impl TryFrom<Type> for ColorCapabilities {
             Err(value)
         }
     }
+}
+
+impl ReportingType for ColorCapabilities {
+    type Configuration = Discrete<Self>;
 }

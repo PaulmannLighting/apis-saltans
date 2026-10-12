@@ -2,6 +2,8 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zb_core::TypeId;
 use zb_core::types::{Enum16, Type as ZclType, Uint16};
 
+use crate::{Discrete, ReportingType};
+
 /// Zone types.
 ///
 /// TODO: Add option for manufacturer-specific types.
@@ -88,4 +90,8 @@ impl TryFrom<ZclType> for Type {
             Err(value)
         }
     }
+}
+
+impl ReportingType for Type {
+    type Configuration = Discrete<Self>;
 }

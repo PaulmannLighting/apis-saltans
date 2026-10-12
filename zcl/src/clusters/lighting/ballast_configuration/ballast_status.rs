@@ -2,6 +2,8 @@ use bitflags::bitflags;
 use zb_core::TypeId;
 use zb_core::types::Type;
 
+use crate::{Discrete, ReportingType};
+
 /// Ballast status attribute.
 #[cfg_attr(
     feature = "serde",
@@ -74,4 +76,8 @@ impl BallastStatus {
     pub const fn is_lamp_in_socket(&self) -> bool {
         !self.is_lamp_not_in_socket()
     }
+}
+
+impl ReportingType for BallastStatus {
+    type Configuration = Discrete<Self>;
 }

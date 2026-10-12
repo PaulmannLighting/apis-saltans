@@ -343,8 +343,10 @@ does not add the attribute to the readable API.
 
 Reporting generation intentionally does not filter on `P` (ZCL §2.5.7.3). `R`, `W`, and `S` filtering
 is unchanged. Device capabilities and attribute-specific restrictions remain runtime concerns;
-Discover Attributes Extended reports actual access bits. Reporting configurations classify numeric
-wire types as analog and strings, enums, and bitmaps as discrete; generic string types retain their
+Discover Attributes Extended reports actual access bits. The `ReportingType` trait selects the associated reporting configuration, and
+`ReportingConfiguration` converts it to the wire record. The macro delegates to these traits
+instead of matching type names, so aliases and qualified paths behave identically. Numeric
+wire types use analog parameters; strings, enums, and bitmaps use discrete parameters; generic string types retain their
 length parameter. Numeric wrappers without stream serialization use their underlying wire type for
 the reportable change. The macro recursion limit accommodates the larger generated reporting enums.
 

@@ -3,6 +3,8 @@ use core::num::NonZero;
 use zb_core::TypeId;
 use zb_core::types::{Type, Uint8};
 
+use crate::{Analog, ReportingType};
+
 /// Valid levels for the Ballast Settings Level attribute.
 #[cfg_attr(
     feature = "serde",
@@ -79,4 +81,8 @@ impl TryFrom<Type> for Level {
             Err(value)
         }
     }
+}
+
+impl ReportingType for Level {
+    type Configuration = Analog<Uint8>;
 }

@@ -4,6 +4,7 @@ use zb_core::types::{Int32, UtcTime};
 
 pub use self::time_status::TimeStatus;
 use crate::macros::zcl_attribute_newtype;
+use crate::{Analog, ReportingType};
 
 mod time_status;
 
@@ -50,4 +51,40 @@ zcl_attribute_newtype! {
 zcl_attribute_newtype! {
     /// Deadline until which the `Time` attribute can be trusted.
     pub struct ValidUntilTime(UtcTime) => UtcTime;
+}
+
+impl ReportingType for Time {
+    type Configuration = Analog<UtcTime>;
+}
+
+impl ReportingType for TimeZone {
+    type Configuration = Analog<Int32>;
+}
+
+impl ReportingType for DstStart {
+    type Configuration = Analog<UtcTime>;
+}
+
+impl ReportingType for DstEnd {
+    type Configuration = Analog<UtcTime>;
+}
+
+impl ReportingType for DstShift {
+    type Configuration = Analog<Int32>;
+}
+
+impl ReportingType for StandardTime {
+    type Configuration = Analog<UtcTime>;
+}
+
+impl ReportingType for LocalTime {
+    type Configuration = Analog<UtcTime>;
+}
+
+impl ReportingType for LastSetTime {
+    type Configuration = Analog<UtcTime>;
+}
+
+impl ReportingType for ValidUntilTime {
+    type Configuration = Analog<UtcTime>;
 }

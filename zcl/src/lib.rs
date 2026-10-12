@@ -18,7 +18,7 @@
 
 pub use self::attributes::{
     Analog, AttributeReport, Discrete, InvalidType, ParseAttributeError, Readable, Reportable,
-    Writable,
+    ReportingConfiguration, ReportingType, Writable,
 };
 pub use self::clusters::general::{
     alarms, basic, device_temperature_configuration, groups, identify, level, on_off, ota_upgrade,

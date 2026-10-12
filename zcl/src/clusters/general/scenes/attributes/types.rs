@@ -4,6 +4,7 @@ use zb_core::IeeeAddress;
 use zb_core::types::Uint16;
 
 use crate::macros::zcl_attribute_newtype;
+use crate::{Analog, Discrete, ReportingType};
 
 zcl_attribute_newtype! {
     /// An identifier for the current group.
@@ -13,4 +14,12 @@ zcl_attribute_newtype! {
 zcl_attribute_newtype! {
     /// IEEE address of the device that last configured the scene.
     pub struct LastConfiguredBy(IeeeAddress) => IeeeAddress;
+}
+
+impl ReportingType for CurrentGroup {
+    type Configuration = Analog<Uint16>;
+}
+
+impl ReportingType for LastConfiguredBy {
+    type Configuration = Discrete<Self>;
 }

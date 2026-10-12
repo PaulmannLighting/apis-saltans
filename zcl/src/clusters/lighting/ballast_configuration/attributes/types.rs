@@ -2,6 +2,8 @@ use bitflags::bitflags;
 use zb_core::TypeId;
 use zb_core::types::Type;
 
+use crate::{Discrete, ReportingType};
+
 /// Lamp alarm mode attribute.
 #[cfg_attr(
     feature = "serde",
@@ -40,4 +42,8 @@ impl TryFrom<Type> for LampAlarmMode {
             Err(value)
         }
     }
+}
+
+impl ReportingType for LampAlarmMode {
+    type Configuration = Discrete<Self>;
 }

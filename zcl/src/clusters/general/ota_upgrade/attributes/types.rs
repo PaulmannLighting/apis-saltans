@@ -3,6 +3,7 @@
 use zb_core::IeeeAddress;
 
 use crate::macros::zcl_attribute_newtype;
+use crate::{Discrete, ReportingType};
 
 zcl_attribute_newtype! {
     /// IEEE address of the OTA upgrade server.
@@ -30,4 +31,8 @@ zcl_attribute_newtype! {
         /// The client is waiting for another required image.
         WaitForMore = 0x05,
     }
+}
+
+impl ReportingType for UpgradeServerId {
+    type Configuration = Discrete<Self>;
 }

@@ -3,6 +3,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::TypeId;
 use zb_core::types::{Map16, Type};
 
+use crate::{Discrete, ReportingType};
+
 /// Zone status attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
@@ -66,4 +68,8 @@ impl TryFrom<Type> for Status {
             Err(value)
         }
     }
+}
+
+impl ReportingType for Status {
+    type Configuration = Discrete<Self>;
 }

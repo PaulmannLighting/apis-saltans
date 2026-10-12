@@ -2,6 +2,8 @@ use zb_core::TypeId;
 use zb_core::types::{Type, Uint16};
 use zb_core::units::Mireds;
 
+use crate::{Analog, ReportingType};
+
 const PREVIOUS: u16 = 0xffff;
 
 /// The startup color temperature to use.
@@ -64,4 +66,8 @@ impl TryFrom<Type> for StartupColorTemperature {
             Err(value)
         }
     }
+}
+
+impl ReportingType for StartupColorTemperature {
+    type Configuration = Analog<Uint16>;
 }

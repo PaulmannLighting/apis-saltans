@@ -4,6 +4,7 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::types::Uint16;
 
 use crate::macros::zcl_attribute_newtype;
+use crate::{Analog, ReportingType};
 
 const BASE: f32 = 10.0;
 const FACTOR: f32 = 10_000.0;
@@ -130,4 +131,8 @@ mod tests {
             1
         );
     }
+}
+
+impl ReportingType for MeasuredValue {
+    type Configuration = Analog<Self>;
 }

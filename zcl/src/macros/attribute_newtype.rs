@@ -380,26 +380,43 @@ macro_rules! zcl_attribute_newtype {
         }
     };
     (@type_id_impl [$name:ident] [$inner:ty] [Enum8]) => {
+        impl $crate::ReportingType for $name {
+            type Configuration = $crate::Discrete<Self>;
+        }
+
         impl zb_core::TypeId for $name {
             const ID: u8 = <zb_core::types::Enum8 as zb_core::TypeId>::ID;
         }
     };
     (@type_id_impl [$name:ident] [$inner:ty] [Map8]) => {
+        impl $crate::ReportingType for $name {
+            type Configuration = $crate::Discrete<Self>;
+        }
+
         impl zb_core::TypeId for $name {
             const ID: u8 = <u8 as zb_core::TypeId>::ID;
         }
     };
     (@type_id_impl [$name:ident] [$inner:ty] [Map16]) => {
+        impl $crate::ReportingType for $name {
+            type Configuration = $crate::Discrete<Self>;
+        }
+
         impl zb_core::TypeId for $name {
             const ID: u8 = <zb_core::types::Map16 as zb_core::TypeId>::ID;
         }
     };
     (@type_id_impl [$name:ident] [$inner:ty] [Map32]) => {
+        impl $crate::ReportingType for $name {
+            type Configuration = $crate::Discrete<Self>;
+        }
+
         impl zb_core::TypeId for $name {
             const ID: u8 = <zb_core::types::Map32 as zb_core::TypeId>::ID;
         }
     };
     (@type_id_impl [$name:ident] [$inner:ty] [$variant:ident]) => {
+
         impl zb_core::TypeId for $name {
             const ID: u8 = <$inner as zb_core::TypeId>::ID;
         }

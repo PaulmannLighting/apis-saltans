@@ -3,6 +3,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::TypeId;
 use zb_core::types::Type;
 
+use crate::{Discrete, ReportingType};
+
 /// Options for the On/Off cluster commands.
 #[cfg_attr(
     feature = "serde",
@@ -42,4 +44,8 @@ impl TryFrom<Type> for Options {
             Err(value)
         }
     }
+}
+
+impl ReportingType for Options {
+    type Configuration = Discrete<Self>;
 }

@@ -2,6 +2,8 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zb_core::TypeId;
 use zb_core::types::{Enum8, Type, Uint8};
 
+use crate::{Discrete, ReportingType};
+
 /// Mechanism used for compensating color or color intensity drift over time.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
@@ -54,4 +56,8 @@ impl TryFrom<Type> for DriftCompensation {
             Err(value)
         }
     }
+}
+
+impl ReportingType for DriftCompensation {
+    type Configuration = Discrete<Self>;
 }

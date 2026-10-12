@@ -273,3 +273,7 @@ unexpected-default error when it reports success without the required specific r
 Use the `response:` declaration in `zcl_command!` to select the complete response type, for example
 `response: MaybeDefault<Response>;`. No policy constant or macro policy declaration is needed.
 Response acceptance is independent of the outgoing disable-default-response flag.
+
+Attribute value types implement `ReportingType` to select their reporting parameters.
+Type aliases inherit this choice; custom types explicitly choose `Analog<T>` or `Discrete<T>`
+through the associated `Configuration` type.

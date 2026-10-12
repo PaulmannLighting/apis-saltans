@@ -1,11 +1,15 @@
 use zb_core::types::{Type, Uint8, Uint16};
 use zb_core::{Cluster, Profile, Profiled, TypeId};
 
-use crate::Analog;
 use crate::macros::zcl_attributes;
+use crate::{Analog, Discrete, ReportingType};
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Custom(Uint8);
+
+impl ReportingType for Custom {
+    type Configuration = Discrete<Self>;
+}
 
 impl TypeId for Custom {
     const ID: u8 = <Uint8 as TypeId>::ID;
@@ -94,8 +98,8 @@ mod required_cluster {
     use zb_core::types::Uint16;
 
     use super::{Cluster, Profile, Profiled, Uint8};
-    use crate::Analog;
     use crate::macros::zcl_attributes;
+    use crate::{Analog, Discrete, ReportingType};
 
     zcl_attributes! {
         cluster: Cluster::Basic;
@@ -230,4 +234,45 @@ fn optional_reporting_encodes_analog_discrete_and_global_attributes() {
         timezone.to_le_stream().collect::<Vec<_>>(),
         [0x00, 0x02, 0x00, 0x2b, 10, 0, 60, 0, 2, 0, 0, 0]
     );
+}
+
+mod aliased_reporting {
+    use zb_core::Cluster;
+    use zb_core::types::Uint16 as Renamed;
+
+    use crate::macros::zcl_attributes;
+
+    zcl_attributes! {
+        cluster: Cluster::OnOff;
+        RenamedValue = 0x0010: Renamed { R },
+        QualifiedValue = 0x0011: zb_core::types::Uint16 { R },
+    }
+}
+
+#[test]
+fn reporting_classification_is_independent_of_type_spelling() {
+    use aliased_reporting::SendReport;
+    use le_stream::ToLeStream;
+
+    use crate::global::configure_reporting::send::AttributeReportingConfiguration;
+
+    const MINIMUM: u16 = 10;
+    const MAXIMUM: u16 = 60;
+    const CHANGE: Uint16 = Uint16::new(2);
+    for (report, id) in [
+        (
+            SendReport::RenamedValue(Analog::new(MINIMUM, MAXIMUM, CHANGE)),
+            0x10,
+        ),
+        (
+            SendReport::QualifiedValue(Analog::new(MINIMUM, MAXIMUM, CHANGE)),
+            0x11,
+        ),
+    ] {
+        let record: AttributeReportingConfiguration = report.into();
+        assert_eq!(
+            record.to_le_stream().collect::<Vec<_>>(),
+            [0, id, 0, 0x21, 10, 0, 60, 0, 2, 0]
+        );
+    }
 }

@@ -2,6 +2,7 @@ use zb_core::TypeId;
 use zb_core::types::{Enum8, Type, Uint8};
 
 pub use self::manufacturer_specific::ManufacturerSpecific;
+use crate::{Discrete, ReportingType};
 
 mod manufacturer_specific;
 
@@ -84,4 +85,8 @@ impl TryFrom<Type> for LightSensorType {
             Err(value)
         }
     }
+}
+
+impl ReportingType for LightSensorType {
+    type Configuration = Discrete<Self>;
 }

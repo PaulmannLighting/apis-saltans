@@ -7,6 +7,7 @@ use zb_core::TypeId;
 use zb_core::types::{String, Type};
 
 pub use self::parse_error::ParseError;
+use crate::{Discrete, ReportingType};
 
 mod parse_error;
 
@@ -151,4 +152,8 @@ mod tests {
             "20060814Custom"
         );
     }
+}
+
+impl ReportingType for DateCode {
+    type Configuration = Discrete<Self>;
 }

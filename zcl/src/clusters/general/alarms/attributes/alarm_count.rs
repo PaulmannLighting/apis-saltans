@@ -2,6 +2,8 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::TypeId;
 use zb_core::types::{Type, Uint16};
 
+use crate::{Analog, ReportingType};
+
 const MAX: u16 = 0x00ff;
 
 /// Alarm count type.
@@ -85,4 +87,8 @@ impl TryFrom<Type> for AlarmCount {
         #[expect(clippy::result_large_err)]
         Uint16::try_from(typ).and_then(|uint16| Self::try_from(uint16).map_err(Type::Uint16))
     }
+}
+
+impl ReportingType for AlarmCount {
+    type Configuration = Analog<Self>;
 }

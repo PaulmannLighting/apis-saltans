@@ -2,6 +2,8 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zb_core::TypeId;
 use zb_core::types::{Enum8, Type, Uint8};
 
+use crate::{Discrete, ReportingType};
+
 /// Enhanced color modes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
@@ -51,4 +53,8 @@ impl TryFrom<Type> for EnhancedColorMode {
             Err(value)
         }
     }
+}
+
+impl ReportingType for EnhancedColorMode {
+    type Configuration = Discrete<Self>;
 }

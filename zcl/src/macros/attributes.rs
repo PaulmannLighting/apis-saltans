@@ -30,7 +30,7 @@ macro_rules! zcl_attributes {
         manufacturer_code: $manufacturer_code:expr;
         $(
             $(#[$variant_attr:meta])*
-            $variant:ident = $id:tt: $ty:ident $(<$ty_argument:tt>)? {
+            $variant:ident = $id:tt: $ty:ty {
                 $($access:tt)*
             }
         ),* $(,)?
@@ -41,7 +41,7 @@ macro_rules! zcl_attributes {
             [$manufacturer_code]
             $(
                 $(#[$variant_attr])*
-                $variant = $id: $ty $(<$ty_argument>)? {
+                $variant = $id: $ty {
                     $($access)*
                 }
             ),*
@@ -52,7 +52,7 @@ macro_rules! zcl_attributes {
         $(profile: $profile:expr;)?
         $(
             $(#[$variant_attr:meta])*
-            $variant:ident = $id:tt: $ty:ident $(<$ty_argument:tt>)? {
+            $variant:ident = $id:tt: $ty:ty {
                 $($access:tt)*
             }
         ),* $(,)?
@@ -63,7 +63,7 @@ macro_rules! zcl_attributes {
             []
             $(
                 $(#[$variant_attr])*
-                $variant = $id: $ty $(<$ty_argument>)? {
+                $variant = $id: $ty {
                     $($access)*
                 }
             ),*
@@ -75,7 +75,7 @@ macro_rules! zcl_attributes {
         manufacturer_code: $manufacturer_code:expr;
         $(
             $(#[$variant_attr:meta])*
-            $variant:ident = $id:tt: $ty:ident $(<$ty_argument:tt>)? {
+            $variant:ident = $id:tt: $ty:ty {
                 $($access:tt)*
             }
         ),* $(,)?
@@ -86,7 +86,7 @@ macro_rules! zcl_attributes {
             [$manufacturer_code]
             $(
                 $(#[$variant_attr])*
-                $variant = $id: $ty $(<$ty_argument>)? {
+                $variant = $id: $ty {
                     $($access)*
                 }
             ),*
@@ -97,7 +97,7 @@ macro_rules! zcl_attributes {
         $(profile: $profile:expr;)?
         $(
             $(#[$variant_attr:meta])*
-            $variant:ident = $id:tt: $ty:ident $(<$ty_argument:tt>)? {
+            $variant:ident = $id:tt: $ty:ty {
                 $($access:tt)*
             }
         ),* $(,)?
@@ -108,7 +108,7 @@ macro_rules! zcl_attributes {
             []
             $(
                 $(#[$variant_attr])*
-                $variant = $id: $ty $(<$ty_argument>)? {
+                $variant = $id: $ty {
                     $($access)*
                 }
             ),*
@@ -120,7 +120,7 @@ macro_rules! zcl_attributes {
         [$($manufacturer_code:expr)?]
         $(
             $(#[$variant_attr:meta])*
-            $variant:ident = $id:tt: $ty:ident $(<$ty_argument:tt>)? {
+            $variant:ident = $id:tt: $ty:ty {
                 $($access:tt)*
             }
         ),* $(,)?
@@ -157,7 +157,7 @@ macro_rules! zcl_attributes {
                 Readable::ClusterRevision(value) => value.into(),
                 Readable::AttributeReportingStatus(value) => value.into(),
             ]
-            [$([$(#[$variant_attr])*] [$variant] [$id] [$ty $(<$ty_argument>)?] [$($access)*];)*]
+            [$([$(#[$variant_attr])*] [$variant] [$id] [$ty] [$($access)*];)*]
         }
 
         $crate::macros::zcl_attributes! {
@@ -165,7 +165,7 @@ macro_rules! zcl_attributes {
             $cluster
             [$($manufacturer_code)?]
             [] [] []
-            [$([$(#[$variant_attr])*] [$variant] [$id] [$ty $(<$ty_argument>)?] [$($access)*];)*]
+            [$([$(#[$variant_attr])*] [$variant] [$id] [$ty] [$($access)*];)*]
         }
 
         $crate::macros::zcl_attributes! {
@@ -178,7 +178,7 @@ macro_rules! zcl_attributes {
                 ] [ClusterRevision] [0xfffd] [zb_core::types::Uint16] [R];
                 [/// The reporting status of the cluster instance.
                 ] [AttributeReportingStatus] [0xfffe] [zb_core::types::Uint8] [R];
-                $([$(#[$variant_attr])*] [$variant] [$id] [$ty $(<$ty_argument>)?] [$($access)*];)*
+                $([$(#[$variant_attr])*] [$variant] [$id] [$ty] [$($access)*];)*
             ]
         }
 
@@ -190,7 +190,7 @@ macro_rules! zcl_attributes {
             ["Attributes that can be stored in scenes."]
             [S]
             []
-            [$([$(#[$variant_attr])*] [$variant] [$id] [$ty $(<$ty_argument>)?] [$($access)*];)*]
+            [$([$(#[$variant_attr])*] [$variant] [$id] [$ty] [$($access)*];)*]
         }
 
         const _: () = {
@@ -200,7 +200,7 @@ macro_rules! zcl_attributes {
             {
             }
 
-            $(let _ = assert_type_id::<$ty $(<$ty_argument>)?>;)*
+            $(let _ = assert_type_id::<$ty>;)*
         };
     };
     (@manufacturer_code []) => {};
@@ -1158,142 +1158,9 @@ macro_rules! zcl_attributes {
             [$id]
         }
     };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [AlarmCount] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [AlarmCount] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [CurrentGroup] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint16] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Time] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [TimeZone] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Int32] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [DstStart] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [DstEnd] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [DstShift] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Int32] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [StandardTime] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Int32] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [LocalTime] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Int32] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [LastSetTime] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [ValidUntilTime] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::UtcTime] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Level] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint8] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [StartupColorTemperature] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint16] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [zb_core::types::Uint8] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint8] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [zb_core::types::Uint16] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [zb_core::types::Uint16] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint8] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint8] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint16] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint16] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint24] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint24] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint32] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint32] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint40] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint40] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint48] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint48] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint56] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint56] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Uint64] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Uint64] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Int8] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Int8] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Int16] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Int16] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Int24] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Int24] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Int32] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Int32] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Int40] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Int40] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Int48] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Int48] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Int56] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Int56] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Int64] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Int64] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [TimeOfDay] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [TimeOfDay] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Date] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Date] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [UtcTime] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [UtcTime] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [Mireds] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [Mireds] $id }
-    };
-    (@classify_send_report_variant $manufacturer_code:tt $variants:tt $type_id_arms:tt $conversion_arms:tt $rest:tt $attrs:tt $variant:tt [MeasuredValue] $id:tt) => {
-        $crate::macros::zcl_attributes! { @send_report_analog $manufacturer_code $variants $type_id_arms $conversion_arms $rest $attrs $variant [MeasuredValue] $id }
-    };
     (
         @classify_send_report_variant
         $manufacturer_code:tt
-        $variants:tt
-        $type_id_arms:tt
-        $conversion_arms:tt
-        $rest:tt
-        $attrs:tt
-        $variant:tt
-        [$ty:ty]
-        $id:tt
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @send_report_discrete
-            $manufacturer_code
-            $variants
-            $type_id_arms
-            $conversion_arms
-            $rest
-            $attrs
-            $variant
-            [$ty]
-            $id
-        }
-    };
-    (
-        @send_report_analog
-        $manufacturer_code:tt
         [$($variants:tt)*]
         [$($type_id_arms:tt)*]
         [$($conversion_arms:tt)*]
@@ -1309,7 +1176,7 @@ macro_rules! zcl_attributes {
             [
                 $($variants)*
                 $($variant_attr)*
-                $variant($crate::Analog<$ty>) = $id,
+                $variant(<$ty as $crate::ReportingType>::Configuration) = $id,
             ]
             [
                 $($type_id_arms)*
@@ -1317,38 +1184,7 @@ macro_rules! zcl_attributes {
             ]
             [
                 $($conversion_arms)*
-                SendReport::$variant(value) => Self::analog($id, value),
-            ]
-            [$($rest)*]
-        }
-    };
-    (
-        @send_report_discrete
-        $manufacturer_code:tt
-        [$($variants:tt)*]
-        [$($type_id_arms:tt)*]
-        [$($conversion_arms:tt)*]
-        [$($rest:tt)*]
-        [$($variant_attr:tt)*]
-        [$variant:ident]
-        [$ty:ty]
-        [$id:tt]
-    ) => {
-        $crate::macros::zcl_attributes! {
-            @classify_send_report_variants
-            $manufacturer_code
-            [
-                $($variants)*
-                $($variant_attr)*
-                $variant($crate::Discrete<$ty>) = $id,
-            ]
-            [
-                $($type_id_arms)*
-                SendReport::$variant(_) => <$ty as zb_core::TypeId>::ID,
-            ]
-            [
-                $($conversion_arms)*
-                SendReport::$variant(value) => Self::discrete($id, &value),
+                SendReport::$variant(value) => $crate::ReportingConfiguration::into_configuration(value, $id),
             ]
             [$($rest)*]
         }

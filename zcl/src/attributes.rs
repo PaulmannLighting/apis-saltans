@@ -4,6 +4,7 @@ use zb_core::{ClusterSpecific, Profiled};
 pub use self::analog::Analog;
 pub use self::discrete::Discrete;
 pub use self::errors::{InvalidType, ParseAttributeError};
+pub use self::reporting::{ReportingConfiguration, ReportingType};
 use crate::alarms::Reportable as AlarmsAttributes;
 use crate::ballast_configuration::Reportable as BallastConfigurationAttributes;
 use crate::basic::Reportable as BasicAttributes;
@@ -27,6 +28,7 @@ use crate::time::Reportable as TimeAttributes;
 mod analog;
 mod discrete;
 mod errors;
+mod reporting;
 
 /// A trait to allow the reading of attributes by their respective IDs in a type-safe manner.
 pub trait Readable: ClusterSpecific + Profiled + TryFrom<u16, Error = u16> + Into<u16> {
