@@ -1,5 +1,6 @@
 use std::future::poll_fn;
 use std::mem::replace;
+use std::ops::ControlFlow;
 use std::task::Poll;
 
 use le_stream::ToLeStream;
@@ -19,7 +20,7 @@ use zb_zcl::ota_upgrade::{
 use zb_zcl::{Command, Directed, Scope, Scoped, Status, UnsequencedFrame, UnsequencedHeader};
 
 use self::lifecycle::Lifecycle;
-use self::operations::{OperationCompletion, OperationOutcome, Operations};
+use self::operations::{OperationOutcome, Operations};
 use super::image::ImageTransfer;
 use super::page_transfer::{PageProgress, PageTransfer};
 use super::state::RequestContext;
@@ -128,9 +129,11 @@ struct RequestedRange {
 }
 
 enum TransferEvent {
-    Message(Option<TransferMessage>),
+    Message(TransferMessage),
 
-    Operation(OperationCompletion),
+    InboxClosed,
+
+    Operation(OperationOutcome),
 }
 
 impl Transfer {
@@ -168,49 +171,9 @@ impl Transfer {
         self.lifecycle.start();
         self.notify();
         let result = loop {
-            let event = poll_fn(|context| {
-                if let Poll::Ready(message) = self.messages.poll_recv(context) {
-                    return Poll::Ready(TransferEvent::Message(message));
-                }
-                if !self.operations.is_empty()
-                    && let Poll::Ready(operation) = self.operations.poll_finished(context)
-                {
-                    return Poll::Ready(TransferEvent::Operation(operation));
-                }
-                Poll::Pending
-            })
-            .await;
-            match event {
-                TransferEvent::Message(message) => {
-                    let Some(message) = message else {
-                        break Err(UpdateError::TransferTask);
-                    };
-                    match message {
-                        TransferMessage::HardwareUnavailable => {
-                            break Err(UpdateError::HardwareEventStreamClosed);
-                        }
-                        TransferMessage::Cancel { generation }
-                            if generation == self.lifecycle.generation() =>
-                        {
-                            break Err(UpdateError::Cancelled);
-                        }
-                        TransferMessage::Deadline {
-                            generation,
-                            deadline,
-                        } if generation == self.lifecycle.generation() => {
-                            break Err(deadline.error());
-                        }
-                        message => self.handle_message(message),
-                    }
-                }
-                TransferEvent::Operation(operation) => {
-                    if let Some(result) = self
-                        .operations
-                        .finish(operation, self.lifecycle.generation())
-                    {
-                        break result;
-                    }
-                }
+            let event = self.next_event().await;
+            if let ControlFlow::Break(result) = self.handle_event(event) {
+                break result;
             }
         };
         self.lifecycle.abort();
@@ -222,59 +185,86 @@ impl Transfer {
         }
     }
 
-    /// Apply an update replacement or dispatch an inbound OTA command.
-    fn handle_message(&mut self, message: TransferMessage) {
+    /// Poll inbox messages before operation completions, preserving replacement priority.
+    async fn next_event(&mut self) -> TransferEvent {
+        poll_fn(|context| {
+            if let Poll::Ready(message) = self.messages.poll_recv(context) {
+                return Poll::Ready(
+                    message.map_or(TransferEvent::InboxClosed, TransferEvent::Message),
+                );
+            }
+            self.operations
+                .poll_finished(context, self.lifecycle.generation())
+                .map(TransferEvent::Operation)
+        })
+        .await
+    }
+
+    /// Apply one event or return the terminal update result.
+    fn handle_event(&mut self, event: TransferEvent) -> ControlFlow<UpdateResult> {
+        match event {
+            TransferEvent::Message(message) => self.handle_message(message),
+            TransferEvent::InboxClosed => ControlFlow::Break(Err(UpdateError::TransferTask)),
+            TransferEvent::Operation(OperationOutcome::Complete(result)) => {
+                ControlFlow::Break(result)
+            }
+            TransferEvent::Operation(OperationOutcome::Continue) => ControlFlow::Continue(()),
+        }
+    }
+
+    /// Handle all mailbox messages, ignoring lifecycle signals from superseded offers.
+    fn handle_message(&mut self, message: TransferMessage) -> ControlFlow<UpdateResult> {
         match message {
-            TransferMessage::Replace(replacement) => {
-                self.replace(*replacement);
-            }
-            TransferMessage::Cancel { .. } | TransferMessage::Deadline { .. } => {
-                // Stale lifecycle messages from a superseded generation are ignored.
-            }
+            TransferMessage::Replace(replacement) => self.replace(*replacement),
             TransferMessage::HardwareUnavailable => {
-                unreachable!("hardware shutdown is handled by the transfer loop");
+                return ControlFlow::Break(Err(UpdateError::HardwareEventStreamClosed));
             }
-            TransferMessage::Request { context, command } => {
-                trace!(
-                    "Processing OTA command from {}: {command:?}",
+            TransferMessage::Cancel { generation } if generation == self.lifecycle.generation() => {
+                return ControlFlow::Break(Err(UpdateError::Cancelled));
+            }
+            TransferMessage::Deadline {
+                generation,
+                deadline,
+            } if generation == self.lifecycle.generation() => {
+                return ControlFlow::Break(Err(deadline.error()));
+            }
+            TransferMessage::Cancel { .. } | TransferMessage::Deadline { .. } => {}
+            TransferMessage::Request { context, command } => self.handle_request(context, command),
+        }
+        ControlFlow::Continue(())
+    }
+
+    /// Dispatch an OTA command and reset inactivity only when it represents accepted activity.
+    fn handle_request(&mut self, context: RequestContext, command: OtaCommand) {
+        trace!(
+            "Processing OTA command from {}: {command:?}",
+            context.destination
+        );
+        let accepted = match command {
+            OtaCommand::QueryNextImageRequest(request) => self.query_next_image(context, &request),
+            OtaCommand::ImageBlockRequest(request) => self.image_block(context, *request),
+            OtaCommand::ImagePageRequest(request) => self.image_page(context, *request),
+            OtaCommand::QuerySpecificFileRequest(request) => {
+                self.query_specific_file(context, *request)
+            }
+            OtaCommand::UpgradeEndRequest(request) => {
+                self.upgrade_end(context, *request);
+                false
+            }
+            OtaCommand::ImageNotify(_)
+            | OtaCommand::QueryNextImageResponse(_)
+            | OtaCommand::ImageBlockResponse(_)
+            | OtaCommand::UpgradeEndResponse(_)
+            | OtaCommand::QuerySpecificFileResponse(_) => {
+                debug!(
+                    "Ignoring server-to-client OTA command from {}",
                     context.destination
                 );
-                match command {
-                    OtaCommand::QueryNextImageRequest(request) => {
-                        if self.query_next_image(context, &request) {
-                            self.lifecycle.record_activity();
-                        }
-                    }
-                    OtaCommand::ImageBlockRequest(request) => {
-                        if self.image_block(context, *request) {
-                            self.lifecycle.record_activity();
-                        }
-                    }
-                    OtaCommand::ImagePageRequest(request) => {
-                        if self.image_page(context, *request) {
-                            self.lifecycle.record_activity();
-                        }
-                    }
-                    OtaCommand::UpgradeEndRequest(request) => {
-                        self.upgrade_end(context, *request);
-                    }
-                    OtaCommand::QuerySpecificFileRequest(request) => {
-                        if self.query_specific_file(context, *request) {
-                            self.lifecycle.record_activity();
-                        }
-                    }
-                    OtaCommand::ImageNotify(_)
-                    | OtaCommand::QueryNextImageResponse(_)
-                    | OtaCommand::ImageBlockResponse(_)
-                    | OtaCommand::UpgradeEndResponse(_)
-                    | OtaCommand::QuerySpecificFileResponse(_) => {
-                        debug!(
-                            "Ignoring server-to-client OTA command from {}",
-                            context.destination
-                        );
-                    }
-                }
+                false
             }
+        };
+        if accepted {
+            self.lifecycle.record_activity();
         }
     }
 

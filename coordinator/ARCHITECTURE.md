@@ -251,8 +251,11 @@ helper that spawns a generation-tagged operation. It reports transmission failur
 applying any terminal update result. Image Page operations reuse the validated request range's
 offset for both their initial position and page boundary calculation. Block and page requests
 supply named `RequestedRange` fields to shared range validation. Operation completion handling
-retires task bookkeeping and filters stale generations separately from the transfer event loop;
-the loop continues to poll queued messages before operation completions.
+retires task bookkeeping and filters stale generations before exposing a normalized `OperationOutcome`.
+An empty operation set stays pending. `Transfer::next_event` polls queued messages before operation
+completions, preserving replacement priority. A single `ControlFlow`-based event handler decides
+whether the update continues or completes; all lifecycle messages follow this same path. Request
+dispatch records activity once after an accepted command instead of repeating timer logic per branch.
 
 Each update carries a `FullAddress` plus its remote endpoint. The transfer pins the IEEE identity
 and current NWK short address for Image Notify transmission and destination-restricted image
