@@ -4,6 +4,19 @@ use super::{Alias, IndividualEndpoint, RequestDestination, TxOptions};
 
 const DEFAULT_RADIUS_COUNTER: u8 = 0;
 
+/// Required addressing and protocol parameters of an APS data request.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct RequestParameters {
+    /// Destination address and endpoint.
+    pub destination: RequestDestination,
+    /// Raw application profile identifier.
+    pub profile_id: u16,
+    /// Raw cluster identifier.
+    pub cluster_id: u16,
+    /// Local source endpoint.
+    pub source_endpoint: IndividualEndpoint,
+}
+
 /// Parameters of an `APSDE-DATA.request` primitive.
 ///
 /// The ASDU is generic so callers can use owned bytes, borrowed byte slices,
@@ -24,13 +37,13 @@ pub struct DataRequest<T> {
 impl<T> DataRequest<T> {
     /// Create a data request without optional transmission behaviors.
     #[must_use]
-    pub const fn new(
-        destination: RequestDestination,
-        profile_id: u16,
-        cluster_id: u16,
-        source_endpoint: IndividualEndpoint,
-        asdu: T,
-    ) -> Self {
+    pub const fn new(parameters: RequestParameters, asdu: T) -> Self {
+        let RequestParameters {
+            destination,
+            profile_id,
+            cluster_id,
+            source_endpoint,
+        } = parameters;
         Self {
             destination,
             profile_id,
@@ -175,7 +188,7 @@ mod tests {
     use zb_core::{Endpoint, Profile};
 
     use super::super::{Alias, IndividualEndpoint, NetworkAddress, RequestDestination, TxOptions};
-    use super::DataRequest;
+    use super::{DataRequest, RequestParameters};
 
     const ALIAS_SEQUENCE_NUMBER: u8 = 7;
     const ASDU: [u8; 3] = [1, 2, 3];
@@ -193,10 +206,12 @@ mod tests {
             endpoint: Endpoint::Broadcast,
         };
         let request = DataRequest::new(
-            destination,
-            Profile::ZigbeeHomeAutomation.as_u16(),
-            CLUSTER_ID,
-            endpoint,
+            RequestParameters {
+                destination,
+                profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+                cluster_id: CLUSTER_ID,
+                source_endpoint: endpoint,
+            },
             ASDU,
         )
         .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION)

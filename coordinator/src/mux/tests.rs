@@ -43,22 +43,22 @@ fn keep_alive_routes_only_valid_device_sources_to_application_events() {
             mux.events = EventSink::new(events);
 
             for address in [LOCAL_ADDRESS, REMOTE_ADDRESS] {
-                let metadata = IndicationMetadata::new(
-                    ReceivedDestination::Network {
+                let metadata = IndicationMetadata {
+                    destination: ReceivedDestination::Network {
                         address: network_address(LOCAL_ADDRESS),
                         endpoint: individual_endpoint(),
                     },
-                    ApsdeSource::Network {
+                    source: ApsdeSource::Network {
                         address: network_address(address),
                         endpoint: individual_endpoint(),
                     },
-                    Profile::ZigbeeHomeAutomation.as_u16(),
-                    Cluster::KeepAlive.as_u16(),
-                    IndicationStatus::success(),
-                    Security::<()>::Unsecured,
-                    LINK_QUALITY,
-                    RX_TIME,
-                );
+                    profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+                    cluster_id: Cluster::KeepAlive.as_u16(),
+                    status: IndicationStatus::success(),
+                    security: Security::<()>::Unsecured,
+                    link_quality: LINK_QUALITY,
+                    rx_time: RX_TIME,
+                };
                 mux.handle_data_indication(DataIndication::new(metadata, Bytes::new()), false)
                     .await;
 
@@ -88,22 +88,22 @@ fn routes_data_indication_to_zcl() {
             let (mux, _aps_messages, mut zcl_messages, _zdp_messages) = test_mux();
             let endpoint = application_endpoint();
             let source_endpoint = individual_endpoint();
-            let metadata = IndicationMetadata::new(
-                ReceivedDestination::Network {
+            let metadata = IndicationMetadata {
+                destination: ReceivedDestination::Network {
                     address: network_address(LOCAL_ADDRESS),
                     endpoint: source_endpoint,
                 },
-                ApsdeSource::Network {
+                source: ApsdeSource::Network {
                     address: network_address(REMOTE_ADDRESS),
                     endpoint: source_endpoint,
                 },
-                Profile::ZigbeeHomeAutomation.as_u16(),
-                Cluster::OnOff.as_u16(),
-                IndicationStatus::success(),
-                Security::<()>::Unsecured,
-                LINK_QUALITY,
-                RX_TIME,
-            );
+                profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+                cluster_id: Cluster::OnOff.as_u16(),
+                status: IndicationStatus::success(),
+                security: Security::<()>::Unsecured,
+                link_quality: LINK_QUALITY,
+                rx_time: RX_TIME,
+            };
             let header = ZclHeader::new(
                 Scope::ClusterSpecific,
                 Direction::ClientToServer,
@@ -151,22 +151,22 @@ fn routes_broadcast_data_indication_to_zdp() {
             let (mux, _aps_messages, _zcl_messages, mut zdp_messages) = test_mux();
             let source_endpoint =
                 IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
-            let metadata = IndicationMetadata::new(
-                ReceivedDestination::Broadcast {
+            let metadata = IndicationMetadata {
+                destination: ReceivedDestination::Broadcast {
                     address: Broadcast::RxOnWhenIdle,
                     endpoint: Endpoint::Data,
                 },
-                ApsdeSource::Network {
+                source: ApsdeSource::Network {
                     address: network_address(REMOTE_ADDRESS),
                     endpoint: source_endpoint,
                 },
-                Profile::Network.as_u16(),
-                <ActiveEpReq as ClusterSpecific>::ID,
-                IndicationStatus::success(),
-                Security::<()>::Unsecured,
-                LINK_QUALITY,
-                RX_TIME,
-            );
+                profile_id: Profile::Network.as_u16(),
+                cluster_id: <ActiveEpReq as ClusterSpecific>::ID,
+                status: IndicationStatus::success(),
+                security: Security::<()>::Unsecured,
+                link_quality: LINK_QUALITY,
+                rx_time: RX_TIME,
+            };
             let request = ActiveEpReq::new(REMOTE_ADDRESS);
             let asdu = ZdpFrame::new(ZDP_SEQUENCE, request)
                 .to_le_stream()
@@ -309,22 +309,22 @@ fn full_zdp_inbox_does_not_delay_aps_confirmation() {
             );
             let source_endpoint =
                 IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
-            let metadata = IndicationMetadata::new(
-                ReceivedDestination::Broadcast {
+            let metadata = IndicationMetadata {
+                destination: ReceivedDestination::Broadcast {
                     address: Broadcast::RxOnWhenIdle,
                     endpoint: Endpoint::Data,
                 },
-                ApsdeSource::Network {
+                source: ApsdeSource::Network {
                     address: network_address(REMOTE_ADDRESS),
                     endpoint: source_endpoint,
                 },
-                Profile::Network.as_u16(),
-                <ActiveEpReq as ClusterSpecific>::ID,
-                IndicationStatus::success(),
-                Security::<()>::Unsecured,
-                LINK_QUALITY,
-                RX_TIME,
-            );
+                profile_id: Profile::Network.as_u16(),
+                cluster_id: <ActiveEpReq as ClusterSpecific>::ID,
+                status: IndicationStatus::success(),
+                security: Security::<()>::Unsecured,
+                link_quality: LINK_QUALITY,
+                rx_time: RX_TIME,
+            };
             let asdu = ZdpFrame::new(ZDP_SEQUENCE, ActiveEpReq::new(REMOTE_ADDRESS))
                 .to_le_stream()
                 .collect();

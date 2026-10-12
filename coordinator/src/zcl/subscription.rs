@@ -196,22 +196,22 @@ mod tests {
         let endpoint = Endpoint::Application(Application::MIN);
         let individual_endpoint =
             IndividualEndpoint::new(endpoint).expect("application endpoint is individual");
-        let metadata = IndicationMetadata::new(
-            ReceivedDestination::Network {
+        let metadata = IndicationMetadata {
+            destination: ReceivedDestination::Network {
                 address: NetworkAddress::new(LOCAL_ADDRESS).expect("coordinator address is valid"),
                 endpoint: individual_endpoint,
             },
-            Source::Network {
+            source: Source::Network {
                 address: NetworkAddress::new(REMOTE_ADDRESS).expect("device address is valid"),
                 endpoint: individual_endpoint,
             },
-            Profile::ZigbeeHomeAutomation.as_u16(),
-            cluster.as_u16(),
-            IndicationStatus::success(),
-            Security::<()>::Unsecured,
-            LINK_QUALITY,
-            (),
-        );
+            profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+            cluster_id: cluster.as_u16(),
+            status: IndicationStatus::success(),
+            security: Security::<()>::Unsecured,
+            link_quality: LINK_QUALITY,
+            rx_time: (),
+        };
         let zcl_header = ZclHeader::new(scope, direction, false, None, 0, 0);
         DataIndication::new(metadata, Frame::new(zcl_header, ()))
     }

@@ -103,7 +103,7 @@ mod tests {
     use zb_core::{Application, Endpoint, Profile};
 
     use super::{Fragments, SINGLE_BLOCK};
-    use crate::data::{Frame, Header};
+    use crate::data::{DataHeaderParameters, Frame, Header};
     use crate::{Destination, Extended};
 
     const CHUNK_SIZE: usize = 4;
@@ -119,14 +119,14 @@ mod tests {
     }
 
     fn header(extended: Option<Extended>) -> Header {
-        Header::new(
-            Destination::Unicast(Application::default().into()),
-            CLUSTER_ID,
-            PROFILE_ID,
-            Endpoint::default(),
-            COUNTER,
+        Header::new(DataHeaderParameters {
+            destination: Destination::Unicast(Application::default().into()),
+            cluster_id: CLUSTER_ID,
+            profile_id: PROFILE_ID,
+            source_endpoint: Endpoint::default(),
+            counter: COUNTER,
             extended,
-        )
+        })
     }
 
     #[test]

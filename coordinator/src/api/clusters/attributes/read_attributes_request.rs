@@ -1,5 +1,5 @@
 use zb_aps::TxOptions;
-use zb_aps::apsde::{DataRequest, IndividualEndpoint, NetworkDestination};
+use zb_aps::apsde::{DataRequest, IndividualEndpoint, NetworkDestination, RequestParameters};
 use zb_core::{ClusterSpecific, Profiled};
 use zb_zcl::Readable;
 use zb_zcl::global::read_attributes::Command;
@@ -17,10 +17,12 @@ where
 {
     ZclRequest::new(
         DataRequest::new(
-            destination.into(),
-            <T::Item as Profiled>::PROFILE.as_u16(),
-            <T::Item as ClusterSpecific>::ID,
-            source_endpoint,
+            RequestParameters {
+                destination: destination.into(),
+                profile_id: <T::Item as Profiled>::PROFILE.as_u16(),
+                cluster_id: <T::Item as ClusterSpecific>::ID,
+                source_endpoint,
+            },
             Command::new(attributes.into_iter().map(Into::into).collect()),
         )
         .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION),

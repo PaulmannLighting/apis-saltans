@@ -110,22 +110,22 @@ mod tests {
     ) -> DataIndication<Frame<Command>, (), ()> {
         let command: Command =
             NetworkManagement::from(MgmtPermitJoiningRsp::new(Status::Success)).into();
-        let metadata = IndicationMetadata::new(
-            ReceivedDestination::Network {
+        let metadata = IndicationMetadata {
+            destination: ReceivedDestination::Network {
                 address: network_address(LOCAL_ADDRESS),
                 endpoint: individual_endpoint(destination_endpoint),
             },
-            Source::Network {
+            source: Source::Network {
                 address: network_address(REMOTE_ADDRESS),
                 endpoint: individual_endpoint(source_endpoint),
             },
-            Profile::Network.as_u16(),
-            command.cluster_id(),
-            IndicationStatus::success(),
-            Security::<()>::Unsecured,
-            LINK_QUALITY,
-            (),
-        );
+            profile_id: Profile::Network.as_u16(),
+            cluster_id: command.cluster_id(),
+            status: IndicationStatus::success(),
+            security: Security::<()>::Unsecured,
+            link_quality: LINK_QUALITY,
+            rx_time: (),
+        };
 
         DataIndication::new(metadata, Frame::new(SEQUENCE, command))
     }

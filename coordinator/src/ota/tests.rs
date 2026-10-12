@@ -1069,19 +1069,19 @@ where
 fn test_metadata(profile: Profile) -> IndicationMetadata<(), ()> {
     let endpoint =
         IndividualEndpoint::new(ENDPOINT).expect("test endpoint is an individual endpoint");
-    IndicationMetadata::new(
-        ReceivedDestination::Network {
+    IndicationMetadata {
+        destination: ReceivedDestination::Network {
             address: NetworkAddress::new(LOCAL_NWK_ADDRESS).expect("coordinator address is valid"),
             endpoint,
         },
-        test_source(),
-        profile.as_u16(),
-        Cluster::OtaUpgrade.as_u16(),
-        IndicationStatus::success(),
-        Security::Unsecured,
-        u8::MAX,
-        (),
-    )
+        source: test_source(),
+        profile_id: profile.as_u16(),
+        cluster_id: Cluster::OtaUpgrade.as_u16(),
+        status: IndicationStatus::success(),
+        security: Security::Unsecured,
+        link_quality: u8::MAX,
+        rx_time: (),
+    }
 }
 
 fn test_source() -> Source {

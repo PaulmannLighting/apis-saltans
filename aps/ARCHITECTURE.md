@@ -113,3 +113,16 @@ Invalid fragmentation states are intentionally drop-only:
 Fieldless enums with an integer `#[repr]`, such as APS broadcast addresses, frame types, and
 delivery modes, derive `num_enum::IntoPrimitive` and `num_enum::TryFromPrimitive`. Repr enums with
 payload-carrying variants cannot use these derives and retain their representation-specific parsing.
+
+## Named Construction Parameters
+
+`DataRequest::new` accepts `RequestParameters` and a payload. Required addressing and protocol
+identifiers are named fields; optional transmission options, alias, and radius retain their
+existing setters and defaults. `IndicationMetadata` is itself a named parameter record, so it
+can be built directly without a duplicate options type. Its address and security field types
+continue to enforce their existing invariants.
+
+Data frame header constructors accept `DataHeaderParameters` and `UnicastHeaderParameters`.
+The constructors derive control flags and encode endpoint values; callers cannot supply a
+control field inconsistent with the named constructor options. Parsing and wire layout are
+unchanged.

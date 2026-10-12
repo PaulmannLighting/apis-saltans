@@ -5,7 +5,7 @@ use tokio::sync::oneshot::error::TryRecvError;
 use zb_aps::TxOptions;
 use zb_aps::apsde::{
     Alias, DataIndication, DataRequest, IndicationMetadata, IndicationStatus, IndividualEndpoint,
-    NetworkAddress, ReceivedDestination, RequestDestination, Security, Source,
+    NetworkAddress, ReceivedDestination, RequestDestination, RequestParameters, Security, Source,
 };
 use zb_core::endpoint::Application;
 use zb_core::{Cluster as ClusterId, Direction, Endpoint, Profile};
@@ -56,10 +56,12 @@ fn encoding_preserves_every_aps_request_field() {
         sequence_number: ALIAS_SEQUENCE_NUMBER,
     };
     let request = DataRequest::new(
-        destination,
-        Profile::ZigbeeHomeAutomation.as_u16(),
-        ClusterId::OnOff.as_u16(),
-        source_endpoint,
+        RequestParameters {
+            destination,
+            profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+            cluster_id: ClusterId::OnOff.as_u16(),
+            source_endpoint,
+        },
         UnsequencedFrame::from_command(On),
     )
     .with_tx_options(tx_options)
@@ -94,10 +96,12 @@ fn communication_rejects_a_non_network_destination() {
     )
     .expect("application endpoint is individual");
     let request = DataRequest::new(
-        RequestDestination::Bound,
-        Profile::ZigbeeHomeAutomation.as_u16(),
-        ClusterId::OnOff.as_u16(),
-        source_endpoint,
+        RequestParameters {
+            destination: RequestDestination::Bound,
+            profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+            cluster_id: ClusterId::OnOff.as_u16(),
+            source_endpoint,
+        },
         UnsequencedFrame::from_command(On),
     );
 
@@ -125,10 +129,12 @@ fn response_free_unicast_rejects_an_enabled_default_response() {
             )
             .expect("application endpoint is individual");
             let request = DataRequest::new(
-                destination,
-                Profile::ZigbeeHomeAutomation.as_u16(),
-                ClusterId::OnOff.as_u16(),
-                source_endpoint,
+                RequestParameters {
+                    destination,
+                    profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+                    cluster_id: ClusterId::OnOff.as_u16(),
+                    source_endpoint,
+                },
                 UnsequencedFrame::from_command(On).with_disable_default_response(false),
             );
 
@@ -383,24 +389,24 @@ fn unstarted_transceiver() -> (Transceiver, Receiver<Event>) {
 fn subscribed_indication() -> DataIndication<Frame<Cluster>, (), ()> {
     let endpoint = IndividualEndpoint::new(Endpoint::Application(Application::MIN))
         .expect("application endpoint is individual");
-    let metadata = IndicationMetadata::new(
-        ReceivedDestination::Network {
+    let metadata = IndicationMetadata {
+        destination: ReceivedDestination::Network {
             address: NetworkAddress::new(LOCAL_NODE_ID)
                 .expect("coordinator address is a valid NWK address"),
             endpoint,
         },
-        Source::Network {
+        source: Source::Network {
             address: NetworkAddress::new(SOURCE_NODE_ID)
                 .expect("source address is a valid NWK address"),
             endpoint,
         },
-        Profile::ZigbeeHomeAutomation.as_u16(),
-        ClusterId::OnOff.as_u16(),
-        IndicationStatus::success(),
-        Security::<()>::Unsecured,
-        LINK_QUALITY,
-        (),
-    );
+        profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+        cluster_id: ClusterId::OnOff.as_u16(),
+        status: IndicationStatus::success(),
+        security: Security::<()>::Unsecured,
+        link_quality: LINK_QUALITY,
+        rx_time: (),
+    };
     let header = ZclHeader::new(
         Scope::ClusterSpecific,
         Direction::ClientToServer,
@@ -564,31 +570,33 @@ fn local_endpoint_is_part_of_response_identity() {
         IndividualEndpoint::new(Endpoint::try_from(LOCAL_ENDPOINT_ID).unwrap()).unwrap();
     let remote_endpoint = IndividualEndpoint::new(Endpoint::Application(Application::MIN)).unwrap();
     let request = DataRequest::new(
-        RequestDestination::Network {
-            address: NetworkAddress::new(SOURCE_NODE_ID).unwrap(),
-            endpoint: remote_endpoint.get(),
+        RequestParameters {
+            destination: RequestDestination::Network {
+                address: NetworkAddress::new(SOURCE_NODE_ID).unwrap(),
+                endpoint: remote_endpoint.get(),
+            },
+            profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+            cluster_id: ClusterId::OnOff.as_u16(),
+            source_endpoint: local_endpoint,
         },
-        Profile::ZigbeeHomeAutomation.as_u16(),
-        ClusterId::OnOff.as_u16(),
-        local_endpoint,
         UnsequencedFrame::from_command(On),
     );
     let expected = ZclKey::from_request(&request, TRANSACTION_SEQUENCE).unwrap();
     let response = read_response_indication();
     assert_ne!(ZclKey::from_indication(&response), Some(expected));
-    let metadata = IndicationMetadata::new(
-        ReceivedDestination::Network {
+    let metadata = IndicationMetadata {
+        destination: ReceivedDestination::Network {
             address: NetworkAddress::new(LOCAL_NODE_ID).unwrap(),
             endpoint: local_endpoint,
         },
-        source(),
-        Profile::ZigbeeHomeAutomation.as_u16(),
-        ClusterId::OnOff.as_u16(),
-        IndicationStatus::success(),
-        Security::<()>::Unsecured,
-        LINK_QUALITY,
-        (),
-    );
+        source: source(),
+        profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+        cluster_id: ClusterId::OnOff.as_u16(),
+        status: IndicationStatus::success(),
+        security: Security::<()>::Unsecured,
+        link_quality: LINK_QUALITY,
+        rx_time: (),
+    };
     let corrected = DataIndication::new(metadata, response.into_parts().1);
     assert_eq!(ZclKey::from_indication(&corrected), Some(expected));
 }

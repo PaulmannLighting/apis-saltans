@@ -21,14 +21,22 @@ pub enum IndicationStatus {
 /// therefore generic.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct IndicationMetadata<T, K = ()> {
-    destination: ReceivedDestination,
-    source: Source,
-    profile_id: u16,
-    cluster_id: u16,
-    status: IndicationStatus,
-    security: Security<K>,
-    link_quality: u8,
-    rx_time: T,
+    /// Received destination address and endpoint.
+    pub destination: ReceivedDestination,
+    /// Source address and endpoint.
+    pub source: Source,
+    /// Raw application profile identifier.
+    pub profile_id: u16,
+    /// Raw cluster identifier.
+    pub cluster_id: u16,
+    /// Incoming-frame processing status.
+    pub status: IndicationStatus,
+    /// Security processing metadata.
+    pub security: Security<K>,
+    /// Received link quality.
+    pub link_quality: u8,
+    /// Implementation-defined reception timestamp.
+    pub rx_time: T,
 }
 
 /// An ASDU and its `APSDE-DATA.indication` metadata.
@@ -59,34 +67,6 @@ impl From<Status> for IndicationStatus {
 }
 
 impl<T, K> IndicationMetadata<T, K> {
-    /// Create received APSDE metadata.
-    #[expect(
-        clippy::too_many_arguments,
-        reason = "fields mirror the APSDE primitive"
-    )]
-    #[must_use]
-    pub const fn new(
-        destination: ReceivedDestination,
-        source: Source,
-        profile_id: u16,
-        cluster_id: u16,
-        status: IndicationStatus,
-        security: Security<K>,
-        link_quality: u8,
-        rx_time: T,
-    ) -> Self {
-        Self {
-            destination,
-            source,
-            profile_id,
-            cluster_id,
-            status,
-            security,
-            link_quality,
-            rx_time,
-        }
-    }
-
     /// Return the received destination.
     #[must_use]
     pub const fn destination(&self) -> ReceivedDestination {
@@ -259,24 +239,24 @@ mod tests {
     fn indication_keeps_transport_and_security_metadata_with_the_asdu() {
         let endpoint =
             IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
-        let metadata = IndicationMetadata::new(
-            ReceivedDestination::Group(
+        let metadata = IndicationMetadata {
+            destination: ReceivedDestination::Group(
                 GroupId::new(GROUP_ID).expect("test group identifier is valid"),
             ),
-            Source::Network {
+            source: Source::Network {
                 address: NetworkAddress::new(SOURCE_ADDRESS).expect("test source address is valid"),
                 endpoint,
             },
-            Profile::ZigbeeHomeAutomation.as_u16(),
-            CLUSTER_ID,
-            IndicationStatus::Aps(Status::Success),
-            Security::LinkKey {
+            profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+            cluster_id: CLUSTER_ID,
+            status: IndicationStatus::Aps(Status::Success),
+            security: Security::LinkKey {
                 key_index: KEY_INDEX,
                 device_key_pair_entry: DEVICE_KEY_PAIR_ENTRY,
             },
-            LINK_QUALITY,
-            RX_TIME,
-        );
+            link_quality: LINK_QUALITY,
+            rx_time: RX_TIME,
+        };
         let indication = DataIndication::new(metadata, ASDU);
 
         assert_eq!(indication.asdu_length(), ASDU.len());

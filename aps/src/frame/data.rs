@@ -7,8 +7,8 @@ use le_stream::{FromLeStream, ToLeStream};
 
 pub use self::defragmentation::Assembler;
 pub use self::fragments::Fragments;
-pub use self::header::Header;
-pub use self::unicast::Unicast;
+pub use self::header::{DataHeaderParameters, Header};
+pub use self::unicast::{Unicast, UnicastHeaderParameters};
 
 mod defragmentation;
 mod fragments;

@@ -6,6 +6,27 @@ use zb_core::endpoint::Reserved;
 
 use crate::{Control, DeliveryMode, Extended, FrameType};
 
+/// Named construction parameters for an APS data header.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub struct UnicastHeaderParameters {
+    /// Whether APS security is enabled.
+    pub security: bool,
+    /// Whether an APS acknowledgement is requested.
+    pub ack_request: bool,
+    /// Destination endpoint.
+    pub dst_endpoint: Endpoint,
+    /// Raw cluster identifier.
+    pub cluster_id: u16,
+    /// Raw profile identifier.
+    pub profile_id: u16,
+    /// Source endpoint.
+    pub source_endpoint: Endpoint,
+    /// APS frame counter.
+    pub counter: u8,
+    /// Optional extended header.
+    pub extended: Option<Extended>,
+}
+
 /// A header for an APS unicast frame.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, ToLeStream)]
 pub struct Header {
@@ -20,18 +41,18 @@ pub struct Header {
 
 impl Header {
     /// Create a new header for an APS unicast frame.
-    #[expect(clippy::too_many_arguments)]
     #[must_use]
-    pub fn new(
-        security: bool,
-        ack_request: bool,
-        dst_endpoint: Endpoint,
-        cluster_id: u16,
-        profile_id: u16,
-        source_endpoint: Endpoint,
-        counter: u8,
-        extended: Option<Extended>,
-    ) -> Self {
+    pub fn new(parameters: UnicastHeaderParameters) -> Self {
+        let UnicastHeaderParameters {
+            security,
+            ack_request,
+            dst_endpoint,
+            cluster_id,
+            profile_id,
+            source_endpoint,
+            counter,
+            extended,
+        } = parameters;
         let mut control = Control::empty();
         control.set_frame_type(FrameType::Data);
         control.set_delivery_mode(DeliveryMode::Unicast);
@@ -127,5 +148,48 @@ impl FromLeStream for Header {
             counter,
             extended,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use le_stream::{FromLeStream, ToLeStream};
+    use zb_core::Endpoint;
+
+    use super::{Header, UnicastHeaderParameters};
+    use crate::{Control, Extended};
+
+    const CLUSTER_ID: u16 = 0x0006;
+    const PROFILE_ID: u16 = 0x0104;
+    const COUNTER: u8 = 42;
+
+    #[test]
+    fn named_options_preserve_control_flags_and_wire_round_trip() {
+        for security in [false, true] {
+            for ack_request in [false, true] {
+                for extended in [None, Some(Extended::default())] {
+                    let header = Header::new(UnicastHeaderParameters {
+                        security,
+                        ack_request,
+                        dst_endpoint: Endpoint::Data,
+                        cluster_id: CLUSTER_ID,
+                        profile_id: PROFILE_ID,
+                        source_endpoint: Endpoint::Data,
+                        counter: COUNTER,
+                        extended,
+                    });
+                    assert_eq!(header.control().contains(Control::SECURITY), security);
+                    assert_eq!(header.control().contains(Control::ACK_REQUEST), ack_request);
+                    assert_eq!(
+                        header.control().contains(Control::EXTENDED_HEADER),
+                        extended.is_some()
+                    );
+                    assert_eq!(
+                        Header::from_le_stream(header.clone().to_le_stream()),
+                        Some(header)
+                    );
+                }
+            }
+        }
     }
 }

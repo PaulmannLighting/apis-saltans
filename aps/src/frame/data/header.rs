@@ -7,6 +7,23 @@ use zb_core::{Cluster, Endpoint, Profile};
 use crate::frame::destination::{Destination, WeakDestination};
 use crate::{Control, Extended, Fragmentation, FrameType};
 
+/// Named construction parameters for an APS data header.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub struct DataHeaderParameters {
+    /// Frame destination and delivery mode.
+    pub destination: Destination,
+    /// Raw cluster identifier.
+    pub cluster_id: u16,
+    /// Raw profile identifier.
+    pub profile_id: u16,
+    /// Source endpoint.
+    pub source_endpoint: Endpoint,
+    /// APS frame counter.
+    pub counter: u8,
+    /// Optional extended header.
+    pub extended: Option<Extended>,
+}
+
 /// A data frame header.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, ToLeStream)]
 pub struct Header {
@@ -22,14 +39,15 @@ pub struct Header {
 impl Header {
     /// Create a new `Header`.
     #[must_use]
-    pub fn new(
-        destination: Destination,
-        cluster_id: u16,
-        profile_id: u16,
-        source_endpoint: Endpoint,
-        counter: u8,
-        extended: Option<Extended>,
-    ) -> Self {
+    pub fn new(parameters: DataHeaderParameters) -> Self {
+        let DataHeaderParameters {
+            destination,
+            cluster_id,
+            profile_id,
+            source_endpoint,
+            counter,
+            extended,
+        } = parameters;
         let mut control = Control::empty();
         control.set_frame_type(FrameType::Data);
         control.set_destination(destination.into());
@@ -187,7 +205,7 @@ mod tests {
     use zb_core::endpoint::Reserved;
     use zb_core::{Application, Endpoint, Profile};
 
-    use super::Header;
+    use super::{DataHeaderParameters, Header};
     use crate::{Destination, WeakDestination};
 
     const CLUSTER_ID: u16 = 0x0006;
@@ -224,13 +242,13 @@ mod tests {
     }
 
     fn header() -> Header {
-        Header::new(
-            Destination::Unicast(Application::MIN.into()),
-            CLUSTER_ID,
-            PROFILE_ID,
-            Endpoint::Application(Application::MIN),
-            COUNTER,
-            None,
-        )
+        Header::new(DataHeaderParameters {
+            destination: Destination::Unicast(Application::MIN.into()),
+            cluster_id: CLUSTER_ID,
+            profile_id: PROFILE_ID,
+            source_endpoint: Endpoint::Application(Application::MIN),
+            counter: COUNTER,
+            extended: None,
+        })
     }
 }

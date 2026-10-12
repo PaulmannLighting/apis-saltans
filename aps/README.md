@@ -67,6 +67,15 @@ address and endpoint fields permitted by each primitive:
 - `NetworkDestination` pairs a network address with an individual endpoint for
   operations that require response-capable unicast addressing.
 
+Construct `DataRequest` from a named `RequestParameters` value and its payload; optional
+transmission behavior remains available through `with_tx_options`, `with_alias`, and
+`with_radius_counter`. Construct `IndicationMetadata` directly with named fields, then attach
+its payload using `DataIndication::new`. This makes profile and cluster IDs explicit at call sites.
+
+APS data header constructors similarly accept `DataHeaderParameters` or
+`UnicastHeaderParameters` instead of positional arguments. They derive control flags from the
+supplied destination, security, acknowledgement, and extended-header settings.
+
 `Alias` groups the alias source address and sequence number.
 `Security<K>` groups the key index and implementation-defined device-key-pair
 handle used for link-key security. ASDU length is derived from byte-like
@@ -76,7 +85,7 @@ and the ASDU.
 
 ```rust
 use zb_aps::apsde::{
-    DataRequest, IndividualEndpoint, NetworkAddress, RequestDestination,
+    DataRequest, IndividualEndpoint, NetworkAddress, RequestDestination, RequestParameters,
 };
 use zb_aps::TxOptions;
 use zb_core::{Endpoint, Profile};
@@ -88,10 +97,12 @@ let destination = RequestDestination::Network {
     endpoint: Endpoint::Broadcast,
 };
 let request = DataRequest::new(
-    destination,
-    Profile::ZigbeeHomeAutomation.as_u16(),
-    0x0006,
-    local_endpoint,
+    RequestParameters {
+        destination,
+        profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+        cluster_id: 0x0006,
+        source_endpoint: local_endpoint,
+    },
     [0x01, 0x02],
 )
 .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION);

@@ -230,7 +230,7 @@ mod tests {
 
     use bytes::Bytes;
     use tokio::runtime::Builder;
-    use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination};
+    use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination, RequestParameters};
     use zb_core::short_id::{Broadcast, Device};
     use zb_core::{Endpoint, IeeeAddress, Profile};
     use zb_zdp::SimpleDescriptor;
@@ -320,14 +320,16 @@ mod tests {
 
     const fn request() -> DataRequest<Bytes> {
         DataRequest::new(
-            RequestDestination::Broadcast {
-                address: Broadcast::AllDevices,
-                endpoint: Endpoint::Broadcast,
+            RequestParameters {
+                destination: RequestDestination::Broadcast {
+                    address: Broadcast::AllDevices,
+                    endpoint: Endpoint::Broadcast,
+                },
+                profile_id: PROFILE_ID.as_u16(),
+                cluster_id: CLUSTER_ID,
+                source_endpoint: IndividualEndpoint::new(SOURCE_ENDPOINT)
+                    .expect("the ZDO data endpoint is an individual endpoint"),
             },
-            PROFILE_ID.as_u16(),
-            CLUSTER_ID,
-            IndividualEndpoint::new(SOURCE_ENDPOINT)
-                .expect("the ZDO data endpoint is an individual endpoint"),
             Bytes::new(),
         )
     }

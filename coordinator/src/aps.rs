@@ -9,7 +9,9 @@ use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 use tokio::sync::oneshot::{Sender as OneshotSender, channel};
 use tokio::time::sleep;
 use zb_aps::TxOptions;
-use zb_aps::apsde::{ConfirmStatus, DataRequest, IndividualEndpoint, RequestDestination};
+use zb_aps::apsde::{
+    ConfirmStatus, DataRequest, IndividualEndpoint, RequestDestination, RequestParameters,
+};
 use zb_hw::{NcpHandle, TransmissionError};
 
 pub use self::message::Message;
@@ -44,10 +46,12 @@ pub const fn data_request(
     asdu: Bytes,
 ) -> DataRequest<Bytes> {
     DataRequest::new(
-        destination,
-        metadata.profile().as_u16(),
-        metadata.cluster_id(),
-        source_endpoint,
+        RequestParameters {
+            destination,
+            profile_id: metadata.profile().as_u16(),
+            cluster_id: metadata.cluster_id(),
+            source_endpoint,
+        },
         asdu,
     )
     .with_tx_options(metadata.tx_options())

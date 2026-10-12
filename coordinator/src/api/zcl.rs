@@ -6,7 +6,7 @@ use log::trace;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot::channel;
 use zb_aps::TxOptions;
-use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination};
+use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination, RequestParameters};
 use zb_core::{ClusterSpecific, ExpectResponse, Profiled};
 pub use zb_zcl::ZclResponseType;
 use zb_zcl::global::default_response::DefaultResponse;
@@ -69,8 +69,16 @@ pub const fn request_with_ids(
     cluster_id: u16,
     frame: UnsequencedFrame<Bytes>,
 ) -> DataRequest<UnsequencedFrame<Bytes>> {
-    DataRequest::new(destination, profile_id, cluster_id, source_endpoint, frame)
-        .with_tx_options(DEFAULT_TX_OPTIONS)
+    DataRequest::new(
+        RequestParameters {
+            destination,
+            profile_id,
+            cluster_id,
+            source_endpoint,
+        },
+        frame,
+    )
+    .with_tx_options(DEFAULT_TX_OPTIONS)
 }
 
 /// Trait for sending ZCL commands.
@@ -167,10 +175,12 @@ pub trait Zcl {
     {
         self.communicate_request(ZclRequest::new(
             DataRequest::new(
-                destination,
-                C::PROFILE.as_u16(),
-                <C as ClusterSpecific>::ID,
-                source_endpoint,
+                RequestParameters {
+                    destination,
+                    profile_id: C::PROFILE.as_u16(),
+                    cluster_id: <C as ClusterSpecific>::ID,
+                    source_endpoint,
+                },
                 command,
             )
             .with_tx_options(DEFAULT_TX_OPTIONS),
@@ -349,6 +359,7 @@ mod tests {
     use le_stream::ToLeStream;
     use zb_aps::apsde::{
         DataRequest, IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination,
+        RequestParameters,
     };
     use zb_core::endpoint::Application;
     use zb_core::{ClusterSpecific, Direction, Endpoint, ExpectResponse, Profile};
@@ -538,10 +549,12 @@ mod tests {
         {
             let (sender, mut messages) = tokio::sync::mpsc::channel(CHANNEL_CAPACITY);
             let request = ZclRequest::new(DataRequest::new(
-                destination(),
-                PROFILE,
-                CLUSTER,
-                source_endpoint(),
+                RequestParameters {
+                    destination: destination(),
+                    profile_id: PROFILE,
+                    cluster_id: CLUSTER,
+                    source_endpoint: source_endpoint(),
+                },
                 command,
             ));
             let mut pending = pin!(sender.communicate_request(request));
@@ -594,7 +607,7 @@ mod tests {
 
     #[test]
     fn typed_global_request_preserves_addressing_and_manufacturer_context() {
-        use zb_aps::apsde::DataRequest;
+        use zb_aps::apsde::{DataRequest, RequestParameters};
         use zb_zcl::global::read_attributes;
 
         use super::ZclRequest;
@@ -602,8 +615,15 @@ mod tests {
         const CLUSTER: u16 = 0x0006;
         const MANUFACTURER: u16 = 0x1234;
         let command = read_attributes::Command::new(Box::default());
-        let original =
-            DataRequest::new(destination(), PROFILE, CLUSTER, source_endpoint(), command);
+        let original = DataRequest::new(
+            RequestParameters {
+                destination: destination(),
+                profile_id: PROFILE,
+                cluster_id: CLUSTER,
+                source_endpoint: source_endpoint(),
+            },
+            command,
+        );
         let expected = original.clone().map_asdu(UnsequencedFrame::from_command);
         let typed = ZclRequest::new(original);
         assert_eq!(typed.as_request(), &expected);

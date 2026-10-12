@@ -9,6 +9,7 @@ use tokio::sync::oneshot::Receiver;
 use zb_aps::TxOptions;
 use zb_aps::apsde::{
     DataRequest, IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination,
+    RequestParameters,
 };
 #[cfg(test)]
 use zb_core::IeeeAddress;
@@ -81,10 +82,12 @@ const fn request_from_unsequenced_frame(
     frame: UnsequencedFrame<Bytes>,
 ) -> Request {
     DataRequest::new(
-        destination,
-        profile.as_u16(),
-        cluster_id,
-        source_endpoint,
+        RequestParameters {
+            destination,
+            profile_id: profile.as_u16(),
+            cluster_id,
+            source_endpoint,
+        },
         frame,
     )
     .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION)

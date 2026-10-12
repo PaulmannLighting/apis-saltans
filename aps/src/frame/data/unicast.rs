@@ -2,7 +2,7 @@
 
 use le_stream::{FromLeStream, ToLeStream};
 
-pub use self::header::Header;
+pub use self::header::{Header, UnicastHeaderParameters};
 
 mod header;
 

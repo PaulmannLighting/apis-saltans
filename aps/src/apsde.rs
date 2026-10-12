@@ -17,7 +17,7 @@ pub use self::address::{
 pub use self::alias::Alias;
 pub use self::confirm::{ConfirmStatus, DataConfirm};
 pub use self::indication::{DataIndication, IndicationMetadata, IndicationStatus};
-pub use self::request::DataRequest;
+pub use self::request::{DataRequest, RequestParameters};
 pub use self::security::{Security, SecurityStatus};
 pub use self::status::Status;
 pub use self::tx_options::TxOptions;
