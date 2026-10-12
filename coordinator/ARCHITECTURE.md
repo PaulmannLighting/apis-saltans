@@ -523,14 +523,20 @@ destination, and outcome without overwriting earlier failures.
 
 Managed startup installs a task-local task group while spawning the actors. Internal spawning
 inherits that group, including protocol deadlines, OTA operations, forwarding tasks, and asynchronous
-image reads. Registrations are removed when task futures are dropped. The supervisor
-closes registration to new running work, cancels asynchronous tasks, and waits for the group to
-empty before publishing `Stopped`. Tasks racing with shutdown are registered and immediately
-cancelled. Image sources implement `AsyncRead + AsyncSeek + Unpin + Send`; their owning
-transfer tasks serialize seeks and reads and can be cancelled while I/O is pending. Reader-owned
-background work (such as Tokio filesystem workers) is outside this task group. Hardware drivers remain
-externally owned. Lifecycle notifications use a watch channel; event-loss counters use atomics and
-are independent of the application event channel's capacity.
+image reads. A `tokio_util::task::TaskTracker` tracks each future before it is spawned, including
+futures placed in actor-owned `JoinSet`s. A shared `CancellationToken` drops pending task futures
+when shutdown begins. Cancelled tasks return `None`; explicit handle abortion still produces a
+Tokio cancellation error. A small unwind guard reports task panics, while actor wrappers report
+unexpected normal exits. The first termination reason is retained.
+
+The supervisor cancels the token, closes the tracker, and waits for tracked futures to finish
+cleanup before publishing `Stopped`. Closing the tracker alone does not prohibit new tasks:
+children spawned during cleanup are registered before their parent exits and inherit the cancelled
+token, so their futures are dropped without being polled. Image sources implement
+`AsyncRead + AsyncSeek + Unpin + Send`; their owning transfer tasks serialize seeks and reads.
+Reader-owned background work (such as Tokio filesystem workers) is outside this task group.
+Hardware drivers remain externally owned. Lifecycle notifications use a watch channel; event-loss
+counters use atomics and are independent of the application event channel's capacity.
 
 ## Runtime settings
 

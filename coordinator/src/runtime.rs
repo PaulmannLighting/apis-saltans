@@ -1,14 +1,11 @@
 //! Ownership and supervision of coordinator tasks.
 
-use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
-
-use tokio::sync::{Notify, watch};
+use tokio::sync::watch::{Receiver, Sender, channel};
 use tokio::task::{AbortHandle, JoinHandle, JoinSet};
+use tokio_util::sync::CancellationToken;
+use tokio_util::task::TaskTracker;
 
 use crate::event::{DroppedEvents, EventSink};
-
-const TASK_ID_STEP: u64 = 1;
 
 tokio::task_local! {
     static TASKS: TaskGroup;
@@ -51,58 +48,27 @@ pub enum RuntimeStatus {
 #[derive(Debug)]
 pub struct CoordinatorRuntime {
     tasks: TaskGroup,
-    status: watch::Receiver<RuntimeStatus>,
+    status: Receiver<RuntimeStatus>,
     events: EventSink,
     stop_on_drop: bool,
 }
 
 #[derive(Clone, Debug)]
-struct TaskGroup(Arc<GroupState>);
-
-#[derive(Debug)]
-struct GroupState {
-    registry: Mutex<Registry>,
-    changed: Notify,
-    stop: watch::Sender<Option<RuntimeExit>>,
+struct TaskGroup {
+    tracker: TaskTracker,
+    cancellation: CancellationToken,
+    stop: Sender<Option<RuntimeExit>>,
 }
 
-#[derive(Debug, Default)]
-struct Registry {
-    next: u64,
-    closed: bool,
-    tasks: BTreeMap<u64, Option<AbortHandle>>,
-}
-
-struct Registration {
-    group: TaskGroup,
-    id: u64,
-}
+/// Report unwinding separately from task lifetime tracking.
+struct PanicGuard(TaskGroup);
 
 impl CoordinatorRuntime {
+    /// Create a task group and start its lifecycle supervisor.
     pub(crate) fn new(events: EventSink) -> Self {
-        let (stop, mut requested) = watch::channel(None);
-        let tasks = TaskGroup(Arc::new(GroupState {
-            registry: Mutex::new(Registry::default()),
-            changed: Notify::new(),
-            stop,
-        }));
-        let (status, receiver) = watch::channel(RuntimeStatus::Running);
-        let group = tasks.clone();
-        tokio::spawn(async move {
-            let reason = loop {
-                let reason = *requested.borrow_and_update();
-                if let Some(reason) = reason {
-                    break reason;
-                }
-                if requested.changed().await.is_err() {
-                    break RuntimeExit::Shutdown;
-                }
-            };
-            status.send_replace(RuntimeStatus::Stopping(reason));
-            group.close();
-            group.join().await;
-            status.send_replace(RuntimeStatus::Stopped(reason));
-        });
+        let tasks = TaskGroup::new();
+        let (status, receiver) = channel(RuntimeStatus::Running);
+        tokio::spawn(tasks.clone().supervise(status));
         Self {
             tasks,
             status: receiver,
@@ -131,7 +97,7 @@ impl CoordinatorRuntime {
 
     /// Subscribe to lifecycle changes independently of application event delivery.
     #[must_use]
-    pub fn subscribe(&self) -> watch::Receiver<RuntimeStatus> {
+    pub fn subscribe(&self) -> Receiver<RuntimeStatus> {
         self.status.clone()
     }
 
@@ -170,33 +136,42 @@ impl Drop for CoordinatorRuntime {
 }
 
 impl TaskGroup {
-    fn register(&self) -> Registration {
-        let mut registry = self.0.registry.lock().expect("task registry lock");
-        let id = registry.next;
-        registry.next = registry.next.wrapping_add(TASK_ID_STEP);
-        assert!(
-            registry.tasks.insert(id, None).is_none(),
-            "task ID exhausted"
-        );
-        drop(registry);
-        Registration {
-            group: self.clone(),
-            id,
+    /// Create task tracking, cancellation, and termination notification state.
+    fn new() -> Self {
+        Self {
+            tracker: TaskTracker::new(),
+            cancellation: CancellationToken::new(),
+            stop: Sender::new(None),
         }
     }
 
-    fn attach(&self, id: u64, handle: AbortHandle) {
-        let mut registry = self.0.registry.lock().expect("task registry lock");
-        if registry.closed {
-            handle.abort();
-        }
-        if let Some(entry) = registry.tasks.get_mut(&id) {
-            *entry = Some(handle);
+    /// Publish lifecycle transitions and await task cleanup after a stop request.
+    async fn supervise(self, status: Sender<RuntimeStatus>) {
+        let reason = self.wait_for_stop().await;
+        status.send_replace(RuntimeStatus::Stopping(reason));
+        self.cancellation.cancel();
+        self.tracker.close();
+        self.tracker.wait().await;
+        status.send_replace(RuntimeStatus::Stopped(reason));
+    }
+
+    /// Observe the first stop reason, including requests made before supervision starts.
+    async fn wait_for_stop(&self) -> RuntimeExit {
+        let mut requested = self.stop.subscribe();
+        loop {
+            let reason = *requested.borrow_and_update();
+            if let Some(reason) = reason {
+                return reason;
+            }
+            if requested.changed().await.is_err() {
+                return RuntimeExit::Shutdown;
+            }
         }
     }
 
+    /// Retain the first termination reason and notify the supervisor.
     fn request_stop(&self, reason: RuntimeExit) {
-        self.0.stop.send_if_modified(|current| {
+        self.stop.send_if_modified(|current| {
             if current.is_some() {
                 false
             } else {
@@ -206,70 +181,48 @@ impl TaskGroup {
         });
     }
 
-    fn close(&self) {
-        let mut registry = self.0.registry.lock().expect("task registry lock");
-        registry.closed = true;
-        for task in registry.tasks.values().flatten() {
-            task.abort();
-        }
-    }
-
-    async fn join(&self) {
-        loop {
-            let changed = self.0.changed.notified();
-            if self
-                .0
-                .registry
-                .lock()
-                .expect("task registry lock")
-                .tasks
-                .is_empty()
-            {
-                return;
-            }
-            changed.await;
-        }
+    /// Register synchronously, before spawning, so shutdown includes unpolled tasks.
+    fn track<F>(&self, future: F) -> impl Future<Output = Option<F::Output>> + Send + 'static
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        let scope = self.clone();
+        let cancellation = self.cancellation.clone();
+        let guard = PanicGuard(self.clone());
+        self.tracker.track_future(async move {
+            let _guard = guard;
+            TASKS
+                .scope(scope, cancellation.run_until_cancelled(future))
+                .await
+        })
     }
 }
 
-impl Drop for Registration {
+impl Drop for PanicGuard {
     fn drop(&mut self) {
         if std::thread::panicking() {
-            self.group.request_stop(RuntimeExit::TaskPanicked);
+            self.0.request_stop(RuntimeExit::TaskPanicked);
         }
-        self.group
-            .0
-            .registry
-            .lock()
-            .expect("task registry lock")
-            .tasks
-            .remove(&self.id);
-        self.group.0.changed.notify_one();
     }
 }
 
 /// Spawn a child inheriting the current coordinator's task ownership.
-pub fn spawn<F>(future: F) -> JoinHandle<F::Output>
+///
+/// The task returns `None` when coordinator shutdown cancels its future.
+pub fn spawn<F>(future: F) -> JoinHandle<Option<F::Output>>
 where
     F: Future + Send + 'static,
     F::Output: Send + 'static,
 {
     let Ok(group) = TASKS.try_with(Clone::clone) else {
-        return tokio::spawn(future);
+        return tokio::spawn(async move { Some(future.await) });
     };
-    let registration = group.register();
-    let id = registration.id;
-    let scope = group.clone();
-    let task = tokio::spawn(async move {
-        let _registration = registration;
-        TASKS.scope(scope, future).await
-    });
-    group.attach(id, task.abort_handle());
-    task
+    tokio::spawn(group.track(future))
 }
 
 /// Spawn a main actor, terminating its coordinator if the actor exits unexpectedly.
-pub fn spawn_actor<F>(name: &'static str, future: F) -> JoinHandle<()>
+pub fn spawn_actor<F>(name: &'static str, future: F) -> JoinHandle<Option<()>>
 where
     F: Future<Output = ()> + Send + 'static,
 {
@@ -285,23 +238,15 @@ pub fn request_stop(reason: RuntimeExit) {
 }
 
 /// Track tasks whose results are collected by an actor-owned `JoinSet`.
-pub fn spawn_in<F>(set: &mut JoinSet<F::Output>, future: F) -> AbortHandle
+pub fn spawn_in<F>(set: &mut JoinSet<Option<F::Output>>, future: F) -> AbortHandle
 where
     F: Future + Send + 'static,
     F::Output: Send + 'static,
 {
     let Ok(group) = TASKS.try_with(Clone::clone) else {
-        return set.spawn(future);
+        return set.spawn(async move { Some(future.await) });
     };
-    let registration = group.register();
-    let id = registration.id;
-    let scope = group.clone();
-    let task = set.spawn(async move {
-        let _registration = registration;
-        TASKS.scope(scope, future).await
-    });
-    group.attach(id, task.clone());
-    task
+    set.spawn(group.track(future))
 }
 
 #[cfg(test)]
@@ -411,6 +356,94 @@ mod tests {
             })
             .await
             .unwrap();
+        });
+    }
+
+    struct SpawnDuringCleanup {
+        resource: Option<oneshot::Sender<()>>,
+    }
+
+    impl Drop for SpawnDuringCleanup {
+        fn drop(&mut self) {
+            let resource = self.resource.take().unwrap();
+            spawn(async move {
+                let _resource = resource;
+                panic!("a task created during shutdown must not be polled");
+            });
+        }
+    }
+
+    #[test]
+    fn shutdown_tracks_children_spawned_during_cleanup() {
+        Runtime::new().unwrap().block_on(async {
+            let (events, _received) = mpsc::channel(CAPACITY);
+            let runtime = CoordinatorRuntime::new(EventSink::new(events));
+            let (resource, mut receiver) = oneshot::channel::<()>();
+            let (ready, started) = oneshot::channel();
+            runtime.enter(|| {
+                spawn(async move {
+                    let _cleanup = SpawnDuringCleanup {
+                        resource: Some(resource),
+                    };
+                    ready.send(()).unwrap();
+                    pending::<()>().await;
+                })
+            });
+            started.await.unwrap();
+            assert_eq!(
+                timeout(DEADLINE, runtime.shutdown()).await.unwrap(),
+                RuntimeExit::Shutdown
+            );
+            assert!(matches!(
+                receiver.try_recv(),
+                Err(oneshot::error::TryRecvError::Closed)
+            ));
+        });
+    }
+
+    #[test]
+    fn cancellation_before_first_poll_releases_captured_resources() {
+        Runtime::new().unwrap().block_on(async {
+            let (events, _received) = mpsc::channel(CAPACITY);
+            let runtime = CoordinatorRuntime::new(EventSink::new(events));
+            runtime.tasks.cancellation.cancel();
+            let (resource, mut receiver) = oneshot::channel::<()>();
+            let task = runtime.enter(|| {
+                spawn(async move {
+                    let _resource = resource;
+                    panic!("an already cancelled task must not be polled");
+                })
+            });
+            assert_eq!(
+                timeout(DEADLINE, runtime.shutdown()).await.unwrap(),
+                RuntimeExit::Shutdown
+            );
+            assert!(matches!(
+                receiver.try_recv(),
+                Err(oneshot::error::TryRecvError::Closed)
+            ));
+            assert_eq!(task.await.unwrap(), None);
+        });
+    }
+
+    #[test]
+    fn tracked_tasks_preserve_values_and_explicit_abort() {
+        Runtime::new().unwrap().block_on(async {
+            let (events, _received) = mpsc::channel(CAPACITY);
+            let runtime = CoordinatorRuntime::new(EventSink::new(events));
+            let task = runtime.enter(|| spawn(async { RuntimeExit::HardwareEventStreamClosed }));
+            assert_eq!(
+                task.await.unwrap(),
+                Some(RuntimeExit::HardwareEventStreamClosed)
+            );
+            let task = runtime.enter(|| spawn(pending::<()>()));
+            task.abort();
+            assert!(task.await.unwrap_err().is_cancelled());
+            assert_eq!(runtime.status(), RuntimeStatus::Running);
+            assert_eq!(
+                timeout(DEADLINE, runtime.shutdown()).await.unwrap(),
+                RuntimeExit::Shutdown
+            );
         });
     }
 }

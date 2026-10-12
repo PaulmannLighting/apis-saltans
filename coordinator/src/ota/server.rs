@@ -43,7 +43,7 @@ struct ActiveTransfer {
 #[derive(Debug)]
 struct ActiveSubscription {
     messages: Sender<SubscriptionMessage>,
-    task: JoinHandle<()>,
+    task: JoinHandle<Option<()>>,
 }
 
 #[derive(Debug)]
@@ -569,11 +569,15 @@ async fn forward_subscription_frames(
 
 /// Forward one destination task's terminal result into the server event inbox.
 async fn forward_transfer_completion(
-    task: JoinHandle<TransferExit>,
+    task: JoinHandle<Option<TransferExit>>,
     task_id: Id,
     sender: WeakSender<ServerEvent>,
 ) {
-    let result = task.await.map(|exit| (task_id, exit));
+    let result = match task.await {
+        Ok(Some(exit)) => Ok((task_id, exit)),
+        Ok(None) => return,
+        Err(error) => Err(error),
+    };
     let Some(sender) = sender.upgrade() else {
         return;
     };

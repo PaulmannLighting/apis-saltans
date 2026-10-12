@@ -403,6 +403,18 @@ criteria = "safe-to-deploy"
 delta = "0.3.33 -> 0.3.34"
 notes = "AI-assisted delta audit. Only release metadata and lockfile version changes; library source unchanged."
 
+[[audits.futures-macro]]
+who = "Codex (AI-assisted)"
+criteria = "safe-to-deploy"
+version = "0.3.34"
+notes = "AI-assisted full source audit. Reviewed normalized/original manifests and all five source modules: entry points, executor test attribute, join/try_join, select/select_biased, and stream_select. No build script or filesystem/network/process/environment access; proc macros parse supplied syntax and emit tokens. Checked generated future pinning, scoped borrows, fused-future handling, result extraction, error paths, and stream Unpin bounds. Unsafe pin construction is confined to shadowed stable stack bindings or caller futures checked as Unpin. Stream size-hint arithmetic may overflow for excessive aggregate hints but does not perform memory access. No security issues found."
+
+[[audits.futures-sink]]
+who = "Codex (AI-assisted)"
+criteria = "safe-to-deploy"
+version = "0.3.34"
+notes = "AI-assisted full source audit. Reviewed both manifests and the complete library, including all alloc/std configurations. No build script, dependencies, filesystem/network/process access, or hidden initialization. Sink forwarding preserves the underlying error and readiness contracts. Pin forwarding requires Unpin where necessary; the two unchecked projections only mutate Vec/VecDeque heap contents, without moving the pinned container or exposing structurally pinned elements. No security issues found."
+
 [[audits.futures-task]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -942,3 +954,10 @@ criteria = "safe-to-deploy"
 user-id = 6741 # Alice Ryhl (Darksonn)
 start = "2020-12-25"
 end = "2027-07-19"
+
+[[trusted.tokio-util]]
+criteria = "safe-to-deploy"
+user-id = 6741 # Alice Ryhl (Darksonn)
+start = "2020-12-25"
+end = "2027-07-19"
+notes = "Apply the existing Tokio publisher trust to tokio-util, published by the same Tokio maintainer."

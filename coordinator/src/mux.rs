@@ -111,9 +111,9 @@ impl Mux {
                 });
         });
         for shutdown in [aps_shutdown, zcl_shutdown, zdp_shutdown, ota_shutdown] {
-            shutdown.await.unwrap_or_else(|error| {
+            if let Err(error) = shutdown.await {
                 trace!("Terminal notification task failed: {error}");
-            });
+            }
         }
     }
 

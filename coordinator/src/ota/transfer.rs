@@ -99,7 +99,7 @@ pub(super) struct Transfer {
     cancellation: Option<oneshot::Receiver<()>>,
     completion: Option<oneshot::Sender<UpdateResult>>,
     messages: Receiver<TransferMessage>,
-    operations: JoinSet<OperationResult>,
+    operations: JoinSet<Option<OperationResult>>,
     operation_generations: HashMap<Id, u64>,
     cancellation_task: Option<AbortHandle>,
     discovery_deadline_task: Option<AbortHandle>,
@@ -150,7 +150,7 @@ struct RequestedRange {
 enum TransferEvent {
     Message(Option<TransferMessage>),
 
-    Operation(Option<Result<(Id, OperationResult), JoinError>>),
+    Operation(Option<Result<(Id, Option<OperationResult>), JoinError>>),
 }
 
 impl Transfer {
@@ -251,11 +251,12 @@ impl Transfer {
     /// Retire completed operations, ignoring outcomes from replaced update generations.
     fn finish_operation(
         &mut self,
-        operation: Option<Result<(Id, OperationResult), JoinError>>,
+        operation: Option<Result<(Id, Option<OperationResult>), JoinError>>,
     ) -> Option<UpdateResult> {
         match operation {
             Some(Ok((task_id, operation))) => {
                 self.operation_generations.remove(&task_id);
+                let operation = operation?;
                 if operation.generation != self.generation {
                     return None;
                 }
