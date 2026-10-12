@@ -3,7 +3,7 @@ use zb_core::GroupId;
 use zb_core::types::{String, Uint16};
 use zb_zcl::groups::{AddGroup, GetGroupMembership, GetGroupMembershipResponse, RemoveGroup};
 
-use crate::{Error, StatusExt, Zcl, ZclResponse};
+use crate::{Error, StatusExt, Zcl};
 
 /// Trait for Groups cluster operations.
 ///
@@ -11,18 +11,16 @@ use crate::{Error, StatusExt, Zcl, ZclResponse};
 pub trait Groups {
     /// Lists the group memberships from the device.
     ///
-    /// The first await queues the request and returns a [`ZclResponse`]. Await that response to
-    /// confirm transmission and receive the membership list.
+    /// Awaiting this operation completes transmission and returns the membership list.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the request cannot be queued. The returned [`ZclResponse`] reports
-    /// transmission, reception, and response-conversion errors when awaited.
+    /// Returns an [`Error`] if queueing, transmission, reception, or response conversion fails.
     fn list(
         &self,
         destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
-    ) -> impl Future<Output = Result<ZclResponse<GetGroupMembershipResponse>, Error>> + Send;
+    ) -> impl Future<Output = Result<GetGroupMembershipResponse, Error>> + Send;
 
     /// Adds the device to a group.
     ///
@@ -62,12 +60,13 @@ where
         &self,
         destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
-    ) -> Result<ZclResponse<GetGroupMembershipResponse>, Error> {
+    ) -> Result<GetGroupMembershipResponse, Error> {
         self.communicate_command(
             destination.into(),
             source_endpoint,
             GetGroupMembership::default(),
         )
+        .await?
         .await
     }
 

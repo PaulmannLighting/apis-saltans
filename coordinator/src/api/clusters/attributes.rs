@@ -5,8 +5,8 @@ use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
 use self::configure_reporting_request::request as configure_reporting_request;
 use self::read_attributes_request::request as read_attributes_request;
 use self::write_attributes_request::request as write_attributes_request;
+use crate::Error;
 use crate::api::zcl::Zcl;
-use crate::{Error, ZclResponse};
 
 mod configure_reporting_request;
 mod read_attributes_request;
@@ -32,19 +32,17 @@ pub trait Attributes {
     /// configure-reporting response; this API does not guarantee support or waive attribute-specific
     /// restrictions.
     ///
-    /// The first await queues the request and returns a [`ZclResponse`]. Await that response to
-    /// confirm transmission and receive the device's configure-reporting response.
+    /// Awaiting this operation completes transmission and returns the configure-reporting response.
     ///
     /// # Errors
     ///
-    /// Returns an [`Error`] if the request cannot be queued. The returned [`ZclResponse`] reports
-    /// transmission, reception, and response-conversion errors when awaited.
+    /// Returns an [`Error`] if queueing, transmission, reception, or response conversion fails.
     fn configure_reporting<T>(
         &self,
         destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: T,
-    ) -> impl Future<Output = Result<ZclResponse<Response>, Error>> + Send
+    ) -> impl Future<Output = Result<Response, Error>> + Send
     where
         Self: Sync,
         T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send;
@@ -94,7 +92,7 @@ where
         destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: U,
-    ) -> Result<ZclResponse<Response>, Error>
+    ) -> Result<Response, Error>
     where
         U: IntoIterator<Item: Reportable, IntoIter: Send> + Send,
     {
@@ -103,6 +101,7 @@ where
             source_endpoint,
             attributes,
         ))
+        .await?
         .await
     }
 

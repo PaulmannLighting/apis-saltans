@@ -373,9 +373,9 @@ duration; the actors do not use auxiliary receivers.
 expose their source errors and can be constructed through `From`; the send variant intentionally
 discards the failed channel payload.
 
-Higher-level discovery and binding helpers consume both stages internally when they return a final
-value. `Groups::list(...)` and `Attributes::configure_reporting(...)` intentionally expose a
-`ZclResponse<T>` so callers retain control over when to await the device response.
+All convenience methods, including `Groups::list(...)` and `Attributes::configure_reporting(...)`,
+complete transmission and receive the response in one await. Raw ZCL/ZDP communication retains
+separate submission and response awaits for callers that need that control.
 
 ## Events
 

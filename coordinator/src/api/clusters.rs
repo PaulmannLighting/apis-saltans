@@ -13,3 +13,6 @@ mod groups;
 mod level;
 mod on_off;
 mod ota;
+
+#[cfg(test)]
+mod tests;
