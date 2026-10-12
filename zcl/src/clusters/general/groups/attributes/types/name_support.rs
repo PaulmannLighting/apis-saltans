@@ -5,6 +5,7 @@ zcl_attribute_newtype! {
     pub enum NameSupport: Map8 {
         /// The device does not support group names.
         Unsupported = 0x00,
+
         /// The device supports group names.
         Supported = 0x01,
     }

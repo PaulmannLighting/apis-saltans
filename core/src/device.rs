@@ -35,6 +35,7 @@ pub enum Device {
         serialize = "0x0000"
     )]
     OnOffSwitch = 0x0000,
+
     /// Level-control switch.
     #[strum(
         to_string = "LevelControlSwitch (0x0001)",
@@ -43,6 +44,7 @@ pub enum Device {
         serialize = "0x0001"
     )]
     LevelControlSwitch = 0x0001,
+
     /// On/off output.
     #[strum(
         to_string = "OnOffOutput (0x0002)",
@@ -51,6 +53,7 @@ pub enum Device {
         serialize = "0x0002"
     )]
     OnOffOutput = 0x0002,
+
     /// Level-controllable output.
     #[strum(
         to_string = "LevelControllableOutput (0x0003)",
@@ -59,6 +62,7 @@ pub enum Device {
         serialize = "0x0003"
     )]
     LevelControllableOutput = 0x0003,
+
     /// Scene selector.
     #[strum(
         to_string = "SceneSelector (0x0004)",
@@ -67,6 +71,7 @@ pub enum Device {
         serialize = "0x0004"
     )]
     SceneSelector = 0x0004,
+
     /// Configuration tool.
     #[strum(
         to_string = "ConfigurationTool (0x0005)",
@@ -75,6 +80,7 @@ pub enum Device {
         serialize = "0x0005"
     )]
     ConfigurationTool = 0x0005,
+
     /// Remote control.
     #[strum(
         to_string = "RemoteControl (0x0006)",
@@ -83,6 +89,7 @@ pub enum Device {
         serialize = "0x0006"
     )]
     RemoteControl = 0x0006,
+
     /// Combined interface.
     #[strum(
         to_string = "CombinedInterface (0x0007)",
@@ -91,6 +98,7 @@ pub enum Device {
         serialize = "0x0007"
     )]
     CombinedInterface = 0x0007,
+
     /// Range extender.
     #[strum(
         to_string = "RangeExtender (0x0008)",
@@ -99,6 +107,7 @@ pub enum Device {
         serialize = "0x0008"
     )]
     RangeExtender = 0x0008,
+
     /// Mains-powered outlet.
     #[strum(
         to_string = "MainsPowerOutlet (0x0009)",
@@ -107,6 +116,7 @@ pub enum Device {
         serialize = "0x0009"
     )]
     MainsPowerOutlet = 0x0009,
+
     /// Door lock.
     #[strum(
         to_string = "DoorLock (0x000A)",
@@ -116,6 +126,7 @@ pub enum Device {
         serialize = "0x000a"
     )]
     DoorLock = 0x000A,
+
     /// Door-lock controller.
     #[strum(
         to_string = "DoorLockController (0x000B)",
@@ -125,6 +136,7 @@ pub enum Device {
         serialize = "0x000b"
     )]
     DoorLockController = 0x000B,
+
     /// Simple sensor.
     #[strum(
         to_string = "SimpleSensor (0x000C)",
@@ -134,6 +146,7 @@ pub enum Device {
         serialize = "0x000c"
     )]
     SimpleSensor = 0x000C,
+
     /// Consumption-awareness device.
     #[strum(
         to_string = "ConsumptionAwareness (0x000D)",
@@ -152,6 +165,7 @@ pub enum Device {
         serialize = "0x0050"
     )]
     HomeGateway = 0x0050,
+
     /// Smart plug.
     #[strum(
         to_string = "SmartPlug (0x0051)",
@@ -160,6 +174,7 @@ pub enum Device {
         serialize = "0x0051"
     )]
     SmartPlug = 0x0051,
+
     /// White-goods appliance.
     #[strum(
         to_string = "WhiteGoods (0x0052)",
@@ -168,6 +183,7 @@ pub enum Device {
         serialize = "0x0052"
     )]
     WhiteGoods = 0x0052,
+
     /// Meter interface.
     #[strum(
         to_string = "MeterInterface (0x0053)",
@@ -185,6 +201,7 @@ pub enum Device {
         serialize = "0x0100"
     )]
     OnOffLight = 0x0100,
+
     /// Dimmable light.
     #[strum(
         to_string = "DimmableLight (0x0101)",
@@ -193,6 +210,7 @@ pub enum Device {
         serialize = "0x0101"
     )]
     DimmableLight = 0x0101,
+
     /// Color-dimmable light.
     #[strum(
         to_string = "ColorDimmableLight (0x0102)",
@@ -201,6 +219,7 @@ pub enum Device {
         serialize = "0x0102"
     )]
     ColorDimmableLight = 0x0102,
+
     /// On/off light switch.
     #[strum(
         to_string = "OnOffLightSwitch (0x0103)",
@@ -209,6 +228,7 @@ pub enum Device {
         serialize = "0x0103"
     )]
     OnOffLightSwitch = 0x0103,
+
     /// Dimmer switch.
     #[strum(
         to_string = "DimmerSwitch (0x0104)",
@@ -217,6 +237,7 @@ pub enum Device {
         serialize = "0x0104"
     )]
     DimmerSwitch = 0x0104,
+
     /// Color-dimmer switch.
     #[strum(
         to_string = "ColorDimmerSwitch (0x0105)",
@@ -225,6 +246,7 @@ pub enum Device {
         serialize = "0x0105"
     )]
     ColorDimmerSwitch = 0x0105,
+
     /// Light sensor.
     #[strum(
         to_string = "LightSensor (0x0106)",
@@ -233,6 +255,7 @@ pub enum Device {
         serialize = "0x0106"
     )]
     LightSensor = 0x0106,
+
     /// Occupancy sensor.
     #[strum(
         to_string = "OccupancySensor (0x0107)",
@@ -250,6 +273,7 @@ pub enum Device {
         serialize = "0x0200"
     )]
     Shade = 0x0200,
+
     /// Shade controller.
     #[strum(
         to_string = "ShadeController (0x0201)",
@@ -258,6 +282,7 @@ pub enum Device {
         serialize = "0x0201"
     )]
     ShadeController = 0x0201,
+
     /// Window-covering device.
     #[strum(
         to_string = "WindowCoveringDevice (0x0202)",
@@ -266,6 +291,7 @@ pub enum Device {
         serialize = "0x0202"
     )]
     WindowCoveringDevice = 0x0202,
+
     /// Window-covering controller.
     #[strum(
         to_string = "WindowCoveringController (0x0203)",
@@ -283,6 +309,7 @@ pub enum Device {
         serialize = "0x0300"
     )]
     HeatingCoolingUnit = 0x0300,
+
     /// Thermostat.
     #[strum(
         to_string = "Thermostat (0x0301)",
@@ -291,6 +318,7 @@ pub enum Device {
         serialize = "0x0301"
     )]
     Thermostat = 0x0301,
+
     /// Temperature sensor.
     #[strum(
         to_string = "TemperatureSensor (0x0302)",
@@ -299,6 +327,7 @@ pub enum Device {
         serialize = "0x0302"
     )]
     TemperatureSensor = 0x0302,
+
     /// Pump.
     #[strum(
         to_string = "Pump (0x0303)",
@@ -307,6 +336,7 @@ pub enum Device {
         serialize = "0x0303"
     )]
     Pump = 0x0303,
+
     /// Pump controller.
     #[strum(
         to_string = "PumpController (0x0304)",
@@ -315,6 +345,7 @@ pub enum Device {
         serialize = "0x0304"
     )]
     PumpController = 0x0304,
+
     /// Pressure sensor.
     #[strum(
         to_string = "PressureSensor (0x0305)",
@@ -323,6 +354,7 @@ pub enum Device {
         serialize = "0x0305"
     )]
     PressureSensor = 0x0305,
+
     /// Flow sensor.
     #[strum(
         to_string = "FlowSensor (0x0306)",
@@ -331,6 +363,7 @@ pub enum Device {
         serialize = "0x0306"
     )]
     FlowSensor = 0x0306,
+
     /// Mini-split air conditioner.
     #[strum(
         to_string = "MiniSplitAc (0x0307)",
@@ -348,6 +381,7 @@ pub enum Device {
         serialize = "0x0400"
     )]
     IasCie = 0x0400,
+
     /// IAS ancillary-control equipment.
     #[strum(
         to_string = "IasAncillaryControl (0x0401)",
@@ -356,6 +390,7 @@ pub enum Device {
         serialize = "0x0401"
     )]
     IasAncillaryControl = 0x0401,
+
     /// IAS zone device.
     #[strum(
         to_string = "IasZone (0x0402)",
@@ -364,6 +399,7 @@ pub enum Device {
         serialize = "0x0402"
     )]
     IasZone = 0x0402,
+
     /// IAS warning device.
     #[strum(
         to_string = "IasWarningDevice (0x0403)",

@@ -7,6 +7,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 pub enum AddressMode {
     /// Group Addressing Mode
     Group = 0x01,
+
     /// Extended Addressing Mode
     Extended = 0x03,
 }

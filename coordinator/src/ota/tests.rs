@@ -65,6 +65,7 @@ enum ObservedZcl {
     Transmit {
         request: Request,
     },
+
     Reply {
         sequence_number: u8,
         request: Request,

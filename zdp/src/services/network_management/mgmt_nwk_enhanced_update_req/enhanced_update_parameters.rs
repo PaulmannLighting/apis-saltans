@@ -16,6 +16,7 @@ pub enum EnhancedNwkUpdateParameters {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x00,
+
     /// Scan duration of `<const> * (2^1)` symbols.
     One {
         /// The channel to scan.
@@ -23,6 +24,7 @@ pub enum EnhancedNwkUpdateParameters {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x01,
+
     /// Scan duration of `<const> * (2^2)` symbols.
     Two {
         /// The channel to scan.
@@ -30,6 +32,7 @@ pub enum EnhancedNwkUpdateParameters {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x02,
+
     /// Scan duration of `<const> * (2^3)` symbols.
     Three {
         /// The channel to scan.
@@ -37,6 +40,7 @@ pub enum EnhancedNwkUpdateParameters {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x03,
+
     /// Scan duration of `<const> * (2^4)` symbols.
     Four {
         /// The channel to scan.
@@ -44,6 +48,7 @@ pub enum EnhancedNwkUpdateParameters {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x04,
+
     /// Scan duration of `<const> * (2^5)` symbols.
     Five {
         /// The channel to scan.
@@ -51,6 +56,7 @@ pub enum EnhancedNwkUpdateParameters {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x05,
+
     /// Channel change request.
     ChannelChange {
         /// The channels to scan.
@@ -58,6 +64,7 @@ pub enum EnhancedNwkUpdateParameters {
         /// Network update ID.
         nwk_update_id: u8,
     } = 0xFE,
+
     /// `aps_channel_mask_list` and `nwk_manager_addr` attribute change request.
     AttributeChange {
         /// The channels to scan.

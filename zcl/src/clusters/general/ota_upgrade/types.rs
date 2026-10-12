@@ -100,6 +100,7 @@ impl ImageId {
 pub enum ImageNotifyPayload {
     /// Notify clients without filtering by image metadata.
     QueryJitter(QueryJitter),
+
     /// Notify clients belonging to one manufacturer.
     Manufacturer {
         /// Percentage controlling whether a matching client queries the server.
@@ -107,6 +108,7 @@ pub enum ImageNotifyPayload {
         /// Zigbee-assigned manufacturer code.
         manufacturer_code: u16,
     },
+
     /// Notify clients matching a manufacturer and image type.
     ImageType {
         /// Percentage controlling whether a matching client queries the server.
@@ -116,6 +118,7 @@ pub enum ImageNotifyPayload {
         /// Manufacturer-defined image type.
         image_type: u16,
     },
+
     /// Notify clients matching a complete image identifier.
     FileVersion {
         /// Percentage controlling whether a matching client queries the server.
@@ -206,8 +209,10 @@ pub enum QueryResponse {
         /// Total image size in bytes, including the header and all sub-elements.
         image_size: u32,
     },
+
     /// The server currently has no matching image.
     NoImageAvailable,
+
     /// The server is not authorized to upgrade the client.
     NotAuthorized,
 }
@@ -380,8 +385,10 @@ impl WaitForData {
 pub enum ImageBlockResponsePayload {
     /// A block of OTA image data is available.
     Success(ImageBlock),
+
     /// The client should wait before requesting data again.
     WaitForData(WaitForData),
+
     /// The server has aborted the image transfer.
     Abort,
 }

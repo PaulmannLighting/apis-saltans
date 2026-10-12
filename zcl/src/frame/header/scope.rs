@@ -7,6 +7,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 pub enum Scope {
     /// A global command.
     Global = 0x00,
+
     /// A cluster-specific command.
     ClusterSpecific = 0x01,
 }

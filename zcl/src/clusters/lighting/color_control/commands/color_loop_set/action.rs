@@ -8,6 +8,7 @@ mod source;
 pub enum Action {
     /// Deactivate the color loop.
     Deactivate,
+
     /// Activate the color loop.
     Activate(Source),
 }

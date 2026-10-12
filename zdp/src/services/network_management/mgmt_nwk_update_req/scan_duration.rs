@@ -13,36 +13,43 @@ pub enum ScanDuration {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x00,
+
     /// Scan duration of `<const> * (2^1)` symbols.
     One {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x01,
+
     /// Scan duration of `<const> * (2^2)` symbols.
     Two {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x02,
+
     /// Scan duration of `<const> * (2^3)` symbols.
     Three {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x03,
+
     /// Scan duration of `<const> * (2^4)` symbols.
     Four {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x04,
+
     /// Scan duration of `<const> * (2^5)` symbols.
     Five {
         /// Perform an energy scan if `true`.
         energy_scan: bool,
     } = 0x05,
+
     /// Channel change request.
     ChannelChange {
         /// Network update ID.
         nwk_update_id: u8,
     } = 0xFE,
+
     /// `aps_channel_mask_list` and `nwk_manager_addr` attribute change request.
     AttributeChange {
         /// Network update ID.

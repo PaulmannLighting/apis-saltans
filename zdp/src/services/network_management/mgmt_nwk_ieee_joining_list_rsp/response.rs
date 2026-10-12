@@ -9,8 +9,10 @@ use zb_core::{ByteSizedVec, IeeeAddress};
 pub enum JoiningPolicy {
     /// Any device is allowed to join.
     AllJoin = 0x00,
+
     /// Only devices on the IEEE joining list are allowed to join.
     IeeeListJoin = 0x01,
+
     /// No device is allowed to join.
     NoJoin = 0x02,
 }

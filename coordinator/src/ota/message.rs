@@ -30,11 +30,13 @@ pub enum Message {
         /// Reports the terminal result of the scheduled update.
         completion: Sender<UpdateResult>,
     },
+
     /// A received OTA Upgrade cluster command.
     Received {
         /// APSDE indication containing the typed OTA command and all receive metadata.
         indication: DataIndication<Frame<OtaCommand>, (), ()>,
     },
+
     /// Stop every active update because hardware events are unavailable.
     HardwareUnavailable,
 }
@@ -45,45 +47,58 @@ pub enum UpdateError {
     /// The OTA server could not register its ZCL subscription.
     #[error("the OTA ZCL subscription could not be registered")]
     Subscription,
+
     /// The configured number of concurrent destination OTA transfer tasks has been reached.
     #[error("the concurrent destination OTA transfer task limit of {limit} has been reached")]
     UpdateTaskLimitReached {
         /// Configured maximum number of concurrent destination OTA transfer tasks.
         limit: usize,
     },
+
     /// A destination transfer task stopped unexpectedly.
     #[error("the OTA transfer task stopped unexpectedly")]
     TransferTask,
+
     /// A newer image replaced this update for the same device endpoint.
     #[error("the OTA update was superseded by a newer image")]
     Superseded,
+
     /// The update future was explicitly cancelled or dropped.
     #[error("the OTA update was cancelled")]
     Cancelled,
+
     /// The OTA client did not accept the image offer before its discovery deadline.
     #[error("the OTA client did not accept the image offer before its discovery deadline")]
     DiscoveryTimeout,
+
     /// The OTA client stopped requesting transfer data.
     #[error("the OTA client exceeded the block-inactivity deadline")]
     BlockInactivityTimeout,
+
     /// The complete OTA exchange exceeded its configured deadline.
     #[error("the OTA update exceeded its total-transfer deadline")]
     TotalTransferTimeout,
+
     /// The OTA client aborted the update.
     #[error("the OTA client aborted the update")]
     Aborted,
+
     /// The OTA client rejected the downloaded image as invalid.
     #[error("the OTA client rejected the downloaded image")]
     InvalidImage,
+
     /// The OTA client requires another image before it can upgrade.
     #[error("the OTA client requires another image")]
     RequireMoreImage,
+
     /// Reading image data failed.
     #[error("reading OTA image data failed")]
     ImageTransfer,
+
     /// Transmitting an OTA command failed.
     #[error("transmitting OTA data failed")]
     Transmission,
+
     /// The hardware event stream closed before the OTA update completed.
     #[error("the hardware event stream closed")]
     HardwareEventStreamClosed,

@@ -12,8 +12,10 @@ use zb_core::types::{Enum8, Type, Uint8};
 pub enum ColorMode {
     /// Current hue and saturation.
     CurrentHueAndSaturation = 0x00,
+
     /// Current X and Y coordinates.
     CurrentXAndY = 0x01,
+
     /// Color temperature in mireds.
     ColorTemperature = 0x02,
 }

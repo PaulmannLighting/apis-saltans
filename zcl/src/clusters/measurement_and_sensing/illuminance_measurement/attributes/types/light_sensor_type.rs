@@ -10,10 +10,13 @@ mod manufacturer_specific;
 pub enum LightSensorType {
     /// The illuminance measurement is being performed by a photodiode.
     Photodiode,
+
     /// The illuminance measurement is being performed by a CMOS sensor.
     Cmos,
+
     /// Manufacturer-specific type of light sensor.
     ManufacturerSpecific(ManufacturerSpecific),
+
     /// The type of light sensor is unknown.
     Unknown,
 }

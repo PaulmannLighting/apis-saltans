@@ -8,6 +8,7 @@ pub enum TryFromNaiveDateError {
     /// A `Date` can only represent years in the range 1900-2154.
     #[error("Year {0} is out of range")]
     YearOverflow(i32),
+
     /// The year offset results in a non-value.
     ///
     /// This happens when the offset is 0xff (255), i.e. the year is 2155.

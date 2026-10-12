@@ -10,6 +10,7 @@ use self::iterator::AddressLeStream;
 pub enum Address {
     /// 16-bit group address.
     Group(u16),
+
     /// 64-bit extended address.
     Extended(IeeeAddress),
 }
@@ -42,6 +43,7 @@ mod iterator {
     #[derive(Debug)]
     pub enum AddressLeStream {
         Group(<u16 as ToLeStream>::Iter),
+
         Extended(<IeeeAddress as ToLeStream>::Iter),
     }
 

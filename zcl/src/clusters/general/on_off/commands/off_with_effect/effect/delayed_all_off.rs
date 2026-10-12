@@ -9,8 +9,10 @@ pub enum DelayedAllOff {
     /// Fade to off in 0.8 seconds.
     #[default]
     FadeToOff = 0x00,
+
     /// No fade.
     NoFade = 0x01,
+
     /// 50%% dim down in 0.8 seconds, then fade to off in 12 seconds.
     DimDown = 0x02,
 }

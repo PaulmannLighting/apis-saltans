@@ -10,6 +10,7 @@ const PREVIOUS: u16 = 0xffff;
 pub enum StartupColorTemperature {
     /// Set the color temperature to the specified value in mireds.
     Value(Mireds),
+
     /// Use the previous color temperature value.
     Previous,
 }

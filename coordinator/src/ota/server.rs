@@ -48,6 +48,7 @@ struct ActiveSubscription {
 #[derive(Debug)]
 enum AddressResolver {
     Ncp(NcpHandle),
+
     #[cfg(test)]
     Fixed(IeeeAddress),
 }
@@ -64,7 +65,9 @@ impl AddressResolver {
 
 enum ServerEvent {
     Message(Message),
+
     Shutdown,
+
     Transfer(Result<(Id, TransferExit), JoinError>),
 }
 

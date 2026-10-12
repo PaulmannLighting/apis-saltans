@@ -8,10 +8,13 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 pub enum Direction {
     /// Take the shortest distance.
     ShortestDistance = 0x00,
+
     /// Take the longest distance.
     LongestDistance = 0x01,
+
     /// Move up.
     Up = 0x02,
+
     /// Move down.
     Down = 0x03,
 }

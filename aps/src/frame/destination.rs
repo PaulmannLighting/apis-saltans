@@ -61,6 +61,7 @@ mod iterator {
     /// Le-stream iterator
     pub enum DestinationIterator {
         Endpoint(<u8 as ToLeStream>::Iter),
+
         U16(<u16 as ToLeStream>::Iter),
     }
 

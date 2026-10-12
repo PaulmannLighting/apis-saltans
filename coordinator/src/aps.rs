@@ -146,6 +146,7 @@ struct PendingTransmission {
 #[derive(Clone, Copy, Debug)]
 enum TransmissionPhase {
     Submitting { confirmation: Option<ConfirmStatus> },
+
     AwaitingConfirmation,
 }
 

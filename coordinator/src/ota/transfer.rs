@@ -37,11 +37,13 @@ const GENERATION_STEP: u64 = 1;
 pub(super) enum TransferMessage {
     /// Replace the image offered by the existing destination task.
     Replace(Box<Offer>),
+
     /// Cancel an update whose caller dropped or explicitly cancelled its future.
     Cancel {
         /// Generation of the update that owned the cancellation signal.
         generation: u64,
     },
+
     /// Expire one lifecycle deadline.
     Deadline {
         /// Generation of the update that scheduled the deadline.
@@ -49,8 +51,10 @@ pub(super) enum TransferMessage {
         /// Deadline that expired.
         deadline: Deadline,
     },
+
     /// Stop the update because the hardware event source is unavailable.
     HardwareUnavailable,
+
     /// Process an OTA request received from the destination.
     Request {
         context: RequestContext,
@@ -109,14 +113,17 @@ pub(super) struct Transfer {
 pub(super) enum Deadline {
     /// The client has not accepted the offered image.
     Discovery,
+
     /// The client stopped requesting image data.
     BlockInactivity,
+
     /// The complete exchange exceeded its maximum duration.
     TotalTransfer,
 }
 
 enum OperationOutcome {
     Continue,
+
     Complete(UpdateResult),
 }
 
@@ -132,6 +139,7 @@ struct ImageRange {
 
 enum TransferEvent {
     Message(Option<TransferMessage>),
+
     Operation(Option<Result<(Id, OperationResult), JoinError>>),
 }
 

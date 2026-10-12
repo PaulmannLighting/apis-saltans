@@ -10,6 +10,7 @@ pub enum NwkAddrRspResponse {
         /// Remote device network address.
         nwk_addr_remote_dev: u16,
     },
+
     /// Extended response.
     Extended {
         /// Remote device IEEE address.

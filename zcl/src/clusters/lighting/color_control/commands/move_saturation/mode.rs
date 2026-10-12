@@ -8,8 +8,10 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 pub enum Mode {
     /// Stop move.
     Stop = 0x00,
+
     /// Move up.
     Up = 0x01,
+
     // 0x02 is reserved.
     /// Move down.
     Down = 0x03,

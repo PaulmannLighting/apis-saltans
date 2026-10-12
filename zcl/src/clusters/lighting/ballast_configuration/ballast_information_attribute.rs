@@ -8,8 +8,10 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 pub enum BallastInformationAttribute {
     /// Physical minimum level of the ballast.
     PhysicalMinLevel = 0x0000,
+
     /// Physical maximum level of the ballast.
     PhysicalMaxLevel = 0x0001,
+
     /// Status of the ballast.
     BallastStatus = 0x0002,
 }

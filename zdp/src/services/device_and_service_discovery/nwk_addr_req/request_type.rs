@@ -8,6 +8,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 pub enum RequestType {
     /// Request for a single device response.
     SingleDeviceResponse = 0x00,
+
     /// Request for an extended response.
     ExtendedResponse = 0x01,
 }

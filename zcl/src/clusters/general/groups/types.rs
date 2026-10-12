@@ -8,6 +8,7 @@ const AT_LEAST_ONE_CAPACITY: u8 = Uint8::MAX.into_inner();
 pub enum Capacity {
     /// A concrete number of further groups that may be added.
     Remaining(u8),
+
     /// At least one further group may be added.
     AtLeastOne,
 }

@@ -12,6 +12,7 @@ use zb_core::types::{Enum8, Type, Uint8};
 pub enum ColorLoopDirection {
     /// Increment `EnhancedCurrentHue`.
     Increment = 0x00,
+
     /// Decrement `EnhancedCurrentHue`.
     Decrement = 0x01,
 }
