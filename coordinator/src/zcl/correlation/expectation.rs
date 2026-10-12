@@ -1,14 +1,56 @@
+use std::any::type_name;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
+use std::marker::PhantomData;
+
+use bytes::Bytes;
 use zb_zcl::global::default_response::DefaultResponse;
-use zb_zcl::{Cluster, Frame, Header, Status, global};
+use zb_zcl::{Cluster, Frame, Header, Status, UnsequencedFrame, global};
 
-use crate::{DefaultResponsePolicy, ZclResponseType};
+use crate::{DefaultResponsePolicy, ZclRequestPolicy, ZclResponseType};
 
-/// Command matcher retained with pending and quarantined ZCL transactions.
-#[derive(Clone, Copy, Debug)]
+/// Erased response contract retained with pending and quarantined ZCL transactions.
+///
+/// A boxed adapter retains the response type's matching behavior together with the request
+/// command identity and Default Response policy.
+#[derive(Debug)]
 pub struct ResponseExpectation {
-    matches_header: fn(Header) -> bool,
+    contract: Box<dyn ResponseContract>,
+}
+
+/// Object-safe classification shared by typed and encoded response contracts.
+trait ResponseContract
+where
+    Self: Debug + Send + Sync,
+{
+    /// Classify a frame without consuming the contract needed for subsequent or late replies.
+    fn classify(&self, frame: &Frame<Cluster>) -> ResponseMatch;
+}
+
+/// Response type adapter retaining a request's command identity and policy.
+struct ResponseTypeContract<T> {
+    response: PhantomData<T>,
     request_command_id: u8,
     default_response_policy: DefaultResponsePolicy,
+}
+
+impl<T> Debug for ResponseTypeContract<T> {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> FmtResult {
+        formatter
+            .debug_struct("ResponseTypeContract")
+            .field("response", &type_name::<T>())
+            .field("request_command_id", &self.request_command_id)
+            .field("default_response_policy", &self.default_response_policy)
+            .finish()
+    }
+}
+
+impl<T> ResponseContract for ResponseTypeContract<T>
+where
+    T: ZclResponseType + Send + Sync,
+{
+    fn classify(&self, frame: &Frame<Cluster>) -> ResponseMatch {
+        classify_response::<T>(frame, self.request_command_id, self.default_response_policy)
+    }
 }
 
 /// Outcome of matching a frame against a transaction's response policy.
@@ -28,49 +70,83 @@ pub enum ResponseMatch {
 }
 
 impl ResponseExpectation {
-    /// Construct a matcher for a response type and the original request command ID.
-    pub const fn new<T>(
-        request_command_id: u8,
+    /// Erase a request type's fixed response contract for storage in the actor registry.
+    pub(crate) fn for_request<C>() -> Self
+    where
+        C: ZclRequestPolicy,
+        C::Response: ZclResponseType + Send + Sync + 'static,
+    {
+        Self {
+            contract: Box::new(ResponseTypeContract::<C::Response> {
+                response: PhantomData,
+                request_command_id: C::ID,
+                default_response_policy: C::DEFAULT_RESPONSE_POLICY,
+            }),
+        }
+    }
+
+    /// Build a raw contract, taking the original command ID from the encoded frame.
+    ///
+    /// The caller is responsible for selecting the appropriate response type and policy.
+    pub(crate) fn for_encoded<T>(
+        request: &UnsequencedFrame<Bytes>,
         default_response_policy: DefaultResponsePolicy,
     ) -> Self
     where
-        T: ZclResponseType,
+        T: ZclResponseType + Send + Sync + 'static,
     {
         Self {
-            matches_header: T::matches_response,
-            request_command_id,
-            default_response_policy,
+            contract: Box::new(ResponseTypeContract::<T> {
+                response: PhantomData,
+                request_command_id: request.header().command_id(),
+                default_response_policy,
+            }),
         }
     }
 
-    /// Classify a response, including error Default Responses to typed requests.
-    pub fn classify(self, frame: &Frame<Cluster>) -> ResponseMatch {
-        if let Cluster::Global(global::Command::DefaultResponse(response)) = frame.payload() {
-            return self.classify_default(frame.header(), response);
-        }
-        if (self.matches_header)(frame.header()) {
-            ResponseMatch::Expected
-        } else {
-            ResponseMatch::Unrelated
-        }
+    /// Classify a response using the stored request contract.
+    pub(crate) fn classify(&self, frame: &Frame<Cluster>) -> ResponseMatch {
+        self.contract.classify(frame)
     }
+}
 
-    /// Validate the original command before applying the request's Default Response policy.
-    fn classify_default(self, header: Header, response: &DefaultResponse) -> ResponseMatch {
-        if !DefaultResponse::matches_response(header)
-            || response.command_id() != self.request_command_id
-        {
-            return ResponseMatch::Unrelated;
-        }
-        if self.default_response_policy == DefaultResponsePolicy::DefaultAllowed {
-            return ResponseMatch::Expected;
-        }
-        let status = Status::try_from(response.status());
-        if status == Ok(Status::Success) {
-            ResponseMatch::UnexpectedDefault(self.request_command_id)
-        } else {
-            ResponseMatch::Rejected(status)
-        }
+/// Apply Default Response policy before matching the expected response type's header.
+fn classify_response<T>(
+    frame: &Frame<Cluster>,
+    request_command_id: u8,
+    policy: DefaultResponsePolicy,
+) -> ResponseMatch
+where
+    T: ZclResponseType,
+{
+    if let Cluster::Global(global::Command::DefaultResponse(response)) = frame.payload() {
+        return classify_default(frame.header(), response, request_command_id, policy);
+    }
+    if T::matches_response(frame.header()) {
+        ResponseMatch::Expected
+    } else {
+        ResponseMatch::Unrelated
+    }
+}
+
+/// Validate the original command before applying the request's Default Response policy.
+fn classify_default(
+    header: Header,
+    response: &DefaultResponse,
+    request_command_id: u8,
+    policy: DefaultResponsePolicy,
+) -> ResponseMatch {
+    if !DefaultResponse::matches_response(header) || response.command_id() != request_command_id {
+        return ResponseMatch::Unrelated;
+    }
+    if policy == DefaultResponsePolicy::DefaultAllowed {
+        return ResponseMatch::Expected;
+    }
+    let status = Status::try_from(response.status());
+    if status == Ok(Status::Success) {
+        ResponseMatch::UnexpectedDefault(request_command_id)
+    } else {
+        ResponseMatch::Rejected(status)
     }
 }
 
@@ -122,8 +198,8 @@ mod tests {
         const READ: [u8; 8] = [0x18, SEQUENCE, 0x01, 0x00, 0x00, 0x00, 0x10, 0x01];
         const DEFAULT: [u8; 5] = [0x18, SEQUENCE, 0x0b, 0x00, 0x86];
         const UNRELATED: [u8; 5] = [0x18, SEQUENCE, 0x0b, 0x01, 0x86];
-        let expected = ResponseExpectation::new::<ReadOrDefault>(
-            <read_attributes::Command as Command>::ID,
+        let expected = ResponseExpectation::for_encoded::<ReadOrDefault>(
+            &encoded_request(<read_attributes::Command as Command>::ID),
             crate::DefaultResponsePolicy::DefaultAllowed,
         );
         for bytes in [READ.as_slice(), DEFAULT.as_slice()] {
@@ -152,21 +228,71 @@ mod tests {
             )
             .unwrap();
             assert_eq!(
-                ResponseExpectation::new::<DefaultResponse>(
-                    REQUEST_ID,
+                ResponseExpectation::for_encoded::<DefaultResponse>(
+                    &encoded_request(REQUEST_ID),
                     crate::DefaultResponsePolicy::DefaultAllowed
                 )
                 .classify(&frame),
                 ResponseMatch::Expected
             );
             assert_eq!(
-                ResponseExpectation::new::<ReadOrDefault>(
-                    REQUEST_ID,
+                ResponseExpectation::for_encoded::<ReadOrDefault>(
+                    &encoded_request(REQUEST_ID),
                     crate::DefaultResponsePolicy::DefaultAllowed
                 )
                 .classify(&frame),
                 ResponseMatch::Expected
             );
         }
+    }
+    #[test]
+    fn typed_read_contract_matches_specific_reply_and_terminates_on_defaults() {
+        const CLUSTER_ID: u16 = 0x0006;
+        const READ: [u8; 8] = [0x18, SEQUENCE, 0x01, 0x00, 0x00, 0x00, 0x10, 0x01];
+        const REPORT: [u8; 7] = [0x18, SEQUENCE, 0x0a, 0x00, 0x00, 0x10, 0x01];
+        const UNKNOWN: u8 = 0xff;
+        const DEFAULT_ID: u8 = <DefaultResponse as Command>::ID;
+        const REQUEST_ID: u8 = <read_attributes::Command as Command>::ID;
+        const FRAME_CONTROL: u8 = 0x18;
+        let expectation = ResponseExpectation::for_request::<read_attributes::Command>();
+        assert_eq!(
+            expectation.classify(&Frame::parse(CLUSTER_ID, READ.into_iter()).unwrap()),
+            ResponseMatch::Expected
+        );
+        assert_eq!(
+            expectation.classify(&Frame::parse(CLUSTER_ID, REPORT.into_iter()).unwrap()),
+            ResponseMatch::Unrelated
+        );
+        for (status, expected) in [
+            (
+                super::Status::Success as u8,
+                ResponseMatch::UnexpectedDefault(REQUEST_ID),
+            ),
+            (
+                super::Status::Failure as u8,
+                ResponseMatch::Rejected(Ok(super::Status::Failure)),
+            ),
+            (UNKNOWN, ResponseMatch::Rejected(Err(UNKNOWN))),
+        ] {
+            let frame = Frame::parse(
+                CLUSTER_ID,
+                [FRAME_CONTROL, SEQUENCE, DEFAULT_ID, REQUEST_ID, status].into_iter(),
+            )
+            .unwrap();
+            assert_eq!(expectation.classify(&frame), expected);
+        }
+    }
+
+    fn encoded_request(command_id: u8) -> zb_zcl::UnsequencedFrame<bytes::Bytes> {
+        zb_zcl::UnsequencedFrame::new(
+            zb_zcl::UnsequencedHeader::new(
+                Scope::Global,
+                Direction::ClientToServer,
+                false,
+                None,
+                command_id,
+            ),
+            bytes::Bytes::new(),
+        )
     }
 }

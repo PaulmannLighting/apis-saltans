@@ -425,7 +425,10 @@ impl ToLeStream for ImageBlockResponsePayload {
     }
 }
 
-/// Status sent by an OTA client when it finishes or terminates a download.
+/// Wire status sent by an OTA client when it finishes or terminates a download.
+///
+/// Outgoing typed requests use `UpgradeComplete` or `UpgradeIncomplete` instead of accepting
+/// an unrestricted status. This enum remains available for inspecting the decoded wire status.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
     Clone,
@@ -444,10 +447,13 @@ impl ToLeStream for ImageBlockResponsePayload {
 pub enum UpgradeEndStatus {
     /// The image was downloaded and validated successfully.
     Success = 0x00,
+
     /// The client aborted the upgrade process.
     Abort = 0x95,
+
     /// The downloaded image failed validation.
     InvalidImage = 0x96,
+
     /// The client requires another image before it can upgrade.
     RequireMoreImage = 0x99,
 }

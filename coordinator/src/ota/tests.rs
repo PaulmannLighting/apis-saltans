@@ -17,7 +17,7 @@ use zb_zcl::ota_upgrade::{
     Command as OtaCommand, ImageBlockRequest, ImageBlockResponse, ImageBlockResponsePayload,
     ImageId, ImageNotify, ImageNotifyPayload, ImagePageRequest, QueryNextImageRequest,
     QueryNextImageResponse, QueryResponse, QuerySpecificFileRequest, QuerySpecificFileResponse,
-    UpgradeEndRequest, UpgradeEndResponse, UpgradeEndStatus,
+    UpgradeComplete, UpgradeEndResponse, UpgradeIncomplete, UpgradeIncompleteReason,
 };
 use zb_zcl::{Cluster as ZclCluster, Command, Frame, Header, Scope};
 
@@ -546,7 +546,7 @@ fn handles_query_block_and_upgrade_end_flow() {
         ota_sender
             .send(incoming(
                 TEST_SEQUENCE_NUMBER,
-                UpgradeEndRequest::new(UpgradeEndStatus::Success, image_id),
+                UpgradeComplete::new(image_id),
             ))
             .await
             .expect("OTA server is running");
@@ -690,30 +690,52 @@ fn hardware_unavailability_fails_an_active_update_and_stops_the_server() {
 
 #[test]
 fn update_reports_the_clients_terminal_failure() {
-    run_test(async {
-        let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
-        let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
-        tokio::spawn(server.run());
-        let image = test_image();
-        let image_id = image.id();
-        let completion = update_via_api(ota_sender.clone(), image);
-        receive_zcl(&mut zcl_receiver).await;
+    for (reason, expected_error) in [
+        (UpgradeIncompleteReason::Abort, UpdateError::Aborted),
+        (
+            UpgradeIncompleteReason::InvalidImage,
+            UpdateError::InvalidImage,
+        ),
+        (
+            UpgradeIncompleteReason::RequireMoreImage,
+            UpdateError::RequireMoreImage,
+        ),
+    ] {
+        run_test(async {
+            let (zcl_sender, mut zcl_receiver) = tokio::sync::mpsc::channel(TEST_CHANNEL_SIZE);
+            let (ota_sender, server) = Server::test_new(zcl_sender, TEST_UPDATE_LIMIT);
+            tokio::spawn(server.run());
+            let image = test_image();
+            let image_id = image.id();
+            let completion = update_via_api(ota_sender.clone(), image);
+            receive_zcl(&mut zcl_receiver).await;
 
-        ota_sender
-            .send(incoming(
-                TEST_SEQUENCE_NUMBER,
-                UpgradeEndRequest::new(UpgradeEndStatus::InvalidImage, image_id),
-            ))
-            .await
-            .expect("OTA server is running");
-        receive_zcl(&mut zcl_receiver).await;
+            ota_sender
+                .send(incoming(
+                    TEST_SEQUENCE_NUMBER,
+                    UpgradeIncomplete::new(reason, image_id),
+                ))
+                .await
+                .expect("OTA server is running");
+            let (sequence, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
+            assert_eq!(sequence, TEST_SEQUENCE_NUMBER);
+            let response = zb_zcl::global::default_response::DefaultResponse::from_le_stream(
+                bytes.into_iter(),
+            )
+            .expect("valid Default Response");
+            assert_eq!(response.command_id(), <UpgradeIncomplete as Command>::ID);
+            assert_eq!(response.status(), zb_zcl::Status::Success as u8);
 
-        let result = timeout(TEST_TIMEOUT, completion)
-            .await
-            .expect("OTA completion timed out")
-            .expect("OTA update task completed normally");
-        assert!(matches!(result, Err(Error::Ota(UpdateError::InvalidImage))));
-    });
+            let result = timeout(TEST_TIMEOUT, completion)
+                .await
+                .expect("OTA completion timed out")
+                .expect("OTA update task completed normally");
+            let Err(Error::Ota(actual)) = result else {
+                panic!("expected client failure despite successful acknowledgement");
+            };
+            assert_eq!(actual, expected_error);
+        });
+    }
 }
 
 #[test]

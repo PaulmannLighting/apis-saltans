@@ -8,6 +8,7 @@ zcl_command! {
         { Cluster::Groups } => Groups;
         command_id: 0x04;
         direction: Direction::ClientToServer;
+        response: crate::NoSpecificResponse;
         fields;
     }
 }

@@ -9,6 +9,7 @@ zcl_command! {
         { Cluster::Groups } => Groups;
         command_id: 0x05;
         direction: Direction::ClientToServer;
+        response: crate::NoSpecificResponse;
         fields {
             group_id: Uint16,
             group_name: String,

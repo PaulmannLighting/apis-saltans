@@ -337,12 +337,32 @@ completion. Its `expectation` submodule classifies command-specific and Default 
 The transceiver delegates to this component before subscription and application-event routing.
 The generic `crate::correlation` registry remains shared with ZDP.
 
-ZCL registration carries a `ResponseExpectation` with a command-header predicate, the original
-request command ID, and an explicit `DefaultResponsePolicy`. `ZclResponseType` supplies the scope/ID
-predicate; `ZclRequestPolicy` derives the policy from a typed command before encoding. The raw
-`communicate` API requires the policy explicitly. The typed `communicate_command` API derives it,
-including payload-dependent OTA Upgrade End behavior. Attribute helpers select their specified
-command-specific response policies when constructing global requests with explicit cluster IDs.
+ZCL registration carries an erased `ResponseExpectation` owning a `Box<dyn ResponseContract>`.
+The private, object-safe trait classifies frames by reference and requires `Debug + Send + Sync`.
+`ResponseTypeContract<T>` holds the request's command ID and policy alongside a response type
+marker. Both typed and encoded request constructors use this same adapter.
+`ZclResponseType` supplies the scope/ID predicate and is defined in the ZCL crate, re-exported by
+the coordinator. `ZclRequestPolicy` requires `Command` and `ExpectResponse<Cluster>` and supplies
+a fixed `DEFAULT_RESPONSE_POLICY`. The typed constructor derives all three from that one type;
+there is no independently supplied command ID, response type, or policy in the typed path.
+
+`ZclRequest<C>` keeps its encoded request and command marker private and carries no separate
+expectation field. `into_parts` creates the specialized classifier when submitting to the actor.
+The raw `communicate` API still requires a response type and policy; `for_encoded` obtains the
+original command ID from its encoded request header. The typed `communicate_command` API derives it,
+using the concrete OTA client types `UpgradeComplete` and `UpgradeIncomplete` for their distinct
+response contracts. The decoded `UpgradeEndRequest` enum selects the corresponding type from the
+wire status, and the OTA server matches its variant. `communicate_request` accepts the same typed
+contract with explicit APS metadata, used by attribute helpers for global commands and manufacturer
+context. Both typed APIs return `ZclResponse<C::Response>`. Boxed trait objects let the registry
+hold different command contracts and dispatch to their generic implementations without storing
+explicit classifier or header-matcher function pointers. The shared classification helper is generic
+over the response type. The adapter's `PhantomData<T>` marker is zero-sized and retains no response
+value. It inherits the response type's auto traits, so actor-owned contracts require the response
+type (`C::Response` or raw `T`) to be `Send + Sync + 'static`, without requiring `Debug`. Dynamic
+dispatch uses Rust's trait-object vtable; the adapter contains no explicit function-pointer type. Both constructors box an adapter containing the command ID and policy,
+allocating storage for those fields. Packet identity and response validation
+remain runtime operations. Default-only commands use the uninhabited `NoSpecificResponse` marker.
 
 Classification distinguishes expected responses, device rejection, unexpected successful Default
 Responses, and unrelated frames. Default Response policy takes precedence over the header predicate:
@@ -353,8 +373,8 @@ Response terminates the one-response exchange regardless of the disable-default-
 `ZclResponse<T>` uses `CommunicationResponse<Cluster, ZclOutcome<T>>`; conversion recognizes Default
 Responses before trying `T::try_from`, preserving both response forms without converting success
 into missing data. Deferred multi-response protocols require their own state machine.
-`Registry<T, M>` retains this copyable metadata with the pending entry and transfers it into
-quarantine on cancellation or timeout. ZDP uses unit metadata and keeps its existing matching.
+`Registry<T, M>` owns metadata with the pending entry and moves it into quarantine on cancellation
+or timeout; metadata no longer needs to implement `Copy` or `Clone`. ZDP uses unit metadata and keeps its existing matching.
 The ZCL actor checks the expectation before removing either entry. Expected responses, protocol rejections, and unexpected successful Default Responses all
 complete pending transactions or release quarantined ones. A mismatch follows normal
 subscription/event routing and leaves transaction state untouched. Indications without an

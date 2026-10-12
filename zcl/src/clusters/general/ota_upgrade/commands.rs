@@ -10,7 +10,9 @@ pub use self::query_next_image_request::QueryNextImageRequest;
 pub use self::query_next_image_response::QueryNextImageResponse;
 pub use self::query_specific_file_request::QuerySpecificFileRequest;
 pub use self::query_specific_file_response::QuerySpecificFileResponse;
-pub use self::upgrade_end_request::UpgradeEndRequest;
+pub use self::upgrade_end_request::{
+    UpgradeComplete, UpgradeEndRequest, UpgradeIncomplete, UpgradeIncompleteReason,
+};
 pub use self::upgrade_end_response::UpgradeEndResponse;
 use crate::macros::zcl_command_enum;
 

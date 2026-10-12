@@ -143,6 +143,14 @@ request/response commands. Status-dependent response layouts are represented by 
 and `ImageBlockResponsePayload`, while `ImageBlock::try_new` ensures image data fits the wire
 protocol's one-octet data-size field.
 
+OTA clients construct `UpgradeComplete::new(image)` after successful validation, or
+`UpgradeIncomplete::new(reason, image)` with an `UpgradeIncompleteReason`. Both encode command
+`0x06`; the successful type expects `UpgradeEndResponse`, while the incomplete type expects only
+a Default Response (`NoSpecificResponse`). Incoming packets decode into
+`UpgradeEndRequest::Complete` or `UpgradeEndRequest::Incomplete` based on the status byte.
+Unknown statuses and truncated payloads are rejected. Checked `TryFrom<UpgradeEndRequest>`
+conversions extract a concrete request and return the original enum on a variant mismatch.
+
 ```rust
 use zb_zcl::ota_upgrade::{ImageId, QueryNextImageRequest};
 
@@ -243,3 +251,11 @@ Key dependencies:
 - `apis-saltans-core`: core datatypes and TLV support
 - `apis-saltans-aps`: APS frame definitions
 - `apis-saltans-zdp`: ZDP service and command models
+
+## Typed response contracts
+
+Commands declaring a response implement `apis_saltans_core::ExpectResponse<Cluster>` with an
+associated `Response` type. `ZclResponseType` matches response headers by scope and command ID;
+custom response enums can implement it to accept multiple forms. Remove All Groups and Add Group
+If Identifying declare `NoSpecificResponse`, an uninhabited marker that matches no specific reply.
+Default Response policy and transaction correlation are handled by the coordinator.

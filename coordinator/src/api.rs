@@ -16,7 +16,8 @@ pub use self::scanning::{
     Channel, ChannelMask, FoundNetwork, NetworkDescriptor, ScanDuration, ScannedChannel, Scanning,
 };
 pub use self::zcl::{
-    DefaultResponsePolicy, Zcl, ZclOutcome, ZclRequestPolicy, ZclResponse, ZclResponseType,
+    DefaultResponsePolicy, Zcl, ZclOutcome, ZclRequest, ZclRequestPolicy, ZclResponse,
+    ZclResponseType,
 };
 pub use self::zdp::{Zdp, ZdpResponse};
 

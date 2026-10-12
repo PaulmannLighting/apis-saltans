@@ -1,25 +1,31 @@
-use bytes::Bytes;
-use le_stream::ToLeStream;
+use zb_aps::TxOptions;
+use zb_aps::apsde::{DataRequest, IndividualEndpoint, NetworkDestination};
+use zb_core::{ClusterSpecific, Profiled};
+use zb_zcl::Reportable;
 use zb_zcl::global::configure_reporting;
-use zb_zcl::{Command, Reportable, Scoped, UnsequencedFrame, UnsequencedHeader};
 
-/// Construct a global Configure Reporting frame scoped to one target cluster.
-pub fn frame<T>(attributes: T) -> UnsequencedFrame<Bytes>
+use crate::ZclRequest;
+
+/// Construct a typed global request with the attributes' cluster and manufacturer context.
+pub fn request<T>(
+    destination: NetworkDestination,
+    source_endpoint: IndividualEndpoint,
+    attributes: T,
+) -> ZclRequest<configure_reporting::Send>
 where
     T: IntoIterator<Item: Reportable>,
 {
-    UnsequencedFrame::new(
-        UnsequencedHeader::new(
-            configure_reporting::Send::SCOPE,
-            <configure_reporting::Send as zb_zcl::Directed>::DIRECTION,
-            configure_reporting::Send::DISABLE_DEFAULT_RESPONSE,
-            <T::Item as Reportable>::MANUFACTURER_CODE,
-            configure_reporting::Send::ID,
-        ),
-        configure_reporting::Send::new(attributes.into_iter().map(Into::into).collect())
-            .to_le_stream()
-            .collect(),
+    ZclRequest::new(
+        DataRequest::new(
+            destination.into(),
+            <T::Item as Profiled>::PROFILE.as_u16(),
+            <T::Item as ClusterSpecific>::ID,
+            source_endpoint,
+            configure_reporting::Send::new(attributes.into_iter().map(Into::into).collect()),
+        )
+        .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION),
     )
+    .with_manufacturer_code(<T::Item as Reportable>::MANUFACTURER_CODE)
 }
 
 #[cfg(test)]
@@ -29,7 +35,26 @@ mod tests {
     use zb_zcl::Discrete;
     use zb_zcl::on_off::SendReport;
 
-    use super::frame;
+    use super::request;
+
+    const ENDPOINT: zb_core::Endpoint =
+        zb_core::Endpoint::Application(zb_core::endpoint::Application::MIN);
+    const ADDRESS: u16 = 0x1234;
+
+    fn frame<T>(attributes: T) -> zb_zcl::UnsequencedFrame<bytes::Bytes>
+    where
+        T: IntoIterator<Item: zb_zcl::Reportable>,
+    {
+        let endpoint = zb_aps::apsde::IndividualEndpoint::new(ENDPOINT).unwrap();
+        let destination = zb_aps::apsde::NetworkDestination::new(
+            zb_aps::apsde::NetworkAddress::new(ADDRESS).unwrap(),
+            endpoint,
+        );
+        request(destination, endpoint, attributes)
+            .as_request()
+            .asdu()
+            .clone()
+    }
 
     const ATTRIBUTE_ID: u16 = 0x0000;
     const TYPE_ID: u8 = 0x10;

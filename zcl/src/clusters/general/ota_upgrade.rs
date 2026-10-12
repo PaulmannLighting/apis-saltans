@@ -9,7 +9,8 @@ pub use self::attributes::{
 pub use self::commands::{
     Command, ImageBlockRequest, ImageBlockResponse, ImageNotify, ImagePageRequest,
     QueryNextImageRequest, QueryNextImageResponse, QuerySpecificFileRequest,
-    QuerySpecificFileResponse, UpgradeEndRequest, UpgradeEndResponse,
+    QuerySpecificFileResponse, UpgradeComplete, UpgradeEndRequest, UpgradeEndResponse,
+    UpgradeIncomplete, UpgradeIncompleteReason,
 };
 pub use self::types::{
     ImageBlock, ImageBlockResponsePayload, ImageId, ImageNotifyPayload, QueryJitter, QueryResponse,
@@ -29,7 +30,7 @@ mod tests {
         ImageBlock, ImageBlockRequest, ImageBlockResponse, ImageId, ImageNotify,
         ImageNotifyPayload, ImagePageRequest, QueryJitter, QueryNextImageRequest,
         QueryNextImageResponse, QueryResponse, QuerySpecificFileRequest, QuerySpecificFileResponse,
-        UpgradeEndRequest, UpgradeEndResponse, UpgradeEndStatus,
+        UpgradeComplete, UpgradeEndResponse, UpgradeIncomplete, UpgradeIncompleteReason,
     };
     use crate::{Command as CommandMetadata, Directed, Frame, Header, Scope};
 
@@ -101,7 +102,14 @@ mod tests {
         assert_runtime_round_trip(ImageBlockResponse::new(
             super::ImageBlockResponsePayload::Success(image_block),
         ));
-        assert_runtime_round_trip(UpgradeEndRequest::new(UpgradeEndStatus::Success, IMAGE));
+        assert_runtime_round_trip(UpgradeComplete::new(IMAGE));
+        for reason in [
+            UpgradeIncompleteReason::Abort,
+            UpgradeIncompleteReason::InvalidImage,
+            UpgradeIncompleteReason::RequireMoreImage,
+        ] {
+            assert_runtime_round_trip(UpgradeIncomplete::new(reason, IMAGE));
+        }
         assert_runtime_round_trip(UpgradeEndResponse::new(IMAGE, CURRENT_TIME, UPGRADE_TIME));
         assert_runtime_round_trip(QuerySpecificFileRequest::new(
             ADDRESS,

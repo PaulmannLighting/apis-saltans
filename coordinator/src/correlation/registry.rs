@@ -27,10 +27,7 @@ pub struct Registry<T, M = ()> {
     quarantined: BTreeMap<Key, (u64, M)>,
 }
 
-impl<T, M> Registry<T, M>
-where
-    M: Copy,
-{
+impl<T, M> Registry<T, M> {
     /// Create an empty response registry.
     pub const fn new() -> Self {
         Self {
@@ -145,11 +142,10 @@ where
 
     /// Fail one pending response whose actor-owned timeout message arrived.
     pub fn timeout(&mut self, token: Token) -> bool {
-        let Some(pending) = self.remove_and_quarantine(token) else {
+        let Some(response) = self.remove_and_quarantine(token) else {
             return false;
         };
-        pending
-            .response
+        response
             .send(Err(Error::ProtocolResponseTimeout))
             .unwrap_or_else(drop);
         true
@@ -244,7 +240,8 @@ where
         !self.pending.contains_key(&key) && !self.quarantined.contains_key(&key)
     }
 
-    fn remove_and_quarantine(&mut self, token: Token) -> Option<Pending<T, M>> {
+    /// Move metadata into quarantine and return the pending response sender.
+    fn remove_and_quarantine(&mut self, token: Token) -> Option<Sender<Result<T, Error>>> {
         if !self.pending_generation_matches(token) {
             return None;
         }
@@ -255,7 +252,7 @@ where
             .insert(token.key(), (token.generation(), pending.metadata))
             .is_none();
         debug_assert!(newly_quarantined);
-        Some(pending)
+        Some(pending.response)
     }
 
     fn pending_generation_matches(&self, token: Token) -> bool {
@@ -366,6 +363,41 @@ mod tests {
     }
 
     #[test]
+    fn owned_metadata_survives_cancellation_and_timeout() {
+        const METADATA: &str = "response contract";
+
+        for timeout in [false, true] {
+            let mut registry = Registry::<(), String>::new();
+            let (_, token, response) = registry
+                .try_register_with_metadata(|sequence| Ok(key(sequence)), METADATA.to_owned())
+                .expect("transaction sequence is available");
+            assert_eq!(
+                registry.metadata(token.key()).map(String::as_str),
+                Some(METADATA)
+            );
+
+            if timeout {
+                assert!(registry.timeout(token));
+                assert!(matches!(
+                    response.blocking_recv(),
+                    Ok(Err(Error::ProtocolResponseTimeout))
+                ));
+            } else {
+                assert!(registry.cancel(token));
+                assert!(response.blocking_recv().is_err());
+            }
+
+            assert!(!registry.pending.contains_key(&token.key()));
+            assert_eq!(
+                registry.metadata(token.key()).map(String::as_str),
+                Some(METADATA)
+            );
+            assert!(registry.release_quarantine(token.key()));
+            assert!(registry.metadata(token.key()).is_none());
+        }
+    }
+
+    #[test]
     fn untracked_sequences_wrap_without_exhaustion() {
         let mut registry = Registry::<()>::new();
         let mut sequences = Vec::new();
@@ -426,15 +458,16 @@ mod tests {
 
     #[test]
     fn protected_network_boundary_retains_only_selected_identities() {
-        let mut registry = Registry::<()>::new();
+        const METADATA: &str = "preserved contract";
+        let mut registry = Registry::<(), String>::new();
         let (preserved_sequence, token, preserved_response) = registry
-            .register(key)
+            .try_register_with_metadata(|sequence| Ok(key(sequence)), METADATA.to_owned())
             .expect("transaction sequence is available");
         let (_, _, pending_response) = registry
-            .register(key)
+            .try_register_with_metadata(|sequence| Ok(key(sequence)), METADATA.to_owned())
             .expect("another transaction sequence is available");
         let (released_sequence, released_token, _released_response) = registry
-            .register(key)
+            .try_register_with_metadata(|sequence| Ok(key(sequence)), METADATA.to_owned())
             .expect("a third transaction sequence is available");
         assert!(registry.cancel(released_token));
 
@@ -442,6 +475,10 @@ mod tests {
             registry.network_down_preserving(&zb_hw::TransmissionError::NoRoute, [token]);
 
         assert_eq!(preserved, [token]);
+        assert_eq!(
+            registry.metadata(token.key()).map(String::as_str),
+            Some(METADATA)
+        );
         assert!(registry.quarantined.contains_key(&key(preserved_sequence)));
         assert!(!registry.quarantined.contains_key(&key(released_sequence)));
         assert!(matches!(

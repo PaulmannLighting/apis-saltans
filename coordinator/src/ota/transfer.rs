@@ -17,7 +17,7 @@ use zb_zcl::ota_upgrade::{
     ImageBlockResponsePayload, ImageId, ImageNotify, ImageNotifyPayload, ImagePageRequest,
     QueryJitter, QueryNextImageRequest, QueryNextImageResponse, QueryResponse,
     QuerySpecificFileRequest, QuerySpecificFileResponse, UpgradeEndRequest, UpgradeEndResponse,
-    UpgradeEndStatus,
+    UpgradeIncompleteReason,
 };
 use zb_zcl::{Command, Scope, Status, UnsequencedFrame, UnsequencedHeader};
 
@@ -529,8 +529,8 @@ impl Transfer {
             return;
         }
 
-        let error = match request.status() {
-            UpgradeEndStatus::Success => {
+        let error = match request {
+            UpgradeEndRequest::Complete(request) => {
                 let response = UpgradeEndResponse::new(
                     request.image(),
                     CURRENT_TIME_IMMEDIATE,
@@ -539,9 +539,11 @@ impl Transfer {
                 self.spawn_reply(context, response, Some(Ok(())));
                 return;
             }
-            UpgradeEndStatus::Abort => UpdateError::Aborted,
-            UpgradeEndStatus::InvalidImage => UpdateError::InvalidImage,
-            UpgradeEndStatus::RequireMoreImage => UpdateError::RequireMoreImage,
+            UpgradeEndRequest::Incomplete(request) => match request.reason() {
+                UpgradeIncompleteReason::Abort => UpdateError::Aborted,
+                UpgradeIncompleteReason::InvalidImage => UpdateError::InvalidImage,
+                UpgradeIncompleteReason::RequireMoreImage => UpdateError::RequireMoreImage,
+            },
         };
         self.spawn_default_response(
             context,

@@ -1,10 +1,7 @@
 use zb_aps::apsde::{IndividualEndpoint, NetworkDestination};
 use zb_core::GroupId;
 use zb_core::types::{String, Uint16};
-use zb_zcl::groups::{
-    AddGroup, AddGroupResponse, GetGroupMembership, GetGroupMembershipResponse, RemoveGroup,
-    RemoveGroupResponse,
-};
+use zb_zcl::groups::{AddGroup, GetGroupMembership, GetGroupMembershipResponse, RemoveGroup};
 
 use crate::{Error, StatusExt, Zcl, ZclResponse};
 
@@ -82,7 +79,7 @@ where
         name: Option<String>,
     ) -> Result<Uint16, Error> {
         let response = self
-            .communicate_command::<_, AddGroupResponse>(
+            .communicate_command(
                 destination.into(),
                 source_endpoint,
                 AddGroup::new(group_id, name.unwrap_or_default()),
@@ -104,7 +101,7 @@ where
         group_id: GroupId,
     ) -> Result<Uint16, Error> {
         let response = self
-            .communicate_command::<_, RemoveGroupResponse>(
+            .communicate_command::<_>(
                 destination.into(),
                 source_endpoint,
                 RemoveGroup::new(group_id),

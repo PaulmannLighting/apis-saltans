@@ -201,8 +201,8 @@ fn matching_subscription_does_not_consume_correlated_response() {
                 .registry()
                 .try_register_with_metadata(
                     |_| Ok(response_key),
-                    super::ResponseExpectation::new::<On>(
-                        <On as Command>::ID,
+                    super::ResponseExpectation::for_encoded::<On>(
+                        &encoded_request(<On as Command>::ID),
                         crate::DefaultResponsePolicy::SpecificRequired,
                     ),
                 )
@@ -248,8 +248,8 @@ fn subscription_request_does_not_complete_opposite_direction_response() {
                 .registry()
                 .try_register_with_metadata(
                     |_| Ok(response_key),
-                    super::ResponseExpectation::new::<On>(
-                        <On as Command>::ID,
+                    super::ResponseExpectation::for_encoded::<On>(
+                        &encoded_request(<On as Command>::ID),
                         crate::DefaultResponsePolicy::SpecificRequired,
                     ),
                 )
@@ -436,20 +436,16 @@ fn unrelated_reports_preserve_pending_responses_and_reach_normal_routing() {
                 }
                 let response = read_response_indication();
                 let key = Key::from_received_zcl_indication(&response).unwrap();
-                let (_, _, mut receiver) =
-                    transceiver
-                        .responses
-                        .registry()
-                        .try_register_with_metadata(
-                            |_| Ok(key),
-                            super::ResponseExpectation::new::<
-                                zb_zcl::global::read_attributes::Response,
-                            >(
-                                <zb_zcl::global::read_attributes::Command as Command>::ID,
-                                crate::DefaultResponsePolicy::SpecificRequired,
-                            ),
-                        )
-                        .unwrap();
+                let (_, _, mut receiver) = transceiver
+                    .responses
+                    .registry()
+                    .try_register_with_metadata(
+                        |_| Ok(key),
+                        super::ResponseExpectation::for_request::<
+                            zb_zcl::global::read_attributes::Command,
+                        >(),
+                    )
+                    .unwrap();
                 let report = report_indication();
                 assert_eq!(Key::from_received_zcl_indication(&report), Some(key));
                 transceiver.handle_message_received(report);
@@ -486,20 +482,16 @@ fn unrelated_reports_do_not_release_cancelled_or_timed_out_transactions() {
                 let (mut transceiver, mut events) = unstarted_transceiver();
                 let response = read_response_indication();
                 let key = Key::from_received_zcl_indication(&response).unwrap();
-                let (_, token, _receiver) =
-                    transceiver
-                        .responses
-                        .registry()
-                        .try_register_with_metadata(
-                            |_| Ok(key),
-                            super::ResponseExpectation::new::<
-                                zb_zcl::global::read_attributes::Response,
-                            >(
-                                <zb_zcl::global::read_attributes::Command as Command>::ID,
-                                crate::DefaultResponsePolicy::SpecificRequired,
-                            ),
-                        )
-                        .unwrap();
+                let (_, token, _receiver) = transceiver
+                    .responses
+                    .registry()
+                    .try_register_with_metadata(
+                        |_| Ok(key),
+                        super::ResponseExpectation::for_request::<
+                            zb_zcl::global::read_attributes::Command,
+                        >(),
+                    )
+                    .unwrap();
                 if timeout {
                     assert!(transceiver.responses.registry().timeout(token));
                 } else {
@@ -533,10 +525,10 @@ fn default_response_must_name_the_original_command() {
                     .registry()
                     .try_register_with_metadata(
                         |_| Ok(key),
-                        super::ResponseExpectation::new::<
+                        super::ResponseExpectation::for_encoded::<
                             zb_zcl::global::default_response::DefaultResponse,
                         >(
-                            <On as Command>::ID,
+                            &encoded_request(<On as Command>::ID),
                             crate::DefaultResponsePolicy::DefaultAllowed,
                         ),
                     )
@@ -658,10 +650,11 @@ fn error_default_responses_fail_typed_requests_and_release_quarantine() {
                         .registry()
                         .try_register_with_metadata(
                             |_| Ok(key),
-                            super::ResponseExpectation::new::<
+                            super::ResponseExpectation::for_encoded::<
                                 zb_zcl::global::read_attributes::Response,
                             >(
-                                REQUEST_ID, crate::DefaultResponsePolicy::SpecificRequired
+                                &encoded_request(REQUEST_ID),
+                                crate::DefaultResponsePolicy::SpecificRequired,
                             ),
                         )
                         .unwrap();
@@ -698,20 +691,16 @@ fn unrelated_defaults_preserve_transactions_but_unexpected_success_resolves_them
                 let (mut transceiver, mut events) = unstarted_transceiver();
                 let response = read_response_indication();
                 let key = Key::from_received_zcl_indication(&response).unwrap();
-                let (_, token, mut receiver) =
-                    transceiver
-                        .responses
-                        .registry()
-                        .try_register_with_metadata(
-                            |_| Ok(key),
-                            super::ResponseExpectation::new::<
-                                zb_zcl::global::read_attributes::Response,
-                            >(
-                                <zb_zcl::global::read_attributes::Command as Command>::ID,
-                                crate::DefaultResponsePolicy::SpecificRequired,
-                            ),
-                        )
-                        .unwrap();
+                let (_, token, mut receiver) = transceiver
+                    .responses
+                    .registry()
+                    .try_register_with_metadata(
+                        |_| Ok(key),
+                        super::ResponseExpectation::for_request::<
+                            zb_zcl::global::read_attributes::Command,
+                        >(),
+                    )
+                    .unwrap();
                 if quarantined {
                     assert!(transceiver.responses.registry().cancel(token));
                 }
@@ -769,10 +758,11 @@ fn allowed_defaults_resolve_specific_requests_for_all_statuses() {
                         .registry()
                         .try_register_with_metadata(
                             |_| Ok(key),
-                            super::ResponseExpectation::new::<
+                            super::ResponseExpectation::for_encoded::<
                                 zb_zcl::global::read_attributes::Response,
                             >(
-                                REQUEST_ID, crate::DefaultResponsePolicy::DefaultAllowed
+                                &encoded_request(REQUEST_ID),
+                                crate::DefaultResponsePolicy::DefaultAllowed,
                             ),
                         )
                         .unwrap();
@@ -797,4 +787,17 @@ fn allowed_defaults_resolve_specific_requests_for_all_statuses() {
                 }
             }
         });
+}
+
+fn encoded_request(command_id: u8) -> UnsequencedFrame<bytes::Bytes> {
+    UnsequencedFrame::new(
+        zb_zcl::UnsequencedHeader::new(
+            Scope::Global,
+            Direction::ClientToServer,
+            false,
+            None,
+            command_id,
+        ),
+        bytes::Bytes::new(),
+    )
 }

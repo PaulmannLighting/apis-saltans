@@ -17,6 +17,10 @@ has protocol-specific invariants or parsing rules.
   - `Command` for static command ID, accepted parsing directions, and default-response behavior.
   - `Directed` for commands with a single outgoing frame direction.
   - `Scoped` for command scope; cluster-specific commands receive it through a blanket implementation.
+- `src/response.rs` defines `ZclResponseType` and the uninhabited `NoSpecificResponse` marker.
+  The command macro's `response:` declaration implements `ExpectResponse<Cluster>`, binding requests
+  to response types. Keeping header matching and the marker in this crate allows the blanket
+  implementation for `Command + Scoped` and the marker's always-false matcher to coexist.
 - `src/clusters.rs` defines the runtime `Cluster` enum. This is the top-level command container used
   by `Frame<Cluster>::parse`.
 - `src/clusters/global/` contains global ZCL commands such as read/write attributes, configure
@@ -87,8 +91,18 @@ sequenceDiagram
         Server-->>Client: Image Block Response
     end
     Client->>Server: Upgrade End Request
-    Server-->>Client: Upgrade End Response
+    alt Download validated
+        Server-->>Client: Upgrade End Response
+    else Abort, invalid image, or more image required
+        Server-->>Client: Default Response SUCCESS
+    end
 ```
+
+Upgrade End Request uses a discriminated `UpgradeEndRequest` enum. Its decoder selects
+`UpgradeComplete` for SUCCESS, or `UpgradeIncomplete` with a restricted reason enum for the other
+supported statuses. The concrete types implement distinct `ExpectResponse` associations; the outer
+enum intentionally does not. Their wire header metadata is identical and runtime dispatch registers
+only the outer enum, avoiding duplicate command-ID arms.
 
 The OTA wire format has three kinds of conditional structure that cannot be represented by a plain
 field-by-field derive:

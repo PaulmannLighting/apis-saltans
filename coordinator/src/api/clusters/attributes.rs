@@ -1,13 +1,12 @@
 use zb_aps::apsde::{IndividualEndpoint, NetworkDestination};
-use zb_core::{ClusterSpecific, Profiled};
-use zb_zcl::global::{configure_reporting, read_attributes, write_attributes};
+use zb_zcl::global::configure_reporting;
 use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
 
-use self::configure_reporting_request::frame as configure_reporting_frame;
-use self::read_attributes_request::frame as read_attributes_frame;
-use self::write_attributes_request::frame as write_attributes_frame;
+use self::configure_reporting_request::request as configure_reporting_request;
+use self::read_attributes_request::request as read_attributes_request;
+use self::write_attributes_request::request as write_attributes_request;
 use crate::api::zcl::Zcl;
-use crate::{DefaultResponsePolicy, Error, ZclResponse};
+use crate::{Error, ZclResponse};
 
 mod configure_reporting_request;
 mod read_attributes_request;
@@ -99,16 +98,11 @@ where
     where
         U: IntoIterator<Item: Reportable, IntoIter: Send> + Send,
     {
-        self.communicate(
-            crate::api::zcl::request_with_ids(
-                destination.into(),
-                source_endpoint,
-                <U::Item as Profiled>::PROFILE.as_u16(),
-                <U::Item as ClusterSpecific>::ID,
-                configure_reporting_frame(attributes),
-            ),
-            DefaultResponsePolicy::SpecificRequired,
-        )
+        self.communicate_request(configure_reporting_request(
+            destination,
+            source_endpoint,
+            attributes,
+        ))
         .await
     }
 
@@ -122,16 +116,11 @@ where
         U: IntoIterator<Item: Readable, IntoIter: Send> + Send,
     {
         Ok(self
-            .communicate::<read_attributes::Response>(
-                crate::api::zcl::request_with_ids(
-                    destination.into(),
-                    source_endpoint,
-                    <U::Item as Profiled>::PROFILE.as_u16(),
-                    <U::Item as ClusterSpecific>::ID,
-                    read_attributes_frame(attributes),
-                ),
-                DefaultResponsePolicy::SpecificRequired,
-            )
+            .communicate_request(read_attributes_request(
+                destination,
+                source_endpoint,
+                attributes,
+            ))
             .await?
             .await?
             .into_specific()?
@@ -148,16 +137,11 @@ where
         U: IntoIterator<Item: Writable, IntoIter: Send> + Send,
     {
         Ok(self
-            .communicate::<write_attributes::Response>(
-                crate::api::zcl::request_with_ids(
-                    destination.into(),
-                    source_endpoint,
-                    <U::Item as Profiled>::PROFILE.as_u16(),
-                    <U::Item as ClusterSpecific>::ID,
-                    write_attributes_frame(attributes),
-                ),
-                DefaultResponsePolicy::SpecificRequired,
-            )
+            .communicate_request(write_attributes_request(
+                destination,
+                source_endpoint,
+                attributes,
+            ))
             .await?
             .await?
             .into_specific()?

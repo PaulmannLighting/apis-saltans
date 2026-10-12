@@ -836,15 +836,30 @@ queues the request and returns `ZclResponse<T>`; the second returns `Result<ZclO
 carries a permitted Default Response, preserving its status. The destination must be one individual
 16-bit network endpoint.
 
-Use `communicate_command::<_, T>(destination, source_endpoint, command)` for typed cluster commands
-implementing `ZclRequestPolicy`. It derives the policy before encoding. Supported policies cover
-Groups commands and OTA Upgrade End: successful download completion requires an Upgrade End
-Response, whereas abort/invalid-image/more-image outcomes permit a Default Response (ZCL §11.13.9.4).
+Use `communicate_command(destination, source_endpoint, command)` for typed cluster commands
+implementing `ExpectResponse<Cluster>` and `ZclRequestPolicy`. The response is inferred from the
+command's associated `Response` type, so an Add Group request cannot select a Remove Group response.
+The original command ID, response matcher, and `DEFAULT_RESPONSE_POLICY` are derived from the
+request type. Prepared requests expose their encoded data only for inspection; their response
+contract is derived from the type when submitted. OTA clients send `UpgradeComplete::new(image)` to await an
+`UpgradeEndResponse`, or `UpgradeIncomplete::new(reason, image)` to await a Default Response
+(ZCL §11.13.9.4). `UpgradeIncompleteReason` contains only abort, invalid-image, and more-image
+reasons. The coordinator decodes both into `UpgradeEndRequest::{Complete, Incomplete}` and replies
+according to the variant. This outer wire enum has no single typed response contract.
 Global read/write/configure-reporting commands also implement `ZclRequestPolicy`; their attribute
-helpers supply cluster/profile metadata and select `SpecificRequired` directly.
+helpers construct `ZclRequest<C>` with explicit cluster/profile metadata and retain manufacturer
+context. For custom global requests, build `ZclRequest::new(DataRequest<C>)`, optionally apply
+`with_manufacturer_code(...)`, and send it with `communicate_request(...)`. APS options are preserved.
+The encoded `communicate::<T>` API remains an escape hatch whose request/response association
+cannot be checked by the compiler. Its original command ID is always taken from the encoded
+request header rather than supplied separately. Response types (`C::Response` for typed commands,
+`T` for raw requests) must be `Send + Sync + 'static`, because the actor owns their boxed response contracts through
+completion or late-response quarantine. These bounds concern the types; command values are encoded
+and are not retained by the contracts.
 
 Groups add/remove/list helpers require their specified responses. Remove All Groups and Add Group
-If Identifying allow Default Responses. `communicate_default` selects `DefaultAllowed` and maps
+If Identifying use `NoSpecificResponse` as their associated response and allow Default Responses;
+these return `ZclOutcome::Default`, with no constructible `Specific` value. `communicate_default` selects `DefaultAllowed` and maps
 unsuccessful statuses to `Error::Zcl`. Helpers requiring returned data use `into_specific()`; they do
 not manufacture a response value from a successful Default Response.
 
