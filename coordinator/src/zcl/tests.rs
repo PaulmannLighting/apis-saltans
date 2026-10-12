@@ -17,14 +17,13 @@ use zb_zcl::{
     UnsequencedHeader,
 };
 
-use super::correlation::Responses;
 use super::{
     Message, ResponseExpectation, Subscription, SubscriptionFilter, SubscriptionMessage,
     Transceiver,
 };
 use crate::aps::Aps;
-use crate::correlation::Key;
 use crate::event::EventSink;
+use crate::zcl::ZclKey;
 use crate::{Error, Event, MPSC_CHANNEL_SIZE};
 
 const SOURCE_NODE_ID: u16 = 0x4321;
@@ -103,7 +102,7 @@ fn communication_rejects_a_non_network_destination() {
     );
 
     assert!(matches!(
-        Responses::request_key(&request, TRANSACTION_SEQUENCE),
+        ZclKey::from_request(&request, TRANSACTION_SEQUENCE),
         Err(Error::InvalidZclCommunicationDestination(
             RequestDestination::Bound
         ))
@@ -205,8 +204,8 @@ fn matching_subscription_does_not_consume_correlated_response() {
             let (mut transceiver, mut events) = unstarted_transceiver();
             transceiver.subscriptions.push(subscription);
             let indication = subscribed_indication();
-            let response_key = Key::from_received_zcl_indication(&indication)
-                .expect("test indication has a network source");
+            let response_key =
+                ZclKey::from_indication(&indication).expect("test indication has a network source");
             let (_, _, response) = transceiver
                 .responses
                 .registry()
@@ -242,15 +241,16 @@ fn subscription_request_does_not_complete_opposite_direction_response() {
             let (mut transceiver, _events) = unstarted_transceiver();
             transceiver.subscriptions.push(subscription);
             let endpoint = Endpoint::Application(Application::MIN);
-            let response_key = Key::new_zcl(
-                SOURCE_NODE_ID,
-                (endpoint, endpoint),
-                ClusterId::OnOff.as_u16(),
-                Profile::ZigbeeHomeAutomation.as_u16(),
-                None,
-                Direction::ServerToClient,
-                TRANSACTION_SEQUENCE,
-            );
+            let response_key = ZclKey {
+                short_id: SOURCE_NODE_ID,
+                remote_endpoint: endpoint,
+                local_endpoint: endpoint,
+                cluster_id: ClusterId::OnOff.as_u16(),
+                profile_id: Profile::ZigbeeHomeAutomation.as_u16(),
+                manufacturer_code: None,
+                direction: Direction::ServerToClient,
+                sequence: TRANSACTION_SEQUENCE,
+            };
             let (_, _, mut response) = transceiver
                 .responses
                 .registry()
@@ -440,7 +440,7 @@ fn unrelated_reports_preserve_pending_responses_and_reach_normal_routing() {
                     transceiver.subscriptions.push(subscription);
                 }
                 let response = read_response_indication();
-                let key = Key::from_received_zcl_indication(&response).unwrap();
+                let key = ZclKey::from_indication(&response).unwrap();
                 let (_, _, mut receiver) =
                     transceiver
                         .responses
@@ -453,7 +453,7 @@ fn unrelated_reports_preserve_pending_responses_and_reach_normal_routing() {
                         )
                         .unwrap();
                 let report = report_indication();
-                assert_eq!(Key::from_received_zcl_indication(&report), Some(key));
+                assert_eq!(ZclKey::from_indication(&report), Some(key));
                 transceiver.handle_message_received(report);
                 assert!(matches!(receiver.try_recv(), Err(TryRecvError::Empty)));
                 assert!(transceiver.responses.registry().metadata(key).is_some());
@@ -484,7 +484,7 @@ fn unrelated_reports_do_not_release_cancelled_or_timed_out_transactions() {
             for timeout in [false, true] {
                 let (mut transceiver, mut events) = unstarted_transceiver();
                 let response = read_response_indication();
-                let key = Key::from_received_zcl_indication(&response).unwrap();
+                let key = ZclKey::from_indication(&response).unwrap();
                 let (_, token, _receiver) =
                     transceiver
                         .responses
@@ -523,7 +523,7 @@ fn default_response_must_name_the_original_command() {
                 let (mut transceiver, mut events) = unstarted_transceiver();
                 let response = incoming_frame(&DEFAULT_RESPONSE);
                 let unrelated = incoming_frame(&UNRELATED_DEFAULT_RESPONSE);
-                let key = Key::from_received_zcl_indication(&response).unwrap();
+                let key = ZclKey::from_indication(&response).unwrap();
                 let (_, token, mut receiver) = transceiver
                     .responses
                     .registry()
@@ -573,9 +573,9 @@ fn local_endpoint_is_part_of_response_identity() {
         local_endpoint,
         UnsequencedFrame::from_command(On),
     );
-    let expected = Responses::request_key(&request, TRANSACTION_SEQUENCE).unwrap();
+    let expected = ZclKey::from_request(&request, TRANSACTION_SEQUENCE).unwrap();
     let response = read_response_indication();
-    assert_ne!(Key::from_received_zcl_indication(&response), Some(expected));
+    assert_ne!(ZclKey::from_indication(&response), Some(expected));
     let metadata = IndicationMetadata::new(
         ReceivedDestination::Network {
             address: NetworkAddress::new(LOCAL_NODE_ID).unwrap(),
@@ -590,10 +590,7 @@ fn local_endpoint_is_part_of_response_identity() {
         (),
     );
     let corrected = DataIndication::new(metadata, response.into_parts().1);
-    assert_eq!(
-        Key::from_received_zcl_indication(&corrected),
-        Some(expected)
-    );
+    assert_eq!(ZclKey::from_indication(&corrected), Some(expected));
 }
 
 fn incoming_frame(bytes: &[u8]) -> DataIndication<Frame<Cluster>, (), ()> {
@@ -641,7 +638,7 @@ fn error_default_responses_fail_typed_requests_and_release_quarantine() {
                         REQUEST_ID,
                         status,
                     ]);
-                    let key = Key::from_received_zcl_indication(&response).unwrap();
+                    let key = ZclKey::from_indication(&response).unwrap();
                     let (_, token, mut receiver) = transceiver
                         .responses
                         .registry()
@@ -684,7 +681,7 @@ fn unrelated_defaults_preserve_transactions_but_unexpected_success_resolves_them
             for quarantined in [false, true] {
                 let (mut transceiver, mut events) = unstarted_transceiver();
                 let response = read_response_indication();
-                let key = Key::from_received_zcl_indication(&response).unwrap();
+                let key = ZclKey::from_indication(&response).unwrap();
                 let (_, token, mut receiver) =
                     transceiver
                         .responses
@@ -741,7 +738,7 @@ fn allowed_defaults_resolve_specific_requests_for_all_statuses() {
                         REQUEST_ID,
                         status,
                     ]);
-                    let key = Key::from_received_zcl_indication(&response).unwrap();
+                    let key = ZclKey::from_indication(&response).unwrap();
                     let (_, token, mut receiver) = transceiver
                         .responses
                         .registry()

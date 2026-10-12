@@ -344,19 +344,23 @@ actor while the hardware result is pending.
 
 ## Response Correlation
 
-Pending ZCL and ZDP requests are keyed by an internal correlation `Key` containing:
+Pending requests and quarantined transactions use protocol-owned key types:
 
-- remote short address
-- remote endpoint and, for ZCL, local endpoint
-- expected ZCL response direction
-- cluster ID
-- profile ID
-- optional ZCL manufacturer code
-- protocol transaction sequence
+- `zcl::ZclKey` records the remote short address, named remote and local endpoints,
+  cluster ID, profile ID, optional manufacturer code, expected response direction, and sequence.
+- `zdp::ZdpKey` records the remote short address, request cluster ID, profile ID, and
+  sequence. Incoming ZDP frames must use the data endpoint at both ends before a key is created;
+  their response cluster mask is removed to match the request identity.
 
-The `correlation.rs` façade exposes the correlation types and timeout policy. Its `key`,
-`lifecycle`, and `registry` submodules respectively own protocol identity construction,
-cancellation tokens, and actor-owned response state.
+Each protocol's `key` submodule derives identities from outgoing requests and incoming frames.
+The shared `Registry<K, T, M>` accepts any ordered, copyable key and uses the complete key for
+matching and quarantine. `Token<K>` retains that key and its allocation generation in lifecycle
+messages. ZCL and ZDP registries and messages therefore cannot accept each other's keys or tokens.
+
+The `correlation.rs` façade exposes generic lifecycle and registry types and timeout policy.
+Its `lifecycle` and `registry` submodules own cancellation tokens and actor-owned response state.
+`CancellationMessage::Key` selects the actor's token type. The cancellation guard captures the
+typed token in its boxed callback, keeping the public response wrapper independent of key types.
 
 The `zcl::correlation` submodule owns ZCL response state through `Responses`: request-key
 construction, shared sequence allocation, transaction registration, and incoming response
@@ -404,7 +408,7 @@ the one-response exchange regardless of the disable-default-response bit.
 `ZclResponse<T>` uses `CommunicationResponse<Cluster, T>` and returns `T` directly. ZCL's
 `MaybeDefault<T>` converts either response form when requested; no unconditional outcome wrapper
 is applied by the coordinator. Deferred multi-response protocols require their own state machine.
-`Registry<T, M>` owns metadata with the pending entry and moves it into quarantine on cancellation
+`Registry<K, T, M>` owns metadata with the pending entry and moves it into quarantine on cancellation
 or timeout; metadata no longer needs to implement `Copy` or `Clone`. ZDP uses unit metadata and keeps its existing
 matching.
 The ZCL actor checks the expectation before removing either entry. Expected responses, protocol rejections, and

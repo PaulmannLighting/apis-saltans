@@ -4,15 +4,15 @@ use std::task::{Context, Poll, Waker};
 use tokio::sync::mpsc::{Receiver, channel};
 use tokio::sync::oneshot;
 use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, NetworkDestination};
-use zb_core::Endpoint;
 use zb_core::endpoint::Application;
+use zb_core::{Direction, Endpoint};
 use zb_zcl::on_off::SendReport;
 use zb_zcl::{Cluster, Discrete};
 
 use crate::aps::TransmissionResponse;
-use crate::correlation::{Cancellation, Key};
+use crate::correlation::Cancellation;
 use crate::response::ApsProtocolResponse;
-use crate::zcl::Message;
+use crate::zcl::{Message, ZclKey};
 use crate::{Attributes, Error, Groups};
 
 const CAPACITY: usize = 1;
@@ -65,7 +65,16 @@ where
     let (accepted, transmission) = oneshot::channel();
     let (received, protocol) = oneshot::channel::<Result<Cluster, Error>>();
     let (aps, _messages) = channel(CAPACITY);
-    let key = Key::new(ADDRESS, endpoint().get(), CLUSTER, PROFILE, None, SEQUENCE);
+    let key = ZclKey {
+        short_id: ADDRESS,
+        remote_endpoint: endpoint().get(),
+        local_endpoint: endpoint().get(),
+        cluster_id: CLUSTER,
+        profile_id: PROFILE,
+        manufacturer_code: None,
+        direction: Direction::ServerToClient,
+        sequence: SEQUENCE,
+    };
     assert!(
         response
             .send(Ok(ApsProtocolResponse::new(

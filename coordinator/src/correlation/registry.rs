@@ -3,14 +3,14 @@ use std::collections::BTreeMap;
 use tokio::sync::oneshot::{Receiver, Sender, channel};
 use zb_hw::TransmissionError;
 
-use super::{Key, Token};
+use super::Token;
 use crate::Error;
 
 const INITIAL_GENERATION: u64 = 0;
 const INITIAL_SEQUENCE: u8 = 0;
 const TRANSACTION_SEQUENCE_COUNT: usize = 1_usize << u8::BITS;
 
-type RegisteredResponse<T> = (u8, Token, Receiver<Result<T, Error>>);
+type RegisteredResponse<K, T> = (u8, Token<K>, Receiver<Result<T, Error>>);
 
 #[derive(Debug)]
 struct Pending<T, M> {
@@ -20,15 +20,22 @@ struct Pending<T, M> {
 }
 
 /// Actor-owned protocol-response correlations and transaction sequences.
+///
+/// Each registry accepts only its protocol's key type `K`; key construction and
+/// interpretation belong to the protocol actor. Metadata `M` remains attached
+/// to the key through cancellation and quarantine.
 #[derive(Debug)]
-pub struct Registry<T, M = ()> {
+pub struct Registry<K, T, M = ()> {
     next_sequence: u8,
     next_generation: u64,
-    pending: BTreeMap<Key, Pending<T, M>>,
-    quarantined: BTreeMap<Key, (u64, M)>,
+    pending: BTreeMap<K, Pending<T, M>>,
+    quarantined: BTreeMap<K, (u64, M)>,
 }
 
-impl<T, M> Registry<T, M> {
+impl<K, T, M> Registry<K, T, M>
+where
+    K: Copy + Ord,
+{
     /// Create an empty response registry.
     pub const fn new() -> Self {
         Self {
@@ -48,9 +55,9 @@ impl<T, M> Registry<T, M> {
         &mut self,
         key_for_sequence: F,
         metadata: M,
-    ) -> Result<RegisteredResponse<T>, Error>
+    ) -> Result<RegisteredResponse<K, T>, Error>
     where
-        F: Fn(u8) -> Result<Key, Error>,
+        F: Fn(u8) -> Result<K, Error>,
     {
         let (sequence, key) = self.allocate(&key_for_sequence)?;
         let token = Token::new(key, self.next_generation);
@@ -69,7 +76,7 @@ impl<T, M> Registry<T, M> {
     }
 
     /// Return metadata for a pending or quarantined transaction.
-    pub fn metadata(&self, key: Key) -> Option<&M> {
+    pub fn metadata(&self, key: K) -> Option<&M> {
         self.pending
             .get(&key)
             .map(|pending| &pending.metadata)
@@ -82,7 +89,7 @@ impl<T, M> Registry<T, M> {
     /// the selected identity after returning it.
     pub fn allocate_untracked_sequence<F>(&mut self, key_for_sequence: F) -> Result<u8, Error>
     where
-        F: Fn(u8) -> Option<Key>,
+        F: Fn(u8) -> Option<K>,
     {
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
             let sequence = self.take_next_sequence();
@@ -98,12 +105,12 @@ impl<T, M> Registry<T, M> {
     }
 
     /// Complete a pending response and release its transaction identity.
-    pub fn complete(&mut self, key: Key, value: T) -> bool {
+    pub fn complete(&mut self, key: K, value: T) -> bool {
         self.complete_result(key, Ok(value))
     }
 
     /// Complete a pending transaction with a response or protocol error.
-    pub fn complete_result(&mut self, key: Key, result: Result<T, Error>) -> bool {
+    pub fn complete_result(&mut self, key: K, result: Result<T, Error>) -> bool {
         let Some(pending) = self.pending.remove(&key) else {
             return false;
         };
@@ -113,24 +120,24 @@ impl<T, M> Registry<T, M> {
     }
 
     /// Cancel a pending response and quarantine its identity for late-response handling.
-    pub fn cancel(&mut self, token: Token) -> bool {
+    pub fn cancel(&mut self, token: Token<K>) -> bool {
         self.remove_and_quarantine(token).is_some()
     }
 
     /// Discard a correlation whose request was never handed to the hardware.
-    pub fn discard(&mut self, token: Token) {
+    pub fn discard(&mut self, token: Token<K>) {
         if self.pending_generation_matches(token) {
             self.pending.remove(&token.key());
         }
     }
 
     /// Consume a late response and release its quarantined transaction identity.
-    pub fn release_quarantine(&mut self, key: Key) -> bool {
+    pub fn release_quarantine(&mut self, key: K) -> bool {
         self.quarantined.remove(&key).is_some()
     }
 
     /// Release a quarantined identity after its bounded late-response grace period.
-    pub fn expire_quarantine(&mut self, token: Token) -> bool {
+    pub fn expire_quarantine(&mut self, token: Token<K>) -> bool {
         let generation_matches = self
             .quarantined
             .get(&token.key())
@@ -142,7 +149,7 @@ impl<T, M> Registry<T, M> {
     }
 
     /// Fail one pending response whose actor-owned timeout message arrived.
-    pub fn timeout(&mut self, token: Token) -> bool {
+    pub fn timeout(&mut self, token: Token<K>) -> bool {
         let Some(response) = self.remove_and_quarantine(token) else {
             return false;
         };
@@ -162,9 +169,13 @@ impl<T, M> Registry<T, M> {
     /// The preserved tokens identify background submissions that may reach the wire after the
     /// boundary. Matching identities remain quarantined so their late responses cannot complete a
     /// request from the new network epoch. All unrelated quarantine is released.
-    pub fn network_down_preserving<I>(&mut self, error: &TransmissionError, tokens: I) -> Vec<Token>
+    pub fn network_down_preserving<I>(
+        &mut self,
+        error: &TransmissionError,
+        tokens: I,
+    ) -> Vec<Token<K>>
     where
-        I: IntoIterator<Item = Token>,
+        I: IntoIterator<Item = Token<K>>,
     {
         let protected: BTreeMap<_, _> = tokens
             .into_iter()
@@ -212,9 +223,9 @@ impl<T, M> Registry<T, M> {
         }
     }
 
-    fn allocate<F>(&mut self, key_for_sequence: &F) -> Result<(u8, Key), Error>
+    fn allocate<F>(&mut self, key_for_sequence: &F) -> Result<(u8, K), Error>
     where
-        F: Fn(u8) -> Result<Key, Error>,
+        F: Fn(u8) -> Result<K, Error>,
     {
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
             let sequence = self.take_next_sequence();
@@ -233,12 +244,12 @@ impl<T, M> Registry<T, M> {
         sequence
     }
 
-    fn key_is_available(&self, key: Key) -> bool {
+    fn key_is_available(&self, key: K) -> bool {
         !self.pending.contains_key(&key) && !self.quarantined.contains_key(&key)
     }
 
     /// Move metadata into quarantine and return the pending response sender.
-    fn remove_and_quarantine(&mut self, token: Token) -> Option<Sender<Result<T, Error>>> {
+    fn remove_and_quarantine(&mut self, token: Token<K>) -> Option<Sender<Result<T, Error>>> {
         if !self.pending_generation_matches(token) {
             return None;
         }
@@ -252,22 +263,25 @@ impl<T, M> Registry<T, M> {
         Some(pending.response)
     }
 
-    fn pending_generation_matches(&self, token: Token) -> bool {
+    fn pending_generation_matches(&self, token: Token<K>) -> bool {
         self.pending
             .get(&token.key())
             .is_some_and(|pending| pending.generation == token.generation())
     }
 }
 
-impl<T> Registry<T> {
+impl<K, T> Registry<K, T>
+where
+    K: Copy + Ord,
+{
     /// Register a response using an infallible key constructor.
     ///
     /// # Errors
     ///
     /// Returns an error when all transaction sequences are occupied.
-    pub fn register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
+    pub fn register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<K, T>, Error>
     where
-        F: Fn(u8) -> Key,
+        F: Fn(u8) -> K,
     {
         self.try_register(|sequence| Ok(key_for_sequence(sequence)))
     }
@@ -277,9 +291,12 @@ impl<T> Registry<T> {
     /// # Errors
     ///
     /// Returns key construction errors or sequence exhaustion.
-    pub fn try_register<F>(&mut self, key_for_sequence: F) -> Result<RegisteredResponse<T>, Error>
+    pub fn try_register<F>(
+        &mut self,
+        key_for_sequence: F,
+    ) -> Result<RegisteredResponse<K, T>, Error>
     where
-        F: Fn(u8) -> Result<Key, Error>,
+        F: Fn(u8) -> Result<K, Error>,
     {
         self.try_register_with_metadata(key_for_sequence, ())
     }
@@ -287,20 +304,17 @@ impl<T> Registry<T> {
 
 #[cfg(test)]
 mod tests {
-    use zb_core::Endpoint;
     use zb_hw::TransmissionError;
 
-    use super::{Key, Registry, TRANSACTION_SEQUENCE_COUNT};
+    use super::{Registry, TRANSACTION_SEQUENCE_COUNT};
     use crate::Error;
 
-    const CLUSTER_ID: u16 = 1;
     const OTHER_SHORT_ID: u16 = 4;
-    const PROFILE_ID: u16 = 2;
     const SHORT_ID: u16 = 3;
 
     #[test]
     fn refuses_to_replace_any_pending_sequence() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let mut responses = Vec::new();
 
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
@@ -319,7 +333,7 @@ mod tests {
 
     #[test]
     fn registration_propagates_key_construction_errors() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
 
         assert!(matches!(
             registry.try_register(|_| Err(Error::SendError)),
@@ -330,7 +344,7 @@ mod tests {
 
     #[test]
     fn completed_sequence_is_immediately_reallocated() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (first_sequence, first_token, _response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -346,7 +360,7 @@ mod tests {
 
     #[test]
     fn actor_expiration_returns_a_protocol_timeout() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (sequence, token, response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -367,7 +381,7 @@ mod tests {
         const METADATA: &str = "response contract";
 
         for timeout in [false, true] {
-            let mut registry = Registry::<(), String>::new();
+            let mut registry = Registry::<(u16, u8), (), String>::new();
             let (_, token, response) = registry
                 .try_register_with_metadata(|sequence| Ok(key(sequence)), METADATA.to_owned())
                 .expect("transaction sequence is available");
@@ -399,7 +413,7 @@ mod tests {
 
     #[test]
     fn untracked_sequences_wrap_without_exhaustion() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let mut sequences = Vec::new();
 
         for _ in 0..TRANSACTION_SEQUENCE_COUNT * 2 {
@@ -416,7 +430,7 @@ mod tests {
 
     #[test]
     fn untracked_allocation_skips_a_pending_identity() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (pending_sequence, _token, _response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -431,7 +445,7 @@ mod tests {
 
     #[test]
     fn network_boundary_releases_quarantined_identities() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let mut responses = Vec::new();
         for _ in 0..TRANSACTION_SEQUENCE_COUNT {
             let (_, token, response) = registry
@@ -459,7 +473,7 @@ mod tests {
     #[test]
     fn protected_network_boundary_retains_only_selected_identities() {
         const METADATA: &str = "preserved contract";
-        let mut registry = Registry::<(), String>::new();
+        let mut registry = Registry::<(u16, u8), (), String>::new();
         let (preserved_sequence, token, preserved_response) = registry
             .try_register_with_metadata(|sequence| Ok(key(sequence)), METADATA.to_owned())
             .expect("transaction sequence is available");
@@ -503,7 +517,7 @@ mod tests {
 
     #[test]
     fn network_failure_resolves_every_pending_response() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (_, first_token, first_response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -526,7 +540,7 @@ mod tests {
 
     #[test]
     fn hardware_unavailability_resolves_every_pending_response() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (_, first_token, first_response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -547,7 +561,7 @@ mod tests {
 
     #[test]
     fn stale_lifecycle_token_does_not_remove_reused_transaction() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (sequence, stale_token, stale_response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -567,7 +581,7 @@ mod tests {
 
     #[test]
     fn stale_quarantine_timeout_does_not_release_a_newer_generation() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (sequence, stale_token, _response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -587,7 +601,7 @@ mod tests {
 
     #[test]
     fn discarded_unsent_transaction_is_not_quarantined() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (sequence, token, response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -607,7 +621,7 @@ mod tests {
 
     #[test]
     fn quarantine_is_scoped_to_the_complete_correlation_key() {
-        let mut registry = Registry::<()>::new();
+        let mut registry = Registry::<(u16, u8), ()>::new();
         let (sequence, token, _response) = registry
             .register(key)
             .expect("transaction sequence is available");
@@ -615,29 +629,13 @@ mod tests {
         registry.next_sequence = sequence;
 
         let (reused_sequence, _, _response) = registry
-            .register(|sequence| {
-                Key::new(
-                    OTHER_SHORT_ID,
-                    Endpoint::Data,
-                    CLUSTER_ID,
-                    PROFILE_ID,
-                    None,
-                    sequence,
-                )
-            })
+            .register(|sequence| (OTHER_SHORT_ID, sequence))
             .expect("another correlation domain can reuse the sequence");
 
         assert_eq!(reused_sequence, sequence);
     }
 
-    fn key(sequence: u8) -> Key {
-        Key::new(
-            SHORT_ID,
-            Endpoint::Data,
-            CLUSTER_ID,
-            PROFILE_ID,
-            None,
-            sequence,
-        )
+    fn key(sequence: u8) -> (u16, u8) {
+        (SHORT_ID, sequence)
     }
 }

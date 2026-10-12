@@ -8,6 +8,7 @@ use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::correlation::{CancellationMessage, Token};
 use crate::response::ApsProtocolResponse;
+use crate::zdp::ZdpKey;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -30,19 +31,19 @@ pub enum Message {
     /// Cancel a pending protocol response whose future was dropped.
     Cancel {
         /// Coordinator-private identity of the protocol transaction to cancel.
-        token: Token,
+        token: Token<ZdpKey>,
     },
 
     /// Expire a pending protocol response.
     ResponseTimeout {
         /// Coordinator-private identity whose response timeout elapsed.
-        token: Token,
+        token: Token<ZdpKey>,
     },
 
     /// Release a response identity after its late-response grace period.
     QuarantineTimeout {
         /// Coordinator-private identity whose quarantine timeout elapsed.
-        token: Token,
+        token: Token<ZdpKey>,
     },
 
     /// Report a failed deferred APS completion for a locally generated ZDP response.
@@ -77,7 +78,9 @@ pub enum Message {
 }
 
 impl CancellationMessage for Message {
-    fn from_cancellation(token: Token) -> Self {
+    type Key = ZdpKey;
+
+    fn from_cancellation(token: Token<ZdpKey>) -> Self {
         Self::Cancel { token }
     }
 }

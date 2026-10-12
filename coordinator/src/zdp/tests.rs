@@ -27,8 +27,8 @@ use super::server::{permit_joining_response, track_reply_completion};
 use super::{Message, Transceiver};
 use crate::Error;
 use crate::aps::{Aps, Message as ApsMessage, Metadata, TransmissionResponse};
-use crate::correlation::Key;
 use crate::event::EventSink;
+use crate::zdp::ZdpKey;
 
 const NO_WORK_LIMIT: usize = 0;
 const SEQUENCE_OFFSET: usize = 0;
@@ -302,7 +302,7 @@ fn network_down_quarantines_a_submission_that_completed_outside_the_actor() {
             let request = communication_request(device);
             let (next_sequence, token, _response) = transceiver
                 .responses
-                .register(|sequence| Key::from_zdp_command(device, sequence, &request))
+                .register(|sequence| ZdpKey::from_command(device, sequence, &request))
                 .expect("another transaction sequence remains available");
             assert_ne!(next_sequence, original_sequence);
             transceiver.responses.discard(token);

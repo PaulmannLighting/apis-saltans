@@ -6,7 +6,7 @@ use super::Responses;
 use crate::correlation::{
     Cancellation, CancellationMessage, PROTOCOL_QUARANTINE_TIMEOUT, Token, schedule_timeout,
 };
-use crate::zcl::Message;
+use crate::zcl::{Message, ZclKey};
 
 impl Responses {
     /// Fail pending responses at a network boundary.
@@ -20,31 +20,31 @@ impl Responses {
     }
 
     /// Quarantine a cancelled transaction and schedule its release.
-    pub(in crate::zcl) fn cancel(&mut self, token: Token) {
+    pub(in crate::zcl) fn cancel(&mut self, token: Token<ZclKey>) {
         if self.registry.cancel(token) {
             self.schedule_quarantine_timeout(token);
         }
     }
 
     /// Expire a pending transaction and schedule release of its identity.
-    pub(in crate::zcl) fn timeout(&mut self, token: Token) {
+    pub(in crate::zcl) fn timeout(&mut self, token: Token<ZclKey>) {
         if self.registry.timeout(token) {
             self.schedule_quarantine_timeout(token);
         }
     }
 
     /// Release a quarantined identity when its grace period expires.
-    pub(in crate::zcl) fn expire_quarantine(&mut self, token: Token) {
+    pub(in crate::zcl) fn expire_quarantine(&mut self, token: Token<ZclKey>) {
         self.registry.expire_quarantine(token);
     }
 
     /// Create a drop guard that notifies the actor when the caller abandons a response.
-    pub(super) fn cancellation(&self, token: Token) -> Cancellation {
+    pub(super) fn cancellation(&self, token: Token<ZclKey>) -> Cancellation {
         Message::cancellation(self.inbox.clone(), token, "ZCL")
     }
 
     /// Schedule the response deadline without keeping the actor alive.
-    pub(super) fn schedule_response_timeout(&self, token: Token) {
+    pub(super) fn schedule_response_timeout(&self, token: Token<ZclKey>) {
         schedule_timeout(
             self.inbox.clone(),
             self.response_timeout,
@@ -53,7 +53,7 @@ impl Responses {
         );
     }
 
-    fn schedule_quarantine_timeout(&self, token: Token) {
+    fn schedule_quarantine_timeout(&self, token: Token<ZclKey>) {
         schedule_timeout(
             self.inbox.clone(),
             PROTOCOL_QUARANTINE_TIMEOUT,

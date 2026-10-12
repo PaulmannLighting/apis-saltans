@@ -5,15 +5,16 @@ use std::time::Duration;
 use bytes::Bytes;
 use log::debug;
 use tokio::sync::mpsc::WeakSender;
-use zb_aps::apsde::{DataIndication, DataRequest, IndividualEndpoint, RequestDestination};
+use zb_aps::apsde::{DataIndication, DataRequest};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::expectation::{ResponseExpectation, ResponseMatch};
 use super::{Message, Transceiver};
 use crate::Error;
 use crate::aps::Aps;
-use crate::correlation::{Key, PROTOCOL_RESPONSE_TIMEOUT, Registry};
+use crate::correlation::{PROTOCOL_RESPONSE_TIMEOUT, Registry};
 use crate::response::ApsProtocolResponse;
+use crate::zcl::ZclKey;
 
 mod expectation;
 mod lifecycle;
@@ -21,7 +22,7 @@ mod lifecycle;
 /// Actor-owned ZCL transactions and their timeout/cancellation notification channel.
 #[derive(Debug)]
 pub(super) struct Responses {
-    registry: Registry<Cluster, ResponseExpectation>,
+    registry: Registry<ZclKey, Cluster, ResponseExpectation>,
     pub(super) response_timeout: Duration,
     inbox: WeakSender<Message>,
 }
@@ -38,7 +39,7 @@ impl Responses {
 
     /// Access transaction state when arranging actor regression tests.
     #[cfg(test)]
-    pub(super) const fn registry(&mut self) -> &mut Registry<Cluster, ResponseExpectation> {
+    pub(super) const fn registry(&mut self) -> &mut Registry<ZclKey, Cluster, ResponseExpectation> {
         &mut self.registry
     }
 
@@ -47,12 +48,12 @@ impl Responses {
         &mut self,
         request: &DataRequest<UnsequencedFrame<Bytes>>,
     ) -> Result<u8, Error> {
-        let is_individual_unicast = Self::request_key(request, u8::MIN).is_ok();
+        let is_individual_unicast = ZclKey::from_request(request, u8::MIN).is_ok();
         if is_individual_unicast && !request.asdu().header().control().disable_default_response() {
             return Err(Error::ZclDefaultResponseEnabled);
         }
         self.registry
-            .allocate_untracked_sequence(|sequence| Self::request_key(request, sequence).ok())
+            .allocate_untracked_sequence(|sequence| ZclKey::from_request(request, sequence).ok())
     }
 
     /// Consume a matching response or late quarantined reply, leaving unrelated frames untouched.
@@ -60,7 +61,7 @@ impl Responses {
         &mut self,
         indication: &DataIndication<Frame<Cluster>, (), ()>,
     ) -> bool {
-        let Some(key) = Key::from_received_zcl_indication(indication) else {
+        let Some(key) = ZclKey::from_indication(indication) else {
             return false;
         };
         let Some(expected) = self.registry.metadata(key) else {
@@ -80,7 +81,7 @@ impl Responses {
         if self.registry.release_quarantine(key) {
             debug!(
                 "Discarding late ZCL response with quarantined sequence {}",
-                key.sequence()
+                key.sequence
             );
             return true;
         }
@@ -103,7 +104,7 @@ impl Responses {
         expected: ResponseExpectation,
     ) -> Result<ApsProtocolResponse<Cluster>, Error> {
         let (sequence_number, token, rx) = self.registry.try_register_with_metadata(
-            |sequence| Self::request_key(&request, sequence),
+            |sequence| ZclKey::from_request(&request, sequence),
             expected,
         )?;
         self.schedule_response_timeout(token);
@@ -121,33 +122,6 @@ impl Responses {
         let cancellation = self.cancellation(token);
 
         Ok(ApsProtocolResponse::new(transmission, rx, cancellation))
-    }
-
-    /// Derive the expected response identity for an individual network destination.
-    pub(super) fn request_key(
-        request: &DataRequest<UnsequencedFrame<Bytes>>,
-        sequence_number: u8,
-    ) -> Result<Key, Error> {
-        let RequestDestination::Network { address, endpoint } = request.destination() else {
-            return Err(Error::InvalidZclCommunicationDestination(
-                request.destination(),
-            ));
-        };
-        if IndividualEndpoint::new(endpoint).is_none() {
-            return Err(Error::InvalidZclCommunicationDestination(
-                request.destination(),
-            ));
-        }
-
-        Ok(Key::new_zcl(
-            address.as_u16(),
-            (endpoint, request.source_endpoint().get()),
-            request.cluster_id(),
-            request.profile_id(),
-            request.asdu().header().manufacturer_code(),
-            !request.asdu().header().control().direction(),
-            sequence_number,
-        ))
     }
 }
 

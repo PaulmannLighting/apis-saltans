@@ -18,6 +18,7 @@ use crate::aps::{Aps, TransmissionResponse};
 use crate::correlation::{Cancellation, CancellationMessage, Registry, Token};
 use crate::response::ApsProtocolResponse;
 use crate::runtime::spawn;
+use crate::zdp::ZdpKey;
 
 const INITIAL_ID: u64 = 0;
 const ID_STEP: u64 = 1;
@@ -35,7 +36,7 @@ pub(super) struct Submissions {
 /// Actor-owned state retained while a ZDP request is being handed to APS.
 #[derive(Debug)]
 struct CommunicationSubmission {
-    token: Token,
+    token: Token<ZdpKey>,
     protocol_response: Receiver<Result<Command, Error>>,
     response: Sender<Result<ApsProtocolResponse<Command>, Error>>,
     task: AbortHandle,
@@ -93,7 +94,7 @@ impl Submissions {
     pub(super) fn start(
         &mut self,
         request: DataRequest<Bytes>,
-        token: Token,
+        token: Token<ZdpKey>,
         protocol_response: Receiver<Result<Command, Error>>,
         response: Sender<Result<ApsProtocolResponse<Command>, Error>>,
     ) {
@@ -129,7 +130,7 @@ impl Submissions {
         &mut self,
         id: u64,
         result: Result<TransmissionResponse, Error>,
-        responses: &mut Registry<Command>,
+        responses: &mut Registry<ZdpKey, Command>,
     ) {
         let Some(submission) = self.pending.remove(&id) else {
             debug!("Ignoring completion for unknown ZDP communication submission {id}");
@@ -149,7 +150,10 @@ impl Submissions {
     }
 
     /// Fail pending handoffs while preserving their exposed sequence numbers in quarantine.
-    pub(super) fn network_down(&mut self, responses: &mut Registry<Command>) -> Vec<Token> {
+    pub(super) fn network_down(
+        &mut self,
+        responses: &mut Registry<ZdpKey, Command>,
+    ) -> Vec<Token<ZdpKey>> {
         let submissions = take(&mut self.pending);
         let protected = submissions
             .values()

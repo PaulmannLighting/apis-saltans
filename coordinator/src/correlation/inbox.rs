@@ -18,15 +18,23 @@ mod tests;
 pub trait CancellationMessage
 where
     Self: Sized + Send + 'static,
+    Self::Key: Copy + Send + 'static,
 {
+    /// Protocol-specific identity carried by lifecycle messages.
+    type Key;
+
     /// Construct a cancellation message carrying the original transaction token.
-    fn from_cancellation(token: Token) -> Self;
+    fn from_cancellation(token: Token<Self::Key>) -> Self;
 
     /// Create a cancellation guard that queues its token when dropped.
     ///
     /// A full inbox defers delivery to the current runtime. The guard retains only a weak
     /// sender until cancellation, so an outstanding response cannot keep its actor alive.
-    fn cancellation(inbox: WeakSender<Self>, token: Token, protocol: &'static str) -> Cancellation {
+    fn cancellation(
+        inbox: WeakSender<Self>,
+        token: Token<Self::Key>,
+        protocol: &'static str,
+    ) -> Cancellation {
         let runtime = Handle::current();
         Cancellation::new(token, move |token| {
             let Some(inbox) = inbox.upgrade() else {

@@ -13,19 +13,21 @@ use zb_core::short_id::Device;
 use zb_hw::NcpHandle;
 use zb_zdp::{Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame};
 
+pub use self::key::ZdpKey;
 pub use self::message::Message;
 use self::server::{Server, ServerRequest, is_server_request};
 use self::server_operations::ServerOperations;
 use self::submission::Submissions;
 use crate::aps::Aps;
 use crate::correlation::{
-    Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token, schedule_timeout,
+    PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token, schedule_timeout,
 };
 use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
 use crate::{CoordinatorConfig, Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
 mod discovery;
+mod key;
 mod match_desc;
 mod message;
 mod node_desc;
@@ -41,7 +43,7 @@ mod tests;
 pub struct Transceiver {
     server: Server,
     events: EventSink,
-    responses: Registry<Command>,
+    responses: Registry<ZdpKey, Command>,
     inbox: WeakSender<Message>,
     submissions: Submissions,
     server_operations: ServerOperations,
@@ -223,7 +225,7 @@ impl Transceiver {
         }
         let (seq, token, protocol_response) = match self
             .responses
-            .register(|sequence| Key::from_zdp_command(device, sequence, &request))
+            .register(|sequence| ZdpKey::from_command(device, sequence, &request))
         {
             Ok(registration) => registration,
             Err(error) => {
@@ -247,7 +249,7 @@ impl Transceiver {
 
 /// Pending-response cancellation, timeout, and quarantine lifecycle management.
 impl Transceiver {
-    fn schedule_response_timeout(&self, token: Token) {
+    fn schedule_response_timeout(&self, token: Token<ZdpKey>) {
         schedule_timeout(
             self.inbox.clone(),
             self.response_timeout,
@@ -256,7 +258,7 @@ impl Transceiver {
         );
     }
 
-    fn schedule_quarantine_timeout(&self, token: Token) {
+    fn schedule_quarantine_timeout(&self, token: Token<ZdpKey>) {
         schedule_timeout(
             self.inbox.clone(),
             PROTOCOL_QUARANTINE_TIMEOUT,
@@ -282,13 +284,13 @@ fn handle_device_annce(events: &EventSink, device_annce: &DeviceAnnce) {
 /// Validate an indication's ZDP addressing and derive its response-correlation key.
 fn received_key<T, K>(
     indication: &DataIndication<Frame<Command>, T, K>,
-) -> Option<(NetworkAddress, Key)> {
+) -> Option<(NetworkAddress, ZdpKey)> {
     let source = indication.metadata().source();
     let Some(source_address) = source.network_address() else {
         warn!("Discarding ZDP indication from non-network source: {source:?}");
         return None;
     };
-    let Some(key) = Key::from_received_zdp_indication(indication) else {
+    let Some(key) = ZdpKey::from_indication(indication) else {
         warn!(
             "Discarding ZDP indication not addressed between endpoint zero: source={source:?} destination={:?}",
             indication.metadata().destination()

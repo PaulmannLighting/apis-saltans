@@ -69,11 +69,11 @@ mod tests {
     use std::task::{Context, Poll, Waker};
 
     use tokio::sync::oneshot::{Receiver, channel};
-    use zb_core::Endpoint;
     use zb_hw::TransmissionError;
 
     use super::{ApsProtocolResponse, TransmissionResponse};
-    use crate::correlation::{Cancellation, Key};
+    use crate::correlation::Cancellation;
+    use crate::zdp::ZdpKey;
 
     const CLUSTER_ID: u16 = 2;
     const PROFILE_ID: u16 = 3;
@@ -153,14 +153,12 @@ mod tests {
         )
     }
 
-    fn key() -> Key {
-        Key::new(
-            SHORT_ID,
-            Endpoint::Data,
-            CLUSTER_ID,
-            PROFILE_ID,
-            None,
-            SEQUENCE,
-        )
+    fn key() -> ZdpKey {
+        ZdpKey {
+            short_id: SHORT_ID,
+            cluster_id: CLUSTER_ID,
+            profile_id: PROFILE_ID,
+            sequence: SEQUENCE,
+        }
     }
 }

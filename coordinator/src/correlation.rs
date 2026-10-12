@@ -4,12 +4,10 @@ use std::time::Duration;
 use const_env::env_lit;
 
 pub use self::inbox::{CancellationMessage, schedule_timeout};
-pub use self::key::Key;
 pub use self::lifecycle::{Cancellation, Token};
 pub use self::registry::Registry;
 
 mod inbox;
-mod key;
 mod lifecycle;
 mod registry;
 

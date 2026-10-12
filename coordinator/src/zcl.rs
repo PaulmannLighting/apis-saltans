@@ -12,6 +12,7 @@ pub use self::correlation::ResponseExpectation;
 #[cfg(test)]
 pub use self::correlation::ResponseMatch;
 use self::correlation::Responses;
+pub use self::key::ZclKey;
 pub use self::message::Message;
 pub use self::subscription::{
     Filter as SubscriptionFilter, Received as SubscriptionMessage, Subscription,
@@ -22,6 +23,7 @@ use crate::event::EventSink;
 use crate::{CoordinatorConfig, Error, Event};
 
 mod correlation;
+mod key;
 mod message;
 mod subscription;
 

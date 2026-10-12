@@ -9,6 +9,7 @@ use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::correlation::{CancellationMessage, Token};
 use crate::response::ApsProtocolResponse;
+use crate::zcl::ZclKey;
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -40,19 +41,19 @@ pub enum Message {
     /// Cancel a pending protocol response whose future was dropped.
     Cancel {
         /// Coordinator-private identity of the protocol transaction to cancel.
-        token: Token,
+        token: Token<ZclKey>,
     },
 
     /// Expire a pending protocol response.
     ResponseTimeout {
         /// Coordinator-private identity whose response timeout elapsed.
-        token: Token,
+        token: Token<ZclKey>,
     },
 
     /// Release a response identity after its late-response grace period.
     QuarantineTimeout {
         /// Coordinator-private identity whose quarantine timeout elapsed.
-        token: Token,
+        token: Token<ZclKey>,
     },
 
     /// Unicast a message.
@@ -85,7 +86,9 @@ pub enum Message {
 }
 
 impl CancellationMessage for Message {
-    fn from_cancellation(token: Token) -> Self {
+    type Key = ZclKey;
+
+    fn from_cancellation(token: Token<ZclKey>) -> Self {
         Self::Cancel { token }
     }
 }
