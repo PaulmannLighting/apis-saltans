@@ -6,6 +6,12 @@ use zb_zdp::{BindReq, Destination, SimpleDescriptor};
 
 use crate::{Error, LocalNode, StatusExt, Zdp};
 
+/// Bindings selected for one local application endpoint.
+struct EndpointBindings {
+    destination: Application,
+    source_clusters: BTreeMap<Endpoint, BTreeSet<Cluster>>,
+}
+
 /// Trait for sending ZDP bind requests.
 pub trait Binding {
     /// Bind one source endpoint and cluster to the given destination.
@@ -77,36 +83,15 @@ pub trait Binding {
             let mut results = BTreeMap::new();
             let dst_address = self.get_ieee_address().await?;
 
-            for descriptor in self.get_endpoints().await? {
-                let Some(dst_endpoint) = application_endpoint(&descriptor) else {
-                    continue;
-                };
-
-                let input_clusters: BTreeSet<_> = descriptor
-                    .input_clusters()
-                    .iter()
-                    .copied()
-                    .filter_map(|cluster| Cluster::try_from(cluster).ok())
-                    .collect();
-                let mut endpoint_clusters_to_bind = BTreeMap::new();
-
-                for (src_endpoint, output_clusters) in &src_endpoint_clusters {
-                    endpoint_clusters_to_bind.insert(
-                        *src_endpoint,
-                        input_clusters
-                            .intersection(output_clusters)
-                            .copied()
-                            .collect(),
-                    );
-                }
-
+            let descriptors = self.get_endpoints().await?;
+            for plan in binding_plan(&descriptors, &src_endpoint_clusters) {
                 results.extend(
                     self.bind_all(
                         address,
-                        endpoint_clusters_to_bind,
+                        plan.source_clusters,
                         Destination::Extended {
                             address: dst_address,
-                            endpoint: dst_endpoint.into(),
+                            endpoint: plan.destination.into(),
                         },
                     )
                     .await,
@@ -145,6 +130,35 @@ where
     }
 }
 
+/// Select matching clusters without performing I/O, retaining local descriptor order.
+fn binding_plan(
+    descriptors: &[SimpleDescriptor],
+    sources: &BTreeMap<Endpoint, BTreeSet<Cluster>>,
+) -> Vec<EndpointBindings> {
+    descriptors
+        .iter()
+        .filter_map(|descriptor| {
+            let destination = application_endpoint(descriptor)?;
+            let inputs: BTreeSet<_> = descriptor
+                .input_clusters()
+                .iter()
+                .copied()
+                .filter_map(|cluster| Cluster::try_from(cluster).ok())
+                .collect();
+            let source_clusters = sources
+                .iter()
+                .map(|(endpoint, outputs)| {
+                    (*endpoint, inputs.intersection(outputs).copied().collect())
+                })
+                .collect();
+            Some(EndpointBindings {
+                destination,
+                source_clusters,
+            })
+        })
+        .collect()
+}
+
 /// Return the application endpoint declared by a local simple descriptor.
 fn application_endpoint(descriptor: &SimpleDescriptor) -> Option<Application> {
     let Ok(Endpoint::Application(endpoint)) = descriptor.endpoint() else {
@@ -155,11 +169,13 @@ fn application_endpoint(descriptor: &SimpleDescriptor) -> Option<Application> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{BTreeMap, BTreeSet};
+
     use zb_core::endpoint::Application;
-    use zb_core::{Endpoint, Profile};
+    use zb_core::{Cluster, Endpoint, Profile};
     use zb_zdp::{AppFlags, Clusters, SimpleDescriptor};
 
-    use super::application_endpoint;
+    use super::{application_endpoint, binding_plan};
 
     const DECLARED_ENDPOINT: u8 = 0x0B;
     const DEVICE_ID: u16 = 0x0100;
@@ -180,6 +196,53 @@ mod tests {
         let descriptor = descriptor(Endpoint::Data);
 
         assert_eq!(application_endpoint(&descriptor), None);
+    }
+
+    #[test]
+    fn selects_cluster_intersections_in_descriptor_order() {
+        const UNKNOWN_CLUSTER: u16 = 0xffff;
+        let first = Endpoint::Application(Application::MIN);
+        let second = Endpoint::try_from(DECLARED_ENDPOINT).expect("valid endpoint");
+        let sources = BTreeMap::from([
+            (first, BTreeSet::from([Cluster::OnOff, Cluster::Level])),
+            (second, BTreeSet::from([Cluster::Scenes])),
+        ]);
+        let descriptors = [
+            descriptor_with_inputs(second, &[Cluster::OnOff.as_u16(), UNKNOWN_CLUSTER]),
+            descriptor_with_inputs(Endpoint::Data, &[Cluster::OnOff.as_u16()]),
+            descriptor_with_inputs(first, &[Cluster::Level.as_u16()]),
+        ];
+        let plan = binding_plan(&descriptors, &sources);
+        assert_eq!(plan.len(), 2);
+        assert_eq!(Endpoint::from(plan[0].destination), second);
+        assert_eq!(Endpoint::from(plan[1].destination), first);
+        assert_eq!(
+            plan[0].source_clusters[&first],
+            BTreeSet::from([Cluster::OnOff])
+        );
+        assert_eq!(
+            plan[1].source_clusters[&first],
+            BTreeSet::from([Cluster::Level])
+        );
+        assert!(plan[0].source_clusters[&second].is_empty());
+        assert!(plan[1].source_clusters[&second].is_empty());
+    }
+
+    fn descriptor_with_inputs(endpoint: Endpoint, inputs: &[u16]) -> SimpleDescriptor {
+        let mut clusters = Clusters::new();
+        for cluster in inputs {
+            clusters
+                .push(*cluster)
+                .expect("test clusters fit descriptor");
+        }
+        SimpleDescriptor::new(
+            endpoint,
+            Profile::ZigbeeHomeAutomation,
+            DEVICE_ID,
+            AppFlags::empty(),
+            clusters,
+            Clusters::new(),
+        )
     }
 
     fn descriptor(endpoint: Endpoint) -> SimpleDescriptor {

@@ -510,3 +510,8 @@ message construction uses static trait dispatch without a function-pointer param
 ZDP. Each actor chooses its message variant and deadline; the shared helpers retain weak senders
 until delivery and preserve generation-tagged tokens. Cancellation uses immediate delivery with
 a runtime task as the fallback when the bounded inbox is full.
+
+Binding selection is computed by a pure `binding_plan` helper before requests are sent.
+The plan retains local descriptor order and intersects local input clusters with remote output
+clusters. Execution retains the existing per-source-endpoint result aggregation and overwrite
+semantics; callers needing per-cluster results can invoke `bind` for each desired binding.
