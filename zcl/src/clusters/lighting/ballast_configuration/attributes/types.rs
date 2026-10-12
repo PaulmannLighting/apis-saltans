@@ -1,4 +1,5 @@
 use bitflags::bitflags;
+use zb_core::TypeId;
 use zb_core::types::Type;
 
 /// Lamp alarm mode attribute.
@@ -10,8 +11,8 @@ use zb_core::types::Type;
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct LampAlarmMode(u8);
 
-impl zb_core::TypeId for LampAlarmMode {
-    const ID: u8 = <u8 as zb_core::TypeId>::ID;
+impl TypeId for LampAlarmMode {
+    const ID: u8 = <u8 as TypeId>::ID;
 }
 
 bitflags! {

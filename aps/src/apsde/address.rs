@@ -1,7 +1,8 @@
 use core::fmt::{self, Display, Formatter, LowerHex, UpperHex};
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use zb_core::{Endpoint, GroupId, IeeeAddress, ShortId, short_id};
+use zb_core::short_id::Broadcast;
+use zb_core::{Endpoint, GroupId, IeeeAddress, ShortId};
 
 const MAX_NETWORK_ADDRESS: u16 = 0xfff7;
 const MIN_BROADCAST_ADDRESS: u16 = 0xfffc;
@@ -80,7 +81,7 @@ pub enum RequestDestination {
     /// Send to a 16-bit NWK broadcast address and endpoint.
     Broadcast {
         /// NWK broadcast receiver set.
-        address: short_id::Broadcast,
+        address: Broadcast,
         /// Destination endpoint, including the APS broadcast endpoint when required.
         endpoint: Endpoint,
     },
@@ -137,7 +138,7 @@ pub enum ReceivedDestination {
     /// The received ASDU was addressed to a 16-bit NWK broadcast address and endpoint.
     Broadcast {
         /// NWK broadcast receiver set.
-        address: short_id::Broadcast,
+        address: Broadcast,
         /// Local target endpoint, including the APS broadcast endpoint.
         endpoint: Endpoint,
     },
@@ -439,7 +440,8 @@ mod tests {
 
     use super::{
         AddressMode, BroadcastAddress, IndividualEndpoint, MAX_NETWORK_ADDRESS,
-        MIN_BROADCAST_ADDRESS, NetworkAddress, ReceivedDestination, RequestDestination, Source,
+        MIN_BROADCAST_ADDRESS, NetworkAddress, NetworkDestination, ReceivedDestination,
+        RequestDestination, Source,
     };
 
     #[test]
@@ -468,7 +470,7 @@ mod tests {
         let address = NetworkAddress::new(NETWORK_ADDRESS).expect("test NWK address is valid");
         let endpoint =
             IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
-        let destination = super::NetworkDestination::new(address, endpoint);
+        let destination = NetworkDestination::new(address, endpoint);
 
         assert_eq!(destination.address(), address);
         assert_eq!(destination.endpoint(), endpoint);

@@ -11,7 +11,7 @@ use tokio::sync::oneshot::{Sender as OneshotSender, channel};
 use tokio::time::sleep;
 use zb_aps::TxOptions;
 use zb_aps::apsde::{ConfirmStatus, DataRequest, IndividualEndpoint, RequestDestination};
-use zb_hw::NcpHandle;
+use zb_hw::{NcpHandle, TransmissionError};
 
 pub use self::message::Message;
 pub use self::metadata::Metadata;
@@ -183,7 +183,7 @@ impl PendingTransmission {
         let result = if status.is_success() {
             Ok(())
         } else {
-            Err(zb_hw::TransmissionError::Confirmation(status).into())
+            Err(TransmissionError::Confirmation(status).into())
         };
         self.complete(result);
     }
@@ -356,7 +356,7 @@ impl TransmissionState {
                 .remove(&token.counter)
                 .expect("matching pending generation remains present");
             self.quarantined.insert(token.counter, token.generation);
-            pending.complete(Err(zb_hw::TransmissionError::Timeout.into()));
+            pending.complete(Err(TransmissionError::Timeout.into()));
         }
 
         self.quarantined.get(&token.counter) == Some(&token.generation)
@@ -421,8 +421,7 @@ impl Transceiver {
                 self.state.handle_confirm(counter, status);
             }
             Message::NetworkDown => {
-                self.state
-                    .network_down(&zb_hw::TransmissionError::NoRoute.into());
+                self.state.network_down(&TransmissionError::NoRoute.into());
             }
             Message::HardwareUnavailable => {
                 self.state.stop(&zb_hw::Error::ActorUnavailable);

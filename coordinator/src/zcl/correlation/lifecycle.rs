@@ -1,5 +1,7 @@
 //! Cancellation, network failures, and timeout scheduling for ZCL transactions.
 
+use zb_hw::TransmissionError;
+
 use super::Responses;
 use crate::correlation::{
     Cancellation, CancellationMessage, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT,
@@ -10,8 +12,7 @@ use crate::zcl::Message;
 impl Responses {
     /// Fail pending responses at a network boundary.
     pub(in crate::zcl) fn network_down(&mut self) {
-        self.registry
-            .network_down(&zb_hw::TransmissionError::NoRoute);
+        self.registry.network_down(&TransmissionError::NoRoute);
     }
 
     /// Fail all pending responses when the hardware event stream closes.

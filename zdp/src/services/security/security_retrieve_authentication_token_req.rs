@@ -1,11 +1,13 @@
 use zb_core::types::tlv::Tlv;
 
+use crate::SecurityRetrieveAuthenticationTokenRsp;
+
 crate::zdp_command! {
     /// Security Retrieve Authentication Token Request.
     SecurityRetrieveAuthenticationTokenReq => Security_Retrieve_Authentication_Token_req;
     cluster_id: 0x0041;
     group: Security;
-    response: crate::SecurityRetrieveAuthenticationTokenRsp;
+    response: SecurityRetrieveAuthenticationTokenRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }

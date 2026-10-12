@@ -9,7 +9,7 @@ use crate::ballast_configuration::Reportable as BallastConfigurationAttributes;
 use crate::basic::Reportable as BasicAttributes;
 use crate::color_control::Reportable as ColorControlAttributes;
 use crate::device_temperature_configuration::Reportable as DeviceTemperatureConfigurationAttributes;
-use crate::global::configure_reporting;
+use crate::global::configure_reporting::send::AttributeReportingConfiguration;
 use crate::global::write_attributes::Record;
 use crate::groups::Reportable as GroupsAttributes;
 use crate::ias::zone::Reportable as IasZoneAttributes;
@@ -51,9 +51,7 @@ pub trait Writable: ClusterSpecific + Profiled + Into<Record> {
 /// Generated implementations include attributes without `P`: reporting may be a manufacturer
 /// option (ZCL §2.5.7.3). Availability here does not guarantee device support or override
 /// attribute-specific restrictions. Discover Attributes Extended describes actual device access.
-pub trait Reportable:
-    ClusterSpecific + Profiled + Into<configure_reporting::send::AttributeReportingConfiguration>
-{
+pub trait Reportable: ClusterSpecific + Profiled + Into<AttributeReportingConfiguration> {
     /// The manufacturer code, if any.
     const MANUFACTURER_CODE: Option<u16> = None;
 

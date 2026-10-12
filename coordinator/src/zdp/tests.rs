@@ -7,18 +7,19 @@ use le_stream::ToLeStream;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::channel;
 use tokio::sync::oneshot;
+use tokio::sync::oneshot::{Receiver, Sender};
 use tokio::time::timeout;
 use zb_aps::apsde::{
-    ConfirmStatus, DataIndication, IndicationMetadata, IndicationStatus, IndividualEndpoint,
-    NetworkAddress, NetworkDestination, ReceivedDestination, RequestDestination, Security, Source,
-    Status as ApsStatus,
+    ConfirmStatus, DataIndication, DataRequest, IndicationMetadata, IndicationStatus,
+    IndividualEndpoint, NetworkAddress, NetworkDestination, ReceivedDestination,
+    RequestDestination, Security, Source, Status as ApsStatus,
 };
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
 use zb_core::{ClusterSpecific, Endpoint, IeeeAddress, Profile};
 use zb_hw::{
     ChannelMask, Driver, Error as HardwareError, FoundNetwork, Operation, ScanDuration,
-    ScannedChannel,
+    ScannedChannel, TransmissionError,
 };
 use zb_zdp::{ActiveEpReq, Command, DeviceAndServiceDiscovery, Frame, SimpleDescriptor, Status};
 
@@ -40,8 +41,8 @@ const TEST_TIMEOUT: Duration = Duration::from_millis(100);
 
 #[derive(Debug)]
 struct DelayedEndpointDriver {
-    started: Mutex<Option<oneshot::Sender<()>>>,
-    release: Mutex<Option<oneshot::Receiver<()>>>,
+    started: Mutex<Option<Sender<()>>>,
+    release: Mutex<Option<Receiver<()>>>,
 }
 
 impl Driver for DelayedEndpointDriver {
@@ -113,7 +114,7 @@ impl Driver for DelayedEndpointDriver {
 
     async fn transmit(
         &mut self,
-        _request: zb_aps::apsde::DataRequest<Bytes>,
+        _request: DataRequest<Bytes>,
         _counter: u8,
     ) -> Result<(), HardwareError> {
         unsupported(Operation::Transmit)
@@ -133,12 +134,12 @@ fn reports_deferred_backend_rejection_through_the_actor_inbox() {
     Runtime::new()
         .expect("runtime must be available")
         .block_on(async {
-            let message = tracked_reply_failure(zb_hw::TransmissionError::Rejected.into()).await;
+            let message = tracked_reply_failure(TransmissionError::Rejected.into()).await;
 
             assert!(matches!(
                 message,
                 Message::ReplyTransmissionFailed {
-                    error: zb_hw::Error::Transmission(zb_hw::TransmissionError::Rejected)
+                    error: zb_hw::Error::Transmission(TransmissionError::Rejected)
                 }
             ));
         });
@@ -151,13 +152,13 @@ fn reports_deferred_acknowledgement_failure_through_the_actor_inbox() {
         .block_on(async {
             let status = ConfirmStatus::Aps(ApsStatus::NoAcknowledgement);
             let message =
-                tracked_reply_failure(zb_hw::TransmissionError::Confirmation(status).into()).await;
+                tracked_reply_failure(TransmissionError::Confirmation(status).into()).await;
 
             assert!(matches!(
                 message,
                 Message::ReplyTransmissionFailed {
                     error: zb_hw::Error::Transmission(
-                        zb_hw::TransmissionError::Confirmation(received)
+                        TransmissionError::Confirmation(received)
                     )
                 } if received == status
             ));
@@ -297,7 +298,7 @@ fn network_down_quarantines_a_submission_that_completed_outside_the_actor() {
             assert!(matches!(
                 result.await,
                 Ok(Err(Error::Hardware(HardwareError::Transmission(
-                    zb_hw::TransmissionError::NoRoute
+                    TransmissionError::NoRoute
                 ))))
             ));
             assert!(transceiver.handle_actor_message(stale_completion));
@@ -358,7 +359,7 @@ fn active_endpoint_request() -> DataIndication<Frame<Command>, (), ()> {
     DataIndication::new(metadata, Frame::new(SEQUENCE, command))
 }
 
-fn communication_request(device: Device) -> zb_aps::apsde::DataRequest<Bytes> {
+fn communication_request(device: Device) -> DataRequest<Bytes> {
     let destination: RequestDestination =
         NetworkDestination::new(network_address(device.as_u16()), data_endpoint()).into();
     crate::aps::data_request(

@@ -1,15 +1,16 @@
+use heapless::Vec;
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::tlv::Tag;
 
 /// Manufacturer specific data.
-pub type Data = heapless::Vec<u8, { u8::MAX as usize }, u8>;
+pub type Data = Vec<u8, { u8::MAX as usize }, u8>;
 
 /// Manufacturer Specific TLV global.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ManufacturerSpecific {
     manufacturer_id: u16,
-    data: heapless::Vec<u8, { u8::MAX as usize }, u8>,
+    data: Vec<u8, { u8::MAX as usize }, u8>,
 }
 
 impl ManufacturerSpecific {

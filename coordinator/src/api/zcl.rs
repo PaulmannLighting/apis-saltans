@@ -10,10 +10,10 @@ use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination};
 use zb_core::{ClusterSpecific, ExpectResponse, Profiled};
 pub use zb_zcl::ZclResponseType;
 use zb_zcl::global::default_response::DefaultResponse;
-use zb_zcl::{Cluster, Command, Directed, Scoped, UnsequencedFrame};
+use zb_zcl::{Cluster, Command, Directed, Scoped, Status, UnsequencedFrame};
 
 pub use self::typed_request::ZclRequest;
-use crate::zcl::Message;
+use crate::zcl::{Message, ResponseExpectation};
 use crate::{CommunicationResponse, Coordinator, Error, StatusExt};
 
 mod typed_request;
@@ -272,7 +272,7 @@ impl Zcl for Sender<Message> {
     where
         T: ZclResponseType + TryFrom<Cluster, Error: Debug> + Send + Sync + 'static,
     {
-        let expected = crate::zcl::ResponseExpectation::for_encoded::<T>(request.asdu());
+        let expected = ResponseExpectation::for_encoded::<T>(request.asdu());
         enqueue(self, request, expected)
     }
 }
@@ -318,7 +318,7 @@ impl Zcl for Coordinator {
 async fn enqueue<T>(
     sender: &Sender<Message>,
     request: DataRequest<UnsequencedFrame<Bytes>>,
-    expected: crate::zcl::ResponseExpectation,
+    expected: ResponseExpectation,
 ) -> Result<ZclResponse<T>, Error>
 where
     T: TryFrom<Cluster, Error: Debug> + Send,
@@ -341,22 +341,25 @@ fn validate_default_response(command_id: u8, response: &DefaultResponse) -> Resu
             response.command_id()
         )));
     }
-    zb_zcl::Status::try_from(response.status()).ensure_success()
+    Status::try_from(response.status()).ensure_success()
 }
 
 #[cfg(test)]
 mod tests {
+    use le_stream::ToLeStream;
     use zb_aps::apsde::{
-        IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination,
+        DataRequest, IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination,
     };
-    use zb_core::Endpoint;
     use zb_core::endpoint::Application;
-    use zb_zcl::Command;
+    use zb_core::{ClusterSpecific, Direction, Endpoint, ExpectResponse, Profile};
     use zb_zcl::global::default_response::DefaultResponse;
+    use zb_zcl::global::read_attributes::Response;
     use zb_zcl::on_off::On;
+    use zb_zcl::{Command, Directed, Scoped, Status, UnsequencedFrame};
 
     use super::{request_without_response, validate_default_response};
-    use crate::Error;
+    use crate::zcl::{ResponseExpectation, ResponseMatch};
+    use crate::{Error, ZclResponseType};
 
     const DEVICE_ID: u16 = 0x1234;
     const OTHER_COMMAND_ID: u8 = 0x02;
@@ -370,14 +373,14 @@ mod tests {
 
     #[test]
     fn validates_a_successful_default_response() {
-        let response = DefaultResponse::new(<On as Command>::ID, zb_zcl::Status::Success.into());
+        let response = DefaultResponse::new(<On as Command>::ID, Status::Success.into());
 
         assert!(validate_default_response(<On as Command>::ID, &response).is_ok());
     }
 
     #[test]
     fn rejects_a_default_response_for_another_command() {
-        let response = DefaultResponse::new(OTHER_COMMAND_ID, zb_zcl::Status::Success.into());
+        let response = DefaultResponse::new(OTHER_COMMAND_ID, Status::Success.into());
 
         assert!(matches!(
             validate_default_response(<On as Command>::ID, &response),
@@ -387,21 +390,19 @@ mod tests {
 
     #[test]
     fn returns_an_unsuccessful_default_response_status() {
-        let response = DefaultResponse::new(<On as Command>::ID, zb_zcl::Status::Failure.into());
+        let response = DefaultResponse::new(<On as Command>::ID, Status::Failure.into());
 
         assert!(matches!(
             validate_default_response(<On as Command>::ID, &response),
-            Err(Error::Zcl(Ok(zb_zcl::Status::Failure)))
+            Err(Error::Zcl(Ok(Status::Failure)))
         ));
     }
 
     #[test]
     fn communication_carries_typed_response_expectation_to_actor() {
-        use std::future::Future;
         use std::pin::pin;
         use std::task::{Context, Poll, Waker};
 
-        use zb_zcl::global::read_attributes;
         use zb_zcl::{Frame, Header, Scope};
 
         use super::{Zcl, request};
@@ -430,10 +431,7 @@ mod tests {
             EXPECTED_DEFAULT.into_iter(),
         )
         .unwrap();
-        assert!(matches!(
-            expected.classify(&frame),
-            crate::zcl::ResponseMatch::Expected
-        ));
+        assert!(matches!(expected.classify(&frame), ResponseMatch::Expected));
         let frame = Frame::parse(
             zb_core::Cluster::OnOff.as_u16(),
             UNRELATED_DEFAULT.into_iter(),
@@ -441,28 +439,27 @@ mod tests {
         .unwrap();
         assert!(matches!(
             expected.classify(&frame),
-            crate::zcl::ResponseMatch::Unrelated
+            ResponseMatch::Unrelated
         ));
         let unrelated = Frame::new(
             Header::new(
                 Scope::Global,
-                zb_core::Direction::ServerToClient,
+                Direction::ServerToClient,
                 false,
                 None,
                 SEQUENCE,
-                <read_attributes::Response as Command>::ID,
+                <Response as Command>::ID,
             ),
             frame.into_payload(),
         );
         assert!(matches!(
             expected.classify(&unrelated),
-            crate::zcl::ResponseMatch::Unrelated
+            ResponseMatch::Unrelated
         ));
     }
 
     #[test]
     fn typed_requests_accept_error_defaults_even_when_default_responses_are_disabled() {
-        use std::future::Future;
         use std::pin::pin;
         use std::task::{Context, Poll, Waker};
 
@@ -476,18 +473,17 @@ mod tests {
         const FAILURE_RESPONSE: [u8; 5] = [0x18, 0x07, 0x0b, 0x00, 0x01];
         for disabled in [false, true] {
             let (sender, mut messages) = tokio::sync::mpsc::channel(CHANNEL_CAPACITY);
-            let frame = zb_zcl::UnsequencedFrame::from_command(read_attributes::Command::new(
-                Box::default(),
-            ))
-            .with_disable_default_response(disabled);
+            let frame =
+                UnsequencedFrame::from_command(read_attributes::Command::new(Box::default()))
+                    .with_disable_default_response(disabled);
             let request = request_with_ids(
                 destination(),
                 source_endpoint(),
-                zb_core::Profile::ZigbeeHomeAutomation.as_u16(),
+                Profile::ZigbeeHomeAutomation.as_u16(),
                 zb_core::Cluster::OnOff.as_u16(),
                 frame,
             );
-            let mut response = pin!(sender.communicate::<read_attributes::Response>(request));
+            let mut response = pin!(sender.communicate::<Response>(request));
             let mut context = Context::from_waker(Waker::noop());
             assert!(matches!(
                 response.as_mut().poll(&mut context),
@@ -510,7 +506,7 @@ mod tests {
             .unwrap();
             assert_eq!(
                 expected.classify(&frame),
-                ResponseMatch::Rejected(Ok(zb_zcl::Status::Failure))
+                ResponseMatch::Rejected(Ok(Status::Failure))
             );
         }
     }
@@ -530,22 +526,18 @@ mod tests {
 
         const CHANNEL_CAPACITY: usize = 1;
         const IMAGE: ImageId = ImageId::new(0x1234, 0x5678, 0x90ab_cdef);
-        const CLUSTER: u16 = <UpgradeComplete as zb_core::ClusterSpecific>::ID;
-        const PROFILE: u16 = zb_core::Profile::ZigbeeHomeAutomation.as_u16();
+        const CLUSTER: u16 = <UpgradeComplete as ClusterSpecific>::ID;
+        const PROFILE: u16 = Profile::ZigbeeHomeAutomation.as_u16();
         const DEFAULT: [u8; 5] = [0x18, 7, 0x0b, 0x06, 0x00];
         const WRONG_DEFAULT: [u8; 5] = [0x18, 7, 0x0b, 0x07, 0x00];
 
         fn check<C>(command: C, classification: ResponseMatch)
         where
-            C: zb_core::ExpectResponse<zb_zcl::Cluster>
-                + Command
-                + zb_zcl::Directed
-                + zb_zcl::Scoped
-                + le_stream::ToLeStream,
-            C::Response: crate::ZclResponseType + Send + Sync + 'static,
+            C: ExpectResponse<zb_zcl::Cluster> + Command + Directed + Scoped + ToLeStream,
+            C::Response: ZclResponseType + Send + Sync + 'static,
         {
             let (sender, mut messages) = tokio::sync::mpsc::channel(CHANNEL_CAPACITY);
-            let request = ZclRequest::new(zb_aps::apsde::DataRequest::new(
+            let request = ZclRequest::new(DataRequest::new(
                 destination(),
                 PROFILE,
                 CLUSTER,
@@ -586,10 +578,10 @@ mod tests {
 
         use crate::zcl::ResponseMatch;
 
-        const GROUP_CLUSTER: u16 = <RemoveAllGroups as zb_core::ClusterSpecific>::ID;
+        const GROUP_CLUSTER: u16 = <RemoveAllGroups as ClusterSpecific>::ID;
         const GROUP_DEFAULT: [u8; 5] = [0x18, 7, 0x0b, 0x04, Status::Success as u8];
         const GROUP_SPECIFIC: [u8; 6] = [0x19, 7, 0x03, 0x00, 0x01, 0x00];
-        let expected = crate::zcl::ResponseExpectation::for_request::<RemoveAllGroups>();
+        let expected = ResponseExpectation::for_request::<RemoveAllGroups>();
         assert_eq!(
             expected.classify(&Frame::parse(GROUP_CLUSTER, GROUP_DEFAULT.into_iter()).unwrap()),
             ResponseMatch::Expected
@@ -612,9 +604,7 @@ mod tests {
         let command = read_attributes::Command::new(Box::default());
         let original =
             DataRequest::new(destination(), PROFILE, CLUSTER, source_endpoint(), command);
-        let expected = original
-            .clone()
-            .map_asdu(zb_zcl::UnsequencedFrame::from_command);
+        let expected = original.clone().map_asdu(UnsequencedFrame::from_command);
         let typed = ZclRequest::new(original);
         assert_eq!(typed.as_request(), &expected);
         let typed = typed

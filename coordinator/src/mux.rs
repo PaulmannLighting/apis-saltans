@@ -10,8 +10,9 @@ use zb_hw::{
 };
 
 use self::aps_payload::ApsPayload;
-use crate::event::EventSink;
-use crate::{Device, Event, Network, NetworkError, aps, ota, zcl, zdp};
+use crate::aps::Aps;
+use crate::event::{EventSink, KeepAlive};
+use crate::{Device, Event, Network, NetworkError, ota, zcl, zdp};
 
 mod aps_payload;
 
@@ -19,7 +20,7 @@ mod aps_payload;
 #[derive(Debug)]
 pub struct Mux {
     events: EventSink,
-    aps: aps::Aps,
+    aps: Aps,
     ota: Sender<ota::Message>,
     zcl: Sender<zcl::Message>,
     zdp: Sender<zdp::Message>,
@@ -29,7 +30,7 @@ impl Mux {
     /// Create a new multiplexer.
     pub const fn new(
         events: EventSink,
-        aps: aps::Aps,
+        aps: Aps,
         ota: Sender<ota::Message>,
         zcl: Sender<zcl::Message>,
         zdp: Sender<zdp::Message>,
@@ -47,7 +48,7 @@ impl Mux {
     pub fn spawn<T, K>(
         hw_events: Receiver<HardwareEvent<T, K>>,
         events: EventSink,
-        aps: aps::Aps,
+        aps: Aps,
         ota_tx: Sender<ota::Message>,
         zcl_tx: Sender<zcl::Message>,
         zdp_tx: Sender<zdp::Message>,
@@ -290,9 +291,11 @@ impl Mux {
                     return;
                 };
 
-                self.events.emit(Event::Device(Device::KeepAlive(
-                    crate::event::KeepAlive::new(device_id, source_endpoint),
-                )));
+                self.events
+                    .emit(Event::Device(Device::KeepAlive(KeepAlive::new(
+                        device_id,
+                        source_endpoint,
+                    ))));
             }
         }
     }

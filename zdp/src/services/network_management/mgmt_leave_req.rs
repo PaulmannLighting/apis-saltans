@@ -1,6 +1,9 @@
+use std::fmt::Formatter;
+
 use zb_core::IeeeAddress;
 
 pub use self::leave_req_flags::LeaveReqFlags;
+use crate::MgmtLeaveRsp;
 
 mod leave_req_flags;
 
@@ -9,7 +12,7 @@ crate::zdp_command! {
     MgmtLeaveReq => Mgmt_Leave_req;
     cluster_id: 0x0034;
     group: NetworkManagement;
-    response: crate::MgmtLeaveRsp;
+    response: MgmtLeaveRsp;
     fields {
         device_address: IeeeAddress,
         flags: LeaveReqFlags,
@@ -28,7 +31,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ device_address: {}, flags: {} }}",

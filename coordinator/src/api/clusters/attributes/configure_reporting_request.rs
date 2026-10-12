@@ -30,26 +30,25 @@ where
 
 #[cfg(test)]
 mod tests {
+    use bytes::Bytes;
+    use zb_aps::apsde::{IndividualEndpoint, NetworkAddress, NetworkDestination};
+    use zb_core::endpoint::Application;
     use zb_core::types::Bool;
-    use zb_core::{Cluster, Direction, Profile};
-    use zb_zcl::Discrete;
+    use zb_core::{Cluster, ClusterSpecific, Direction, Endpoint, Profile, Profiled};
     use zb_zcl::on_off::SendReport;
+    use zb_zcl::{Discrete, Reportable, UnsequencedFrame};
 
     use super::request;
 
-    const ENDPOINT: zb_core::Endpoint =
-        zb_core::Endpoint::Application(zb_core::endpoint::Application::MIN);
+    const ENDPOINT: Endpoint = Endpoint::Application(Application::MIN);
     const ADDRESS: u16 = 0x1234;
 
-    fn frame<T>(attributes: T) -> zb_zcl::UnsequencedFrame<bytes::Bytes>
+    fn frame<T>(attributes: T) -> UnsequencedFrame<Bytes>
     where
-        T: IntoIterator<Item: zb_zcl::Reportable>,
+        T: IntoIterator<Item: Reportable>,
     {
-        let endpoint = zb_aps::apsde::IndividualEndpoint::new(ENDPOINT).unwrap();
-        let destination = zb_aps::apsde::NetworkDestination::new(
-            zb_aps::apsde::NetworkAddress::new(ADDRESS).unwrap(),
-            endpoint,
-        );
+        let endpoint = IndividualEndpoint::new(ENDPOINT).unwrap();
+        let destination = NetworkDestination::new(NetworkAddress::new(ADDRESS).unwrap(), endpoint);
         request(destination, endpoint, attributes)
             .as_request()
             .asdu()
@@ -84,13 +83,10 @@ mod tests {
         let expected = [record.as_slice(), record.as_slice()].concat();
 
         assert_eq!(
-            <SendReport as zb_core::Profiled>::PROFILE,
+            <SendReport as Profiled>::PROFILE,
             Profile::ZigbeeHomeAutomation
         );
-        assert_eq!(
-            <SendReport as zb_core::ClusterSpecific>::ID,
-            Cluster::OnOff.as_u16()
-        );
+        assert_eq!(<SendReport as ClusterSpecific>::ID, Cluster::OnOff.as_u16());
         assert_eq!(manufacturer_code, None);
         assert_eq!(bytes.as_ref(), expected);
     }

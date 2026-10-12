@@ -1,8 +1,5 @@
 //! Structured attribute selector.
 
-use std::boxed::Box;
-use std::vec::Vec;
-
 use le_stream::{FromLeStream, ToLeStream};
 
 const LIMIT: usize = 0x0f;

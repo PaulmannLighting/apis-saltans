@@ -1,10 +1,13 @@
+use std::fmt::Formatter;
+
+use crate::MgmtBindRsp;
 crate::zdp_command! {
     /// Management Bind Request structure.
     derive { Copy }
     MgmtBindReq => Mgmt_Bind_req;
     cluster_id: 0x0033;
     group: NetworkManagement;
-    response: crate::MgmtBindRsp;
+    response: MgmtBindRsp;
     fields {
         start_index: u8,
     }
@@ -16,7 +19,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ start_index: {:#04X} }}",

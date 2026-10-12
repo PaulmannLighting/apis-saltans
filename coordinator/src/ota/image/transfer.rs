@@ -1,5 +1,7 @@
 use std::io;
+use std::io::{Error, ErrorKind};
 
+use tokio::sync::mpsc::Receiver;
 use tokio::sync::{mpsc, oneshot};
 use zb_core::IeeeAddress;
 use zb_zcl::ota_upgrade::ImageId;
@@ -17,7 +19,7 @@ pub struct ImageTransfer {
 
 struct ImageTransferTask {
     source: Option<Box<dyn ImageSource>>,
-    inbound: mpsc::Receiver<ReadRequest>,
+    inbound: Receiver<ReadRequest>,
 }
 
 struct ReadRequest {
@@ -67,9 +69,7 @@ impl ImageTransfer {
         let end = offset
             .checked_add(length)
             .filter(|end| *end <= self.len())
-            .ok_or_else(|| {
-                io::Error::new(io::ErrorKind::InvalidInput, "invalid OTA image range")
-            })?;
+            .ok_or_else(|| Error::new(ErrorKind::InvalidInput, "invalid OTA image range"))?;
         let header_length = usize::from(self.header.header_length());
         let mut result = Vec::with_capacity(length);
         if offset < header_length {
@@ -87,10 +87,10 @@ impl ImageTransfer {
                     response,
                 })
                 .await
-                .map_err(|_| io::Error::other("OTA image transfer task has stopped"))?;
+                .map_err(|_| Error::other("OTA image transfer task has stopped"))?;
             let payload = received
                 .await
-                .map_err(|_| io::Error::other("OTA image transfer response was dropped"))??;
+                .map_err(|_| Error::other("OTA image transfer response was dropped"))??;
             result.extend_from_slice(&payload);
         }
         Ok(result.into_boxed_slice())
@@ -116,7 +116,7 @@ impl ImageTransferTask {
                     drop(response.send(result));
                 }
                 Err(error) => {
-                    drop(response.send(Err(io::Error::other(error))));
+                    drop(response.send(Err(Error::other(error))));
                     return;
                 }
             }

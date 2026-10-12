@@ -1,7 +1,6 @@
-use std::vec::Vec;
-
 use zb_core::{Cluster, Direction, IeeeAddress};
 
+use super::ImageBlockResponse;
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
 
@@ -15,7 +14,7 @@ zcl_command! {
         command_id: 0x03;
         direction: Direction::ClientToServer;
         disable_default_response: false;
-        response: super::ImageBlockResponse;
+        response: ImageBlockResponse;
         fields {
             image: ImageId,
             file_offset: u32,

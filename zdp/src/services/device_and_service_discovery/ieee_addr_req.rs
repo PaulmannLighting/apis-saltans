@@ -1,9 +1,12 @@
+use std::fmt::Formatter;
+
+use crate::IeeeAddrRsp;
 crate::zdp_command! {
     /// Request type for IEEE address request.
     IeeeAddrReq => IEEE_addr_req;
     cluster_id: 0x0001;
     group: DeviceAndServiceDiscovery;
-    response: crate::IeeeAddrRsp;
+    response: IeeeAddrRsp;
     fields {
         nwk_addr_of_interest: u16,
         request_type: u8,
@@ -29,7 +32,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ nwk_addr_of_interest: {:#06X}, request_type: {:#04X}, start_index: {:#04X} }}",

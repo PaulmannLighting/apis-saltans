@@ -1,4 +1,5 @@
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::TypeId;
 use zb_core::types::{Type, Uint16};
 
 const MAX: u16 = 0x00ff;
@@ -14,8 +15,8 @@ const MAX: u16 = 0x00ff;
 )]
 pub struct AlarmCount(Uint16);
 
-impl zb_core::TypeId for AlarmCount {
-    const ID: u8 = <Uint16 as zb_core::TypeId>::ID;
+impl TypeId for AlarmCount {
+    const ID: u8 = <Uint16 as TypeId>::ID;
 }
 
 impl AlarmCount {

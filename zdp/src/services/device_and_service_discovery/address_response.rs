@@ -1,5 +1,7 @@
 //! Common wire payload for Network Address and IEEE Address responses.
 
+use std::vec::IntoIter;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::{ByteSizedVec, IeeeAddress};
 
@@ -110,7 +112,7 @@ impl FromLeStream for AddressResponse {
 }
 
 impl ToLeStream for AddressResponse {
-    type Iter = std::vec::IntoIter<u8>;
+    type Iter = IntoIter<u8>;
 
     fn to_le_stream(self) -> Self::Iter {
         let mut bytes = Vec::new();

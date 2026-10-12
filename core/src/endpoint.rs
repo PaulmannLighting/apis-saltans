@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::UpperHex;
 use core::str::FromStr;
 
 use le_stream::{FromLeStream, ToLeStream};
@@ -72,7 +72,7 @@ impl_display_and_hex_via_value!(Endpoint, u8, |value| value.as_u8(), |value, for
         Self::Data => formatter.write_str("Data (0x00)"),
         Self::Application(application) => {
             formatter.write_str("Application (")?;
-            <Application as fmt::UpperHex>::fmt(&application, formatter)?;
+            <Application as UpperHex>::fmt(&application, formatter)?;
             formatter.write_str(")")
         }
         Self::Broadcast => formatter.write_str("Broadcast (0xff)"),

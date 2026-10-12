@@ -1,3 +1,5 @@
+use std::vec::IntoIter;
+
 pub use self::response::IeeeAddrRspResponse;
 use super::address_response::AddressResponse;
 use crate::Status;
@@ -49,7 +51,7 @@ crate::zdp_command! {
             }
         }
         to {
-            type Iter = std::vec::IntoIter<u8>;
+            type Iter = IntoIter<u8>;
 
             fn to_le_stream(self) -> Self::Iter {
                 self.payload.to_le_stream()

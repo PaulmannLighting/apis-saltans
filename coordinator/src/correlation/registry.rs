@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use tokio::sync::oneshot::{Receiver, Sender, channel};
+use zb_hw::TransmissionError;
 
 use super::{Key, Token};
 use crate::Error;
@@ -152,7 +153,7 @@ impl<T, M> Registry<T, M> {
     }
 
     /// Fail every pending response and start a fresh network correlation epoch.
-    pub fn network_down(&mut self, error: &zb_hw::TransmissionError) {
+    pub fn network_down(&mut self, error: &TransmissionError) {
         self.fail_all(|| zb_hw::Error::from(error.clone()).into());
     }
 
@@ -161,11 +162,7 @@ impl<T, M> Registry<T, M> {
     /// The preserved tokens identify background submissions that may reach the wire after the
     /// boundary. Matching identities remain quarantined so their late responses cannot complete a
     /// request from the new network epoch. All unrelated quarantine is released.
-    pub fn network_down_preserving<I>(
-        &mut self,
-        error: &zb_hw::TransmissionError,
-        tokens: I,
-    ) -> Vec<Token>
+    pub fn network_down_preserving<I>(&mut self, error: &TransmissionError, tokens: I) -> Vec<Token>
     where
         I: IntoIterator<Item = Token>,
     {
@@ -290,6 +287,9 @@ impl<T> Registry<T> {
 
 #[cfg(test)]
 mod tests {
+    use zb_core::Endpoint;
+    use zb_hw::TransmissionError;
+
     use super::{Key, Registry, TRANSACTION_SEQUENCE_COUNT};
     use crate::Error;
 
@@ -445,7 +445,7 @@ mod tests {
             Err(Error::TransactionSequenceExhausted)
         ));
 
-        registry.network_down(&zb_hw::TransmissionError::NoRoute);
+        registry.network_down(&TransmissionError::NoRoute);
 
         assert_eq!(
             registry
@@ -471,8 +471,7 @@ mod tests {
             .expect("a third transaction sequence is available");
         assert!(registry.cancel(released_token));
 
-        let preserved =
-            registry.network_down_preserving(&zb_hw::TransmissionError::NoRoute, [token]);
+        let preserved = registry.network_down_preserving(&TransmissionError::NoRoute, [token]);
 
         assert_eq!(preserved, [token]);
         assert_eq!(
@@ -484,13 +483,13 @@ mod tests {
         assert!(matches!(
             preserved_response.blocking_recv(),
             Ok(Err(Error::Hardware(zb_hw::Error::Transmission(
-                zb_hw::TransmissionError::NoRoute
+                TransmissionError::NoRoute
             ))))
         ));
         assert!(matches!(
             pending_response.blocking_recv(),
             Ok(Err(Error::Hardware(zb_hw::Error::Transmission(
-                zb_hw::TransmissionError::NoRoute
+                TransmissionError::NoRoute
             ))))
         ));
         registry.next_sequence = preserved_sequence;
@@ -513,13 +512,13 @@ mod tests {
             .expect("transaction sequence is available");
         registry.cancel(first_token);
 
-        registry.network_down(&zb_hw::TransmissionError::NoRoute);
+        registry.network_down(&TransmissionError::NoRoute);
 
         assert!(first_response.blocking_recv().is_err());
         assert!(matches!(
             second_response.blocking_recv(),
             Ok(Err(Error::Hardware(zb_hw::Error::Transmission(
-                zb_hw::TransmissionError::NoRoute
+                TransmissionError::NoRoute
             ))))
         ));
         assert!(registry.quarantined.is_empty());
@@ -619,7 +618,7 @@ mod tests {
             .register(|sequence| {
                 Key::new(
                     OTHER_SHORT_ID,
-                    zb_core::Endpoint::Data,
+                    Endpoint::Data,
                     CLUSTER_ID,
                     PROFILE_ID,
                     None,
@@ -634,7 +633,7 @@ mod tests {
     fn key(sequence: u8) -> Key {
         Key::new(
             SHORT_ID,
-            zb_core::Endpoint::Data,
+            Endpoint::Data,
             CLUSTER_ID,
             PROFILE_ID,
             None,

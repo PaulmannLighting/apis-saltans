@@ -1,7 +1,5 @@
 //! Discover Commands Received Command and Response.
 
-use std::boxed::Box;
-
 use zb_core::Direction;
 
 use crate::macros::zcl_command;

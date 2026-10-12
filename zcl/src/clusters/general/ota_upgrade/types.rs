@@ -1,8 +1,5 @@
 //! Shared OTA Upgrade command payload types.
 
-use std::boxed::Box;
-use std::vec::Vec;
-
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::Status;
@@ -477,6 +474,8 @@ impl ToLeStream for UpgradeEndStatus {
 
 #[cfg(test)]
 mod tests {
+    use core::fmt::Debug;
+
     use le_stream::{FromLeStream, ToLeStream};
 
     use super::{
@@ -488,7 +487,7 @@ mod tests {
 
     fn round_trip<T>(value: T)
     where
-        T: Clone + core::fmt::Debug + Eq + FromLeStream + ToLeStream,
+        T: Clone + Debug + Eq + FromLeStream + ToLeStream,
     {
         let bytes = value.clone().to_le_stream();
         assert_eq!(T::from_le_stream(bytes), Some(value));

@@ -1,4 +1,5 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use zb_core::TypeId;
 use zb_core::types::{Enum16, Type as ZclType, Uint16};
 
 /// Zone types.
@@ -59,8 +60,8 @@ pub enum Type {
     Invalid = 0xffff,
 }
 
-impl zb_core::TypeId for Type {
-    const ID: u8 = <Enum16 as zb_core::TypeId>::ID;
+impl TypeId for Type {
+    const ID: u8 = <Enum16 as TypeId>::ID;
 }
 
 impl From<Type> for ZclType {

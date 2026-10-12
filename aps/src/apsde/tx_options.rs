@@ -1,6 +1,7 @@
-use core::fmt::{self, Display};
+use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
 
+use bitflags::parser::ParseError;
 use bitflags::{bitflags, parser};
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -28,13 +29,13 @@ bitflags! {
 }
 
 impl Display for TxOptions {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         parser::to_writer(self, formatter)
     }
 }
 
 impl FromStr for TxOptions {
-    type Err = parser::ParseError;
+    type Err = ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
         parser::from_str(flags)

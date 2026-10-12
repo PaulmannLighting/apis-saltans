@@ -1,5 +1,5 @@
 use zb_aps::apsde::{IndividualEndpoint, NetworkDestination};
-use zb_zcl::global::configure_reporting;
+use zb_zcl::global::configure_reporting::Response;
 use zb_zcl::{ParseAttributeError, Readable, Reportable, Writable};
 
 use self::configure_reporting_request::request as configure_reporting_request;
@@ -44,7 +44,7 @@ pub trait Attributes {
         destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: T,
-    ) -> impl Future<Output = Result<ZclResponse<configure_reporting::Response>, Error>> + Send
+    ) -> impl Future<Output = Result<ZclResponse<Response>, Error>> + Send
     where
         Self: Sync,
         T: IntoIterator<Item: Reportable + Send, IntoIter: Send> + Send;
@@ -94,7 +94,7 @@ where
         destination: NetworkDestination,
         source_endpoint: IndividualEndpoint,
         attributes: U,
-    ) -> Result<ZclResponse<configure_reporting::Response>, Error>
+    ) -> Result<ZclResponse<Response>, Error>
     where
         U: IntoIterator<Item: Reportable, IntoIter: Send> + Send,
     {

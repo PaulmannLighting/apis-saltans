@@ -1,4 +1,8 @@
+use core::fmt::{Display, Formatter};
+use core::str::FromStr;
+
 use bitflags::bitflags;
+use bitflags::parser::ParseError;
 use le_stream::{FromLeStream, ToLeStream};
 
 /// Control field of the extended header.
@@ -22,14 +26,14 @@ bitflags! {
     }
 }
 
-impl core::fmt::Display for Control {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl Display for Control {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> core::fmt::Result {
         bitflags::parser::to_writer(self, formatter)
     }
 }
 
-impl core::str::FromStr for Control {
-    type Err = bitflags::parser::ParseError;
+impl FromStr for Control {
+    type Err = ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
         bitflags::parser::from_str(flags)

@@ -142,16 +142,19 @@ where
 
 #[cfg(test)]
 mod tests {
+    use bytes::Bytes;
     use zb_core::{Direction, ExpectResponse};
     use zb_zcl::global::default_response::DefaultResponse;
-    use zb_zcl::global::read_attributes;
-    use zb_zcl::{Command, Scope, Scoped};
+    use zb_zcl::global::read_attributes::{self, Response};
+    use zb_zcl::{
+        Command, MaybeDefault, Scope, Scoped, Status, UnsequencedFrame, UnsequencedHeader,
+    };
 
     use super::{Cluster, Frame, Header, ResponseExpectation, ResponseMatch, ZclResponseType};
 
     const SEQUENCE: u8 = 7;
 
-    type ReadOrDefault = zb_zcl::MaybeDefault<read_attributes::Response>;
+    type ReadOrDefault = MaybeDefault<Response>;
 
     struct ReadOrDefaultRequest;
 
@@ -171,18 +174,18 @@ mod tests {
             false,
             None,
             SEQUENCE,
-            <read_attributes::Response as Command>::ID,
+            <Response as Command>::ID,
         );
-        assert!(!read_attributes::Response::matches_response(header));
+        assert!(!Response::matches_response(header));
         let header = Header::new(
-            <read_attributes::Response as Scoped>::SCOPE,
+            <Response as Scoped>::SCOPE,
             Direction::ServerToClient,
             false,
             None,
             SEQUENCE,
-            <read_attributes::Response as Command>::ID,
+            <Response as Command>::ID,
         );
-        assert!(read_attributes::Response::matches_response(header));
+        assert!(Response::matches_response(header));
     }
 
     #[test]
@@ -213,11 +216,7 @@ mod tests {
         const DEFAULT_ID: u8 = <DefaultResponse as Command>::ID;
         const FRAME_CONTROL: u8 = 0x18;
         const UNKNOWN_STATUS: u8 = 0xff;
-        for status in [
-            zb_zcl::Status::Success as u8,
-            zb_zcl::Status::Failure as u8,
-            UNKNOWN_STATUS,
-        ] {
+        for status in [Status::Success as u8, Status::Failure as u8, UNKNOWN_STATUS] {
             let frame = Frame::parse(
                 CLUSTER_ID,
                 [FRAME_CONTROL, SEQUENCE, DEFAULT_ID, REQUEST_ID, status].into_iter(),
@@ -255,12 +254,12 @@ mod tests {
         );
         for (status, expected) in [
             (
-                super::Status::Success as u8,
+                Status::Success as u8,
                 ResponseMatch::UnexpectedDefault(REQUEST_ID),
             ),
             (
-                super::Status::Failure as u8,
-                ResponseMatch::Rejected(Ok(super::Status::Failure)),
+                Status::Failure as u8,
+                ResponseMatch::Rejected(Ok(Status::Failure)),
             ),
             (UNKNOWN, ResponseMatch::Rejected(Err(UNKNOWN))),
         ] {
@@ -293,16 +292,16 @@ mod tests {
         );
     }
 
-    fn encoded_request(command_id: u8) -> zb_zcl::UnsequencedFrame<bytes::Bytes> {
-        zb_zcl::UnsequencedFrame::new(
-            zb_zcl::UnsequencedHeader::new(
+    fn encoded_request(command_id: u8) -> UnsequencedFrame<Bytes> {
+        UnsequencedFrame::new(
+            UnsequencedHeader::new(
                 Scope::Global,
                 Direction::ClientToServer,
                 false,
                 None,
                 command_id,
             ),
-            bytes::Bytes::new(),
+            Bytes::new(),
         )
     }
 }

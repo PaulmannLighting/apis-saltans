@@ -1,7 +1,5 @@
 //! Reading Attributes Command and Response.
 
-use std::boxed::Box;
-
 use zb_core::Direction;
 
 pub use self::read_attributes_status::ReadAttributesStatus;

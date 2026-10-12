@@ -1,4 +1,4 @@
-use core::fmt::{self, LowerHex, UpperHex};
+use core::fmt::{self, Formatter, LowerHex, UpperHex};
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use thiserror::Error;
@@ -122,13 +122,13 @@ impl Profile {
 }
 
 impl LowerHex for Profile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         LowerHex::fmt(&self.as_u16(), f)
     }
 }
 
 impl UpperHex for Profile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         UpperHex::fmt(&self.as_u16(), f)
     }
 }

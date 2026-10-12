@@ -1,3 +1,5 @@
+use std::fmt::Formatter;
+
 use zb_core::endpoint::Reserved;
 use zb_core::{ByteSizedVec, Endpoint};
 
@@ -73,7 +75,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ status: {:#04X}, nwk_addr_of_interest: {:#06X}, active_eps: {:#04X?} }}",

@@ -1,7 +1,9 @@
-use std::fmt::{self, Display};
+use std::fmt::{self, Display, Formatter};
 
 use le_stream::ToLeStream;
 use zb_core::Endpoint;
+
+use self::iterator::DestinationIterator;
 
 /// A destination that preserves raw endpoint IDs while parsing APS frames.
 pub type WeakDestination = Destination<u8>;
@@ -23,7 +25,7 @@ impl<E> Display for Destination<E>
 where
     E: Display,
 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Unicast(value) => write!(f, "Unicast({value})"),
             Self::Broadcast(value) => write!(f, "Broadcast({value})"),
@@ -43,7 +45,7 @@ impl From<Destination> for WeakDestination {
 }
 
 impl ToLeStream for WeakDestination {
-    type Iter = iterator::DestinationIterator;
+    type Iter = DestinationIterator;
 
     fn to_le_stream(self) -> Self::Iter {
         match self {

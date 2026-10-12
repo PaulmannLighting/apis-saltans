@@ -1,7 +1,5 @@
 //! Discover Attributes Extended Command and Response.
 
-use std::boxed::Box;
-
 use zb_core::Direction;
 
 pub use self::attribute_information::AttributeInformation;

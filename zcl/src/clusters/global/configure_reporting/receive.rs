@@ -1,10 +1,9 @@
 //! Command for configuring a device to receive attribute reports.
 
-use std::boxed::Box;
-
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::Direction;
 
+use super::Response;
 use crate::macros::zcl_command;
 
 const DIRECTION: Direction = Direction::ServerToClient;
@@ -48,7 +47,7 @@ zcl_command! {
         Global;
         command_id: super::COMMAND_ID;
         direction: DIRECTION;
-        response: super::Response;
+        response: Response;
         => crate::global::ConfigureReportingReceive;
         fields {
             attributes: Box<[AttributeReportingConfiguration]>,

@@ -84,6 +84,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::global::ConfigurationParameters;
     extern crate alloc;
 
     use alloc::vec;
@@ -148,9 +149,6 @@ mod tests {
         assert_eq!(PreSharedSecrets::all().bits(), 0b0001_1111);
         assert_eq!(RouterInformation::all().bits(), 0b0000_0000_1111_1111);
         assert_eq!(FragmentationOptions::all().bits(), 0b0000_0001);
-        assert_eq!(
-            global::ConfigurationParameters::all().bits(),
-            0b0000_0000_0000_0111
-        );
+        assert_eq!(ConfigurationParameters::all().bits(), 0b0000_0000_0000_0111);
     }
 }

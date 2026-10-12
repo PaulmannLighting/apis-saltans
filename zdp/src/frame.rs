@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
@@ -66,7 +66,7 @@ impl<T> Display for Frame<T>
 where
     T: Display,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Frame {{ seq: {:#04X}, data: {} }}", self.seq, self.data)
     }
 }

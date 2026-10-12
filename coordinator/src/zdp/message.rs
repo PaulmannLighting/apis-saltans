@@ -5,6 +5,7 @@ use zb_core::short_id::Device;
 use zb_zdp::{Command, Frame};
 
 use crate::Error;
+use crate::aps::TransmissionResponse;
 use crate::correlation::{CancellationMessage, Token};
 use crate::response::ApsProtocolResponse;
 
@@ -61,7 +62,7 @@ pub enum Message {
         /// Coordinator-private identity of the completed submission.
         id: u64,
         /// APS actor handoff result.
-        result: Result<crate::aps::TransmissionResponse, Error>,
+        result: Result<TransmissionResponse, Error>,
     },
 
     /// Communicate a unicast with an expected response.

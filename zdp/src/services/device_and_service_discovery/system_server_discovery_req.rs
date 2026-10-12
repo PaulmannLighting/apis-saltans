@@ -1,4 +1,8 @@
+use std::fmt::Formatter;
+
 use zb_core::node::ServerMask;
+
+use crate::SystemServerDiscoveryRsp;
 
 crate::zdp_command! {
     /// System Server Discovery Request
@@ -6,7 +10,7 @@ crate::zdp_command! {
     SystemServerDiscoveryReq => System_Server_Discovery_req;
     cluster_id: 0x0015;
     group: DeviceAndServiceDiscovery;
-    response: crate::SystemServerDiscoveryRsp;
+    response: SystemServerDiscoveryRsp;
     fields {
         server_mask: ServerMask,
     }
@@ -18,7 +22,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(f, "{} {{ server_mask: {} }}", Self::NAME, self.server_mask)
         }
     }

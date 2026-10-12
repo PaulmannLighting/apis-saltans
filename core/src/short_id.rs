@@ -1,3 +1,5 @@
+use core::fmt::UpperHex;
+
 pub use self::broadcast::Broadcast;
 pub use self::device::Device;
 use self::reserved::Reserved;
@@ -87,12 +89,12 @@ impl_display_and_hex_via_value!(ShortId, u16, |value| value.as_u16(), |value, fo
         Self::Coordinator => formatter.write_str("Coordinator (0x0000)"),
         Self::Device(device) => {
             formatter.write_str("Device (")?;
-            <Device as core::fmt::UpperHex>::fmt(&device, formatter)?;
+            <Device as UpperHex>::fmt(&device, formatter)?;
             formatter.write_str(")")
         }
         Self::Broadcast(broadcast) => {
             formatter.write_str("Broadcast (")?;
-            <Broadcast as core::fmt::UpperHex>::fmt(&broadcast, formatter)?;
+            <Broadcast as UpperHex>::fmt(&broadcast, formatter)?;
             formatter.write_str(")")
         }
     }

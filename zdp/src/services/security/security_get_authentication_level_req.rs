@@ -1,11 +1,13 @@
 use zb_core::types::tlv::Tlv;
 
+use crate::SecurityGetAuthenticationLevelRsp;
+
 crate::zdp_command! {
     /// Security Get Authentication Level Request.
     SecurityGetAuthenticationLevelReq => Security_Get_Authentication_Level_req;
     cluster_id: 0x0042;
     group: Security;
-    response: crate::SecurityGetAuthenticationLevelRsp;
+    response: SecurityGetAuthenticationLevelRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }

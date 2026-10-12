@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use zb_core::endpoint::Application;
 use zb_core::{Cluster, Endpoint, FullAddress};
-use zb_zdp::{BindReq, Destination};
+use zb_zdp::{BindReq, Destination, SimpleDescriptor};
 
 use crate::{Error, LocalNode, StatusExt, Zdp};
 
@@ -146,7 +146,7 @@ where
 }
 
 /// Return the application endpoint declared by a local simple descriptor.
-fn application_endpoint(descriptor: &zb_zdp::SimpleDescriptor) -> Option<Application> {
+fn application_endpoint(descriptor: &SimpleDescriptor) -> Option<Application> {
     let Ok(Endpoint::Application(endpoint)) = descriptor.endpoint() else {
         return None;
     };

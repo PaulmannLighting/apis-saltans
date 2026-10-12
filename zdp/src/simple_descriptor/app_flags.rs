@@ -1,6 +1,7 @@
-use core::fmt::{self, Display};
+use core::fmt::{self, Display, Formatter};
 use core::str::FromStr;
 
+use bitflags::parser::ParseError;
 use bitflags::{bitflags, parser};
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -46,13 +47,13 @@ impl AppFlags {
 }
 
 impl Display for AppFlags {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         parser::to_writer(self, f)
     }
 }
 
 impl FromStr for AppFlags {
-    type Err = parser::ParseError;
+    type Err = ParseError;
 
     fn from_str(flags: &str) -> Result<Self, Self::Err> {
         parser::from_str(flags)

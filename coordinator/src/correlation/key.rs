@@ -1,5 +1,7 @@
 use zb_aps::apsde::{DataIndication, DataRequest, ReceivedDestination, Source};
-use zb_core::{Direction, Endpoint, short_id};
+use zb_core::short_id::Device;
+use zb_core::{Direction, Endpoint};
+use zb_zcl::Cluster;
 use zb_zdp::{CLUSTER_ID_RESPONSE_MASK, Command};
 
 /// Correlation key for pending transceiver responses.
@@ -88,11 +90,7 @@ impl Key {
     /// manufacturer code, so the key is built from the request's cluster and
     /// profile identifiers plus the transaction sequence number.
     #[must_use]
-    pub fn from_zdp_command<T>(
-        device: short_id::Device,
-        seq: u8,
-        request: &DataRequest<T>,
-    ) -> Self {
+    pub fn from_zdp_command<T>(device: Device, seq: u8, request: &DataRequest<T>) -> Self {
         Self::new(
             device.into(),
             Endpoint::Data,
@@ -109,7 +107,7 @@ impl Key {
     /// destination is an individual address with a local endpoint.
     #[must_use]
     pub const fn from_received_zcl_indication<T, K>(
-        indication: &DataIndication<zb_zcl::Frame<zb_zcl::Cluster>, T, K>,
+        indication: &DataIndication<zb_zcl::Frame<Cluster>, T, K>,
     ) -> Option<Self> {
         let Source::Network {
             address: source,

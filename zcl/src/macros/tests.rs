@@ -1,13 +1,14 @@
-use zb_core::types::{Type, Uint8};
-use zb_core::{Cluster, Profile, Profiled};
+use zb_core::types::{Type, Uint8, Uint16};
+use zb_core::{Cluster, Profile, Profiled, TypeId};
 
+use crate::Analog;
 use crate::macros::zcl_attributes;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Custom(Uint8);
 
-impl zb_core::TypeId for Custom {
-    const ID: u8 = <Uint8 as zb_core::TypeId>::ID;
+impl TypeId for Custom {
+    const ID: u8 = <Uint8 as TypeId>::ID;
 }
 
 impl From<Custom> for Type {
@@ -54,34 +55,23 @@ fn generates_access_specific_enums() {
         Some(0x1234)
     );
     assert_eq!(<Scene as Profiled>::PROFILE, Profile::TouchLink);
-    assert_eq!(
-        <Custom as zb_core::TypeId>::ID,
-        <Uint8 as zb_core::TypeId>::ID
-    );
+    assert_eq!(<Custom as TypeId>::ID, <Uint8 as TypeId>::ID);
     let _ = Id::ReadOnly;
     let _ = Id::ClusterRevision;
     let _ = Id::AttributeReportingStatus;
     let _ = Readable::ReadOnly(Uint8::new(1));
     let _ = Readable::Writable(Uint8::new(2));
-    let _ = Readable::ClusterRevision(zb_core::types::Uint16::new(1));
+    let _ = Readable::ClusterRevision(Uint16::new(1));
     let _ = Readable::AttributeReportingStatus(Uint8::new(0));
     let _ = Writable::Writable(Uint8::new(3));
     let _ = Writable::WriteOnly(Custom(Uint8::new(4)));
     let _ = Reportable::Writable(Uint8::new(5));
     assert_eq!(
-        crate::Reportable::attribute_id(&SendReport::Writable(crate::Analog::new(
-            1,
-            2,
-            Uint8::new(5),
-        ))),
+        crate::Reportable::attribute_id(&SendReport::Writable(Analog::new(1, 2, Uint8::new(5),))),
         0x0001
     );
     assert_eq!(
-        crate::Reportable::type_id(&SendReport::Writable(crate::Analog::new(
-            1,
-            2,
-            Uint8::new(5),
-        ))),
+        crate::Reportable::type_id(&SendReport::Writable(Analog::new(1, 2, Uint8::new(5),))),
         0x20
     );
     let _ = Scene::Writable(Uint8::new(6));
@@ -100,7 +90,11 @@ fn generated_id_display_and_parsing_round_trip() {
 }
 
 mod required_cluster {
+    use zb_core::ClusterSpecific;
+    use zb_core::types::Uint16;
+
     use super::{Cluster, Profile, Profiled, Uint8};
+    use crate::Analog;
     use crate::macros::zcl_attributes;
 
     zcl_attributes! {
@@ -116,19 +110,19 @@ mod required_cluster {
     fn generates_cluster_bound_impls() {
         fn assert_readable<T>()
         where
-            T: zb_core::ClusterSpecific<Cluster> + crate::Readable,
+            T: ClusterSpecific<Cluster> + crate::Readable,
         {
         }
 
         fn assert_writable<T>()
         where
-            T: zb_core::ClusterSpecific<Cluster> + crate::Writable,
+            T: ClusterSpecific<Cluster> + crate::Writable,
         {
         }
 
         fn assert_cluster<T>()
         where
-            T: zb_core::ClusterSpecific<Cluster>,
+            T: ClusterSpecific<Cluster>,
         {
         }
 
@@ -170,16 +164,12 @@ mod required_cluster {
         let _ = Id::ClusterRevision;
         let _ = Id::AttributeReportingStatus;
         let _ = Readable::ReadOnly(Uint8::new(1));
-        let _ = Readable::ClusterRevision(zb_core::types::Uint16::new(1));
+        let _ = Readable::ClusterRevision(Uint16::new(1));
         let _ = Readable::AttributeReportingStatus(Uint8::new(0));
         let _ = Writable::Writable(Uint8::new(2));
         let _ = Reportable::Writable(Uint8::new(3));
         assert_eq!(
-            crate::Reportable::type_id(&SendReport::Writable(crate::Analog::new(
-                1,
-                2,
-                Uint8::new(3),
-            ))),
+            crate::Reportable::type_id(&SendReport::Writable(Analog::new(1, 2, Uint8::new(3),))),
             0x20
         );
         let _ = Scene::Writable(Uint8::new(4));

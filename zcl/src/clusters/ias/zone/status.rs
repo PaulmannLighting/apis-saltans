@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
-use zb_core::types::Type;
+use zb_core::TypeId;
+use zb_core::types::{Map16, Type};
 
 /// Zone status attributes.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -9,8 +10,8 @@ use zb_core::types::Type;
 )]
 pub struct Status(u16);
 
-impl zb_core::TypeId for Status {
-    const ID: u8 = <zb_core::types::Map16 as zb_core::TypeId>::ID;
+impl TypeId for Status {
+    const ID: u8 = <Map16 as TypeId>::ID;
 }
 
 bitflags! {

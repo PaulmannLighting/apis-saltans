@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 use repr_discriminant::ReprDiscriminant;
 
@@ -53,7 +53,7 @@ pub enum ScanDuration {
 }
 
 impl Display for ScanDuration {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Zero { energy_scan } => {
                 write!(f, "Zero {{ energy_scan: {energy_scan} }}")

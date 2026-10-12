@@ -1,5 +1,7 @@
 //! General commands that are not specific to any cluster.
 
+use self::configure_reporting::Receive;
+use self::default_response::DefaultResponse;
 use crate::macros::zcl_command_enum;
 
 pub mod configure_reporting;
@@ -30,12 +32,12 @@ zcl_command_enum! {
     WriteAttributesResponse(write_attributes::Response),
     WriteAttributesNoResponse(write_attributes_no_response::Command),
     ConfigureReportingSend(configure_reporting::Send),
-    ConfigureReportingReceive(configure_reporting::Receive),
+    ConfigureReportingReceive(Receive),
     ConfigureReportingResponse(configure_reporting::Response),
     ReadReportingConfiguration(read_reporting_configuration::Command),
     ReadReportingConfigurationResponse(read_reporting_configuration::Response),
     ReportAttributes(report_attributes::Command),
-    DefaultResponse(default_response::DefaultResponse),
+    DefaultResponse(DefaultResponse),
     DiscoverAttributes(discover_attributes::Command),
     DiscoverAttributesResponse(discover_attributes::Response),
     ReadAttributesStructured(read_attributes_structured::Command),

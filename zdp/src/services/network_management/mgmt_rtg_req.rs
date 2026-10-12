@@ -1,10 +1,13 @@
+use std::fmt::Formatter;
+
+use crate::MgmtRtgRsp;
 crate::zdp_command! {
     /// Management Routing Table Request structure.
     derive { Copy }
     MgmtRtgReq => Mgmt_Rtg_req;
     cluster_id: 0x0032;
     group: NetworkManagement;
-    response: crate::MgmtRtgRsp;
+    response: MgmtRtgRsp;
     fields {
         start_index: u8,
     }
@@ -16,7 +19,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ start_index: {:#04X} }}",

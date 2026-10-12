@@ -1,5 +1,3 @@
-use std::iter::FromIterator;
-
 use super::Channel;
 
 const SINGLE_CHANNEL_BIT: u32 = 1;

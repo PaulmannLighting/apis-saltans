@@ -1,3 +1,6 @@
+use std::vec::IntoIter;
+
+use le_stream::{FromLeStream, ToLeStream};
 use zb_core::ByteSizedVec;
 
 pub use self::response::MgmtBindRspPayload;
@@ -52,14 +55,14 @@ crate::zdp_command! {
             where
                 T: Iterator<Item = u8>,
             {
-                let status = <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?;
+                let status = <u8 as FromLeStream>::from_le_stream(&mut bytes)?;
 
                 if status == Status::Success as u8 {
                     Some(Self {
                         status,
-                        binding_table_entries: <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?,
-                        start_index: <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?,
-                        binding_table_list: <ByteSizedVec<u8> as le_stream::FromLeStream>::from_le_stream(&mut bytes)?,
+                        binding_table_entries: <u8 as FromLeStream>::from_le_stream(&mut bytes)?,
+                        start_index: <u8 as FromLeStream>::from_le_stream(&mut bytes)?,
+                        binding_table_list: <ByteSizedVec<u8> as FromLeStream>::from_le_stream(&mut bytes)?,
                     })
                 } else {
                     Some(Self {
@@ -72,17 +75,17 @@ crate::zdp_command! {
             }
         }
         to {
-            type Iter = std::vec::IntoIter<u8>;
+            type Iter = IntoIter<u8>;
 
             fn to_le_stream(self) -> Self::Iter {
                 let mut bytes = Vec::new();
 
-                bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(self.status));
+                bytes.extend(<u8 as ToLeStream>::to_le_stream(self.status));
 
                 if self.status == Status::Success as u8 {
-                    bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(self.binding_table_entries));
-                    bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(self.start_index));
-                    bytes.extend(<ByteSizedVec<u8> as le_stream::ToLeStream>::to_le_stream(self.binding_table_list));
+                    bytes.extend(<u8 as ToLeStream>::to_le_stream(self.binding_table_entries));
+                    bytes.extend(<u8 as ToLeStream>::to_le_stream(self.start_index));
+                    bytes.extend(<ByteSizedVec<u8> as ToLeStream>::to_le_stream(self.binding_table_list));
                 }
 
                 bytes.into_iter()

@@ -3,7 +3,7 @@
 use bytes::Bytes;
 use log::debug;
 use tokio::sync::mpsc::WeakSender;
-use zb_aps::apsde::{DataIndication, DataRequest};
+use zb_aps::apsde::{DataIndication, DataRequest, IndividualEndpoint, RequestDestination};
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::expectation::{ResponseExpectation, ResponseMatch};
@@ -34,7 +34,7 @@ impl Responses {
 
     /// Access transaction state when arranging actor regression tests.
     #[cfg(test)]
-    pub(super) fn registry(&mut self) -> &mut Registry<Cluster, ResponseExpectation> {
+    pub(super) const fn registry(&mut self) -> &mut Registry<Cluster, ResponseExpectation> {
         &mut self.registry
     }
 
@@ -124,14 +124,12 @@ impl Responses {
         request: &DataRequest<UnsequencedFrame<Bytes>>,
         sequence_number: u8,
     ) -> Result<Key, Error> {
-        let zb_aps::apsde::RequestDestination::Network { address, endpoint } =
-            request.destination()
-        else {
+        let RequestDestination::Network { address, endpoint } = request.destination() else {
             return Err(Error::InvalidZclCommunicationDestination(
                 request.destination(),
             ));
         };
-        if zb_aps::apsde::IndividualEndpoint::new(endpoint).is_none() {
+        if IndividualEndpoint::new(endpoint).is_none() {
             return Err(Error::InvalidZclCommunicationDestination(
                 request.destination(),
             ));

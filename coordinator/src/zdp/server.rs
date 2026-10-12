@@ -29,6 +29,7 @@ use super::match_desc::{
 use super::node_desc::{
     Action as NodeDescAction, action as node_desc_action, unavailable_child_status,
 };
+use crate::Error;
 use crate::aps::{Aps, Metadata, TransmissionResponse};
 
 /// Cloneable context used by bounded background ZDP request-serving operations.
@@ -286,7 +287,7 @@ impl Server {
         }
     }
 
-    async fn respond<T>(&self, seq: u8, device: Device, payload: T) -> Result<(), crate::Error>
+    async fn respond<T>(&self, seq: u8, device: Device, payload: T) -> Result<(), Error>
     where
         T: ClusterSpecific + ToLeStream,
     {

@@ -1,11 +1,10 @@
 //! Command for configuring a device to send attribute reports.
 
-use std::boxed::Box;
-
 use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::{Direction, TypeId};
 
+use super::Response;
 use crate::attributes::{Analog, Discrete};
 use crate::macros::zcl_command;
 
@@ -63,7 +62,7 @@ zcl_command! {
         Global;
         command_id: super::COMMAND_ID;
         direction: DIRECTION;
-        response: super::Response;
+        response: Response;
         => crate::global::ConfigureReportingSend;
         fields {
             attributes: Box<[AttributeReportingConfiguration]>,

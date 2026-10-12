@@ -4,17 +4,18 @@ use std::time::Duration;
 use bytes::Bytes;
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::channel;
+use tokio::sync::oneshot::Receiver;
 use zb_aps::TxOptions;
 use zb_aps::apsde::{
-    BroadcastAddress, ConfirmStatus, IndividualEndpoint, NetworkAddress, NetworkDestination,
-    RequestDestination, Status as ApsStatus,
+    BroadcastAddress, ConfirmStatus, DataRequest, IndividualEndpoint, NetworkAddress,
+    NetworkDestination, RequestDestination, Status as ApsStatus,
 };
 use zb_core::endpoint::Application;
-use zb_core::short_id::Device as ShortDevice;
-use zb_core::{Endpoint, GroupId, IeeeAddress, Profile, short_id};
+use zb_core::short_id::{Broadcast, Device as ShortDevice};
+use zb_core::{Endpoint, GroupId, IeeeAddress, Profile};
 use zb_hw::{
-    ChannelMask, Driver, Error as HardwareError, FoundNetwork, Operation, ScanDuration,
-    ScannedChannel,
+    ChannelMask, Driver, Error, Error as HardwareError, FoundNetwork, Operation, ScanDuration,
+    ScannedChannel, TransmissionError,
 };
 use zb_zdp::SimpleDescriptor;
 
@@ -37,7 +38,7 @@ const TEST_TIMEOUT: Duration = Duration::from_millis(100);
 
 #[derive(Debug)]
 struct DelayedDriver {
-    acceptance: Option<tokio::sync::oneshot::Receiver<()>>,
+    acceptance: Option<Receiver<()>>,
 }
 
 impl Driver for DelayedDriver {
@@ -93,7 +94,7 @@ impl Driver for DelayedDriver {
 
     async fn transmit(
         &mut self,
-        _request: zb_aps::apsde::DataRequest<Bytes>,
+        _request: DataRequest<Bytes>,
         _counter: u8,
     ) -> Result<(), HardwareError> {
         self.acceptance
@@ -127,7 +128,7 @@ fn unicast_destination() -> RequestDestination {
 
 const fn broadcast_destination() -> RequestDestination {
     RequestDestination::Broadcast {
-        address: short_id::Broadcast::AllDevices,
+        address: Broadcast::AllDevices,
         endpoint: Endpoint::Broadcast,
     }
 }
@@ -135,7 +136,7 @@ const fn broadcast_destination() -> RequestDestination {
 fn group_destination() -> RequestDestination {
     RequestDestination::Group {
         address: GroupId::new(GROUP_ID).expect("test group ID is valid"),
-        broadcast_address: BroadcastAddress::new(short_id::Broadcast::AllDevices.as_u16())
+        broadcast_address: BroadcastAddress::new(Broadcast::AllDevices.as_u16())
             .expect("all-devices is a valid APSDE group broadcast selector"),
     }
 }
@@ -148,7 +149,7 @@ fn request(
     destination: RequestDestination,
     tx_options: TxOptions,
     payload: Bytes,
-) -> zb_aps::apsde::DataRequest<Bytes> {
+) -> DataRequest<Bytes> {
     data_request(destination, individual_endpoint(), metadata(), payload)
         .with_tx_options(tx_options)
 }
@@ -423,15 +424,11 @@ fn backend_rejection_completes_transmission_with_error() {
             let token = transmission_token(FIRST_COUNTER);
             state.store_submission(token, false, response);
 
-            assert!(
-                !state.finish_submission(token, Err(zb_hw::TransmissionError::Rejected.into()),)
-            );
+            assert!(!state.finish_submission(token, Err(TransmissionError::Rejected.into()),));
 
             assert!(matches!(
                 result.await.expect("response must be available"),
-                Err(zb_hw::Error::Transmission(
-                    zb_hw::TransmissionError::Rejected
-                ))
+                Err(Error::Transmission(TransmissionError::Rejected))
             ));
         });
 }
@@ -498,13 +495,11 @@ fn network_down_while_submitting_quarantines_after_acceptance() {
             let (response, result) = tokio::sync::oneshot::channel();
             state.store_submission(token, true, response);
 
-            state.network_down(&zb_hw::TransmissionError::NoRoute.into());
+            state.network_down(&TransmissionError::NoRoute.into());
 
             assert!(matches!(
                 result.await.expect("response must be available"),
-                Err(zb_hw::Error::Transmission(
-                    zb_hw::TransmissionError::NoRoute
-                ))
+                Err(Error::Transmission(TransmissionError::NoRoute))
             ));
             assert!(state.responses.contains_key(&FIRST_COUNTER));
             assert!(state.finish_submission(token, Ok(())));
@@ -547,8 +542,8 @@ fn unsuccessful_confirmation_resolves_matching_transmission() {
 
             assert!(matches!(
                 second_result.await.expect("response must be available"),
-                Err(zb_hw::Error::Transmission(
-                    zb_hw::TransmissionError::Confirmation(status)
+                Err(Error::Transmission(
+                    TransmissionError::Confirmation(status)
                 )) if status == failure
             ));
             assert_eq!(state.responses.len(), CHANNEL_SIZE);
@@ -622,9 +617,7 @@ fn missing_confirmation_at_deadline_is_terminal() {
             assert!(state.timeout(token));
             assert!(matches!(
                 result.await.expect("response is available"),
-                Err(zb_hw::Error::Transmission(
-                    zb_hw::TransmissionError::Timeout
-                ))
+                Err(Error::Transmission(TransmissionError::Timeout))
             ));
         });
 }
@@ -698,14 +691,12 @@ fn network_down_resolves_every_pending_transmission() {
             state.store_pending_response(transmission_token(FIRST_COUNTER), first_response);
             state.store_pending_response(transmission_token(SECOND_COUNTER), second_response);
 
-            state.network_down(&zb_hw::TransmissionError::NoRoute.into());
+            state.network_down(&TransmissionError::NoRoute.into());
 
             for result in [first_result, second_result] {
                 assert!(matches!(
                     result.await.expect("response is available"),
-                    Err(zb_hw::Error::Transmission(
-                        zb_hw::TransmissionError::NoRoute
-                    ))
+                    Err(Error::Transmission(TransmissionError::NoRoute))
                 ));
             }
             assert!(state.responses.is_empty());
@@ -725,12 +716,12 @@ fn hardware_unavailability_resolves_every_pending_transmission() {
             state.store_pending_response(transmission_token(FIRST_COUNTER), first_response);
             state.store_pending_response(transmission_token(SECOND_COUNTER), second_response);
 
-            state.stop(&zb_hw::Error::ActorUnavailable);
+            state.stop(&Error::ActorUnavailable);
 
             for result in [first_result, second_result] {
                 assert!(matches!(
                     result.await.expect("response is available"),
-                    Err(zb_hw::Error::ActorUnavailable)
+                    Err(Error::ActorUnavailable)
                 ));
             }
             assert!(state.responses.is_empty());

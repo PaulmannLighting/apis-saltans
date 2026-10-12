@@ -1,5 +1,7 @@
 //! Cluster groups.
 
+use zb_core::ClusterSpecific;
+
 use self::general::{alarms, basic, groups, identify, level, on_off, ota_upgrade, scenes};
 use self::lighting::color_control;
 use crate::{Header, ParseFrameError, Scope};
@@ -66,34 +68,34 @@ impl Cluster {
         match typ {
             Scope::Global => global::Command::parse_zcl_frame(header, bytes).map(Self::Global),
             Scope::ClusterSpecific => match cluster_id {
-                <basic::Command as zb_core::ClusterSpecific>::ID => {
+                <basic::Command as ClusterSpecific>::ID => {
                     basic::Command::parse_zcl_frame(header, bytes).map(Self::Basic)
                 }
-                <groups::Command as zb_core::ClusterSpecific>::ID => {
+                <groups::Command as ClusterSpecific>::ID => {
                     groups::Command::parse_zcl_frame(header, bytes).map(Self::Groups)
                 }
-                <identify::Command as zb_core::ClusterSpecific>::ID => {
+                <identify::Command as ClusterSpecific>::ID => {
                     identify::Command::parse_zcl_frame(header, bytes).map(Self::Identify)
                 }
-                <on_off::Command as zb_core::ClusterSpecific>::ID => {
+                <on_off::Command as ClusterSpecific>::ID => {
                     on_off::Command::parse_zcl_frame(header, bytes).map(Self::OnOff)
                 }
-                <level::Command as zb_core::ClusterSpecific>::ID => {
+                <level::Command as ClusterSpecific>::ID => {
                     level::Command::parse_zcl_frame(header, bytes).map(Self::Level)
                 }
-                <alarms::Command as zb_core::ClusterSpecific>::ID => {
+                <alarms::Command as ClusterSpecific>::ID => {
                     alarms::Command::parse_zcl_frame(header, bytes).map(Self::Alarms)
                 }
-                <scenes::Command as zb_core::ClusterSpecific>::ID => {
+                <scenes::Command as ClusterSpecific>::ID => {
                     scenes::Command::parse_zcl_frame(header, bytes).map(Self::Scenes)
                 }
-                <ota_upgrade::Command as zb_core::ClusterSpecific>::ID => {
+                <ota_upgrade::Command as ClusterSpecific>::ID => {
                     ota_upgrade::Command::parse_zcl_frame(header, bytes).map(Self::OtaUpgrade)
                 }
-                <color_control::Command as zb_core::ClusterSpecific>::ID => {
+                <color_control::Command as ClusterSpecific>::ID => {
                     color_control::Command::parse_zcl_frame(header, bytes).map(Self::ColorControl)
                 }
-                <ias::zone::Command as zb_core::ClusterSpecific>::ID => {
+                <ias::zone::Command as ClusterSpecific>::ID => {
                     ias::zone::Command::parse_zcl_frame(header, bytes).map(Self::IasZone)
                 }
                 invalid_cluster_id => Err(ParseFrameError::InvalidClusterId(invalid_cluster_id)),

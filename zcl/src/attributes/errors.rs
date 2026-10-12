@@ -1,5 +1,4 @@
 use core::fmt::{self, Debug, Display};
-use std::boxed::Box;
 
 use thiserror::Error;
 use zb_core::types::Type;

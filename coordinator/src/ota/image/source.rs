@@ -1,4 +1,4 @@
-use std::io::{self, Read, Seek, SeekFrom};
+use std::io::{self, Error, ErrorKind, Read, Seek, SeekFrom};
 
 /// Owned OTA image source that can be moved to a blocking worker.
 pub(super) trait ImageSource
@@ -23,8 +23,8 @@ where
     fn read_range(&mut self, offset: usize, length: usize) -> io::Result<Box<[u8]>> {
         let mut data = vec![0; length].into_boxed_slice();
         let offset = u64::try_from(offset).map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
+            Error::new(
+                ErrorKind::InvalidInput,
                 "OTA image offset does not fit the reader",
             )
         })?;

@@ -1,10 +1,13 @@
+use std::fmt::Formatter;
+
+use crate::MgmtNwkIeeeJoiningListRsp;
 crate::zdp_command! {
     /// Management Network IEEE Joining List Request.
     derive { Copy }
     MgmtNwkIeeeJoiningListReq => Mgmt_NWK_IEEE_Joining_List_req;
     cluster_id: 0x003A;
     group: NetworkManagement;
-    response: crate::MgmtNwkIeeeJoiningListRsp;
+    response: MgmtNwkIeeeJoiningListRsp;
     fields {
         start_index: u8,
     }
@@ -16,7 +19,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ start_index: {:#04X} }}",

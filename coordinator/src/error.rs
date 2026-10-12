@@ -12,6 +12,7 @@ use zb_core::IeeeAddress;
 
 pub use self::optional::Optional;
 pub use self::status_ext::StatusExt;
+use crate::ota::UpdateError;
 
 mod optional;
 mod status_ext;
@@ -88,7 +89,7 @@ pub enum Error {
 
     /// A coordinator-managed OTA update failed.
     #[error("OTA update failed: {0}")]
-    Ota(#[from] crate::ota::UpdateError),
+    Ota(#[from] UpdateError),
 }
 
 impl<T> From<SendError<T>> for Error {

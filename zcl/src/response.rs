@@ -64,7 +64,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{Cluster, MaybeDefault, ZclResponseType};
-    use crate::global::read_attributes;
+    use crate::global::read_attributes::Response;
     use crate::{Frame, Status};
 
     const CLUSTER_ID: u16 = 0x0006;
@@ -84,12 +84,10 @@ mod tests {
                 [FRAME_CONTROL, SEQUENCE, DEFAULT_ID, REQUEST_ID, status].into_iter(),
             )
             .unwrap();
-            assert!(MaybeDefault::<read_attributes::Response>::matches_response(
-                frame.header()
-            ));
-            assert!(!read_attributes::Response::matches_response(frame.header()));
+            assert!(MaybeDefault::<Response>::matches_response(frame.header()));
+            assert!(!Response::matches_response(frame.header()));
             let MaybeDefault::Default(response) =
-                MaybeDefault::<read_attributes::Response>::try_from(frame.into_payload()).unwrap()
+                MaybeDefault::<Response>::try_from(frame.into_payload()).unwrap()
             else {
                 panic!("expected a Default Response");
             };
@@ -101,12 +99,10 @@ mod tests {
     #[test]
     fn specific_response_preserves_payload() {
         let frame = Frame::<Cluster>::parse(CLUSTER_ID, READ.into_iter()).unwrap();
-        assert!(MaybeDefault::<read_attributes::Response>::matches_response(
-            frame.header()
-        ));
-        let expected = read_attributes::Response::try_from(frame.payload().clone()).unwrap();
+        assert!(MaybeDefault::<Response>::matches_response(frame.header()));
+        let expected = Response::try_from(frame.payload().clone()).unwrap();
         assert_eq!(
-            MaybeDefault::<read_attributes::Response>::try_from(frame.into_payload()).unwrap(),
+            MaybeDefault::<Response>::try_from(frame.into_payload()).unwrap(),
             MaybeDefault::Specific(expected)
         );
     }
@@ -114,10 +110,10 @@ mod tests {
     #[test]
     fn unrelated_response_is_neither_matched_nor_converted() {
         let frame = Frame::<Cluster>::parse(CLUSTER_ID, REPORT.into_iter()).unwrap();
-        assert!(!MaybeDefault::<read_attributes::Response>::matches_response(frame.header()));
+        assert!(!MaybeDefault::<Response>::matches_response(frame.header()));
         let payload = frame.into_payload();
         assert_eq!(
-            MaybeDefault::<read_attributes::Response>::try_from(payload.clone()),
+            MaybeDefault::<Response>::try_from(payload.clone()),
             Err(payload)
         );
     }

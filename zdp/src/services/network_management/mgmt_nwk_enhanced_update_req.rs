@@ -1,3 +1,4 @@
+use std::fmt::Formatter;
 mod enhanced_update_parameters;
 
 use std::iter::once;
@@ -141,7 +142,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             match self.scan_duration() {
                 Ok(scan_duration) => {
                     if let Some(configuration_bitmask) = self.configuration_bitmask() {

@@ -2,7 +2,7 @@ use zb_aps::TxOptions;
 use zb_aps::apsde::{DataRequest, IndividualEndpoint, NetworkDestination};
 use zb_core::{ClusterSpecific, Profiled};
 use zb_zcl::Writable;
-use zb_zcl::global::write_attributes;
+use zb_zcl::global::write_attributes::Command;
 
 use crate::ZclRequest;
 
@@ -11,7 +11,7 @@ pub fn request<T>(
     destination: NetworkDestination,
     source_endpoint: IndividualEndpoint,
     attributes: T,
-) -> ZclRequest<write_attributes::Command>
+) -> ZclRequest<Command>
 where
     T: IntoIterator<Item: Writable>,
 {
@@ -21,7 +21,7 @@ where
             <T::Item as Profiled>::PROFILE.as_u16(),
             <T::Item as ClusterSpecific>::ID,
             source_endpoint,
-            write_attributes::Command::new(attributes.into_iter().map(Into::into).collect()),
+            Command::new(attributes.into_iter().map(Into::into).collect()),
         )
         .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION),
     )

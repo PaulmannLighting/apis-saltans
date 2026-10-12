@@ -10,14 +10,15 @@ use zb_zcl::ota_upgrade::{ImageBlock, ImageBlockResponse, ImageBlockResponsePayl
 
 use super::image::ImageTransfer;
 use super::transfer::read_image_range;
-use super::{OTA_PROFILE, UpdateError, UpdateResult, reply_zcl, request, zcl};
+use super::zcl::Message;
+use super::{OTA_PROFILE, UpdateError, UpdateResult, reply_zcl, request};
 
 /// State owned by a paced OTA Image Page transfer task.
 ///
 /// The task sends consecutive Image Block responses without blocking the server actor and reports
 /// its first read or transmission failure to its owning destination transfer task.
 pub(super) struct PageTransfer {
-    pub(super) zcl: Sender<zcl::Message>,
+    pub(super) zcl: Sender<Message>,
     pub(super) image: ImageTransfer,
     pub(super) destination: NetworkDestination,
     pub(super) source_endpoint: IndividualEndpoint,

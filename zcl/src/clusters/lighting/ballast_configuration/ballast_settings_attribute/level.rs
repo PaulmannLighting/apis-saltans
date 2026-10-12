@@ -1,5 +1,6 @@
 use core::num::NonZero;
 
+use zb_core::TypeId;
 use zb_core::types::{Type, Uint8};
 
 /// Valid levels for the Ballast Settings Level attribute.
@@ -12,8 +13,8 @@ use zb_core::types::{Type, Uint8};
 #[repr(transparent)]
 pub struct Level(NonZero<u8>);
 
-impl zb_core::TypeId for Level {
-    const ID: u8 = <Uint8 as zb_core::TypeId>::ID;
+impl TypeId for Level {
+    const ID: u8 = <Uint8 as TypeId>::ID;
 }
 
 impl Level {

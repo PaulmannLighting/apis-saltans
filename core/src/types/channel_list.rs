@@ -1,16 +1,17 @@
-use core::fmt::{self, Display};
+use core::fmt::{self, Display, Formatter};
 
+use heapless::Vec;
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::ChannelsField;
 
 /// Channel List pages.
-pub type Pages = heapless::Vec<ChannelsField, { u8::MAX as usize }, u8>;
+pub type Pages = Vec<ChannelsField, { u8::MAX as usize }, u8>;
 
 /// Channel List structure.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, FromLeStream, ToLeStream)]
 pub struct ChannelList {
-    pages: heapless::Vec<ChannelsField, { u8::MAX as usize }, u8>,
+    pages: Vec<ChannelsField, { u8::MAX as usize }, u8>,
 }
 
 impl ChannelList {
@@ -28,7 +29,7 @@ impl ChannelList {
 }
 
 impl Display for ChannelList {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         let mut channels = self.pages.iter();
 

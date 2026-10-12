@@ -1,3 +1,6 @@
+use std::vec::IntoIter;
+
+use le_stream::{FromLeStream, ToLeStream};
 use zb_core::{ByteSizedVec, IeeeAddress};
 
 pub use self::response::{
@@ -81,15 +84,15 @@ crate::zdp_command! {
             where
                 T: Iterator<Item = u8>,
             {
-                let status = <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?;
+                let status = <u8 as FromLeStream>::from_le_stream(&mut bytes)?;
 
                 if status == Status::Success as u8 {
                     let ieee_joining_list_update_id =
-                        <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?;
+                        <u8 as FromLeStream>::from_le_stream(&mut bytes)?;
                     let joining_policy =
-                        <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?;
+                        <u8 as FromLeStream>::from_le_stream(&mut bytes)?;
                     let ieee_joining_list_total =
-                        <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?;
+                        <u8 as FromLeStream>::from_le_stream(&mut bytes)?;
 
                     if ieee_joining_list_total == 0 {
                         Some(Self {
@@ -106,8 +109,8 @@ crate::zdp_command! {
                             ieee_joining_list_update_id: Some(ieee_joining_list_update_id),
                             joining_policy,
                             ieee_joining_list_total,
-                            start_index: <u8 as le_stream::FromLeStream>::from_le_stream(&mut bytes)?,
-                            ieee_joining_list: <ByteSizedVec<IeeeAddress> as le_stream::FromLeStream>::from_le_stream(&mut bytes)?,
+                            start_index: <u8 as FromLeStream>::from_le_stream(&mut bytes)?,
+                            ieee_joining_list: <ByteSizedVec<IeeeAddress> as FromLeStream>::from_le_stream(&mut bytes)?,
                         })
                     }
                 } else {
@@ -123,26 +126,26 @@ crate::zdp_command! {
             }
         }
         to {
-            type Iter = std::vec::IntoIter<u8>;
+            type Iter = IntoIter<u8>;
 
             fn to_le_stream(self) -> Self::Iter {
                 let mut bytes = Vec::new();
 
-                bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(self.status));
+                bytes.extend(<u8 as ToLeStream>::to_le_stream(self.status));
 
                 if self.status == Status::Success as u8 {
-                    bytes.extend(<Option<u8> as le_stream::ToLeStream>::to_le_stream(
+                    bytes.extend(<Option<u8> as ToLeStream>::to_le_stream(
                         self.ieee_joining_list_update_id,
                     ));
-                    bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(self.joining_policy));
-                    bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(
+                    bytes.extend(<u8 as ToLeStream>::to_le_stream(self.joining_policy));
+                    bytes.extend(<u8 as ToLeStream>::to_le_stream(
                         self.ieee_joining_list_total,
                     ));
 
                     if self.ieee_joining_list_total > 0 {
-                        bytes.extend(<u8 as le_stream::ToLeStream>::to_le_stream(self.start_index));
+                        bytes.extend(<u8 as ToLeStream>::to_le_stream(self.start_index));
                         bytes.extend(
-                            <ByteSizedVec<IeeeAddress> as le_stream::ToLeStream>::to_le_stream(
+                            <ByteSizedVec<IeeeAddress> as ToLeStream>::to_le_stream(
                                 self.ieee_joining_list,
                             ),
                         );

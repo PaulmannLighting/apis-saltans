@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
-use zb_core::types::Type;
+use zb_core::TypeId;
+use zb_core::types::{Map16, Type};
 
 /// Color-related capabilities of a device.
 #[cfg_attr(
@@ -14,8 +15,8 @@ use zb_core::types::Type;
 #[repr(transparent)]
 pub struct ColorCapabilities(u16);
 
-impl zb_core::TypeId for ColorCapabilities {
-    const ID: u8 = <zb_core::types::Map16 as zb_core::TypeId>::ID;
+impl TypeId for ColorCapabilities {
+    const ID: u8 = <Map16 as TypeId>::ID;
 }
 
 bitflags! {

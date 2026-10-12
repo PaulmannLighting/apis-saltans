@@ -1,12 +1,13 @@
 use bytes::Bytes;
 use zb_aps::apsde::{IndicationMetadata, ReceivedDestination};
 use zb_core::{Cluster, Endpoint, Profile};
+use zb_zdp::Command;
 
 pub use self::error::ParseApsPayloadError;
 
 mod error;
 
-type ZdpFrame = zb_zdp::Frame<zb_zdp::Command>;
+type ZdpFrame = zb_zdp::Frame<Command>;
 type ZclFrame = zb_zcl::Frame<zb_zcl::Cluster>;
 
 /// Payloads received on the APS layer.

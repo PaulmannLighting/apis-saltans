@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use le_stream::ToLeStream;
 use tokio::runtime::Runtime;
-use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::{Receiver, channel};
 use tokio::time::timeout;
 use zb_aps::apsde::{
     ConfirmStatus, DataConfirm, DataIndication, Destination, IndicationMetadata, IndicationStatus,
@@ -421,9 +421,9 @@ fn full_aps_inbox_does_not_delay_other_terminal_notifications() {
 
 fn test_mux() -> (
     Mux,
-    tokio::sync::mpsc::Receiver<ApsMessage>,
-    tokio::sync::mpsc::Receiver<zcl::Message>,
-    tokio::sync::mpsc::Receiver<zdp::Message>,
+    Receiver<ApsMessage>,
+    Receiver<zcl::Message>,
+    Receiver<zdp::Message>,
 ) {
     let (events, _application_events) = channel(MPSC_CHANNEL_SIZE);
     let (aps_messages, aps_receiver) = channel(MPSC_CHANNEL_SIZE);

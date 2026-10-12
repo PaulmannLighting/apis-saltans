@@ -1,5 +1,6 @@
 use core::iter::Chain;
 
+use heapless::Vec;
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::types::tlv::Tag;
@@ -7,7 +8,7 @@ use crate::types::tlv::Tag;
 const LENGTH_OFFSET: usize = 1;
 
 /// The raw payload of a general TLV.
-pub type Payload = heapless::Vec<u8, { u8::MAX as usize + LENGTH_OFFSET }, usize>;
+pub type Payload = Vec<u8, { u8::MAX as usize + LENGTH_OFFSET }, usize>;
 
 /// A general TLV.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]

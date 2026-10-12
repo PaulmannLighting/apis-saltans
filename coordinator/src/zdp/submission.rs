@@ -4,6 +4,7 @@ use tokio::sync::oneshot::{Receiver, Sender};
 use tokio::task::AbortHandle;
 use zb_zdp::Command;
 
+use crate::Error;
 use crate::correlation::Token;
 use crate::response::ApsProtocolResponse;
 
@@ -11,7 +12,7 @@ use crate::response::ApsProtocolResponse;
 #[derive(Debug)]
 pub(super) struct CommunicationSubmission {
     pub(super) token: Token,
-    pub(super) protocol_response: Receiver<Result<Command, crate::Error>>,
-    pub(super) response: Sender<Result<ApsProtocolResponse<Command>, crate::Error>>,
+    pub(super) protocol_response: Receiver<Result<Command, Error>>,
+    pub(super) response: Sender<Result<ApsProtocolResponse<Command>, Error>>,
     pub(super) task: AbortHandle,
 }

@@ -1,3 +1,5 @@
+use std::fmt::Formatter;
+
 use zb_core::Endpoint;
 use zb_core::endpoint::Reserved;
 
@@ -41,7 +43,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ nwk_address_of_interest: {:#06X}, endpoint: {:#04X} }}",

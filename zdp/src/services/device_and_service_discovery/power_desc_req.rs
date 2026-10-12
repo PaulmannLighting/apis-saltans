@@ -1,10 +1,13 @@
+use std::fmt::Formatter;
+
+use crate::PowerDescRsp;
 crate::zdp_command! {
     /// Power Descriptor Request structure.
     derive { Copy }
     PowerDescReq => Power_Desc_req;
     cluster_id: 0x0003;
     group: DeviceAndServiceDiscovery;
-    response: crate::PowerDescRsp;
+    response: PowerDescRsp;
     fields {
         nwk_addr_of_interest: u16,
     }
@@ -16,7 +19,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ nwk_addr_of_interest: {:#06X} }}",

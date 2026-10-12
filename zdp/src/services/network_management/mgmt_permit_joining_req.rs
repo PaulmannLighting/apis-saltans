@@ -1,11 +1,15 @@
+use std::fmt::Formatter;
+
 use zb_core::types::tlv::Tlv;
+
+use crate::MgmtPermitJoiningRsp;
 
 crate::zdp_command! {
     /// Service for management permit joining request.
     MgmtPermitJoiningReq => Mgmt_Permit_Joining_req;
     cluster_id: 0x0036;
     group: NetworkManagement;
-    response: crate::MgmtPermitJoiningRsp;
+    response: MgmtPermitJoiningRsp;
     fields {
         duration: u8,
         tc_significance: bool,
@@ -31,7 +35,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ duration: {:#04X}, tc_significance: {}, tlv_data: {:?} }}",

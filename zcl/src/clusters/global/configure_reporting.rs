@@ -5,6 +5,7 @@ use zb_core::Direction;
 pub use self::attribute_status::AttributeStatus;
 pub use self::receive::Command as Receive;
 pub use self::send::Command as Send;
+use crate::Status;
 use crate::macros::zcl_command;
 
 mod attribute_status;
@@ -38,7 +39,7 @@ zcl_command! {
             /// Returns whether all records indicate success, including an empty list.
             #[must_use]
             pub fn is_success(&self) -> bool {
-                self.status.iter().all(|record| record.status() == crate::Status::Success as u8)
+                self.status.iter().all(|record| record.status() == Status::Success as u8)
             }
         }
 
@@ -48,12 +49,13 @@ zcl_command! {
 #[cfg(test)]
 mod tests {
     use le_stream::{FromLeStream, ToLeStream};
-    use zb_core::Direction;
     use zb_core::types::{Bool, Uint16};
+    use zb_core::{Direction, TypeId};
 
-    use super::{AttributeStatus, Receive, Response, Send, receive};
+    use super::receive::AttributeReportingConfiguration;
+    use super::{AttributeStatus, Receive, Response, Send};
     use crate::clusters::general::{level, on_off};
-    use crate::{Analog, Directed, Discrete, Status};
+    use crate::{Analog, Directed, Discrete, Frame, Status};
 
     const SEND_ATTRIBUTE_ID: u16 = 0x0000;
     const ANALOG_SEND_ATTRIBUTE_ID: u16 = 0x0004;
@@ -74,7 +76,7 @@ mod tests {
     #[test]
     fn parses_success_response_through_frame_dispatch() {
         const CLUSTER_ID: u16 = 0x0006;
-        let frame = crate::Frame::parse(CLUSTER_ID, [0x18, 0x42, 0x07, 0x00].into_iter()).unwrap();
+        let frame = Frame::parse(CLUSTER_ID, [0x18, 0x42, 0x07, 0x00].into_iter()).unwrap();
         let response = Response::try_from(frame.into_payload()).unwrap();
         assert!(response.is_success());
         assert_eq!(response.status(), [AttributeStatus::success()]);
@@ -169,7 +171,7 @@ mod tests {
         let bytes: Vec<_> = command.to_le_stream().collect();
         let mut expected = vec![Direction::ClientToServer as u8];
         expected.extend(ANALOG_SEND_ATTRIBUTE_ID.to_le_bytes());
-        expected.push(<Uint16 as zb_core::TypeId>::ID);
+        expected.push(<Uint16 as TypeId>::ID);
         expected.extend(MINIMUM_REPORTING_INTERVAL.to_le_bytes());
         expected.extend(MAXIMUM_REPORTING_INTERVAL.to_le_bytes());
         expected.extend(REPORTABLE_CHANGE.to_le_bytes());
@@ -179,8 +181,7 @@ mod tests {
 
     #[test]
     fn serializes_and_parses_receive_command() {
-        let attribute =
-            receive::AttributeReportingConfiguration::new(RECEIVE_ATTRIBUTE_ID, TIMEOUT_PERIOD);
+        let attribute = AttributeReportingConfiguration::new(RECEIVE_ATTRIBUTE_ID, TIMEOUT_PERIOD);
         let command = Receive::new(Box::new([attribute]));
         let bytes: Vec<_> = command.clone().to_le_stream().collect();
         let mut expected = vec![Direction::ServerToClient as u8];

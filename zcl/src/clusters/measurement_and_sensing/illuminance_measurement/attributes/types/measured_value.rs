@@ -1,5 +1,6 @@
 use core::ops::RangeInclusive;
 
+use le_stream::{FromLeStream, ToLeStream};
 use zb_core::types::Uint16;
 
 use crate::macros::zcl_attribute_newtype;
@@ -15,7 +16,7 @@ zcl_attribute_newtype! {
 }
 
 zcl_attribute_newtype! {
-    #[derive(le_stream::FromLeStream, le_stream::ToLeStream)]
+    #[derive(FromLeStream, ToLeStream)]
     /// Measured value of a sensor.
     pub struct MeasuredValue(Uint16) => Uint16;
 }

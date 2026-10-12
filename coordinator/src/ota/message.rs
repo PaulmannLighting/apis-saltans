@@ -1,5 +1,5 @@
 use thiserror::Error as ThisError;
-use tokio::sync::oneshot;
+use tokio::sync::oneshot::{Receiver, Sender};
 use zb_aps::apsde::{DataIndication, IndividualEndpoint};
 use zb_core::FullAddress;
 use zb_zcl::Frame;
@@ -26,9 +26,9 @@ pub enum Message {
         /// Discovery, inactivity, and total-transfer deadlines for this offer.
         timeouts: UpdateTimeouts,
         /// Resolves when the caller explicitly cancels or drops the update future.
-        cancellation: oneshot::Receiver<()>,
+        cancellation: Receiver<()>,
         /// Reports the terminal result of the scheduled update.
-        completion: oneshot::Sender<UpdateResult>,
+        completion: Sender<UpdateResult>,
     },
     /// A received OTA Upgrade cluster command.
     Received {

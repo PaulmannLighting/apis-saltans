@@ -1,3 +1,5 @@
+use std::fmt::Formatter;
+
 use heapless::CapacityError;
 use zb_core::{ByteSizedVec, IeeeAddress};
 
@@ -17,7 +19,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(f, "{} {{ child_info: [", Self::NAME)?;
 
             let mut mac_addresses = self.child_info().iter();

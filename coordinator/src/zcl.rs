@@ -11,7 +11,7 @@ use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::correlation::ResponseExpectation;
 #[cfg(test)]
-pub(crate) use self::correlation::ResponseMatch;
+pub use self::correlation::ResponseMatch;
 use self::correlation::Responses;
 pub use self::message::Message;
 pub use self::subscription::{

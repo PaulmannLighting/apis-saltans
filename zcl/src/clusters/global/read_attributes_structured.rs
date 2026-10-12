@@ -1,7 +1,5 @@
 //! Read Attributes Structured Command.
 
-use std::boxed::Box;
-
 use zb_core::Direction;
 
 pub use self::record::Record;

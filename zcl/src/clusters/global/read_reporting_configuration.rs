@@ -1,7 +1,5 @@
 //! Read Reporting Configuration Command and Response.
 
-use std::boxed::Box;
-
 use zb_core::Direction;
 
 pub use self::record::Record;

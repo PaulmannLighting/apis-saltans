@@ -1,8 +1,9 @@
-use core::fmt::Display;
+use core::fmt::{Display, Formatter};
 use core::str::{FromStr, Utf8Error};
 
 use chrono::NaiveDate;
 use either::{Either, Left, Right};
+use zb_core::TypeId;
 use zb_core::types::{String, Type};
 
 pub use self::parse_error::ParseError;
@@ -23,8 +24,8 @@ pub struct DateCode {
     custom: CustomString,
 }
 
-impl zb_core::TypeId for DateCode {
-    const ID: u8 = <String as zb_core::TypeId>::ID;
+impl TypeId for DateCode {
+    const ID: u8 = <String as TypeId>::ID;
 }
 
 impl DateCode {
@@ -48,7 +49,7 @@ impl DateCode {
 }
 
 impl Display for DateCode {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}{}", self.date.format(DATE_FORMAT), self.custom)
     }
 }

@@ -1,3 +1,5 @@
+use std::fmt::Formatter;
+
 use crate::{Displayable, Status};
 
 crate::zdp_command! {
@@ -29,7 +31,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ status: {} }}",

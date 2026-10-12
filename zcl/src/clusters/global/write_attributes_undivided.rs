@@ -1,7 +1,6 @@
 //! Write Attributes Undivided Command.
 
 use core::ops::Deref;
-use std::boxed::Box;
 
 use zb_core::Direction;
 

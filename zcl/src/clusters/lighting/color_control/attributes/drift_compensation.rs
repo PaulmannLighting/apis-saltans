@@ -1,4 +1,5 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use zb_core::TypeId;
 use zb_core::types::{Enum8, Type, Uint8};
 
 /// Mechanism used for compensating color or color intensity drift over time.
@@ -25,8 +26,8 @@ pub enum DriftCompensation {
     OpticalColor = 0x04,
 }
 
-impl zb_core::TypeId for DriftCompensation {
-    const ID: u8 = <Enum8 as zb_core::TypeId>::ID;
+impl TypeId for DriftCompensation {
+    const ID: u8 = <Enum8 as TypeId>::ID;
 }
 
 impl From<DriftCompensation> for Type {

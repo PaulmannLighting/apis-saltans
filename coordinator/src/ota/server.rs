@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, warn};
 use tokio::spawn;
@@ -8,8 +9,9 @@ use tokio::task::{AbortHandle, Id, JoinError, JoinHandle};
 use zb_aps::apsde::{
     DataIndication, IndividualEndpoint, NetworkDestination, ReceivedDestination, Source,
 };
+use zb_core::short_id::Device;
 use zb_core::{Cluster, Direction, FullAddress, IeeeAddress};
-use zb_hw::NcpHandle;
+use zb_hw::{Error, NcpHandle};
 use zb_zcl::global::default_response::DefaultResponse;
 use zb_zcl::ota_upgrade::{
     Command as OtaCommand, ImageBlockRequest, ImagePageRequest, QueryNextImageResponse,
@@ -21,6 +23,7 @@ use zb_zcl::{
 
 use super::state::RequestContext;
 use super::transfer::{Offer, Transfer, TransferExit, TransferMessage};
+use super::zcl::{SubscriptionMessage, SubscriptionReceiver};
 use super::{
     Message, OTA_PROFILE, UpdateError, network_destination, reply_zcl,
     request_from_unsequenced_frame, zcl,
@@ -38,7 +41,7 @@ struct ActiveTransfer {
 /// Registered OTA subscription and its frame-forwarding task.
 #[derive(Debug)]
 struct ActiveSubscription {
-    messages: Sender<zcl::SubscriptionMessage>,
+    messages: Sender<SubscriptionMessage>,
     task: JoinHandle<()>,
 }
 
@@ -50,10 +53,7 @@ enum AddressResolver {
 }
 
 impl AddressResolver {
-    async fn resolve(
-        &self,
-        short_id: zb_core::short_id::Device,
-    ) -> Result<IeeeAddress, zb_hw::Error> {
+    async fn resolve(&self, short_id: Device) -> Result<IeeeAddress, Error> {
         match self {
             Self::Ncp(ncp) => ncp.short_id_to_ieee_address(short_id).await,
             #[cfg(test)]
@@ -446,7 +446,7 @@ impl Server {
 
     /// Reply to a request for which no destination transfer is active.
     async fn reject_unauthorized(&self, context: RequestContext, command: OtaCommand) {
-        let frame: UnsequencedFrame<bytes::Bytes> = match command {
+        let frame: UnsequencedFrame<Bytes> = match command {
             OtaCommand::QueryNextImageRequest(_) => UnsequencedFrame::from_command(
                 QueryNextImageResponse::new(QueryResponse::NotAuthorized),
             ),
@@ -504,11 +504,11 @@ async fn forward_api_messages(mut messages: Receiver<Message>, events: Sender<Se
 
 /// Forward subscribed OTA frames through the server's ordinary message inbox.
 async fn forward_subscription_frames(
-    mut frames: zcl::SubscriptionReceiver,
+    mut frames: SubscriptionReceiver,
     sender: WeakSender<ServerEvent>,
 ) {
     while let Some(message) = frames.recv().await {
-        let zcl::SubscriptionMessage { indication } = message;
+        let SubscriptionMessage { indication } = message;
         let (metadata, zcl_frame) = indication.into_parts();
         let (zcl_header, cluster) = zcl_frame.into_parts();
         let ZclCluster::OtaUpgrade(command) = cluster else {
@@ -551,7 +551,7 @@ const fn is_server_command(command: &OtaCommand) -> bool {
     )
 }
 
-fn default_response(request_command_id: u8, status: Status) -> UnsequencedFrame<bytes::Bytes> {
+fn default_response(request_command_id: u8, status: Status) -> UnsequencedFrame<Bytes> {
     let response = DefaultResponse::new(request_command_id, status.into());
     UnsequencedFrame::new(
         UnsequencedHeader::new(

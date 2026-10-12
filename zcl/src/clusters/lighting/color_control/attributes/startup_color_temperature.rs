@@ -1,3 +1,4 @@
+use zb_core::TypeId;
 use zb_core::types::{Type, Uint16};
 use zb_core::units::Mireds;
 
@@ -13,8 +14,8 @@ pub enum StartupColorTemperature {
     Previous,
 }
 
-impl zb_core::TypeId for StartupColorTemperature {
-    const ID: u8 = <Uint16 as zb_core::TypeId>::ID;
+impl TypeId for StartupColorTemperature {
+    const ID: u8 = <Uint16 as TypeId>::ID;
 }
 
 impl From<StartupColorTemperature> for u16 {

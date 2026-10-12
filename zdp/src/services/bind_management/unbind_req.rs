@@ -1,14 +1,17 @@
+use std::fmt::{Error, Formatter};
+
 use zb_core::endpoint::Reserved;
 use zb_core::{Endpoint, IeeeAddress};
 
 use super::{Address, AddressMode, Destination};
+use crate::UnbindRsp;
 
 crate::zdp_command! {
     /// Request type for Bind Request.
     UnbindReq => Unbind_req;
     cluster_id: 0x0022;
     group: BindManagement;
-    response: crate::UnbindRsp;
+    response: UnbindRsp;
     fields {
         src_address: IeeeAddress,
         src_endpoint: u8,
@@ -90,7 +93,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ src_address: {}, src_endpoint: {}, cluster_id: {:#06X}, destination: {} }}",
@@ -98,7 +101,7 @@ crate::zdp_command! {
                 self.src_address,
                 self.src_endpoint,
                 self.cluster_id,
-                self.destination().map_err(|_| std::fmt::Error)?
+                self.destination().map_err(|_| Error)?
             )
         }
     }

@@ -1,5 +1,6 @@
 //! Default Response Command.
 
+use crate::ParseDirection;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -7,7 +8,7 @@ zcl_command! {
     DefaultResponse {
         Global;
         command_id: 0x0b;
-        parse_direction: crate::ParseDirection::Both;
+        parse_direction: ParseDirection::Both;
         disable_default_response: true;
         fields {
             command_id: u8,
@@ -32,7 +33,8 @@ zcl_command! {
 
 #[cfg(test)]
 mod tests {
-    use crate::clusters::global;
+
+    use crate::clusters::global::Command;
     use crate::{Cluster, Frame};
 
     #[test]
@@ -40,8 +42,7 @@ mod tests {
         let frame = Frame::parse(0x0008, [0x18, 0x06, 0x0b, 0x00, 0x00].into_iter())
             .expect("default response frame should parse");
 
-        let Cluster::Global(global::Command::DefaultResponse(response)) = frame.into_payload()
-        else {
+        let Cluster::Global(Command::DefaultResponse(response)) = frame.into_payload() else {
             panic!("expected global default response");
         };
 
@@ -54,8 +55,7 @@ mod tests {
         let frame = Frame::parse(0x0008, [0x10, 0x06, 0x0b, 0x01, 0x86].into_iter())
             .expect("default response frame should parse");
 
-        let Cluster::Global(global::Command::DefaultResponse(response)) = frame.into_payload()
-        else {
+        let Cluster::Global(Command::DefaultResponse(response)) = frame.into_payload() else {
             panic!("expected global default response");
         };
 

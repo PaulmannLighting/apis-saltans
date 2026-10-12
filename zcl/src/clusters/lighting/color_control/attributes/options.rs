@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use le_stream::{FromLeStream, ToLeStream};
+use zb_core::TypeId;
 use zb_core::types::Type;
 
 /// Options for the On/Off cluster commands.
@@ -12,8 +13,8 @@ use zb_core::types::Type;
 #[repr(transparent)]
 pub struct Options(u8);
 
-impl zb_core::TypeId for Options {
-    const ID: u8 = <u8 as zb_core::TypeId>::ID;
+impl TypeId for Options {
+    const ID: u8 = <u8 as TypeId>::ID;
 }
 
 bitflags! {

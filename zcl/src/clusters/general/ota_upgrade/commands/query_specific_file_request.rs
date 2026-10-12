@@ -1,5 +1,6 @@
 use zb_core::{Cluster, Direction, IeeeAddress};
 
+use super::QuerySpecificFileResponse;
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
 
@@ -10,7 +11,7 @@ zcl_command! {
         command_id: 0x08;
         direction: Direction::ClientToServer;
         disable_default_response: false;
-        response: super::QuerySpecificFileResponse;
+        response: QuerySpecificFileResponse;
         derive(Copy);
         fields {
             request_node_address: IeeeAddress,

@@ -1,4 +1,5 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use zb_core::TypeId;
 use zb_core::types::{Enum8, Type, Uint8};
 
 /// Color mode of the device.
@@ -17,8 +18,8 @@ pub enum ColorMode {
     ColorTemperature = 0x02,
 }
 
-impl zb_core::TypeId for ColorMode {
-    const ID: u8 = <Enum8 as zb_core::TypeId>::ID;
+impl TypeId for ColorMode {
+    const ID: u8 = <Enum8 as TypeId>::ID;
 }
 
 impl From<ColorMode> for Type {

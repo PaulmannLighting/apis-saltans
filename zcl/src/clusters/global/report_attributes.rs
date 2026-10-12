@@ -1,7 +1,5 @@
 //! Report Attributes Command.
 
-use std::boxed::Box;
-
 use zb_core::Direction;
 
 pub use self::attribute_report::AttributeReport;

@@ -1,10 +1,13 @@
+use std::fmt::Formatter;
+
+use crate::MgmtLqiRsp;
 crate::zdp_command! {
     /// Management LQI Request structure.
     derive { Copy }
     MgmtLqiReq => Mgmt_Lqi_req;
     cluster_id: 0x0031;
     group: NetworkManagement;
-    response: crate::MgmtLqiRsp;
+    response: MgmtLqiRsp;
     fields {
         start_index: u8,
     }
@@ -16,7 +19,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ start_index: {:#04X} }}",

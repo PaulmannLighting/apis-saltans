@@ -1,3 +1,5 @@
+use std::fmt::Formatter;
+
 pub use self::scan_duration::ScanDuration;
 
 mod scan_duration;
@@ -99,7 +101,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             match self.scan_duration() {
                 Ok(scan_duration) => {
                     write!(

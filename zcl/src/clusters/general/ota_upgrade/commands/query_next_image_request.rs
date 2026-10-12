@@ -1,7 +1,6 @@
-use std::vec::Vec;
-
 use zb_core::{Cluster, Direction};
 
+use super::QueryNextImageResponse;
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
 
@@ -14,7 +13,7 @@ zcl_command! {
         command_id: 0x01;
         direction: Direction::ClientToServer;
         disable_default_response: false;
-        response: super::QueryNextImageResponse;
+        response: QueryNextImageResponse;
         fields {
             image: ImageId,
             hardware_version: Option<u16>,

@@ -1,13 +1,14 @@
 use thiserror::Error;
 use zb_aps::apsde::{ReceivedDestination, Source};
 use zb_core::Endpoint;
+use zb_zcl::ParseFrameError;
 
 /// An error that can occur when parsing an APSDE indication payload.
 #[derive(Clone, Debug, Eq, Error, PartialEq, Hash)]
 pub enum ParseApsPayloadError {
     /// The ZCL frame is invalid.
     #[error("{0}")]
-    ParseZclFrameError(#[from] zb_zcl::ParseFrameError),
+    ParseZclFrameError(#[from] ParseFrameError),
 
     /// The profile ID is invalid.
     #[error("Invalid profile ID: {0}")]
@@ -42,11 +43,13 @@ pub enum ParseApsPayloadError {
 mod tests {
     use std::error::Error as _;
 
+    use zb_zcl::ParseFrameError;
+
     use super::ParseApsPayloadError;
 
     #[test]
     fn converted_frame_error_is_retained_as_source() {
-        let error = ParseApsPayloadError::from(zb_zcl::ParseFrameError::MissingHeader);
+        let error = ParseApsPayloadError::from(ParseFrameError::MissingHeader);
 
         assert_eq!(error.to_string(), "Missing ZCL frame header");
         assert_eq!(

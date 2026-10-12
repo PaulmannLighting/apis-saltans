@@ -6,6 +6,7 @@ use zb_hw::{Error, NcpHandle};
 
 use crate::event::EventSink;
 use crate::mux::Mux;
+use crate::ota::Server;
 use crate::{DEFAULT_OTA_UPDATE_TASK_LIMIT, Event, aps, ota, zcl, zdp};
 
 /// External Zigbee API struct.
@@ -70,7 +71,7 @@ impl Coordinator {
         let events = EventSink::new(events_out);
         let aps = aps::Transceiver::spawn(ncp.clone());
         let zcl = zcl::Transceiver::spawn(aps.clone(), events.clone());
-        let ota = ota::Server::spawn(ncp.clone(), zcl.clone(), ota_update_task_limit);
+        let ota = Server::spawn(ncp.clone(), zcl.clone(), ota_update_task_limit);
         let zdp = zdp::Transceiver::spawn(ncp.clone(), aps.clone(), events.clone(), descriptor);
         Mux::spawn(
             hw_events,

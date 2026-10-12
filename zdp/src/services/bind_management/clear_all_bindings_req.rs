@@ -1,12 +1,16 @@
+use std::fmt::Formatter;
+
 use zb_core::Eui64;
 use zb_core::types::tlv::{Local, Tlv};
+
+use crate::ClearAllBindingsRsp;
 
 crate::zdp_command! {
     /// Clear All Bindings Request
     ClearAllBindingsReq => Clear_All_Bindings_req;
     cluster_id: 0x002b;
     group: BindManagement;
-    response: crate::ClearAllBindingsRsp;
+    response: ClearAllBindingsRsp;
     fields {
         tlvs: Box<[Tlv]>,
     }
@@ -35,7 +39,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(f, "{} {{ tlvs: {:?} }}", Self::NAME, self.tlvs)
         }
     }

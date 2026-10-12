@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use bytes::{BufMut, Bytes, BytesMut};
+use tokio::runtime::Builder;
 
 use super::{FieldControl, ParseImage, ParseImageError};
 
@@ -84,7 +85,7 @@ fn parses_complete_file() {
 
 #[test]
 fn reads_header_and_payload_ranges_from_the_source() {
-    tokio::runtime::Builder::new_current_thread()
+    Builder::new_current_thread()
         .build()
         .expect("test runtime can be built")
         .block_on(async {

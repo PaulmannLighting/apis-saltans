@@ -5,10 +5,14 @@ use le_stream::ToLeStream;
 use log::warn;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
+use tokio::sync::oneshot::Receiver;
 use zb_aps::TxOptions;
 use zb_aps::apsde::{
     DataRequest, IndividualEndpoint, NetworkAddress, NetworkDestination, RequestDestination,
 };
+#[cfg(test)]
+use zb_core::IeeeAddress;
+use zb_core::short_id::Device;
 use zb_core::{Cluster, Direction, Profile};
 use zb_zcl::{Command, Directed, Scope, Scoped, UnsequencedFrame};
 
@@ -21,6 +25,7 @@ pub use self::timeouts::UpdateTimeouts;
 pub use self::update::CancellableOtaUpdate;
 pub(crate) use self::update::Update;
 use crate::aps::TransmissionResponse;
+use crate::zcl::{Subscription, SubscriptionFilter, SubscriptionReceiver};
 use crate::{Error, zcl};
 
 mod image;
@@ -36,15 +41,12 @@ const CURRENT_TIME_IMMEDIATE: u32 = 0;
 const UPGRADE_TIME_IMMEDIATE: u32 = 0;
 const OTA_PROFILE: Profile = Profile::ZigbeeHomeAutomation;
 #[cfg(test)]
-const TEST_IEEE_ADDRESS: zb_core::IeeeAddress =
-    zb_core::IeeeAddress::new(0x00, 0x12, 0x4b, 0x00, 0x01, 0xaa, 0xbb, 0xcc);
+const TEST_IEEE_ADDRESS: IeeeAddress =
+    IeeeAddress::new(0x00, 0x12, 0x4b, 0x00, 0x01, 0xaa, 0xbb, 0xcc);
 
 type Request = DataRequest<UnsequencedFrame<Bytes>>;
 
-const fn network_destination(
-    short_id: zb_core::short_id::Device,
-    endpoint: IndividualEndpoint,
-) -> NetworkDestination {
+const fn network_destination(short_id: Device, endpoint: IndividualEndpoint) -> NetworkDestination {
     NetworkDestination::new(
         NetworkAddress::new(short_id.as_u16())
             .expect("device short addresses are valid APSDE network addresses"),
@@ -88,8 +90,8 @@ const fn request_from_unsequenced_frame(
     .with_tx_options(TxOptions::ACKNOWLEDGED_TRANSMISSION)
 }
 
-pub(crate) fn subscription() -> (zcl::Subscription, zcl::SubscriptionReceiver) {
-    zcl::Subscription::channel(zcl::SubscriptionFilter::new(
+pub(crate) fn subscription() -> (Subscription, SubscriptionReceiver) {
+    Subscription::channel(SubscriptionFilter::new(
         Cluster::OtaUpgrade,
         Scope::ClusterSpecific,
         Direction::ClientToServer,
@@ -126,7 +128,7 @@ async fn send_zcl(zcl: &Sender<zcl::Message>, request: Request) -> Option<()> {
 }
 
 async fn receive_transmission_result(
-    response: oneshot::Receiver<Result<TransmissionResponse, Error>>,
+    response: Receiver<Result<TransmissionResponse, Error>>,
 ) -> Option<()> {
     let transmission = match response.await {
         Ok(Ok(transmission)) => transmission,

@@ -1,11 +1,15 @@
+use std::fmt::Formatter;
+
 use zb_core::ByteSizedVec;
+
+use crate::MatchDescRsp;
 
 crate::zdp_command! {
     /// Match Descriptor Request.
     MatchDescReq => Match_Desc_req;
     cluster_id: 0x0006;
     group: DeviceAndServiceDiscovery;
-    response: crate::MatchDescRsp;
+    response: MatchDescRsp;
     fields {
         nwk_addr_of_interest: u16,
         profile_id: u16,
@@ -38,7 +42,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ nwk_addr_of_interest: {:#06X}, profile_id: {:#06X}, in_cluster_list: [",

@@ -2,6 +2,9 @@
 
 use std::fmt::{self, Debug, Formatter};
 
+use zb_core::IeeeAddress;
+use zb_zcl::ota_upgrade::ImageId;
+
 pub use self::error::ParseImageError;
 pub use self::field_control::FieldControl;
 pub use self::header::{BaseHeaderBytes, Header, HeaderString};
@@ -47,7 +50,7 @@ impl Image {
 
     /// Return the manufacturer, image type, and file version from the image header.
     #[must_use]
-    pub const fn id(&self) -> zb_zcl::ota_upgrade::ImageId {
+    pub const fn id(&self) -> ImageId {
         self.header.id()
     }
 
@@ -89,7 +92,7 @@ impl Image {
 
     /// Return the optional IEEE address to which this file is restricted.
     #[must_use]
-    pub const fn upgrade_file_destination(&self) -> Option<zb_core::IeeeAddress> {
+    pub const fn upgrade_file_destination(&self) -> Option<IeeeAddress> {
         self.header.upgrade_file_destination()
     }
 

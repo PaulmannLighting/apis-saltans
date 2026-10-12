@@ -1,6 +1,9 @@
+use std::fmt::Formatter;
+
 use zb_core::IeeeAddress;
 
 pub use self::request_type::RequestType;
+use crate::NwkAddrRsp;
 
 mod request_type;
 
@@ -9,7 +12,7 @@ crate::zdp_command! {
     NwkAddrReq => NWK_addr_req;
     cluster_id: 0x0000;
     group: DeviceAndServiceDiscovery;
-    response: crate::NwkAddrRsp;
+    response: NwkAddrRsp;
     fields {
         ieee_addr: IeeeAddress,
         request_type: u8,
@@ -49,7 +52,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ ieee_addr: {}, request_type: {:#04X}, start_index: {:#04X} }}",

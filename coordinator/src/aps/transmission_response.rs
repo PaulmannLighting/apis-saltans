@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -7,6 +6,7 @@ use tokio::runtime::Handle;
 use tokio::sync::mpsc::WeakSender;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::oneshot::Receiver;
+use zb_hw::Error;
 
 use super::{Message, TransmissionToken};
 
@@ -70,14 +70,14 @@ impl Drop for Cancellation {
 #[must_use = "futures do nothing unless polled"]
 #[derive(Debug)]
 pub struct TransmissionResponse {
-    response: Receiver<Result<(), zb_hw::Error>>,
+    response: Receiver<Result<(), Error>>,
     cancellation: Cancellation,
 }
 
 impl TransmissionResponse {
     /// Create a deferred APS transmission response.
     pub(crate) fn new(
-        response: Receiver<Result<(), zb_hw::Error>>,
+        response: Receiver<Result<(), Error>>,
         token: TransmissionToken,
         inbox: WeakSender<Message>,
     ) -> Self {
@@ -89,7 +89,7 @@ impl TransmissionResponse {
 
     #[cfg(test)]
     pub(crate) fn test_new(
-        response: Receiver<Result<(), zb_hw::Error>>,
+        response: Receiver<Result<(), Error>>,
         counter: u8,
         inbox: WeakSender<Message>,
     ) -> Self {
@@ -105,7 +105,7 @@ impl TransmissionResponse {
 }
 
 impl Future for TransmissionResponse {
-    type Output = Result<(), zb_hw::Error>;
+    type Output = Result<(), Error>;
 
     fn poll(self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
@@ -123,7 +123,7 @@ impl Future for TransmissionResponse {
 
 #[cfg(test)]
 mod tests {
-    use std::future::Future;
+
     use std::pin::pin;
     use std::task::{Context, Poll, Waker};
 

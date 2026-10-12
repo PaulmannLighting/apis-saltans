@@ -115,7 +115,7 @@ mod tests {
     mod serde_tests {
         use serde::de::{Deserializer, IntoDeserializer, Visitor};
         use serde::ser::Impossible;
-        use serde::{Deserialize, Serialize};
+        use serde::{Deserialize, Serialize, Serializer};
 
         use super::alloc::string::{String, ToString};
         use super::{ADDRESS, IeeeAddress};
@@ -155,7 +155,7 @@ mod tests {
             }
         }
 
-        impl serde::Serializer for StringSerializer {
+        impl Serializer for StringSerializer {
             type Ok = String;
             type Error = Error;
             type SerializeSeq = Impossible<String, Error>;

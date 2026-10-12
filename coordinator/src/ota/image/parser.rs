@@ -1,5 +1,7 @@
 use std::fs::File;
-use std::io::{self, Read, Seek, SeekFrom};
+#[cfg(test)]
+use std::io::Cursor;
+use std::io::{ErrorKind, Read, Seek, SeekFrom};
 
 use super::header::HeaderBuilder;
 use super::{BaseHeaderBytes, Header, Image, ParseImageError};
@@ -71,7 +73,7 @@ where
     /// [`ParseImageError::Io`] for another read failure.
     fn read_header_exact(&mut self, buffer: &mut [u8]) -> Result<(), ParseImageError> {
         self.read_exact(buffer).map_err(|error| {
-            if error.kind() == io::ErrorKind::UnexpectedEof {
+            if error.kind() == ErrorKind::UnexpectedEof {
                 ParseImageError::TruncatedHeader
             } else {
                 error.into()
@@ -103,4 +105,4 @@ where
 impl ParseImage for File {}
 
 #[cfg(test)]
-impl<T> ParseImage for io::Cursor<T> where T: AsRef<[u8]> + Send + 'static {}
+impl<T> ParseImage for Cursor<T> where T: AsRef<[u8]> + Send + 'static {}

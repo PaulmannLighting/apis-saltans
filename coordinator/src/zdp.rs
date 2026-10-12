@@ -12,7 +12,7 @@ use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress, ReceivedDestina
 use zb_core::FullAddress;
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
-use zb_hw::NcpHandle;
+use zb_hw::{NcpHandle, TransmissionError};
 use zb_zdp::{Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame};
 
 pub use self::message::Message;
@@ -338,7 +338,7 @@ impl Transceiver {
             .collect::<Vec<_>>();
         let quarantined = self
             .responses
-            .network_down_preserving(&zb_hw::TransmissionError::NoRoute, protected);
+            .network_down_preserving(&TransmissionError::NoRoute, protected);
         for token in quarantined {
             self.schedule_quarantine_timeout(token);
         }
@@ -347,9 +347,7 @@ impl Transceiver {
             submission.task.abort();
             submission
                 .response
-                .send(Err(
-                    zb_hw::Error::from(zb_hw::TransmissionError::NoRoute).into()
-                ))
+                .send(Err(zb_hw::Error::from(TransmissionError::NoRoute).into()))
                 .unwrap_or_else(drop);
         }
     }

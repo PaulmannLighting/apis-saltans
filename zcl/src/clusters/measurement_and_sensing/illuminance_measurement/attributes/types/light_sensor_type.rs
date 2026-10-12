@@ -1,3 +1,4 @@
+use zb_core::TypeId;
 use zb_core::types::{Enum8, Type, Uint8};
 
 pub use self::manufacturer_specific::ManufacturerSpecific;
@@ -17,8 +18,8 @@ pub enum LightSensorType {
     Unknown,
 }
 
-impl zb_core::TypeId for LightSensorType {
-    const ID: u8 = <Enum8 as zb_core::TypeId>::ID;
+impl TypeId for LightSensorType {
+    const ID: u8 = <Enum8 as TypeId>::ID;
 }
 
 impl LightSensorType {

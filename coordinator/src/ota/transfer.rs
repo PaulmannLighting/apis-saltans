@@ -19,7 +19,7 @@ use zb_zcl::ota_upgrade::{
     QuerySpecificFileRequest, QuerySpecificFileResponse, UpgradeEndRequest, UpgradeEndResponse,
     UpgradeIncompleteReason,
 };
-use zb_zcl::{Command, Scope, Status, UnsequencedFrame, UnsequencedHeader};
+use zb_zcl::{Command, Directed, Scope, Scoped, Status, UnsequencedFrame, UnsequencedHeader};
 
 use super::image::ImageTransfer;
 use super::page_transfer::PageTransfer;
@@ -560,7 +560,7 @@ impl Transfer {
         command: T,
         completion: Option<UpdateResult>,
     ) where
-        T: Command + zb_zcl::Directed + zb_zcl::Scoped + ToLeStream,
+        T: Command + Directed + Scoped + ToLeStream,
     {
         let request = request(
             context.destination.into(),

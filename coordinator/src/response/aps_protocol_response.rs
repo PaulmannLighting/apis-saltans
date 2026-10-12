@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -65,11 +64,13 @@ impl<T> Future for ApsProtocolResponse<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::future::Future;
+
     use std::pin::pin;
     use std::task::{Context, Poll, Waker};
 
-    use tokio::sync::oneshot::channel;
+    use tokio::sync::oneshot::{Receiver, channel};
+    use zb_core::Endpoint;
+    use zb_hw::TransmissionError;
 
     use super::{ApsProtocolResponse, TransmissionResponse};
     use crate::correlation::{Cancellation, Key};
@@ -128,20 +129,20 @@ mod tests {
 
         assert!(
             transmission_sender
-                .send(Err(zb_hw::TransmissionError::Timeout.into()))
+                .send(Err(TransmissionError::Timeout.into()))
                 .is_ok()
         );
         assert!(matches!(
             response.as_mut().poll(&mut context),
             Poll::Ready(Err(crate::Error::Hardware(zb_hw::Error::Transmission(
-                zb_hw::TransmissionError::Timeout
+                TransmissionError::Timeout
             ))))
         ));
     }
 
     fn response<T>(
-        transmission: tokio::sync::oneshot::Receiver<Result<(), zb_hw::Error>>,
-        protocol: tokio::sync::oneshot::Receiver<Result<T, crate::Error>>,
+        transmission: Receiver<Result<(), zb_hw::Error>>,
+        protocol: Receiver<Result<T, crate::Error>>,
     ) -> ApsProtocolResponse<T> {
         let cancellation = Cancellation::test_new(key(), drop);
         let (aps_inbox, _aps_messages) = tokio::sync::mpsc::channel(1);
@@ -155,7 +156,7 @@ mod tests {
     fn key() -> Key {
         Key::new(
             SHORT_ID,
-            zb_core::Endpoint::Data,
+            Endpoint::Data,
             CLUSTER_ID,
             PROFILE_ID,
             None,

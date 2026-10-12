@@ -1,4 +1,4 @@
-use std::fmt::{Display, UpperHex};
+use std::fmt::{Display, Formatter, UpperHex};
 
 use crate::Status;
 
@@ -22,7 +22,7 @@ where
     T: Display,
     E: UpperHex,
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.0 {
             Ok(status) => write!(f, "{status}"),
             Err(code) => write!(f, "RESERVED ({code:#04X})"),

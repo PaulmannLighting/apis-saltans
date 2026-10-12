@@ -1,3 +1,5 @@
+use std::fmt::Formatter;
+
 use zb_core::IeeeAddress;
 use zb_core::node::MacCapabilityFlags;
 
@@ -31,7 +33,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
                 "{} {{ nwk_addr: {:#06X}, ieee_addr: {}, capabilities: {} }}",

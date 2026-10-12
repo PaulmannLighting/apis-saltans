@@ -27,12 +27,12 @@ mod tests {
     use zb_core::{Cluster as ClusterId, IeeeAddress};
 
     use super::{
-        ImageBlock, ImageBlockRequest, ImageBlockResponse, ImageId, ImageNotify,
-        ImageNotifyPayload, ImagePageRequest, QueryJitter, QueryNextImageRequest,
+        ImageBlock, ImageBlockRequest, ImageBlockResponse, ImageBlockResponsePayload, ImageId,
+        ImageNotify, ImageNotifyPayload, ImagePageRequest, QueryJitter, QueryNextImageRequest,
         QueryNextImageResponse, QueryResponse, QuerySpecificFileRequest, QuerySpecificFileResponse,
         UpgradeComplete, UpgradeEndResponse, UpgradeIncomplete, UpgradeIncompleteReason,
     };
-    use crate::{Command as CommandMetadata, Directed, Frame, Header, Scope};
+    use crate::{Cluster, Command as CommandMetadata, Directed, Frame, Header, Scope};
 
     const SEQUENCE_NUMBER: u8 = 0x42;
     const HARDWARE_VERSION: u16 = 0x0102;
@@ -50,7 +50,7 @@ mod tests {
 
     fn assert_runtime_round_trip<T>(command: T)
     where
-        T: Clone + CommandMetadata + Directed + Into<crate::Cluster> + ToLeStream,
+        T: Clone + CommandMetadata + Directed + Into<Cluster> + ToLeStream,
     {
         let expected = command.clone().into();
         let header = Header::new(
@@ -99,9 +99,9 @@ mod tests {
             RESPONSE_SPACING,
             Some(ADDRESS),
         ));
-        assert_runtime_round_trip(ImageBlockResponse::new(
-            super::ImageBlockResponsePayload::Success(image_block),
-        ));
+        assert_runtime_round_trip(ImageBlockResponse::new(ImageBlockResponsePayload::Success(
+            image_block,
+        )));
         assert_runtime_round_trip(UpgradeComplete::new(IMAGE));
         for reason in [
             UpgradeIncompleteReason::Abort,

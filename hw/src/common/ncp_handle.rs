@@ -5,7 +5,7 @@ use std::time::Duration;
 
 #[cfg(feature = "coordinator")]
 use bytes::Bytes;
-use tokio::sync::mpsc::{Sender, WeakSender};
+use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
 #[cfg(feature = "coordinator")]
 use tokio::sync::oneshot::channel;
 #[cfg(feature = "coordinator")]
@@ -31,7 +31,7 @@ pub struct NcpHandle {
 
 impl NcpHandle {
     #[cfg(feature = "driver")]
-    pub(crate) fn channel(capacity: NonZeroUsize) -> (Self, tokio::sync::mpsc::Receiver<Message>) {
+    pub(crate) fn channel(capacity: NonZeroUsize) -> (Self, Receiver<Message>) {
         let (sender, receiver) = tokio::sync::mpsc::channel(capacity.get());
         let handle = Self { sender };
         (handle, receiver)

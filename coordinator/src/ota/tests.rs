@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::io::Cursor;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -6,25 +5,33 @@ use std::time::Duration;
 
 use bytes::{BufMut, Bytes, BytesMut};
 use le_stream::{FromLeStream, ToLeStream};
+use tokio::runtime::Builder;
+use tokio::sync::oneshot::error::RecvError;
+use tokio::task::JoinHandle;
 use tokio::time::timeout;
+use zb_aps::TxOptions;
 use zb_aps::apsde::{
     DataIndication, IndicationMetadata, IndicationStatus, IndividualEndpoint, NetworkAddress,
     NetworkDestination, ReceivedDestination, Security, Source,
 };
 use zb_core::endpoint::Application;
-use zb_core::{Cluster, Direction, Endpoint, FullAddress, IeeeAddress, Profile, short_id};
+use zb_core::short_id::Device;
+use zb_core::{Cluster, Direction, Endpoint, FullAddress, IeeeAddress, Profile};
+use zb_hw::Operation;
+use zb_zcl::global::default_response::DefaultResponse;
 use zb_zcl::ota_upgrade::{
     Command as OtaCommand, ImageBlockRequest, ImageBlockResponse, ImageBlockResponsePayload,
     ImageId, ImageNotify, ImageNotifyPayload, ImagePageRequest, QueryNextImageRequest,
     QueryNextImageResponse, QueryResponse, QuerySpecificFileRequest, QuerySpecificFileResponse,
     UpgradeComplete, UpgradeEndResponse, UpgradeIncomplete, UpgradeIncompleteReason,
 };
-use zb_zcl::{Cluster as ZclCluster, Command, Frame, Header, Scope};
+use zb_zcl::{Cluster as ZclCluster, Command, Frame, Header, Scope, Status};
 
 use super::{
     FieldControl, Image, Message, OTA_PROFILE, ParseImage, Request, Server, TEST_IEEE_ADDRESS,
     TransmissionResponse, UpdateError, UpdateResult, UpdateTimeouts,
 };
+use crate::zcl::SubscriptionMessage;
 use crate::{Error, Ota, zcl};
 
 const TEST_TIMEOUT: Duration = Duration::from_secs(1);
@@ -70,7 +77,7 @@ struct ScheduledUpdate {
 }
 
 impl Future for ScheduledUpdate {
-    type Output = Result<UpdateResult, tokio::sync::oneshot::error::RecvError>;
+    type Output = Result<UpdateResult, RecvError>;
 
     fn poll(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Self::Output> {
         Pin::new(&mut self.completion).poll(context)
@@ -719,12 +726,10 @@ fn update_reports_the_clients_terminal_failure() {
                 .expect("OTA server is running");
             let (sequence, bytes) = reply_bytes(receive_zcl(&mut zcl_receiver).await);
             assert_eq!(sequence, TEST_SEQUENCE_NUMBER);
-            let response = zb_zcl::global::default_response::DefaultResponse::from_le_stream(
-                bytes.into_iter(),
-            )
-            .expect("valid Default Response");
+            let response =
+                DefaultResponse::from_le_stream(bytes.into_iter()).expect("valid Default Response");
             assert_eq!(response.command_id(), <UpgradeIncomplete as Command>::ID);
-            assert_eq!(response.status(), zb_zcl::Status::Success as u8);
+            assert_eq!(response.status(), Status::Success as u8);
 
             let result = timeout(TEST_TIMEOUT, completion)
                 .await
@@ -816,12 +821,12 @@ fn second_test_address() -> FullAddress {
     FullAddress::new(TEST_IEEE_ADDRESS, second_test_short_id())
 }
 
-fn test_short_id() -> short_id::Device {
-    short_id::Device::new(0x1234).expect("valid short ID")
+fn test_short_id() -> Device {
+    Device::new(0x1234).expect("valid short ID")
 }
 
-fn second_test_short_id() -> short_id::Device {
-    short_id::Device::new(SECOND_DEVICE_SHORT_ID).expect("valid short ID")
+fn second_test_short_id() -> Device {
+    Device::new(SECOND_DEVICE_SHORT_ID).expect("valid short ID")
 }
 
 fn test_destination() -> NetworkDestination {
@@ -879,7 +884,7 @@ async fn schedule_for(
 fn update_via_api(
     sender: tokio::sync::mpsc::Sender<Message>,
     image: Image,
-) -> tokio::task::JoinHandle<Result<(), Error>> {
+) -> JoinHandle<Result<(), Error>> {
     update_via_api_for(sender, test_address(), image)
 }
 
@@ -887,7 +892,7 @@ fn update_via_api_for(
     sender: tokio::sync::mpsc::Sender<Message>,
     target: FullAddress,
     image: Image,
-) -> tokio::task::JoinHandle<Result<(), Error>> {
+) -> JoinHandle<Result<(), Error>> {
     tokio::spawn(async move {
         sender
             .update(
@@ -927,7 +932,7 @@ where
     }
 }
 
-fn subscribed<T>(sequence_number: u8, command: T) -> zcl::SubscriptionMessage
+fn subscribed<T>(sequence_number: u8, command: T) -> SubscriptionMessage
 where
     T: Command + Into<OtaCommand>,
 {
@@ -939,7 +944,7 @@ where
         sequence_number,
         T::ID,
     );
-    zcl::SubscriptionMessage {
+    SubscriptionMessage {
         indication: DataIndication::new(
             test_metadata(OTA_PROFILE),
             Frame::new(zcl_header, ZclCluster::OtaUpgrade(command.into())),
@@ -1022,7 +1027,7 @@ async fn fail_next_transmission(receiver: &mut tokio::sync::mpsc::Receiver<zcl::
     let (completion, transmission) = deferred_transmission();
     assert!(
         completion
-            .send(Err(zb_hw::Error::Unsupported(zb_hw::Operation::Transmit)))
+            .send(Err(zb_hw::Error::Unsupported(Operation::Transmit)))
             .is_ok()
     );
     assert!(response.send(Ok(transmission)).is_ok());
@@ -1056,11 +1061,11 @@ async fn receive_non_subscription(
 
 fn reply_bytes(message: ObservedZcl) -> (u8, Bytes) {
     let (sequence_number, tx_options, bytes) = reply_parts(message);
-    assert_eq!(tx_options, zb_aps::TxOptions::ACKNOWLEDGED_TRANSMISSION);
+    assert_eq!(tx_options, TxOptions::ACKNOWLEDGED_TRANSMISSION);
     (sequence_number, bytes)
 }
 
-fn reply_parts(message: ObservedZcl) -> (u8, zb_aps::TxOptions, Bytes) {
+fn reply_parts(message: ObservedZcl) -> (u8, TxOptions, Bytes) {
     let ObservedZcl::Reply {
         sequence_number,
         request,
@@ -1098,7 +1103,7 @@ fn run_test<T>(future: T)
 where
     T: Future<Output = ()>,
 {
-    tokio::runtime::Builder::new_current_thread()
+    Builder::new_current_thread()
         .enable_time()
         .build()
         .expect("Tokio runtime")
