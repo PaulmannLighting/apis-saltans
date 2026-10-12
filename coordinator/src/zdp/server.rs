@@ -316,54 +316,12 @@ impl Server {
         seq: u8,
         match_desc_req: MatchDescReq,
     ) {
-        let Ok(logical_type) = self
-            .descriptor
-            .flags()
-            .logical_type()
-            .inspect_err(|value| warn!("Invalid logical device type: {value:#04X}"))
+        let Some(response) = self
+            .match_desc_response(&match_desc_req, request_was_broadcast)
+            .await
         else {
             return;
         };
-
-        let nwk_addr_of_interest = match_desc_req.nwk_addr_of_interest();
-
-        let response =
-            match match_desc_action(logical_type, nwk_addr_of_interest, request_was_broadcast) {
-                MatchDescAction::MatchLocalDescriptors => {
-                    let Ok(endpoints) = self.ncp.get_endpoints().await else {
-                        return;
-                    };
-                    let Some(matches) = matching_endpoints(&match_desc_req, &endpoints) else {
-                        error!("Too many endpoints matched Match_Desc_req");
-                        return;
-                    };
-
-                    let Some(response) =
-                        local_match_response(nwk_addr_of_interest, matches, request_was_broadcast)
-                    else {
-                        return;
-                    };
-                    response
-                }
-                MatchDescAction::MatchRemoteDevice(nwk_address) => {
-                    if self
-                        .ncp
-                        .short_id_to_ieee_address(nwk_address)
-                        .await
-                        .is_err()
-                    {
-                        MatchDescRsp::new(nwk_addr_of_interest, Err(Status::DeviceNotFound))
-                    } else if request_was_broadcast {
-                        return;
-                    } else {
-                        MatchDescRsp::new(nwk_addr_of_interest, Err(Status::NoDescriptor))
-                    }
-                }
-                MatchDescAction::RespondWithError(status) => {
-                    MatchDescRsp::new(nwk_addr_of_interest, Err(status))
-                }
-                MatchDescAction::Ignore => return,
-            };
 
         let Ok(node_id) = source.as_u16().try_into().inspect_err(|error| {
             warn!("Invalid node ID: {error:?}");
@@ -374,6 +332,59 @@ impl Server {
         if let Err(error) = self.respond(seq, node_id, response).await {
             error!("Failed to send Match_Desc_rsp: {error:?}");
         }
+    }
+
+    /// Select a Match Descriptor response; `None` means the request must remain unanswered.
+    async fn match_desc_response(
+        &self,
+        match_desc_req: &MatchDescReq,
+        request_was_broadcast: bool,
+    ) -> Option<MatchDescRsp> {
+        let Ok(logical_type) = self
+            .descriptor
+            .flags()
+            .logical_type()
+            .inspect_err(|value| warn!("Invalid logical device type: {value:#04X}"))
+        else {
+            return None;
+        };
+
+        let nwk_addr_of_interest = match_desc_req.nwk_addr_of_interest();
+
+        let response =
+            match match_desc_action(logical_type, nwk_addr_of_interest, request_was_broadcast) {
+                MatchDescAction::MatchLocalDescriptors => {
+                    let Ok(endpoints) = self.ncp.get_endpoints().await else {
+                        return None;
+                    };
+                    let Some(matches) = matching_endpoints(match_desc_req, &endpoints) else {
+                        error!("Too many endpoints matched Match_Desc_req");
+                        return None;
+                    };
+
+                    local_match_response(nwk_addr_of_interest, matches, request_was_broadcast)?
+                }
+                MatchDescAction::MatchRemoteDevice(nwk_address) => {
+                    if self
+                        .ncp
+                        .short_id_to_ieee_address(nwk_address)
+                        .await
+                        .is_err()
+                    {
+                        MatchDescRsp::new(nwk_addr_of_interest, Err(Status::DeviceNotFound))
+                    } else if request_was_broadcast {
+                        return None;
+                    } else {
+                        MatchDescRsp::new(nwk_addr_of_interest, Err(Status::NoDescriptor))
+                    }
+                }
+                MatchDescAction::RespondWithError(status) => {
+                    MatchDescRsp::new(nwk_addr_of_interest, Err(status))
+                }
+                MatchDescAction::Ignore => return None,
+            };
+
+        Some(response)
     }
 
     /// Respond to a Node Descriptor request with the descriptor or an appropriate status.
