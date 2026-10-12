@@ -50,7 +50,7 @@ pub(super) struct ServerRequest {
     command: Command,
 }
 
-/// Construction, APS access, and dispatch of incoming ZDP requests.
+/// Construction and dispatch of incoming ZDP requests.
 impl Server {
     /// Create a server context for background request handling.
     pub(super) const fn new(
@@ -65,11 +65,6 @@ impl Server {
             descriptor,
             inbox,
         }
-    }
-
-    /// Return the APS transceiver used by the server.
-    pub(super) const fn aps(&self) -> &Aps {
-        &self.aps
     }
 
     /// Dispatch a received request to its command-specific handler.

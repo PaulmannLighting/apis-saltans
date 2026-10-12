@@ -296,12 +296,20 @@ The ZDP actor:
 
 Received response commands and device announcements are handled synchronously in the actor.
 Requests that can query the NCP or enqueue an APS reply run in tracked background operations, with
-at most `ZIGBEE_COORDINATOR_MPSC_CHANNEL_SIZE` operations active at once. Each normal completion is
+at most `CoordinatorConfig::zdp_server_operation_limit` operations active at once. Each normal completion is
 returned through the actor's ordinary inbox. Network-down, hardware-unavailable, actor-inbox
 closure, and actor shutdown abort all active request-serving operations. If the operation limit is
 already occupied, the new request is logged and dropped rather than allowing work to grow without
 bound. A recognized request is dispatched only when the hardware backend marks its ZDO response as
 application-owned; otherwise the NCP remains responsible for any response.
+
+`server_operations::ServerOperations` owns inbound task admission, operation IDs, completion
+retirement, and cancellation. `submission::Submissions` separately owns outbound handoff admission,
+IDs, caller channels, and correlation cleanup. Both retain their ID counters across cancellation
+so late completion messages cannot retire newly admitted work. Their drop handlers stop owned tasks;
+the transceiver coordinates network changes and response/quarantine timers without accessing either
+component's task map. Outbound admission uses `CoordinatorConfig::zdp_submission_limit` independently
+of the inbound operation limit.
 
 Outgoing ZDP communication similarly reserves its correlation identity synchronously and performs
 the possibly backpressured APS actor handoff in a bounded background submission. The actor retains

@@ -5,7 +5,7 @@ use std::time::Duration;
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use tokio::runtime::Runtime;
-use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::{WeakSender, channel};
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio::time::timeout;
@@ -30,6 +30,8 @@ use crate::aps::{Aps, Message as ApsMessage, Metadata, TransmissionResponse};
 use crate::correlation::Key;
 use crate::event::EventSink;
 
+const NO_WORK_LIMIT: usize = 0;
+const SEQUENCE_OFFSET: usize = 0;
 const CHANNEL_SIZE: usize = 1;
 const APS_COUNTER: u8 = 1;
 const LINK_QUALITY: u8 = u8::MAX;
@@ -269,21 +271,14 @@ fn network_down_quarantines_a_submission_that_completed_outside_the_actor() {
             let (response, result) = oneshot::channel();
 
             transceiver.communicate(device, request, response);
-            let original_sequence = transceiver
-                .communication_submissions
-                .values()
-                .next()
-                .expect("communication submission is tracked")
-                .token
-                .key()
-                .sequence();
-            let ApsMessage::Transmit { response, .. } = aps_messages
+            let ApsMessage::Transmit { request, response } = aps_messages
                 .recv()
                 .await
                 .expect("submission reaches the APS actor")
             else {
                 panic!("expected APS transmission");
             };
+            let original_sequence = request.asdu()[SEQUENCE_OFFSET];
             let (_completion, deferred) = oneshot::channel();
             let transmission =
                 TransmissionResponse::test_new(deferred, APS_COUNTER, aps_inbox.downgrade());
@@ -320,6 +315,117 @@ fn network_down_quarantines_a_submission_that_completed_outside_the_actor() {
                 .expect("driver actor must stop after transceiver shutdown")
                 .expect("driver actor task must not panic");
         });
+}
+
+#[test]
+fn server_operation_admission_recovers_and_ignores_stale_completions() {
+    Runtime::new().unwrap().block_on(async {
+        let (aps, aps_messages) = channel(CHANNEL_SIZE);
+        drop(aps_messages);
+        let (inbox, mut messages) = channel(CHANNEL_SIZE);
+        let mut actor = bookkeeping_actor(Aps::new(aps), inbox.downgrade());
+        actor.server_operations.set_limit(NO_WORK_LIMIT);
+        actor.handle_message_received(active_endpoint_request(), true);
+        assert!(actor.server_operations.is_empty());
+
+        actor.server_operations.set_limit(CHANNEL_SIZE);
+        actor.handle_message_received(active_endpoint_request(), true);
+        actor.handle_message_received(active_endpoint_request(), true);
+        let Message::ServerOperationFinished { id: previous } =
+            timeout(TEST_TIMEOUT, messages.recv())
+                .await
+                .unwrap()
+                .unwrap()
+        else {
+            panic!("expected server completion")
+        };
+        actor.handle_actor_message(Message::ServerOperationFinished { id: previous });
+        assert!(
+            actor.server_operations.is_empty(),
+            "only one request was admitted"
+        );
+
+        actor.handle_message_received(active_endpoint_request(), true);
+        let Message::ServerOperationFinished { id: current } =
+            timeout(TEST_TIMEOUT, messages.recv())
+                .await
+                .unwrap()
+                .unwrap()
+        else {
+            panic!("expected server completion")
+        };
+        assert_ne!(previous, current);
+        actor.handle_actor_message(Message::ServerOperationFinished { id: previous });
+        assert!(!actor.server_operations.is_empty());
+        actor.handle_actor_message(Message::ServerOperationFinished { id: current });
+        assert!(actor.server_operations.is_empty());
+    });
+}
+
+#[test]
+fn submission_admission_recovers_after_failure_and_shutdown_fails_pending_callers() {
+    Runtime::new().unwrap().block_on(async {
+        let (aps, mut aps_messages) = channel(CHANNEL_SIZE);
+        let (inbox, mut messages) = channel(CHANNEL_SIZE);
+        let mut actor = bookkeeping_actor(Aps::new(aps), inbox.downgrade());
+        let device = Device::new(REMOTE_ADDRESS).unwrap();
+        actor.submissions.set_limit(NO_WORK_LIMIT);
+        let (response, result) = oneshot::channel();
+        actor.communicate(device, communication_request(device), response);
+        assert!(matches!(result.await, Ok(Err(Error::SendError))));
+        assert!(aps_messages.try_recv().is_err());
+
+        actor.submissions.set_limit(CHANNEL_SIZE);
+        let (response, first_result) = oneshot::channel();
+        actor.communicate(device, communication_request(device), response);
+        let (response, rejected_result) = oneshot::channel();
+        actor.communicate(device, communication_request(device), response);
+        assert!(matches!(rejected_result.await, Ok(Err(Error::SendError))));
+        let ApsMessage::Transmit { response, .. } = timeout(TEST_TIMEOUT, aps_messages.recv())
+            .await
+            .unwrap()
+            .unwrap()
+        else {
+            panic!("expected APS handoff")
+        };
+        response.send(Err(Error::SendError)).unwrap();
+        let completion = timeout(TEST_TIMEOUT, messages.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        actor.handle_actor_message(completion);
+        assert!(matches!(first_result.await, Ok(Err(Error::SendError))));
+        assert!(actor.submissions.has_capacity());
+
+        let (response, pending_result) = oneshot::channel();
+        actor.communicate(device, communication_request(device), response);
+        assert!(!actor.submissions.has_capacity());
+        assert!(!actor.handle_actor_message(Message::HardwareUnavailable));
+        assert!(matches!(
+            pending_result.await,
+            Ok(Err(Error::Hardware(HardwareError::ActorUnavailable)))
+        ));
+        assert!(actor.submissions.has_capacity());
+    });
+}
+
+/// An actor whose unused hardware receiver is closed; APS is controlled by each test.
+fn bookkeeping_actor(aps: Aps, inbox: WeakSender<Message>) -> Transceiver {
+    let (started, _started) = oneshot::channel();
+    let (_release, release) = oneshot::channel();
+    let (ncp, _driver) = DelayedEndpointDriver {
+        started: Mutex::new(Some(started)),
+        release: Mutex::new(Some(release)),
+    }
+    .into_actor(NCP_CHANNEL_SIZE);
+    let (events, _events) = channel(CHANNEL_SIZE);
+    Transceiver::new(
+        ncp,
+        aps,
+        EventSink::new(events),
+        Descriptor::default(),
+        inbox,
+    )
 }
 
 async fn tracked_reply_failure(error: zb_hw::Error) -> Message {

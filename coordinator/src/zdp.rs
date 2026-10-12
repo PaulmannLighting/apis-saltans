@@ -1,31 +1,28 @@
 //! Transceiver to send and receive ZDP messages.
 
-use std::collections::BTreeMap;
 use std::time::Duration;
 
 use bytes::Bytes;
 use le_stream::ToLeStream;
 use log::{debug, error, trace, warn};
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
-use tokio::task::AbortHandle;
 use zb_aps::apsde::{DataIndication, DataRequest, NetworkAddress, ReceivedDestination};
 use zb_core::FullAddress;
 use zb_core::node::Descriptor;
 use zb_core::short_id::Device;
-use zb_hw::{NcpHandle, TransmissionError};
+use zb_hw::NcpHandle;
 use zb_zdp::{Command, DeviceAndServiceDiscovery, DeviceAnnce, Frame};
 
 pub use self::message::Message;
 use self::server::{Server, ServerRequest, is_server_request};
-use self::submission::CommunicationSubmission;
-use crate::aps::{Aps, TransmissionResponse};
+use self::server_operations::ServerOperations;
+use self::submission::Submissions;
+use crate::aps::Aps;
 use crate::correlation::{
-    Cancellation, CancellationMessage, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT,
-    Registry, Token, schedule_timeout,
+    Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token, schedule_timeout,
 };
 use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
-use crate::runtime::spawn;
 use crate::{CoordinatorConfig, Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
 
 mod discovery;
@@ -33,10 +30,11 @@ mod match_desc;
 mod message;
 mod node_desc;
 mod server;
+mod server_operations;
 mod submission;
 
-const INITIAL_SERVER_OPERATION_ID: u64 = 0;
-const INITIAL_COMMUNICATION_SUBMISSION_ID: u64 = 0;
+#[cfg(test)]
+mod tests;
 
 /// Zigbee transceiver actor.
 #[derive(Debug)]
@@ -45,13 +43,9 @@ pub struct Transceiver {
     events: EventSink,
     responses: Registry<Command>,
     inbox: WeakSender<Message>,
-    communication_submissions: BTreeMap<u64, CommunicationSubmission>,
-    next_communication_submission_id: u64,
-    server_operations: BTreeMap<u64, AbortHandle>,
-    next_server_operation_id: u64,
+    submissions: Submissions,
+    server_operations: ServerOperations,
     response_timeout: Duration,
-    submission_limit: usize,
-    server_operation_limit: usize,
 }
 
 /// Construction, startup, and actor-inbox processing.
@@ -66,17 +60,13 @@ impl Transceiver {
         inbox: WeakSender<Message>,
     ) -> Self {
         Self {
-            server: Server::new(ncp, aps, descriptor, inbox.clone()),
+            server: Server::new(ncp, aps.clone(), descriptor, inbox.clone()),
             events,
             responses: Registry::new(),
+            submissions: Submissions::new(aps, inbox.clone(), MPSC_CHANNEL_SIZE),
             inbox,
-            communication_submissions: BTreeMap::new(),
-            next_communication_submission_id: INITIAL_COMMUNICATION_SUBMISSION_ID,
-            server_operations: BTreeMap::new(),
-            next_server_operation_id: INITIAL_SERVER_OPERATION_ID,
+            server_operations: ServerOperations::new(MPSC_CHANNEL_SIZE),
             response_timeout: PROTOCOL_RESPONSE_TIMEOUT,
-            submission_limit: MPSC_CHANNEL_SIZE,
-            server_operation_limit: MPSC_CHANNEL_SIZE,
         }
     }
 
@@ -91,8 +81,10 @@ impl Transceiver {
         let (zdp_tx, zdp_rx) = tokio::sync::mpsc::channel(config.inbox_capacity.get());
         let mut actor = Self::new(ncp, aps, events, descriptor, zdp_tx.downgrade());
         actor.response_timeout = config.protocol_response_timeout;
-        actor.submission_limit = config.zdp_submission_limit;
-        actor.server_operation_limit = config.zdp_server_operation_limit;
+        actor.submissions.set_limit(config.zdp_submission_limit);
+        actor
+            .server_operations
+            .set_limit(config.zdp_server_operation_limit);
         crate::runtime::spawn_actor("ZDP", actor.run(zdp_rx));
         zdp_tx
     }
@@ -104,8 +96,8 @@ impl Transceiver {
                 break;
             }
         }
-        self.abort_server_operations();
-        self.abort_communication_submissions();
+        self.server_operations.abort();
+        self.submissions.abort();
     }
 
     fn handle_actor_message(&mut self, message: Message) -> bool {
@@ -117,12 +109,12 @@ impl Transceiver {
                 self.handle_message_received(indication, response_required);
             }
             Message::NetworkDown => {
-                self.abort_server_operations();
+                self.server_operations.abort();
                 self.handle_network_down();
             }
             Message::HardwareUnavailable => {
-                self.abort_server_operations();
-                self.fail_communication_submissions_for_hardware_unavailability();
+                self.server_operations.abort();
+                self.submissions.hardware_unavailable();
                 self.responses.hardware_unavailable();
                 return false;
             }
@@ -143,12 +135,10 @@ impl Transceiver {
                 error!("ZDP server response transmission failed: {error}");
             }
             Message::ServerOperationFinished { id } => {
-                if self.server_operations.remove(&id).is_none() {
-                    debug!("Ignoring completion for unknown ZDP server operation {id}");
-                }
+                self.server_operations.finish(id);
             }
             Message::CommunicationSubmissionFinished { id, result } => {
-                self.finish_communication_submission(id, result);
+                self.submissions.finish(id, result, &mut self.responses);
             }
             Message::Communicate {
                 device,
@@ -189,12 +179,11 @@ impl Transceiver {
         }
         if is_server_request(&command) {
             if response_required {
-                self.spawn_server_operation(ServerRequest::new(
-                    source_address,
-                    request_was_broadcast,
-                    seq,
-                    command,
-                ));
+                self.server_operations.spawn(
+                    &self.server,
+                    self.inbox.clone(),
+                    ServerRequest::new(source_address, request_was_broadcast, seq, command),
+                );
             }
             return;
         }
@@ -208,51 +197,6 @@ impl Transceiver {
             debug!("Discarding late ZDP response with quarantined sequence {seq}");
         } else {
             warn!("Unexpected ZDP response: {command:?}");
-        }
-    }
-
-    fn spawn_server_operation(&mut self, request: ServerRequest) {
-        if self.server_operations.len() >= self.server_operation_limit {
-            warn!(
-                "Discarding ZDP server request because the operation limit of \
-                 {} has been reached",
-                self.server_operation_limit
-            );
-            return;
-        }
-
-        let id = self.allocate_server_operation_id();
-        let server = self.server.clone();
-        let inbox = self.inbox.clone();
-        let task = spawn(async move {
-            server.handle(request).await;
-            let Some(inbox) = inbox.upgrade() else {
-                return;
-            };
-            inbox
-                .send(Message::ServerOperationFinished { id })
-                .await
-                .unwrap_or_else(|error| {
-                    debug!("Failed to retire ZDP server operation: {error}");
-                });
-        });
-        let previous = self.server_operations.insert(id, task.abort_handle());
-        debug_assert!(previous.is_none());
-    }
-
-    fn abort_server_operations(&mut self) {
-        for operation in std::mem::take(&mut self.server_operations).into_values() {
-            operation.abort();
-        }
-    }
-
-    fn allocate_server_operation_id(&mut self) -> u64 {
-        loop {
-            let id = self.next_server_operation_id;
-            self.next_server_operation_id = self.next_server_operation_id.wrapping_add(1);
-            if !self.server_operations.contains_key(&id) {
-                return id;
-            }
         }
     }
 }
@@ -271,12 +215,7 @@ impl Transceiver {
         request: DataRequest<Bytes>,
         response: tokio::sync::oneshot::Sender<Result<ApsProtocolResponse<Command>, crate::Error>>,
     ) {
-        if self.communication_submissions.len() >= self.submission_limit {
-            warn!(
-                "Rejecting ZDP communication because the submission limit of \
-                 {} has been reached",
-                self.submission_limit
-            );
+        if !self.submissions.has_capacity() {
             response
                 .send(Err(crate::Error::SendError))
                 .unwrap_or_else(drop);
@@ -294,103 +233,20 @@ impl Transceiver {
         };
         self.schedule_response_timeout(token);
         let request = request.map_asdu(|payload| Frame::new(seq, payload).to_le_stream().collect());
-        let aps = self.server.aps().clone();
-        let inbox = self.inbox.clone();
-        let id = self.allocate_communication_submission_id();
-        let task = spawn(async move {
-            let result = aps.transmit(request).await;
-            let Some(inbox) = inbox.upgrade() else {
-                return;
-            };
-            inbox
-                .send(Message::CommunicationSubmissionFinished { id, result })
-                .await
-                .unwrap_or_else(|error| {
-                    debug!("Failed to complete ZDP communication submission: {error}");
-                });
-        });
-        let previous = self.communication_submissions.insert(
-            id,
-            CommunicationSubmission {
-                token,
-                protocol_response,
-                response,
-                task: task.abort_handle(),
-            },
-        );
-        debug_assert!(previous.is_none());
+        self.submissions
+            .start(request, token, protocol_response, response);
     }
 
-    /// Retire a submission and complete its caller, releasing failed correlations.
-    fn finish_communication_submission(
-        &mut self,
-        id: u64,
-        result: Result<TransmissionResponse, crate::Error>,
-    ) {
-        let Some(submission) = self.communication_submissions.remove(&id) else {
-            debug!("Ignoring completion for unknown ZDP communication submission {id}");
-            return;
-        };
-        match result {
-            Ok(transmission) => {
-                let cancellation = self.cancellation(submission.token);
-                submission.complete(transmission, cancellation);
-            }
-            Err(error) => {
-                self.responses.discard(submission.token);
-                submission.fail(error);
-            }
-        }
-    }
-
+    /// Reset response correlation while preserving identities exposed by in-flight handoffs.
     fn handle_network_down(&mut self) {
-        let submissions = std::mem::take(&mut self.communication_submissions);
-        let protected = submissions
-            .values()
-            .map(|submission| submission.token)
-            .collect::<Vec<_>>();
-        let quarantined = self
-            .responses
-            .network_down_preserving(&TransmissionError::NoRoute, protected);
-        for token in quarantined {
+        for token in self.submissions.network_down(&mut self.responses) {
             self.schedule_quarantine_timeout(token);
-        }
-
-        for submission in submissions.into_values() {
-            submission.fail(zb_hw::Error::from(TransmissionError::NoRoute).into());
-        }
-    }
-
-    fn fail_communication_submissions_for_hardware_unavailability(&mut self) {
-        for submission in std::mem::take(&mut self.communication_submissions).into_values() {
-            submission.fail(zb_hw::Error::ActorUnavailable.into());
-        }
-    }
-
-    fn abort_communication_submissions(&mut self) {
-        for submission in std::mem::take(&mut self.communication_submissions).into_values() {
-            submission.task.abort();
-        }
-    }
-
-    fn allocate_communication_submission_id(&mut self) -> u64 {
-        loop {
-            let id = self.next_communication_submission_id;
-            self.next_communication_submission_id =
-                self.next_communication_submission_id.wrapping_add(1);
-            if !self.communication_submissions.contains_key(&id) {
-                return id;
-            }
         }
     }
 }
 
 /// Pending-response cancellation, timeout, and quarantine lifecycle management.
 impl Transceiver {
-    fn cancellation(&self, token: Token) -> Cancellation {
-        Message::cancellation(self.inbox.clone(), token, "ZDP")
-    }
-
     fn schedule_response_timeout(&self, token: Token) {
         schedule_timeout(
             self.inbox.clone(),
@@ -443,13 +299,10 @@ fn received_key<T, K>(
     Some((source_address, key))
 }
 
-#[cfg(test)]
-mod tests;
-
 impl Drop for Transceiver {
     fn drop(&mut self) {
-        self.abort_server_operations();
-        self.fail_communication_submissions_for_hardware_unavailability();
+        self.server_operations.abort();
+        self.submissions.hardware_unavailable();
         self.responses.hardware_unavailable();
     }
 }
