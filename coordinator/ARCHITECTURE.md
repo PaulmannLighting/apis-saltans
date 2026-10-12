@@ -496,6 +496,9 @@ or `ZdpResponse<T>` containing both the deferred APS completion and the applicat
 
 ### Shared protocol lifecycle delivery
 
+`correlation::inbox::CancellationMessage` supplies a shared cancellation guard constructor.
+The ZCL and ZDP message enums implement `from_cancellation` to construct their `Cancel` variants;
+message construction uses static trait dispatch without a function-pointer parameter.
 `correlation::inbox` implements cancellation delivery and delayed inbox messages for ZCL and
 ZDP. Each actor chooses its message variant and deadline; the shared helpers retain weak senders
 until delivery and preserve generation-tagged tokens. Cancellation uses immediate delivery with

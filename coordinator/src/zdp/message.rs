@@ -5,7 +5,7 @@ use zb_core::short_id::Device;
 use zb_zdp::{Command, Frame};
 
 use crate::Error;
-use crate::correlation::Token;
+use crate::correlation::{CancellationMessage, Token};
 use crate::response::ApsProtocolResponse;
 
 /// Messages exchanged with the transceiver actor.
@@ -73,4 +73,10 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<ApsProtocolResponse<Command>, Error>>,
     },
+}
+
+impl CancellationMessage for Message {
+    fn from_cancellation(token: Token) -> Self {
+        Self::Cancel { token }
+    }
 }

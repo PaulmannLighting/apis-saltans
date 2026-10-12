@@ -14,38 +14,39 @@ use super::{Cancellation, Token};
 #[cfg(test)]
 mod tests;
 
-/// Create a cancellation guard that queues its token when dropped.
-///
-/// A full inbox defers delivery to the current runtime. The guard retains only a weak
-/// sender until cancellation, so an outstanding response cannot keep its actor alive.
-pub fn cancellation<M>(
-    inbox: WeakSender<M>,
-    token: Token,
-    message: fn(Token) -> M,
-    protocol: &'static str,
-) -> Cancellation
+/// Actor messages that can represent cancellation of a protocol transaction.
+pub trait CancellationMessage
 where
-    M: Send + 'static,
+    Self: Sized + Send + 'static,
 {
-    let runtime = Handle::current();
-    Cancellation::new(token, move |token| {
-        let Some(inbox) = inbox.upgrade() else {
-            return;
-        };
-        match inbox.try_send(message(token)) {
-            Ok(()) => {}
-            Err(TrySendError::Full(message)) => {
-                runtime.spawn(async move {
-                    inbox.send(message).await.unwrap_or_else(|error| {
-                        debug!("Failed to enqueue {protocol} response cancellation: {error}");
+    /// Construct a cancellation message carrying the original transaction token.
+    fn from_cancellation(token: Token) -> Self;
+
+    /// Create a cancellation guard that queues its token when dropped.
+    ///
+    /// A full inbox defers delivery to the current runtime. The guard retains only a weak
+    /// sender until cancellation, so an outstanding response cannot keep its actor alive.
+    fn cancellation(inbox: WeakSender<Self>, token: Token, protocol: &'static str) -> Cancellation {
+        let runtime = Handle::current();
+        Cancellation::new(token, move |token| {
+            let Some(inbox) = inbox.upgrade() else {
+                return;
+            };
+            match inbox.try_send(Self::from_cancellation(token)) {
+                Ok(()) => {}
+                Err(TrySendError::Full(message)) => {
+                    runtime.spawn(async move {
+                        inbox.send(message).await.unwrap_or_else(|error| {
+                            debug!("Failed to enqueue {protocol} response cancellation: {error}");
+                        });
                     });
-                });
+                }
+                Err(TrySendError::Closed(_)) => {
+                    debug!("Failed to enqueue {protocol} response cancellation: actor unavailable");
+                }
             }
-            Err(TrySendError::Closed(_)) => {
-                debug!("Failed to enqueue {protocol} response cancellation: actor unavailable");
-            }
-        }
-    })
+        })
+    }
 }
 
 /// Queue a lifecycle message after its deadline without retaining the actor while waiting.

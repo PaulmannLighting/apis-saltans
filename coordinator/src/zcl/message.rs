@@ -7,7 +7,7 @@ use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 use super::{ResponseExpectation, Subscription, SubscriptionMessage};
 use crate::Error;
 use crate::aps::TransmissionResponse;
-use crate::correlation::Token;
+use crate::correlation::{CancellationMessage, Token};
 use crate::response::ApsProtocolResponse;
 
 /// Messages exchanged with the transceiver actor.
@@ -82,4 +82,10 @@ pub enum Message {
         /// The response channel.
         response: Sender<Result<ApsProtocolResponse<Cluster>, Error>>,
     },
+}
+
+impl CancellationMessage for Message {
+    fn from_cancellation(token: Token) -> Self {
+        Self::Cancel { token }
+    }
 }

@@ -2,8 +2,8 @@
 
 use super::Responses;
 use crate::correlation::{
-    Cancellation, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Token, cancellation,
-    schedule_timeout,
+    Cancellation, CancellationMessage, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT,
+    Token, schedule_timeout,
 };
 use crate::zcl::Message;
 
@@ -40,12 +40,7 @@ impl Responses {
 
     /// Create a drop guard that notifies the actor when the caller abandons a response.
     pub(super) fn cancellation(&self, token: Token) -> Cancellation {
-        cancellation(
-            self.inbox.clone(),
-            token,
-            |token| Message::Cancel { token },
-            "ZCL",
-        )
+        Message::cancellation(self.inbox.clone(), token, "ZCL")
     }
 
     /// Schedule the response deadline without keeping the actor alive.

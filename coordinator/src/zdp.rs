@@ -20,8 +20,8 @@ use self::server::{Server, ServerRequest, is_server_request};
 use self::submission::CommunicationSubmission;
 use crate::aps::Aps;
 use crate::correlation::{
-    Cancellation, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT, Registry, Token,
-    cancellation, schedule_timeout,
+    Cancellation, CancellationMessage, Key, PROTOCOL_QUARANTINE_TIMEOUT, PROTOCOL_RESPONSE_TIMEOUT,
+    Registry, Token, schedule_timeout,
 };
 use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
@@ -385,12 +385,7 @@ impl Transceiver {
 /// Pending-response cancellation, timeout, and quarantine lifecycle management.
 impl Transceiver {
     fn cancellation(&self, token: Token) -> Cancellation {
-        cancellation(
-            self.inbox.clone(),
-            token,
-            |token| Message::Cancel { token },
-            "ZDP",
-        )
+        Message::cancellation(self.inbox.clone(), token, "ZDP")
     }
 
     fn schedule_response_timeout(&self, token: Token) {
