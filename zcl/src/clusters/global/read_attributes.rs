@@ -6,7 +6,7 @@ use zb_core::Direction;
 
 pub use self::read_attributes_status::ReadAttributesStatus;
 use crate::macros::zcl_command;
-use crate::{ParseAttributeError, Readable};
+use crate::{DefaultResponsePolicy, ParseAttributeError, Readable};
 
 mod read_attributes_status;
 
@@ -17,6 +17,7 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ClientToServer;
         response: Response;
+        default_response_policy: DefaultResponsePolicy::SpecificRequired;
         => crate::global::ReadAttributes;
         fields {
             attribute_ids: Box<[u16]>,

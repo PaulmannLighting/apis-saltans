@@ -837,7 +837,8 @@ carries a permitted Default Response, preserving its status. The destination mus
 16-bit network endpoint.
 
 Use `communicate_command(destination, source_endpoint, command)` for typed cluster commands
-implementing `ExpectResponse<Cluster>` and `ZclRequestPolicy`. The response is inferred from the
+implementing `ExpectResponse<Cluster>` and `zb_zcl::RequestPolicy` (re-exported here as
+`ZclRequestPolicy`). The response is inferred from the
 command's associated `Response` type, so an Add Group request cannot select a Remove Group response.
 The original command ID, response matcher, and `DEFAULT_RESPONSE_POLICY` are derived from the
 request type. Prepared requests expose their encoded data only for inspection; their response

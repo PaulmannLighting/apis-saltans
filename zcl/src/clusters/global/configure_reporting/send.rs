@@ -6,6 +6,7 @@ use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::{Direction, TypeId};
 
+use crate::DefaultResponsePolicy;
 use crate::attributes::{Analog, Discrete};
 use crate::macros::zcl_command;
 
@@ -64,6 +65,7 @@ zcl_command! {
         command_id: super::COMMAND_ID;
         direction: DIRECTION;
         response: super::Response;
+        default_response_policy: DefaultResponsePolicy::SpecificRequired;
         => crate::global::ConfigureReportingSend;
         fields {
             attributes: Box<[AttributeReportingConfiguration]>,

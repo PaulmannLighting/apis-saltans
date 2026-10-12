@@ -4,6 +4,7 @@ use zb_core::types::{String, Uint16};
 use zb_core::{Cluster, Direction, GroupId};
 
 use super::AddGroupResponse;
+use crate::DefaultResponsePolicy;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -13,6 +14,7 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ClientToServer;
         response: AddGroupResponse;
+        default_response_policy: DefaultResponsePolicy::SpecificRequired;
         fields {
             /// The identifier of the group to be added.
             group_id: Uint16,

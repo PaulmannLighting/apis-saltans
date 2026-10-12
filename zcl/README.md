@@ -258,4 +258,11 @@ Commands declaring a response implement `apis_saltans_core::ExpectResponse<Clust
 associated `Response` type. `ZclResponseType` matches response headers by scope and command ID;
 custom response enums can implement it to accept multiple forms. Remove All Groups and Add Group
 If Identifying declare `NoSpecificResponse`, an uninhabited marker that matches no specific reply.
-Default Response policy and transaction correlation are handled by the coordinator.
+`RequestPolicy` defines a command's `DEFAULT_RESPONSE_POLICY`: `SpecificRequired` requires its
+command-specific result, while `DefaultAllowed` permits a Default Response with any status.
+These policies are independent of the outgoing disable-default-response flag. Transaction
+correlation and applying the policy remain the coordinator's responsibility.
+
+Command definitions opt into the trait by adding `default_response_policy:` immediately after
+`response:` in the crate's `zcl_command!` macro. Handwritten command types implement `RequestPolicy`
+directly; the OTA types `UpgradeComplete` and `UpgradeIncomplete` select distinct policies.

@@ -7,7 +7,10 @@ use zb_core::{ClusterSpecific, ExpectResponse, Profile, Profiled};
 
 use super::{UpgradeComplete, UpgradeEndRequest, UpgradeIncomplete, UpgradeIncompleteReason};
 use crate::ota_upgrade::{ImageId, UpgradeEndResponse, UpgradeEndStatus};
-use crate::{Cluster, Command, Directed, Direction, NoSpecificResponse, ParseDirection};
+use crate::{
+    Cluster, Command, DefaultResponsePolicy, Directed, Direction, NoSpecificResponse,
+    ParseDirection, RequestPolicy,
+};
 
 const COMMAND_ID: u8 = 0x06;
 
@@ -214,4 +217,12 @@ impl From<UpgradeIncomplete> for crate::ota_upgrade::Command {
     fn from(request: UpgradeIncomplete) -> Self {
         UpgradeEndRequest::from(request).into()
     }
+}
+
+impl RequestPolicy for UpgradeComplete {
+    const DEFAULT_RESPONSE_POLICY: DefaultResponsePolicy = DefaultResponsePolicy::SpecificRequired;
+}
+
+impl RequestPolicy for UpgradeIncomplete {
+    const DEFAULT_RESPONSE_POLICY: DefaultResponsePolicy = DefaultResponsePolicy::DefaultAllowed;
 }

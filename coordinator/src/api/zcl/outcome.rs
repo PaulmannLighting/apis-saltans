@@ -3,16 +3,6 @@ use zb_zcl::{Cluster, global};
 
 use crate::{Error, StatusExt};
 
-/// Whether a request permits a Default Response as its application-level outcome.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum DefaultResponsePolicy {
-    /// Require a command-specific response. Device rejections still terminate the request.
-    SpecificRequired,
-
-    /// Permit a Default Response, preserving its success, failure, or unknown status.
-    DefaultAllowed,
-}
-
 /// The response returned by a ZCL transaction.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ZclOutcome<T> {

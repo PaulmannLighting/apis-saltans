@@ -4,9 +4,10 @@ use std::marker::PhantomData;
 
 use bytes::Bytes;
 use zb_zcl::global::default_response::DefaultResponse;
-use zb_zcl::{Cluster, Frame, Header, Status, UnsequencedFrame, global};
-
-use crate::{DefaultResponsePolicy, ZclRequestPolicy, ZclResponseType};
+use zb_zcl::{
+    Cluster, DefaultResponsePolicy, Frame, Header, RequestPolicy, Status, UnsequencedFrame,
+    ZclResponseType, global,
+};
 
 /// Erased response contract retained with pending and quarantined ZCL transactions.
 ///
@@ -73,7 +74,7 @@ impl ResponseExpectation {
     /// Erase a request type's fixed response contract for storage in the actor registry.
     pub(crate) fn for_request<C>() -> Self
     where
-        C: ZclRequestPolicy,
+        C: RequestPolicy,
         C::Response: ZclResponseType + Send + Sync + 'static,
     {
         Self {

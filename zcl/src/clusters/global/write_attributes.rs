@@ -7,6 +7,7 @@ use zb_core::Direction;
 
 pub use self::record::Record;
 pub use self::status::Status;
+use crate::DefaultResponsePolicy;
 use crate::macros::zcl_command;
 
 mod record;
@@ -19,6 +20,7 @@ zcl_command! {
         command_id: 0x02;
         direction: Direction::ClientToServer;
         response: Response;
+        default_response_policy: DefaultResponsePolicy::SpecificRequired;
         => crate::global::WriteAttributes;
         fields {
             records: Box<[Record]>,

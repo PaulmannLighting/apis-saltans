@@ -8,18 +8,16 @@ use tokio::sync::oneshot::channel;
 use zb_aps::TxOptions;
 use zb_aps::apsde::{DataRequest, IndividualEndpoint, RequestDestination};
 use zb_core::{ClusterSpecific, ExpectResponse, Profiled};
-pub use zb_zcl::ZclResponseType;
 use zb_zcl::global::default_response::DefaultResponse;
-use zb_zcl::{Cluster, Command, Directed, Scoped, UnsequencedFrame};
+use zb_zcl::{Cluster, Command, Directed, RequestPolicy, Scoped, UnsequencedFrame};
+pub use zb_zcl::{DefaultResponsePolicy, RequestPolicy as ZclRequestPolicy, ZclResponseType};
 
-pub use self::outcome::{DefaultResponsePolicy, ZclOutcome};
-pub use self::request_policy::ZclRequestPolicy;
+pub use self::outcome::ZclOutcome;
 pub use self::typed_request::ZclRequest;
 use crate::zcl::Message;
 use crate::{CommunicationResponse, Coordinator, Error, StatusExt};
 
 mod outcome;
-mod request_policy;
 mod typed_request;
 
 const DEFAULT_TX_OPTIONS: TxOptions = TxOptions::ACKNOWLEDGED_TRANSMISSION;
@@ -160,7 +158,7 @@ pub trait Zcl {
     ) -> impl Future<Output = Result<ZclResponse<C::Response>, Error>> + Send
     where
         C: ExpectResponse<Cluster>
-            + ZclRequestPolicy
+            + RequestPolicy
             + ClusterSpecific
             + Command
             + Directed
@@ -194,7 +192,7 @@ pub trait Zcl {
         request: ZclRequest<C>,
     ) -> impl Future<Output = Result<ZclResponse<C::Response>, Error>> + Send
     where
-        C: ZclRequestPolicy,
+        C: RequestPolicy,
         C::Response: ZclResponseType + Send + Sync + 'static;
 
     /// Send an encoded ZCL command with explicitly supplied response metadata.
@@ -238,7 +236,7 @@ impl Zcl for Sender<Message> {
         request: ZclRequest<C>,
     ) -> Result<ZclResponse<C::Response>, Error>
     where
-        C: ZclRequestPolicy,
+        C: RequestPolicy,
         C::Response: ZclResponseType + Send + Sync + 'static,
     {
         let (request, expected) = request.into_parts();
@@ -300,7 +298,7 @@ impl Zcl for Coordinator {
         request: ZclRequest<C>,
     ) -> Result<ZclResponse<C::Response>, Error>
     where
-        C: ZclRequestPolicy,
+        C: RequestPolicy,
         C::Response: ZclResponseType + Send + Sync + 'static,
     {
         self.zcl.communicate_request(request).await

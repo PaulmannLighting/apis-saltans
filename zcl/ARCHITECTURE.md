@@ -185,6 +185,7 @@ zcl_command! {
         command_id: 0x00;
         direction: Direction::ClientToServer;
         response: Response;
+        default_response_policy: DefaultResponsePolicy::SpecificRequired;
         fields {
             attribute_ids: Box<[u16]>,
         }
@@ -211,6 +212,9 @@ Generated items:
   type without an outgoing direction and defaults command parsing to both directions unless an
   explicit `parse_direction` is supplied.
 - `ExpectResponse<crate::Cluster>` when `response: Type;` is supplied.
+- `RequestPolicy` when `default_response_policy: Policy;` follows the response declaration.
+  The trait and `DefaultResponsePolicy` enum live in `request_policy`; coordinator code consumes
+  this protocol metadata rather than maintaining separate implementations.
 - `From<CommandPayload> for crate::Cluster`.
 - `TryFrom<crate::Cluster> for CommandPayload`.
 
@@ -221,6 +225,10 @@ Optional sections:
   When omitted, the generated `Command` implementation uses the crate-wide
   compile-time `ZCL_DISABLE_DEFAULT_RESPONSE` switch through the trait default.
 - `response: ResponseType;`: define the expected response.
+- `default_response_policy: DefaultResponsePolicy::SpecificRequired;` (or `DefaultAllowed`):
+  explicitly select the request policy after `response`. Omission generates no `RequestPolicy`
+  implementation. The policy is not inferred from `response` or `disable_default_response`.
+  Handwritten OTA request types implement the trait beside their wire metadata.
 - `constructor { ... }`: custom `new` constructor or constructors.
 - `getters { ... }`: custom inherent getters.
 - `from_le_stream { ... }` / `to_le_stream { ... }`: custom stream implementations.

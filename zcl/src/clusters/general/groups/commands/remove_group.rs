@@ -2,6 +2,7 @@ use zb_core::types::Uint16;
 use zb_core::{Cluster, Direction, GroupId};
 
 use super::RemoveGroupResponse;
+use crate::DefaultResponsePolicy;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -12,6 +13,7 @@ zcl_command! {
         command_id: 0x03;
         direction: Direction::ClientToServer;
         response: RemoveGroupResponse;
+        default_response_policy: DefaultResponsePolicy::SpecificRequired;
         derive(Copy);
         fields {
             group_id: Uint16,

@@ -25,7 +25,9 @@
 /// `getters` section can contain accessor methods. Optional `from_le_stream`
 /// and `to_le_stream` sections replace the respective derive, and the final
 /// `impl` section can contain custom inherent or trait implementations for the
-/// type:
+/// type. After `response`, an optional `default_response_policy` declaration implements
+/// [`crate::RequestPolicy`]. Omitting it leaves the command without a request policy;
+/// the policy is independent of the outgoing `disable_default_response` flag:
 ///
 /// ```ignore
 /// zcl_command! {
@@ -35,6 +37,7 @@
 ///         command_id: 0x00;
 ///         direction: Direction::ClientToServer;
 ///         response: Response;
+///         default_response_policy: crate::DefaultResponsePolicy::SpecificRequired;
 ///         => crate::global::ReadAttributes;
 ///         fields {
 ///             attribute_ids: Box<[u16]>,
@@ -70,7 +73,9 @@ macro_rules! zcl_command {
             $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
-            $(response: $response:ty;)?
+            $(response: $response:ty;
+                $(default_response_policy: $request_policy:expr;)?
+            )?
             $(derive($($extra_derive:path),* $(,)?);)?
             fields;
             $($rest:tt)*
@@ -88,7 +93,7 @@ macro_rules! zcl_command {
             [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
-            [$($response)?]
+            [$($response $(; $request_policy)?)?]
             [$($($extra_derive),*)?]
             []
             $($rest)*
@@ -103,7 +108,9 @@ macro_rules! zcl_command {
             $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
-            $(response: $response:ty;)?
+            $(response: $response:ty;
+                $(default_response_policy: $request_policy:expr;)?
+            )?
             $(derive($($extra_derive:path),* $(,)?);)?
             fields {
                 $(
@@ -126,7 +133,7 @@ macro_rules! zcl_command {
             [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
-            [$($response)?]
+            [$($response $(; $request_policy)?)?]
             [$($($extra_derive),*)?]
             [$($(#[$field_attr])* $field: $field_ty,)*]
             $($rest)*
@@ -140,7 +147,9 @@ macro_rules! zcl_command {
             $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
-            $(response: $response:ty;)?
+            $(response: $response:ty;
+                $(default_response_policy: $request_policy:expr;)?
+            )?
             => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
             $(derive($($extra_derive:path),* $(,)?);)?
             fields;
@@ -159,7 +168,7 @@ macro_rules! zcl_command {
             [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
-            [$($response)?]
+            [$($response $(; $request_policy)?)?]
             [$($($extra_derive),*)?]
             []
             $($rest)*
@@ -173,7 +182,9 @@ macro_rules! zcl_command {
             $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
-            $(response: $response:ty;)?
+            $(response: $response:ty;
+                $(default_response_policy: $request_policy:expr;)?
+            )?
             => $try_module:ident::$try_variant_or_module:ident $(::$try_variant:ident)?;
             $(derive($($extra_derive:path),* $(,)?);)?
             fields {
@@ -197,7 +208,7 @@ macro_rules! zcl_command {
             [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
-            [$($response)?]
+            [$($response $(; $request_policy)?)?]
             [$($($extra_derive),*)?]
             [$($(#[$field_attr])* $field: $field_ty,)*]
             $($rest)*
@@ -211,7 +222,9 @@ macro_rules! zcl_command {
             $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
-            $(response: $response:ty;)?
+            $(response: $response:ty;
+                $(default_response_policy: $request_policy:expr;)?
+            )?
             $(derive($($extra_derive:path),* $(,)?);)?
             fields;
             $($rest:tt)*
@@ -229,7 +242,7 @@ macro_rules! zcl_command {
             [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
-            [$($response)?]
+            [$($response $(; $request_policy)?)?]
             [$($($extra_derive),*)?]
             []
             $($rest)*
@@ -243,7 +256,9 @@ macro_rules! zcl_command {
             $(direction: $direction:expr;)?
             $(parse_direction: $parse_direction:expr;)?
             $(disable_default_response: $disable_default_response:expr;)?
-            $(response: $response:ty;)?
+            $(response: $response:ty;
+                $(default_response_policy: $request_policy:expr;)?
+            )?
             $(derive($($extra_derive:path),* $(,)?);)?
             fields {
                 $(
@@ -266,7 +281,7 @@ macro_rules! zcl_command {
             [$($direction)?]
             [$($parse_direction)?]
             [$(const DISABLE_DEFAULT_RESPONSE: bool = $disable_default_response;)?]
-            [$($response)?]
+            [$($response $(; $request_policy)?)?]
             [$($($extra_derive),*)?]
             [$($(#[$field_attr])* $field: $field_ty,)*]
             $($rest)*
@@ -936,10 +951,16 @@ macro_rules! zcl_command {
         const PARSE_DIRECTION: $crate::ParseDirection = $parse_direction;
     };
     (@response_impl $command:ident []) => {};
-    (@response_impl $command:ident [$response:ty]) => {
+    (@response_impl $command:ident [$response:ty $(; $request_policy:expr)?]) => {
         impl zb_core::ExpectResponse<$crate::Cluster> for $command {
             type Response = $response;
         }
+
+        $(
+            impl $crate::RequestPolicy for $command {
+                const DEFAULT_RESPONSE_POLICY: $crate::DefaultResponsePolicy = $request_policy;
+            }
+        )?
     };
     (
         @from_cluster

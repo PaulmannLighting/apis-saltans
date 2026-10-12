@@ -1,6 +1,7 @@
 use zb_core::types::{String, Uint16};
 use zb_core::{Cluster, Direction};
 
+use crate::DefaultResponsePolicy;
 use crate::macros::zcl_command;
 
 zcl_command! {
@@ -10,6 +11,7 @@ zcl_command! {
         command_id: 0x05;
         direction: Direction::ClientToServer;
         response: crate::NoSpecificResponse;
+        default_response_policy: DefaultResponsePolicy::DefaultAllowed;
         fields {
             group_id: Uint16,
             group_name: String,

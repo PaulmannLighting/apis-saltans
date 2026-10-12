@@ -342,8 +342,11 @@ The private, object-safe trait classifies frames by reference and requires `Debu
 `ResponseTypeContract<T>` holds the request's command ID and policy alongside a response type
 marker. Both typed and encoded request constructors use this same adapter.
 `ZclResponseType` supplies the scope/ID predicate and is defined in the ZCL crate, re-exported by
-the coordinator. `ZclRequestPolicy` requires `Command` and `ExpectResponse<Cluster>` and supplies
-a fixed `DEFAULT_RESPONSE_POLICY`. The typed constructor derives all three from that one type;
+the coordinator. ZCL's `RequestPolicy` requires `Command` and `ExpectResponse<Cluster>` and supplies
+a fixed `DEFAULT_RESPONSE_POLICY` using ZCL's `DefaultResponsePolicy` enum. The coordinator
+re-exports the trait as `ZclRequestPolicy` and re-exports the enum under its original name.
+Command definitions select policies through `zcl_command!`, with direct implementations for the
+handwritten OTA request types. The typed constructor derives all three from that one type;
 there is no independently supplied command ID, response type, or policy in the typed path.
 
 `ZclRequest<C>` keeps its encoded request and command marker private and carries no separate
