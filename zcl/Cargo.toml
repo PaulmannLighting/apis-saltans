@@ -16,10 +16,10 @@ bitflags.workspace = true
 bytes = { workspace = true, optional = true }
 chrono = { workspace = true, features = ["core-error"] }
 const_env.workspace = true
-either = { version = "1", default-features = false }
+either.workspace = true
 heapless.workspace = true
 le-stream = { workspace = true, features = ["derive", "heapless", "intx"] }
-libm = { version = "0.2.16", default-features = false }
+libm.workspace = true
 num_enum.workspace = true
 repr-discriminant.workspace = true
 serde = { workspace = true, optional = true }

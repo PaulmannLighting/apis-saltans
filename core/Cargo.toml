@@ -14,16 +14,16 @@ exclude = [".gitignore"]
 [dependencies]
 bitflags.workspace = true
 chrono.workspace = true
-cfg_eval = { version = "0.1", optional = true }
+cfg_eval = { workspace = true, optional = true }
 heapless.workspace = true
-intx = "0.1"
+intx.workspace = true
 le-stream = { workspace = true, features = ["derive", "heapless", "intx", "macaddr"] }
 log.workspace = true
-macaddr = { version = "1", default-features = false }
+macaddr.workspace = true
 num_enum.workspace = true
 repr-discriminant.workspace = true
 serde = { workspace = true, optional = true }
-serde_with = { version = "3.21.0", default-features = false, features = ["macros"], optional = true }
+serde_with = { workspace = true, features = ["macros"], optional = true }
 strum.workspace = true
 thiserror.workspace = true
 

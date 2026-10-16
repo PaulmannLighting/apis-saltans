@@ -5,14 +5,20 @@ resolver = "3"
 [workspace.dependencies]
 bitflags = "2"
 bytes = { version = "1.12.0", default-features = false }
+cfg_eval = "0.1"
 chrono = { version = "0.4", default-features = false }
 const_env = "0.1.5"
+either = { version = "1", default-features = false }
 heapless = "0.9"
+intx = "0.1"
 le-stream = "10.2.1"
+libm = { version = "0.2.16", default-features = false }
 log = "0.4"
+macaddr = { version = "1", default-features = false }
 num_enum = { version = "0.7", default-features = false }
 repr-discriminant = { version = "3", features = ["derive"] }
 serde = { version = "1", default-features = false }
+serde_with = { version = "3.21.0", default-features = false }
 strum = { version = "0.28", default-features = false, features = ["derive"] }
 thiserror = { version = "2", default-features = false }
 tokio = "1"
