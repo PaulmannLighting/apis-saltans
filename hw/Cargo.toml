@@ -21,7 +21,7 @@ thiserror = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["sync"], optional = true }
 zb-aps = { workspace = true, features = ["alloc"], optional = true }
 zb-core = { workspace = true, optional = true }
-zb-zdp = { workspace = true, optional = true }
+zb-zdp = { workspace = true, optional = true, features = ["alloc"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt"] }

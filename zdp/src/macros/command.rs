@@ -643,8 +643,9 @@ macro_rules! zdp_command {
             const NAME: &'static str = Self::NAME;
         }
 
-        impl From<Box<Self>> for $command {
-            fn from(value: Box<Self>) -> Self {
+        #[cfg(feature = "alloc")]
+        impl From<$crate::storage::Owned<Self>> for $command {
+            fn from(value: $crate::storage::Owned<Self>) -> Self {
                 *value
             }
         }
@@ -673,7 +674,7 @@ macro_rules! zdp_command {
             $($response)?
         }
 
-        impl std::fmt::Display for $command {
+        impl core::fmt::Display for $command {
             $crate::zdp_command! {
                 @display
                 self,
@@ -753,7 +754,7 @@ macro_rules! zdp_command {
         {
         }
     ) => {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             let mut debug = f.debug_struct(Self::NAME);
             $(debug.field(stringify!($field), &self.$field);)*
             debug.finish()

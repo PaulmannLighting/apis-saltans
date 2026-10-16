@@ -121,3 +121,45 @@ jobs:
           ZIGBEE_APS_FRAGMENTS_CAPACITY: "8"
           ZIGBEE_APS_TRANSACTIONS_CAPACITY: "2"
         run: cargo test --locked -p apis-saltans-aps --no-default-features
+
+  zdp-no-std:
+    name: ZDP without std
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: ["", "alloc", "serde", "alloc,serde"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust and bare-metal target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabi
+
+      - name: Test ZDP in isolation
+        run: cargo test --locked -p apis-saltans-zdp --no-default-features --features "${{ matrix.features }}"
+
+      - name: Check ZDP on bare metal
+        run: cargo check --locked -p apis-saltans-zdp --target thumbv7em-none-eabi --no-default-features --features "${{ matrix.features }}"
+
+      - name: Check target dependency features
+        env:
+          ZDP_FEATURES: ${{ matrix.features }}
+        run: |
+          cargo tree --locked -p apis-saltans-zdp --target thumbv7em-none-eabi --no-default-features --features "$ZDP_FEATURES" -e normal,features,no-proc-macro > zdp-features.txt
+          if grep -E 'feature "std"' zdp-features.txt; then
+            exit 1
+          fi
+          if [[ "$ZDP_FEATURES" != *alloc* ]] && grep -E 'feature "alloc"|bytes v' zdp-features.txt; then
+            exit 1
+          fi
+
+      - name: Test minimum TLV capacity
+        if: matrix.features == ''
+        env:
+          ZIGBEE_ZDP_TLV_CAPACITY: "1"
+        run: cargo test --locked -p apis-saltans-zdp --no-default-features
+
+      - name: Test independent APS allocation
+        if: matrix.features == ''
+        run: cargo test --locked -p apis-saltans-zdp --no-default-features --features zb-aps/alloc

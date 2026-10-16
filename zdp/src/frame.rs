@@ -1,8 +1,7 @@
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
-use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
-use zb_aps::{Data, Destination};
+use zb_aps::{Data, Destination, Payload};
 use zb_core::Endpoint;
 
 pub use self::parse_frame_error::ParseFrameError;
@@ -66,15 +65,15 @@ impl<T> Display for Frame<T>
 where
     T: Display,
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "Frame {{ seq: {:#04X}, data: {} }}", self.seq, self.data)
     }
 }
 
-impl TryFrom<Data<Bytes>> for Frame<Command> {
+impl TryFrom<Data<Payload>> for Frame<Command> {
     type Error = ParseFrameError;
 
-    fn try_from(frame: Data<Bytes>) -> Result<Self, Self::Error> {
+    fn try_from(frame: Data<Payload>) -> Result<Self, Self::Error> {
         let (header, payload) = frame.into_parts();
 
         match header.source_endpoint() {

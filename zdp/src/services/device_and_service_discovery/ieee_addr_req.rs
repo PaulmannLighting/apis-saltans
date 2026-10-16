@@ -1,4 +1,4 @@
-use std::fmt::Formatter;
+use core::fmt::Formatter;
 
 use crate::IeeeAddrRsp;
 crate::zdp_command! {
@@ -32,7 +32,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             write!(
                 f,
                 "{} {{ nwk_addr_of_interest: {:#06X}, request_type: {:#04X}, start_index: {:#04X} }}",

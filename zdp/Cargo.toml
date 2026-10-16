@@ -13,17 +13,19 @@ exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
 bitflags.workspace = true
-bytes = { workspace = true, default-features = true }
+const_env.workspace = true
 heapless.workspace = true
-le-stream = { workspace = true, features = ["alloc", "derive"] }
+le-stream = { workspace = true, features = ["derive"] }
 num_enum.workspace = true
 repr-discriminant.workspace = true
-serde = { workspace = true, default-features = true, optional = true }
+serde = { workspace = true, optional = true }
 thiserror.workspace = true
-zb-aps = { workspace = true, features = ["alloc"] }
+zb-aps.workspace = true
 zb-core.workspace = true
 
 [features]
+default = []
+alloc = ["zb-aps/alloc", "le-stream/alloc", "serde?/alloc"]
 serde = ["dep:serde", "serde/derive", "heapless/serde", "zb-core/serde"]
 
 [lints]

@@ -1,8 +1,9 @@
-use std::fmt::Formatter;
+use core::fmt::Formatter;
 
 use zb_core::types::tlv::Tlv;
 
 use crate::MgmtPermitJoiningRsp;
+use crate::storage::Tlvs;
 
 crate::zdp_command! {
     /// Service for management permit joining request.
@@ -13,7 +14,7 @@ crate::zdp_command! {
     fields {
         duration: u8,
         tc_significance: bool,
-        tlv_data: Vec<Tlv>,
+        tlv_data: Tlvs,
     }
     getters {
         /// Returns the duration.
@@ -35,7 +36,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             write!(
                 f,
                 "{} {{ duration: {:#04X}, tc_significance: {}, tlv_data: {:?} }}",

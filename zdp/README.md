@@ -44,13 +44,13 @@ Key flow:
 
 APIs:
 - `Frame<T>: ToLeStream`
-- `TryFrom<zb_aps::Data<bytes::Bytes>> for Frame<Command>`
+- `TryFrom<zb_aps::Data<zb_aps::Payload>> for Frame<Command>`
 - `Frame<Command>::parse_with_cluster_id(cluster_id, bytes)`
 - `Command::cluster_id()`
 - `Command: ToLeStream`
 
 Invalid APS endpoints, cluster IDs, and payloads are reported through `ParseFrameError`, which
-implements `std::error::Error`. ZDP `Status` values also retain their protocol-defined display names
+implements `core::error::Error`. ZDP `Status` values also retain their protocol-defined display names
 when used as errors.
 
 ## Supported Service Groups
@@ -160,3 +160,69 @@ Key dependencies:
 - `apis-saltans-core`: core protocol definitions
 - `apis-saltans-aps`: APS layer frame structures
 - `apis-saltans-zcl`: ZCL command and cluster models
+
+
+## no_std and optional allocation
+
+ZDP is always `no_std`. Default features are empty: no allocator is required.
+Enable `alloc` to preserve the existing `Vec`, `Box`, and boxed iterator types:
+
+```toml
+apis-saltans-zdp = { version = "0.12", features = ["alloc"] }
+```
+
+The `alloc` feature enables `zb-aps/alloc` and `le-stream/alloc`, and enables
+Serde's allocation support if `serde` is selected. Serde alone does not require
+allocation. ZDP no longer depends directly on `bytes`; its APS conversion uses
+`zb_aps::Payload`, which remains `Bytes` when APS allocation is enabled.
+
+Cargo combines features requested by all consumers. ZDP only requests APS
+allocation through its own `alloc` feature, but another dependency can enable
+APS allocation independently. This combination is supported. Coordinator and HW
+explicitly enable ZDP allocation to retain their existing behavior.
+
+Without `alloc`, `storage::Tlvs` and `storage::TlvSlice` use a heapless-backed
+`RawList`. Unlike a normal heapless vector's `le-stream` codec, this container
+encodes TLVs **without a collection length prefix**. Construct it using
+`Default`, `push`, or `try_from_iter`; overflow is returned to the caller.
+Parsing an oversized or truncated sequence returns `None`, never a partial list.
+With `alloc`, those aliases resolve to `Vec<Tlv>` and `Box<[Tlv]>`, respectively.
+
+`storage::Owned<T>` resolves to `Box<T>` with allocation, and directly to `T`
+without it. This applies to command variants, serialization iterator variants,
+and boxed address-list fields. Box/Vec conversions on `ParentAnnce` remain
+available with `alloc`; slice conversion works in both modes.
+
+### Bounded capacities
+
+Configure capacities using build-time environment variables consumed by
+`const_env`. The build script tracks changes to these variables.
+
+| Environment variable | Default | Constraint and purpose |
+| --- | ---: | --- |
+| `ZIGBEE_ZDP_TLV_CAPACITY` | 2 | Positive; TLVs per command |
+| `ZIGBEE_ZDP_ADDRESS_CAPACITY` | 255 | At least 255; associated-address storage |
+| `ZIGBEE_ZDP_CLUSTER_CAPACITY` | 255 | At least 255; cluster lists returned by `SimpleDescriptor::into_parts()` |
+
+The last two capacities preserve the entire range of the existing byte-sized
+lists, so existing infallible constructors and descriptor decomposition stay
+infallible. Existing `ByteSizedVec` fields retain their protocol-defined
+255-element capacities. No capacity settings apply to allocating builds.
+
+```sh
+ZIGBEE_ZDP_TLV_CAPACITY=4 cargo build -p apis-saltans-zdp --no-default-features
+```
+
+Bounded commands and iterators own their storage inline. A core `Tlv` is roughly
+2 KiB, so even the default two-element TLV list occupies roughly 4 KiB.
+Unified command enums are sized for their largest variant, and moves and parsing
+can require additional stack space, especially in unoptimized builds. Budget
+stack memory for the selected capacities; use concrete command types when the
+unified enum is unnecessary. Increasing the TLV limit increases these costs.
+Management and address responses stream their encoded bytes without allocating
+a temporary payload buffer; only a fixed-size protocol header is buffered.
+
+CI checks the `alloc`/`serde` combinations on `thumbv7em-none-eabi`, checks target
+dependency features, and exercises small capacities and independent APS
+allocation. Host unit tests may use `alloc` to collect expected bytes; that does
+not enable the library's `alloc` feature.

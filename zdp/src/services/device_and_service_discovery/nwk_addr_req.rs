@@ -1,4 +1,4 @@
-use std::fmt::Formatter;
+use core::fmt::Formatter;
 
 use zb_core::IeeeAddress;
 
@@ -52,7 +52,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             write!(
                 f,
                 "{} {{ ieee_addr: {}, request_type: {:#04X}, start_index: {:#04X} }}",

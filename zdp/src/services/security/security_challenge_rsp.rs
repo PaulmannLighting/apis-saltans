@@ -1,4 +1,4 @@
-use zb_core::types::tlv::Tlv;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Security Challenge Response.
@@ -6,7 +6,7 @@ crate::zdp_command! {
     cluster_id: 0x8047;
     group: Security;
     fields {
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
     }

@@ -1,11 +1,11 @@
-use std::fmt::Formatter;
-use std::iter::Chain;
+use core::fmt::Formatter;
+use core::iter::Chain;
 
 use le_stream::ToLeStream;
 use zb_core::node::Descriptor;
-use zb_core::types::tlv::Tlv;
 
 use crate::Status;
+use crate::storage::Tlvs;
 
 crate::zdp_command! {
     /// Node Descriptor Response structure.
@@ -15,7 +15,7 @@ crate::zdp_command! {
     fields {
         nwk_addr_of_interest: u16,
         node_descriptor: Result<Descriptor, Result<Status, u8>>,
-        tlvs: Vec<Tlv>,
+        tlvs: Tlvs,
     }
     constructor {
         /// Creates a new `NodeDescRsp`.
@@ -23,7 +23,7 @@ crate::zdp_command! {
         pub const fn new(
             nwk_addr_of_interest: u16,
             node_descriptor: Result<Descriptor, Status>,
-            tlvs: Vec<Tlv>,
+            tlvs: Tlvs,
         ) -> Self {
             Self {
                 nwk_addr_of_interest,
@@ -43,12 +43,12 @@ crate::zdp_command! {
         }
 
         /// Returns the descriptor result and TLVs.
-        pub fn into_parts(self) -> (Result<Descriptor, Result<Status, u8>>, Vec<Tlv>) {
+        pub fn into_parts(self) -> (Result<Descriptor, Result<Status, u8>>, Tlvs) {
             (self.node_descriptor, self.tlvs)
         }
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             write!(
                 f,
                 "{} {{ nwk_addr_of_interest: {:#06X}, ",
@@ -109,7 +109,7 @@ crate::zdp_command! {
                     Err(status)
                 };
 
-                let tlvs = Vec::from_le_stream(&mut bytes)?;
+                let tlvs = Tlvs::from_le_stream(&mut bytes)?;
 
                 Some(Self {
                     nwk_addr_of_interest,
@@ -124,7 +124,7 @@ crate::zdp_command! {
                     Chain<<u8 as ToLeStream>::Iter, <u16 as ToLeStream>::Iter>,
                     <Option<Descriptor> as ToLeStream>::Iter,
                 >,
-                <Vec<Tlv> as ToLeStream>::Iter,
+                <Tlvs as ToLeStream>::Iter,
             >;
 
             fn to_le_stream(self) -> Self::Iter {

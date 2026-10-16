@@ -1,6 +1,5 @@
-use zb_core::types::tlv::Tlv;
-
 use crate::SecuritySetConfigurationRsp;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Security Set Configuration Request.
@@ -9,7 +8,7 @@ crate::zdp_command! {
     group: Security;
     response: SecuritySetConfigurationRsp;
     fields {
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
     }

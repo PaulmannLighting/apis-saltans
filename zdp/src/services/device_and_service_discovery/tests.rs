@@ -1,3 +1,5 @@
+use alloc::vec::Vec;
+
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::{ByteSizedVec, IeeeAddress};
 
@@ -82,13 +84,13 @@ fn extended_constructors_preserve_empty_and_nonempty_lists() {
             ieee_addr_remote_dev: IEEE_ADDRESS,
             nwk_addr_remote_dev: NETWORK_ADDRESS,
             start_index: START_INDEX,
-            nwk_addr_assoc_dev_list: Box::new(list.clone()),
+            nwk_addr_assoc_dev_list: crate::storage::own(list.clone()),
         }));
         let ieee = IeeeAddrRsp::new(Ok(IeeeAddrRspResponse::Extended {
             ieee_addr_remote_dev: IEEE_ADDRESS,
             nwk_addr_remote_dev: NETWORK_ADDRESS,
             start_index: START_INDEX,
-            nwk_addr_assoc_dev_list: Box::new(list),
+            nwk_addr_assoc_dev_list: crate::storage::own(list),
         }));
         assert_eq!(nwk.to_le_stream().collect::<Vec<_>>(), expected);
         assert_eq!(ieee.to_le_stream().collect::<Vec<_>>(), expected);

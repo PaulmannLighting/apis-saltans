@@ -1,6 +1,5 @@
-use zb_core::types::tlv::Tlv;
-
 use crate::Status;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Security Set Configuration Response.
@@ -9,7 +8,7 @@ crate::zdp_command! {
     group: Security;
     fields {
         overall_status: u8,
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
         /// Return the overall status of the response.

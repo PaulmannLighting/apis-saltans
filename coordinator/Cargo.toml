@@ -26,7 +26,7 @@ zb-aps = { workspace = true, features = ["alloc"] }
 zb-core = { workspace = true, features = ["serde"] }
 zb-hw = { workspace = true, features = ["coordinator", "serde"] }
 zb-zcl = { workspace = true, features = ["serde"] }
-zb-zdp = { workspace = true, features = ["serde"] }
+zb-zdp = { workspace = true, features = ["serde", "alloc"] }
 
 [dev-dependencies]
 zb-hw = { workspace = true, features = ["driver"] }

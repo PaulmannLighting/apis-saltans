@@ -1,6 +1,9 @@
-use std::vec::IntoIter;
+#[cfg(feature = "alloc")]
+use alloc::{vec::IntoIter, vec::Vec};
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::FromLeStream;
+#[cfg(feature = "alloc")]
+use le_stream::ToLeStream;
 use zb_core::ByteSizedVec;
 
 pub use self::response::MgmtLqiRspPayload;
@@ -75,8 +78,12 @@ crate::zdp_command! {
             }
         }
         to {
+            #[cfg(feature = "alloc")]
             type Iter = IntoIter<u8>;
+            #[cfg(not(feature = "alloc"))]
+            type Iter = crate::storage::Stream<<ByteSizedVec<u8> as IntoIterator>::IntoIter>;
 
+            #[cfg(feature = "alloc")]
             fn to_le_stream(self) -> Self::Iter {
                 let mut bytes = Vec::new();
 
@@ -89,6 +96,19 @@ crate::zdp_command! {
                 }
 
                 bytes.into_iter()
+            }
+
+            #[cfg(not(feature = "alloc"))]
+            fn to_le_stream(self) -> Self::Iter {
+                let mut prefix = crate::storage::Prefix::new();
+                prefix.extend(self.status.to_le_stream());
+                let mut items = self.neighbor_table_list;
+                if self.status == Status::Success as u8 {
+                    prefix.extend(self.neighbor_table_entries.to_le_stream());
+                    prefix.extend(self.start_index.to_le_stream());
+                    prefix.extend(u8::try_from(items.len()).expect("byte-sized list length fits u8").to_le_stream());
+                } else { items.clear(); }
+                crate::storage::Stream::new(&prefix, items.into_iter())
             }
         }
     }

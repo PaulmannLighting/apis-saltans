@@ -1,11 +1,13 @@
 //! Common wire payload for Network Address and IEEE Address responses.
 
-use std::vec::IntoIter;
+#[cfg(feature = "alloc")]
+use alloc::{vec::IntoIter, vec::Vec};
 
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::{ByteSizedVec, IeeeAddress};
 
 use crate::Status;
+use crate::storage::Addresses;
 
 const NO_ASSOCIATED_DEVICES: u8 = 0;
 
@@ -17,7 +19,7 @@ pub(super) struct AddressResponse {
     nwk_addr_remote_dev: Option<u16>,
     num_assoc_dev: Option<u8>,
     start_index: Option<u8>,
-    nwk_addr_assoc_dev_list: Box<[u16]>,
+    nwk_addr_assoc_dev_list: Addresses,
 }
 
 impl AddressResponse {
@@ -29,7 +31,7 @@ impl AddressResponse {
             nwk_addr_remote_dev: Some(nwk_addr_remote_dev),
             num_assoc_dev: None,
             start_index: None,
-            nwk_addr_assoc_dev_list: Box::default(),
+            nwk_addr_assoc_dev_list: Addresses::default(),
         }
     }
 
@@ -47,10 +49,7 @@ impl AddressResponse {
             } else {
                 Some(start_index)
             },
-            nwk_addr_assoc_dev_list: nwk_addr_assoc_dev_list
-                .into_iter()
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
+            nwk_addr_assoc_dev_list: nwk_addr_assoc_dev_list.into_iter().collect(),
             ..Self::single(ieee_addr_remote_dev, nwk_addr_remote_dev)
         }
     }
@@ -63,7 +62,7 @@ impl AddressResponse {
             nwk_addr_remote_dev: None,
             num_assoc_dev: None,
             start_index: None,
-            nwk_addr_assoc_dev_list: Box::default(),
+            nwk_addr_assoc_dev_list: Addresses::default(),
         }
     }
 
@@ -93,12 +92,23 @@ impl FromLeStream for AddressResponse {
             } else {
                 None
             };
+        #[cfg(feature = "alloc")]
         let mut nwk_addr_assoc_dev_list =
             Vec::with_capacity(usize::from(num_assoc_dev.unwrap_or_default()));
 
+        #[cfg(not(feature = "alloc"))]
+        let mut nwk_addr_assoc_dev_list = Addresses::new();
+
         for _ in NO_ASSOCIATED_DEVICES..num_assoc_dev.unwrap_or_default() {
-            nwk_addr_assoc_dev_list.push(<u16 as FromLeStream>::from_le_stream(&mut bytes)?);
+            let address = <u16 as FromLeStream>::from_le_stream(&mut bytes)?;
+            #[cfg(feature = "alloc")]
+            nwk_addr_assoc_dev_list.push(address);
+            #[cfg(not(feature = "alloc"))]
+            nwk_addr_assoc_dev_list.push(address).ok()?;
         }
+
+        #[cfg(feature = "alloc")]
+        let nwk_addr_assoc_dev_list = nwk_addr_assoc_dev_list.into_boxed_slice();
 
         Some(Self {
             status,
@@ -106,11 +116,12 @@ impl FromLeStream for AddressResponse {
             nwk_addr_remote_dev,
             num_assoc_dev,
             start_index,
-            nwk_addr_assoc_dev_list: nwk_addr_assoc_dev_list.into_boxed_slice(),
+            nwk_addr_assoc_dev_list,
         })
     }
 }
 
+#[cfg(feature = "alloc")]
 impl ToLeStream for AddressResponse {
     type Iter = IntoIter<u8>;
 
@@ -140,5 +151,23 @@ impl ToLeStream for AddressResponse {
         }
 
         bytes.into_iter()
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl ToLeStream for AddressResponse {
+    type Iter = crate::storage::Stream<<Addresses as IntoIterator>::IntoIter>;
+    fn to_le_stream(self) -> Self::Iter {
+        let mut prefix = crate::storage::Prefix::new();
+        prefix.extend(self.status.to_le_stream());
+        prefix.extend(self.ieee_addr_remote_dev.to_le_stream());
+        prefix.extend(self.nwk_addr_remote_dev.to_le_stream());
+        if let Some(count) = self.num_assoc_dev {
+            prefix.extend(count.to_le_stream());
+            if count > NO_ASSOCIATED_DEVICES {
+                prefix.extend(self.start_index.unwrap_or_default().to_le_stream());
+            }
+        }
+        crate::storage::Stream::new(&prefix, self.nwk_addr_assoc_dev_list.into_iter())
     }
 }

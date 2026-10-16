@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
 use repr_discriminant::ReprDiscriminant;
 use zb_core::types::{ChannelList, ChannelsField};
@@ -77,7 +77,7 @@ pub enum EnhancedNwkUpdateParameters {
 }
 
 impl Display for EnhancedNwkUpdateParameters {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Zero {
                 channel,

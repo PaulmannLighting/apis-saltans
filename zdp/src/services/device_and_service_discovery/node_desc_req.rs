@@ -1,8 +1,9 @@
-use std::fmt::Formatter;
+use core::fmt::Formatter;
 
 use zb_core::types::tlv::{FragmentationParameters, Global, Tlv};
 
 use crate::NodeDescRsp;
+use crate::storage::Tlvs;
 
 crate::zdp_command! {
     /// Node Descriptor Request structure.
@@ -12,12 +13,12 @@ crate::zdp_command! {
     response: NodeDescRsp;
     fields {
         nwk_addr: u16,
-        tlvs: Vec<Tlv>,
+        tlvs: Tlvs,
     }
     constructor {
         /// Creates a new `NodeDescReq`.
         #[must_use]
-        pub fn new(nwk_addr: u16, tlvs: Vec<Tlv>) -> Option<Self> {
+        pub fn new(nwk_addr: u16, tlvs: Tlvs) -> Option<Self> {
             if !tlvs
                 .iter()
                 .any(|tlv| matches!(tlv, Tlv::Global(Global::FragmentationParameters(_))))
@@ -42,7 +43,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             write!(
                 f,
                 "{} {{ nwk_addr: {:#06X}, tlvs: {:?} }}",
@@ -57,7 +58,7 @@ crate::zdp_command! {
             fn from(fragmentation: FragmentationParameters) -> Self {
                 Self {
                     nwk_addr: fragmentation.node_id(),
-                    tlvs: vec![Tlv::Global(Global::FragmentationParameters(fragmentation))],
+                    tlvs: crate::storage::single_tlv(Tlv::Global(Global::FragmentationParameters(fragmentation))),
                 }
             }
         }

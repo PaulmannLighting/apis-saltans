@@ -7,10 +7,11 @@ macro_rules! zdp_command_group {
     ) => {
         $(#[$attribute])*
         #[derive(Clone, Debug, Eq, PartialEq, Hash)]
+        #[cfg_attr(not(feature = "alloc"), allow(clippy::large_enum_variant, variant_size_differences, reason = "allocation-free variants own their bounded storage inline"))]
         pub enum $group {
             $(
                 #[doc = concat!("Command variant for `", stringify!($command), "`.")]
-                $command(Box<$command>)
+                $command($crate::storage::Owned<$command>)
             ),*
         }
 
@@ -56,10 +57,10 @@ macro_rules! zdp_command_group {
             }
         }
 
-        impl std::fmt::Display for $group {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        impl core::fmt::Display for $group {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 match self {
-                    $(Self::$command(command) => std::fmt::Display::fmt(command, f)),*
+                    $(Self::$command(command) => core::fmt::Display::fmt(command, f)),*
                 }
             }
         }
@@ -71,7 +72,7 @@ macro_rules! zdp_command_group {
                 match self {
                     $(Self::$command(command) => {
                         to_le_stream::Iter::$command(
-                            <$command as le_stream::ToLeStream>::to_le_stream(*command)
+                            <$command as le_stream::ToLeStream>::to_le_stream($crate::storage::unpack(command))
                                 .into()
                         )
                     }),*
@@ -84,6 +85,7 @@ macro_rules! zdp_command_group {
             /// Little-endian stream iterator for a command group.
             #[allow(clippy::enum_variant_names)]
             #[derive(Debug)]
+            #[cfg_attr(not(feature = "alloc"), allow(clippy::large_enum_variant, variant_size_differences, reason = "allocation-free variants own their bounded storage inline"))]
             pub enum Iter {
                 $(
                     #[doc = concat!(
@@ -91,7 +93,7 @@ macro_rules! zdp_command_group {
                         stringify!($command),
                         "`."
                     )]
-                    $command(Box<<super::$command as le_stream::ToLeStream>::Iter>)
+                    $command($crate::storage::Owned<<super::$command as le_stream::ToLeStream>::Iter>)
                 ),*
             }
 
@@ -119,7 +121,7 @@ macro_rules! zdp_command_group {
 
                 fn try_from(command: $group) -> Result<Self, Self::Error> {
                     match command {
-                        $group::$command(command) => Ok(*command),
+                        $group::$command(command) => Ok($crate::storage::unpack(command)),
                         other => Err(other),
                     }
                 }

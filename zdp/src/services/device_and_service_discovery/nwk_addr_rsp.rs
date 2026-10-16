@@ -1,8 +1,9 @@
-use std::vec::IntoIter;
-
 pub use self::response::NwkAddrRspResponse;
 use super::address_response::AddressResponse;
 use crate::Status;
+#[cfg(not(feature = "alloc"))]
+use crate::storage::Addresses;
+use crate::storage::unpack;
 
 mod response;
 
@@ -24,7 +25,7 @@ crate::zdp_command! {
                 Ok(NwkAddrRspResponse::Extended {
                     ieee_addr_remote_dev, nwk_addr_remote_dev, start_index, nwk_addr_assoc_dev_list,
                 }) => AddressResponse::extended(
-                    ieee_addr_remote_dev, nwk_addr_remote_dev, start_index, *nwk_addr_assoc_dev_list,
+                    ieee_addr_remote_dev, nwk_addr_remote_dev, start_index, unpack(nwk_addr_assoc_dev_list),
                 ),
                 Err(status) => AddressResponse::failure(status),
             };
@@ -51,7 +52,10 @@ crate::zdp_command! {
             }
         }
         to {
-            type Iter = IntoIter<u8>;
+            #[cfg(feature = "alloc")]
+            type Iter = alloc::vec::IntoIter<u8>;
+            #[cfg(not(feature = "alloc"))]
+            type Iter = crate::storage::Stream<<Addresses as IntoIterator>::IntoIter>;
 
             fn to_le_stream(self) -> Self::Iter {
                 self.payload.to_le_stream()

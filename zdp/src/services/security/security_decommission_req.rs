@@ -1,6 +1,5 @@
-use zb_core::types::tlv::Tlv;
-
 use crate::SecurityDecommissionRsp;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Security Decommission Request.
@@ -9,7 +8,7 @@ crate::zdp_command! {
     group: Security;
     response: SecurityDecommissionRsp;
     fields {
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
     }

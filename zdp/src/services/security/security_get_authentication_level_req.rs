@@ -1,6 +1,5 @@
-use zb_core::types::tlv::Tlv;
-
 use crate::SecurityGetAuthenticationLevelRsp;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Security Get Authentication Level Request.
@@ -9,7 +8,7 @@ crate::zdp_command! {
     group: Security;
     response: SecurityGetAuthenticationLevelRsp;
     fields {
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
     }

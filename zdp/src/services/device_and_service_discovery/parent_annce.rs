@@ -1,4 +1,6 @@
-use std::fmt::Formatter;
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
+use core::fmt::Formatter;
 
 use heapless::CapacityError;
 use zb_core::{ByteSizedVec, IeeeAddress};
@@ -19,7 +21,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             write!(f, "{} {{ child_info: [", Self::NAME)?;
 
             let mut mac_addresses = self.child_info().iter();
@@ -37,6 +39,7 @@ crate::zdp_command! {
     }
 
     try_from {
+        #[cfg(feature = "alloc")]
         impl TryFrom<Box<[IeeeAddress]>> for ParentAnnce {
             type Error = CapacityError;
 
@@ -45,6 +48,7 @@ crate::zdp_command! {
             }
         }
 
+        #[cfg(feature = "alloc")]
         impl TryFrom<Vec<IeeeAddress>> for ParentAnnce {
             type Error = CapacityError;
 

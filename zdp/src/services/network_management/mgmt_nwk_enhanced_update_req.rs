@@ -1,7 +1,7 @@
-use std::fmt::Formatter;
+use core::fmt::Formatter;
 mod enhanced_update_parameters;
 
-use std::iter::once;
+use core::iter::once;
 
 use zb_core::types::{ChannelList, ConfigurationBitmask};
 
@@ -142,7 +142,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             match self.scan_duration() {
                 Ok(scan_duration) => {
                     if let Some(configuration_bitmask) = self.configuration_bitmask() {

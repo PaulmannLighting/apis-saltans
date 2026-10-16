@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 
 use le_stream::ToLeStream;
 use zb_core::IeeeAddress;
@@ -16,7 +16,7 @@ pub enum Address {
 }
 
 impl Display for Address {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Group(addr) => write!(f, "{addr:#06X}"),
             Self::Extended(addr) => write!(f, "{addr}"),

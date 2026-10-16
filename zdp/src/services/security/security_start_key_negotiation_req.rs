@@ -1,6 +1,5 @@
-use zb_core::types::tlv::Tlv;
-
 use crate::SecurityStartKeyNegotiationRsp;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Security Start Key Negotiation Request.
@@ -9,7 +8,7 @@ crate::zdp_command! {
     group: Security;
     response: SecurityStartKeyNegotiationRsp;
     fields {
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
     }

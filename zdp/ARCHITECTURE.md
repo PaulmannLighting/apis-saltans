@@ -265,3 +265,54 @@ Network Address and IEEE Address responses retain distinct public commands, resp
 service names, and cluster IDs. Both delegate to the private `address_response::AddressResponse`
 payload for construction and wire encoding. Tests cover status-only, single-device, and empty
 or nonempty extended responses, unknown statuses, and incomplete required fields.
+
+
+## Storage modes and feature propagation
+
+The crate is unconditionally `no_std`. Its default feature set is empty.
+`alloc` forwards to APS and le-stream, plus optional Serde allocation support.
+`serde` alone stays allocation-free. APS's `Payload` alias defines the input
+representation for APS-to-ZDP conversion even if APS allocation was enabled by
+another dependency. Workspace consumers opt into ZDP allocation explicitly.
+
+```mermaid
+flowchart TD
+    Feature[ZDP alloc feature] --> APS[APS alloc feature]
+    Feature --> Codec[le-stream alloc feature]
+    Feature --> Dynamic[Vec and Box storage]
+    Bounded[Default bounded mode] --> Lists[Heapless raw TLV lists]
+    Bounded --> Inline[Inline command and iterator variants]
+    Lists --> Wire[Unchanged ZDP wire encoding]
+    Dynamic --> Wire
+    Inline --> Wire
+```
+
+`storage` defines conditional aliases for vectors, slices, boxed values, and
+returned cluster IDs. The command macros use `Owned` and `unpack` to retain
+boxed public variants with allocation and inline variants without it. Existing
+`ByteSizedVec` fields retain their core representation and codec.
+
+`RawList` deliberately implements unprefixed sequence serialization rather than
+using le-stream's prefixed heapless codec. Its parser distinguishes exhausted
+input from a truncated element and checks every insertion. Capacity exhaustion
+returns `None` through `FromLeStream`; fallible construction exposes
+`storage::CapacityError` or returns the rejected element from `push`.
+
+Bounded response serialization uses `Stream`: a fixed protocol header followed
+by owned elements and the current element's iterator. This avoids whole-message
+scratch buffers and introduces no new wire-size limit. Allocating responses
+retain their original `Vec<u8>::IntoIter` representation. The 16-byte header
+buffer accommodates the largest address-response header (13 bytes).
+
+The build script tracks all `ZIGBEE_ZDP_*_CAPACITY` variables. Compile-time
+assertions reject zero TLV capacity or address/cluster capacities below 255,
+which would invalidate existing infallible conversions. TLV capacity defaults
+to two because core TLVs already contain substantial inline storage. Enums and
+iterators therefore remain relatively large; targeted size-lint allowances
+explain why boxing is unavailable in bounded mode.
+
+Validation includes shared wire fixtures in both modes, full byte-sized lists,
+TLV overflow/truncation, command dispatch and conversion, legacy allocating
+types, and independent APS allocation. Bare-metal and feature-tree checks run
+separately from workspace builds to prevent feature unification from concealing
+an accidental allocator dependency.

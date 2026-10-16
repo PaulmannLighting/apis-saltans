@@ -1,4 +1,4 @@
-use std::fmt::Formatter;
+use core::fmt::Formatter;
 
 use zb_core::node::ServerMask;
 
@@ -22,7 +22,7 @@ crate::zdp_command! {
         }
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             write!(f, "{} {{ server_mask: {} }}", Self::NAME, self.server_mask)
         }
     }

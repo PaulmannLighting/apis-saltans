@@ -3,6 +3,7 @@ use zb_core::endpoint::Reserved;
 use zb_core::{ByteSizedVec, Endpoint, Profile};
 
 pub use self::app_flags::AppFlags;
+use crate::storage::ClusterIds;
 
 mod app_flags;
 
@@ -13,7 +14,7 @@ mod app_flags;
 pub type Clusters = ByteSizedVec<u16>;
 
 /// Type alias for the constituent parts of a simple descriptor.
-type Parts = (u8, u16, u16, u8, Box<[u16]>, Box<[u16]>);
+type Parts = (u8, u16, u16, u8, ClusterIds, ClusterIds);
 
 /// ZDP Simple Descriptor payload.
 ///

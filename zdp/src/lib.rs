@@ -2,10 +2,17 @@
 //!
 //! The crate provides typed ZDP request/response payloads, grouped service enums, a unified
 //! [`Command`] enum, command dispatch by cluster ID, and sequence-numbered [`Frame`] wrappers.
+//! The crate is `no_std` with allocation disabled by default. Enable `alloc`
+//! to retain dynamically allocated containers and boxed command variants.
+//! See [`storage`] for bounded alternatives and compile-time capacities.
+//!
 //! Implemented service groups currently include Device and Service Discovery, Bind Management,
 //! Network Management, and Security.
 
-extern crate core;
+#![no_std]
+
+#[cfg(any(feature = "alloc", test))]
+extern crate alloc;
 
 pub use status::{Displayable, Status};
 
@@ -38,6 +45,7 @@ mod macros;
 mod services;
 mod simple_descriptor;
 mod status;
+pub mod storage;
 
 pub(crate) use self::macros::{zdp_command, zdp_command_enum, zdp_command_group};
 

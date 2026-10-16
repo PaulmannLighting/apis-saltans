@@ -1,6 +1,5 @@
-use zb_core::types::tlv::Tlv;
-
 use crate::SecurityChallengeRsp;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Security Challenge Request.
@@ -9,7 +8,7 @@ crate::zdp_command! {
     group: Security;
     response: SecurityChallengeRsp;
     fields {
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
     }

@@ -7,6 +7,7 @@ macro_rules! zdp_command_enum {
     ) => {
         $(#[$attribute])*
         #[derive(Clone, Debug, Eq, PartialEq, Hash)]
+        #[cfg_attr(not(feature = "alloc"), allow(clippy::large_enum_variant, variant_size_differences, reason = "allocation-free variants own their bounded storage inline"))]
         pub enum $command_enum {
             $(
                 #[doc = concat!("Command variant for `", stringify!($variant), "`.")]
@@ -50,10 +51,10 @@ macro_rules! zdp_command_enum {
             }
         }
 
-        impl std::fmt::Display for $command_enum {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        impl core::fmt::Display for $command_enum {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 match self {
-                    $(Self::$variant(command) => std::fmt::Display::fmt(command, f)),*
+                    $(Self::$variant(command) => core::fmt::Display::fmt(command, f)),*
                 }
             }
         }
@@ -77,6 +78,7 @@ macro_rules! zdp_command_enum {
         pub mod command_to_le_stream {
             /// Little-endian stream iterator for a command.
             #[derive(Debug)]
+            #[cfg_attr(not(feature = "alloc"), allow(clippy::large_enum_variant, variant_size_differences, reason = "allocation-free variants own their bounded storage inline"))]
             pub enum Iter {
                 $(
                     #[doc = concat!(
@@ -84,7 +86,7 @@ macro_rules! zdp_command_enum {
                         stringify!($variant),
                         "`."
                     )]
-                    $variant(Box<<super::$variant as le_stream::ToLeStream>::Iter>)
+                    $variant($crate::storage::Owned<<super::$variant as le_stream::ToLeStream>::Iter>)
                 ),*
             }
 

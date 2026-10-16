@@ -1,6 +1,5 @@
-use zb_core::types::tlv::Tlv;
-
 use crate::SecurityRetrieveAuthenticationTokenRsp;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Security Retrieve Authentication Token Request.
@@ -9,7 +8,7 @@ crate::zdp_command! {
     group: Security;
     response: SecurityRetrieveAuthenticationTokenRsp;
     fields {
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
     }

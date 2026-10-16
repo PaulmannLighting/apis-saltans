@@ -1,8 +1,7 @@
-use std::fmt::Formatter;
-
-use zb_core::types::tlv::Tlv;
+use core::fmt::Formatter;
 
 use crate::MgmtNwkBeaconSurveyRsp;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Management Network Beacon Survey Request.
@@ -11,12 +10,12 @@ crate::zdp_command! {
     group: NetworkManagement;
     response: MgmtNwkBeaconSurveyRsp;
     fields {
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     getters {
     }
     display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
             write!(f, "{} {{ tlvs: [", Self::NAME)?;
 
             let mut tlvs = self.tlvs.iter();

@@ -1,12 +1,16 @@
-use std::vec::IntoIter;
+#[cfg(feature = "alloc")]
+use alloc::{vec::IntoIter, vec::Vec};
 
-use le_stream::{FromLeStream, ToLeStream};
+use le_stream::FromLeStream;
+#[cfg(feature = "alloc")]
+use le_stream::ToLeStream;
 use zb_core::{ByteSizedVec, IeeeAddress};
 
 pub use self::response::{
     JoiningPolicy, MgmtNwkIeeeJoiningListRspEntries, MgmtNwkIeeeJoiningListRspPayload,
 };
 use crate::Status;
+use crate::storage::unpack;
 
 mod response;
 
@@ -43,7 +47,7 @@ crate::zdp_command! {
                             (
                                 entries.ieee_joining_list_total.into(),
                                 entries.start_index,
-                                *entries.ieee_joining_list,
+                                unpack(entries.ieee_joining_list),
                             )
                         },
                     );
@@ -126,8 +130,12 @@ crate::zdp_command! {
             }
         }
         to {
+            #[cfg(feature = "alloc")]
             type Iter = IntoIter<u8>;
+            #[cfg(not(feature = "alloc"))]
+            type Iter = crate::storage::Stream<<ByteSizedVec<IeeeAddress> as IntoIterator>::IntoIter>;
 
+            #[cfg(feature = "alloc")]
             fn to_le_stream(self) -> Self::Iter {
                 let mut bytes = Vec::new();
 
@@ -153,6 +161,23 @@ crate::zdp_command! {
                 }
 
                 bytes.into_iter()
+            }
+
+            #[cfg(not(feature = "alloc"))]
+            fn to_le_stream(self) -> Self::Iter {
+                let mut prefix = crate::storage::Prefix::new();
+                prefix.extend(self.status.to_le_stream());
+                let mut items = self.ieee_joining_list;
+                if self.status == Status::Success as u8 {
+                    prefix.extend(self.ieee_joining_list_update_id.to_le_stream());
+                    prefix.extend(self.joining_policy.to_le_stream());
+                    prefix.extend(self.ieee_joining_list_total.to_le_stream());
+                    if self.ieee_joining_list_total > 0 {
+                        prefix.extend(self.start_index.to_le_stream());
+                        prefix.extend(u8::try_from(items.len()).expect("byte-sized list length fits u8").to_le_stream());
+                    } else { items.clear(); }
+                } else { items.clear(); }
+                crate::storage::Stream::new(&prefix, items.into_iter())
             }
         }
     }

@@ -1,6 +1,5 @@
-use zb_core::types::tlv::Tlv;
-
 use crate::Status;
+use crate::storage::TlvSlice;
 
 crate::zdp_command! {
     /// Management Network Beacon Survey Response.
@@ -9,12 +8,12 @@ crate::zdp_command! {
     group: NetworkManagement;
     fields {
         status: u8,
-        tlvs: Box<[Tlv]>,
+        tlvs: TlvSlice,
     }
     constructor {
         /// Creates a new `MgmtNwkBeaconSurveyRsp`.
         #[must_use]
-        pub fn new(response: Result<Box<[Tlv]>, Status>) -> Self {
+        pub fn new(response: Result<TlvSlice, Status>) -> Self {
             match response {
                 Ok(tlvs) => Self {
                     status: Status::Success.into(),
@@ -22,7 +21,7 @@ crate::zdp_command! {
                 },
                 Err(status) => Self {
                     status: status.into(),
-                    tlvs: Box::default(),
+                    tlvs: TlvSlice::default(),
                 },
             }
         }
