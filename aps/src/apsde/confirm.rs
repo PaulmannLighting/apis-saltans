@@ -1,18 +1,19 @@
 use core::fmt::{self, Display, Formatter};
 
+use zb_core::{AcknowledgementLayer, NetworkError};
+
 use super::{Destination, IndividualEndpoint, Status};
 
 /// Status reported by an `APSDE-DATA.confirm`.
 ///
-/// APSDE may return either a native APS status or a status propagated from the
-/// implementation's network data entity.
+/// APSDE may return a native APS status or a backend-reported networking failure.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ConfirmStatus {
     /// APS-layer completion status.
     Aps(Status),
 
-    /// Status propagated from `NLDE-DATA.confirm`.
-    Network(u8),
+    /// Zigbee networking failure reported by the backend.
+    Failure(NetworkError),
 }
 
 /// Parameters of an `APSDE-DATA.confirm` primitive.
@@ -25,6 +26,24 @@ pub struct DataConfirm<T> {
 }
 
 impl ConfirmStatus {
+    /// Return the networking failure, if present or recognized from an APS status.
+    ///
+    /// Unclassified backend bytes are returned as `NetworkError::BackendStatus`.
+    #[must_use]
+    pub const fn network_error(self) -> Option<NetworkError> {
+        match self {
+            Self::Failure(error) => Some(error),
+            Self::Aps(Status::NoAcknowledgement) => Some(NetworkError::NoAcknowledgement {
+                layer: AcknowledgementLayer::Aps,
+            }),
+            Self::Aps(Status::AsduTooLong) => Some(NetworkError::MessageTooLong),
+            Self::Aps(Status::NoShortAddress) => Some(NetworkError::AddressResolutionFailed),
+            Self::Aps(Status::SecurityFailure) => Some(NetworkError::SecurityFailure),
+            Self::Aps(Status::TableFull) => Some(NetworkError::TableFull),
+            Self::Aps(_) => None,
+        }
+    }
+
     /// Return a successful APS completion status.
     #[must_use]
     pub const fn success() -> Self {
@@ -48,7 +67,7 @@ impl Display for ConfirmStatus {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Aps(status) => Display::fmt(status, formatter),
-            Self::Network(status) => write!(formatter, "NWK status {status:#04x}"),
+            Self::Failure(error) => Display::fmt(error, formatter),
         }
     }
 }
@@ -106,19 +125,19 @@ mod tests {
     use zb_core::Endpoint;
 
     use super::super::{Destination, IndividualEndpoint};
-    use super::{ConfirmStatus, DataConfirm};
+    use super::{ConfirmStatus, DataConfirm, NetworkError};
 
-    const NETWORK_STATUS: u8 = 0xc1;
+    const BACKEND_STATUS: u8 = 0xc1;
     const TX_TIME: u64 = 42;
 
     #[test]
-    fn confirmation_preserves_a_propagated_network_status() {
+    fn confirmation_preserves_an_unclassified_backend_status() {
         let source_endpoint =
             IndividualEndpoint::new(Endpoint::Data).expect("data endpoint is individual");
         let confirmation = DataConfirm::new(
             Destination::Bound,
             source_endpoint,
-            ConfirmStatus::Network(NETWORK_STATUS),
+            ConfirmStatus::Failure(NetworkError::BackendStatus(BACKEND_STATUS)),
             TX_TIME,
         );
 
@@ -126,8 +145,36 @@ mod tests {
         assert_eq!(confirmation.source_endpoint(), source_endpoint);
         assert_eq!(
             confirmation.status(),
-            ConfirmStatus::Network(NETWORK_STATUS)
+            ConfirmStatus::Failure(NetworkError::BackendStatus(BACKEND_STATUS))
         );
         assert_eq!(confirmation.tx_time(), &TX_TIME);
+    }
+}
+
+#[cfg(test)]
+mod classification_tests {
+    use super::{AcknowledgementLayer, ConfirmStatus, NetworkError, Status};
+
+    #[test]
+    fn failures_are_inspectable_without_guessing_backend_status_semantics() {
+        assert_eq!(
+            ConfirmStatus::Aps(Status::NoAcknowledgement).network_error(),
+            Some(NetworkError::NoAcknowledgement {
+                layer: AcknowledgementLayer::Aps
+            })
+        );
+        assert_eq!(
+            ConfirmStatus::Aps(Status::SecurityFailure).network_error(),
+            Some(NetworkError::SecurityFailure)
+        );
+        assert_eq!(ConfirmStatus::success().network_error(), None);
+        for raw in u8::MIN..=u8::MAX {
+            let failure = ConfirmStatus::Failure(NetworkError::BackendStatus(raw));
+            assert_eq!(
+                failure.network_error(),
+                Some(NetworkError::BackendStatus(raw))
+            );
+            assert!(!failure.is_success());
+        }
     }
 }

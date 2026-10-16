@@ -21,6 +21,7 @@ pub use self::endpoint::{Application, Endpoint, ParseApplicationError, ParseEndp
 pub use self::full_address::FullAddress;
 pub use self::group_id::GroupId;
 pub use self::ieee_address::{Eui64, IeeeAddress};
+pub use self::network_error::{AcknowledgementLayer, NetworkError};
 pub use self::profile::{ParseProfileError, Profile, Profiled};
 pub use self::short_id::ShortId;
 pub use self::traits::{ExpectResponse, TypeId};
@@ -37,6 +38,7 @@ pub mod endpoint;
 mod full_address;
 mod group_id;
 mod ieee_address;
+mod network_error;
 pub mod node;
 mod profile;
 /// Zigbee NWK short-address domain types.

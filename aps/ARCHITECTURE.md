@@ -79,8 +79,9 @@ metadata.
 ASDU length is derived from byte-like payloads, preventing disagreement
 between an explicit length and the ASDU. Generic parameters preserve
 implementation-defined timestamp and link-key device-pair handle
-representations. Propagated NWK and security-processing status values remain
-raw 8-bit codes so unknown statuses are not discarded.
+representations. Unclassified backend failures and security-processing statuses retain
+raw 8-bit codes so unknown statuses are not discarded. Recognized confirmation failures
+carry common networking semantics.
 
 `Security<K>` encodes conditional fields as variants, ensuring a key index and
 key-pair handle exist only for link-key-secured ASDUs.
@@ -126,3 +127,11 @@ Data frame header constructors accept `DataHeaderParameters` and `UnicastHeaderP
 The constructors derive control flags and encode endpoint values; callers cannot supply a
 control field inconsistent with the named constructor options. Parsing and wire layout are
 unchanged.
+
+## Networking failure classifications
+
+`apis-saltans-core::NetworkError` carries portable failure semantics, including the acknowledgement layer where
+known. `ConfirmStatus::Failure` carries this error directly. Unclassified bytes are retained in
+`NetworkError::BackendStatus`; recognized failures do not retain a redundant vendor code. Native
+APS failures are classified by `ConfirmStatus::network_error()`, which also returns unclassified
+backend failures without interpreting their bytes.

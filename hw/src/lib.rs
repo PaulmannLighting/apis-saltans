@@ -32,6 +32,8 @@
 #[cfg(feature = "types")]
 #[cfg_attr(docsrs, doc(cfg(feature = "types")))]
 pub use zb_aps::TxOptions;
+#[cfg(feature = "types")]
+pub use zb_core::{AcknowledgementLayer, NetworkError};
 
 #[cfg(feature = "driver")]
 #[cfg_attr(docsrs, doc(cfg(feature = "driver")))]

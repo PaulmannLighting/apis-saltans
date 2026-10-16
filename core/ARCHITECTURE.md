@@ -154,3 +154,18 @@ Both expose `try_resize_capacity` as a lossless, fallible capacity conversion; f
 the original value. `truncate` forwards to this method for source compatibility. Conversions
 from the runtime `Type` enum also use `try_resize_capacity`. Wire parsing retains its existing
 behavior of consuming the encoded length and discarding bytes that exceed capacity.
+
+## Shared networking failures
+
+`network_error.rs` defines the root-exported `NetworkError` and `AcknowledgementLayer` value
+types. Their semantics span protocol layers, so core owns them rather than APSDE or hardware.
+The types remain compatible with `no_std` and contain no backend error sources or actor state.
+APSDE uses them in `ConfirmStatus::Failure`; hardware re-exports them and adds error sources
+through its own error wrappers.
+
+```mermaid
+flowchart LR
+    Core[Core networking error types] --> APS[APS confirmations]
+    Core --> Hardware[Hardware errors and re-exports]
+    APS --> Hardware
+```

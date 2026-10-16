@@ -159,9 +159,15 @@ impl Submissions {
             .values()
             .map(|submission| submission.token)
             .collect::<Vec<_>>();
-        let quarantined = responses.network_down_preserving(&TransmissionError::NoRoute, protected);
+        let quarantined = responses.network_down_preserving(
+            &TransmissionError::Network(zb_hw::NetworkError::NetworkDown),
+            protected,
+        );
         for submission in submissions.into_values() {
-            submission.fail(HardwareError::from(TransmissionError::NoRoute).into());
+            submission.fail(
+                HardwareError::from(TransmissionError::Network(zb_hw::NetworkError::NetworkDown))
+                    .into(),
+            );
         }
         quarantined
     }

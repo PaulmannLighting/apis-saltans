@@ -119,3 +119,16 @@ where
         Err(raw) => write!(f, "{raw:#04x}"),
     })
 }
+
+impl Error {
+    /// Inspect a portable Zigbee networking failure reported by the hardware.
+    ///
+    /// Response timeouts and unclassified backend errors return `None`.
+    #[must_use]
+    pub const fn network_error(&self) -> Option<zb_hw::NetworkError> {
+        match self {
+            Self::Hardware(error) => error.network_error(),
+            _ => None,
+        }
+    }
+}

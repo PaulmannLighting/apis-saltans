@@ -579,3 +579,10 @@ Build-time environment variables provide defaults, including
 `ZIGBEE_COORDINATOR_APS_CONFIRMATION_TIMEOUT_SECS` for APS confirmations (30 seconds by default).
 Explicit runtime settings take precedence. Quarantine durations are internal and independent
 of caller-selected response deadlines.
+
+## Networking error inspection
+
+The APS actor preserves failed confirmation statuses inside hardware `TransmissionError::Confirmation`
+values, including common failures or unclassified backend codes. The public coordinator error delegates
+`network_error()` through `Error::Hardware`; command rejection and asynchronous confirmation paths
+thus share the same inspection API without converting response timeouts into delivery failures.

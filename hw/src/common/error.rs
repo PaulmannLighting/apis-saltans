@@ -5,6 +5,7 @@ use thiserror::Error;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::oneshot::error::RecvError;
 use zb_aps::apsde::ConfirmStatus;
+use zb_core::NetworkError;
 
 /// Hardware operation that a backend may not support.
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -67,6 +68,10 @@ impl Display for Operation {
     reason = "backend failures retain a shared trait-object source while protocol statuses stay inline"
 )]
 pub enum TransmissionError {
+    /// A portable networking failure during transmission.
+    #[error(transparent)]
+    Network(#[from] NetworkError),
+
     /// An accepted APS transmission did not complete before its deadline.
     #[error("APS transmission timed out")]
     Timeout,
@@ -89,6 +94,17 @@ pub enum TransmissionError {
 }
 
 impl TransmissionError {
+    /// Inspect the portable networking failure, when known.
+    #[must_use]
+    pub const fn network_error(&self) -> Option<NetworkError> {
+        match self {
+            Self::NoRoute => Some(NetworkError::NoRoute),
+            Self::Network(error) => Some(*error),
+            Self::Confirmation(status) => status.network_error(),
+            _ => None,
+        }
+    }
+
     /// Wrap a backend-specific transmission error.
     #[must_use]
     pub fn backend<T>(error: T) -> Self
@@ -103,6 +119,17 @@ impl TransmissionError {
 #[derive(Clone, Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
+    /// A portable networking failure, optionally retaining backend diagnostics.
+    #[error("{kind}")]
+    Network {
+        /// Common failure information.
+        kind: NetworkError,
+
+        /// Original backend error, when available.
+        #[source]
+        source: Option<Arc<dyn std::error::Error + Send + Sync>>,
+    },
+
     /// A backend-specific error occurred.
     #[error("{0}")]
     Backend(#[source] Arc<dyn std::error::Error + Send + Sync>),
@@ -121,6 +148,28 @@ pub enum Error {
 }
 
 impl Error {
+    /// Inspect a networking failure without downcasting a backend error.
+    #[must_use]
+    pub const fn network_error(&self) -> Option<NetworkError> {
+        match self {
+            Self::Network { kind, .. } => Some(*kind),
+            Self::Transmission(error) => error.network_error(),
+            _ => None,
+        }
+    }
+
+    /// Preserve a backend error alongside its portable networking classification.
+    #[must_use]
+    pub fn network<T>(kind: NetworkError, source: T) -> Self
+    where
+        T: std::error::Error + Send + Sync + 'static,
+    {
+        Self::Network {
+            kind,
+            source: Some(Arc::new(source)),
+        }
+    }
+
     /// Wrap a backend-specific hardware error.
     #[must_use]
     pub fn backend<T>(error: T) -> Self
@@ -140,5 +189,11 @@ impl<T> From<SendError<T>> for Error {
 impl From<RecvError> for Error {
     fn from(_: RecvError) -> Self {
         Self::ActorUnavailable
+    }
+}
+
+impl From<NetworkError> for Error {
+    fn from(kind: NetworkError) -> Self {
+        Self::Network { kind, source: None }
     }
 }

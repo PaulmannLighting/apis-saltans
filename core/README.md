@@ -229,3 +229,12 @@ old capacity.
 
 This differs from `OctStr::from_le_stream`, which consumes the encoded bytes and discards
 bytes beyond the destination capacity.
+
+## Networking failures
+
+`NetworkError` describes Zigbee networking failures across APS, NWK, MAC, and local stack
+operations. `AcknowledgementLayer` identifies whether a missing acknowledgement was expected
+at APS or MAC. These shared value types are used by APS confirmations and hardware errors;
+they do not perform hardware I/O or implement protocol behavior. Unclassified backend codes
+remain available as `NetworkError::BackendStatus(u8)` and require the originating backend's
+status namespace for interpretation.

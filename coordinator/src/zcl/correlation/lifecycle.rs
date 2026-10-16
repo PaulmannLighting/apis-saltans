@@ -11,7 +11,9 @@ use crate::zcl::{Message, ZclKey};
 impl Responses {
     /// Fail pending responses at a network boundary.
     pub(in crate::zcl) fn network_down(&mut self) {
-        self.registry.network_down(&TransmissionError::NoRoute);
+        self.registry.network_down(&TransmissionError::Network(
+            zb_hw::NetworkError::NetworkDown,
+        ));
     }
 
     /// Fail all pending responses when the hardware event stream closes.

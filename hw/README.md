@@ -211,3 +211,23 @@ async fn inspect_local_endpoints(ncp: &NcpHandle) -> Result<(), apis_saltans_hw:
 
 Use `SimpleDescriptor::input_clusters()` and `SimpleDescriptor::output_clusters()` to inspect the
 raw cluster IDs.
+
+### Inspecting networking failures
+
+`Error::network_error()` returns an optional `NetworkError`, shared with the APS data-service
+confirmation types. It distinguishes delivery failure, missing APS or MAC acknowledgements,
+routing failures, channel access failure, congestion, exhausted local resources, network down,
+not joined, address resolution failure, oversized messages, security failure, indirect-message
+expiry, and full management tables. These classifications do not promise that retrying is safe.
+
+Drivers should use `Error::network(kind, source)` for known command failures to retain the original
+backend error, or `NetworkError::into()` if no backend source exists. Unclassified failures remain
+`Error::backend(source)`. For asynchronous completion, use
+`ConfirmStatus::Failure(error)`. Use `NetworkError::BackendStatus(u8)` when no portable
+classification exists; recognized failures carry common semantics without the original vendor byte.
+Use native APS statuses when the backend actually reports APS status semantics. Never interpret
+`BackendStatus` without knowing the backend's status namespace.
+
+`TransmissionError::Confirmation` retains the complete confirmation status, and its
+`network_error()` accessor classifies known APS failures as well as backend-classified failures.
+Local confirmation timeouts remain distinct from a reported delivery failure.

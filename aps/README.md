@@ -221,3 +221,8 @@ Primary dependencies:
 - `apis-saltans-core`: core Zigbee protocol types
 - `apis-saltans-zcl`: Zigbee Cluster Library framing and commands
 - `apis-saltans-zdp`: Zigbee Device Profile services
+
+`apis-saltans-core::NetworkError` describes portable networking failures. A backend can attach one to an
+APS confirmation using `ConfirmStatus::Failure(error)`. Unclassified failures retain their native
+status byte in `NetworkError::BackendStatus(u8)`; recognized failures carry portable semantics. `ConfirmStatus::network_error()` also classifies known native APS failures; it never
+interprets an untyped network status byte as a vendor-specific code.

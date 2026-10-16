@@ -797,3 +797,26 @@ const fn transmission_token(counter: u8) -> TransmissionToken {
         generation: INITIAL_GENERATION,
     }
 }
+
+#[test]
+fn classified_delivery_failure_survives_confirmation_before_acceptance() {
+    Runtime::new()
+        .expect("runtime must be available")
+        .block_on(async {
+            let mut state = TransmissionState::new();
+            let (response, result) = tokio::sync::oneshot::channel();
+            let token = transmission_token(FIRST_COUNTER);
+            state.store_submission(token, true, response);
+            let failure = ConfirmStatus::Failure(zb_hw::NetworkError::DeliveryFailed);
+            state.handle_confirm(FIRST_COUNTER, failure);
+            assert!(!state.finish_submission(token, Ok(())));
+            let error = crate::Error::from(result.await.expect("response").expect_err("failure"));
+            assert_eq!(
+                error.network_error(),
+                Some(zb_hw::NetworkError::DeliveryFailed)
+            );
+            assert!(matches!(error, crate::Error::Hardware(Error::Transmission(
+                TransmissionError::Confirmation(status)
+            )) if status == failure));
+        });
+}

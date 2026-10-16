@@ -979,3 +979,27 @@ Protocol response deadlines begin at correlation registration; APS confirmation 
 after hardware acceptance. Late-response quarantine remains independently controlled internally,
 so reducing a response deadline does not permit early reuse of an old transaction identity.
 OTA per-offer discovery, inactivity, and total-transfer deadlines remain in `OtaUpdateTimeouts`.
+
+### Inspecting Zigbee networking errors
+
+Coordinator errors expose `network_error()` so applications can inspect hardware failures without
+backend-specific downcasts:
+
+```rust,ignore
+use apis_saltans_hw::NetworkError;
+
+if let Some(failure) = error.network_error() {
+    match failure {
+        NetworkError::DeliveryFailed => eprintln!("Zigbee delivery failed"),
+        NetworkError::NoAcknowledgement { layer } => {
+            eprintln!("Missing {layer:?} acknowledgement");
+        }
+        other => eprintln!("Zigbee networking error: {other}"),
+    }
+}
+```
+
+A missing protocol response or local timeout does not prove failed delivery and returns `None`.
+Opaque backend error sources also return `None` unless the driver supplies a classification.
+Unclassified confirmation bytes return `Some(NetworkError::BackendStatus(code))`.
+Original hardware error sources and confirmation statuses remain accessible through `Error::Hardware`.

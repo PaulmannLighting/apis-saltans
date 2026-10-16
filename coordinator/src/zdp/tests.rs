@@ -294,7 +294,7 @@ fn network_down_quarantines_a_submission_that_completed_outside_the_actor() {
             assert!(matches!(
                 result.await,
                 Ok(Err(Error::Hardware(HardwareError::Transmission(
-                    TransmissionError::NoRoute
+                    TransmissionError::Network(zb_hw::NetworkError::NetworkDown)
                 ))))
             ));
             assert!(transceiver.handle_actor_message(stale_completion));

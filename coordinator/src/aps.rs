@@ -466,7 +466,9 @@ impl Transceiver {
                 self.state.handle_confirm(counter, status);
             }
             Message::NetworkDown => {
-                self.state.network_down(&TransmissionError::NoRoute.into());
+                self.state.network_down(
+                    &TransmissionError::Network(zb_hw::NetworkError::NetworkDown).into(),
+                );
             }
             Message::HardwareUnavailable => {
                 self.state.stop(&zb_hw::Error::ActorUnavailable);

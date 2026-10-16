@@ -123,3 +123,12 @@ metadata. The coordinator uses the flag only for incoming ZDO requests when deci
 generate a response. Acknowledged completion uses `DataConfirm<T>` plus the coordinator correlation
 counter. The generic timestamp and key-pair handle preserve backend-native representations.
 Startup, event-task ownership, and backend configuration remain outside this crate.
+
+## Error classification
+
+The core crate owns the copyable `NetworkError` and `AcknowledgementLayer` types because their
+semantics span protocol layers. APS confirmations and hardware errors both consume these shared
+values without introducing a dependency from APS to hardware. The hardware crate re-exports it and adds optional
+backend error sources through `Error::Network`. Command failures and asynchronous confirmations
+therefore expose the same classification while retaining their original diagnostics. Classification
+belongs at the backend boundary, where the status namespace is known.
