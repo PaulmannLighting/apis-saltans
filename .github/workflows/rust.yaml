@@ -52,3 +52,31 @@ jobs:
 
       - name: Check for supply-chain changes
         run: git diff --exit-code supply-chain/
+
+  core-no-std:
+    name: Core without std or alloc
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: ["", "serde"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust and bare-metal target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabi
+
+      - name: Run core tests in isolation
+        run: cargo test --locked -p apis-saltans-core --no-default-features --features "${{ matrix.features }}"
+
+      - name: Check core on bare metal
+        run: cargo check --locked -p apis-saltans-core --target thumbv7em-none-eabi --no-default-features --features "${{ matrix.features }}"
+
+      - name: Reject std and alloc dependency features
+        run: |
+          cargo tree --locked -p apis-saltans-core --target thumbv7em-none-eabi --no-default-features --features "${{ matrix.features }}" -e normal,features,no-proc-macro > core-features.txt
+          if grep -E 'feature "(std|alloc)"' core-features.txt; then
+            echo "Core must not enable std or alloc on target dependencies."
+            exit 1
+          fi

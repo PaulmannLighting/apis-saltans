@@ -377,9 +377,9 @@ dependencies = [
 
 [[package]]
 name = "le-stream"
-version = "10.2.0"
+version = "10.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42537ed5e918288237bfa43d0ab3be58d58f74ed1b96983d082a8892da9f5acf"
+checksum = "29bae26247e1233aa76d1da74347754fefe6a2d68bc260b6a830d71b0da925a6"
 dependencies = [
  "bytes",
  "heapless",

@@ -17,9 +17,9 @@ chrono.workspace = true
 cfg_eval = { version = "0.1", optional = true }
 heapless.workspace = true
 intx = "0.1"
-le-stream = { workspace = true, features = ["alloc", "derive", "heapless", "intx", "macaddr"] }
+le-stream = { workspace = true, features = ["derive", "heapless", "intx", "macaddr"] }
 log.workspace = true
-macaddr = "1"
+macaddr = { version = "1", default-features = false }
 num_enum.workspace = true
 repr-discriminant.workspace = true
 serde = { workspace = true, optional = true }

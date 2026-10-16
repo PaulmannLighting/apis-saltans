@@ -1,68 +1,51 @@
 
 # cargo-vet imports lock
 
-[[unpublished.apis-saltans-aps]]
-version = "0.12.0"
-audited_as = "0.11.0"
-
-[[unpublished.apis-saltans-coordinator]]
-version = "0.21.0"
-audited_as = "0.20.0"
-
-[[unpublished.apis-saltans-core]]
-version = "0.11.3"
-audited_as = "0.11.2"
-
-[[unpublished.apis-saltans-hw]]
-version = "0.18.0"
-audited_as = "0.17.0"
-
-[[unpublished.apis-saltans-zcl]]
-version = "0.15.0"
-audited_as = "0.14.0"
-
-[[unpublished.apis-saltans-zdp]]
-version = "0.12.0"
-audited_as = "0.11.0"
-
 [[publisher.apis-saltans-aps]]
-version = "0.11.0"
-when = "2026-10-12"
+version = "0.12.0"
+when = "2026-10-16"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
 [[publisher.apis-saltans-coordinator]]
-version = "0.20.0"
-when = "2026-10-12"
+version = "0.21.0"
+when = "2026-10-16"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
 [[publisher.apis-saltans-core]]
-version = "0.11.2"
-when = "2026-10-12"
+version = "0.11.3"
+when = "2026-10-16"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
 [[publisher.apis-saltans-hw]]
-version = "0.17.0"
-when = "2026-10-12"
+version = "0.18.0"
+when = "2026-10-16"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
 [[publisher.apis-saltans-zcl]]
-version = "0.14.0"
-when = "2026-10-12"
+version = "0.15.0"
+when = "2026-10-16"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
 [[publisher.apis-saltans-zdp]]
-version = "0.11.0"
-when = "2026-10-12"
+version = "0.12.0"
+when = "2026-10-16"
+user-id = 290593
+user-login = "neumann-paulmann"
+user-name = "Richard Neumann"
+
+[[publisher.le-stream]]
+version = "10.2.1"
+when = "2026-10-16"
 user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"

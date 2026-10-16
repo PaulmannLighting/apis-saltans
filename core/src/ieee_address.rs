@@ -111,6 +111,19 @@ mod tests {
         assert_eq!(address, ADDRESS);
     }
 
+    #[test]
+    fn from_le_stream_rejects_truncated_addresses_and_leaves_trailing_bytes() {
+        const OCTETS: [u8; 8] = [8, 7, 6, 5, 4, 3, 2, 1];
+        const TRAILING_BYTE: u8 = 0xff;
+
+        for length in 0..OCTETS.len() {
+            assert!(IeeeAddress::from_le_stream(OCTETS[..length].iter().copied()).is_none());
+        }
+        let mut bytes = OCTETS.into_iter().chain(core::iter::once(TRAILING_BYTE));
+        assert_eq!(IeeeAddress::from_le_stream(&mut bytes), Some(ADDRESS));
+        assert_eq!(bytes.next(), Some(TRAILING_BYTE));
+    }
+
     #[cfg(feature = "serde")]
     mod serde_tests {
         use serde::de::{Deserializer, IntoDeserializer, Visitor};
@@ -224,6 +237,13 @@ mod tests {
 
             fn serialize_str(self, value: &str) -> Result<Self::Ok, Self::Error> {
                 Ok(value.into())
+            }
+
+            fn collect_str<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+            where
+                T: core::fmt::Display + ?Sized,
+            {
+                Ok(value.to_string())
             }
 
             fn serialize_bytes(self, _value: &[u8]) -> Result<Self::Ok, Self::Error> {

@@ -16,7 +16,7 @@ all-features = true
 
 [dependencies]
 bytes = { workspace = true, optional = true }
-serde = { workspace = true, optional = true }
+serde = { workspace = true, default-features = true, optional = true }
 thiserror = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["sync"], optional = true }
 zb-aps = { workspace = true, optional = true }

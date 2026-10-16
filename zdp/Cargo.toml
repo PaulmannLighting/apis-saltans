@@ -15,10 +15,10 @@ exclude = [".gitignore", "TODO.md"]
 bitflags.workspace = true
 bytes.workspace = true
 heapless.workspace = true
-le-stream = { workspace = true, features = ["derive"] }
+le-stream = { workspace = true, features = ["alloc", "derive"] }
 num_enum.workspace = true
 repr-discriminant.workspace = true
-serde = { workspace = true, optional = true }
+serde = { workspace = true, default-features = true, optional = true }
 thiserror.workspace = true
 zb-aps.workspace = true
 zb-core.workspace = true

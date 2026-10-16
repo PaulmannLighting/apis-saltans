@@ -14,14 +14,14 @@ exclude = [".gitignore", "TODO.md"]
 [dependencies]
 bitflags.workspace = true
 bytes.workspace = true
-chrono.workspace = true
+chrono = { workspace = true, default-features = true }
 const_env.workspace = true
 either = "1"
 heapless.workspace = true
-le-stream = { workspace = true, features = ["derive", "heapless", "intx", "bytes"] }
+le-stream = { workspace = true, features = ["alloc", "derive", "heapless", "intx", "bytes"] }
 num_enum.workspace = true
 repr-discriminant.workspace = true
-serde = { workspace = true, optional = true }
+serde = { workspace = true, default-features = true, optional = true }
 strum.workspace = true
 thiserror.workspace = true
 zb-aps.workspace = true

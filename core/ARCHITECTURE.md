@@ -169,3 +169,17 @@ flowchart LR
     Core --> Hardware[Hardware errors and re-exports]
     APS --> Hardware
 ```
+
+## No-std and allocation boundary
+
+Core disables Chrono, Serde, and its direct macaddr dependency's defaults, and does not enable
+`le-stream/alloc`. `IeeeAddress` derives its byte-stream traits through `le-stream/macaddr`.
+Since `le-stream` 10.2.1, that integration also disables macaddr's defaults, allowing core to
+build on bare-metal targets without `std` or `alloc`.
+
+Workspace defaults for Chrono and Serde are minimal. Higher-level crates explicitly opt back into
+the defaults they previously inherited. ZCL and ZDP explicitly enable `le-stream/alloc` for
+their own heap-backed command payloads instead of relying on core to enable it. CI tests core in
+isolation with and without Serde and verifies both configurations on a bare-metal target.
+A dependency-feature check rejects `std` and `alloc` on target dependencies while excluding
+host procedural macros. Test-only formatting and collections can use the host allocator.

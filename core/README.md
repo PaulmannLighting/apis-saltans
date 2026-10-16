@@ -238,3 +238,16 @@ at APS or MAC. These shared value types are used by APS confirmations and hardwa
 they do not perform hardware I/O or implement protocol behavior. Unclassified backend codes
 remain available as `NetworkError::BackendStatus(u8)` and require the originating backend's
 status namespace for interpretation.
+
+## Embedded targets
+
+Core declares `no_std`, uses fixed-capacity `heapless` collections, and disables unnecessary
+Chrono and Serde defaults and `le-stream/alloc`. Host unit tests may use `alloc`.
+
+Core supports bare-metal targets with and without Serde. `le-stream` 10.2.1 disables macaddr's
+default features, so `IeeeAddress` retains its derived byte-stream implementations without pulling
+in `std`.
+
+CI tests core in isolation, checks both configurations on `thumbv7em-none-eabi`, and rejects
+`std` or `alloc` features on target dependencies. A full workspace build can hide missing
+feature declarations through Cargo feature unification and does not establish bare-metal support.

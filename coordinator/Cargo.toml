@@ -18,7 +18,7 @@ const_env.workspace = true
 heapless.workspace = true
 le-stream = { workspace = true, features = ["derive", "bytes"] }
 log.workspace = true
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true, default-features = true, features = ["derive"] }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "rt", "rt-multi-thread", "time", "fs", "io-util"] }
 tokio-util = { workspace = true, features = ["rt"] }
