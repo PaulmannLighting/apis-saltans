@@ -5,20 +5,45 @@
 //! payload fragments, and returns the rebuilt APS data frame once all fragments
 //! are present.
 
-use std::collections::BTreeMap;
-use std::num::NonZero;
+#[cfg(feature = "alloc")]
+use alloc::collections::BTreeMap;
+use core::num::NonZero;
 
-use bytes::Bytes;
 use log::{trace, warn};
+use thiserror::Error;
 
 use self::index::Index;
 use self::transaction::{InsertResult, Transaction};
 use crate::apsde::{DataIndication, Source};
 use crate::data::Frame;
-use crate::{Extended, ExtendedControl};
+use crate::{CapacityError, Extended, ExtendedControl, Payload};
+#[cfg(not(feature = "alloc"))]
+use crate::{CapacityKind, TRANSACTIONS_CAPACITY};
 
 mod index;
 mod transaction;
+
+#[cfg(feature = "alloc")]
+type Transactions = BTreeMap<Index, Transaction>;
+#[cfg(not(feature = "alloc"))]
+type Transactions = heapless::LinearMap<Index, Transaction, TRANSACTIONS_CAPACITY>;
+
+/// Reassembly failure, distinct from an incomplete transaction.
+#[derive(Clone, Copy, Debug, Eq, Error, PartialEq)]
+#[non_exhaustive]
+pub enum AssemblyError {
+    /// Invalid control flags, block count, or fragment index.
+    #[error("Invalid APS fragment")]
+    InvalidFragment,
+
+    /// No first fragment has established this transaction.
+    #[error("APS follow-up fragment has no transaction")]
+    UnexpectedFragment,
+
+    /// A configured allocation-free resource was exhausted.
+    #[error(transparent)]
+    Capacity(#[from] CapacityError),
+}
 
 /// Reassembles fragmented APS data frames.
 ///
@@ -31,7 +56,7 @@ mod transaction;
 /// returned payload is no longer fragmented.
 #[derive(Debug, Default)]
 pub struct Assembler {
-    transactions: BTreeMap<Index, Transaction>,
+    transactions: Transactions,
 }
 
 impl Assembler {
@@ -49,15 +74,33 @@ impl Assembler {
     #[must_use]
     pub fn add<T, K>(
         &mut self,
-        indication: DataIndication<Frame<Bytes>, T, K>,
-    ) -> Option<Frame<Bytes>> {
+        indication: DataIndication<Frame<Payload>, T, K>,
+    ) -> Option<Frame<Payload>> {
+        self.try_add(indication).unwrap_or_else(|error| {
+            warn!("Dropping APS fragment: {error}");
+            None
+        })
+    }
+
+    /// Add a frame, distinguishing incomplete transactions from rejected input.
+    ///
+    /// A full transaction table rejects new keys without evicting existing entries.
+    /// A replacement first fragment is validated before replacing the existing transaction.
+    /// Invalid or excessive follow-up fragments discard their matching transaction.
+    ///
+    /// # Errors
+    /// Returns an error for invalid fragments, missing transactions, or exceeded capacities.
+    pub fn try_add<T, K>(
+        &mut self,
+        indication: DataIndication<Frame<Payload>, T, K>,
+    ) -> Result<Option<Frame<Payload>>, AssemblyError> {
         let (metadata, aps) = indication.into_parts();
         let source = metadata.source();
         trace!("Received APSDE data indication from {source:?}: {aps:?}");
 
         let Some(extended) = aps.header().extended() else {
             trace!("APS frame has no extended header.");
-            return Some(aps);
+            return Ok(Some(aps));
         };
 
         trace!("APS frame has extended header: {extended:?}");
@@ -69,7 +112,7 @@ impl Assembler {
             warn!(
                 "Dropping invalid frame that claims to be the first and a follow-up fragment of the transaction."
             );
-            return None;
+            return Err(AssemblyError::InvalidFragment);
         }
 
         if extended.control().contains(ExtendedControl::FIRST_FRAGMENT) {
@@ -84,25 +127,25 @@ impl Assembler {
         }
 
         trace!("APS frame is not a follow-up fragment.");
-        Some(aps)
+        Ok(Some(aps))
     }
 
     fn handle_first_fragment(
         &mut self,
         source: Source,
         extended: Extended,
-        aps: Frame<Bytes>,
-    ) -> Option<Frame<Bytes>> {
+        aps: Frame<Payload>,
+    ) -> Result<Option<Frame<Payload>>, AssemblyError> {
         trace!("APS frame is first fragment.");
 
         let Some(blocks) = extended.block_number() else {
             warn!("Dropping invalid APS frame without block number.");
-            return None;
+            return Err(AssemblyError::InvalidFragment);
         };
 
         let Some(blocks) = NonZero::new(blocks) else {
             warn!("Dropping invalid APS frame with block number 0.");
-            return None;
+            return Err(AssemblyError::InvalidFragment);
         };
 
         let (mut header, payload) = aps.into_parts();
@@ -110,34 +153,56 @@ impl Assembler {
         if blocks.get() == 1 {
             trace!("APS frame contains only 1 block.");
             header.drop_extended();
-            return Some(Frame::raw(header, payload));
+            return Ok(Some(Frame::raw(header, payload)));
         }
 
         trace!("Transaction size is: {}", blocks.get());
 
-        if let Some(previous_transaction) = self.transactions.insert(
-            Index::new(source, header.counter()),
-            Transaction::new(blocks, header, payload),
-        ) {
-            warn!("Dropping previous transaction: {previous_transaction:?}");
-            return None;
-        }
+        let transaction = Transaction::new(blocks, header, payload)?;
+        self.insert_transaction(Index::new(source, header.counter()), transaction)?;
+        Ok(None)
+    }
 
-        trace!("Began new transaction for source: {source:?}");
-        None
+    #[cfg_attr(
+        feature = "alloc",
+        expect(
+            clippy::unnecessary_wraps,
+            reason = "the shared interface reports bounded map exhaustion without alloc"
+        )
+    )]
+    fn insert_transaction(
+        &mut self,
+        key: Index,
+        transaction: Transaction,
+    ) -> Result<(), AssemblyError> {
+        #[cfg(feature = "alloc")]
+        let previous = self.transactions.insert(key, transaction);
+        #[cfg(not(feature = "alloc"))]
+        let previous = self
+            .transactions
+            .insert(key, transaction)
+            .map_err(|_| CapacityError {
+                kind: CapacityKind::Transactions,
+                required: TRANSACTIONS_CAPACITY + 1,
+                capacity: TRANSACTIONS_CAPACITY,
+            })?;
+        if let Some(previous) = previous {
+            warn!("Dropping previous transaction: {previous:?}");
+        }
+        Ok(())
     }
 
     fn handle_followup_fragment(
         &mut self,
         source: Source,
         extended: Extended,
-        aps: Frame<Bytes>,
-    ) -> Option<Frame<Bytes>> {
+        aps: Frame<Payload>,
+    ) -> Result<Option<Frame<Payload>>, AssemblyError> {
         trace!("APS frame is followup fragment.");
 
         let Some(index) = extended.block_number() else {
             warn!("Dropping invalid APS frame without block number.");
-            return None;
+            return Err(AssemblyError::InvalidFragment);
         };
 
         trace!("APS frame is is block #{index}");
@@ -146,22 +211,18 @@ impl Assembler {
 
         let Some(transaction) = self.transactions.remove(&key) else {
             warn!("Dropping follow-up APS frame without existing transaction.");
-            return None;
+            return Err(AssemblyError::UnexpectedFragment);
         };
 
-        match transaction.insert(index, payload) {
+        match transaction.insert(index, payload)? {
             InsertResult::Complete(frame) => {
                 trace!("Transaction complete.");
-                Some(frame)
+                Ok(Some(frame))
             }
             InsertResult::Incomplete(transaction) => {
                 trace!("Transaction not yet complete.");
-                self.transactions.insert(key, transaction);
-                None
-            }
-            InsertResult::OutOfBounds(index) => {
-                warn!("Received out of bounds fragment: {index}. Dropping transaction.");
-                None
+                self.insert_transaction(key, transaction)?;
+                Ok(None)
             }
         }
     }

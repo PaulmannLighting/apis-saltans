@@ -135,3 +135,38 @@ known. `ConfirmStatus::Failure` carries this error directly. Unclassified bytes 
 `NetworkError::BackendStatus`; recognized failures do not retain a redundant vendor code. Native
 APS failures are classified by `ConfirmStatus::network_error()`, which also returns unclassified
 backend failures without interpreting their bytes.
+
+## Allocation boundary
+
+The crate root is unconditionally `no_std`. The optional, default-disabled `alloc` feature selects
+`bytes::Bytes` as `Payload`, `Vec<Option<Bytes>>` for transaction slots, and `BTreeMap` for pending
+transactions. Bytes disables its `std` default. Other workspace consumers opt into `alloc` explicitly.
+
+Without `alloc`, `payload/bounded.rs` supplies a heapless owned payload with unprefixed wire codecs.
+Transaction slots use `heapless::Vec<Option<heapless::Vec<u8, FRAGMENT_CAPACITY>>, FRAGMENTS_CAPACITY>`;
+the assembler uses `heapless::LinearMap<Index, Transaction, TRANSACTIONS_CAPACITY>`. Map order is not
+observable in reassembly. Fragmentation retains the original payload and copies slices using an
+offset instead of shifting the remaining bytes on each iteration.
+
+```mermaid
+flowchart LR
+    Env[Compile-time environment] --> Limits[capacity.rs]
+    Limits --> Payload[Bounded payload]
+    Limits --> Slots[Bounded fragment slots]
+    Limits --> Map[Bounded transaction map]
+    Payload --> Fragments[Fragmentation iterator]
+    Slots --> Map
+    Map --> Assembler[Assembler]
+    Assembler --> Payload
+```
+
+`build.rs` tracks each environment variable so stable `const_env` values are refreshed on rebuild.
+Compile-time assertions enforce positive limits, fragment size no greater than payload size, and
+fragment counts representable by the protocol. No heapless length-prefix codec is used for raw APS
+payloads. Construction and decoding reject capacity overflow instead of dropping excess bytes.
+
+`try_add` reports errors independently of completion. It validates new transactions before insertion;
+map exhaustion never evicts another key. Follow-up processing removes its transaction, validates and
+replaces the indexed block, and either returns a complete frame or reinserts the transaction. Failed
+follow-ups discard that transaction. The total-size calculation excludes the replaced slot, so a
+duplicate fragment does not consume extra capacity. `add` preserves the old completion-only API.

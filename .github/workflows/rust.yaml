@@ -80,3 +80,44 @@ jobs:
             echo "Core must not enable std or alloc on target dependencies."
             exit 1
           fi
+
+  aps-no-std:
+    name: APS without std
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: ["", "alloc"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust and bare-metal target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabi
+
+      - name: Test APS in isolation
+        run: cargo test --locked -p apis-saltans-aps --no-default-features --features "${{ matrix.features }}"
+
+      - name: Check APS on bare metal
+        run: cargo check --locked -p apis-saltans-aps --target thumbv7em-none-eabi --no-default-features --features "${{ matrix.features }}"
+
+      - name: Check target dependency features
+        env:
+          APS_FEATURES: ${{ matrix.features }}
+        run: |
+          cargo tree --locked -p apis-saltans-aps --target thumbv7em-none-eabi --no-default-features --features "$APS_FEATURES" -e normal,features,no-proc-macro > aps-features.txt
+          if grep -E 'feature "std"' aps-features.txt; then
+            exit 1
+          fi
+          if [ -z "$APS_FEATURES" ] && grep -E 'feature "alloc"|bytes v' aps-features.txt; then
+            exit 1
+          fi
+
+      - name: Test smaller bounded capacities
+        if: matrix.features == ''
+        env:
+          ZIGBEE_APS_PAYLOAD_CAPACITY: "32"
+          ZIGBEE_APS_FRAGMENT_CAPACITY: "8"
+          ZIGBEE_APS_FRAGMENTS_CAPACITY: "8"
+          ZIGBEE_APS_TRANSACTIONS_CAPACITY: "2"
+        run: cargo test --locked -p apis-saltans-aps --no-default-features

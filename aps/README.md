@@ -226,3 +226,82 @@ Primary dependencies:
 APS confirmation using `ConfirmStatus::Failure(error)`. Unclassified failures retain their native
 status byte in `NetworkError::BackendStatus(u8)`; recognized failures carry portable semantics. `ConfirmStatus::network_error()` also classifies known native APS failures; it never
 interprets an untyped network status byte as a vendor-specific code.
+
+## `no_std` and storage features
+
+APS is `no_std` and has no default features. Without `alloc`, owned payloads and the assembler
+use fixed-capacity heapless storage. Enable `alloc` to use the original `bytes::Bytes`,
+`alloc::vec::Vec`, and `alloc::collections::BTreeMap` representations:
+
+```toml
+[dependencies]
+apis-saltans-aps = { version = "0.12", features = ["alloc"] }
+```
+
+`Payload` is an alias for `bytes::Bytes` with `alloc`. Without it, `Payload` is an owned,
+heapless byte buffer with `TryFrom<&[u8]>`, `try_from_iter`, slice access, and little-endian
+stream traits. Its wire encoding is raw bytes, with **no length prefix**. The generic `Data<T>`
+and APSDE payload types remain usable with other representations, including borrowed data.
+
+```rust
+use apis_saltans_aps::Payload;
+
+#[cfg(not(feature = "alloc"))]
+let payload = Payload::try_from(&[1, 2, 3][..]).expect("payload fits");
+#[cfg(feature = "alloc")]
+let payload = Payload::from_static(&[1, 2, 3]);
+assert_eq!(payload.as_ref(), &[1, 2, 3]);
+```
+
+### Compile-time capacities
+
+Without `alloc`, `const_env` reads these environment variables when APS is compiled:
+
+| Public constant | Environment variable | Default | Unit |
+| --- | --- | ---: | --- |
+| `PAYLOAD_CAPACITY` | `ZIGBEE_APS_PAYLOAD_CAPACITY` | 1024 | Owned/reassembled payload bytes |
+| `FRAGMENT_CAPACITY` | `ZIGBEE_APS_FRAGMENT_CAPACITY` | 128 | Bytes per buffered fragment |
+| `FRAGMENTS_CAPACITY` | `ZIGBEE_APS_FRAGMENTS_CAPACITY` | 16 | Fragment slots per transaction |
+| `TRANSACTIONS_CAPACITY` | `ZIGBEE_APS_TRANSACTIONS_CAPACITY` | 4 | Concurrent transactions |
+
+These are implementation resource limits, not additional Zigbee wire-format limits. All must be
+positive; fragment capacity must not exceed payload capacity, and fragment slots must be at most
+255. Invalid configurations fail compilation. They are ignored with `alloc`.
+
+For example:
+
+```sh
+ZIGBEE_APS_PAYLOAD_CAPACITY=512 ZIGBEE_APS_FRAGMENT_CAPACITY=64 \
+ZIGBEE_APS_FRAGMENTS_CAPACITY=8 ZIGBEE_APS_TRANSACTIONS_CAPACITY=2 \
+cargo check -p apis-saltans-aps --target thumbv7em-none-eabi
+```
+
+The build script tracks changes to these variables so Cargo rebuilds APS when they change.
+Configure them in the build environment or Cargo's `[env]` configuration; they are not runtime settings.
+The assembler's inline memory scales approximately as transactions × fragment slots × fragment
+capacity, plus headers, lengths, discriminants, and temporary output storage. The default fragment
+byte storage alone totals 8 KiB. Cloning and splitting bounded payloads copies bytes; allocating
+mode retains `Bytes` sharing and splitting behavior.
+
+### Errors and fragmentation
+
+`Assembler::try_add()` returns `Result<Option<Data<Payload>>, AssemblyError>`: `Ok(None)` means an
+incomplete transaction, while errors distinguish invalid fragments, unexpected follow-ups, and
+resource exhaustion. `CapacityError` identifies the resource, required size, and configured limit.
+`Assembler::add()` remains a compatibility wrapper returning `None` for rejected input.
+
+A full table rejects new keys without evicting other transactions. A valid first fragment can
+replace the same key even when the table is full; an invalid replacement leaves the existing
+transaction intact. Invalid or excessive follow-up fragments discard their matching transaction.
+Duplicate blocks replace their previous bytes and are counted only once toward the total size.
+Single-block and unfragmented frames do not occupy transaction slots and only need to fit the owned
+payload capacity. Nothing is silently truncated on overflow.
+
+`Data<Payload>::fragment()` preserves the existing `TryFromIntError` error type with `alloc`.
+Without `alloc`, `FragmentationError` also reports excessive chunk sizes or fragment counts before
+returning an iterator. Reassembly independently checks total bytes, since incoming peers need not
+respect local capacity settings.
+
+CI builds and tests APS in isolation in both modes, checks bare-metal compilation, and exercises
+smaller capacities. Other workspace crates explicitly enable APS's `alloc` feature to retain their
+existing APIs; building the whole workspace therefore does not test allocation-free APS.

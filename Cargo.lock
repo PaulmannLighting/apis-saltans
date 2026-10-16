@@ -18,6 +18,8 @@ dependencies = [
  "apis-saltans-core",
  "bitflags",
  "bytes",
+ "const_env",
+ "heapless",
  "le-stream",
  "log",
  "num_enum",

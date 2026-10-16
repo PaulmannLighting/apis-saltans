@@ -1,13 +1,34 @@
-use std::num::{NonZero, TryFromIntError};
+use core::num::{NonZero, TryFromIntError};
 
-use bytes::Bytes;
+#[cfg(not(feature = "alloc"))]
+use thiserror::Error;
 
-use crate::Fragmentation;
 use crate::data::{Frame, Header};
+#[cfg(not(feature = "alloc"))]
+use crate::{CapacityError, CapacityKind, FRAGMENT_CAPACITY, FRAGMENTS_CAPACITY};
+use crate::{Fragmentation, Payload};
 
 const EMPTY_PAYLOAD_BLOCKS: u8 = 0;
 const FIRST_FRAGMENT_INDEX: u8 = 0;
 const SINGLE_BLOCK: u8 = 1;
+
+/// Fragmentation failure in allocating mode, preserving the original API.
+#[cfg(feature = "alloc")]
+pub type FragmentationError = TryFromIntError;
+
+/// Fragmentation failure without an allocator.
+#[cfg(not(feature = "alloc"))]
+#[derive(Debug, Error)]
+#[non_exhaustive]
+pub enum FragmentationError {
+    /// The block count cannot be represented by the APS header.
+    #[error("APS fragment count is out of range: {0}")]
+    BlockCount(#[from] TryFromIntError),
+
+    /// A configured capacity would be exceeded.
+    #[error(transparent)]
+    Capacity(#[from] CapacityError),
+}
 
 /// Iterator over APS data fragments produced from a single frame payload.
 ///
@@ -17,10 +38,12 @@ const SINGLE_BLOCK: u8 = 1;
 #[derive(Debug)]
 pub struct Fragments {
     header: Header,
-    payload: Bytes,
+    payload: Payload,
     chunk_size: NonZero<usize>,
     blocks: u8,
     index: u8,
+    #[cfg(not(feature = "alloc"))]
+    offset: usize,
 }
 
 impl Fragments {
@@ -29,20 +52,46 @@ impl Fragments {
     /// # Errors
     ///
     /// Returns an error if the number of fragments does not fit into the APS
-    /// extended header block count field.
+    /// extended header block count field, or a bounded fragmentation capacity is exceeded.
     ///
-    pub fn new(frame: Frame<Bytes>, chunk_size: NonZero<usize>) -> Result<Self, TryFromIntError> {
+    pub fn new(
+        frame: Frame<Payload>,
+        chunk_size: NonZero<usize>,
+    ) -> Result<Self, FragmentationError> {
         let (header, payload) = frame.into_parts();
         let blocks: u8 = payload.len().div_ceil(chunk_size.get()).try_into()?;
+        #[cfg(not(feature = "alloc"))]
+        if blocks > SINGLE_BLOCK {
+            let fragment_size = chunk_size.get().min(payload.len());
+            if fragment_size > FRAGMENT_CAPACITY {
+                return Err(CapacityError {
+                    kind: CapacityKind::Fragment,
+                    required: fragment_size,
+                    capacity: FRAGMENT_CAPACITY,
+                }
+                .into());
+            }
+            if usize::from(blocks) > FRAGMENTS_CAPACITY {
+                return Err(CapacityError {
+                    kind: CapacityKind::Fragments,
+                    required: usize::from(blocks),
+                    capacity: FRAGMENTS_CAPACITY,
+                }
+                .into());
+            }
+        }
         Ok(Self {
             header,
             payload,
             chunk_size,
             blocks,
             index: FIRST_FRAGMENT_INDEX,
+            #[cfg(not(feature = "alloc"))]
+            offset: 0,
         })
     }
 
+    #[cfg(feature = "alloc")]
     #[must_use]
     fn chunk_size(&self) -> usize {
         self.chunk_size.get().min(self.payload.len())
@@ -69,7 +118,7 @@ impl Fragments {
 
 impl Iterator for Fragments {
     /// Fragmented APS data frame yielded by the iterator.
-    type Item = Frame<Bytes>;
+    type Item = Frame<Payload>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == FIRST_FRAGMENT_INDEX && self.blocks == EMPTY_PAYLOAD_BLOCKS {
@@ -90,21 +139,33 @@ impl Iterator for Fragments {
             return Some(Frame::raw(header, self.payload.clone()));
         }
 
+        #[cfg(feature = "alloc")]
         let chunk = self.payload.split_to(self.chunk_size());
+        #[cfg(not(feature = "alloc"))]
+        let chunk = {
+            let end = self
+                .offset
+                .saturating_add(self.chunk_size.get())
+                .min(self.payload.len());
+            let chunk = Payload::try_from(&self.payload[self.offset..end])
+                .expect("a slice of a bounded payload fits the same capacity");
+            self.offset = end;
+            chunk
+        };
         Some(Frame::raw(header, chunk))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZero;
+    use alloc::vec::Vec;
+    use core::num::NonZero;
 
-    use bytes::Bytes;
     use zb_core::{Application, Endpoint, Profile};
 
     use super::{Fragments, SINGLE_BLOCK};
     use crate::data::{DataHeaderParameters, Frame, Header};
-    use crate::{Destination, Extended};
+    use crate::{Destination, Extended, Payload};
 
     const CHUNK_SIZE: usize = 4;
     const CLUSTER_ID: u16 = 0x0006;
@@ -113,6 +174,17 @@ mod tests {
     const MULTI_BLOCK_PAYLOAD_LEN: usize = 10;
     const PROFILE_ID: u16 = Profile::ZigbeeHomeAutomation.as_u16();
     const SINGLE_BLOCK_PAYLOAD_LEN: usize = 3;
+
+    fn payload(bytes: &[u8]) -> Payload {
+        #[cfg(feature = "alloc")]
+        {
+            Payload::copy_from_slice(bytes)
+        }
+        #[cfg(not(feature = "alloc"))]
+        {
+            Payload::try_from(bytes).expect("test payload fits")
+        }
+    }
 
     fn chunk_size() -> NonZero<usize> {
         NonZero::new(CHUNK_SIZE).expect("chunk size is non-zero")
@@ -133,7 +205,7 @@ mod tests {
     fn empty_payload_yields_one_unfragmented_frame() {
         let frame = Frame::raw(
             header(Some(Extended::first_fragment(SINGLE_BLOCK))),
-            Bytes::new(),
+            Payload::new(),
         );
         let mut fragments =
             Fragments::new(frame, chunk_size()).expect("empty payload has valid block count");
@@ -149,7 +221,7 @@ mod tests {
     fn single_block_payload_yields_one_unfragmented_frame() {
         let frame = Frame::raw(
             header(Some(Extended::first_fragment(SINGLE_BLOCK))),
-            Bytes::from_static(&[0; SINGLE_BLOCK_PAYLOAD_LEN]),
+            payload(&[0; SINGLE_BLOCK_PAYLOAD_LEN]),
         );
         let mut fragments = Fragments::new(frame, chunk_size())
             .expect("single block payload has valid block count");
@@ -163,10 +235,7 @@ mod tests {
 
     #[test]
     fn multi_block_payload_stops_after_final_partial_chunk() {
-        let frame = Frame::raw(
-            header(None),
-            Bytes::from_static(&[0; MULTI_BLOCK_PAYLOAD_LEN]),
-        );
+        let frame = Frame::raw(header(None), payload(&[0; MULTI_BLOCK_PAYLOAD_LEN]));
         let fragments =
             Fragments::new(frame, chunk_size()).expect("multi block payload has valid block count");
 

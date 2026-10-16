@@ -1,18 +1,20 @@
 //! APS Data frame definitions.
 
-use std::num::{NonZero, TryFromIntError};
+use core::num::NonZero;
 
-use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 
-pub use self::defragmentation::Assembler;
-pub use self::fragments::Fragments;
+pub use self::defragmentation::{Assembler, AssemblyError};
+pub use self::fragments::{FragmentationError, Fragments};
 pub use self::header::{DataHeaderParameters, Header};
 pub use self::unicast::{Unicast, UnicastHeaderParameters};
+use crate::Payload;
 
 mod defragmentation;
 mod fragments;
 mod header;
+#[cfg(test)]
+mod tests;
 mod unicast;
 
 /// An APS Data frame.
@@ -65,10 +67,10 @@ impl<T> Frame<T> {
     }
 }
 
-impl Frame<Bytes> {
+impl Frame<Payload> {
     /// Return a new frame with the given header and payload.
     #[must_use]
-    pub const fn raw(header: Header, payload: Bytes) -> Self {
+    pub const fn raw(header: Header, payload: Payload) -> Self {
         Self { header, payload }
     }
 
@@ -80,14 +82,14 @@ impl Frame<Bytes> {
     /// # Errors
     ///
     /// Returns an error if the number of fragments does not fit into the APS
-    /// extended header block count field.
+    /// extended header block count field, or an allocation-free capacity is exceeded.
     ///
-    pub fn fragment(self, chunk_size: NonZero<usize>) -> Result<Fragments, TryFromIntError> {
+    pub fn fragment(self, chunk_size: NonZero<usize>) -> Result<Fragments, FragmentationError> {
         Fragments::new(self, chunk_size)
     }
 }
 
-impl Frame<Bytes> {
+impl Frame<Payload> {
     /// Parse the frame into a frame with typed payload.
     ///
     /// # Errors

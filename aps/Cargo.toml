@@ -14,12 +14,18 @@ exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 
 [dependencies]
 bitflags.workspace = true
-bytes.workspace = true
+bytes = { workspace = true, optional = true }
+const_env.workspace = true
+heapless.workspace = true
 le-stream = { workspace = true, features = ["derive"] }
 log.workspace = true
 num_enum.workspace = true
 thiserror.workspace = true
 zb-core.workspace = true
+
+[features]
+default = []
+alloc = ["dep:bytes", "le-stream/bytes"]
 
 [lints]
 workspace = true

@@ -1,4 +1,4 @@
-use std::fmt::{self, Display, Formatter};
+use core::fmt::{self, Display, Formatter};
 
 use le_stream::ToLeStream;
 use zb_core::Endpoint;

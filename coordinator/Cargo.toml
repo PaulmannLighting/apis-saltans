@@ -13,7 +13,7 @@ exclude = [".gitignore", "ARCHITECTURE.md"]
 
 [dependencies]
 bitflags.workspace = true
-bytes.workspace = true
+bytes = { workspace = true, default-features = true }
 const_env.workspace = true
 heapless.workspace = true
 le-stream = { workspace = true, features = ["derive", "bytes"] }
@@ -22,7 +22,7 @@ serde = { workspace = true, default-features = true, features = ["derive"] }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "rt", "rt-multi-thread", "time", "fs", "io-util"] }
 tokio-util = { workspace = true, features = ["rt"] }
-zb-aps.workspace = true
+zb-aps = { workspace = true, features = ["alloc"] }
 zb-core = { workspace = true, features = ["serde"] }
 zb-hw = { workspace = true, features = ["coordinator", "serde"] }
 zb-zcl = { workspace = true, features = ["serde"] }

@@ -15,11 +15,11 @@ exclude = [".gitignore", "ARCHITECTURE.md", "TODO.md"]
 all-features = true
 
 [dependencies]
-bytes = { workspace = true, optional = true }
+bytes = { workspace = true, default-features = true, optional = true }
 serde = { workspace = true, default-features = true, optional = true }
 thiserror = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["sync"], optional = true }
-zb-aps = { workspace = true, optional = true }
+zb-aps = { workspace = true, features = ["alloc"], optional = true }
 zb-core = { workspace = true, optional = true }
 zb-zdp = { workspace = true, optional = true }
 

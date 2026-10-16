@@ -13,14 +13,14 @@ exclude = [".gitignore", "TODO.md"]
 
 [dependencies]
 bitflags.workspace = true
-bytes.workspace = true
+bytes = { workspace = true, default-features = true }
 heapless.workspace = true
 le-stream = { workspace = true, features = ["alloc", "derive"] }
 num_enum.workspace = true
 repr-discriminant.workspace = true
 serde = { workspace = true, default-features = true, optional = true }
 thiserror.workspace = true
-zb-aps.workspace = true
+zb-aps = { workspace = true, features = ["alloc"] }
 zb-core.workspace = true
 
 [features]

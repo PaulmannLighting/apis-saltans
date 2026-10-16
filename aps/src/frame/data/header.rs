@@ -201,6 +201,8 @@ impl FromLeStream for Header {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use le_stream::{FromLeStream, ToLeStream};
     use zb_core::endpoint::Reserved;
     use zb_core::{Application, Endpoint, Profile};
