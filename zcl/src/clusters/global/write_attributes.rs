@@ -7,6 +7,7 @@ use zb_core::Direction;
 pub use self::record::Record;
 pub use self::status::Status;
 use crate::macros::zcl_command;
+use crate::storage::Records;
 
 mod record;
 mod status;
@@ -20,7 +21,7 @@ zcl_command! {
         response: Response;
         => crate::global::WriteAttributes;
         fields {
-            records: Box<[Record]>,
+            records: Records<Record>,
         }
     }
 }
@@ -41,7 +42,7 @@ zcl_command! {
         direction: Direction::ServerToClient;
         => crate::global::WriteAttributesResponse;
         fields {
-            records: Box<[Status]>,
+            records: Records<Status>,
         }
     }
 }
@@ -55,8 +56,8 @@ impl Deref for Response {
 }
 
 impl IntoIterator for Response {
-    type Item = <Box<[Status]> as IntoIterator>::Item;
-    type IntoIter = <Box<[Status]> as IntoIterator>::IntoIter;
+    type Item = <Records<Status> as IntoIterator>::Item;
+    type IntoIter = <Records<Status> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.records.into_iter()

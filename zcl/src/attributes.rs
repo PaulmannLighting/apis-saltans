@@ -4,7 +4,7 @@ use zb_core::{ClusterSpecific, Profiled};
 pub use self::analog::Analog;
 pub use self::discrete::Discrete;
 pub use self::errors::{InvalidType, ParseAttributeError};
-pub use self::reporting::{ReportingConfiguration, ReportingType};
+pub use self::reporting::{ConfigurationResult, ReportingConfiguration, ReportingType};
 use crate::alarms::Reportable as AlarmsAttributes;
 use crate::ballast_configuration::Reportable as BallastConfigurationAttributes;
 use crate::basic::Reportable as BasicAttributes;
@@ -48,12 +48,35 @@ pub trait Writable: ClusterSpecific + Profiled + Into<Record> {
     fn id(&self) -> u16;
 }
 
+#[cfg(feature = "alloc")]
 /// A trait for reporting configurations and their ZCL wire types.
 ///
 /// Generated implementations include attributes without `P`: reporting may be a manufacturer
 /// option (ZCL §2.5.7.3). Availability here does not guarantee device support or override
 /// attribute-specific restrictions. Discover Attributes Extended describes actual device access.
-pub trait Reportable: ClusterSpecific + Profiled + Into<AttributeReportingConfiguration> {
+pub trait Reportable
+where
+    Self: ClusterSpecific + Profiled + Into<AttributeReportingConfiguration>,
+{
+    /// The manufacturer code, if any.
+    const MANUFACTURER_CODE: Option<u16> = None;
+
+    /// Return the attribute ID.
+    fn attribute_id(&self) -> u16;
+
+    /// Return the ZCL data type ID.
+    fn type_id(&self) -> u8;
+}
+
+#[cfg(not(feature = "alloc"))]
+/// A trait for reporting configurations and their ZCL wire types.
+///
+/// Generated implementations include attributes without `P`: reporting may be a manufacturer
+/// option (ZCL §2.5.7.3). Availability here does not guarantee device support or override
+/// attribute-specific restrictions. Discover Attributes Extended describes actual device access.
+pub trait Reportable:
+    ClusterSpecific + Profiled + TryInto<AttributeReportingConfiguration>
+{
     /// The manufacturer code, if any.
     const MANUFACTURER_CODE: Option<u16> = None;
 
@@ -119,6 +142,13 @@ pub enum AttributeReport {
     IasZone(IasZoneAttributes),
 }
 
+#[cfg_attr(
+    not(feature = "alloc"),
+    allow(
+        clippy::result_large_err,
+        reason = "bounded errors retain the rejected attribute value inline"
+    )
+)]
 impl AttributeReport {
     /// Parse a reportable attribute from a cluster ID, attribute ID, and ZCL type.
     ///
@@ -195,6 +225,7 @@ impl AttributeReport {
 
 #[cfg(test)]
 mod tests {
+
     use zb_core::Cluster;
     use zb_core::types::{Bool, Type, Uint8, Uint16};
 

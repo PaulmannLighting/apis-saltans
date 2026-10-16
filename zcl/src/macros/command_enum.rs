@@ -63,10 +63,11 @@ macro_rules! zcl_command_enum {
         $(#[$attr])*
         /// Available ZCL commands.
         #[derive(Clone, Debug, Eq, PartialEq, Hash)]
+        #[cfg_attr(not(feature = "alloc"), allow(clippy::large_enum_variant, variant_size_differences, reason = "allocation-free variants own bounded storage inline"))]
         pub enum Command {
             $(
                 /// ZCL command variant.
-                $variant(std::boxed::Box<$command>),
+                $variant($crate::storage::Owned<$command>),
             )+
         }
 
@@ -85,7 +86,7 @@ macro_rules! zcl_command_enum {
                                 && <$command as $crate::Command>::PARSE_DIRECTION
                                     .accepts(direction) =>
                         {
-                            <std::boxed::Box<$command> as le_stream::FromLeStream>::from_le_stream(
+                            <$crate::storage::Owned<$command> as le_stream::FromLeStream>::from_le_stream(
                                 bytes,
                             )
                             .map(Self::$variant)

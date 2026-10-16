@@ -1,6 +1,11 @@
 //! Structured attribute selector.
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 use le_stream::{FromLeStream, ToLeStream};
+
+use crate::storage::{Indexes, WireBytes};
 
 const LIMIT: usize = 0x0f;
 const INDICATOR_OFFSET: usize = 4;
@@ -15,7 +20,7 @@ const INDICATOR_OFFSET: usize = 4;
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Selector {
     operation: u8,
-    indexes: Box<[u16]>,
+    indexes: Indexes,
 }
 
 impl Selector {
@@ -24,7 +29,7 @@ impl Selector {
     pub fn whole() -> Self {
         Self {
             operation: 0,
-            indexes: Box::new([]),
+            indexes: Indexes::default(),
         }
     }
 
@@ -32,7 +37,7 @@ impl Selector {
     ///
     /// Returns `None` if more than 15 nested indices are supplied.
     #[must_use]
-    pub fn new(operation: u8, indexes: Box<[u16]>) -> Option<Self> {
+    pub fn new(operation: u8, indexes: Indexes) -> Option<Self> {
         (indexes.len() <= LIMIT).then_some(Self { operation, indexes })
     }
 
@@ -57,27 +62,33 @@ impl FromLeStream for Selector {
         let indicator = u8::from_le_stream(&mut bytes)?;
         let operation = indicator >> INDICATOR_OFFSET;
         let count = usize::from(indicator) & LIMIT;
+        #[cfg(feature = "alloc")]
         let mut indexes = Vec::with_capacity(count);
+        #[cfg(not(feature = "alloc"))]
+        let mut indexes = Indexes::new();
 
         for _ in 0..count {
-            indexes.push(u16::from_le_stream(&mut bytes)?);
+            let index = u16::from_le_stream(&mut bytes)?;
+            #[cfg(feature = "alloc")]
+            indexes.push(index);
+            #[cfg(not(feature = "alloc"))]
+            indexes.push(index).ok()?;
         }
 
-        Some(Self {
-            operation,
-            indexes: indexes.into_boxed_slice(),
-        })
+        #[cfg(feature = "alloc")]
+        let indexes = indexes.into_boxed_slice();
+        Some(Self { operation, indexes })
     }
 }
 
 impl ToLeStream for Selector {
-    type Iter = <Vec<u8> as IntoIterator>::IntoIter;
+    type Iter = <WireBytes as IntoIterator>::IntoIter;
 
     fn to_le_stream(self) -> Self::Iter {
         let count = u8::try_from(self.indexes.len())
             .expect("selector constructor limits index count to 15");
         let indicator = (self.operation << INDICATOR_OFFSET) | count;
-        let mut bytes = Vec::with_capacity(usize::from(1 + count) * 2);
+        let mut bytes = WireBytes::new();
 
         bytes.push(indicator);
         bytes.extend(self.indexes.into_iter().flat_map(ToLeStream::to_le_stream));

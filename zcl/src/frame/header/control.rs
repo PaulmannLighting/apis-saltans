@@ -89,6 +89,7 @@ impl Control {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]

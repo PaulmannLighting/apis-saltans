@@ -1,6 +1,10 @@
+#[cfg(not(feature = "alloc"))]
+use core::fmt::Write;
 use core::fmt::{Display, Formatter};
 use core::str::{FromStr, Utf8Error};
 
+#[cfg(not(feature = "alloc"))]
+use chrono::Datelike;
 use chrono::NaiveDate;
 use either::{Either, Left, Right};
 use zb_core::TypeId;
@@ -51,7 +55,14 @@ impl DateCode {
 
 impl Display for DateCode {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}{}", self.date.format(DATE_FORMAT), self.custom)
+        #[cfg(feature = "alloc")]
+        {
+            write!(f, "{}{}", self.date.format(DATE_FORMAT), self.custom)
+        }
+        #[cfg(not(feature = "alloc"))]
+        {
+            write!(f, "{}{}", CompactDate(self.date), self.custom)
+        }
     }
 }
 
@@ -64,11 +75,14 @@ impl From<DateCode> for String<16> {
 impl From<&DateCode> for String<16> {
     fn from(date_code: &DateCode) -> Self {
         let mut buffer = heapless::String::new();
+        #[cfg(feature = "alloc")]
         date_code
             .date
             .format(DATE_FORMAT)
             .write_to(&mut buffer)
             .expect("Date fits into buffer.");
+        #[cfg(not(feature = "alloc"))]
+        write!(buffer, "{}", CompactDate(date_code.date)).expect("Date fits into buffer.");
         buffer
             .push_str(&date_code.custom)
             .expect("Custom string fits into buffer.");
@@ -117,9 +131,50 @@ impl TryFrom<Type> for DateCode {
     }
 }
 
+impl ReportingType for DateCode {
+    type Configuration = Discrete<Self>;
+}
+
+#[cfg(not(feature = "alloc"))]
+struct CompactDate(NaiveDate);
+#[cfg(not(feature = "alloc"))]
+impl Display for CompactDate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        const UNSIGNED_YEARS: core::ops::Range<i32> = 0..10_000;
+        let year = self.0.year();
+        if UNSIGNED_YEARS.contains(&year) {
+            write!(f, "{year:04}")?;
+        } else {
+            write!(f, "{year:+05}")?;
+        }
+        write!(f, "{:02}{:02}", self.0.month(), self.0.day())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
     use super::*;
+
+    #[test]
+    fn display_preserves_padded_and_signed_years() {
+        for (year, expected) in [
+            (0, "00000102"),
+            (42, "00420102"),
+            (-1, "-00010102"),
+            (10_000, "+100000102"),
+        ] {
+            let code = DateCode::new(
+                NaiveDate::from_ymd_opt(year, 1, 2).expect("valid date"),
+                CustomString::new(),
+            );
+            assert_eq!(alloc::format!("{code}"), expected);
+            assert_eq!(
+                String::<16>::from(code).try_as_str().expect("ASCII"),
+                expected
+            );
+        }
+    }
 
     #[test]
     fn from_str_with_custom() {
@@ -152,8 +207,4 @@ mod tests {
             "20060814Custom"
         );
     }
-}
-
-impl ReportingType for DateCode {
-    type Configuration = Discrete<Self>;
 }

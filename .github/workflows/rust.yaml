@@ -163,3 +163,49 @@ jobs:
       - name: Test independent APS allocation
         if: matrix.features == ''
         run: cargo test --locked -p apis-saltans-zdp --no-default-features --features zb-aps/alloc
+
+  zcl-no-std:
+    name: ZCL without std
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: ["", "alloc", "serde", "alloc,serde"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust and bare-metal target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabi
+
+      - name: Test ZCL in isolation
+        run: cargo test --locked -p apis-saltans-zcl --no-default-features --features "${{ matrix.features }}"
+
+      - name: Check ZCL on bare metal
+        run: cargo check --locked -p apis-saltans-zcl --target thumbv7em-none-eabi --no-default-features --features "${{ matrix.features }}"
+
+      - name: Check target dependency features
+        env:
+          ZCL_FEATURES: ${{ matrix.features }}
+        run: |
+          cargo tree --locked -p apis-saltans-zcl --target thumbv7em-none-eabi --no-default-features --features "$ZCL_FEATURES" -e normal,features,no-proc-macro > zcl-features.txt
+          if grep -E 'feature "std"' zcl-features.txt; then
+            exit 1
+          fi
+          if [[ "$ZCL_FEATURES" != *alloc* ]] && grep -E 'feature "alloc"|bytes v' zcl-features.txt; then
+            exit 1
+          fi
+
+      - name: Test smaller bounded capacities
+        if: matrix.features == ''
+        env:
+          ZIGBEE_ZCL_RECORDS_CAPACITY: "3"
+          ZIGBEE_ZCL_ATTRIBUTE_IDS_CAPACITY: "2"
+          ZIGBEE_ZCL_COMMAND_IDS_CAPACITY: "2"
+          ZIGBEE_ZCL_EXTENSIONS_CAPACITY: "1"
+          ZIGBEE_ZCL_PAYLOAD_CAPACITY: "32"
+        run: cargo test --locked -p apis-saltans-zcl --no-default-features
+
+      - name: Test independent APS allocation
+        if: matrix.features == ''
+        run: cargo test --locked -p apis-saltans-zcl --no-default-features --features zb-aps/alloc

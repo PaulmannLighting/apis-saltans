@@ -897,7 +897,7 @@ end = "2027-07-19"
 
 [[trusted.cc]]
 criteria = "safe-to-deploy"
-user-id = 55123
+user-id = 55123 # rust-lang-owner
 start = "2022-10-29"
 end = "2027-07-19"
 
@@ -907,6 +907,13 @@ user-id = 290593 # Richard Neumann (neumann-paulmann)
 start = "2024-09-18"
 end = "2027-10-16"
 notes = "Publisher trusted under repository supply-chain policy."
+
+[[trusted.libm]]
+criteria = "safe-to-deploy"
+user-id = 55123 # rust-lang-owner
+start = "2024-10-26"
+end = "2026-10-16"
+notes = "Trust the Rust project publisher for libm releases through this date, consistent with the publisher trust identified by cargo vet. Used for no_std illuminance math."
 
 [[trusted.proc-macro2]]
 criteria = "safe-to-deploy"

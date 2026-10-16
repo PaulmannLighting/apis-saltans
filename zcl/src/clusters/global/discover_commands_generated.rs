@@ -3,6 +3,7 @@
 use zb_core::Direction;
 
 use crate::macros::zcl_command;
+use crate::storage::CommandIds;
 
 zcl_command! {
     /// Discover Commands Generated Command.
@@ -28,7 +29,7 @@ zcl_command! {
         => crate::global::DiscoverCommandsGeneratedResponse;
         fields {
             discovery_complete: u8,
-            command_ids: Box<[u8]>,
+            command_ids: CommandIds,
         }
 
         getters {

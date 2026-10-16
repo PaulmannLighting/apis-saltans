@@ -101,6 +101,8 @@ impl Status {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use le_stream::ToLeStream;
     use zb_core::types::{Type, Uint16};
 

@@ -1,4 +1,4 @@
-use std::iter::Chain;
+use core::iter::Chain;
 
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::types::Type;

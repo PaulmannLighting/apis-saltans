@@ -39,11 +39,11 @@
 ///         response: Response;
 ///         => crate::global::ReadAttributes;
 ///         fields {
-///             attribute_ids: Box<[u16]>,
+///             attribute_ids: crate::storage::AttributeIds,
 ///         }
 ///
 ///         constructor {
-///             pub const fn new(attribute_ids: Box<[u16]>) -> Self {
+///             pub const fn new(attribute_ids: crate::storage::AttributeIds) -> Self {
 ///                 Self { attribute_ids }
 ///             }
 ///         }
@@ -982,7 +982,7 @@ macro_rules! zcl_command {
                 if let $crate::Cluster::$cluster_variant($try_module::Command::$try_variant(command)) =
                     cluster
                 {
-                    Ok(*command)
+                    Ok($crate::storage::unpack(command))
                 } else {
                     Err(cluster)
                 }
@@ -1003,7 +1003,7 @@ macro_rules! zcl_command {
                     $try_module::$try_submodule::Command::$try_variant(command),
                 ) = cluster
                 {
-                    Ok(*command)
+                    Ok($crate::storage::unpack(command))
                 } else {
                     Err(cluster)
                 }

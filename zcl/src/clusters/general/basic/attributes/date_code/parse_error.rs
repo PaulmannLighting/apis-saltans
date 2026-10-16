@@ -21,6 +21,7 @@ impl From<CapacityError> for ParseError {
 
 #[cfg(test)]
 mod tests {
+
     use core::error::Error as _;
 
     use chrono::NaiveDate;

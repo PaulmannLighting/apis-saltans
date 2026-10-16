@@ -6,6 +6,7 @@ use zb_core::Direction;
 
 pub use super::write_attributes::{Record, Response, Status};
 use crate::macros::zcl_command;
+use crate::storage::Records;
 
 zcl_command! {
     /// Write Attributes Undivided Command.
@@ -16,7 +17,7 @@ zcl_command! {
         response: Response;
         => crate::global::WriteAttributesUndivided;
         fields {
-            records: Box<[Record]>,
+            records: Records<Record>,
         }
     }
 }

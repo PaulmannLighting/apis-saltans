@@ -43,9 +43,9 @@ impl ToLeStream for UpgradeEndRequest {
 
 impl From<UpgradeEndRequest> for Cluster {
     fn from(request: UpgradeEndRequest) -> Self {
-        Self::OtaUpgrade(crate::ota_upgrade::Command::UpgradeEndRequest(Box::new(
-            request,
-        )))
+        Self::OtaUpgrade(crate::ota_upgrade::Command::UpgradeEndRequest(
+            crate::storage::own(request),
+        ))
     }
 }
 
@@ -56,7 +56,7 @@ impl TryFrom<Cluster> for UpgradeEndRequest {
         if let Cluster::OtaUpgrade(crate::ota_upgrade::Command::UpgradeEndRequest(request)) =
             cluster
         {
-            Ok(*request)
+            Ok(crate::storage::unpack(request))
         } else {
             Err(cluster)
         }

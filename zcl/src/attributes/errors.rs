@@ -4,10 +4,22 @@ use thiserror::Error;
 use zb_core::types::Type;
 
 use crate::Status;
+use crate::storage::Owned;
 
 /// An error that occurs when parsing an attribute fails.
 #[derive(Clone, Debug, Eq, Error, PartialEq, Hash)]
-#[cfg_attr(target_pointer_width = "64", expect(variant_size_differences))]
+#[cfg_attr(
+    all(feature = "alloc", target_pointer_width = "64"),
+    expect(variant_size_differences)
+)]
+#[cfg_attr(
+    not(feature = "alloc"),
+    allow(
+        clippy::large_enum_variant,
+        variant_size_differences,
+        reason = "allocation-free variants own bounded storage inline"
+    )
+)]
 pub enum ParseAttributeError<T> {
     /// The attribute is unsupported.
     #[error("unsupported attribute {id:#04X}: {}", display_status(.status))]
@@ -24,12 +36,16 @@ pub enum ParseAttributeError<T> {
 
     /// The attribute type is invalid for this ID.
     #[error("{0}")]
-    InvalidType(#[from] Box<InvalidType<T>>),
+    InvalidType(
+        #[source]
+        #[cfg_attr(feature = "alloc", from)]
+        Owned<InvalidType<T>>,
+    ),
 }
 
 impl<T> From<InvalidType<T>> for ParseAttributeError<T> {
     fn from(error: InvalidType<T>) -> Self {
-        Self::InvalidType(error.into())
+        Self::InvalidType(crate::storage::own(error))
     }
 }
 

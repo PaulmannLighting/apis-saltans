@@ -23,6 +23,7 @@ mod types;
 
 #[cfg(test)]
 mod tests {
+
     use le_stream::ToLeStream;
     use zb_core::{Cluster as ClusterId, IeeeAddress};
 
@@ -71,7 +72,7 @@ mod tests {
     #[test]
     fn every_command_round_trips_through_runtime_dispatch() {
         let query_jitter = QueryJitter::new(QueryJitter::MAX).expect("valid query jitter");
-        let image_data = Box::from([1, 2, 3, 4]);
+        let image_data = crate::storage::test_image_data([1, 2, 3, 4]);
         let image_block = ImageBlock::try_new(IMAGE, FILE_OFFSET, image_data)
             .expect("small image block should be valid");
 

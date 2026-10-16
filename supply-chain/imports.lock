@@ -50,6 +50,12 @@ user-id = 290593
 user-login = "neumann-paulmann"
 user-name = "Richard Neumann"
 
+[[publisher.libm]]
+version = "0.2.16"
+when = "2026-01-24"
+user-id = 55123
+user-login = "rust-lang-owner"
+
 [[publisher.proc-macro2]]
 version = "1.0.107"
 when = "2026-07-19"

@@ -41,6 +41,7 @@ impl TryFrom<SensorBitmap> for SensorType {
 
 #[cfg(test)]
 mod tests {
+
     use super::{SensorBitmap, SensorType};
 
     #[test]

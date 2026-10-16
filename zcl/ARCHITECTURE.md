@@ -396,3 +396,57 @@ Read Reporting Configuration construction uses separate reported, received, and 
 constructors. Reported attributes use named `ReportedConfiguration` fields. Each constructor
 populates the existing flat record with the applicable fields and reporting direction, leaving
 the record's stream and serde representation unchanged.
+
+
+## Storage and no_std boundary
+
+The crate always uses `no_std`. `alloc` selects the original dynamically
+allocated representations and enables APS/le-stream allocation plus optional
+Serde allocation support. `serde` alone remains allocation-free. Normal target
+dependencies disable standard-library defaults, including Chrono and either.
+
+```mermaid
+flowchart TD
+    ZCL[ZCL alloc feature] --> APS[APS alloc feature]
+    ZCL --> Dynamic[Box Vec and Bytes aliases]
+    Default[Default bounded mode] --> Raw[Heapless RawList]
+    Default --> Inline[Inline command and error variants]
+    Raw --> Codec[Unprefixed checked codecs]
+    Inline --> Dispatch[Existing command dispatch]
+```
+
+`storage` contains conditional aliases and a heapless-backed `RawList`. The
+latter deliberately does not reuse le-stream's length-prefixed heapless codec:
+existing ZCL boxed slices and vectors encode raw sequences. The decoder checks
+every insertion and distinguishes exhausted input from a truncated element.
+Bounded serialization iterates over elements without additional list buffers.
+
+Protocol-bounded OTA and selector serializers use `WireBytes`. In allocating
+mode this is the original `Vec<u8>`; in bounded mode it is an inline buffer.
+The minimum capacity of 269 covers status + image ID + offset + data length +
+255 image bytes. Arbitrary command encoding and analog reportable changes use
+fallible collection instead of this fixed scratch buffer.
+
+Command macros select `Owned<T>` for boxed/inline representation, including
+runtime dispatch and extraction. Attribute parsing errors retain the rejected
+core type inline without allocation, preserving their error sources. Generated
+reporting conversions become `TryFrom` in bounded mode because custom analog
+values can serialize beyond any configured limit. Existing allocating APIs
+remain infallible. Read-attribute response collection has one result per input
+record, so its bounded conversion cannot exceed the input record capacity.
+
+`const_env` capacities are validated at compile time and tracked by `build.rs`.
+Existing core heapless types retain their protocol-defined bounds. Inline
+enums require stack space for their largest variant; targeted lint allowances
+explain why boxing is unavailable without allocation.
+
+Date formatting uses Chrono under `alloc` and a direct YYYYMMDD formatter
+otherwise, including Chrono-compatible signed/extended years. Chrono's
+`core-error` keeps parse errors usable as error sources. `libm` provides safe
+no_std floating-point math for illuminance conversions.
+
+Scene extension codecs remain existing TODOs. This migration changes their
+container representation only and does not claim to implement those codecs.
+Validation covers both wire formats, capacity boundaries, malformed input,
+maximum OTA blocks, custom analog overflow, public allocating types, feature
+unification with APS, and isolated bare-metal dependency graphs.

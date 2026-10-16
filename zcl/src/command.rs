@@ -1,3 +1,6 @@
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+
 use const_env::env_item;
 
 pub use self::directed::Directed;
@@ -34,6 +37,7 @@ pub trait Command {
 }
 
 /// Blanket implementation for boxed commands.
+#[cfg(feature = "alloc")]
 impl<T> Command for Box<T>
 where
     T: Command,

@@ -13,15 +13,15 @@ have cluster-specific command dispatch.
 
 ## Crate Characteristics
 
-- `no_std` when `std` feature is disabled
-- uses `alloc` (`extern crate alloc`)
+- always `no_std`, with allocation disabled by default
+- optional `alloc` preserves dynamically allocated containers
 - little-endian serialization/deserialization via `le-stream`
 - depends on the local `apis-saltans-core` core crate
 
 ## Features
 
-- `std`: enable standard library mode
-- `serde`: enable serde support for supported data types
+- `alloc`: enable allocation and forward it to APS and le-stream
+- `serde`: enable serialization support without requiring allocation
 
 ## Build-Time Configuration
 
@@ -282,3 +282,75 @@ Read Reporting Configuration response records use `Status::reported`, `Status::r
 `Status::failed`. `reported` accepts an attribute ID and a `ReportedConfiguration` with named
 fields; the other constructors take only their relevant values. These replace the former
 eight-argument `Status::new` constructor. The record's serialized representation is unchanged.
+
+
+## Allocation-free storage
+
+The default build requires neither `std` nor an allocator. Enable `alloc` to
+retain the existing `Box`, `Vec`, and `Bytes` types, boxed command variants, and
+infallible command/reporting conversions. The coordinator explicitly enables
+this feature. There is no `std` feature.
+
+ZCL requests APS's `alloc` only through its own `alloc` feature. Cargo feature
+unification can still enable APS allocation independently; ZCL supports that
+combination. The APS input conversion uses `zb_aps::Payload`. Outgoing owned ZCL
+bytes use `storage::Payload`, whose storage follows ZCL's own feature.
+
+`storage` exposes aliases for the allocating or bounded representations.
+Without allocation, variable-length lists use `RawList<T, N>`, backed by
+`heapless::Vec`. Construct lists with `new`, `push`, or `try_from_iter`.
+Overflow returns the rejected element or a `CapacityError`; parsing oversized
+or truncated lists returns `None`. Lists retain their original **unprefixed**
+encoding. Existing protocol-sized heapless strings and lists remain unchanged.
+Boxed command/error values are stored inline, increasing enum sizes and stack
+usage. Existing scene-extension serialization/deserialization placeholders
+remain unimplemented in both modes.
+
+### Fallible bounded APIs
+
+- `UnsequencedFrame::<storage::Payload>::try_from_command(command)` checks the
+  serialized payload size. It works in both modes; the existing `from_command`
+  remains available with `alloc`.
+- Generated `SendReport` conversions use `TryFrom` without allocation and retain
+  `From` with allocation. Use `try_into()` when sharing code across both modes.
+- `ReportingConfiguration::into_configuration` returns `ConfigurationResult`:
+  a record with `alloc`, or `Result<Record, CapacityError>` without it. This
+  permits custom analog values to report capacity exhaustion safely.
+- Reporting command `attributes()` getters remain available in both modes;
+  they are `const` only with `alloc`, because heapless slice access is not const.
+
+### Compile-time capacities
+
+The following `const_env` settings apply only without allocation. The build
+script tracks changes to these variables and `ZCL_DISABLE_DEFAULT_RESPONSE`.
+All capacities must be positive; `WIRE_CAPACITY` must be at least 269.
+
+| Environment variable | Default | Storage |
+| --- | ---: | --- |
+| `ZIGBEE_ZCL_RECORDS_CAPACITY` | 4 | Attribute/reporting/discovery records |
+| `ZIGBEE_ZCL_ATTRIBUTE_IDS_CAPACITY` | 64 | Requested attribute IDs |
+| `ZIGBEE_ZCL_COMMAND_IDS_CAPACITY` | 64 | Discovered command IDs |
+| `ZIGBEE_ZCL_INDEXES_CAPACITY` | 15 | Structured selector indexes |
+| `ZIGBEE_ZCL_IMAGE_DATA_CAPACITY` | 255 | OTA image block bytes |
+| `ZIGBEE_ZCL_EXTENSIONS_CAPACITY` | 16 | Scene extension fields |
+| `ZIGBEE_ZCL_REPORTABLE_CHANGE_CAPACITY` | 8 | Encoded analog reportable change |
+| `ZIGBEE_ZCL_PAYLOAD_CAPACITY` | 1024 | Serialized outgoing command bytes |
+| `ZIGBEE_ZCL_WIRE_CAPACITY` | 269 | Scratch bytes for fixed-size OTA/selector codecs |
+
+Protocol limits still apply independently: selectors allow at most 15 indexes,
+and OTA image blocks at most 255 bytes. Smaller storage limits reject input
+that does not fit. The scratch buffer's minimum accommodates a maximum OTA
+block response including its status and headers, so those infallible
+serializers cannot overflow it for valid values.
+
+```sh
+ZIGBEE_ZCL_RECORDS_CAPACITY=8 cargo build -p apis-saltans-zcl --no-default-features
+```
+
+Chrono runs without its standard-library defaults. Its `core-error` feature
+preserves date parse error sources, while bounded date formatting writes
+directly to the formatter. Illuminance conversions use `libm` for logarithms,
+powers, and rounding on targets without standard-library math.
+
+CI checks `alloc`/`serde` combinations, bare-metal builds, target dependency
+features, smaller capacities, and independently enabled APS allocation.

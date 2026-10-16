@@ -5,6 +5,7 @@ use zb_core::Direction;
 
 use super::Response;
 use crate::macros::zcl_command;
+use crate::storage::Records;
 
 const DIRECTION: Direction = Direction::ServerToClient;
 
@@ -50,15 +51,21 @@ zcl_command! {
         response: Response;
         => crate::global::ConfigureReportingReceive;
         fields {
-            attributes: Box<[AttributeReportingConfiguration]>,
+            attributes: Records<AttributeReportingConfiguration>,
         }
 
         getters {
             /// Returns the received-attribute reporting configurations.
             #[must_use]
+            #[cfg(feature = "alloc")]
             pub const fn attributes(&self) -> &[AttributeReportingConfiguration] {
                 &self.attributes
             }
+            /// Returns the attribute reporting configurations.
+            #[cfg(not(feature = "alloc"))]
+            #[must_use]
+            pub fn attributes(&self) -> &[AttributeReportingConfiguration] { &self.attributes }
+
         }
     }
 }

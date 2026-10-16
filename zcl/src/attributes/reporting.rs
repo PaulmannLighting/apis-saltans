@@ -1,7 +1,7 @@
 //! Type-directed selection of attribute reporting parameters.
 
-use std::fmt::Debug;
-use std::hash::Hash;
+use core::fmt::Debug;
+use core::hash::Hash;
 
 use le_stream::ToLeStream;
 use zb_core::types::{
@@ -13,6 +13,15 @@ use zb_core::{IeeeAddress, TypeId};
 
 use super::{Analog, Discrete};
 use crate::global::configure_reporting::send::AttributeReportingConfiguration;
+#[cfg(not(feature = "alloc"))]
+use crate::storage::CapacityError;
+
+/// Result of constructing a reporting record; bounded mode can exhaust storage.
+#[cfg(feature = "alloc")]
+pub type ConfigurationResult = AttributeReportingConfiguration;
+/// Result of constructing a bounded reporting record.
+#[cfg(not(feature = "alloc"))]
+pub type ConfigurationResult = Result<AttributeReportingConfiguration, CapacityError>;
 
 /// Reporting parameters associated with an attribute value type.
 ///
@@ -26,14 +35,17 @@ pub trait ReportingType: TypeId {
 /// Convert typed reporting parameters into a wire configuration record.
 pub trait ReportingConfiguration {
     /// Build the record for the supplied attribute identifier.
-    fn into_configuration(self, attribute_id: u16) -> AttributeReportingConfiguration;
+    ///
+    /// # Errors
+    /// Without `alloc`, returns a capacity error if the reportable change is too large.
+    fn into_configuration(self, attribute_id: u16) -> ConfigurationResult;
 }
 
 impl<T> ReportingConfiguration for Analog<T>
 where
     T: TypeId + ToLeStream,
 {
-    fn into_configuration(self, attribute_id: u16) -> AttributeReportingConfiguration {
+    fn into_configuration(self, attribute_id: u16) -> ConfigurationResult {
         AttributeReportingConfiguration::analog(attribute_id, self)
     }
 }
@@ -42,8 +54,16 @@ impl<T> ReportingConfiguration for Discrete<T>
 where
     T: TypeId,
 {
-    fn into_configuration(self, attribute_id: u16) -> AttributeReportingConfiguration {
-        AttributeReportingConfiguration::discrete(attribute_id, &self)
+    fn into_configuration(self, attribute_id: u16) -> ConfigurationResult {
+        let record = AttributeReportingConfiguration::discrete(attribute_id, &self);
+        #[cfg(feature = "alloc")]
+        {
+            record
+        }
+        #[cfg(not(feature = "alloc"))]
+        {
+            Ok(record)
+        }
     }
 }
 

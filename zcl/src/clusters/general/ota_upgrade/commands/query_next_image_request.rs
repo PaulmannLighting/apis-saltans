@@ -3,6 +3,7 @@ use zb_core::{Cluster, Direction};
 use super::QueryNextImageResponse;
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
+use crate::storage::WireBytes;
 
 const HARDWARE_VERSION_PRESENT: u8 = 0b0000_0001;
 
@@ -54,13 +55,13 @@ zcl_command! {
         }
 
         to_le_stream {
-            type Iter = <Vec<u8> as IntoIterator>::IntoIter;
+            type Iter = <WireBytes as IntoIterator>::IntoIter;
 
             fn to_le_stream(self) -> Self::Iter {
                 let field_control = self
                     .hardware_version
                     .map_or(0, |_| HARDWARE_VERSION_PRESENT);
-                let mut bytes = Vec::new();
+                let mut bytes = WireBytes::new();
                 bytes.push(field_control);
                 bytes.extend(self.image.to_le_stream());
                 bytes.extend(self.hardware_version.to_le_stream());

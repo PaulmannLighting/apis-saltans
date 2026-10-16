@@ -1,6 +1,5 @@
-use core::iter::Flatten;
-use std::iter::{Chain, Once, once};
-use std::option::IntoIter;
+use core::iter::{Chain, Flatten, Once, once};
+use core::option::IntoIter;
 
 use le_stream::{FromLeStream, ToLeStream};
 
@@ -76,6 +75,8 @@ impl ToLeStream for AttributeStatus {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+
     use le_stream::{FromLeStream, ToLeStream};
 
     use super::AttributeStatus;

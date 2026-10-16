@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use core::iter::once;
 
 use le_stream::{FromLeStream, ToLeStream};

@@ -16,6 +16,8 @@ zcl_attribute_newtype! {
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::ToString;
+
     use super::TimeStatus;
 
     const TIME_STATUS_FLAGS: &str = "MASTER | SYNCHRONIZED";

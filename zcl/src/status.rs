@@ -1,4 +1,4 @@
-use std::fmt::{Formatter, LowerHex, UpperHex};
+use core::fmt::{Formatter, LowerHex, UpperHex};
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use thiserror::Error;
@@ -140,13 +140,13 @@ impl Status {
 }
 
 impl LowerHex for Status {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         LowerHex::fmt(&(*self as u8), f)
     }
 }
 
 impl UpperHex for Status {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         UpperHex::fmt(&(*self as u8), f)
     }
 }
@@ -170,6 +170,7 @@ impl From<Deprecated> for Status {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]

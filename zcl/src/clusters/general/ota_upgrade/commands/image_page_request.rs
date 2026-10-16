@@ -3,6 +3,7 @@ use zb_core::{Cluster, Direction, IeeeAddress};
 use super::ImageBlockResponse;
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
+use crate::storage::WireBytes;
 
 const REQUEST_NODE_ADDRESS_PRESENT: u8 = 0b0000_0001;
 
@@ -90,13 +91,13 @@ zcl_command! {
         }
 
         to_le_stream {
-            type Iter = <Vec<u8> as IntoIterator>::IntoIter;
+            type Iter = <WireBytes as IntoIterator>::IntoIter;
 
             fn to_le_stream(self) -> Self::Iter {
                 let field_control = self
                     .request_node_address
                     .map_or(0, |_| REQUEST_NODE_ADDRESS_PRESENT);
-                let mut bytes = Vec::new();
+                let mut bytes = WireBytes::new();
                 bytes.push(field_control);
                 bytes.extend(self.image.to_le_stream());
                 bytes.extend(self.file_offset.to_le_stream());

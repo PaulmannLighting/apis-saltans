@@ -5,6 +5,7 @@ use zb_core::Direction;
 pub use self::record::Record;
 pub use self::status::Status;
 use crate::macros::zcl_command;
+use crate::storage::Records;
 
 mod record;
 mod status;
@@ -18,7 +19,7 @@ zcl_command! {
         response: Response;
         => crate::global::WriteAttributesStructured;
         fields {
-            records: Box<[Record]>,
+            records: Records<Record>,
         }
 
         getters {
@@ -39,7 +40,7 @@ zcl_command! {
         direction: Direction::ServerToClient;
         => crate::global::WriteAttributesStructuredResponse;
         fields {
-            records: Box<[Status]>,
+            records: Records<Status>,
         }
 
         getters {

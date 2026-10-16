@@ -3,6 +3,7 @@
 use le_stream::{FromLeStream, ToLeStream};
 
 use crate::Status;
+use crate::storage::{ImageData, WireBytes};
 
 const QUERY_JITTER_MIN: u8 = 1;
 const QUERY_JITTER_MAX: u8 = 100;
@@ -156,10 +157,10 @@ impl FromLeStream for ImageNotifyPayload {
 }
 
 impl ToLeStream for ImageNotifyPayload {
-    type Iter = <Vec<u8> as IntoIterator>::IntoIter;
+    type Iter = <WireBytes as IntoIterator>::IntoIter;
 
     fn to_le_stream(self) -> Self::Iter {
-        let mut bytes = Vec::new();
+        let mut bytes = WireBytes::new();
 
         match self {
             Self::QueryJitter(query_jitter) => {
@@ -235,10 +236,10 @@ impl FromLeStream for QueryResponse {
 }
 
 impl ToLeStream for QueryResponse {
-    type Iter = <Vec<u8> as IntoIterator>::IntoIter;
+    type Iter = <WireBytes as IntoIterator>::IntoIter;
 
     fn to_le_stream(self) -> Self::Iter {
-        let mut bytes = Vec::new();
+        let mut bytes = WireBytes::new();
 
         match self {
             Self::Success { image, image_size } => {
@@ -260,7 +261,7 @@ impl ToLeStream for QueryResponse {
 pub struct ImageBlock {
     image: ImageId,
     file_offset: u32,
-    image_data: Box<[u8]>,
+    image_data: ImageData,
 }
 
 impl ImageBlock {
@@ -272,11 +273,18 @@ impl ImageBlock {
     /// # Errors
     ///
     /// Returns the supplied image data if it exceeds [`Self::MAX_DATA_SIZE`].
+    #[cfg_attr(
+        not(feature = "alloc"),
+        allow(
+            clippy::result_large_err,
+            reason = "return the rejected bounded image data without allocation"
+        )
+    )]
     pub fn try_new(
         image: ImageId,
         file_offset: u32,
-        image_data: Box<[u8]>,
-    ) -> Result<Self, Box<[u8]>> {
+        image_data: ImageData,
+    ) -> Result<Self, ImageData> {
         if image_data.len() <= Self::MAX_DATA_SIZE {
             Ok(Self {
                 image,
@@ -315,7 +323,10 @@ impl FromLeStream for ImageBlock {
         let image = ImageId::from_le_stream(&mut bytes)?;
         let file_offset = u32::from_le_stream(&mut bytes)?;
         let data_size = usize::from(u8::from_le_stream(&mut bytes)?);
-        let image_data: Box<[u8]> = bytes.by_ref().take(data_size).collect();
+        #[cfg(feature = "alloc")]
+        let image_data: ImageData = bytes.by_ref().take(data_size).collect();
+        #[cfg(not(feature = "alloc"))]
+        let image_data = ImageData::try_from_iter(bytes.by_ref().take(data_size)).ok()?;
 
         (image_data.len() == data_size).then_some(Self {
             image,
@@ -326,12 +337,12 @@ impl FromLeStream for ImageBlock {
 }
 
 impl ToLeStream for ImageBlock {
-    type Iter = <Vec<u8> as IntoIterator>::IntoIter;
+    type Iter = <WireBytes as IntoIterator>::IntoIter;
 
     fn to_le_stream(self) -> Self::Iter {
         let data_size = u8::try_from(self.image_data.len())
             .expect("ImageBlock constructor limits image data to 255 bytes");
-        let mut bytes = Vec::new();
+        let mut bytes = WireBytes::new();
         bytes.extend(self.image.to_le_stream());
         bytes.extend(self.file_offset.to_le_stream());
         bytes.push(data_size);
@@ -382,6 +393,14 @@ impl WaitForData {
 /// Payload variants of the Image Block Response command.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[cfg_attr(
+    not(feature = "alloc"),
+    allow(
+        clippy::large_enum_variant,
+        variant_size_differences,
+        reason = "allocation-free variants own bounded storage inline"
+    )
+)]
 pub enum ImageBlockResponsePayload {
     /// A block of OTA image data is available.
     Success(ImageBlock),
@@ -408,10 +427,10 @@ impl FromLeStream for ImageBlockResponsePayload {
 }
 
 impl ToLeStream for ImageBlockResponsePayload {
-    type Iter = <Vec<u8> as IntoIterator>::IntoIter;
+    type Iter = <WireBytes as IntoIterator>::IntoIter;
 
     fn to_le_stream(self) -> Self::Iter {
-        let mut bytes = Vec::new();
+        let mut bytes = WireBytes::new();
 
         match self {
             Self::Success(block) => {
@@ -481,6 +500,8 @@ impl ToLeStream for UpgradeEndStatus {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "alloc")]
+    use alloc::vec;
     use core::fmt::Debug;
 
     use le_stream::{FromLeStream, ToLeStream};
@@ -539,8 +560,8 @@ mod tests {
 
     #[test]
     fn block_response_payloads_round_trip() {
-        let block =
-            ImageBlock::try_new(IMAGE, 128, Box::from([1, 2, 3, 4])).expect("small image block");
+        let block = ImageBlock::try_new(IMAGE, 128, crate::storage::test_image_data([1, 2, 3, 4]))
+            .expect("small image block");
         round_trip(ImageBlockResponsePayload::Success(block));
         round_trip(ImageBlockResponsePayload::WaitForData(WaitForData::new(
             100, 110, 2,
@@ -548,6 +569,7 @@ mod tests {
         round_trip(ImageBlockResponsePayload::Abort);
     }
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn rejects_oversized_image_block() {
         let image_data = vec![0; ImageBlock::MAX_DATA_SIZE + 1].into_boxed_slice();

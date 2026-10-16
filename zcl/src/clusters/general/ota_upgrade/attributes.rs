@@ -37,6 +37,7 @@ zcl_attributes! {
 
 #[cfg(test)]
 mod tests {
+
     use zb_core::IeeeAddress;
     use zb_core::types::{Enum8, Type};
 

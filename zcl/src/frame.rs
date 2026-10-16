@@ -1,8 +1,7 @@
 //! ZCL frame representation.
 
-use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
-use zb_aps::Data;
+use zb_aps::{Data, Payload};
 
 pub use self::header::{Control, Direction, Header, Scope};
 pub use self::parse_frame_error::ParseFrameError;
@@ -88,10 +87,10 @@ impl Frame<Cluster> {
     }
 }
 
-impl TryFrom<Data<Bytes>> for Frame<Cluster> {
+impl TryFrom<Data<Payload>> for Frame<Cluster> {
     type Error = ParseFrameError;
 
-    fn try_from(frame: Data<Bytes>) -> Result<Self, Self::Error> {
+    fn try_from(frame: Data<Payload>) -> Result<Self, Self::Error> {
         let (header, payload) = frame.into_parts();
         Self::parse(header.cluster_id(), payload.into_iter())
     }
@@ -99,7 +98,8 @@ impl TryFrom<Data<Bytes>> for Frame<Cluster> {
 
 #[cfg(test)]
 mod tests {
-    use bytes::Bytes;
+
+    use zb_aps::Payload;
 
     use super::{Direction, Frame, Header, Scope};
 
@@ -117,7 +117,7 @@ mod tests {
                 SEQUENCE_NUMBER,
                 COMMAND_ID,
             ),
-            Bytes::new(),
+            Payload::new(),
         )
         .with_disable_default_response(false);
 

@@ -15,6 +15,14 @@ pub mod measurement_and_sensing;
 /// Available ZCL clusters.
 // TODO: Add all ZCL clusters.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(
+    not(feature = "alloc"),
+    allow(
+        clippy::large_enum_variant,
+        variant_size_differences,
+        reason = "allocation-free variants own bounded storage inline"
+    )
+)]
 pub enum Cluster {
     /// General cluster commands.
     Global(global::Command),

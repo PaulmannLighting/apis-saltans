@@ -1,12 +1,12 @@
 //! Command for configuring a device to send attribute reports.
 
-use bytes::Bytes;
 use le_stream::{FromLeStream, ToLeStream};
 use zb_core::{Direction, TypeId};
 
 use super::Response;
 use crate::attributes::{Analog, Discrete};
 use crate::macros::zcl_command;
+use crate::storage::{Records, ReportableChange};
 
 const DIRECTION: Direction = Direction::ClientToServer;
 
@@ -19,23 +19,43 @@ pub struct AttributeReportingConfiguration {
     attribute_data_type: u8,
     minimum_reporting_interval: u16,
     maximum_reporting_interval: u16,
-    reportable_change: Bytes,
+    reportable_change: ReportableChange,
 }
 
 impl AttributeReportingConfiguration {
     /// Creates a reporting configuration for an analog attribute.
-    #[must_use]
-    pub(crate) fn analog<T>(attribute_id: u16, analog: Analog<T>) -> Self
+    #[cfg_attr(feature = "alloc", must_use)]
+    #[cfg_attr(
+        feature = "alloc",
+        expect(
+            clippy::use_self,
+            reason = "the shared result alias is fallible without allocation"
+        )
+    )]
+    pub(crate) fn analog<T>(attribute_id: u16, analog: Analog<T>) -> crate::ConfigurationResult
     where
         T: TypeId + ToLeStream,
     {
-        Self {
+        #[cfg(feature = "alloc")]
+        let reportable_change = analog.reportable_change.to_le_stream().collect();
+        #[cfg(not(feature = "alloc"))]
+        let reportable_change =
+            ReportableChange::try_from_iter(analog.reportable_change.to_le_stream())?;
+        let record = Self {
             direction: DIRECTION as u8,
             attribute_id,
             attribute_data_type: T::ID,
             minimum_reporting_interval: analog.minimum_reporting_interval,
             maximum_reporting_interval: analog.maximum_reporting_interval,
-            reportable_change: analog.reportable_change.to_le_stream().collect(),
+            reportable_change,
+        };
+        #[cfg(feature = "alloc")]
+        {
+            record
+        }
+        #[cfg(not(feature = "alloc"))]
+        {
+            Ok(record)
         }
     }
 
@@ -51,7 +71,7 @@ impl AttributeReportingConfiguration {
             attribute_data_type: T::ID,
             minimum_reporting_interval: discrete.minimum_reporting_interval,
             maximum_reporting_interval: discrete.maximum_reporting_interval,
-            reportable_change: Bytes::new(),
+            reportable_change: ReportableChange::new(),
         }
     }
 }
@@ -65,15 +85,21 @@ zcl_command! {
         response: Response;
         => crate::global::ConfigureReportingSend;
         fields {
-            attributes: Box<[AttributeReportingConfiguration]>,
+            attributes: Records<AttributeReportingConfiguration>,
         }
 
         getters {
             /// Returns the attribute reporting configurations.
             #[must_use]
+            #[cfg(feature = "alloc")]
             pub const fn attributes(&self) -> &[AttributeReportingConfiguration] {
                 &self.attributes
             }
+            /// Returns the attribute reporting configurations.
+            #[cfg(not(feature = "alloc"))]
+            #[must_use]
+            pub fn attributes(&self) -> &[AttributeReportingConfiguration] { &self.attributes }
+
         }
     }
 }

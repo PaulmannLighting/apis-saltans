@@ -3,6 +3,7 @@ use zb_core::{Cluster, Direction, IeeeAddress};
 use super::ImageBlockResponse;
 use crate::macros::zcl_command;
 use crate::ota_upgrade::ImageId;
+use crate::storage::WireBytes;
 
 const REQUEST_NODE_ADDRESS_PRESENT: u8 = 0b0000_0001;
 const MINIMUM_BLOCK_PERIOD_PRESENT: u8 = 0b0000_0010;
@@ -86,7 +87,7 @@ zcl_command! {
         }
 
         to_le_stream {
-            type Iter = <Vec<u8> as IntoIterator>::IntoIter;
+            type Iter = <WireBytes as IntoIterator>::IntoIter;
 
             fn to_le_stream(self) -> Self::Iter {
                 let mut field_control = 0;
@@ -97,7 +98,7 @@ zcl_command! {
                     field_control |= MINIMUM_BLOCK_PERIOD_PRESENT;
                 }
 
-                let mut bytes = Vec::new();
+                let mut bytes = WireBytes::new();
                 bytes.push(field_control);
                 bytes.extend(self.image.to_le_stream());
                 bytes.extend(self.file_offset.to_le_stream());

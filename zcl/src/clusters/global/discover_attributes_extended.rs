@@ -4,6 +4,7 @@ use zb_core::Direction;
 
 pub use self::attribute_information::AttributeInformation;
 use crate::macros::zcl_command;
+use crate::storage::Records;
 
 mod attribute_information;
 
@@ -31,7 +32,7 @@ zcl_command! {
         => crate::global::DiscoverAttributesExtendedResponse;
         fields {
             discovery_complete: u8,
-            attributes: Box<[AttributeInformation]>,
+            attributes: Records<AttributeInformation>,
         }
 
         getters {

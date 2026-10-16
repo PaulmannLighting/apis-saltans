@@ -1,5 +1,3 @@
-mod scene_table_extension;
-
 use core::str::Utf8Error;
 
 use chrono::Duration;
@@ -7,6 +5,9 @@ use le_stream::{FromLeStream, ToLeStream};
 use zb_core::types::{String, Uint8, Uint16};
 
 pub use self::scene_table_extension::SceneTableExtension;
+use crate::storage::Extensions;
+
+mod scene_table_extension;
 
 /// Scene table entry.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -16,8 +17,8 @@ pub struct SceneTable {
     scene_id: Uint8,
     scene_name: String<16>,
     transition_time: Uint16,
-    extension_field_sets: Vec<SceneTableExtension>, // TODO: More specific type
-    transition_time100ms: Uint8,                    // TODO: Limit to 0x00..0x09.
+    extension_field_sets: Extensions, // TODO: More specific type
+    transition_time100ms: Uint8,      // TODO: Limit to 0x00..0x09.
 }
 
 impl SceneTable {
@@ -32,7 +33,7 @@ impl SceneTable {
         scene_id: Uint8,
         scene_name: String<16>,
         transition_time: Uint16,
-        extension_field_sets: Vec<SceneTableExtension>,
+        extension_field_sets: Extensions,
         transition_time100ms: Uint8,
     ) -> Self {
         Self {

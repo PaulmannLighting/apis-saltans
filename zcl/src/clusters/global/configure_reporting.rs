@@ -7,6 +7,7 @@ pub use self::receive::Command as Receive;
 pub use self::send::Command as Send;
 use crate::Status;
 use crate::macros::zcl_command;
+use crate::storage::Records;
 
 mod attribute_status;
 pub mod receive;
@@ -24,7 +25,7 @@ zcl_command! {
         direction: Direction::ServerToClient;
         => crate::global::ConfigureReportingResponse;
         fields {
-            status: Box<[AttributeStatus]>,
+            status: Records<AttributeStatus>,
         }
 
         getters {
@@ -47,7 +48,17 @@ zcl_command! {
 }
 
 #[cfg(test)]
+#[cfg_attr(
+    feature = "alloc",
+    allow(
+        clippy::unnecessary_fallible_conversions,
+        reason = "shared tests cover fallible bounded conversions"
+    )
+)]
 mod tests {
+    use alloc::vec;
+    use alloc::vec::Vec;
+
     use le_stream::{FromLeStream, ToLeStream};
     use zb_core::types::{Bool, Uint16};
     use zb_core::{Direction, TypeId};
@@ -110,7 +121,12 @@ mod tests {
         );
         assert_eq!(response.status()[2], AttributeStatus::success());
         assert!(!response.is_success());
-        assert_eq!(Response::new(response.status().into()), response);
+        assert_eq!(
+            Response::new(crate::storage::test_records(
+                response.status().iter().copied()
+            )),
+            response
+        );
         assert_eq!(
             response.to_le_stream().collect::<Vec<_>>(),
             [0x00, 0x86, 0x00, 0x78, 0x56, 0x00],
@@ -123,7 +139,8 @@ mod tests {
         for payload in PAYLOADS {
             let response = Response::from_le_stream(payload.iter().copied()).unwrap();
             let records =
-                Box::<[AttributeStatus]>::from_le_stream(payload.iter().copied()).unwrap();
+                crate::storage::Records::<AttributeStatus>::from_le_stream(payload.iter().copied())
+                    .unwrap();
             assert_eq!(response.status(), &*records);
         }
     }
@@ -144,8 +161,9 @@ mod tests {
             MINIMUM_REPORTING_INTERVAL,
             MAXIMUM_REPORTING_INTERVAL,
         ))
-        .into();
-        let command = Send::new(Box::new([attribute]));
+        .try_into()
+        .expect("configuration fits");
+        let command = Send::new(crate::storage::test_records([attribute]));
         let bytes: Vec<_> = command.clone().to_le_stream().collect();
         let mut expected = vec![Direction::ClientToServer as u8];
         expected.extend(SEND_ATTRIBUTE_ID.to_le_bytes());
@@ -166,8 +184,9 @@ mod tests {
             MAXIMUM_REPORTING_INTERVAL,
             Uint16::new(REPORTABLE_CHANGE),
         ))
-        .into();
-        let command = Send::new(Box::new([attribute]));
+        .try_into()
+        .expect("configuration fits");
+        let command = Send::new(crate::storage::test_records([attribute]));
         let bytes: Vec<_> = command.to_le_stream().collect();
         let mut expected = vec![Direction::ClientToServer as u8];
         expected.extend(ANALOG_SEND_ATTRIBUTE_ID.to_le_bytes());
@@ -182,7 +201,7 @@ mod tests {
     #[test]
     fn serializes_and_parses_receive_command() {
         let attribute = AttributeReportingConfiguration::new(RECEIVE_ATTRIBUTE_ID, TIMEOUT_PERIOD);
-        let command = Receive::new(Box::new([attribute]));
+        let command = Receive::new(crate::storage::test_records([attribute]));
         let bytes: Vec<_> = command.clone().to_le_stream().collect();
         let mut expected = vec![Direction::ServerToClient as u8];
         expected.extend(RECEIVE_ATTRIBUTE_ID.to_le_bytes());

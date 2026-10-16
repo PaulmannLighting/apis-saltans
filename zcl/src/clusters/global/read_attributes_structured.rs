@@ -5,6 +5,7 @@ use zb_core::Direction;
 pub use self::record::Record;
 use super::read_attributes::Response;
 use crate::macros::zcl_command;
+use crate::storage::Records;
 
 mod record;
 
@@ -17,7 +18,7 @@ zcl_command! {
         response: Response;
         => crate::global::ReadAttributesStructured;
         fields {
-            records: Box<[Record]>,
+            records: Records<Record>,
         }
 
         getters {

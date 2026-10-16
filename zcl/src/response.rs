@@ -24,7 +24,7 @@ where
     fn try_from(response: Cluster) -> Result<Self, Self::Error> {
         match response {
             Cluster::Global(global::Command::DefaultResponse(response)) => {
-                Ok(Self::Default(*response))
+                Ok(Self::Default(crate::storage::unpack(response)))
             }
             response => T::try_from(response).map(Self::Specific),
         }
@@ -63,6 +63,7 @@ where
 
 #[cfg(test)]
 mod tests {
+
     use super::{Cluster, MaybeDefault, ZclResponseType};
     use crate::global::read_attributes::Response;
     use crate::{Frame, Status};

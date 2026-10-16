@@ -1,3 +1,13 @@
+#![cfg_attr(
+    feature = "alloc",
+    allow(
+        clippy::unnecessary_fallible_conversions,
+        reason = "shared tests cover fallible bounded conversions"
+    )
+)]
+use alloc::string::ToString;
+use alloc::vec::Vec;
+
 use zb_core::types::{Type, Uint8, Uint16};
 use zb_core::{Cluster, Profile, Profiled, TypeId};
 
@@ -211,25 +221,33 @@ fn optional_reporting_encodes_analog_discrete_and_global_attributes() {
     const TIME_CHANGE: Int32 = Int32::new(2);
 
     let remaining_time: AttributeReportingConfiguration =
-        level::SendReport::RemainingTime(Analog::new(MINIMUM, MAXIMUM, CHANGE)).into();
+        level::SendReport::RemainingTime(Analog::new(MINIMUM, MAXIMUM, CHANGE))
+            .try_into()
+            .expect("conversion succeeds");
     assert_eq!(
         remaining_time.to_le_stream().collect::<Vec<_>>(),
         [0x00, 0x01, 0x00, 0x21, 10, 0, 60, 0, 2, 0]
     );
     let manufacturer: AttributeReportingConfiguration =
-        basic::SendReport::ManufacturerName(Discrete::<String<32>>::new(MINIMUM, MAXIMUM)).into();
+        basic::SendReport::ManufacturerName(Discrete::<String<32>>::new(MINIMUM, MAXIMUM))
+            .try_into()
+            .expect("conversion succeeds");
     assert_eq!(
         manufacturer.to_le_stream().collect::<Vec<_>>(),
         [0x00, 0x04, 0x00, 0x42, 10, 0, 60, 0]
     );
     let revision: AttributeReportingConfiguration =
-        basic::SendReport::ClusterRevision(Analog::new(MINIMUM, MAXIMUM, CHANGE)).into();
+        basic::SendReport::ClusterRevision(Analog::new(MINIMUM, MAXIMUM, CHANGE))
+            .try_into()
+            .expect("conversion succeeds");
     assert_eq!(
         revision.to_le_stream().collect::<Vec<_>>(),
         [0x00, 0xfd, 0xff, 0x21, 10, 0, 60, 0, 2, 0]
     );
     let timezone: AttributeReportingConfiguration =
-        time::SendReport::TimeZone(Analog::new(MINIMUM, MAXIMUM, TIME_CHANGE)).into();
+        time::SendReport::TimeZone(Analog::new(MINIMUM, MAXIMUM, TIME_CHANGE))
+            .try_into()
+            .expect("conversion succeeds");
     assert_eq!(
         timezone.to_le_stream().collect::<Vec<_>>(),
         [0x00, 0x02, 0x00, 0x2b, 10, 0, 60, 0, 2, 0, 0, 0]
@@ -269,7 +287,8 @@ fn reporting_classification_is_independent_of_type_spelling() {
             0x11,
         ),
     ] {
-        let record: AttributeReportingConfiguration = report.into();
+        let record: AttributeReportingConfiguration =
+            report.try_into().expect("conversion succeeds");
         assert_eq!(
             record.to_le_stream().collect::<Vec<_>>(),
             [0, id, 0, 0x21, 10, 0, 60, 0, 2, 0]

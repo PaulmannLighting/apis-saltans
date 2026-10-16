@@ -1,9 +1,9 @@
 //! ZCL frames awaiting assignment of a transaction sequence number.
 
-use bytes::Bytes;
 use le_stream::ToLeStream;
 
 use super::{Control, Direction, Frame, Header, Scope};
+use crate::storage::{CapacityError, Payload};
 use crate::{Command, Directed, Scoped};
 
 /// A ZCL header awaiting assignment of its transaction sequence number.
@@ -142,9 +142,34 @@ impl<T> UnsequencedFrame<T> {
     }
 }
 
-impl UnsequencedFrame<Bytes> {
+impl UnsequencedFrame<Payload> {
+    /// Serialize a command, rejecting payloads beyond the configured capacity.
+    ///
+    /// # Errors
+    /// Returns a capacity error when the serialized command is too large.
+    pub fn try_from_command<T>(command: T) -> Result<Self, CapacityError>
+    where
+        T: Command + Directed + Scoped + ToLeStream,
+    {
+        #[cfg(feature = "alloc")]
+        let payload = command.to_le_stream().collect();
+        #[cfg(not(feature = "alloc"))]
+        let payload = Payload::try_from_iter(command.to_le_stream())?;
+        Ok(Self::new(
+            UnsequencedHeader::new(
+                T::SCOPE,
+                T::DIRECTION,
+                T::DISABLE_DEFAULT_RESPONSE,
+                T::MANUFACTURER_CODE,
+                <T as Command>::ID,
+            ),
+            payload,
+        ))
+    }
+
     /// Convert a typed command into an unsequenced ZCL frame.
     #[must_use]
+    #[cfg(feature = "alloc")]
     pub fn from_command<T>(command: T) -> Self
     where
         T: Command + Directed + Scoped + ToLeStream,
@@ -164,12 +189,13 @@ impl UnsequencedFrame<Bytes> {
 
 #[cfg(test)]
 mod tests {
-    use bytes::Bytes;
+
     use le_stream::FromLeStream;
 
     use super::{Direction, Scope, UnsequencedFrame, UnsequencedHeader};
     use crate::Command;
     use crate::on_off::On;
+    use crate::storage::Payload;
 
     const COMMAND_ID: u8 = 1;
     const MANUFACTURER_CODE: u16 = 0x1234;
@@ -185,7 +211,7 @@ mod tests {
                 Some(MANUFACTURER_CODE),
                 COMMAND_ID,
             ),
-            Bytes::new(),
+            Payload::new(),
         )
         .into_frame(SEQUENCE_NUMBER);
 
@@ -210,7 +236,7 @@ mod tests {
                 None,
                 COMMAND_ID,
             ),
-            Bytes::new(),
+            Payload::new(),
         )
         .with_disable_default_response(false)
         .into_frame(SEQUENCE_NUMBER);
@@ -220,7 +246,7 @@ mod tests {
 
     #[test]
     fn constructs_an_unsequenced_frame_from_a_typed_command() {
-        let frame = UnsequencedFrame::from_command(On);
+        let frame = UnsequencedFrame::try_from_command(On).expect("command fits");
 
         assert_eq!(frame.header().command_id(), <On as Command>::ID);
         assert_eq!(

@@ -78,7 +78,7 @@ impl TryFrom<MeasuredValue> for Lux {
 )]
 fn lux_to_measured_value(lux: u32) -> Option<u16> {
     if VALID_LUX_VALUES.contains(&lux) {
-        Some((FACTOR * (lux as f32).log(BASE)).round() as u16 + OFFSET)
+        Some(libm::roundf(FACTOR * (libm::logf(lux as f32) / libm::logf(BASE))) as u16 + OFFSET)
     } else {
         None
     }
@@ -88,11 +88,16 @@ fn lux_to_measured_value(lux: u32) -> Option<u16> {
 fn measured_value_to_lux(measured_value: u16) -> Option<u32> {
     measured_value
         .checked_sub(OFFSET)
-        .map(|n| BASE.powf(f32::from(n) / FACTOR).round() as u32)
+        .map(|n| libm::roundf(libm::powf(BASE, f32::from(n) / FACTOR)) as u32)
+}
+
+impl ReportingType for MeasuredValue {
+    type Configuration = Analog<Self>;
 }
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
@@ -131,8 +136,4 @@ mod tests {
             1
         );
     }
-}
-
-impl ReportingType for MeasuredValue {
-    type Configuration = Analog<Self>;
 }

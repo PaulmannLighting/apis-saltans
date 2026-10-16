@@ -1127,6 +1127,7 @@ macro_rules! zcl_attributes {
             }
         }
 
+        #[cfg(feature = "alloc")]
         impl From<SendReport>
             for $crate::global::configure_reporting::send::AttributeReportingConfiguration
         {
@@ -1134,6 +1135,15 @@ macro_rules! zcl_attributes {
                 match value {
                     $($conversion_arms)*
                 }
+            }
+        }
+        #[cfg(not(feature = "alloc"))]
+        impl TryFrom<SendReport>
+            for $crate::global::configure_reporting::send::AttributeReportingConfiguration
+        {
+            type Error = $crate::storage::CapacityError;
+            fn try_from(value: SendReport) -> Result<Self, Self::Error> {
+                match value { $($conversion_arms)* }
             }
         }
     };

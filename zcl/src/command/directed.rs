@@ -1,3 +1,6 @@
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+
 use zb_core::Direction;
 
 /// Trait for commands that have a single direction when sent.
@@ -6,6 +9,7 @@ pub trait Directed {
     const DIRECTION: Direction;
 }
 
+#[cfg(feature = "alloc")]
 impl<T> Directed for Box<T>
 where
     T: Directed,

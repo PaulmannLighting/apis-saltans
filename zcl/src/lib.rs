@@ -3,6 +3,10 @@
 //! The crate provides typed ZCL frame parsing and serialization, global commands, selected
 //! cluster-specific commands, and generated access-specific attribute enums.
 //!
+//! This crate is always `no_std`. Enable `alloc` for the original dynamically
+//! allocated containers; the default uses bounded [`storage`] configured through
+//! `ZIGBEE_ZCL_*_CAPACITY` environment variables.
+//!
 //! Runtime command dispatch currently covers global commands plus the Basic, Groups, Identify,
 //! On/Off, Level Control, Alarms, Scenes, OTA Upgrade, Color Control, and IAS Zone clusters.
 //! Attribute modules are broader and currently cover implemented General, Lighting, Measurement
@@ -14,11 +18,15 @@
 //! frame control fields.
 
 // Reporting enums cover optional attributes as well as mandatory ones.
+#![no_std]
 #![recursion_limit = "512"]
 
+#[cfg(any(feature = "alloc", test))]
+extern crate alloc;
+
 pub use self::attributes::{
-    Analog, AttributeReport, Discrete, InvalidType, ParseAttributeError, Readable, Reportable,
-    ReportingConfiguration, ReportingType, Writable,
+    Analog, AttributeReport, ConfigurationResult, Discrete, InvalidType, ParseAttributeError,
+    Readable, Reportable, ReportingConfiguration, ReportingType, Writable,
 };
 pub use self::clusters::general::{
     alarms, basic, device_temperature_configuration, groups, identify, level, on_off, ota_upgrade,
@@ -45,3 +53,4 @@ mod macros;
 mod options;
 mod response;
 mod status;
+pub mod storage;
