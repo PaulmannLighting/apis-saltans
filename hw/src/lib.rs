@@ -10,6 +10,12 @@
 //! - `driver` adds the implementor-facing `Driver` trait and protocol re-export modules, and enables
 //!   `types`.
 //!
+//! Core network dump and restore are optional per actor. Backend crates implement `NetworkDump`
+//! and/or `NetworkRestore` and register them with `Driver::actor_builder`. Existing `into_actor`
+//! construction leaves both disabled. Snapshots contain network identity and security state only;
+//! serialized backups contain secrets. Restoration requires an offline target and explicit outgoing
+//! security-counter advances. It persists and verifies state while leaving the network stopped.
+//!
 //! Event translation and startup wiring are backend concerns; this crate does not prescribe
 //! backend configuration or provide an event-translator abstraction.
 //!

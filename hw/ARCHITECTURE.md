@@ -132,3 +132,66 @@ values without introducing a dependency from APS to hardware. The hardware crate
 backend error sources through `Error::Network`. Command failures and asynchronous confirmations
 therefore expose the same classification while retaining their original diagnostics. Classification
 belongs at the backend boundary, where the status namespace is known.
+
+## Optional core network backup
+
+`common/backup.rs` owns versioned snapshots, validated constructors, redacted secret wrappers,
+capability results, restore options/reports, and backup errors. `backup/serialization.rs` deserializes
+invariant-bearing records through validation. The model deliberately excludes application state.
+Backend-specific core state is carried in required namespaced/versioned extensions.
+
+`common/driver/backup.rs` defines the independent `NetworkDump` and `NetworkRestore` traits and
+`ActorBuilder`. `Driver::actor_builder` starts with two zero-sized disabled dispatch policies;
+`with_network_dump` and `with_network_restore` replace them with enabled policies under the
+corresponding driver trait bounds. `Driver::into_actor` uses both disabled policies. Public handles
+remain opaque and independent of backend and policy types. Dispatch traits stay inside the private
+implementation module; only supported marker types are exported.
+
+```mermaid
+flowchart LR
+    H[NcpHandle] --> M[One driver mailbox]
+    M --> A[One driver actor]
+    A --> C[Required Driver methods]
+    A --> P[Static optional dispatch policies]
+    P --> U[Unsupported response]
+    P --> D[NetworkDump]
+    P --> R[NetworkRestore]
+```
+
+All actors accept the same message enum. The added variants are `GetBackupCapabilities`,
+`DumpNetwork`, and `RestoreNetwork`. Every branch responds explicitly, including unsupported
+operations. The entire restore payload is boxed, avoiding backup-size-dependent mailbox slots.
+Ordinary commands require no additional allocation, mailbox, or actor. Capabilities report registered
+support and the common schema version; extension and firmware compatibility remain per-backup target
+checks rather than a promise inferred from registration.
+
+```mermaid
+sequenceDiagram
+    participant H as NcpHandle
+    participant A as Driver actor
+    participant D as Offline backend
+    H->>A: RestoreNetwork with original snapshot and options
+    A->>A: Validate structure and advance normalized outgoing counters
+    A->>D: validate_restore with prepared snapshot
+    D-->>A: Compatible target with no storage mutation
+    A->>D: restore_network with prepared snapshot
+    D->>D: Persist and verify required core state
+    D-->>A: RestoreReport with network still stopped
+    A-->>H: One-shot result
+```
+
+The receive loop awaits the operation even if the response receiver disappears. Cancellation of a
+caller therefore cannot drop an in-progress hardware write future. Actor termination or power loss
+can still interrupt restoration. Restore failures preserve backend sources and distinguish unchanged
+storage from possibly partial state. Generic dispatch checks all normalized outgoing counters before
+calling target validation; the backend checks and advances any counters encoded in opaque extensions.
+
+The backend must keep the network offline throughout target validation, apply, verification, and any
+failure. Coordinator runtime shutdown does not stop the externally owned driver, so application/backend
+startup owns this maintenance lifecycle. Successful restoration does not start the network. No generic
+transactional rollback is promised for NCP storage.
+
+Counter advancement is explicit and only safe for bounded traffic since capture, including previous
+restores. Incoming replay counters are retained. Stale snapshots cannot recover subsequent key or
+membership changes. A backend offering live snapshots must synchronize with autonomous NCP changes;
+serializing commands at the actor boundary alone does not provide snapshot consistency.

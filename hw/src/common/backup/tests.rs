@@ -1,6 +1,7 @@
 use std::num::NonZeroU32;
 
 use zb_core::IeeeAddress;
+use zb_core::short_id::Device;
 
 use super::{
     BackupError, BackupExtension, BackupSource, DeviceBackup, LinkKeyState, NetworkBackup,
@@ -11,6 +12,8 @@ use crate::{Channel, ChannelMask};
 const COORDINATOR: IeeeAddress = IeeeAddress::new(1, 2, 3, 4, 5, 6, 7, 8);
 const REMOTE: IeeeAddress = IeeeAddress::new(8, 7, 6, 5, 4, 3, 2, 1);
 const PAN_ID: u16 = 0x1234;
+const REMOTE_SHORT: u16 = 0x1234;
+const OTHER_REMOTE: IeeeAddress = IeeeAddress::new(8, 7, 6, 5, 4, 3, 2, 2);
 const KEY_BYTES: [u8; 16] = [42; 16];
 const COUNTER: u32 = 10;
 const LINK_INCREMENT: NonZeroU32 = NonZeroU32::new(2).unwrap();
@@ -109,6 +112,15 @@ fn rejects_duplicate_addresses_key_sequences_and_extensions() {
         Err(BackupError::DuplicateDevice)
     ));
     let mut backup = snapshot();
+    backup.devices[0].nwk_address = Device::new(REMOTE_SHORT);
+    let mut other = backup.devices[0].clone();
+    other.ieee_address = OTHER_REMOTE;
+    backup.devices.push(other);
+    assert!(matches!(
+        backup.validate(),
+        Err(BackupError::DuplicateDevice)
+    ));
+    let mut backup = snapshot();
     backup.additional_network_keys[0].sequence_number = backup.network_key.sequence_number;
     assert!(matches!(
         backup.validate(),
@@ -202,6 +214,16 @@ fn serialization_round_trip_preserves_secrets_and_rejects_invalid_input() {
             serde_json::from_value::<NetworkBackup>(invalid).is_err(),
             "accepted {pointer}"
         );
+    }
+    for field in ["network_key", "devices"] {
+        let mut invalid = json.clone();
+        let object = if field == "devices" {
+            &mut invalid[field][0]
+        } else {
+            &mut invalid[field]
+        };
+        object["unknown_required_state"] = serde_json::json!(true);
+        assert!(serde_json::from_value::<NetworkBackup>(invalid).is_err());
     }
     let mut duplicate = json.clone();
     duplicate["devices"]

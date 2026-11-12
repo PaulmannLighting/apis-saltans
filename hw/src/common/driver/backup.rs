@@ -74,6 +74,25 @@ pub struct BackupEnabled;
 /// Builds a single driver actor with independently registered backup operations.
 ///
 /// Existing `Driver::into_actor` is equivalent to building with both operations disabled.
+///
+/// ```
+/// use std::num::NonZeroUsize;
+///
+/// use apis_saltans_hw::{Driver, NetworkDump, NetworkRestore};
+///
+/// fn start<D>(driver: D, capacity: NonZeroUsize)
+/// where
+///     D: Driver + NetworkDump + NetworkRestore,
+/// {
+///     let (handle, actor) = driver.actor_builder(capacity)
+///         .with_network_dump()
+///         .with_network_restore()
+///         .build();
+///     tokio::spawn(actor);
+///     // Pass handle to coordinator startup or maintenance code.
+///     drop(handle);
+/// }
+/// ```
 #[must_use = "build the actor and continuously poll its driving future"]
 #[derive(Debug)]
 pub struct ActorBuilder<D, Dump = BackupDisabled, Restore = BackupDisabled> {

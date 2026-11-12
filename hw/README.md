@@ -231,3 +231,149 @@ Use native APS statuses when the backend actually reports APS status semantics. 
 `TransmissionError::Confirmation` retains the complete confirmation status, and its
 `network_error()` accessor classifies known APS failures as well as backend-classified failures.
 Local confirmation timeouts remain distinct from a reported delivery failure.
+
+## Core network backup and restore
+
+Network backup is optional for each driver actor. Existing `Driver` implementations and
+`Driver::into_actor(capacity)` continue to work without implementing additional traits; the resulting
+handle reports both capabilities disabled. Requests for an unregistered operation return
+`Error::Unsupported(Operation::DumpNetwork)` or `Error::Unsupported(Operation::RestoreNetwork)`.
+
+A capable backend implements `NetworkDump`, `NetworkRestore`, or both, and explicitly registers
+those implementations at actor construction:
+
+```rust
+# #[cfg(feature = "driver")]
+# {
+use std::num::NonZeroUsize;
+
+use apis_saltans_hw::{Driver, NetworkDump, NetworkRestore, NcpHandle};
+
+fn backup_actor<D>(driver: D, capacity: NonZeroUsize)
+    -> (NcpHandle, impl Future<Output = D> + Send)
+where
+    D: Driver + NetworkDump + NetworkRestore,
+{
+    driver
+        .actor_builder(capacity)
+        .with_network_dump()
+        .with_network_restore()
+        .build()
+}
+# }
+```
+
+The backend still owns spawning or polling the returned future. Dump and restore use the same
+mailbox and actor-owned driver as ordinary commands. Disabled dispatch markers occupy no storage,
+add no task or channel, and allocate nothing during ordinary commands. The complete restore request
+is boxed only when restore is requested. The mailbox message remains 72 bytes on the tested
+x86-64 Linux target, the same size as before backup support.
+
+### Snapshot contents
+
+`NetworkBackup` contains only core network state:
+
+- Source stack and firmware identifiers and a backup schema version.
+- Coordinator IEEE address, PAN ID, extended PAN ID, channel, channel mask, network update ID, and
+  network security level.
+- Active and additional retained/staged network keys, their sequence numbers, and outgoing security
+  frame counters.
+- Remote device IEEE/short addresses, child membership, individual APS/Trust Center link keys,
+  link-key security counters, and incoming active-network-key counters where the stack maintains them.
+- Required versioned `BackupExtension` values for remaining core network state.
+
+Application endpoints, clusters, bindings, interviews, names, groups, scenes, reporting configuration,
+and automations are outside this API. Green Power state is deferred.
+
+An extension has a stack/vendor namespace, name, version, and opaque byte payload. Use extensions for
+core state the normalized model cannot express: default Trust Center keys, link-key derivation seeds,
+Trust Center/security policies, additional child records, network-key transition semantics, and replay
+state for other key epochs. Every extension is required. A target must understand and restore every
+extension or reject the backup before writing. Structural validity alone does not establish that a
+snapshot is complete for a particular stack or transferable to another stack.
+
+A backend must export a complete, consistent snapshot or fail. The actor's command serialization does
+not stop autonomous NCP traffic: use the stack's snapshot facility or quiesce relevant operations.
+Non-exportable credentials can make a backend unable to offer this capability.
+
+### Calling the API
+
+With `coordinator` enabled, operations are inherent methods on `NcpHandle`:
+
+```rust,no_run
+# #[cfg(feature = "coordinator")]
+# {
+use apis_saltans_hw::{Error, NcpHandle, NetworkBackup};
+
+async fn capture(ncp: &NcpHandle) -> Result<Option<NetworkBackup>, Error> {
+    if ncp.backup_capabilities().await?.can_dump() {
+        return ncp.dump_network().await.map(Some);
+    }
+    Ok(None)
+}
+# }
+```
+
+`backup_capabilities()` describes registered operations and the API schema version. Each restore
+still validates the specific backup against the actual target, including required extension versions.
+
+To restore, pass the original snapshot and explicit `RestoreOptions::new(network_advance,
+link_advance)`, with two `NonZeroU32` advances. There is no default advance. Choose advances exceeding
+the traffic since capture, including any earlier restoration of the same snapshot. A finite increment
+cannot make arbitrarily stale backups safe, nor recover keys or devices added after capture.
+
+Normalized counters mean the last used counter, or a conservative upper bound on it. They are
+32-bit security counters, separate from the wrapping eight-bit APS correlation counter passed to
+`transmit`. Dispatch prepares a copy with checked outgoing counter advances for **all** retained
+network keys and individual link keys, preserving incoming counters. Overflow or advancement to an
+exhausted counter is rejected before target validation or mutation. Extension counters require
+backend-specific preparation and checks. Reserve the resulting counter values before transmitting
+so that the first new secured frame uses a greater value.
+
+### Restore lifecycle and backend obligations
+
+1. Stop coordinator protocol actors and initialize the target backend with its Zigbee network stopped.
+   Backend startup must make this maintenance state available before automatically joining or forming
+   a network. The old coordinator must remain offline when the replacement starts using its identity.
+2. Call `NcpHandle::restore_network(original_backup, options)`. The actor validates structure and
+   prepares normalized counters before calling `NetworkRestore::validate_restore`.
+3. `validate_restore` checks stopped state, firmware compatibility, IEEE identity restoration, key
+   import, table capacities, required extensions, and extension counter arithmetic without mutating
+   persistent network state. It must reject incompatible targets before the first write.
+4. `NetworkRestore::restore_network` applies the prepared snapshot. Do not advance its normalized
+   counters again. Prevent external state changes between validation and writes; persist and verify
+   the restored identity, credentials, parameters, and counters before constructing
+   `RestoreReport::from_verified_backup`.
+5. Leave the network stopped after both success and failure. Backend startup resumes the verified
+   network deliberately; the generic hardware API provides no network-start command.
+
+Direct callers of the implementor trait must validate, call `NetworkBackup::prepare_restore`, and
+follow the same target validation/apply sequence themselves. Normal callers use `NcpHandle`.
+
+Hardware restore failures should use `BackupError::restore_failed` with `RestoreFailureState::Unchanged`
+or `PossiblyModified` and the backend error source. Partially changed targets must stay offline.
+Backend errors and source metadata must not contain secrets. Dropping the response future does not
+cancel a queued restore, but aborting the actor or losing hardware power can interrupt it. A lost
+response leaves the outcome unknown and requires verification before resuming or retrying.
+
+The result is restoration of the existing coordinator identity and network security relationships,
+without manual pairing for devices covered by a compatible, sufficiently recent backup. Device
+wake-up and mesh convergence still take time. Concrete backend tests must verify persistence,
+identity restoration, counter behavior, failure recovery, and actual device communication.
+
+### Serialization
+
+The existing `serde` feature supports `NetworkBackup` and its component values. Schema version 1 is
+this crate's representation, not the Open Coordinator Backup JSON format. JSON is an application
+choice; the hardware library has no JSON runtime dependency. `serde_json` is used only by tests.
+
+IEEE addresses use the existing `IeeeAddress` display representation. Extended PAN IDs are eight
+bytes in display/big-endian order, channel masks are page-zero bit masks, and key material and
+extension payloads serialize as byte sequences. Deserialization validates invariant-bearing records
+and rejects unknown fields and unsupported schema versions; consumers should preserve the complete
+snapshot, including all required extensions.
+
+Keys and extension payloads have redacted `Debug` output, while serialization intentionally contains
+secrets. Protect serialized backups at rest and in transit. Key wrappers do not promise memory
+zeroization. Cloud upload, storage, encryption, scheduling, and Open Coordinator Backup conversion
+belong outside the current hardware abstraction.

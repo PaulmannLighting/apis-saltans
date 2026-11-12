@@ -5,7 +5,9 @@ use std::time::Duration;
 
 #[cfg(feature = "coordinator")]
 use bytes::Bytes;
-use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
+#[cfg(feature = "driver")]
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Sender, WeakSender};
 #[cfg(feature = "coordinator")]
 use tokio::sync::oneshot::channel;
 #[cfg(feature = "coordinator")]

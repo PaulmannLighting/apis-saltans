@@ -129,6 +129,7 @@ pub enum Message {
 }
 
 /// Owned restore payload, allocated only when restoration is requested.
+#[cfg_attr(not(feature = "driver"), allow(dead_code))]
 pub struct RestoreRequest {
     /// Original snapshot; actor dispatch prepares outgoing counters.
     pub backup: NetworkBackup,

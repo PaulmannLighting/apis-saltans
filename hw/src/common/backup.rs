@@ -22,6 +22,7 @@ pub const NETWORK_BACKUP_VERSION: u32 = 1;
 pub const NETWORK_KEY_LENGTH: usize = 16;
 
 const MAX_SECURITY_LEVEL: u8 = 7;
+const MIN_EXTENSION_VERSION: u32 = 1;
 const BROADCAST_PAN_ID: u16 = u16::MAX;
 
 /// Failure boundary of a hardware restore.
@@ -258,6 +259,7 @@ impl NetworkParameters {
 
 /// Network key and associated security state.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NetworkKeyState {
     key: NetworkKey,
@@ -294,6 +296,7 @@ impl NetworkKeyState {
 
 /// Per-device APS or Trust Center link key and replay state.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LinkKeyState {
     key: NetworkKey,
@@ -330,6 +333,7 @@ impl LinkKeyState {
 
 /// Persistent device relationship and security state.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DeviceBackup {
     ieee_address: IeeeAddress,
@@ -435,7 +439,10 @@ impl BackupExtension {
         &self.payload
     }
     fn validate(&self) -> Result<(), BackupError> {
-        if self.namespace.trim().is_empty() || self.name.trim().is_empty() || self.version == 0 {
+        if self.namespace.trim().is_empty()
+            || self.name.trim().is_empty()
+            || self.version < MIN_EXTENSION_VERSION
+        {
             return Err(BackupError::InvalidExtension);
         }
         Ok(())
