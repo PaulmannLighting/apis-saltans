@@ -493,6 +493,12 @@ criteria = "safe-to-deploy"
 version = "0.1.0"
 notes = "AI-assisted audit"
 
+[[audits.itoa]]
+who = "AI-assisted (Codex)"
+criteria = "safe-to-run"
+delta = "1.0.15 -> 1.0.19"
+notes = "AI-assisted delta audit. Inspected manifests, sealed integer formatting implementations, buffer casts and initialized suffix conversion, signed minimum handling via unsigned_abs, decimal-pair table accesses, and u128 division/multiplication helpers. Four-digit chunks keep table indices below 200 and offsets within maximum decimal string buffers; u128 writes two bounded 16-digit chunks before its leading digits. Changes are in-memory numeric formatting, compiler/MSRV metadata, benchmarks and tests. No build script or external I/O introduced. Scope: safe-to-run for JSON backup serialization tests."
+
 [[audits.js-sys]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -571,6 +577,12 @@ criteria = "safe-to-deploy"
 version = "1.0.1"
 notes = "AI-assisted audit"
 
+[[audits.memchr]]
+who = "AI-assisted (Codex)"
+criteria = "safe-to-run"
+delta = "2.7.2 -> 2.8.3"
+notes = "AI-assisted delta audit. Reviewed both manifests and all source changes: raw x86 pointer entry points now require unsafe callers; packed-pair bounds check uses remaining haystack length to avoid forming an out-of-bounds pointer; returned-index assumptions follow the existing unsafe callback contract. Reviewed NEON big-endian byte swaps and host-endian mask handling, owned finder allocation/lifetimes, removed redundant clones/constants, and regression tests. No new build script, external commands, filesystem access, or network behavior. Scope: safe-to-run as a serialization test dependency."
+
 [[audits.num_enum]]
 who = "OpenAI Codex"
 criteria = "safe-to-deploy"
@@ -648,6 +660,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "1.0.228"
 notes = "AI-assisted audit"
+
+[[audits.serde_json]]
+who = "AI-assisted (Codex)"
+criteria = "safe-to-run"
+delta = "1.0.140 -> 1.0.154"
+notes = "AI-assisted delta audit. Reviewed manifests and build-script change (riscv64 configuration), serde_core migration, ryu-to-zmij formatting calls, enum map-key validation, negative-zero/exponent handling, finite float filtering, invalid UTF-8 error positioning, map defaults/hash configuration, and value helpers. String serialization splits only at ASCII escapes, preserving UTF-8 boundaries; unchecked escape dispatch is bounded by the static escape table. New unchecked raw-value constructor is feature-gated and unused here. JSON operates on supplied values/readers/writers; no unrelated filesystem or network access introduced. Optional preserve_order/raw_value features are not enabled by this workspace. Scope: safe-to-run test dependency."
 
 [[audits.serde_with]]
 who = "Codex AI"
@@ -858,6 +876,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.5.1"
 notes = "AI-assisted audit"
+
+[[audits.zmij]]
+who = "AI-assisted (Codex)"
+criteria = "safe-to-run"
+delta = "1.0.21 -> 1.0.23"
+notes = "AI-assisted delta audit. Reviewed manifests, build-script OPT_LEVEL configuration, decimal exponent and power-of-ten tables, compressed/table paths, f32/f64 rounding and subnormal handling, scalar/SSE2/SSE4.1/NEON digit generation and buffer writes, exponent shuffle lookup bounds and architecture gates, and helper/test changes. Static data uses aligned storage for SIMD loads; output writes remain within the documented formatting buffer, with feature-specific shuffles limited to their tables. Compiler barriers preserve values and introduce no external calls. Build script only queries compiler/build configuration. No network, arbitrary filesystem, process execution at runtime, or resource-intensive background behavior. Scope: safe-to-run in serialization tests; not a proof of correctly rounded output for every float."
 
 [[trusted.apis-saltans-aps]]
 criteria = "safe-to-deploy"
