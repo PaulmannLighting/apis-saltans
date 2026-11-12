@@ -235,7 +235,7 @@ use fixed-capacity heapless storage. Enable `alloc` to use the original `bytes::
 
 ```toml
 [dependencies]
-apis-saltans-aps = { version = "0.12", features = ["alloc"] }
+apis-saltans-aps = { version = "0.13", features = ["alloc"] }
 ```
 
 `Payload` is an alias for `bytes::Bytes` with `alloc`. Without it, `Payload` is an owned,

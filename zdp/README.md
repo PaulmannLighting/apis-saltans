@@ -168,7 +168,7 @@ ZDP is always `no_std`. Default features are empty: no allocator is required.
 Enable `alloc` to preserve the existing `Vec`, `Box`, and boxed iterator types:
 
 ```toml
-apis-saltans-zdp = { version = "0.12", features = ["alloc"] }
+apis-saltans-zdp = { version = "0.13", features = ["alloc"] }
 ```
 
 The `alloc` feature enables `zb-aps/alloc` and `le-stream/alloc`, and enables
