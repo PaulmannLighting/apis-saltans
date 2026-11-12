@@ -41,9 +41,12 @@ pub use self::common::Driver;
 #[cfg(feature = "types")]
 #[cfg_attr(docsrs, doc(cfg(feature = "types")))]
 pub use self::common::{
-    ApsdeEvent, Channel, ChannelMask, DeviceEvent, Error, Event, FoundNetwork, NcpHandle,
-    NetworkDescriptor, NetworkEvent, Operation, RouteError, ScanDuration, ScannedChannel,
-    TransmissionError, WeakNcpHandle,
+    ApsdeEvent, BackupCapabilities, BackupError, BackupExtension, BackupSource, Channel,
+    ChannelMask, DeviceBackup, DeviceEvent, Error, Event, FoundNetwork, LinkKeyState,
+    NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH, NcpHandle, NetworkBackup, NetworkDescriptor,
+    NetworkEvent, NetworkKey, NetworkKeyState, NetworkParameters, Operation, RestoreFailureState,
+    RestoreOptions, RestoreReport, RouteError, ScanDuration, ScannedChannel, TransmissionError,
+    WeakNcpHandle,
 };
 #[cfg(feature = "driver")]
 #[cfg_attr(docsrs, doc(cfg(feature = "driver")))]

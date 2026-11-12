@@ -2,6 +2,11 @@
 
 //! Common hardware abstraction types shared by drivers and coordinators.
 
+pub use self::backup::{
+    BackupCapabilities, BackupError, BackupExtension, BackupSource, DeviceBackup, LinkKeyState,
+    NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH, NetworkBackup, NetworkKey, NetworkKeyState,
+    NetworkParameters, RestoreFailureState, RestoreOptions, RestoreReport,
+};
 #[cfg(feature = "driver")]
 pub use self::driver::Driver;
 pub use self::error::{Error, Operation, TransmissionError};
@@ -11,6 +16,7 @@ pub use self::message::{
 };
 pub use self::ncp_handle::{NcpHandle, WeakNcpHandle};
 
+mod backup;
 #[cfg(feature = "driver")]
 mod driver;
 mod error;

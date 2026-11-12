@@ -7,6 +7,8 @@ use tokio::sync::oneshot::error::RecvError;
 use zb_aps::apsde::ConfirmStatus;
 use zb_core::NetworkError;
 
+use crate::BackupError;
+
 /// Hardware operation that a backend may not support.
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -141,6 +143,10 @@ pub enum Error {
     /// The backend does not support the requested operation.
     #[error("Unsupported hardware operation: {0}")]
     Unsupported(Operation),
+
+    /// Core network backup validation or restoration failed.
+    #[error(transparent)]
+    Backup(#[from] BackupError),
 
     /// An accepted APS transmission failed.
     #[error(transparent)]
