@@ -1,6 +1,12 @@
 //! Trait-based Zigbee API and protocol-specific deferred response aliases.
 
 pub use self::address_translation::AddressTranslation;
+pub use self::backup::{
+    Backup, BackupCapabilities, BackupError, BackupExtension, BackupSource, DeviceBackup,
+    HardwareError, HardwareOperation, LinkKeyState, NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH,
+    NetworkBackup, NetworkKey, NetworkKeyState, NetworkParameters, RestoreFailureState,
+    RestoreOptions, RestoreReport,
+};
 pub use self::binding::{Binding, BindingResult};
 pub use self::clusters::{
     Attributes, CancellableOtaUpdate, ColorControl, Groups, Level, OnOff, Ota, ReadAttributeResult,
@@ -19,6 +25,7 @@ pub use self::zcl::{Zcl, ZclRequest, ZclResponse, ZclResponseType};
 pub use self::zdp::{Zdp, ZdpResponse};
 
 mod address_translation;
+mod backup;
 mod binding;
 mod clusters;
 mod endpoints;

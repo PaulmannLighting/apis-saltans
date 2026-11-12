@@ -586,3 +586,11 @@ The APS actor preserves failed confirmation statuses inside hardware `Transmissi
 values, including common failures or unclassified backend codes. The public coordinator error delegates
 `network_error()` through `Error::Hardware`; command rejection and asynchronous confirmation paths
 thus share the same inspection API without converting response timeouts into delivery failures.
+
+## Core network backup API
+
+`api/backup.rs` defines `Backup` and re-exports the hardware snapshot, capability, restore, and error
+types. Its `Coordinator` implementation checks the hardware actor's runtime capabilities before
+requesting a dump. Operations use the existing `NcpHandle` mailbox and preserve hardware errors
+through `Error::Hardware`; no coordinator actor or capability type parameter is added. Snapshot
+consistency in the presence of autonomous radio activity remains the backend's responsibility.

@@ -22,6 +22,8 @@ use zb_zdp::{ActiveEpReq, SimpleDescriptor};
 
 use crate::{Coordinator, CoordinatorConfig, Error, RuntimeExit, Zcl, Zdp};
 
+mod backup;
+
 const ADDRESS: u16 = 0x1234;
 const DEADLINE: Duration = Duration::from_secs(2);
 const LONG_TIMEOUT: Duration = Duration::from_secs(60);

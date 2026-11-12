@@ -1003,3 +1003,17 @@ A missing protocol response or local timeout does not prove failed delivery and 
 Opaque backend error sources also return `None` unless the driver supplies a classification.
 Unclassified confirmation bytes return `Some(NetworkError::BackendStatus(code))`.
 Original hardware error sources and confirmation statuses remain accessible through `Error::Hardware`.
+
+## Core network backups
+
+Import the `Backup` trait to call `Coordinator::backup_capabilities()` and
+`Coordinator::dump_network()` during normal operation. Support is checked at runtime for the
+underlying driver actor. Dumping without registered hardware support returns
+`Error::Hardware(HardwareError::Unsupported(HardwareOperation::DumpNetwork))`.
+
+`NetworkBackup`, its component types, `RestoreOptions`, `RestoreReport`, `BackupError`,
+`HardwareError`, and `HardwareOperation` are re-exported by this crate. Applications need no direct
+hardware dependency to inspect, serialize, or handle backup results. Snapshots cover core network
+identity and security only; application-level information is excluded. They contain credentials,
+so protect serialized backups at rest and in transit. The backend must provide consistent capture
+while the network is running.
