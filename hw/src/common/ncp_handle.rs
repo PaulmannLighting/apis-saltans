@@ -19,9 +19,11 @@ use zb_zdp::SimpleDescriptor;
 
 use super::message::Message;
 #[cfg(feature = "coordinator")]
+use super::message::RestoreRequest;
+#[cfg(feature = "coordinator")]
 use super::message::{ChannelMask, FoundNetwork, ScanDuration, ScannedChannel};
 #[cfg(feature = "coordinator")]
-use crate::Error;
+use crate::{BackupCapabilities, Error, NetworkBackup, RestoreOptions, RestoreReport};
 
 /// A handle on the NCP driver actor.
 #[derive(Clone, Debug)]
@@ -52,6 +54,54 @@ impl NcpHandle {
     #[must_use]
     pub fn is_closed(&self) -> bool {
         self.sender.is_closed()
+    }
+
+    /// Discover dump and restore operations registered at actor construction.
+    /// Extension compatibility is validated against the target during restoration.
+    ///
+    /// # Errors
+    /// Returns `Error::ActorUnavailable` if the actor has stopped.
+    #[cfg(feature = "coordinator")]
+    pub async fn backup_capabilities(&self) -> Result<BackupCapabilities, Error> {
+        let (response, receiver) = channel();
+        self.send(Message::GetBackupCapabilities { response })
+            .await?;
+        receiver.await?
+    }
+
+    /// Capture a complete core Zigbee network snapshot, including security secrets.
+    /// Application-level state is excluded. Protect the returned backup at rest and in transit.
+    ///
+    /// # Errors
+    /// Returns unsupported, actor-unavailable, or backend snapshot errors.
+    #[cfg(feature = "coordinator")]
+    pub async fn dump_network(&self) -> Result<NetworkBackup, Error> {
+        let (response, receiver) = channel();
+        self.send(Message::DumpNetwork { response }).await?;
+        receiver.await?
+    }
+
+    /// Restore core network state on an offline target, leaving its network stopped.
+    ///
+    /// Dispatch advances outgoing counters before target validation and writes. The backend must
+    /// persist and verify state before reporting success. Dropping this future after enqueueing
+    /// does not cancel restoration. A lost response leaves the outcome unknown; verify before use.
+    /// Stop the coordinator protocol actors before restoring and resume via backend startup.
+    ///
+    /// # Errors
+    /// Returns unsupported, validation, target compatibility, counter, or hardware restore errors.
+    /// Hardware failures identify whether persistent state may have changed.
+    #[cfg(feature = "coordinator")]
+    pub async fn restore_network(
+        &self,
+        backup: NetworkBackup,
+        options: RestoreOptions,
+    ) -> Result<RestoreReport, Error> {
+        let (response, receiver) = channel();
+        let request = Box::new(RestoreRequest { backup, options });
+        self.send(Message::RestoreNetwork { request, response })
+            .await?;
+        receiver.await?
     }
 
     /// Return the local application endpoints provided by the NCP.

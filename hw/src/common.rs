@@ -8,7 +8,9 @@ pub use self::backup::{
     NetworkParameters, RestoreFailureState, RestoreOptions, RestoreReport,
 };
 #[cfg(feature = "driver")]
-pub use self::driver::Driver;
+pub use self::driver::{
+    ActorBuilder, BackupDisabled, BackupEnabled, Driver, NetworkDump, NetworkRestore,
+};
 pub use self::error::{Error, Operation, TransmissionError};
 pub use self::event::{ApsdeEvent, DeviceEvent, Event, NetworkEvent, RouteError};
 pub use self::message::{

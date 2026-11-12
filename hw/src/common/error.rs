@@ -41,6 +41,12 @@ pub enum Operation {
     /// Resolving an IEEE address to a short address.
     IeeeAddressToShortId,
 
+    /// Exporting core network state.
+    DumpNetwork,
+
+    /// Restoring core network state.
+    RestoreNetwork,
+
     /// Transmitting an APS frame.
     Transmit,
 }
@@ -57,6 +63,8 @@ impl Display for Operation {
             Self::RouteRequest => "route request",
             Self::ShortIdToIeeeAddress => "short ID to IEEE address translation",
             Self::IeeeAddressToShortId => "IEEE address to short ID translation",
+            Self::DumpNetwork => "dump network",
+            Self::RestoreNetwork => "restore network",
             Self::Transmit => "APS transmission",
         })
     }

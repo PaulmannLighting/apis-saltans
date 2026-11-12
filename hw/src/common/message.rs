@@ -13,6 +13,7 @@ pub use self::found_network::{FoundNetwork, NetworkDescriptor};
 pub use self::scan_duration::ScanDuration;
 pub use self::scanned_channel::ScannedChannel;
 use crate::common::Error;
+use crate::{BackupCapabilities, NetworkBackup, RestoreOptions, RestoreReport};
 
 mod channel;
 mod channel_mask;
@@ -26,6 +27,26 @@ mod scanned_channel;
     allow(dead_code)
 )]
 pub enum Message {
+    /// Discover registered optional operations.
+    GetBackupCapabilities {
+        /// One-shot capability result.
+        response: Sender<Result<BackupCapabilities, Error>>,
+    },
+
+    /// Capture a complete core network snapshot.
+    DumpNetwork {
+        /// One-shot backup result.
+        response: Sender<Result<NetworkBackup, Error>>,
+    },
+
+    /// Restore core network state while keeping the target network stopped.
+    RestoreNetwork {
+        /// Boxed complete request keeps mailbox variants small.
+        request: Box<RestoreRequest>,
+        /// One-shot persistence and verification result.
+        response: Sender<Result<RestoreReport, Error>>,
+    },
+
     /// Return the NCP's local application endpoint descriptors.
     GetEndpoints {
         /// One-shot channel used to return local simple descriptors or a driver error.
@@ -105,4 +126,12 @@ pub enum Message {
         /// One-shot channel used to report whether the backend accepted the request.
         response: Sender<Result<(), Error>>,
     },
+}
+
+/// Owned restore payload, allocated only when restoration is requested.
+pub struct RestoreRequest {
+    /// Original snapshot; actor dispatch prepares outgoing counters.
+    pub backup: NetworkBackup,
+    /// Explicit counter advancement policy.
+    pub options: RestoreOptions,
 }

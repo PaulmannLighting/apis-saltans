@@ -15,7 +15,7 @@ const KEY_BYTES: [u8; 16] = [42; 16];
 const COUNTER: u32 = 10;
 const LINK_INCREMENT: NonZeroU32 = NonZeroU32::new(2).unwrap();
 
-pub(super) fn snapshot() -> NetworkBackup {
+pub(crate) fn snapshot() -> NetworkBackup {
     NetworkBackup::new(
         BackupSource::new("test-stack".into(), "test-firmware".into()).unwrap(),
         NetworkParameters::new(

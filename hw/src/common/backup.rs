@@ -14,7 +14,7 @@ use crate::{Channel, ChannelMask};
 #[cfg(feature = "serde")]
 mod serialization;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 /// Current version of this crate's network backup representation.
 pub const NETWORK_BACKUP_VERSION: u32 = 1;
@@ -211,40 +211,40 @@ impl NetworkParameters {
     }
     /// Coordinator IEEE address to preserve.
     #[must_use]
-    pub fn coordinator_ieee(&self) -> IeeeAddress {
+    pub const fn coordinator_ieee(&self) -> IeeeAddress {
         self.coordinator_ieee
     }
     /// Short PAN identifier.
     #[must_use]
-    pub fn pan_id(&self) -> u16 {
+    pub const fn pan_id(&self) -> u16 {
         self.pan_id
     }
     /// Extended PAN identifier in display (big-endian) order.
     #[must_use]
-    pub fn extended_pan_id(&self) -> [u8; 8] {
+    pub const fn extended_pan_id(&self) -> [u8; 8] {
         self.extended_pan_id
     }
     /// Current operating channel.
     #[must_use]
-    pub fn channel(&self) -> Channel {
+    pub const fn channel(&self) -> Channel {
         self.channel
     }
     /// Permitted channel-page-zero channels.
     #[must_use]
-    pub fn channel_mask(&self) -> ChannelMask {
+    pub const fn channel_mask(&self) -> ChannelMask {
         self.channel_mask
     }
     /// Network update identifier.
     #[must_use]
-    pub fn nwk_update_id(&self) -> u8 {
+    pub const fn nwk_update_id(&self) -> u8 {
         self.nwk_update_id
     }
     /// Network security level.
     #[must_use]
-    pub fn security_level(&self) -> u8 {
+    pub const fn security_level(&self) -> u8 {
         self.security_level
     }
-    fn validate(&self) -> Result<(), BackupError> {
+    const fn validate(&self) -> Result<(), BackupError> {
         if self.pan_id == BROADCAST_PAN_ID
             || self.security_level > MAX_SECURITY_LEVEL
             || ChannelMask::new(self.channel_mask.bits()).is_none()
@@ -268,27 +268,26 @@ pub struct NetworkKeyState {
 impl NetworkKeyState {
     /// Construct network key and associated security state.
     #[must_use]
-    pub fn new(key: NetworkKey, sequence_number: u8, tx_counter: u32) -> Self {
-        let value = Self {
+    pub const fn new(key: NetworkKey, sequence_number: u8, tx_counter: u32) -> Self {
+        Self {
             key,
             sequence_number,
             tx_counter,
-        };
-        value
+        }
     }
     /// Secret network key.
     #[must_use]
-    pub fn key(&self) -> &NetworkKey {
+    pub const fn key(&self) -> &NetworkKey {
         &self.key
     }
     /// Network key sequence number.
     #[must_use]
-    pub fn sequence_number(&self) -> u8 {
+    pub const fn sequence_number(&self) -> u8 {
         self.sequence_number
     }
     /// Last used outgoing security counter; never the wrapping APS correlation counter.
     #[must_use]
-    pub fn tx_counter(&self) -> u32 {
+    pub const fn tx_counter(&self) -> u32 {
         self.tx_counter
     }
 }
@@ -305,27 +304,26 @@ pub struct LinkKeyState {
 impl LinkKeyState {
     /// Construct per-device APS or Trust Center link key and replay state.
     #[must_use]
-    pub fn new(key: NetworkKey, tx_counter: u32, rx_counter: u32) -> Self {
-        let value = Self {
+    pub const fn new(key: NetworkKey, tx_counter: u32, rx_counter: u32) -> Self {
+        Self {
             key,
             tx_counter,
             rx_counter,
-        };
-        value
+        }
     }
     /// Secret link key.
     #[must_use]
-    pub fn key(&self) -> &NetworkKey {
+    pub const fn key(&self) -> &NetworkKey {
         &self.key
     }
     /// Last used outgoing link-key security counter.
     #[must_use]
-    pub fn tx_counter(&self) -> u32 {
+    pub const fn tx_counter(&self) -> u32 {
         self.tx_counter
     }
     /// Highest accepted incoming link-key security counter.
     #[must_use]
-    pub fn rx_counter(&self) -> u32 {
+    pub const fn rx_counter(&self) -> u32 {
         self.rx_counter
     }
 }
@@ -344,45 +342,44 @@ pub struct DeviceBackup {
 impl DeviceBackup {
     /// Construct persistent device relationship and security state.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         ieee_address: IeeeAddress,
         nwk_address: Option<Device>,
         is_child: bool,
         link_key: Option<LinkKeyState>,
         nwk_rx_counter: Option<u32>,
     ) -> Self {
-        let value = Self {
+        Self {
             ieee_address,
             nwk_address,
             is_child,
             link_key,
             nwk_rx_counter,
-        };
-        value
+        }
     }
     /// Remote device IEEE address.
     #[must_use]
-    pub fn ieee_address(&self) -> IeeeAddress {
+    pub const fn ieee_address(&self) -> IeeeAddress {
         self.ieee_address
     }
     /// Last known allocated short address, when known.
     #[must_use]
-    pub fn nwk_address(&self) -> Option<Device> {
+    pub const fn nwk_address(&self) -> Option<Device> {
         self.nwk_address
     }
     /// Whether this device is a direct coordinator child.
     #[must_use]
-    pub fn is_child(&self) -> bool {
+    pub const fn is_child(&self) -> bool {
         self.is_child
     }
     /// Individual link-key state, when present.
     #[must_use]
-    pub fn link_key(&self) -> Option<&LinkKeyState> {
+    pub const fn link_key(&self) -> Option<&LinkKeyState> {
         self.link_key.as_ref()
     }
     /// Incoming network-key replay counter, when maintained by the stack; other key epochs require an extension.
     #[must_use]
-    pub fn nwk_rx_counter(&self) -> Option<u32> {
+    pub const fn nwk_rx_counter(&self) -> Option<u32> {
         self.nwk_rx_counter
     }
 }
@@ -429,7 +426,7 @@ impl BackupExtension {
     }
     /// Extension representation version.
     #[must_use]
-    pub fn version(&self) -> u32 {
+    pub const fn version(&self) -> u32 {
         self.version
     }
     /// Secret-bearing payload, interpreted only by compatible backends.
@@ -497,17 +494,17 @@ impl NetworkBackup {
     }
     /// Source stack and firmware.
     #[must_use]
-    pub fn source(&self) -> &BackupSource {
+    pub const fn source(&self) -> &BackupSource {
         &self.source
     }
     /// Network identity and parameters.
     #[must_use]
-    pub fn network(&self) -> &NetworkParameters {
+    pub const fn network(&self) -> &NetworkParameters {
         &self.network
     }
     /// Active network key state.
     #[must_use]
-    pub fn network_key(&self) -> &NetworkKeyState {
+    pub const fn network_key(&self) -> &NetworkKeyState {
         &self.network_key
     }
     /// Other retained or staged network keys; transition semantics require an extension.
@@ -641,6 +638,7 @@ pub struct BackupCapabilities {
 }
 
 impl BackupCapabilities {
+    #[cfg(feature = "driver")]
     pub(crate) const fn new(dump: bool, restore: bool) -> Self {
         Self { dump, restore }
     }
