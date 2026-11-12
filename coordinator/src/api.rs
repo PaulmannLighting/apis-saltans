@@ -17,6 +17,7 @@ pub use self::joining::Joining;
 pub use self::leaving::Leaving;
 pub use self::local_node::LocalNode;
 pub use self::node::Node;
+pub use self::restore::Restore;
 pub use self::routing::Routing;
 pub use self::scanning::{
     Channel, ChannelMask, FoundNetwork, NetworkDescriptor, ScanDuration, ScannedChannel, Scanning,
@@ -33,6 +34,7 @@ mod joining;
 mod leaving;
 mod local_node;
 mod node;
+mod restore;
 mod routing;
 mod scanning;
 mod zcl;

@@ -594,3 +594,37 @@ types. Its `Coordinator` implementation checks the hardware actor's runtime capa
 requesting a dump. Operations use the existing `NcpHandle` mailbox and preserve hardware errors
 through `Error::Hardware`; no coordinator actor or capability type parameter is added. Snapshot
 consistency in the presence of autonomous radio activity remains the backend's responsibility.
+
+### Startup-only restoration
+
+`startup.rs` owns `CoordinatorStartup`, a non-cloneable preparation object retaining the opaque hardware
+handle, node descriptor, hardware receiver, application event sender, and configuration. Its `Backup`
+implementation uses runtime capability discovery. `api/restore.rs` exposes `Restore` only on the
+preparation object. The running `Coordinator` remains non-generic and has no restore method.
+
+The preparation creates no coordinator tasks. `start_managed` consumes its inputs into the existing
+`Coordinator::start_managed`; `start` additionally detaches the returned runtime. Hardware-event type
+parameters are preserved without adding capability type parameters or changing existing startup APIs.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Prepared
+    Prepared --> RestoreIncomplete: Begin requested restore
+    RestoreIncomplete --> Prepared: Restore succeeds and verifies state
+    RestoreIncomplete --> RestoreIncomplete: Restore fails or caller cancels
+    Prepared --> Running: Backend resumes network and startup is consumed
+    RestoreIncomplete --> Rejected: Attempt startup
+```
+
+The incomplete flag is set before the first await in restoration, including capability discovery.
+This makes cancellation conservative even when a caller drops the operation while waiting for
+hardware. Failure and cancellation block both startup methods until an explicit successful restore;
+merely querying capabilities or dumping a snapshot does not clear the flag. Backend restore errors
+and mutation boundaries pass through `Error::Hardware`. Rejected startup returns
+`Error::RestoreIncomplete` before entering the runtime or spawning actors.
+
+The backend owns hardware network stop/resume. Restore must run while hardware is offline; successful
+hardware restore persists/verifies state and leaves it stopped. The application resumes it through the
+backend before consuming the startup object. Existing unmanaged hardware-handle clones remain outside
+this object's ownership guarantees. Dropping a restore future leaves the hardware actor free to finish
+its command; losing that response requires explicit outcome verification before retrying.

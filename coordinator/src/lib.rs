@@ -15,6 +15,12 @@
 //! The built-in [`Ota`] service validates complete OTA image files and automatically serves the
 //! OTA Upgrade cluster exchange for individually scheduled device endpoints.
 //!
+//! [`Backup`] exposes core network snapshots with runtime hardware capability checks. For recovery,
+//! [`CoordinatorStartup`] retains startup inputs without spawning protocol actors and implements
+//! [`Restore`]. Restoration requires an offline target; the backend resumes its verified network
+//! before the startup object is consumed. A failed or cancelled restore prevents protocol startup
+//! until an explicit restore succeeds. Existing direct startup methods remain available.
+//!
 //! The hardware NCP is responsible for providing its complete local endpoint descriptors through
 //! [`zb_hw::NcpHandle::get_endpoints`]. The coordinator queries those descriptors when serving ZDP
 //! match requests and exposes them through [`LocalNode::get_endpoints`]. ZCL callers select their
@@ -33,7 +39,7 @@ pub use self::api::{
     DeviceBackup, Endpoints, FoundNetwork, Groups, HardwareError, HardwareOperation, Joining,
     Leaving, Level, LinkKeyState, LocalNode, NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH,
     NetworkBackup, NetworkDescriptor, NetworkKey, NetworkKeyState, NetworkParameters, Node, OnOff,
-    Ota, ReadAttributeResult, RestoreFailureState, RestoreOptions, RestoreReport, Routing,
+    Ota, ReadAttributeResult, Restore, RestoreFailureState, RestoreOptions, RestoreReport, Routing,
     ScanDuration, ScannedChannel, Scanning, SimpleDescriptor, WriteAttributeResult, Zcl,
     ZclRequest, ZclResponse, ZclResponseType, Zdp, ZdpResponse,
 };
@@ -48,6 +54,7 @@ pub use self::ota::{
     UpdateTimeouts as OtaUpdateTimeouts,
 };
 pub use self::response::CommunicationResponse;
+pub use self::startup::CoordinatorStartup;
 
 mod api;
 mod aps;
@@ -60,6 +67,7 @@ mod mux;
 pub mod ota;
 mod response;
 mod runtime;
+mod startup;
 pub use self::runtime::{CoordinatorRuntime, RuntimeExit, RuntimeStatus};
 mod zcl;
 mod zdp;

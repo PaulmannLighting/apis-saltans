@@ -24,6 +24,10 @@ pub enum Error {
     #[error("Hardware error: {0}")]
     Hardware(#[from] zb_hw::Error),
 
+    /// A requested startup restore failed or was cancelled before successful completion.
+    #[error("A requested network restore has not completed successfully")]
+    RestoreIncomplete,
+
     /// Transmission through the channel failed.
     #[error("Sending failed")]
     SendError,

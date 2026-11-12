@@ -31,6 +31,16 @@ const CAPACITY: usize = 4;
 
 struct TestDriver {
     events: Sender<HardwareEvent<(), ()>>,
+    recovery: backup::RecoveryState,
+}
+
+impl TestDriver {
+    fn new(events: Sender<HardwareEvent<(), ()>>) -> Self {
+        Self {
+            events,
+            recovery: backup::RecoveryState::default(),
+        }
+    }
 }
 
 impl Driver for TestDriver {
@@ -125,7 +135,7 @@ fn managed_start_applies_inbox_capacity_and_both_protocol_deadlines() {
     Runtime::new().unwrap().block_on(async {
         let (hardware, incoming) = channel(CAPACITY);
         let (events, _received) = channel(CAPACITY);
-        let (ncp, driver) = TestDriver { events: hardware }.into_actor(NonZeroUsize::MIN);
+        let (ncp, driver) = TestDriver::new(hardware).into_actor(NonZeroUsize::MIN);
         let driver = tokio::spawn(driver);
         let config = CoordinatorConfig {
             inbox_capacity: NonZeroUsize::MIN,
@@ -175,7 +185,7 @@ fn managed_shutdown_fails_a_pending_exchange_without_waiting_for_its_deadline() 
     Runtime::new().unwrap().block_on(async {
         let (hardware, incoming) = channel(CAPACITY);
         let (events, _received) = channel(CAPACITY);
-        let (ncp, driver) = TestDriver { events: hardware }.into_actor(NonZeroUsize::MIN);
+        let (ncp, driver) = TestDriver::new(hardware).into_actor(NonZeroUsize::MIN);
         let driver = tokio::spawn(driver);
         let config = CoordinatorConfig {
             protocol_response_timeout: LONG_TIMEOUT,
