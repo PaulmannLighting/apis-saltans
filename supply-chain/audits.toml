@@ -79,6 +79,12 @@ criteria = "safe-to-deploy"
 delta = "0.7.0 -> 0.8.0"
 notes = "AI-assisted delta audit; reviewed the coordinator API revamp, actor/mux routing changes, ZCL/ZDP request-response handling, timeout error, and joining-state tracking. The changes remain within Tokio channels and NCP abstractions and introduce no new ambient capabilities."
 
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.22.0 -> 0.22.1"
+notes = "AI-assisted delta audit. Compared the packaged crate with the checksum-verified 0.22.0 release. Reviewed APS timeout handling, counter allocation, and regression coverage. A timeout fails its transmission while the APS actor continues processing traffic. The allocator skips the quarantined counter until the actor consumes the late confirmation. Manifest and lockfile changes are limited to the package version."
+
 [[audits.apis-saltans-core]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
