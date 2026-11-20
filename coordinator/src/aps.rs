@@ -81,7 +81,7 @@ impl Aps {
     /// Queue an APS frame and return its deferred transmission result.
     ///
     /// The returned response first waits for backend acceptance. For an acknowledged unicast, it
-    /// then waits for the corresponding hardware completion event.
+    /// then waits for the corresponding hardware completion event until the confirmation deadline.
     pub async fn transmit(
         &self,
         request: DataRequest<Bytes>,
@@ -392,7 +392,8 @@ impl TransmissionState {
         }
     }
 
-    /// Expire an accepted transmission and report whether its confirmation is still missing.
+    /// Fail an overdue transmission and keep its counter reserved until confirmation arrives.
+    /// Return whether the timed-out allocation is still missing its confirmation.
     fn timeout(&mut self, token: TransmissionToken) -> bool {
         if self.pending_generation_matches(token) {
             let mut pending = self
@@ -481,10 +482,9 @@ impl Transceiver {
                 if self.state.timeout(token) {
                     warn!(
                         "APS confirmation for counter {} did not arrive before its deadline; \
-                         stopping the APS actor to prevent unsafe counter reuse",
+                         the counter remains quarantined until confirmation arrives",
                         token.counter
                     );
-                    return false;
                 }
             }
         }

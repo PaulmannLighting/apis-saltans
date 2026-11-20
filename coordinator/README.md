@@ -318,22 +318,20 @@ Acknowledged results arrive as hardware
 eight-bit APS counter supplied to the hardware. A successful confirmation resolves the deferred
 result; an unsuccessful APS or propagated NWK status becomes
 `TransmissionError::Confirmation`. An acknowledged transmission times out after
-`CoordinatorConfig::aps_confirmation_timeout` (30 seconds by default) if its confirmation does not arrive. A network-down event resolves every pending acknowledged
-transmission with `TransmissionError::NoRoute`. Dropping a deferred APS result removes its pending
-confirmation entry; work already accepted by the hardware is not recalled. If backend acceptance
-is still in flight, the actor retains the counter reservation until the backend result establishes
-whether the counter can be released or must be quarantined.
+`CoordinatorConfig::aps_confirmation_timeout` (30 seconds by default) if its confirmation does not
+arrive. A network-down event fails pending transmissions with
+`TransmissionError::Network(NetworkError::NetworkDown)`. Dropping a deferred APS result removes
+the caller's pending confirmation without recalling work already accepted by the hardware. If
+backend acceptance is still in flight, the actor retains the counter reservation until the backend
+result establishes whether the counter can be released or must be quarantined.
 
-The APS actor allocates counters from the complete 256-value Zigbee counter space. It never
-replaces a pending transmission. A counter released by cancellation or network loss is quarantined
-until its late hardware confirmation arrives, so an old confirmation cannot complete a new
-transmission. The hardware contract defines neither a maximum completion latency nor a reset
-boundary that invalidates old confirmations, so quarantine cannot safely expire. If a confirmation
-is still missing at its configured confirmation deadline, the APS actor stops; the coordinator must be
-reconstructed before further traffic is sent. This also applies when the caller dropped its
-response or a network-down event already failed it. A late confirmation received before the
-deadline releases the quarantine normally. If all counters are concurrently pending or
-quarantined before their deadlines, transmission fails with `Error::ApsCounterExhausted`.
+The APS actor allocates counters from the complete 256-value Zigbee counter space. A confirmation
+timeout fails only the affected transmission with `TransmissionError::Timeout`. The coordinator
+continues using available counters. Timeout, cancellation, and network loss quarantine a counter
+until the corresponding late hardware confirmation arrives. The actor consumes that confirmation
+and makes the counter available again. The quarantine has no time limit because hardware can
+report a confirmation after the deadline. If all counters are pending or quarantined, new
+transmissions return `Error::ApsCounterExhausted` while the actor continues handling confirmations.
 
 ZCL accepts a complete `DataRequest<zb_zcl::UnsequencedFrame<Bytes>>` from its caller. The ZCL actor
 consumes the unsequenced frame with its assigned transaction sequence and serializes the resulting

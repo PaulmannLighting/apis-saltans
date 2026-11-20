@@ -658,7 +658,7 @@ fn cancelled_counter_remains_quarantined_until_its_late_confirmation() {
 }
 
 #[test]
-fn missing_confirmation_at_deadline_is_terminal() {
+fn confirmation_timeout_fails_only_its_transmission_and_quarantines_its_counter() {
     Runtime::new()
         .expect("runtime must be available")
         .block_on(async {
@@ -666,17 +666,41 @@ fn missing_confirmation_at_deadline_is_terminal() {
             let token = transmission_token(FIRST_COUNTER);
             let (response, result) = tokio::sync::oneshot::channel();
             state.store_pending_response(token, response);
+            let (other_response, mut other_result) = tokio::sync::oneshot::channel();
+            state.store_pending_response(transmission_token(SECOND_COUNTER), other_response);
 
             assert!(state.timeout(token));
             assert!(matches!(
                 result.await.expect("response is available"),
                 Err(Error::Transmission(TransmissionError::Timeout))
             ));
+            assert_eq!(
+                state.quarantined.get(&FIRST_COUNTER),
+                Some(&token.generation)
+            );
+            state.next_counter = FIRST_COUNTER;
+            let available = state.allocate().expect("other counters are available");
+            assert_ne!(available.counter, FIRST_COUNTER);
+            assert_ne!(available.counter, SECOND_COUNTER);
+
+            state.handle_confirm(FIRST_COUNTER, ConfirmStatus::success());
+
+            assert!(matches!(
+                other_result.try_recv(),
+                Err(tokio::sync::oneshot::error::TryRecvError::Empty)
+            ));
+            state.next_counter = FIRST_COUNTER;
+            assert_eq!(
+                state.allocate().map(|allocated| allocated.counter),
+                Some(FIRST_COUNTER)
+            );
+            state.handle_confirm(SECOND_COUNTER, ConfirmStatus::success());
+            assert!(matches!(other_result.try_recv(), Ok(Ok(()))));
         });
 }
 
 #[test]
-fn cancelled_transmission_with_missing_confirmation_is_terminal() {
+fn cancelled_transmission_remains_quarantined_after_its_confirmation_deadline() {
     let mut state = TransmissionState::new();
     let token = transmission_token(FIRST_COUNTER);
     let (response, _result) = tokio::sync::oneshot::channel();
@@ -684,6 +708,10 @@ fn cancelled_transmission_with_missing_confirmation_is_terminal() {
     state.cancel(token);
 
     assert!(state.timeout(token));
+    assert_eq!(
+        state.quarantined.get(&FIRST_COUNTER),
+        Some(&token.generation)
+    );
 }
 
 #[test]

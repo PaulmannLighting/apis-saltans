@@ -69,8 +69,8 @@ For every outgoing message it:
 4. receives backend acceptance or rejection from that operation through its ordinary inbox
 5. resolves an unacknowledged caller after hardware acceptance, or retains an acknowledged caller
    under the counter
-6. quarantines counters released by dropped callers or network loss until the corresponding late
-   confirmation arrives or its confirmation deadline makes the actor terminal
+6. quarantines counters after timeout, cancellation, or network loss until the corresponding late
+   confirmation arrives
 
 Its command protocol contains:
 
@@ -115,19 +115,17 @@ affecting a newer transmission after successful counter reuse.
 - Unacknowledged, group, or broadcast frame: resolve the caller response after backend acceptance.
 
 The allocator scans all 256 counter values and never reuses one while it is pending or quarantined.
-Cancellation and network loss quarantine an accepted acknowledged transmission's counter until a
-late confirmation for that counter arrives. The quarantine has no clock-based expiry, because the
-hardware API makes no promise about maximum confirmation latency or a reset boundary after which
-old confirmations cannot arrive. If the confirmation is still missing at its deadline, the APS
-actor stops and requires coordinator reconstruction instead of ever reusing the counter. Timeout
-messages retain the allocation generation, including while a counter is quarantined, so a stale
-timeout cannot stop the actor for a newer allocation.
+If the confirmation is still missing at its deadline, the APS actor completes the pending caller
+with `TransmissionError::Timeout` and continues processing messages. Timeout, cancellation, and
+network loss quarantine an accepted acknowledged transmission's counter. The actor consumes a late
+confirmation and releases its counter for reuse. Quarantine has no clock-based expiry because the
+hardware API supplies no maximum confirmation latency or reset boundary that invalidates old
+confirmations.
 
-`Error::ApsCounterExhausted` can still report that all counters are concurrently pending or
-quarantined before their deadlines. Successful or failed confirmations release their counters
-immediately. Unacknowledged transmissions release their reservation after backend acceptance
-without awaiting a confirmation, and rejected transmissions never enter the
-awaiting-confirmation phase.
+When all counters are pending or quarantined, new requests fail with `Error::ApsCounterExhausted`.
+Successful or failed confirmations release their counters immediately. Unacknowledged
+transmissions release their reservation after backend acceptance without awaiting a confirmation,
+and rejected transmissions never enter the awaiting-confirmation phase.
 
 ```mermaid
 sequenceDiagram

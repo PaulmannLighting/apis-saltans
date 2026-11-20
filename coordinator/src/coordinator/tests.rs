@@ -15,23 +15,25 @@ use zb_core::short_id::Device;
 use zb_core::{Endpoint, IeeeAddress};
 use zb_hw::{
     ApsdeEvent, ChannelMask, Driver, Error as HardwareError, Event as HardwareEvent, FoundNetwork,
-    Operation, ScanDuration, ScannedChannel,
+    Operation, ScanDuration, ScannedChannel, TransmissionError,
 };
 use zb_zcl::groups::GetGroupMembership;
 use zb_zdp::{ActiveEpReq, SimpleDescriptor};
 
-use crate::{Coordinator, CoordinatorConfig, Error, RuntimeExit, Zcl, Zdp};
+use crate::{Coordinator, CoordinatorConfig, Error, OnOff, RuntimeExit, RuntimeStatus, Zcl, Zdp};
 
 mod backup;
 
 const ADDRESS: u16 = 0x1234;
 const DEADLINE: Duration = Duration::from_secs(2);
+const APS_CONFIRMATION_TIMEOUT: Duration = Duration::from_millis(100);
 const LONG_TIMEOUT: Duration = Duration::from_secs(60);
 const CAPACITY: usize = 4;
 
 struct TestDriver {
     events: Sender<HardwareEvent<(), ()>>,
     recovery: backup::RecoveryState,
+    suppress_next_confirmation: bool,
 }
 
 impl TestDriver {
@@ -39,6 +41,7 @@ impl TestDriver {
         Self {
             events,
             recovery: backup::RecoveryState::default(),
+            suppress_next_confirmation: false,
         }
     }
 }
@@ -102,6 +105,9 @@ impl Driver for TestDriver {
         let RequestDestination::Network { address, endpoint } = request.destination() else {
             panic!("test expects individual network requests");
         };
+        if std::mem::take(&mut self.suppress_next_confirmation) {
+            return Ok(());
+        }
         self.events
             .send(HardwareEvent::Apsde(ApsdeEvent::DataConfirm {
                 counter,
@@ -171,6 +177,51 @@ fn managed_start_applies_inbox_capacity_and_both_protocol_deadlines() {
             timeout(DEADLINE, zdp).await.unwrap(),
             Err(Error::ProtocolResponseTimeout)
         ));
+        assert_eq!(
+            timeout(DEADLINE, runtime.shutdown()).await.unwrap(),
+            RuntimeExit::Shutdown
+        );
+        drop(coordinator);
+        timeout(DEADLINE, driver).await.unwrap().unwrap();
+    });
+}
+
+#[test]
+fn managed_coordinator_keeps_transmitting_after_an_aps_confirmation_timeout() {
+    Runtime::new().unwrap().block_on(async {
+        let (hardware, incoming) = channel(CAPACITY);
+        let (events, _received) = channel(CAPACITY);
+        let mut test_driver = TestDriver::new(hardware);
+        test_driver.suppress_next_confirmation = true;
+        let (ncp, driver) = test_driver.into_actor(NonZeroUsize::MIN);
+        let driver = tokio::spawn(driver);
+        let config = CoordinatorConfig {
+            aps_confirmation_timeout: APS_CONFIRMATION_TIMEOUT,
+            ..CoordinatorConfig::default()
+        };
+        let (coordinator, runtime) =
+            Coordinator::start_managed(ncp, Descriptor::default(), incoming, events, config)
+                .unwrap();
+
+        assert!(matches!(
+            timeout(
+                DEADLINE,
+                coordinator.on(destination().into(), source_endpoint())
+            )
+            .await
+            .unwrap(),
+            Err(Error::Hardware(HardwareError::Transmission(
+                TransmissionError::Timeout
+            )))
+        ));
+        timeout(
+            DEADLINE,
+            coordinator.off(destination().into(), source_endpoint()),
+        )
+        .await
+        .unwrap()
+        .expect("subsequent transmission must complete");
+        assert_eq!(runtime.status(), RuntimeStatus::Running);
         assert_eq!(
             timeout(DEADLINE, runtime.shutdown()).await.unwrap(),
             RuntimeExit::Shutdown
