@@ -1,14 +1,14 @@
 use bytes::Bytes;
 use tokio::sync::oneshot::Sender;
-use zb_aps::apsde::{DataIndication, DataRequest};
+use zb_aps::apsde::DataRequest;
 use zb_core::short_id::Device;
 use zb_zdp::{Command, Frame};
 
-use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::correlation::{CancellationMessage, Token};
 use crate::response::ApsProtocolResponse;
 use crate::zdp::ZdpKey;
+use crate::{Error, ReceivedIndication};
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -16,7 +16,7 @@ pub enum Message {
     /// A hardware-level event.
     Received {
         /// APSDE indication containing the parsed ZDP frame.
-        indication: DataIndication<Frame<Command>, (), ()>,
+        indication: ReceivedIndication<Frame<Command>>,
 
         /// Whether the hardware backend requires the coordinator to send a ZDO response.
         response_required: bool,

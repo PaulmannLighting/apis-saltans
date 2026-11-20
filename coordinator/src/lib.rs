@@ -46,7 +46,9 @@ pub use self::api::{
 pub use self::config::CoordinatorConfig;
 pub use self::coordinator::Coordinator;
 pub use self::error::{Error, Optional, StatusExt};
-pub use self::event::{Device, DroppedEvents, Event, KeepAlive, Network, NetworkError};
+pub use self::event::{
+    Device, DroppedEvents, Event, KeepAlive, Network, NetworkError, ReceivedIndication,
+};
 pub use self::ota::{
     BaseHeaderBytes as OtaBaseHeaderBytes, FieldControl as OtaFieldControl, Header as OtaHeader,
     HeaderString as OtaHeaderString, Image as OtaImage, Message as OtaMessage, ParseImage,

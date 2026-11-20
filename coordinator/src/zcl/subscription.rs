@@ -8,12 +8,13 @@ use zb_zcl::{Cluster as ZclCluster, Frame, Scope};
 
 #[cfg(test)]
 use crate::MPSC_CHANNEL_SIZE;
+use crate::ReceivedIndication;
 
 /// A received ZCL frame delivered to an internal subscriber.
 #[derive(Clone, Debug)]
 pub struct Received {
     /// APSDE indication containing the parsed ZCL frame and all receive metadata.
-    pub indication: DataIndication<Frame<ZclCluster>, (), ()>,
+    pub indication: ReceivedIndication<Frame<ZclCluster>>,
 }
 
 /// Header fields selecting ZCL frames for an internal subscriber.
@@ -91,7 +92,7 @@ impl Subscription {
             .is_some_and(|messages| messages.same_channel(other))
     }
 
-    pub(super) fn matches(&self, indication: &DataIndication<Frame<ZclCluster>, (), ()>) -> bool {
+    pub(super) fn matches(&self, indication: &ReceivedIndication<Frame<ZclCluster>>) -> bool {
         self.filter.matches(indication)
     }
 

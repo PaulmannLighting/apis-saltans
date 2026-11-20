@@ -24,7 +24,9 @@ use crate::correlation::{
 };
 use crate::event::EventSink;
 use crate::response::ApsProtocolResponse;
-use crate::{CoordinatorConfig, Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE};
+use crate::{
+    CoordinatorConfig, Device as DeviceEvent, Event, MPSC_CHANNEL_SIZE, ReceivedIndication,
+};
 
 mod discovery;
 mod key;
@@ -158,7 +160,7 @@ impl Transceiver {
 impl Transceiver {
     fn handle_message_received(
         &mut self,
-        indication: DataIndication<Frame<Command>, (), ()>,
+        indication: ReceivedIndication<Frame<Command>>,
         response_required: bool,
     ) {
         let Some((source_address, key)) = received_key(&indication) else {

@@ -5,16 +5,16 @@ use std::time::Duration;
 use bytes::Bytes;
 use log::debug;
 use tokio::sync::mpsc::WeakSender;
-use zb_aps::apsde::{DataIndication, DataRequest};
+use zb_aps::apsde::DataRequest;
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::expectation::{ResponseExpectation, ResponseMatch};
 use super::{Message, Transceiver};
-use crate::Error;
 use crate::aps::Aps;
 use crate::correlation::{PROTOCOL_RESPONSE_TIMEOUT, Registry};
 use crate::response::ApsProtocolResponse;
 use crate::zcl::ZclKey;
+use crate::{Error, ReceivedIndication};
 
 mod expectation;
 mod lifecycle;
@@ -59,7 +59,7 @@ impl Responses {
     /// Consume a matching response or late quarantined reply, leaving unrelated frames untouched.
     pub(super) fn handle_received(
         &mut self,
-        indication: &DataIndication<Frame<Cluster>, (), ()>,
+        indication: &ReceivedIndication<Frame<Cluster>>,
     ) -> bool {
         let Some(key) = ZclKey::from_indication(indication) else {
             return false;

@@ -1,15 +1,15 @@
 use bytes::Bytes;
 use tokio::sync::mpsc::Sender as MpscSender;
 use tokio::sync::oneshot::Sender;
-use zb_aps::apsde::{DataIndication, DataRequest};
+use zb_aps::apsde::DataRequest;
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 use super::{ResponseExpectation, Subscription, SubscriptionMessage};
-use crate::Error;
 use crate::aps::TransmissionResponse;
 use crate::correlation::{CancellationMessage, Token};
 use crate::response::ApsProtocolResponse;
 use crate::zcl::ZclKey;
+use crate::{Error, ReceivedIndication};
 
 /// Messages exchanged with the transceiver actor.
 #[derive(Debug)]
@@ -29,7 +29,7 @@ pub enum Message {
     /// A hardware-level event.
     Received {
         /// APSDE indication containing the parsed ZCL frame.
-        indication: DataIndication<Frame<Cluster>, (), ()>,
+        indication: ReceivedIndication<Frame<Cluster>>,
     },
 
     /// Fail pending protocol responses because the Zigbee network went down.

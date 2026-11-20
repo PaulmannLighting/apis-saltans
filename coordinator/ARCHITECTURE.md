@@ -158,7 +158,7 @@ end
 The ZCL actor:
 
 - owns a collision-safe ZCL transaction-sequence allocator
-- receives parsed ZCL frames as normalized `DataIndication<Frame<Cluster>, (), ()>` values
+- receives parsed ZCL frames as `ReceivedIndication<Frame<Cluster>>` values
 - accepts complete `DataRequest<UnsequencedFrame<Bytes>>` values
 - consumes each unsequenced frame with the assigned transaction sequence and serializes the
   resulting `Frame<Bytes>` while preserving every APS request field
@@ -282,7 +282,7 @@ blocks. The first block remains pre-read so an initial read failure can receive 
 The ZDP actor:
 
 - owns the cloneable context used for NCP queries and APS replies
-- receives parsed ZDP frames as normalized `DataIndication<Frame<Command>, (), ()>` values together
+- receives parsed ZDP frames as `ReceivedIndication<Frame<Command>>` values together
   with the hardware backend's ZDO response-required flag
 - owns a collision-safe ZDP transaction-sequence allocator
 - uses profile `0x0000` and endpoint `0x00`
@@ -483,19 +483,20 @@ The mux consumes generic `zb_hw::Event<T, K>` values. It forwards network and de
 events to the application, accepts successful `DataIndication<Bytes, T, K>` values, parses
 network-profile ASDUs as ZDP, parses supported application-profile ASDUs as ZCL, and recognizes
 Keep-Alive traffic before ZCL parsing. APS reassembly and security processing have already happened
-before the hardware backend emits the indication. Before forwarding parsed indications to the
-protocol actors, the mux normalizes only the backend-defined timestamp and device-key-pair handle
-to `()`; APS addressing, profile, cluster, status, security mode, key index, link quality, and the
-parsed ASDU remain attached. The mux selects and parses ZCL, ZDP, and Keep-Alive payloads directly
+before the hardware backend emits the indication. On accepting a hardware indication, the mux
+captures a monotonic `std::time::Instant` before parsing and before awaiting any downstream inbox.
+It stores that instant in APSDE `rx_time` and normalizes the backend device-key-pair handle to
+`()`. APS addressing, profile, cluster, status, security mode, key index, and link quality travel
+with the parsed ASDU. The mux selects and parses ZCL, ZDP, and Keep-Alive payloads directly
 from that metadata and ASDU; it does not synthesize a legacy received APS header.
 The parsed-payload dispatch delegates to separate ZCL forwarding, ZDP forwarding, and Keep-Alive
 helpers. ZCL forwarding awaits inbox capacity, while ZDP forwarding drops frames when its inbox
 is full so hardware confirmations can continue through the mux. Keep-Alive handling validates the
 source device address and endpoint before emitting application activity events.
 
-Unmatched ZCL commands remain application-visible as normalized
-`DataIndication<Frame<Cluster>, (), ()>` values, preserving the APSDE receive metadata with the
-parsed ZCL frame. Supported device notifications also remain application-visible. The coordinator
+Unmatched ZCL commands reach applications as `ReceivedIndication<Frame<Cluster>>` values.
+ZCL subscriptions preserve the same APSDE metadata, including the original ingress timestamp.
+Supported device notifications also reach applications. The coordinator
 does not maintain a persistent device table. Application-event delivery uses non-blocking channel
 sends. A new event is dropped and logged if the application channel is full or closed, ensuring
 application backpressure cannot stall the mux or protocol actors. Applications must therefore

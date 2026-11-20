@@ -27,8 +27,8 @@ use super::{
     Message, OTA_PROFILE, UpdateError, network_destination, reply_zcl,
     request_from_unsequenced_frame, zcl,
 };
-use crate::CoordinatorConfig;
 use crate::runtime::spawn;
+use crate::{CoordinatorConfig, ReceivedIndication};
 
 /// Handle used by the OTA server to route messages to one destination transfer.
 #[derive(Debug)]
@@ -81,7 +81,7 @@ struct InboundRequest {
 
 impl InboundRequest {
     /// Validate transport metadata before looking up or authorizing a transfer.
-    fn parse(indication: DataIndication<Frame<OtaCommand>, (), ()>) -> Option<Self> {
+    fn parse(indication: ReceivedIndication<Frame<OtaCommand>>) -> Option<Self> {
         let metadata = indication.metadata();
         let source_endpoint = match metadata.destination() {
             ReceivedDestination::Network { endpoint, .. }
@@ -384,7 +384,7 @@ impl Server {
     }
 
     /// Validate an inbound OTA frame and route its command to the matching destination task.
-    async fn received_ota(&mut self, indication: DataIndication<Frame<OtaCommand>, (), ()>) {
+    async fn received_ota(&mut self, indication: ReceivedIndication<Frame<OtaCommand>>) {
         let Some(InboundRequest {
             source,
             context,

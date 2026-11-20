@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use bytes::{BufMut, Bytes, BytesMut};
 use le_stream::{FromLeStream, ToLeStream};
@@ -1066,7 +1066,7 @@ where
     }
 }
 
-fn test_metadata(profile: Profile) -> IndicationMetadata<(), ()> {
+fn test_metadata(profile: Profile) -> IndicationMetadata<Instant> {
     let endpoint =
         IndividualEndpoint::new(ENDPOINT).expect("test endpoint is an individual endpoint");
     IndicationMetadata {
@@ -1080,7 +1080,7 @@ fn test_metadata(profile: Profile) -> IndicationMetadata<(), ()> {
         status: IndicationStatus::success(),
         security: Security::Unsecured,
         link_quality: u8::MAX,
-        rx_time: (),
+        rx_time: Instant::now(),
     }
 }
 

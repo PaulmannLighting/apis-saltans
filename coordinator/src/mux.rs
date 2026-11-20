@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use bytes::Bytes;
 use log::{trace, warn};
 use tokio::sync::mpsc::error::TrySendError;
@@ -14,7 +16,7 @@ use self::aps_payload::ApsPayload;
 use crate::aps::Aps;
 use crate::event::{EventSink, KeepAlive};
 use crate::runtime::spawn;
-use crate::{Device, Event, Network, NetworkError, ota, zcl, zdp};
+use crate::{Device, Event, Network, NetworkError, ReceivedIndication, ota, zcl, zdp};
 
 mod aps_payload;
 
@@ -225,7 +227,8 @@ impl Mux {
         indication: DataIndication<Bytes, T, K>,
         zdo_response_required: bool,
     ) {
-        let indication = indication.map_context(drop, drop);
+        let received_at = Instant::now();
+        let indication = indication.map_context(|_| received_at, drop);
         if !indication.metadata().status().is_success() {
             warn!(
                 "Discarding unsuccessful APS data indication: {:?}",
@@ -249,7 +252,7 @@ impl Mux {
 
     async fn forward_received_message(
         &self,
-        indication: DataIndication<ApsPayload, (), ()>,
+        indication: ReceivedIndication<ApsPayload>,
         zdo_response_required: bool,
     ) {
         let (metadata, payload) = indication.into_parts();
@@ -266,7 +269,7 @@ impl Mux {
     }
 
     /// Forward a parsed ZCL frame, waiting for capacity in the actor inbox.
-    async fn forward_zcl(&self, indication: DataIndication<ZclFrame<Cluster>, (), ()>) {
+    async fn forward_zcl(&self, indication: ReceivedIndication<ZclFrame<Cluster>>) {
         self.zcl
             .send(zcl::Message::Received { indication })
             .await
@@ -278,7 +281,7 @@ impl Mux {
     /// Forward a parsed ZDP frame without allowing inbox pressure to stall hardware events.
     fn forward_zdp(
         &self,
-        indication: DataIndication<ZdpFrame<Command>, (), ()>,
+        indication: ReceivedIndication<ZdpFrame<Command>>,
         response_required: bool,
     ) {
         match self.zdp.try_send(zdp::Message::Received {

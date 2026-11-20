@@ -5,7 +5,7 @@ use le_stream::ToLeStream;
 use log::{debug, trace, warn};
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender, WeakSender};
-use zb_aps::apsde::{DataIndication, DataRequest};
+use zb_aps::apsde::DataRequest;
 use zb_zcl::{Cluster, Frame, UnsequencedFrame};
 
 pub use self::correlation::ResponseExpectation;
@@ -20,7 +20,7 @@ pub use self::subscription::{
 };
 use crate::aps::{Aps, TransmissionResponse};
 use crate::event::EventSink;
-use crate::{CoordinatorConfig, Error, Event};
+use crate::{CoordinatorConfig, Error, Event, ReceivedIndication};
 
 mod correlation;
 mod key;
@@ -137,7 +137,7 @@ impl Transceiver {
 /// Inbound response correlation, subscription delivery, and application-event routing.
 impl Transceiver {
     /// Handle a received ZCL message.
-    fn handle_message_received(&mut self, indication: DataIndication<Frame<Cluster>, (), ()>) {
+    fn handle_message_received(&mut self, indication: ReceivedIndication<Frame<Cluster>>) {
         let source = indication.metadata().source();
         trace!("Received ZCL message from {source:?}: {indication:?}");
 
@@ -152,10 +152,7 @@ impl Transceiver {
     }
 
     /// Deliver a received frame to every matching live subscription.
-    fn forward_to_subscribers(
-        &mut self,
-        indication: &DataIndication<Frame<Cluster>, (), ()>,
-    ) -> bool {
+    fn forward_to_subscribers(&mut self, indication: &ReceivedIndication<Frame<Cluster>>) -> bool {
         let mut delivered = false;
 
         self.subscriptions.retain(|subscription| {

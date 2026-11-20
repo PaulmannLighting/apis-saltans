@@ -419,9 +419,12 @@ async fn receive_events(mut events: tokio::sync::mpsc::Receiver<Event>) {
 
 `Event::Zcl` is emitted only for inbound frames that do not match an outstanding request.
 Request/response traffic is consumed by the relevant `communicate(...)` call. The event contains
-the normalized `DataIndication<zb_zcl::Frame<zb_zcl::Cluster>, (), ()>` so applications retain the
+the normalized `ReceivedIndication<zb_zcl::Frame<zb_zcl::Cluster>>` so applications retain the
 received source and destination, profile and cluster identifiers, status, security information,
-and link quality alongside the parsed ZCL frame.
+and link quality alongside the parsed ZCL frame. Read the host monotonic timestamp as
+`*indication.metadata().rx_time()` to compare when the frame entered the coordinator with a
+local deadline. This timestamp measures coordinator ingress after dequeueing the hardware
+indication. It excludes parsing, protocol routing, and application delivery time.
 
 An APS packet with cluster ID `0x0025` (`Cluster::KeepAlive`) under a supported application profile
 is handled before ZCL payload decoding and produces `Device::KeepAlive`. The contained
@@ -430,9 +433,9 @@ endpoint. Packets whose source is not an allocated device short address or whose
 reserved are logged and dropped instead of producing an event.
 
 The mux forwards parsed ZCL and ZDP frames to their protocol actors inside
-`DataIndication<Frame<_>, (), ()>`. It retains APS addressing, status, security mode, key index,
-profile, cluster, and link quality while normalizing the backend-specific timestamp and
-device-key-pair handle to `()`. Parsing reads the profile, cluster, source endpoint, and destination
+`ReceivedIndication<Frame<_>>`. It retains APS addressing, status, security mode, key index,
+profile, cluster, and link quality, stores its ingress `Instant` as `rx_time`, and normalizes the
+backend device-key-pair handle to `()`. Parsing reads the profile, cluster, source endpoint, and destination
 endpoint directly from the indication metadata; the coordinator does not construct a synthetic
 received APS frame header. For ZDP frames, it also retains the hardware event's
 `zdo_response_required` value. The ZDP actor serves an incoming request only when this flag assigns

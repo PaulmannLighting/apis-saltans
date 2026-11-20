@@ -1,4 +1,7 @@
-use std::time::Duration;
+use std::future::{Future, poll_fn};
+use std::pin::pin;
+use std::task::Poll;
+use std::time::{Duration, Instant};
 
 use bytes::Bytes;
 use le_stream::ToLeStream;
@@ -81,7 +84,7 @@ fn keep_alive_routes_only_valid_device_sources_to_application_events() {
 }
 
 #[test]
-fn routes_data_indication_to_zcl() {
+fn timestamps_zcl_indication_before_waiting_for_actor_capacity() {
     Runtime::new()
         .expect("runtime must be available")
         .block_on(async {
@@ -114,8 +117,31 @@ fn routes_data_indication_to_zcl() {
             );
             let asdu = ZclFrame::new(header, On).to_le_stream().collect();
 
-            mux.handle_data_indication(DataIndication::new(metadata, asdu), false)
-                .await;
+            let inbox_capacity = mux.zcl.max_capacity();
+            for _ in 0..inbox_capacity {
+                mux.zcl.try_send(zcl::Message::NetworkDown).unwrap();
+            }
+            let before_ingress = Instant::now();
+            let mut forward = pin!(mux.multiplex_apsde_event(ApsdeEvent::DataIndication {
+                indication: DataIndication::new(metadata, asdu),
+                zdo_response_required: false,
+            }));
+            poll_fn(|context| {
+                assert!(
+                    forward.as_mut().poll(context).is_pending(),
+                    "ZCL inbox must apply backpressure"
+                );
+                Poll::Ready(())
+            })
+            .await;
+            let while_inbox_full = Instant::now();
+            for _ in 0..inbox_capacity {
+                assert!(matches!(
+                    zcl_messages.try_recv(),
+                    Ok(zcl::Message::NetworkDown)
+                ));
+            }
+            timeout(TEST_TIMEOUT, forward).await.unwrap();
 
             let zcl::Message::Received { indication } = zcl_messages
                 .recv()
@@ -135,7 +161,8 @@ fn routes_data_indication_to_zcl() {
                     if destination_endpoint.get() == endpoint
             ));
             assert_eq!(indication.metadata().link_quality(), LINK_QUALITY);
-            assert_eq!(indication.metadata().rx_time(), &());
+            let received_at = *indication.metadata().rx_time();
+            assert!((before_ingress..=while_inbox_full).contains(&received_at));
             assert!(matches!(
                 indication.asdu().payload(),
                 zb_zcl::Cluster::OnOff(OnOffCommand::On(_))
@@ -172,6 +199,7 @@ fn routes_broadcast_data_indication_to_zdp() {
                 .to_le_stream()
                 .collect();
 
+            let before_ingress = Instant::now();
             mux.handle_data_indication(DataIndication::new(metadata, asdu), true)
                 .await;
 
@@ -194,7 +222,7 @@ fn routes_broadcast_data_indication_to_zdp() {
                 }
             ));
             assert_eq!(indication.metadata().link_quality(), LINK_QUALITY);
-            assert_eq!(indication.metadata().rx_time(), &());
+            assert!((before_ingress..=Instant::now()).contains(indication.metadata().rx_time()));
             assert!(matches!(
                 indication.asdu().data(),
                 ZdpCommand::DeviceAndServiceDiscovery(DeviceAndServiceDiscovery::ActiveEpReq(_))

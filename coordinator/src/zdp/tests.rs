@@ -1,6 +1,6 @@
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use bytes::Bytes;
 use le_stream::ToLeStream;
@@ -25,10 +25,10 @@ use zb_zdp::{ActiveEpReq, Command, DeviceAndServiceDiscovery, Frame, SimpleDescr
 
 use super::server::{permit_joining_response, track_reply_completion};
 use super::{Message, Transceiver};
-use crate::Error;
 use crate::aps::{Aps, Message as ApsMessage, Metadata, TransmissionResponse};
 use crate::event::EventSink;
 use crate::zdp::ZdpKey;
+use crate::{Error, ReceivedIndication};
 
 const NO_WORK_LIMIT: usize = 0;
 const SEQUENCE_OFFSET: usize = 0;
@@ -444,7 +444,7 @@ async fn tracked_reply_failure(error: zb_hw::Error) -> Message {
         .expect("deferred failure must reach the ZDP actor inbox")
 }
 
-fn active_endpoint_request() -> DataIndication<Frame<Command>, (), ()> {
+fn active_endpoint_request() -> ReceivedIndication<Frame<Command>> {
     let command: Command = DeviceAndServiceDiscovery::from(ActiveEpReq::new(LOCAL_ADDRESS)).into();
     let metadata = IndicationMetadata {
         destination: ReceivedDestination::Network {
@@ -460,7 +460,7 @@ fn active_endpoint_request() -> DataIndication<Frame<Command>, (), ()> {
         status: IndicationStatus::success(),
         security: Security::<()>::Unsecured,
         link_quality: LINK_QUALITY,
-        rx_time: (),
+        rx_time: Instant::now(),
     };
 
     DataIndication::new(metadata, Frame::new(SEQUENCE, command))

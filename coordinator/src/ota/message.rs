@@ -1,11 +1,12 @@
 use thiserror::Error as ThisError;
 use tokio::sync::oneshot::{Receiver, Sender};
-use zb_aps::apsde::{DataIndication, IndividualEndpoint};
+use zb_aps::apsde::IndividualEndpoint;
 use zb_core::FullAddress;
 use zb_zcl::Frame;
 use zb_zcl::ota_upgrade::Command as OtaCommand;
 
 use super::{Image, UpdateTimeouts};
+use crate::ReceivedIndication;
 
 /// Terminal result delivered to the caller that scheduled an OTA update.
 pub type UpdateResult = Result<(), UpdateError>;
@@ -34,7 +35,7 @@ pub enum Message {
     /// A received OTA Upgrade cluster command.
     Received {
         /// APSDE indication containing the typed OTA command and all receive metadata.
-        indication: DataIndication<Frame<OtaCommand>, (), ()>,
+        indication: ReceivedIndication<Frame<OtaCommand>>,
     },
 
     /// Stop every active update because hardware events are unavailable.

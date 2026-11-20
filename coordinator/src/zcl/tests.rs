@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use bytes::Bytes;
 use tokio::runtime::Builder;
 use tokio::sync::mpsc::{Receiver, channel};
@@ -24,7 +26,7 @@ use super::{
 use crate::aps::Aps;
 use crate::event::EventSink;
 use crate::zcl::ZclKey;
-use crate::{Error, Event, MPSC_CHANNEL_SIZE};
+use crate::{Error, Event, MPSC_CHANNEL_SIZE, ReceivedIndication};
 
 const SOURCE_NODE_ID: u16 = 0x4321;
 const TRANSACTION_SEQUENCE: u8 = 7;
@@ -169,15 +171,15 @@ fn routes_matching_frames_to_a_generic_subscription() {
                 .run(messages),
             );
             let source = source();
+            let indication = subscribed_indication();
+            let received_at = *indication.metadata().rx_time();
 
             transceiver
                 .send(Message::Subscribe { subscription })
                 .await
                 .expect("ZCL transceiver remains available");
             transceiver
-                .send(Message::Received {
-                    indication: subscribed_indication(),
-                })
+                .send(Message::Received { indication })
                 .await
                 .expect("ZCL transceiver remains available");
 
@@ -187,6 +189,7 @@ fn routes_matching_frames_to_a_generic_subscription() {
                 .expect("subscription remains open");
             assert_eq!(received.indication.metadata().source(), source);
             assert_eq!(received.indication.metadata().link_quality(), LINK_QUALITY);
+            assert_eq!(received.indication.metadata().rx_time(), &received_at);
             assert!(matches!(
                 received.indication.asdu().payload(),
                 Cluster::OnOff(OnOffCommand::On(_))
@@ -308,10 +311,10 @@ fn unregisters_a_subscription() {
                 })
                 .await
                 .expect("ZCL transceiver remains available");
+            let indication = subscribed_indication();
+            let received_at = *indication.metadata().rx_time();
             transceiver
-                .send(Message::Received {
-                    indication: subscribed_indication(),
-                })
+                .send(Message::Received { indication })
                 .await
                 .expect("ZCL transceiver remains available");
 
@@ -320,6 +323,7 @@ fn unregisters_a_subscription() {
             };
             assert_eq!(indication.metadata().source(), source());
             assert_eq!(indication.metadata().link_quality(), LINK_QUALITY);
+            assert_eq!(indication.metadata().rx_time(), &received_at);
             assert!(matches!(
                 indication.asdu().payload(),
                 Cluster::OnOff(OnOffCommand::On(_))
@@ -386,7 +390,7 @@ fn unstarted_transceiver() -> (Transceiver, Receiver<Event>) {
     )
 }
 
-fn subscribed_indication() -> DataIndication<Frame<Cluster>, (), ()> {
+fn subscribed_indication() -> ReceivedIndication<Frame<Cluster>> {
     let endpoint = IndividualEndpoint::new(Endpoint::Application(Application::MIN))
         .expect("application endpoint is individual");
     let metadata = IndicationMetadata {
@@ -405,7 +409,7 @@ fn subscribed_indication() -> DataIndication<Frame<Cluster>, (), ()> {
         status: IndicationStatus::success(),
         security: Security::<()>::Unsecured,
         link_quality: LINK_QUALITY,
-        rx_time: (),
+        rx_time: Instant::now(),
     };
     let header = ZclHeader::new(
         Scope::ClusterSpecific,
@@ -595,18 +599,18 @@ fn local_endpoint_is_part_of_response_identity() {
         status: IndicationStatus::success(),
         security: Security::<()>::Unsecured,
         link_quality: LINK_QUALITY,
-        rx_time: (),
+        rx_time: Instant::now(),
     };
     let corrected = DataIndication::new(metadata, response.into_parts().1);
     assert_eq!(ZclKey::from_indication(&corrected), Some(expected));
 }
 
-fn incoming_frame(bytes: &[u8]) -> DataIndication<Frame<Cluster>, (), ()> {
+fn incoming_frame(bytes: &[u8]) -> ReceivedIndication<Frame<Cluster>> {
     subscribed_indication()
         .map_asdu(|_| Frame::parse(ClusterId::OnOff.as_u16(), bytes.iter().copied()).unwrap())
 }
 
-fn read_response_indication() -> DataIndication<Frame<Cluster>, (), ()> {
+fn read_response_indication() -> ReceivedIndication<Frame<Cluster>> {
     const PAYLOAD: [u8; 8] = [
         0x18,
         TRANSACTION_SEQUENCE,
@@ -620,7 +624,7 @@ fn read_response_indication() -> DataIndication<Frame<Cluster>, (), ()> {
     incoming_frame(&PAYLOAD)
 }
 
-fn report_indication() -> DataIndication<Frame<Cluster>, (), ()> {
+fn report_indication() -> ReceivedIndication<Frame<Cluster>> {
     const PAYLOAD: [u8; 7] = [0x18, TRANSACTION_SEQUENCE, 0x0a, 0x00, 0x00, 0x10, 0x01];
     incoming_frame(&PAYLOAD)
 }

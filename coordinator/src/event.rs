@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use zb_aps::apsde::DataIndication;
 use zb_zcl::{Cluster, Frame};
 
@@ -8,6 +10,13 @@ pub use self::sink::{DroppedEvents, EventSink};
 mod device;
 mod network;
 mod sink;
+
+/// An APSDE indication with a host monotonic timestamp captured at coordinator ingress.
+///
+/// Read the timestamp through `metadata().rx_time()`. It records when the coordinator accepts
+/// the hardware indication, before parsing or forwarding it. The device-key-pair handle uses
+/// the default unit type.
+pub type ReceivedIndication<A> = DataIndication<A, Instant>;
 
 /// Event emitted by the coordinator runtime.
 #[derive(Clone, Debug)]
@@ -22,9 +31,7 @@ pub enum Event {
     Zcl {
         /// Normalized APSDE indication containing the parsed ZCL frame and receive metadata.
         ///
-        /// Backend-specific receive timestamps and device-key-pair handles are normalized to
-        /// `()`. Addressing, profile, cluster, status, security, and link-quality metadata remain
-        /// attached.
-        indication: DataIndication<Frame<Cluster>, (), ()>,
+        /// The APS metadata includes the coordinator ingress timestamp.
+        indication: ReceivedIndication<Frame<Cluster>>,
     },
 }
