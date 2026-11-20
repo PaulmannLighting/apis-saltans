@@ -1,115 +1,13 @@
-#[cfg(feature = "alloc")]
-use alloc::{vec::IntoIter, vec::Vec};
-
-use le_stream::FromLeStream;
-#[cfg(feature = "alloc")]
-use le_stream::ToLeStream;
-use zb_core::ByteSizedVec;
-
 pub use self::response::MgmtLqiRspPayload;
-use crate::Status;
+use super::table::management_table_response;
 
 mod response;
 
-crate::zdp_command! {
-    /// Management LQI Response.
+management_table_response! {
+    /// Management Link Quality Indicator response.
     MgmtLqiRsp => Mgmt_Lqi_rsp;
     cluster_id: 0x8031;
-    group: NetworkManagement;
-    fields {
-        status: u8,
-        neighbor_table_entries: u8,
-        start_index: u8,
-        neighbor_table_list: ByteSizedVec<u8>,
-    }
-    constructor {
-        /// Creates a new `MgmtLqiRsp`.
-        #[must_use]
-        pub fn new(response: Result<MgmtLqiRspPayload, Status>) -> Self {
-            match response {
-                Ok(response) => Self {
-                    status: Status::Success.into(),
-                    neighbor_table_entries: response.neighbor_table_entries,
-                    start_index: response.start_index,
-                    neighbor_table_list: response.neighbor_table_list,
-                },
-                Err(status) => Self {
-                    status: status.into(),
-                    neighbor_table_entries: 0,
-                    start_index: 0,
-                    neighbor_table_list: ByteSizedVec::new(),
-                },
-            }
-        }
-    }
-    getters {
-        /// Return the status of the response.
-        ///
-        /// # Errors
-        ///
-        /// Returns the raw status code if the conversion to a [`Status`] fails.
-        pub fn status(&self) -> Result<Status, u8> {
-            self.status.try_into()
-        }
-    }
-    le_stream {
-        from {
-            fn from_le_stream<T>(mut bytes: T) -> Option<Self>
-            where
-                T: Iterator<Item = u8>,
-            {
-                let status = <u8 as FromLeStream>::from_le_stream(&mut bytes)?;
-
-                if status == Status::Success as u8 {
-                    Some(Self {
-                        status,
-                        neighbor_table_entries: <u8 as FromLeStream>::from_le_stream(&mut bytes)?,
-                        start_index: <u8 as FromLeStream>::from_le_stream(&mut bytes)?,
-                        neighbor_table_list: <ByteSizedVec<u8> as FromLeStream>::from_le_stream(&mut bytes)?,
-                    })
-                } else {
-                    Some(Self {
-                        status,
-                        neighbor_table_entries: 0,
-                        start_index: 0,
-                        neighbor_table_list: ByteSizedVec::new(),
-                    })
-                }
-            }
-        }
-        to {
-            #[cfg(feature = "alloc")]
-            type Iter = IntoIter<u8>;
-            #[cfg(not(feature = "alloc"))]
-            type Iter = crate::storage::Stream<<ByteSizedVec<u8> as IntoIterator>::IntoIter>;
-
-            #[cfg(feature = "alloc")]
-            fn to_le_stream(self) -> Self::Iter {
-                let mut bytes = Vec::new();
-
-                bytes.extend(<u8 as ToLeStream>::to_le_stream(self.status));
-
-                if self.status == Status::Success as u8 {
-                    bytes.extend(<u8 as ToLeStream>::to_le_stream(self.neighbor_table_entries));
-                    bytes.extend(<u8 as ToLeStream>::to_le_stream(self.start_index));
-                    bytes.extend(<ByteSizedVec<u8> as ToLeStream>::to_le_stream(self.neighbor_table_list));
-                }
-
-                bytes.into_iter()
-            }
-
-            #[cfg(not(feature = "alloc"))]
-            fn to_le_stream(self) -> Self::Iter {
-                let mut prefix = crate::storage::Prefix::new();
-                prefix.extend(self.status.to_le_stream());
-                let mut items = self.neighbor_table_list;
-                if self.status == Status::Success as u8 {
-                    prefix.extend(self.neighbor_table_entries.to_le_stream());
-                    prefix.extend(self.start_index.to_le_stream());
-                    prefix.extend(u8::try_from(items.len()).expect("byte-sized list length fits u8").to_le_stream());
-                } else { items.clear(); }
-                crate::storage::Stream::new(&prefix, items.into_iter())
-            }
-        }
-    }
+    layout: Neighbor;
+    payload: MgmtLqiRspPayload;
+    fields: neighbor_table_entries, neighbor_table_list;
 }

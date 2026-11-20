@@ -6,17 +6,13 @@ use zb_aps::data::{DataHeaderParameters, Header};
 use zb_aps::{Data, Destination, Payload};
 use zb_core::{Endpoint, Profile};
 
-use crate::{
-    Command, Frame, MgmtBindRsp, MgmtLqiRsp, MgmtNwkIeeeJoiningListRsp, MgmtRtgRsp, NodeDescReq,
-    SecurityChallengeReq,
-};
+use crate::{Command, Frame, MgmtNwkIeeeJoiningListRsp, NodeDescReq, SecurityChallengeReq};
 
 const NETWORK: u16 = 0x1234;
 const SEQUENCE: u8 = 42;
 // Global Fragmentation Parameters TLV: tag, length-minus-one, node ID, options.
 const TLV: &[u8] = &[71, 2, 0x34, 0x12, 0];
 const ERROR: &[u8] = &[0xff];
-const TABLE: &[u8] = &[0, 3, 1, 2, 0xab, 0xcd];
 const JOINING_EMPTY: &[u8] = &[0, 7, 0, 0];
 const JOINING_ONE: &[u8] = &[0, 7, 1, 2, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -29,16 +25,10 @@ where
 }
 
 #[test]
-fn management_response_streams_preserve_conditional_fields() {
-    for bytes in [ERROR, TABLE, &[0, 0, 0, 0]] {
-        roundtrip::<MgmtBindRsp>(bytes);
-        roundtrip::<MgmtLqiRsp>(bytes);
-        roundtrip::<MgmtRtgRsp>(bytes);
-    }
+fn management_joining_list_stream_preserves_conditional_fields() {
     for bytes in [ERROR, JOINING_EMPTY, JOINING_ONE] {
         roundtrip::<MgmtNwkIeeeJoiningListRsp>(bytes);
     }
-    assert!(MgmtLqiRsp::from_le_stream(TABLE[..TABLE.len() - 1].iter().copied()).is_none());
     assert!(
         MgmtNwkIeeeJoiningListRsp::from_le_stream(
             JOINING_ONE[..JOINING_ONE.len() - 1].iter().copied()

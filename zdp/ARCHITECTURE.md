@@ -304,6 +304,12 @@ scratch buffers and introduces no new wire-size limit. Allocating responses
 retain their original `Vec<u8>::IntoIter` representation. The 16-byte header
 buffer accommodates the largest address-response header (13 bytes).
 
+Binding, LQI, and routing responses use a common table codec. It reads each entry using the
+command's record layout and verifies the declared count against the complete page. Binding
+entries select the destination width by address mode. Allocating builds bound decoding by the
+one-byte entry count, and allocation-free builds also enforce a 255-byte storage limit. Successful
+responses preserve the entries in wire order for inspection or re-encoding.
+
 The build script tracks all `ZIGBEE_ZDP_*_CAPACITY` variables. Compile-time
 assertions reject zero TLV capacity or address/cluster capacities below 255,
 which would invalidate existing infallible conversions. TLV capacity defaults

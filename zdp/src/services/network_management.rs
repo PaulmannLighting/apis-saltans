@@ -44,6 +44,9 @@ mod mgmt_permit_joining_req;
 mod mgmt_permit_joining_rsp;
 mod mgmt_rtg_req;
 mod mgmt_rtg_rsp;
+mod table;
+#[cfg(test)]
+mod table_tests;
 
 crate::zdp_command_group! {
     /// Network Management Commands.

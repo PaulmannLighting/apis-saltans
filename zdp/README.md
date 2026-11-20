@@ -209,6 +209,12 @@ lists, so existing infallible constructors and descriptor decomposition stay
 infallible. Existing `ByteSizedVec` fields retain their protocol-defined
 255-element capacities. No capacity settings apply to allocating builds.
 
+Management binding, LQI, and routing responses expose `table_entries()`, `start_index()`,
+`list_count()`, and `list_bytes()`. The wire count refers to complete entries. The allocating
+decoder supports up to 255 entries per page. The allocation-free decoder accepts up to 255 bytes
+of complete entries and rejects pages that exceed that capacity. The raw-byte payloads accepted
+by the response constructors also hold up to 255 bytes in both modes.
+
 ```sh
 ZIGBEE_ZDP_TLV_CAPACITY=4 cargo build -p apis-saltans-zdp --no-default-features
 ```
