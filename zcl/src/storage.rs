@@ -4,6 +4,7 @@ use alloc::{boxed::Box, vec::Vec};
 
 #[cfg(not(feature = "alloc"))]
 use const_env::env_item;
+use le_stream::FromLeStream;
 
 #[cfg(not(feature = "alloc"))]
 pub use self::bounded::{RawList, Stream};
@@ -16,6 +17,9 @@ mod bounded;
 mod tests;
 #[cfg(not(feature = "alloc"))]
 mod wire;
+
+#[cfg(feature = "alloc")]
+const MAX_RESPONSE_RECORDS: usize = u8::MAX as usize;
 
 /// Maximum records storage without allocation.
 #[cfg(not(feature = "alloc"))]
@@ -108,6 +112,30 @@ pub type Records<T> = Box<[T]>;
 /// Bounded storage for `Records`.
 #[cfg(not(feature = "alloc"))]
 pub type Records<T> = RawList<T, RECORDS_CAPACITY>;
+
+/// Decode a complete unprefixed response list and reject malformed tails or capacity overflow.
+pub(crate) fn read_records<T, I>(bytes: I) -> Option<Records<T>>
+where
+    T: FromLeStream,
+    I: Iterator<Item = u8>,
+{
+    #[cfg(feature = "alloc")]
+    {
+        let mut bytes = bytes.peekable();
+        let mut records = Vec::new();
+        while bytes.peek().is_some() {
+            if records.len() == MAX_RESPONSE_RECORDS {
+                return None;
+            }
+            records.push(T::from_le_stream(&mut bytes)?);
+        }
+        Some(records.into_boxed_slice())
+    }
+    #[cfg(not(feature = "alloc"))]
+    {
+        Records::from_le_stream(bytes)
+    }
+}
 
 /// Storage for `AttributeIds` with allocation.
 #[cfg(feature = "alloc")]

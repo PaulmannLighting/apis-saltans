@@ -392,10 +392,12 @@ fields for other statuses. Encoding and decoding are intentionally asymmetric.
 `src/macros/`, with separate modules for commands, command enums, attribute newtypes, attribute tables,
 bitflag formatting, and profile defaults. Attribute macro tests live in `macros/tests.rs`.
 
-Read Reporting Configuration construction uses separate reported, received, and failed
-constructors. Reported attributes use named `ReportedConfiguration` fields. Each constructor
-populates the existing flat record with the applicable fields and reporting direction, leaving
-the record's stream and serde representation unchanged.
+Read Reporting Configuration selects its wire record layout by status and direction. Sender
+records classify the datatype according to ZCL. Analog changes reuse the preceding datatype ID
+and discrete types carry only the ID and reporting intervals. The constructors and Serde
+deserializer validate record fields before the encoder writes them into a fixed-size buffer.
+Read Attributes and Read Reporting Configuration decode complete record lists through
+`storage::read_records`, which enforces each storage mode's capacity and rejects malformed tails.
 
 
 ## Storage and no_std boundary

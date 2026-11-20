@@ -42,6 +42,23 @@ zcl_command! {
             attribute_values: Records<ReadAttributesStatus>,
         }
 
+        getters {
+            /// Return every record in wire order, including unknown attribute IDs and failures.
+            #[must_use]
+            pub fn records(&self) -> &[ReadAttributesStatus] {
+                &self.attribute_values
+            }
+        }
+
+        from_le_stream {
+            fn from_le_stream<I>(bytes: I) -> Option<Self>
+            where
+                I: Iterator<Item = u8>,
+            {
+                Some(Self { attribute_values: crate::storage::read_records(bytes)? })
+            }
+        }
+
         impl {
             impl Response {
                 /// Returns an iterator over the parsed attribute values in the response.
@@ -79,5 +96,50 @@ zcl_command! {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use le_stream::FromLeStream;
+
+    use super::Response;
+    use crate::Frame;
+
+    const SUCCESS: [u8; 5] = [0, 0, 0, 0x10, 1];
+    const FAILURE: [u8; 3] = [0x34, 0x12, 0x86];
+    const ON_OFF_CLUSTER: u16 = 0x0006;
+    const RESPONSE_HEADER: [u8; 3] = [0x18, 0x42, 0x01];
+
+    #[test]
+    fn exposes_typed_records_and_rejects_malformed_tails() {
+        let single = Response::from_le_stream(SUCCESS.into_iter()).unwrap();
+        assert!(single.records()[0].clone().into_parts().1.is_ok());
+        assert!(Response::from_le_stream(SUCCESS.into_iter().chain([0, 0, 0])).is_none());
+
+        let wire = SUCCESS.into_iter().chain(FAILURE);
+        #[cfg(not(feature = "alloc"))]
+        if crate::storage::RECORDS_CAPACITY == 1 {
+            assert!(Response::from_le_stream(wire).is_none());
+            return;
+        }
+        let response = Response::from_le_stream(wire.clone()).unwrap();
+        let [success, failure] = response.records() else {
+            panic!("expected both records");
+        };
+        let (id, value) = success.clone().into_parts();
+        assert_eq!(id, 0);
+        assert!(value.is_ok());
+        let (id, error) = failure.clone().into_parts();
+        assert_eq!(id, 0x1234);
+        assert!(error.is_err());
+        assert!(Response::from_le_stream(wire.chain([0, 0, 0])).is_none());
+    }
+
+    #[test]
+    fn frame_parser_rejects_a_malformed_read_response_tail() {
+        let wire = RESPONSE_HEADER.into_iter().chain(SUCCESS);
+        assert!(Frame::parse(ON_OFF_CLUSTER, wire.clone()).is_ok());
+        assert!(Frame::parse(ON_OFF_CLUSTER, wire.chain([0, 0, 0])).is_err());
     }
 }

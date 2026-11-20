@@ -3,7 +3,7 @@
 use zb_core::Direction;
 
 pub use self::record::Record;
-pub use self::status::{ReportedConfiguration, Status};
+pub use self::status::{InvalidReportingRecord, ReportedConfiguration, Status};
 use crate::macros::zcl_command;
 use crate::storage::Records;
 
@@ -48,6 +48,15 @@ zcl_command! {
             #[must_use]
             pub fn records(&self) -> &[Status] {
                 &self.records
+            }
+        }
+
+        from_le_stream {
+            fn from_le_stream<I>(bytes: I) -> Option<Self>
+            where
+                I: Iterator<Item = u8>,
+            {
+                Some(Self { records: crate::storage::read_records(bytes)? })
             }
         }
     }

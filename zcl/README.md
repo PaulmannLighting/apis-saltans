@@ -278,10 +278,17 @@ Attribute value types implement `ReportingType` to select their reporting parame
 Type aliases inherit this choice; custom types explicitly choose `Analog<T>` or `Discrete<T>`
 through the associated `Configuration` type.
 
-Read Reporting Configuration response records use `Status::reported`, `Status::received`, or
-`Status::failed`. `reported` accepts an attribute ID and a `ReportedConfiguration` with named
-fields; the other constructors take only their relevant values. These replace the former
-eight-argument `Status::new` constructor. The record's serialized representation is unchanged.
+Read Attributes and Read Reporting Configuration responses expose their complete wire-order
+records through `records()`. A truncated or malformed record invalidates the whole response.
+Allocating decoders accept at most 255 records, and allocation-free decoders use
+`ZIGBEE_ZCL_RECORDS_CAPACITY`.
+
+Read Reporting Configuration records carry sender settings, a receive timeout, or a failure
+status. Sender records carry the datatype once. A supported analog datatype requires a matching
+reportable change, and a discrete datatype carries no change threshold. Unsupported analog types
+such as floating-point values are rejected. Use `Status::try_reported` and `Status::try_failed`
+to validate configurations from external inputs. `Status::received` constructs a timeout
+record directly.
 
 
 ## Allocation-free storage
