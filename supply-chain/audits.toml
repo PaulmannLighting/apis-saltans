@@ -85,6 +85,12 @@ criteria = "safe-to-deploy"
 delta = "0.22.0 -> 0.22.1"
 notes = "AI-assisted delta audit. Compared the packaged crate with the checksum-verified 0.22.0 release. Reviewed APS timeout handling, counter allocation, and regression coverage. A timeout fails its transmission while the APS actor continues processing traffic. The allocator skips the quarantined counter until the actor consumes the late confirmation. Manifest and lockfile changes are limited to the package version."
 
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.22.1 -> 0.23.0"
+notes = "AI-assisted delta audit against the checksum-verified 0.22.1 package. Reviewed capture of a monotonic timestamp before APS indication parsing and routing, preservation through ZCL events and subscriptions and OTA routing, and typed discovery matching. Confirmed that the package selects the audited ZCL and ZDP releases. Reviewed the packaged dependency requirements and the locked tokio-util 0.7.20 resolution."
+
 [[audits.apis-saltans-core]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -187,6 +193,12 @@ criteria = "safe-to-deploy"
 delta = "0.5.1 -> 0.6.0"
 notes = "AI-assisted delta audit; reviewed the added response expectation implementations, Groups API support, public newtype exports, parser refinements, and APS/core dependency updates. No build scripts or new ambient capabilities were added."
 
+[[audits.apis-saltans-zcl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.16.0 -> 0.17.0"
+notes = "AI-assisted delta audit against the checksum-verified 0.16.0 package. Reviewed direction-aware client discovery dispatch and typed response matching, bounded attribute response lists, and reporting validation on the wire and through Serde. Checked the fixed encoder buffer against supported analog widths and the allocation-free builds."
+
 [[audits.apis-saltans-zdp]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -210,6 +222,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.4.0 -> 0.5.0"
 notes = "AI-assisted delta audit; reviewed ZDP parsing changes that preserve weak APS destinations, status/display refinements, and APS/core dependency updates. No build scripts or new ambient capabilities were added."
+
+[[audits.apis-saltans-zdp]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.13.0 -> 0.13.1"
+notes = "AI-assisted delta audit against the checksum-verified 0.13.0 package. Inspected binding, neighbor, and routing table response parsing and encoding. Decoders consume complete entries under the declared count and enforce fixed storage capacity without alloc. Regressions cover malformed pages and both storage modes."
 
 [[audits.autocfg]]
 who = "Codex AI"
@@ -258,6 +276,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "1.12.0 -> 1.12.1"
 notes = "AI-assisted delta audit; allocation for Shared metadata now uses Box<MaybeUninit<Shared>> before taking ownership of vector buffers, then initializes via ptr.write, fixing panic handling when Box::new panics. Reviewed the changed unsafe initialization path; no new ambient capabilities, filesystem/network/process access, or exploitable unsafe behavior were introduced."
+
+[[audits.bytes]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.12.1 -> 1.12.2"
+notes = "AI-assisted delta audit of checksum-verified registry archives. Checked signed reads through the bounded unsigned readers, ordering of chained buffers, and partial writer semantics. Reviewed zero-length truncation ownership and the Vec-backed spare-capacity path, which bounds iterator consumption before restoring the logical length. Checked the one-byte store reserves capacity and initializes the byte before extending length."
 
 [[audits.cc]]
 who = "Codex AI"
@@ -379,6 +403,12 @@ criteria = "safe-to-deploy"
 delta = "1.16.0 -> 1.18.0"
 notes = "AI-assisted delta audit. Reviewed formatting-trait forwarding and partitioning Extend/FromIterator implementations: variants select the corresponding collection, each input is consumed once, and formatting delegates to the matching trait. Remaining changes are documentation and CI; no new unsafe code or I/O."
 
+[[audits.either]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.18.0 -> 1.19.0"
+notes = "AI-assisted delta audit of checksum-verified registry archives. Reviewed the variant predicates and iterator inline annotations. Predicates call the supplied function only for the opposite variant and consume its owned value."
+
 [[audits.find-msvc-tools]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -468,6 +498,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.9.3"
 notes = "AI-assisted audit"
+
+[[audits.heapless]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.9.3 -> 0.9.4"
+notes = "AI-assisted delta audit of checksum-verified registry archives. Reviewed packed map index bounds and rebuild guards, deque and vector length updates before element destruction, bounded vector writes, SPSC cursor arithmetic and acquire load, and separate pool link and payload storage. Checked capacity guards in deserialization and linked-list construction. Runtime dependencies are unchanged and the MSRV rises to 1.88. The workspace uses bounded collections and Serde."
 
 [[audits.heck]]
 who = "OpenAI Codex"
@@ -577,6 +613,12 @@ criteria = "safe-to-deploy"
 delta = "0.4.33 -> 0.4.34"
 notes = "AI-assisted delta audit. Reviewed new alloc feature and std implying alloc, boxed logger trait implementation and set_boxed_logger becoming available with alloc. Initialization and Box::leak logic are unchanged and atomic-target gating is retained; no new output destinations."
 
+[[audits.log]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.4.34 -> 0.4.35"
+notes = "AI-assisted delta audit of checksum-verified registry archives. Reviewed the documentation, package manifest, and release workflow differences. The only library source change drops the rustdoc HTML root URL attribute."
+
 [[audits.macaddr]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -612,6 +654,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 version = "0.2.17"
 notes = "AI-assisted audit"
+
+[[audits.pin-project-lite]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.2.17 -> 0.2.18"
+notes = "AI-assisted delta audit of checksum-verified registry archives. Reviewed the generated Drop-coherence guard for unsized types. The marker-trait bound removes an implicit Sized restriction, extending the existing check against a conflicting destructor to unsized projections. The dependency manifest changes concern package metadata and a lint."
 
 [[audits.proc-macro2]]
 who = "Codex AI"
@@ -685,6 +733,12 @@ criteria = "safe-to-deploy"
 delta = "3.21.0 -> 3.24.0"
 notes = "AI-assisted delta audit. Reviewed bounded collection preallocation via size_hint_cautious, reordered visitor methods, checked timestamp arithmetic replacing panicking additions, shared duration conversion macros preserving feature gates, optional jiff conversions with checked ranges, and schema forwarding for NoneAsEmptyString. New jiff dependency is optional and absent from this workspace graph. No new unsafe code or unrelated I/O; workspace serialization tests pass."
 
+[[audits.serde_with]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "3.24.0 -> 3.25.0"
+notes = "AI-assisted delta audit of checksum-verified registry archives. Reviewed the optional jiff 1 adapters against the existing jiff 0.2 conversions and checked their feature gates and schema wiring. The workspace selects only the macros feature. That feature pins serde_with_macros 3.25.0, which was audited separately."
+
 [[audits.serde_with_macros]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -696,6 +750,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "3.21.0 -> 3.24.0"
 notes = "AI-assisted delta audit. Reviewed syn 3 AST adaptations for function pointers, named arguments, path attributes and punctuated pop; boolean cfg_attr conditions parse and emit explicit true/false tokens. Generated serialization transformations retain recursive type traversal; no new unsafe code or ambient access."
+
+[[audits.serde_with_macros]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "3.24.0 -> 3.25.0"
+notes = "AI-assisted delta audit of checksum-verified registry archives. Reviewed the archive delta. The macro source changes update rustdoc URLs. Manifest changes update the package version and the spelling of a Clippy lint."
 
 [[audits.shlex]]
 who = "Codex AI"
@@ -786,6 +846,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "1.0.24 -> 1.0.26"
 notes = "AI-assisted delta audit. Reviewed Unicode 18 trie/table regeneration and zero-chunk fallback reuse. Independently evaluated both trie lookups for every non-ASCII Unicode scalar in Python: all leaf offsets are in bounds and all results match the packaged reference range tables; ASCII fast path is unchanged. No new I/O or unsafe operations; existing unchecked lookup remains bounded."
+
+[[audits.unicode-ident]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "1.0.26 -> 1.0.27"
+notes = "AI-assisted delta audit of checksum-verified registry archives. Reviewed the repacked Unicode 18 XID tables and the separate leaf offsets used by the two lookups. Computed the maximum unchecked offset for each table and verified it is within the leaf array. Verified both fallback chunks are zero-filled."
 
 [[audits.wasm-bindgen]]
 who = "Codex AI"
