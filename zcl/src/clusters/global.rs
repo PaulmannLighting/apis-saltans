@@ -46,7 +46,9 @@ zcl_command_enum! {
     DiscoverCommandsReceived(discover_commands_received::Command),
     DiscoverCommandsReceivedResponse(discover_commands_received::Response),
     DiscoverCommandsGenerated(discover_commands_generated::Command),
+    DiscoverClientCommandsGenerated(discover_commands_generated::ClientCommand),
     DiscoverCommandsGeneratedResponse(discover_commands_generated::Response),
+    DiscoverClientCommandsGeneratedResponse(discover_commands_generated::ClientResponse),
     DiscoverAttributesExtended(discover_attributes_extended::Command),
     DiscoverAttributesExtendedResponse(discover_attributes_extended::Response),
 }

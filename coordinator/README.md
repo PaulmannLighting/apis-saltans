@@ -912,11 +912,12 @@ that build discovery or binding workflows should apply their own retry and persi
 ### ZCL response matching
 
 `Zcl::communicate::<T>` requires `T: ZclResponseType` in addition to its conversion from `Cluster`.
-Commands implementing ZCL `Command` and `Scoped` satisfy this automatically: their scope and
-command ID identify the expected response. Custom response enums accepting several command forms
+Commands implementing ZCL `Command` and `Scoped` satisfy this automatically through their scope,
+command ID, and accepted incoming directions. Custom response enums accepting several command forms
 must implement `ZclResponseType::matches_response` and a corresponding `TryFrom<Cluster>` conversion.
-Include both scope and command ID in each accepted form. Default Responses must name the original
-request in their embedded command ID. The response type's header matcher determines acceptance:
+Match the scope, command ID, and applicable directions for each accepted form. Default Responses
+must name the original request in their embedded command ID. The response type's header matcher
+determines acceptance:
 
 - `MaybeDefault<T>` and `DefaultResponse` deliver accepted defaults for success, failure, and
   unknown status codes. Callers still need to inspect the device status.

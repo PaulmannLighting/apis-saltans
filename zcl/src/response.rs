@@ -44,7 +44,7 @@ where
 ///
 /// Individual command types implement this automatically through `Command` and `Scoped`.
 /// Response enums accepting multiple command forms can implement this trait explicitly.
-/// Implementations should match both scope and command ID and must not accept unrelated commands.
+/// Implementations should match the command scope, ID, and accepted incoming directions.
 /// Accepting a Default Response header opts into receiving all its status values as response data.
 /// Transaction correlation separately validates the original command ID carried in its payload.
 pub trait ZclResponseType {
@@ -57,7 +57,9 @@ where
     T: Command + Scoped,
 {
     fn matches_response(header: Header) -> bool {
-        header.control().typ() == Ok(T::SCOPE) && header.command_id() == T::ID
+        header.control().typ() == Ok(T::SCOPE)
+            && header.command_id() == T::ID
+            && T::PARSE_DIRECTION.accepts(header.control().direction())
     }
 }
 

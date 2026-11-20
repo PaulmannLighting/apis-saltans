@@ -386,6 +386,10 @@ fields for other statuses. Encoding and decoding are intentionally asymmetric.
 - Keep the runtime `Cluster` enum explicit. This avoids silently accepting a cluster in the public
   parser before the command set is ready.
 
+The generated-command discovery types share wire command IDs across client and server cluster
+sides. Frame dispatch and typed response matching both use `Command::PARSE_DIRECTION` to select
+the appropriate type. Default Response explicitly accepts both directions.
+
 ### Macro module layout
 
 `src/macros.rs` preserves the existing crate-local macro paths. Implementations live in

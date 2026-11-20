@@ -213,8 +213,8 @@ pub trait Zcl {
     /// The request destination must be one individual 16-bit NWK endpoint. The returned outer
     /// future queues the request and yields a [`ZclResponse`]. Await that response separately to
     /// complete APS transmission, receive the correlated ZCL response frame, and convert it.
-    /// `T` supplies the accepted command scope and ID through [`ZclResponseType`]. Unrelated
-    /// frames leave the request pending. Default Responses must additionally name the original
+    /// `T` supplies the accepted command headers through [`ZclResponseType`]. Unrelated frames
+    /// leave the request pending. Default Responses must additionally name the original
     /// command. If `T` accepts a Default Response (for example [`zb_zcl::MaybeDefault<T>`] or
     /// [`DefaultResponse`]), its status is preserved in the returned value. Otherwise, a Default
     /// Response produces [`Error::Zcl`] for rejection or [`Error::UnexpectedDefaultResponse`] for

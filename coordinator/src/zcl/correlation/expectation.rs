@@ -145,6 +145,7 @@ mod tests {
     use bytes::Bytes;
     use zb_core::{Direction, ExpectResponse};
     use zb_zcl::global::default_response::DefaultResponse;
+    use zb_zcl::global::discover_commands_generated::{ClientCommand, Command as ServerCommand};
     use zb_zcl::global::read_attributes::{self, Response};
     use zb_zcl::{
         Command, MaybeDefault, Scope, Scoped, Status, UnsequencedFrame, UnsequencedHeader,
@@ -290,6 +291,22 @@ mod tests {
             expectation.classify(&Frame::parse(CLUSTER_ID, DEFAULT.into_iter()).unwrap()),
             ResponseMatch::UnexpectedDefault(REQUEST_ID)
         );
+    }
+
+    #[test]
+    fn discovers_generated_commands_on_the_requested_cluster_side() {
+        const CLUSTER_ID: u16 = 0x0006;
+        const CLIENT: [u8; 5] = [0x10, SEQUENCE, 0x14, 0x01, 0x00];
+        const SERVER: [u8; 5] = [0x18, SEQUENCE, 0x14, 0x01, 0x00];
+        let client = Frame::parse(CLUSTER_ID, CLIENT.into_iter()).unwrap();
+        let server = Frame::parse(CLUSTER_ID, SERVER.into_iter()).unwrap();
+        let client_request = ResponseExpectation::for_request::<ClientCommand>();
+        let server_request = ResponseExpectation::for_request::<ServerCommand>();
+
+        assert_eq!(client_request.classify(&client), ResponseMatch::Expected);
+        assert_eq!(client_request.classify(&server), ResponseMatch::Unrelated);
+        assert_eq!(server_request.classify(&server), ResponseMatch::Expected);
+        assert_eq!(server_request.classify(&client), ResponseMatch::Unrelated);
     }
 
     fn encoded_request(command_id: u8) -> UnsequencedFrame<Bytes> {
