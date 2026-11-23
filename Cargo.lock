@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-coordinator"
-version = "0.23.0"
+version = "0.24.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",
@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "apis-saltans-zcl"
-version = "0.17.0"
+version = "0.18.0"
 dependencies = [
  "apis-saltans-aps",
  "apis-saltans-core",

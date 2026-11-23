@@ -91,6 +91,12 @@ criteria = "safe-to-deploy"
 delta = "0.22.1 -> 0.23.0"
 notes = "AI-assisted delta audit against the checksum-verified 0.22.1 package. Reviewed capture of a monotonic timestamp before APS indication parsing and routing, preservation through ZCL events and subscriptions and OTA routing, and typed discovery matching. Confirmed that the package selects the audited ZCL and ZDP releases. Reviewed the packaged dependency requirements and the locked tokio-util 0.7.20 resolution."
 
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.23.0 -> 0.24.0"
+notes = "AI-assisted delta audit against the checksum-verified 0.23.0 crate archive. Reviewed the capture of attribute IDs from the outgoing request records and correlation of per-ID failures in request order. Confirmed IAS CIE address success and partial-failure coverage, and verified that the only packaged dependency change selects ZCL 0.18."
+
 [[audits.apis-saltans-core]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -198,6 +204,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.16.0 -> 0.17.0"
 notes = "AI-assisted delta audit against the checksum-verified 0.16.0 package. Reviewed direction-aware client discovery dispatch and typed response matching, bounded attribute response lists, and reporting validation on the wire and through Serde. Checked the fixed encoder buffer against supported analog widths and the allocation-free builds."
+
+[[audits.apis-saltans-zcl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.17.0 -> 0.18.0"
+notes = "AI-assisted delta audit against the checksum-verified 0.17.0 crate archive. Reviewed the two response encodings, strict rejection of empty, mixed, or truncated payloads, preservation of nonzero status bytes and attribute IDs, and stable Serde field layout. Confirmed bounded filtering preserves capacity and order, full-frame regression coverage, and unchanged registry dependency versions."
 
 [[audits.apis-saltans-zdp]]
 who = "Codex AI"
