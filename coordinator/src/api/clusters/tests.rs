@@ -26,6 +26,9 @@ const CIE_ADDRESS_ID: u16 = 0x0010;
 const SENSITIVITY_ID: u16 = 0x0013;
 const SUCCESSFUL_WRITE: [u8; 4] = [0x18, SEQUENCE, 0x04, 0x00];
 const PARTIALLY_FAILED_WRITE: [u8; 6] = [0x18, SEQUENCE, 0x04, 0x86, 0x10, 0x00];
+const LEGACY_SUCCESSFUL_WRITE: [u8; 6] = [0x18, SEQUENCE, 0x04, 0x00, 0x10, 0x00];
+const LEGACY_PARTIALLY_FAILED_WRITE: [u8; 9] =
+    [0x18, SEQUENCE, 0x04, 0x86, 0x10, 0x00, 0x00, 0x13, 0x00];
 
 fn endpoint() -> IndividualEndpoint {
     IndividualEndpoint::new(Endpoint::Application(Application::MIN)).expect("individual endpoint")
@@ -72,10 +75,15 @@ fn reporting_configuration_awaits_transmission_and_protocol_response() {
 
 #[test]
 fn writing_the_ias_cie_address_returns_its_id_on_success() {
-    assert_eq!(
-        complete_write([cie_address()], SUCCESSFUL_WRITE),
-        [Ok(CIE_ADDRESS_ID)],
-    );
+    for reply in [
+        SUCCESSFUL_WRITE.as_slice(),
+        LEGACY_SUCCESSFUL_WRITE.as_slice(),
+    ] {
+        assert_eq!(
+            complete_write([cie_address()], reply.iter().copied()),
+            [Ok(CIE_ADDRESS_ID)],
+        );
+    }
 }
 
 #[test]
@@ -92,14 +100,19 @@ fn writing_multiple_attributes_returns_all_ids_in_request_order_on_success() {
 
 #[test]
 fn writing_multiple_attributes_reports_partial_failure_in_request_order() {
-    let attributes = [
-        Writable::CurrentZoneSensitivityLevel(Uint8::MIN),
-        cie_address(),
-    ];
-    assert_eq!(
-        complete_write(attributes, PARTIALLY_FAILED_WRITE),
-        [Ok(SENSITIVITY_ID), Err(CIE_ADDRESS_ID)],
-    );
+    for reply in [
+        PARTIALLY_FAILED_WRITE.as_slice(),
+        LEGACY_PARTIALLY_FAILED_WRITE.as_slice(),
+    ] {
+        let attributes = [
+            Writable::CurrentZoneSensitivityLevel(Uint8::MIN),
+            cie_address(),
+        ];
+        assert_eq!(
+            complete_write(attributes, reply.iter().copied()),
+            [Ok(SENSITIVITY_ID), Err(CIE_ADDRESS_ID)],
+        );
+    }
 }
 
 fn cie_address() -> Writable {

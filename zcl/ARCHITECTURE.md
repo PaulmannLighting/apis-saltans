@@ -404,8 +404,9 @@ Read Attributes and Read Reporting Configuration decode complete record lists th
 `storage::read_records`, which enforces each storage mode's capacity and rejects malformed tails.
 
 Write Attributes responses decode `0x00` as request-wide success when it is the entire payload.
-Failure replies use the unprefixed `Records` decoder, with a status and a little-endian attribute
-ID per record. A success record within a failure list invalidates the reply.
+Other replies use the unprefixed `Records` decoder, with a status and a little-endian attribute
+ID per record. Once the complete payload is decoded, legacy success records are removed from the
+result. Empty payloads and incomplete records are rejected.
 
 ## Storage and no_std boundary
 

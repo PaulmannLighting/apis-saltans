@@ -92,19 +92,17 @@ zcl_command! {
         }
 
         from_le_stream {
-            fn from_le_stream<I>(mut bytes: I) -> Option<Self>
+            fn from_le_stream<I>(bytes: I) -> Option<Self>
             where
                 I: Iterator<Item = u8>,
             {
+                let mut bytes = bytes.peekable();
                 let first = bytes.next()?;
-                if first == SUCCESS {
-                    return bytes.next().is_none().then(Self::success);
+                if first == SUCCESS && bytes.peek().is_none() {
+                    return Some(Self::success());
                 }
                 let records = Records::<Status>::from_le_stream(once(first).chain(bytes))?;
-                if records.iter().any(|record| record.is_success()) {
-                    return None;
-                }
-                Some(Self { records: Some(records) })
+                Some(Self::new(records))
             }
         }
 

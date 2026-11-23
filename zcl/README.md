@@ -289,9 +289,10 @@ records through `records()`. A truncated or malformed record invalidates the who
 Allocating decoders accept at most 255 records, and allocation-free decoders use
 `ZIGBEE_ZCL_RECORDS_CAPACITY`.
 
-For Write Attributes responses, `is_success()` identifies the single-byte success reply.
-`failures()` exposes each failed attribute's status and ID in wire order. Use `Response::success()`
-to construct the request-wide success reply.
+For Write Attributes responses, `is_success()` identifies request-wide success. `failures()`
+exposes each failed attribute's status and ID in wire order. The decoder also accepts complete
+legacy records that pair a success status with an attribute ID. Encoding omits those records and
+uses a single status byte for request-wide success. Use `Response::success()` to construct it.
 
 Read Reporting Configuration records carry sender settings, a receive timeout, or a failure
 status. Sender records carry the datatype once. A supported analog datatype requires a matching
