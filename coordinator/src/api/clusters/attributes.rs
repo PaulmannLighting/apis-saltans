@@ -67,7 +67,8 @@ pub trait Attributes {
 
     /// Write typed attributes to a device.
     ///
-    /// Each result contains the ID of an attribute that was written successfully or failed.
+    /// Returns one result per requested attribute in request order. Each result contains the
+    /// attribute ID, with `Err(id)` for a reported failure and `Ok(id)` for a successful write.
     ///
     /// # Errors
     ///
@@ -134,16 +135,18 @@ where
     where
         U: IntoIterator<Item: Writable, IntoIter: Send> + Send,
     {
-        Ok(self
-            .communicate_request(write_attributes_request(
-                destination,
-                source_endpoint,
-                attributes,
-            ))
-            .await?
-            .await?
+        let (request, ids) = write_attributes_request(destination, source_endpoint, attributes);
+        let response = self.communicate_request(request).await?.await?;
+        let failures = response.failures();
+        Ok(ids
             .into_iter()
-            .map(TryInto::try_into)
+            .map(|id| {
+                if failures.iter().any(|failure| failure.id() == id) {
+                    Err(id)
+                } else {
+                    Ok(id)
+                }
+            })
             .collect())
     }
 }

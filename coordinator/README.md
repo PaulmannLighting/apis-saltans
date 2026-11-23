@@ -770,6 +770,9 @@ async fn read_basic(
 
 ### Writes
 
+`Attributes::write` returns one result per requested attribute in request order. Each failed write
+returns `Err(id)` and each successful write returns `Ok(id)`.
+
 ```rust,no_run
 use apis_saltans_coordinator::Attributes;
 use zb_core::types::String;

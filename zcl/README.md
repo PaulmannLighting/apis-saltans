@@ -289,6 +289,10 @@ records through `records()`. A truncated or malformed record invalidates the who
 Allocating decoders accept at most 255 records, and allocation-free decoders use
 `ZIGBEE_ZCL_RECORDS_CAPACITY`.
 
+For Write Attributes responses, `is_success()` identifies the single-byte success reply.
+`failures()` exposes each failed attribute's status and ID in wire order. Use `Response::success()`
+to construct the request-wide success reply.
+
 Read Reporting Configuration records carry sender settings, a receive timeout, or a failure
 status. Sender records carry the datatype once. A supported analog datatype requires a matching
 reportable change, and a discrete datatype carries no change threshold. Unsupported analog types

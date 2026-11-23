@@ -15,4 +15,10 @@ impl Record {
     pub const fn new(id: u16, typ: Type) -> Self {
         Self { id, typ }
     }
+
+    /// Return the ID of the attribute to write.
+    #[must_use]
+    pub const fn id(&self) -> u16 {
+        self.id
+    }
 }

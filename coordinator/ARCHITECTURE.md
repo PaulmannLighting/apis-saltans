@@ -534,6 +534,10 @@ Command helpers that do not expect a protocol response return `Result<(), Error>
 the deferred APS result outside the protocol actor. Communication methods return `ZclResponse<T>`
 or `ZdpResponse<T>` containing both the deferred APS completion and the application-level response.
 
+`Attributes::write` captures the IDs from the outgoing command records before encoding. It matches
+the reply's failure records against those IDs and returns an outcome for each original write in
+request order.
+
 ### Shared protocol lifecycle delivery
 
 `correlation::inbox::CancellationMessage` supplies a shared cancellation guard constructor.

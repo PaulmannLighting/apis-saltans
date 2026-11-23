@@ -36,6 +36,14 @@ impl<T, const N: usize> RawList<T, N> {
         self.0.as_slice()
     }
 
+    /// Retain the elements that match the predicate, preserving their order.
+    pub(crate) fn retain<F>(&mut self, predicate: F)
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.0.retain(predicate);
+    }
+
     /// Append an element, returning it if the capacity is exhausted.
     ///
     /// # Errors

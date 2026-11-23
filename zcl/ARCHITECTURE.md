@@ -403,6 +403,9 @@ deserializer validate record fields before the encoder writes them into a fixed-
 Read Attributes and Read Reporting Configuration decode complete record lists through
 `storage::read_records`, which enforces each storage mode's capacity and rejects malformed tails.
 
+Write Attributes responses decode `0x00` as request-wide success when it is the entire payload.
+Failure replies use the unprefixed `Records` decoder, with a status and a little-endian attribute
+ID per record. A success record within a failure list invalidates the reply.
 
 ## Storage and no_std boundary
 

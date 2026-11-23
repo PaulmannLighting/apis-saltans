@@ -32,20 +32,22 @@ impl Status {
     pub const fn id(self) -> u16 {
         self.id
     }
+
+    pub(super) const fn is_success(self) -> bool {
+        self.status == super::SUCCESS
+    }
 }
 
 impl TryFrom<Status> for u16 {
     type Error = Self;
 
-    /// Try to convert a status record into a successfully read attribute ID.
+    /// Try to convert a status record into a successfully written attribute ID.
     ///
     /// # Errors
     ///
     /// Returns the attribute ID in the `Err` variant if the status code is not `Success`.
     fn try_from(value: Status) -> Result<Self, Self::Error> {
-        if let Ok(status) = value.status()
-            && status == crate::Status::Success
-        {
+        if value.is_success() {
             Ok(value.id)
         } else {
             Err(value.id)
