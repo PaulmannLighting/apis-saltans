@@ -26,7 +26,7 @@ tokio-util = "0.7"
 zb-aps = { package = "apis-saltans-aps", version = "0.13", path = "aps" }
 zb-core = { package = "apis-saltans-core", version = "0.11.4", path = "core" }
 zb-hw = { package = "apis-saltans-hw", version = "0.19", path = "hw" }
-zb-zcl = { package = "apis-saltans-zcl", version = "0.18", path = "zcl" }
+zb-zcl = { package = "apis-saltans-zcl", version = "0.18.1", path = "zcl" }
 zb-zdp = { package = "apis-saltans-zdp", version = "0.13.1", path = "zdp" }
 
 [workspace.lints.rust]
