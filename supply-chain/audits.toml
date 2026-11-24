@@ -37,6 +37,12 @@ criteria = "safe-to-deploy"
 delta = "0.4.0 -> 0.5.0"
 notes = "AI-assisted delta audit; reviewed APS endpoint parsing changes, fragmentation response handling, and the core/NWK dependency updates. The public destination type now preserves reserved endpoint values; no new ambient capabilities were introduced."
 
+[[audits.apis-saltans-aps]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.13.0 -> 0.13.1"
+notes = "AI-assisted delta audit. Compared with the published 0.13.0 source. Rust sources are unchanged. The release selects the updated core crate."
+
 [[audits.apis-saltans-coordinator]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -103,6 +109,12 @@ criteria = "safe-to-deploy"
 delta = "0.24.0 -> 0.24.1"
 notes = "AI-assisted delta audit against the checksum-verified 0.24.0 crate archive. The packaged runtime source is identical. Reviewed IAS CIE success and partial-failure tests for both response forms, and confirmed the manifest requires the audited ZCL 0.18.1 fix."
 
+[[audits.apis-saltans-coordinator]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.24.1 -> 0.25.0"
+notes = "AI-assisted delta audit. Reviewed generic restore dispatch and coverage and activation reporting against published 0.24.1. Test coverage checks rejection before hardware I/O and startup after a verified rejoin. This change introduces no new unsafe code or ambient capabilities."
+
 [[audits.apis-saltans-core]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -139,6 +151,12 @@ criteria = "safe-to-deploy"
 delta = "0.5.0 -> 0.6.0"
 notes = "AI-assisted delta audit; reviewed endpoint-domain changes, including removal of the separate broadcast endpoint representation, plus TypeId and Zigbee type API updates. No build scripts, filesystem, network, or process capabilities were added."
 
+[[audits.apis-saltans-core]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.11.4 -> 0.11.5"
+notes = "AI-assisted delta audit. Compared with the published 0.11.4 source. This release updates package metadata and keeps the Rust sources unchanged."
+
 [[audits.apis-saltans-hw]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -173,7 +191,7 @@ notes = "AI-assisted delta audit; reviewed NCP and driver trait changes for endp
 who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.19.0 -> 0.20.0"
-notes = "AI-assisted delta audit against the published 0.19.0 source. Reviewed validation of the reserved coverage extension, caller consent before backend interaction, unchanged complete snapshot encoding, actor cancellation behavior, verified restore reports, and manifest bounds. No new unsafe code or ambient capabilities."
+notes = "AI-assisted delta audit against the published 0.19.0 source. Reviewed validation of the reserved coverage extension, caller consent before backend interaction, unchanged complete snapshot encoding, actor cancellation behavior, verified restore reports, and updated core, APS, and ZDP dependency bounds. No new unsafe code or ambient capabilities."
 
 [[audits.apis-saltans-macros]]
 who = "Codex AI"
@@ -229,6 +247,12 @@ criteria = "safe-to-deploy"
 delta = "0.18.0 -> 0.18.1"
 notes = "AI-assisted delta audit against the checksum-verified 0.18.0 crate archive. Reviewed the initial-byte lookahead, acceptance of complete legacy success records, and normalization only after a complete decode. Verified that failure order and status values are preserved, bounded record capacity is enforced, and empty and truncated responses are rejected. Packaged dependency versions are unchanged."
 
+[[audits.apis-saltans-zcl]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.18.1 -> 0.18.2"
+notes = "AI-assisted delta audit. Compared with the published 0.18.1 source. Rust sources are unchanged. The release selects the updated APS and core crates."
+
 [[audits.apis-saltans-zdp]]
 who = "Codex AI"
 criteria = "safe-to-deploy"
@@ -258,6 +282,12 @@ who = "Codex AI"
 criteria = "safe-to-deploy"
 delta = "0.13.0 -> 0.13.1"
 notes = "AI-assisted delta audit against the checksum-verified 0.13.0 package. Inspected binding, neighbor, and routing table response parsing and encoding. Decoders consume complete entries under the declared count and enforce fixed storage capacity without alloc. Regressions cover malformed pages and both storage modes."
+
+[[audits.apis-saltans-zdp]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.13.1 -> 0.13.2"
+notes = "AI-assisted delta audit. Compared with the published 0.13.1 source. Rust sources are unchanged. The release selects the updated APS and core crates."
 
 [[audits.autocfg]]
 who = "Codex AI"

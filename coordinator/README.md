@@ -1081,7 +1081,7 @@ The preparation object cannot coordinate other owners of cloned hardware handles
 mutate or start the target. Hardware events remain buffered in the supplied bounded receiver until
 startup; keep event capture and backend backpressure behavior in mind during maintenance.
 
-Neither restoration nor coordinator startup starts/resumes the hardware network. Backend initialization
-must expose the stopped-network maintenance phase. Existing `Coordinator::start`, `start_with_config`,
+Backend initialization must expose the stopped-network maintenance phase. A complete restore
+leaves the radio stopped, and a rejoin restore may start it. Coordinator startup starts the protocol actors. Existing `Coordinator::start`, `start_with_config`,
 and `start_managed` remain unchanged for applications that do not use restoration. No additional actor
 or mailbox is introduced, and cloud storage/encryption remains application-owned.
