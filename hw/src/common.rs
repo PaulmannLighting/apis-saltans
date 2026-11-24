@@ -3,9 +3,10 @@
 //! Common hardware abstraction types shared by drivers and coordinators.
 
 pub use self::backup::{
-    BackupCapabilities, BackupError, BackupExtension, BackupSource, DeviceBackup, LinkKeyState,
-    NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH, NetworkBackup, NetworkKey, NetworkKeyState,
-    NetworkParameters, RestoreFailureState, RestoreOptions, RestoreReport,
+    BackupCapabilities, BackupCoverage, BackupError, BackupExtension, BackupSource, DeviceBackup,
+    LinkKeyState, NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH, NetworkBackup, NetworkKey,
+    NetworkKeyState, NetworkParameters, RestoreFailureState, RestoreNetworkState, RestoreOptions,
+    RestoreReport,
 };
 #[cfg(feature = "driver")]
 pub use self::driver::{

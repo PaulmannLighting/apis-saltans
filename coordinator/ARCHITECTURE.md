@@ -626,8 +626,9 @@ merely querying capabilities or dumping a snapshot does not clear the flag. Back
 and mutation boundaries pass through `Error::Hardware`. Rejected startup returns
 `Error::RestoreIncomplete` before entering the runtime or spawning actors.
 
-The backend owns hardware network stop/resume. Restore must run while hardware is offline; successful
-hardware restore persists/verifies state and leaves it stopped. The application resumes it through the
-backend before consuming the startup object. Existing unmanaged hardware-handle clones remain outside
+Restoration begins with offline hardware. A complete restore persists and verifies state while
+stopped. An opted-in rejoin restore
+can verify a network it has just formed. The report carries the resulting network state. The
+application resumes a stopped network through the backend before consuming the startup object. Existing unmanaged hardware-handle clones remain outside
 this object's ownership guarantees. Dropping a restore future leaves the hardware actor free to finish
 its command; losing that response requires explicit outcome verification before retrying.

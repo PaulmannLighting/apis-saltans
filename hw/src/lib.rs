@@ -49,12 +49,12 @@ pub use self::common::{
 #[cfg(feature = "types")]
 #[cfg_attr(docsrs, doc(cfg(feature = "types")))]
 pub use self::common::{
-    ApsdeEvent, BackupCapabilities, BackupError, BackupExtension, BackupSource, Channel,
-    ChannelMask, DeviceBackup, DeviceEvent, Error, Event, FoundNetwork, LinkKeyState,
+    ApsdeEvent, BackupCapabilities, BackupCoverage, BackupError, BackupExtension, BackupSource,
+    Channel, ChannelMask, DeviceBackup, DeviceEvent, Error, Event, FoundNetwork, LinkKeyState,
     NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH, NcpHandle, NetworkBackup, NetworkDescriptor,
     NetworkEvent, NetworkKey, NetworkKeyState, NetworkParameters, Operation, RestoreFailureState,
-    RestoreOptions, RestoreReport, RouteError, ScanDuration, ScannedChannel, TransmissionError,
-    WeakNcpHandle,
+    RestoreNetworkState, RestoreOptions, RestoreReport, RouteError, ScanDuration, ScannedChannel,
+    TransmissionError, WeakNcpHandle,
 };
 #[cfg(feature = "driver")]
 #[cfg_attr(docsrs, doc(cfg(feature = "driver")))]

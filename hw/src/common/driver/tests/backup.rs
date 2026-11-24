@@ -13,9 +13,9 @@ use super::{ACTOR_CAPACITY, FakeDriver, PAN_ID};
 use crate::common::backup::tests::snapshot;
 use crate::common::message::Message;
 use crate::{
-    BackupError, ChannelMask, Driver, Error, FoundNetwork, NetworkBackup, NetworkDump,
-    NetworkRestore, Operation, RestoreFailureState, RestoreOptions, RestoreReport, ScanDuration,
-    ScannedChannel,
+    BackupCoverage, BackupError, ChannelMask, Driver, Error, FoundNetwork, NetworkBackup,
+    NetworkDump, NetworkRestore, Operation, RestoreFailureState, RestoreNetworkState,
+    RestoreOptions, RestoreReport, ScanDuration, ScannedChannel,
 };
 
 const ORIGINAL_MESSAGE_SIZE: usize = 72;
@@ -110,6 +110,16 @@ impl NetworkRestore for BackupDriver {
                 std::io::Error::other("test write failure"),
             )
             .into());
+        }
+        if backup.coverage() == BackupCoverage::Rejoin {
+            let report = RestoreReport::from_verified_rejoin(
+                &backup,
+                RestoreNetworkState::Running,
+                backup.network_key().tx_counter(),
+                backup.devices()[0].link_key().unwrap().tx_counter(),
+                backup.network().nwk_update_id(),
+            );
+            return Ok(report);
         }
         Ok(RestoreReport::from_verified_backup(&backup))
     }
@@ -209,6 +219,49 @@ fn combined_registration_preserves_existing_commands_and_backup_round_trip() {
             assert_eq!(
                 task.await.unwrap().restored,
                 Some(snapshot().prepare_restore(options()).unwrap())
+            );
+        });
+}
+
+#[test]
+fn rejoin_requires_opt_in_and_reports_the_running_network() {
+    Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let (handle, actor) = BackupDriver::default()
+                .actor_builder(ACTOR_CAPACITY)
+                .with_network_restore()
+                .build();
+            let task = tokio::spawn(actor);
+            let backup = snapshot().with_rejoin_coverage();
+            assert!(matches!(
+                handle.restore_network(backup, options()).await,
+                Err(Error::Backup(BackupError::RejoinRequiresOptIn))
+            ));
+            drop(handle);
+            let driver = task.await.unwrap();
+            assert!(!driver.validated);
+            assert!(driver.restored.is_none());
+
+            let (handle, actor) = driver
+                .actor_builder(ACTOR_CAPACITY)
+                .with_network_restore()
+                .build();
+            let task = tokio::spawn(actor);
+            let original = snapshot().with_rejoin_coverage();
+            let options = options().allow_rejoin();
+            let report = handle
+                .restore_network(original.clone(), options)
+                .await
+                .unwrap();
+            assert_eq!(report.coverage(), BackupCoverage::Rejoin);
+            assert_eq!(report.network_state(), RestoreNetworkState::Running);
+            assert_eq!(report.restored_link_keys(), 1);
+            drop(handle);
+            assert_eq!(
+                task.await.unwrap().restored,
+                Some(original.prepare_restore(options).unwrap())
             );
         });
 }

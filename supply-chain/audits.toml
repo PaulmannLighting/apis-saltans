@@ -169,6 +169,12 @@ criteria = "safe-to-deploy"
 delta = "0.7.0 -> 0.8.0"
 notes = "AI-assisted delta audit; reviewed NCP and driver trait changes for endpoint discovery and replies, hardware event forwarding, re-exports, and removal of the EventTranslator constructor. Hardware interaction remains delegated to driver implementations."
 
+[[audits.apis-saltans-hw]]
+who = "Codex AI"
+criteria = "safe-to-deploy"
+delta = "0.19.0 -> 0.20.0"
+notes = "AI-assisted delta audit against the published 0.19.0 source. Reviewed validation of the reserved coverage extension, caller consent before backend interaction, unchanged complete snapshot encoding, actor cancellation behavior, verified restore reports, and manifest bounds. No new unsafe code or ambient capabilities."
+
 [[audits.apis-saltans-macros]]
 who = "Codex AI"
 criteria = "safe-to-deploy"

@@ -24,15 +24,15 @@ use crate::{
 ///     -> Result<(CoordinatorStartup, RestoreReport), Error>
 /// {
 ///     let report = startup.restore_network(backup, options).await?;
-///     // Resume hardware via its backend, then consume startup to start protocol actors.
+///     // Check the report for whether the hardware needs to be started.
 ///     Ok((startup, report))
 /// }
 /// ```
 ///
-/// The driver actor must already be running. The backend owns hardware network stop/resume; keep
-/// the target network stopped for restoration, then resume it through backend startup before
-/// calling [`Self::start_managed`] or [`Self::start`]. Other owners of cloned hardware handles must
-/// not start a competing coordinator or mutate the target during restoration.
+/// The driver actor must already be running and the target network must be stopped before restore.
+/// Start the hardware through its backend if a successful restore reports a stopped network.
+/// Once the network is running, call [`Self::start_managed`] or [`Self::start`]. Prevent concurrent
+/// hardware changes through cloned handles during restore.
 #[must_use = "start the coordinator or drop the preparation to release its inputs"]
 #[derive(Debug)]
 pub struct CoordinatorStartup<T = (), K = ()> {
@@ -70,8 +70,8 @@ where
 
     /// Consume the prepared inputs and start a coordinator with an owning runtime handle.
     ///
-    /// This starts protocol actors only; it does not resume the hardware network. After a restore,
-    /// backend startup must resume the verified network deliberately before calling this method.
+    /// This starts protocol actors only. If restoration left the hardware network stopped,
+    /// resume it through the backend before calling this method.
     ///
     /// # Errors
     /// Returns [`Error::RestoreIncomplete`] if a requested restore has not completed successfully,

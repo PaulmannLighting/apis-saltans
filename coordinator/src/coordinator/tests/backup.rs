@@ -11,10 +11,11 @@ use zb_hw::{Driver, NetworkDump, NetworkRestore};
 
 use super::{CAPACITY, DEADLINE, Descriptor, NonZeroUsize, TestDriver};
 use crate::{
-    Backup, BackupError, BackupSource, Channel, ChannelMask, Coordinator, CoordinatorConfig,
-    CoordinatorStartup, DeviceBackup, Error, Event, HardwareError, HardwareOperation, LinkKeyState,
-    Network, NetworkBackup, NetworkKey, NetworkKeyState, NetworkParameters, Restore,
-    RestoreFailureState, RestoreOptions, RestoreReport,
+    Backup, BackupCoverage, BackupError, BackupSource, Channel, ChannelMask, Coordinator,
+    CoordinatorConfig, CoordinatorStartup, DeviceBackup, Error, Event, HardwareError,
+    HardwareOperation, LinkKeyState, Network, NetworkBackup, NetworkKey, NetworkKeyState,
+    NetworkParameters, Restore, RestoreFailureState, RestoreNetworkState, RestoreOptions,
+    RestoreReport,
 };
 
 const COORDINATOR: IeeeAddress = IeeeAddress::new(1, 2, 3, 4, 5, 6, 7, 8);
@@ -179,6 +180,15 @@ impl NetworkRestore for TestDriver {
             )
             .into());
         }
+        if backup.coverage() == BackupCoverage::Rejoin {
+            return Ok(RestoreReport::from_verified_rejoin(
+                &backup,
+                RestoreNetworkState::Running,
+                backup.network_key().tx_counter(),
+                backup.devices()[0].link_key().unwrap().tx_counter(),
+                backup.network().nwk_update_id(),
+            ));
+        }
         Ok(RestoreReport::from_verified_backup(&backup))
     }
 }
@@ -218,6 +228,51 @@ fn restore_only_driver_is_discovered_and_unsupported_dump_is_reported() {
             .await
             .unwrap();
         drop(startup);
+        assert!(
+            timeout(DEADLINE, driver)
+                .await
+                .unwrap()
+                .unwrap()
+                .recovery
+                .restored
+                .is_some()
+        );
+    });
+}
+
+#[test]
+fn startup_can_use_a_network_formed_by_rejoin_restore() {
+    Runtime::new().unwrap().block_on(async {
+        let (hardware, incoming) = channel(CAPACITY);
+        let (events, _received) = channel(CAPACITY);
+        let (ncp, actor) = TestDriver::new(hardware)
+            .actor_builder(NonZeroUsize::MIN)
+            .with_network_restore()
+            .build();
+        let driver = tokio::spawn(actor);
+        let mut startup = CoordinatorStartup::new(
+            ncp,
+            Descriptor::default(),
+            incoming,
+            events,
+            CoordinatorConfig::default(),
+        );
+        let backup = snapshot().with_rejoin_coverage();
+        assert!(matches!(
+            startup.restore_network(backup.clone(), options()).await,
+            Err(Error::Hardware(HardwareError::Backup(
+                BackupError::RejoinRequiresOptIn
+            )))
+        ));
+        let report = startup
+            .restore_network(backup, options().allow_rejoin())
+            .await
+            .unwrap();
+        assert_eq!(report.network_state(), RestoreNetworkState::Running);
+        assert_eq!(report.coverage(), BackupCoverage::Rejoin);
+        let (coordinator, runtime) = startup.start_managed().unwrap();
+        runtime.shutdown().await;
+        drop(coordinator);
         assert!(
             timeout(DEADLINE, driver)
                 .await

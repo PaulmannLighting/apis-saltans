@@ -15,18 +15,19 @@ pub trait NetworkDump
 where
     Self: Driver,
 {
-    /// Capture a consistent snapshot, retaining the coordinator's network identity.
+    /// Capture the coordinator's network identity and available security state.
     ///
     /// # Errors
-    /// Returns an error if complete export is unsupported or snapshot capture fails.
+    /// Returns an error if capture at the supported coverage fails.
     fn dump_network(&mut self) -> impl Future<Output = Result<NetworkBackup, Error>> + Send;
 }
 
 /// Optional restoration of a coordinator's core network state.
 ///
 /// The actor prepares normalized counters, validates the target, then applies the prepared backup.
-/// Direct callers of this trait must perform those same steps. Hardware startup owns stopping and
-/// subsequently starting the network; neither successful nor failed restore starts it.
+/// Direct callers of this trait must perform those same steps. Complete restores keep the
+/// hardware network stopped. Recovery from a rejoin backup can form a running network when
+/// explicitly enabled with [`RestoreOptions::allow_rejoin`].
 pub trait NetworkRestore
 where
     Self: Driver,
@@ -46,13 +47,14 @@ where
         options: RestoreOptions,
     ) -> impl Future<Output = Result<(), Error>> + Send;
 
-    /// Persist and verify the validated snapshot while keeping the target network stopped.
+    /// Apply a validated snapshot and verify the state covered by the restore.
     ///
     /// Normalized counters are already advanced and must not be advanced again. Prevent external
-    /// state changes between validation and writing. Persist and read back the required state before
-    /// returning a report. On hardware failure return `BackupError::RestoreFailed` with the mutation
-    /// boundary, retaining backend diagnostics. Keep partial state offline. Actor task termination
-    /// may interrupt this operation; dropping the caller's response receiver does not.
+    /// state changes between validation and writing. Complete restores persist and read back all
+    /// core state while stopped. A rejoin restore may form the network and verify live state.
+    /// On hardware failure return `BackupError::RestoreFailed` with the mutation boundary and backend
+    /// diagnostics. Actor task termination may interrupt recovery; dropping the caller's response
+    /// receiver leaves the actor free to finish.
     ///
     /// # Errors
     /// Returns a restore failure identifying whether persistent state may have changed.
@@ -115,7 +117,7 @@ where
 }
 
 impl<D, Dump, Restore> ActorBuilder<D, Dump, Restore> {
-    /// Register consistent network export. Requires the driver's optional dump trait.
+    /// Register core network export. Requires the driver's optional dump trait.
     pub fn with_network_dump(self) -> ActorBuilder<D, BackupEnabled, Restore>
     where
         D: NetworkDump,

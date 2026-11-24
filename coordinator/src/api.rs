@@ -2,10 +2,10 @@
 
 pub use self::address_translation::AddressTranslation;
 pub use self::backup::{
-    Backup, BackupCapabilities, BackupError, BackupExtension, BackupSource, DeviceBackup,
-    HardwareError, HardwareOperation, LinkKeyState, NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH,
-    NetworkBackup, NetworkKey, NetworkKeyState, NetworkParameters, RestoreFailureState,
-    RestoreOptions, RestoreReport,
+    Backup, BackupCapabilities, BackupCoverage, BackupError, BackupExtension, BackupSource,
+    DeviceBackup, HardwareError, HardwareOperation, LinkKeyState, NETWORK_BACKUP_VERSION,
+    NETWORK_KEY_LENGTH, NetworkBackup, NetworkKey, NetworkKeyState, NetworkParameters,
+    RestoreFailureState, RestoreNetworkState, RestoreOptions, RestoreReport,
 };
 pub use self::binding::{Binding, BindingResult};
 pub use self::clusters::{

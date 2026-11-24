@@ -24,6 +24,9 @@ pub const NETWORK_KEY_LENGTH: usize = 16;
 const MAX_SECURITY_LEVEL: u8 = 7;
 const MIN_EXTENSION_VERSION: u32 = 1;
 const BROADCAST_PAN_ID: u16 = u16::MAX;
+const COVERAGE_NAMESPACE: &str = "org.apis-saltans";
+const REJOIN_COVERAGE_EXTENSION: &str = "rejoin-coverage";
+const REJOIN_COVERAGE_VERSION: u32 = 1;
 
 /// Failure boundary of a hardware restore.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -31,7 +34,8 @@ pub enum RestoreFailureState {
     /// No persistent network state was changed.
     Unchanged,
 
-    /// Persistent state may have been partially changed; keep the network stopped.
+    /// Persistent state may have changed. Inspect the target before using it or retrying.
+    /// A recovery that forms a running network may already have activated it.
     PossiblyModified,
 }
 
@@ -74,6 +78,10 @@ pub enum BackupError {
     /// The target cannot restore some required network state.
     #[error("incompatible network backup: {0}")]
     Incompatible(&'static str),
+
+    /// Restoring a rejoin backup requires explicit caller consent.
+    #[error("restoring this backup requires opting in to rejoin recovery")]
+    RejoinRequiresOptIn,
 
     /// The operation requires a different hardware lifecycle state.
     #[error("invalid hardware state for network backup operation")]
@@ -438,10 +446,19 @@ impl BackupExtension {
     pub fn payload(&self) -> &[u8] {
         &self.payload
     }
+    fn is_rejoin_coverage(&self) -> bool {
+        self.namespace == COVERAGE_NAMESPACE && self.name == REJOIN_COVERAGE_EXTENSION
+    }
+
     fn validate(&self) -> Result<(), BackupError> {
         if self.namespace.trim().is_empty()
             || self.name.trim().is_empty()
             || self.version < MIN_EXTENSION_VERSION
+        {
+            return Err(BackupError::InvalidExtension);
+        }
+        if self.is_rejoin_coverage()
+            && (self.version != REJOIN_COVERAGE_VERSION || !self.payload.is_empty())
         {
             return Err(BackupError::InvalidExtension);
         }
@@ -461,7 +478,19 @@ impl Debug for BackupExtension {
     }
 }
 
-/// Complete core network snapshot; no application-level state.
+/// The core state a backup can carry into a compatible restore.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum BackupCoverage {
+    /// The full core network state, including replay state and child records when applicable.
+    Complete,
+
+    /// State sufficient to try to recover the network and let devices rejoin.
+    /// Child membership, incoming replay state, or other stack state may be unavailable.
+    Rejoin,
+}
+
+/// Core network snapshot with explicit coverage. Application-level state is excluded.
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NetworkBackup {
@@ -499,6 +528,34 @@ impl NetworkBackup {
         value.validate()?;
         Ok(value)
     }
+    /// Mark state captured for rejoin recovery when a full core snapshot is unavailable.
+    #[must_use]
+    pub fn with_rejoin_coverage(mut self) -> Self {
+        if self.coverage() == BackupCoverage::Complete {
+            self.extensions.push(BackupExtension {
+                namespace: COVERAGE_NAMESPACE.into(),
+                name: REJOIN_COVERAGE_EXTENSION.into(),
+                version: REJOIN_COVERAGE_VERSION,
+                payload: Vec::new(),
+            });
+        }
+        self
+    }
+
+    /// Recoverable scope reported by the capturing backend.
+    #[must_use]
+    pub fn coverage(&self) -> BackupCoverage {
+        if self
+            .extensions
+            .iter()
+            .any(BackupExtension::is_rejoin_coverage)
+        {
+            BackupCoverage::Rejoin
+        } else {
+            BackupCoverage::Complete
+        }
+    }
+
     /// Source stack and firmware.
     #[must_use]
     pub const fn source(&self) -> &BackupSource {
@@ -524,11 +581,20 @@ impl NetworkBackup {
     pub fn devices(&self) -> &[DeviceBackup] {
         &self.devices
     }
-    /// Required extensions; unknown extensions must not be silently ignored.
+    /// Required extensions, including the optional standard rejoin coverage marker.
+    /// Unknown extensions must not be silently ignored.
     #[must_use]
     pub fn extensions(&self) -> &[BackupExtension] {
         &self.extensions
     }
+    /// Iterate through required state interpreted by the hardware backend.
+    /// The generic coverage marker is handled by the backup API.
+    pub fn backend_extensions(&self) -> impl Iterator<Item = &BackupExtension> {
+        self.extensions
+            .iter()
+            .filter(|extension| !extension.is_rejoin_coverage())
+    }
+
     /// Validate structural consistency independently of a target backend.
     ///
     /// # Errors
@@ -581,8 +647,11 @@ impl NetworkBackup {
     /// Incoming replay counters and key material are preserved.
     ///
     /// # Errors
-    /// Returns an error if any retained network or link-key counter would overflow.
+    /// Returns an error if rejoin recovery was not allowed or an outgoing counter would overflow.
     pub fn prepare_restore(&self, options: RestoreOptions) -> Result<Self, BackupError> {
+        if self.coverage() == BackupCoverage::Rejoin && !options.allows_rejoin() {
+            return Err(BackupError::RejoinRequiresOptIn);
+        }
         let mut prepared = self.clone();
         prepared.network_key.tx_counter = advance(
             prepared.network_key.tx_counter,
@@ -609,6 +678,7 @@ impl NetworkBackup {
 pub struct RestoreOptions {
     network_counter_advance: NonZeroU32,
     link_counter_advance: NonZeroU32,
+    allow_rejoin: bool,
 }
 
 impl RestoreOptions {
@@ -621,7 +691,22 @@ impl RestoreOptions {
         Self {
             network_counter_advance,
             link_counter_advance,
+            allow_rejoin: false,
         }
+    }
+
+    /// Allow a rejoin backup to be restored, including on a backend that must form a live
+    /// network. Review the source coverage and target requirements before enabling this.
+    #[must_use]
+    pub const fn allow_rejoin(mut self) -> Self {
+        self.allow_rejoin = true;
+        self
+    }
+
+    /// Whether the caller opted in to rejoin recovery.
+    #[must_use]
+    pub const fn allows_rejoin(self) -> bool {
+        self.allow_rejoin
     }
 
     /// Requested network-key counter advance.
@@ -669,36 +754,114 @@ impl BackupCapabilities {
     }
 }
 
-/// Verified restored identity and outgoing counters. Contains no key material or extension payloads.
+/// Network state after the backend verifies a restore.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RestoreNetworkState {
+    /// The network is still stopped and requires backend startup.
+    Stopped,
+
+    /// The backend formed a running network during recovery.
+    Running,
+}
+
+/// Verified restored identity, outgoing counters and activation state. Contains no keys.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RestoreReport {
     coordinator_ieee: IeeeAddress,
     network_counters: Vec<(u8, u32)>,
     link_counters: Vec<(IeeeAddress, u32)>,
+    coverage: BackupCoverage,
+    network_state: RestoreNetworkState,
+    nwk_update_id: u8,
+    shared_aps_counter: Option<u32>,
+    restored_link_keys: usize,
 }
 
 impl RestoreReport {
-    /// Describe state verified against a prepared backup after persistence.
+    /// Describe a complete restore verified against a prepared backup after persistence.
     /// Backends must verify hardware state before constructing this report.
     #[must_use]
     pub fn from_verified_backup(backup: &NetworkBackup) -> Self {
+        let link_counters: Vec<_> = backup
+            .devices
+            .iter()
+            .filter_map(|device| {
+                device
+                    .link_key
+                    .as_ref()
+                    .map(|key| (device.ieee_address, key.tx_counter))
+            })
+            .collect();
         Self {
             coordinator_ieee: backup.network.coordinator_ieee,
             network_counters: std::iter::once(&backup.network_key)
                 .chain(&backup.additional_network_keys)
                 .map(|key| (key.sequence_number, key.tx_counter))
                 .collect(),
-            link_counters: backup
+            restored_link_keys: link_counters.len(),
+            link_counters,
+            coverage: BackupCoverage::Complete,
+            network_state: RestoreNetworkState::Stopped,
+            nwk_update_id: backup.network.nwk_update_id,
+            shared_aps_counter: None,
+        }
+    }
+
+    /// Describe a verified rejoin restore on a stack with one active network key and one
+    /// shared outgoing APS counter. The backend must have verified all captured link keys,
+    /// the coordinator identity and the supplied values.
+    #[must_use]
+    pub fn from_verified_rejoin(
+        backup: &NetworkBackup,
+        network_state: RestoreNetworkState,
+        nwk_counter: u32,
+        shared_aps_counter: u32,
+        nwk_update_id: u8,
+    ) -> Self {
+        Self {
+            coordinator_ieee: backup.network.coordinator_ieee,
+            network_counters: vec![(backup.network_key.sequence_number, nwk_counter)],
+            link_counters: Vec::new(),
+            coverage: BackupCoverage::Rejoin,
+            network_state,
+            nwk_update_id,
+            shared_aps_counter: Some(shared_aps_counter),
+            restored_link_keys: backup
                 .devices
                 .iter()
-                .filter_map(|device| {
-                    device
-                        .link_key
-                        .as_ref()
-                        .map(|key| (device.ieee_address, key.tx_counter))
-                })
-                .collect(),
+                .filter(|device| device.link_key.is_some())
+                .count(),
         }
+    }
+
+    /// Coverage of the verified restore.
+    #[must_use]
+    pub const fn coverage(&self) -> BackupCoverage {
+        self.coverage
+    }
+
+    /// Whether the hardware network is already running.
+    #[must_use]
+    pub const fn network_state(&self) -> RestoreNetworkState {
+        self.network_state
+    }
+
+    /// Network update ID observed after restore. Compare it with the original snapshot if needed.
+    #[must_use]
+    pub const fn nwk_update_id(&self) -> u8 {
+        self.nwk_update_id
+    }
+
+    /// Verified shared outgoing APS counter when reported by the backend.
+    #[must_use]
+    pub const fn shared_aps_counter(&self) -> Option<u32> {
+        self.shared_aps_counter
+    }
+
+    /// Number of verified restored partner link keys.
+    #[must_use]
+    pub const fn restored_link_keys(&self) -> usize {
+        self.restored_link_keys
     }
 
     /// Verified coordinator IEEE address.
@@ -713,7 +876,8 @@ impl RestoreReport {
         &self.network_counters
     }
 
-    /// Verified link-key partner addresses and outgoing counters.
+    /// Verified per-partner outgoing link-key counters.
+    /// A backend that uses a shared counter can report it through [`Self::shared_aps_counter`].
     #[must_use]
     pub fn link_counters(&self) -> &[(IeeeAddress, u32)] {
         &self.link_counters

@@ -271,7 +271,8 @@ x86-64 Linux target, the same size as before backup support.
 
 ### Snapshot contents
 
-`NetworkBackup` contains only core network state:
+`NetworkBackup::coverage()` identifies a complete backup or a rejoin backup.
+Both contain only core network state:
 
 - Source stack and firmware identifiers and a backup schema version.
 - Coordinator IEEE address, PAN ID, extended PAN ID, channel, channel mask, network update ID, and
@@ -292,9 +293,11 @@ state for other key epochs. Every extension is required. A target must understan
 extension or reject the backup before writing. Structural validity alone does not establish that a
 snapshot is complete for a particular stack or transferable to another stack.
 
-A backend must export a complete, consistent snapshot or fail. The actor's command serialization does
-not stop autonomous NCP traffic: use the stack's snapshot facility or quiesce relevant operations.
-Non-exportable credentials can make a backend unable to offer this capability.
+A backend must mark limited snapshots with `BackupCoverage::Rejoin`. Such a backup
+contains the network identity and credentials available for devices to rejoin. Child
+membership and replay counters may need to be rebuilt. Command serialization leaves
+autonomous NCP traffic active, so use the stack's snapshot facility or quiesce operations
+that change the captured state. An unreadable required credential prevents capture.
 
 ### Calling the API
 
@@ -321,6 +324,8 @@ To restore, pass the original snapshot and explicit `RestoreOptions::new(network
 link_advance)`, with two `NonZeroU32` advances. There is no default advance. Choose advances exceeding
 the traffic since capture, including any earlier restoration of the same snapshot. A finite increment
 cannot make arbitrarily stale backups safe, nor recover keys or devices added after capture.
+Pass `options.allow_rejoin()` to restore a rejoin snapshot after reviewing its coverage.
+The actor rejects the snapshot before target validation when consent is absent.
 
 Normalized counters mean the last used counter, or a conservative upper bound on it. They are
 32-bit security counters, separate from the wrapping eight-bit APS correlation counter passed to
@@ -340,18 +345,19 @@ so that the first new secured frame uses a greater value.
 3. `validate_restore` checks stopped state, firmware compatibility, IEEE identity restoration, key
    import, table capacities, required extensions, and extension counter arithmetic without mutating
    persistent network state. It must reject incompatible targets before the first write.
-4. `NetworkRestore::restore_network` applies the prepared snapshot. Do not advance its normalized
-   counters again. Prevent external state changes between validation and writes; persist and verify
-   the restored identity, credentials, parameters, and counters before constructing
-   `RestoreReport::from_verified_backup`.
-5. Leave the network stopped after both success and failure. Backend startup resumes the verified
-   network deliberately; the generic hardware API provides no network-start command.
+4. `NetworkRestore::restore_network` applies and verifies the prepared state. Advance
+   normalized counters only in dispatch. Complete restores persist and read back core state
+   while the network is stopped. An opted-in rejoin restore can form a running network and
+   verify the recovered identity, credentials and outgoing counters by live readback.
+5. Check `RestoreReport::network_state()` to see whether the backend must resume the network
+   before starting the coordinator. The report also gives the observed network update ID and,
+   where available, a shared APS counter.
 
 Direct callers of the implementor trait must validate, call `NetworkBackup::prepare_restore`, and
 follow the same target validation/apply sequence themselves. Normal callers use `NcpHandle`.
 
 Hardware restore failures should use `BackupError::restore_failed` with `RestoreFailureState::Unchanged`
-or `PossiblyModified` and the backend error source. Partially changed targets must stay offline.
+or `PossiblyModified` and the backend error source. Inspect a possibly modified target before using it or retrying. A rejoin restore may have activated the recovered network.
 Backend errors and source metadata must not contain secrets. Dropping the response future does not
 cancel a queued restore, but aborting the actor or losing hardware power can interrupt it. A lost
 response leaves the outcome unknown and requires verification before resuming or retrying.
@@ -363,9 +369,9 @@ identity restoration, counter behavior, failure recovery, and actual device comm
 
 ### Serialization
 
-The existing `serde` feature supports `NetworkBackup` and its component values. Schema version 1 is
-this crate's representation, not the Open Coordinator Backup JSON format. JSON is an application
-choice; the hardware library has no JSON runtime dependency. `serde_json` is used only by tests.
+The existing `serde` feature supports `NetworkBackup` and its component values. Schema version 1 uses this crate's representation. Complete snapshots retain their
+original format. Rejoin snapshots carry the required `org.apis-saltans/rejoin-coverage`
+extension so older restore backends can reject them safely. JSON is an application choice and the hardware library has no JSON runtime dependency. `serde_json` is used only by tests.
 
 IEEE addresses use the existing `IeeeAddress` display representation. Extended PAN IDs are eight
 bytes in display/big-endian order, channel masks are page-zero bit masks, and key material and

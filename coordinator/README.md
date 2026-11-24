@@ -1020,8 +1020,9 @@ underlying driver actor. Dumping without registered hardware support returns
 `HardwareError`, and `HardwareOperation` are re-exported by this crate. Applications need no direct
 hardware dependency to inspect, serialize, or handle backup results. Snapshots cover core network
 identity and security only; application-level information is excluded. They contain credentials,
-so protect serialized backups at rest and in transit. The backend must provide consistent capture
-while the network is running.
+so protect serialized backups at rest and in transit. Check `NetworkBackup::coverage()` to see
+whether the backend captured complete core state or enough state to attempt device rejoin.
+The backend must account for network activity while capturing a snapshot.
 
 ### Restore before coordinator startup
 
@@ -1037,10 +1038,12 @@ The recovery sequence is:
 1. Initialize and poll the external driver actor, keeping its hardware network stopped. The old
    coordinator must stay offline when the replacement begins using its identity.
 2. Construct `CoordinatorStartup` and inspect `Backup::backup_capabilities()` if desired.
-3. If restoration was requested, await `Restore::restore_network(backup, options)`. Pass the original
+3. If restoration was requested, await `Restore::restore_network(backup, options)`. To accept a
+   rejoin backup, call `options.allow_rejoin()`. Pass the original
    snapshot and explicit outgoing counter advances. Hardware dispatch prepares counters, validates
    the target, then persists and verifies core network state.
-4. Resume the verified hardware network through the backend's startup API.
+4. Check `RestoreReport::network_state()`. If it reports `Stopped`, resume the hardware through
+   the backend. A `Running` report means the hardware is ready for protocol startup.
 5. Consume the startup object with `start_managed()` to receive `(Coordinator, CoordinatorRuntime)`,
    or `start()` for a detached runtime.
 
@@ -1055,7 +1058,7 @@ async fn prepare_replacement(
     options: RestoreOptions,
 ) -> Result<(CoordinatorStartup, RestoreReport), Error> {
     let report = startup.restore_network(backup, options).await?;
-    // The caller resumes the hardware through its backend before consuming startup.
+    // The caller checks the report before starting the protocol runtime.
     Ok((startup, report))
 }
 ```
@@ -1073,8 +1076,8 @@ actors. A subsequent explicit successful restore clears this block. Without a re
 startup proceeds normally, including on hardware offering neither capability.
 
 Dropping the restore future does not cancel an already queued hardware restore. Its outcome may be
-unknown, so verify hardware state before retrying. Keep partial restores offline. The preparation
-object cannot coordinate other owners of cloned hardware handles; those owners must not concurrently
+unknown, so verify hardware state before retrying. A rejoin restore may have started the network.
+The preparation object cannot coordinate other owners of cloned hardware handles; those owners must not concurrently
 mutate or start the target. Hardware events remain buffered in the supplied bounded receiver until
 startup; keep event capture and backend backpressure behavior in mind during maintenance.
 

@@ -34,14 +34,15 @@
 use const_env::env_item;
 
 pub use self::api::{
-    AddressTranslation, Attributes, Backup, BackupCapabilities, BackupError, BackupExtension,
-    BackupSource, Binding, BindingResult, CancellableOtaUpdate, Channel, ChannelMask, ColorControl,
-    DeviceBackup, Endpoints, FoundNetwork, Groups, HardwareError, HardwareOperation, Joining,
-    Leaving, Level, LinkKeyState, LocalNode, NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH,
-    NetworkBackup, NetworkDescriptor, NetworkKey, NetworkKeyState, NetworkParameters, Node, OnOff,
-    Ota, ReadAttributeResult, Restore, RestoreFailureState, RestoreOptions, RestoreReport, Routing,
-    ScanDuration, ScannedChannel, Scanning, SimpleDescriptor, WriteAttributeResult, Zcl,
-    ZclRequest, ZclResponse, ZclResponseType, Zdp, ZdpResponse,
+    AddressTranslation, Attributes, Backup, BackupCapabilities, BackupCoverage, BackupError,
+    BackupExtension, BackupSource, Binding, BindingResult, CancellableOtaUpdate, Channel,
+    ChannelMask, ColorControl, DeviceBackup, Endpoints, FoundNetwork, Groups, HardwareError,
+    HardwareOperation, Joining, Leaving, Level, LinkKeyState, LocalNode, NETWORK_BACKUP_VERSION,
+    NETWORK_KEY_LENGTH, NetworkBackup, NetworkDescriptor, NetworkKey, NetworkKeyState,
+    NetworkParameters, Node, OnOff, Ota, ReadAttributeResult, Restore, RestoreFailureState,
+    RestoreNetworkState, RestoreOptions, RestoreReport, Routing, ScanDuration, ScannedChannel,
+    Scanning, SimpleDescriptor, WriteAttributeResult, Zcl, ZclRequest, ZclResponse,
+    ZclResponseType, Zdp, ZdpResponse,
 };
 pub use self::config::CoordinatorConfig;
 pub use self::coordinator::Coordinator;

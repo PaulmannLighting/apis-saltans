@@ -71,7 +71,7 @@ impl NcpHandle {
         receiver.await?
     }
 
-    /// Capture a complete core Zigbee network snapshot, including security secrets.
+    /// Capture core Zigbee network state, including security secrets and its coverage.
     /// Application-level state is excluded. Protect the returned backup at rest and in transit.
     ///
     /// # Errors
@@ -83,12 +83,13 @@ impl NcpHandle {
         receiver.await?
     }
 
-    /// Restore core network state on an offline target, leaving its network stopped.
+    /// Restore core network state on an offline target.
     ///
     /// Dispatch advances outgoing counters before target validation and writes. The backend must
-    /// persist and verify state before reporting success. Dropping this future after enqueueing
-    /// does not cancel restoration. A lost response leaves the outcome unknown; verify before use.
-    /// Stop the coordinator protocol actors before restoring and resume via backend startup.
+    /// verify the restored state before reporting success. Complete restores require backend
+    /// startup afterward. An opted-in rejoin restore can form a running network and reports the
+    /// resulting state. Stop coordinator protocol actors before restoring. Dropping this future
+    /// after enqueueing leaves the hardware restore in progress; verify its outcome before use.
     ///
     /// # Errors
     /// Returns unsupported, validation, target compatibility, counter, or hardware restore errors.

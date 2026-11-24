@@ -4,8 +4,8 @@ use zb_core::IeeeAddress;
 use zb_core::short_id::Device;
 
 use super::{
-    BackupError, BackupExtension, BackupSource, DeviceBackup, LinkKeyState, NetworkBackup,
-    NetworkKey, NetworkKeyState, NetworkParameters, RestoreOptions, RestoreReport,
+    BackupCoverage, BackupError, BackupExtension, BackupSource, DeviceBackup, LinkKeyState,
+    NetworkBackup, NetworkKey, NetworkKeyState, NetworkParameters, RestoreOptions, RestoreReport,
 };
 use crate::{Channel, ChannelMask};
 
@@ -57,6 +57,7 @@ fn prepares_all_outgoing_counters_without_changing_snapshot_or_incoming_counters
     let prepared = backup
         .prepare_restore(RestoreOptions::new(NonZeroU32::MIN, LINK_INCREMENT))
         .unwrap();
+    assert_eq!(backup.coverage(), BackupCoverage::Complete);
     assert_eq!(backup.network_key().tx_counter(), COUNTER);
     assert_eq!(prepared.network_key().tx_counter(), COUNTER + 1);
     assert_eq!(
@@ -196,6 +197,19 @@ fn debug_redacts_secrets_at_every_level() {
 fn serialization_round_trip_preserves_secrets_and_rejects_invalid_input() {
     let backup = snapshot();
     let json = serde_json::to_value(&backup).unwrap();
+    let rejoin = backup.clone().with_rejoin_coverage();
+    let rejoin_json = serde_json::to_value(&rejoin).unwrap();
+    assert_eq!(rejoin_json["extensions"][1]["name"], "rejoin-coverage");
+    assert_eq!(
+        rejoin_json["extensions"][1]["namespace"],
+        "org.apis-saltans"
+    );
+    assert_eq!(
+        serde_json::from_value::<NetworkBackup>(rejoin_json)
+            .unwrap()
+            .coverage(),
+        BackupCoverage::Rejoin
+    );
     assert_eq!(
         serde_json::from_value::<NetworkBackup>(json.clone()).unwrap(),
         backup

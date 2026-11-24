@@ -1,10 +1,10 @@
 //! Core network backup operations with per-actor runtime capability checks.
 
 pub use zb_hw::{
-    BackupCapabilities, BackupError, BackupExtension, BackupSource, DeviceBackup,
+    BackupCapabilities, BackupCoverage, BackupError, BackupExtension, BackupSource, DeviceBackup,
     Error as HardwareError, LinkKeyState, NETWORK_BACKUP_VERSION, NETWORK_KEY_LENGTH,
     NetworkBackup, NetworkKey, NetworkKeyState, NetworkParameters, Operation as HardwareOperation,
-    RestoreFailureState, RestoreOptions, RestoreReport,
+    RestoreFailureState, RestoreNetworkState, RestoreOptions, RestoreReport,
 };
 
 use crate::{Coordinator, Error};
@@ -23,7 +23,7 @@ pub trait Backup {
     fn backup_capabilities(&self)
     -> impl Future<Output = Result<BackupCapabilities, Error>> + Send;
 
-    /// Capture a complete core network snapshot while the coordinator is running.
+    /// Capture the core network state and its coverage while the coordinator is running.
     ///
     /// # Errors
     /// Returns a hardware unsupported-operation error when dump was not registered, or a hardware

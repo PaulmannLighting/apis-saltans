@@ -135,6 +135,12 @@ belongs at the backend boundary, where the status namespace is known.
 
 ## Optional core network backup
 
+The snapshot carries explicit coverage. Complete snapshots retain the original offline
+contract and serialized representation. Rejoin snapshots describe devices and security
+state the backend can recover and require `RestoreOptions::allow_rejoin()`. Dispatch
+enforces the opt-in before calling the driver and advances outgoing counters once.
+The restore report identifies a stopped or running hardware network.
+
 `common/backup.rs` owns versioned snapshots, validated constructors, redacted secret wrappers,
 capability results, restore options/reports, and backup errors. `backup/serialization.rs` deserializes
 invariant-bearing records through validation. The model deliberately excludes application state.
@@ -169,14 +175,14 @@ checks rather than a promise inferred from registration.
 sequenceDiagram
     participant H as NcpHandle
     participant A as Driver actor
-    participant D as Offline backend
+    participant D as Hardware backend
     H->>A: RestoreNetwork with original snapshot and options
-    A->>A: Validate structure and advance normalized outgoing counters
+    A->>A: Validate structure, consent, and outgoing counter advances
     A->>D: validate_restore with prepared snapshot
     D-->>A: Compatible target with no storage mutation
     A->>D: restore_network with prepared snapshot
-    D->>D: Persist and verify required core state
-    D-->>A: RestoreReport with network still stopped
+    D->>D: Apply and verify required core state
+    D-->>A: RestoreReport with hardware network state
     A-->>H: One-shot result
 ```
 
@@ -186,12 +192,12 @@ can still interrupt restoration. Restore failures preserve backend sources and d
 storage from possibly partial state. Generic dispatch checks all normalized outgoing counters before
 calling target validation; the backend checks and advances any counters encoded in opaque extensions.
 
-The backend must keep the network offline throughout target validation, apply, verification, and any
-failure. Coordinator runtime shutdown does not stop the externally owned driver, so application/backend
-startup owns this maintenance lifecycle. Successful restoration does not start the network. No generic
-transactional rollback is promised for NCP storage.
+Target validation requires offline hardware. Complete restoration stays offline through apply and
+verification. A backend can form a network during opted-in rejoin recovery and verify the live results.
+Coordinator runtime shutdown leaves the externally owned driver running. The application and backend
+control radio startup and recovery after a failure.
 
 Counter advancement is explicit and only safe for bounded traffic since capture, including previous
-restores. Incoming replay counters are retained. Stale snapshots cannot recover subsequent key or
+restores. Complete restores retain incoming replay counters. Stale snapshots cannot recover subsequent key or
 membership changes. A backend offering live snapshots must synchronize with autonomous NCP changes;
 serializing commands at the actor boundary alone does not provide snapshot consistency.
